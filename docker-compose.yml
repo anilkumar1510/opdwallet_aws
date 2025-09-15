@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: opd-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: opd_wallet
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - opd-network
+
+  api:
+    image: node:20-alpine
+    container_name: opd-api
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      COOKIE_NAME: opd_session
+      PORT: 4000
+    depends_on:
+      - mongo
+    volumes:
+      - ./api:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run start:dev"
+
+  web-admin:
+    image: node:20-alpine
+    container_name: opd-web-admin
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      API_URL: http://opd-api:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-admin:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  web-member:
+    image: node:20-alpine
+    container_name: opd-web-member
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3002:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      API_URL: http://opd-api:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-member:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+volumes:
+  mongo-data:
+
+networks:
+  opd-network:
+    driver: bridge
