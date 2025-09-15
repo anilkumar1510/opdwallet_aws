@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: opd-mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./scripts/init-mongo-secure.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - opd-network
+    ports:
+      - "127.0.0.1:27017:27017"  # Only bind to localhost
+    command: mongod --auth --bind_ip_all
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: opd-api
+    restart: always
+    env_file: .env.production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - opd-network
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web-admin:
+    build:
+      context: ./web-admin
+      dockerfile: Dockerfile
+    container_name: opd-web-admin
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+      API_URL: http://api:4000/api
+    depends_on:
+      - api
+    networks:
+      - opd-network
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  web-member:
+    build:
+      context: ./web-member
+      dockerfile: Dockerfile
+    container_name: opd-web-member
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+      API_URL: http://api:4000/api
+    depends_on:
+      - api
+    networks:
+      - opd-network
+    expose:
+      - "3002"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: opd-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.secure.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - api
+      - web-admin
+      - web-member
+    networks:
+      - opd-network
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    image: certbot/certbot
+    container_name: opd-certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  opd-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mongodb_data:
+  mongodb_config:

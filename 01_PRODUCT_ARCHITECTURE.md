@@ -1,4 +1,85 @@
 # 01_PRODUCT_ARCHITECTURE.md
+**Last Updated: September 15, 2025**
+**Current Deployment: http://13.60.210.156**
+
+## 📋 PROJECT OPERATING RULES (DO NOT DEVIATE)
+
+### 1. Mode
+- **Engineering Excellence**: Ship clean, optimized, professional code as a top-tier engineer
+- **Security by Default**: Apply OWASP ASVS/Top-10, least privilege, secrets hygiene, strict validation, audit trails
+- **Clarity First**: If unclear or blocked, pause and ask—no guessing, no hacks
+
+### 2. Documentation: Single Source of Truth
+Maintain these three files at repo root (update after EVERY change):
+1. **01_PRODUCT_ARCHITECTURE.md** — Vision, roles, flows, endpoints, UI map, integrations, environments (AWS), deployment notes, ADRs
+2. **02_DATA_SCHEMA_AND_CREDENTIALS.md** — MongoDB collections, indexes, sample docs, migrations, config keys (placeholders only), external endpoints
+3. **03_TODO_CHANGELOG.md** — Task list, decisions, dated changelog (what/why/when/by whom)
+
+**Rule**: Any PR that changes code MUST update these docs. No exceptions.
+
+### 3. Read Before You Build
+- Read all three docs (and ADRs) before coding
+- Confirm understanding & approach in one short paragraph
+- Proceed step-by-step with verification at each stage
+
+### 4. Docker-Only Runtime
+- Everything runs via Docker and docker-compose (no local services outside containers)
+- Provide: Dockerfiles, docker-compose.yml, make/npx scripts for: up, down, logs, seed, test, lint, typecheck
+- Current implementation: ✅ Docker Compose with all services
+
+### 5. Security Baseline (Apply Everywhere)
+- **AuthN**: httpOnly secure cookies + JWT rotation; session invalidation
+- **AuthZ**: Strict RBAC + resource checks (prevent IDOR)
+- **Validation**: Input & output validation (server & client)
+- **Files**: Scan (AV), store privately, serve via short-lived signed URLs
+- **Headers**: Prod-grade CSP/CORS/CSRF, rate-limits, dependency scanning
+- **Audit**: Immutable log on admin/ops/member actions (who/what/when/before/after)
+- **Secrets**: Never in code or docs—environment/secret manager only
+
+### 6. Database Quality (MongoDB)
+- Design optimized schemas with explicit indexes
+- Critical queries: Attach explain() evidence, target p95: reads < 300ms, writes < 800ms
+- Case-insensitive unique email (collection collation)
+- Maintain migrations & seed scripts; no silent schema changes
+
+### 7. Feature Workflow (Confirm → Plan → Do)
+1. **Understanding**: 1–3 lines stating goal and acceptance criteria
+2. **Approach**: Define API, schema impact, UI, tests
+3. **Implement**: Small, reviewable steps behind feature flags if needed
+4. **Update**: All 3 documentation files
+5. **PR**: Include tests + screenshots (for UI)
+
+### 8. Definition of Done
+A change is "Done" only if:
+- ✅ Lint + typecheck + unit/integration/e2e tests pass in CI
+- ✅ Images build and containers are healthy
+- ✅ Security checks pass (dep scan/SAST; basic DAST on changed endpoints)
+- ✅ Responsive UI verified (mobile-first), accessible focus states
+- ✅ The 3 docs are updated
+
+### 9. Verification
+- After delivery, explicitly ask: "Please verify this in UI/API"
+- Convert feedback into tests where feasible
+
+### 10. Debugging
+- On failure: Add targeted logs/asserts, reproduce minimally, read container logs
+- After fix confirmed: Remove debug artifacts and test scaffolds
+
+### 11. No Shortcuts
+- If something risks quality/security, stop and discuss options
+- Prefer slower + correct over fast + fragile
+
+### 12. SSO & Long-term Alignment
+- Design with SSO (OIDC/SAML) in mind from day-1 (stub routes now, integrate later)
+- All stubs/dummy flows must align with final architecture (routing, RBAC, error contracts, upload security)
+
+## 🚨 CRITICAL OPERATIONAL STATUS
+
+1. **DEPLOYMENT TARGET**: AWS EC2 Instance (13.60.210.156)
+2. **ENVIRONMENT**: Development/Demo (HTTP only, no auth on MongoDB)
+3. **DOCKER ORCHESTRATION**: All services run via Docker Compose
+4. **CI/CD**: Manual deployment via SSH (GitHub Actions pending)
+5. **SECURITY MODE**: Development (cookies without Secure flag)
 
 ## Product Vision
 
@@ -30,11 +111,12 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 ## User Flows
 
 ### Member Login Flow
-1. Member accesses http://localhost:3002
+1. Member accesses http://13.60.210.156 (or localhost:3002 for local dev)
 2. Enters credentials (email/password)
 3. System validates via JWT authentication
-4. Redirects to member dashboard
-5. Dashboard shows wallet balance, benefits, and quick actions
+4. JWT token stored in httpOnly cookie (opd_session)
+5. Redirects to member dashboard
+6. Dashboard shows wallet balance, benefits, and quick actions
 
 ### Claim Submission Flow
 1. Member clicks "File Claim" from dashboard
@@ -289,15 +371,179 @@ open http://localhost:3002  # Member Portal
 ```
 
 ### Test Accounts
-#### Member Portal (http://localhost:3002)
-- Test Member: member@test.com / Test123!
+
+#### Production (AWS EC2 - http://13.60.210.156)
+- Member: member@test.com / Test123!
+- Admin: admin@test.com / Test123!
 - Member ID: OPD000001
 - UHID: UH000001
 
-#### Admin Portal (http://localhost:3001)
-- Admin: admin@test.com / Test123! (to be created)
-- Super Admin: superadmin@test.com / Test123! (to be created)
+#### Local Development
+- Same credentials as production
+- Member Portal: http://localhost:3002
+- Admin Portal: http://localhost:3001
 
 ### API Documentation
 - Swagger UI: http://localhost:4000/api/docs
 - Base URL: http://localhost:4000/api
+
+## Environments (AWS)
+
+### AWS Account & Infrastructure
+- **Account**: OPD Wallet Development (placeholder-account-id)
+- **Primary Region**: eu-north-1 (Stockholm)
+- **Disaster Recovery Region**: eu-west-1 (Ireland) - planned
+
+### Runtime Configuration
+- **API Server**: EC2 t3.small (current) → ECS Fargate (planned)
+- **Frontend**: EC2 via Nginx (current) → CloudFront + S3 (planned)
+- **Load Balancer**: None (current) → Application Load Balancer (planned)
+
+### Networking
+- **VPC**: Default VPC (development)
+- **Subnets**: Public subnet only (current) → Public + Private subnets (production)
+- **Security Groups**:
+  - Current: All ports open to 0.0.0.0/0 (INSECURE)
+  - Target: Least privilege with specific port/IP restrictions
+- **NAT Gateway**: Not configured (planned for private subnets)
+
+### Data Layer
+- **MongoDB**: Self-managed on EC2 (current) → MongoDB Atlas or DocumentDB (planned)
+- **Backup Policy**:
+  - Current: None (CRITICAL GAP)
+  - Target: Daily snapshots, 30-day retention
+  - RPO: 24 hours, RTO: 4 hours
+
+### Storage
+- **S3 Buckets**:
+  - `opd-wallet-uploads-dev` (planned): Member documents, prescriptions
+  - `opd-wallet-backups-dev` (planned): Database backups
+  - `opd-wallet-static-dev` (planned): Frontend assets
+- **Encryption**: AES-256 (planned)
+- **Lifecycle**: 90-day archive for documents
+- **Access**: Pre-signed URLs with 15-minute expiry
+
+### CI/CD Pipeline
+- **Current**: Manual SSH deployment
+- **Target**: GitHub Actions → ECR → ECS deployment
+- **Container Registry**: Amazon ECR (planned)
+- **Secrets Management**:
+  - Current: Hardcoded in docker-compose
+  - Target: AWS Secrets Manager or Systems Manager Parameter Store
+
+### Observability
+- **Logging**:
+  - Current: Docker container logs only
+  - Target: CloudWatch Logs with 30-day retention
+- **Metrics**: CloudWatch metrics for EC2, ECS, RDS
+- **Alarms**:
+  - API 5xx errors > 1% (planned)
+  - Response time p95 > 1s (planned)
+  - Container health checks (planned)
+- **Tracing**: AWS X-Ray (planned)
+
+### DNS & TLS
+- **Domain**: opdwallet.com (to be registered)
+- **DNS**: Route53 hosted zone (planned)
+- **SSL Certificates**: AWS Certificate Manager (planned)
+- **TLS Version**: 1.2+ only
+
+### Access Management
+- **IAM Roles**:
+  - EC2 instance role with minimal permissions
+  - ECS task roles for service-specific access
+  - Lambda execution roles (if applicable)
+- **Break-glass Process**: Root account MFA, documented escalation
+- **SSH Access**: Key-based only (opdwallet-server.pem)
+
+## Current Deployment State (September 2025)
+
+### AWS EC2 Instance (ACTIVE)
+```
+Instance Type: t3.small
+Region: eu-north-1
+Public IP: 13.60.210.156
+OS: Ubuntu 24.04 LTS
+Storage: 30GB gp3
+Security Groups: HTTP(80), HTTPS(443), SSH(22) - All open to 0.0.0.0/0
+Instance ID: [REDACTED]
+```
+
+### Docker Services Status
+- **MongoDB**: Running without authentication (development mode)
+- **API**: Running on port 4000 (NestJS)
+- **Member Portal**: Running on port 3002 (Next.js)
+- **Admin Portal**: Running on port 3001 (Next.js)
+- **Nginx**: Reverse proxy on port 80
+
+### Known Security Gaps (Development Environment)
+
+#### 🔴 Critical for Production
+1. **No HTTPS/SSL**: Running on HTTP only
+2. **MongoDB without authentication**: No username/password required
+3. **Cookies without Secure flag**: Required for HTTP but insecure
+4. **JWT secret hardcoded**: Using development secret
+5. **CORS allowing all origins**: Set to "*" for development
+6. **No rate limiting implemented**: API vulnerable to abuse
+7. **Secrets in docker-compose**: Should use secrets management
+
+#### 🟡 Important Improvements
+1. **No backup strategy**: MongoDB data not backed up
+2. **No monitoring/logging**: No centralized logging system
+3. **No health checks alerts**: Services can fail silently
+4. **Default ports exposed**: MongoDB port should be closed
+5. **No firewall rules**: Beyond AWS security groups
+6. **No input sanitization**: XSS/SQL injection risks
+
+### Production Migration Checklist
+
+#### Phase 1: Security Hardening
+- [ ] Configure SSL certificates (Let's Encrypt or AWS Certificate Manager)
+- [ ] Enable HTTPS on Nginx
+- [ ] Set NODE_ENV=production
+- [ ] Enable COOKIE_SECURE=true
+- [ ] Configure MongoDB authentication
+- [ ] Use environment-specific secrets
+- [ ] Implement rate limiting
+- [ ] Add input validation and sanitization
+
+#### Phase 2: Infrastructure
+- [ ] Set up domain name
+- [ ] Configure CloudFlare or AWS WAF
+- [ ] Implement backup strategy
+- [ ] Set up monitoring (CloudWatch, Datadog, etc.)
+- [ ] Configure log aggregation
+- [ ] Set up CI/CD pipeline properly
+- [ ] Implement blue-green deployment
+
+#### Phase 3: Application Security
+- [ ] Implement CSRF protection
+- [ ] Add request signing for sensitive operations
+- [ ] Implement audit logging
+- [ ] Add 2FA for admin accounts
+- [ ] Regular security scanning
+- [ ] Dependency vulnerability scanning
+
+### Current Cookie Configuration
+
+```javascript
+// Development (Current)
+{
+  httpOnly: true,
+  secure: false,      // Allows HTTP
+  sameSite: 'lax',
+  maxAge: 604800000,  // 7 days
+  domain: '',         // Browser handles
+  path: '/'
+}
+
+// Production (Required)
+{
+  httpOnly: true,
+  secure: true,       // HTTPS only
+  sameSite: 'strict',
+  maxAge: 3600000,    // 1 hour
+  domain: '.yourdomain.com',
+  path: '/'
+}
+```

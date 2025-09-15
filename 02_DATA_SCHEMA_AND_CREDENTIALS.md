@@ -1,4 +1,101 @@
 # 02_DATA_SCHEMA_AND_CREDENTIALS.md
+**Last Updated: September 15, 2025**
+**Current State: Development Environment (No Auth)**
+
+## 🚨 SECURITY NOTICE & COMPLIANCE REQUIREMENTS
+
+### Current Development Configuration (INSECURE)
+- **MongoDB**: Running WITHOUT authentication
+- **Passwords**: Using bcrypt with 10 rounds
+- **JWT Secret**: Hardcoded development key
+- **Connection**: mongodb://opd-mongodb:27017/opd_wallet (no auth)
+- **Validation**: Basic DTOs only
+- **Audit Logging**: Not implemented
+
+### Production Security Baseline (REQUIRED)
+Per Operating Rule #5, all production deployments MUST implement:
+
+#### Authentication & Authorization
+- **MongoDB**: Strong authentication with role-based access
+- **Passwords**: Bcrypt with minimum 12 rounds + complexity requirements
+- **JWT**:
+  - Cryptographically secure 256-bit secret from AWS Secrets Manager
+  - Token rotation every 1 hour
+  - Refresh token strategy with secure storage
+  - Session invalidation on logout
+- **RBAC**: Strict role checks + resource-level authorization (prevent IDOR)
+
+#### Data Protection
+- **Encryption at Rest**: MongoDB encryption, S3 AES-256
+- **Encryption in Transit**: TLS 1.2+ for all connections
+- **PII Handling**:
+  - Mask sensitive fields in logs
+  - Encrypt SSN, payment details
+  - GDPR-compliant data retention
+- **File Security**:
+  - Antivirus scanning on upload
+  - Private S3 storage
+  - Pre-signed URLs (15-minute expiry)
+
+#### Input/Output Validation
+- **Server-side**: Class-validator with strict DTOs
+- **Client-side**: Zod schemas for form validation
+- **Sanitization**: DOMPurify for user-generated content
+- **SQL/NoSQL Injection**: Parameterized queries only
+
+#### Audit & Compliance
+- **Immutable Audit Log**: All admin/member actions
+  - Format: `{timestamp, userId, action, resource, before, after, ip, userAgent}`
+  - Storage: Separate audit collection with TTL
+  - Retention: 2 years minimum
+- **HIPAA Compliance**:
+  - Access logs for PHI
+  - Encryption requirements
+  - Business Associate Agreements (BAA)
+
+#### Security Headers & Rate Limiting
+```javascript
+// Required production headers
+{
+  "Content-Security-Policy": "default-src 'self'",
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-XSS-Protection": "1; mode=block"
+}
+
+// Rate limiting
+{
+  "global": "100 req/min per IP",
+  "auth": "5 login attempts per 15 min",
+  "api": "1000 req/hour per user"
+}
+```
+
+## Database Quality Standards (Operating Rule #6)
+
+### Performance Targets
+- **Read Operations**: p95 < 300ms
+- **Write Operations**: p95 < 800ms
+- **Query Optimization**: All queries must include explain() analysis
+- **Index Coverage**: 100% for frequently accessed fields
+
+### Schema Requirements
+- **Email Uniqueness**: Case-insensitive with collection collation
+- **Migrations**: Version-controlled, reversible scripts
+- **Seed Data**: Maintained for all environments
+- **Schema Changes**: Never silent; always through migration scripts
+
+### MongoDB Query Performance Evidence
+```javascript
+// Example: User lookup by email
+db.users.find({email: "user@test.com"}).explain("executionStats")
+// Expected: Index scan, totalDocsExamined === 1
+
+// Example: Policy assignments for user
+db.userPolicyAssignments.find({userId: ObjectId("...")}).explain("executionStats")
+// Expected: Index scan, execution time < 50ms
+```
 
 ## MongoDB Collections
 
@@ -268,18 +365,18 @@ Auto-increment counters for IDs.
 
 ## Configuration Keys
 
-### API Server (.env)
+### Current Development Configuration (ACTIVE)
 ```bash
-# Database
-MONGODB_URI=[CONNECTION_STRING]
+# Database (NO AUTH - DEVELOPMENT ONLY)
+MONGODB_URI=mongodb://opd-mongodb:27017/opd_wallet
 MONGODB_DATABASE=opd_wallet
 
 # Authentication
-JWT_SECRET=[SECRET_KEY]
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
 JWT_EXPIRY=7d
 COOKIE_NAME=opd_session
-COOKIE_DOMAIN=.opdwallet.com
-COOKIE_SECURE=true
+COOKIE_DOMAIN=
+COOKIE_SECURE=false  # MUST BE true in production
 COOKIE_HTTPONLY=true
 COOKIE_SAMESITE=lax
 COOKIE_MAX_AGE=604800000
@@ -291,7 +388,39 @@ LOCK_TIME=2h
 
 # Server
 PORT=4000
+NODE_ENV=development  # MUST BE production for live
+
+# CORS
+CORS_ORIGIN=*  # DANGEROUS - restrict in production
+```
+
+### Production Configuration (REQUIRED)
+```bash
+# Database (WITH AUTH)
+MONGODB_URI=mongodb://username:password@host:27017/opd_wallet?authSource=admin
+MONGODB_DATABASE=opd_wallet
+
+# Authentication
+JWT_SECRET=[GENERATE_SECURE_256_BIT_KEY]
+JWT_EXPIRY=1h  # Shorter for production
+COOKIE_NAME=opd_session
+COOKIE_DOMAIN=.yourdomain.com
+COOKIE_SECURE=true
+COOKIE_HTTPONLY=true
+COOKIE_SAMESITE=strict
+COOKIE_MAX_AGE=3600000  # 1 hour
+
+# Security
+BCRYPT_ROUNDS=12
+MAX_LOGIN_ATTEMPTS=3
+LOCK_TIME=24h
+
+# Server
+PORT=4000
 NODE_ENV=production
+
+# CORS
+CORS_ORIGIN=https://yourdomain.com,https://admin.yourdomain.com
 
 # Email (Placeholder)
 SMTP_HOST=[SMTP_HOST]
@@ -350,24 +479,32 @@ NEXT_PUBLIC_ENABLE_ANALYTICS=true
 
 ### Data Seeding
 
-#### Development Seed Data
+#### Current Active Seed Data (September 2025)
 ```javascript
-// Test Users
+// Test Users with WORKING password hash for "Test123!"
+// Hash generated with bcrypt.hashSync('Test123!', 10)
 [
   {
     userId: "USR000001",
     uhid: "UH000001",
     memberId: "OPD000001",
     email: "member@test.com",
-    password: "Test123!",
+    passwordHash: "$2b$10$BlBrAV.EPHlwi8J4AthxAObGm6zhCVKF3SXHbi5ZICs.omu3RQL2S",
+    password: "Test123!",  // For reference only
     role: "MEMBER",
     relationship: "SELF",
     name: {
       firstName: "John",
-      lastName: "Doe"
+      lastName: "Doe",
+      fullName: "John Doe"
     },
-    phone: "+91 9876543210",
-    status: "ACTIVE"
+    phone: "+1234567890",
+    status: "ACTIVE",
+    wallet: {
+      balance: 10000,
+      utilized: 0,
+      available: 10000
+    }
   },
   {
     userId: "USR000002",

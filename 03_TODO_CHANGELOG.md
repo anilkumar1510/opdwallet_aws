@@ -1,4 +1,58 @@
 # 03_TODO_CHANGELOG.md
+**Last Updated: September 15, 2025**
+**Deployment Status: LIVE at http://13.60.210.156**
+
+## 📋 VERIFICATION & DEBUGGING PROCEDURES
+
+### Verification Protocol (Operating Rule #9)
+After every feature delivery:
+1. Request explicit verification: "Please verify this in UI/API"
+2. Document verification results
+3. Convert feedback into automated tests
+4. Update this changelog with verification status
+
+### Debugging Protocol (Operating Rule #10)
+When issues occur:
+1. **Reproduce**: Create minimal reproduction case
+2. **Investigate**:
+   - Add targeted console.log/debug statements
+   - Check Docker logs: `docker-compose logs -f [service]`
+   - Review network tab in browser DevTools
+3. **Fix**: Apply minimal fix addressing root cause
+4. **Clean up**: Remove all debug artifacts after confirmation
+5. **Document**: Add issue and resolution to changelog
+
+### Current Verification Checklist
+- [x] Login flow works with test credentials (member@test.com / Test123!)
+- [x] Dashboard loads after authentication
+- [x] API endpoints return expected data
+- [x] Mobile responsive design verified
+- [ ] No console errors in production build
+- [x] Docker containers healthy
+- [ ] Database queries < 300ms (p95)
+
+### Definition of Done (Operating Rule #8)
+A feature/fix is ONLY complete when:
+- ✅ Lint + typecheck pass (`npm run lint`, `npm run typecheck`)
+- ✅ Unit/integration tests pass (`npm test`)
+- ✅ Docker images build successfully (`docker-compose build`)
+- ✅ All containers are healthy (`docker-compose ps`)
+- ✅ Security checks pass (dependency scan)
+- ✅ UI is responsive (mobile-first, 320px to 1920px)
+- ✅ Accessibility verified (keyboard nav, ARIA labels)
+- ✅ All 3 documentation files updated
+- ✅ Verification requested and completed
+
+## 🚨 CRITICAL SECURITY TODOS (Before Production)
+
+### 🔴 MUST FIX IMMEDIATELY
+- [ ] **Enable HTTPS/SSL** - Currently running on HTTP only
+- [ ] **Add MongoDB Authentication** - Currently no auth
+- [ ] **Secure JWT Secret** - Currently hardcoded
+- [ ] **Fix Cookie Security** - Enable Secure flag with HTTPS
+- [ ] **Restrict CORS** - Currently allowing all origins
+- [ ] **Implement Rate Limiting** - No protection against abuse
+- [ ] **Add Input Validation** - Prevent XSS/injection attacks
 
 ## Current TODO List
 
@@ -57,8 +111,15 @@
 2. **Progressive Web App**: Native-like experience without app store distribution
 3. **Teal Brand Color**: Healthcare-friendly, calming color palette
 4. **System Font Stack**: Fast loading, no external font dependencies
-5. **Framer Motion**: Smooth animations for better user experience
+5. **CSS Transitions Only**: Removed Framer Motion due to type conflicts
 6. **Tailwind CSS**: Utility-first for rapid development
+
+### Deployment Decisions (September 2025)
+1. **Development Mode for Demo**: Running without auth for simplicity
+2. **HTTP Only**: No SSL for initial deployment (must fix for production)
+3. **Manual Deployment**: GitHub Actions requires workflow scope
+4. **Docker Compose**: All services in single orchestration
+5. **No MongoDB Auth**: Simplified for development (critical to fix)
 
 ### Security Decisions
 1. **Role-Based Access Control**: Three-tier role system for granular permissions
@@ -69,7 +130,51 @@
 
 ## Changelog
 
-### 2025-09-15
+### 2025-09-15 - MAJOR DEPLOYMENT & FIXES
+#### Morning Session
+- **DEPLOYED**: Complete application to AWS EC2 (t3.small, Ubuntu 24.04)
+  - Public IP changed from 13.60.226.109 to 13.60.210.156 after reboot
+  - All services running via Docker Compose
+  - Nginx reverse proxy configured on port 80
+
+#### Authentication Issues & Resolution
+- **PROBLEM**: Login was failing with "Invalid credentials"
+  - Root cause: MongoDB authentication mismatch
+  - API couldn't connect to MongoDB with auth credentials
+  - Password hash was incorrect for Test123!
+
+- **ATTEMPTED SOLUTIONS**:
+  1. Tried MongoDB with authentication (failed due to init issues)
+  2. Created opduser with specific database permissions (connection failed)
+  3. Regenerated password hashes multiple times
+
+- **FINAL SOLUTION**:
+  - Removed MongoDB authentication for development
+  - Generated correct bcrypt hash: `$2b$10$BlBrAV.EPHlwi8J4AthxAObGm6zhCVKF3SXHbi5ZICs.omu3RQL2S`
+  - Set NODE_ENV=development to disable secure cookies
+  - Configured CORS to allow all origins temporarily
+
+#### Cookie/Session Issues & Resolution
+- **PROBLEM**: Login succeeded but /api/auth/me returned 401
+  - Cookie was set with Secure flag despite COOKIE_SECURE=false
+  - Browser rejected secure cookies over HTTP
+
+- **SOLUTION**:
+  - Changed NODE_ENV from production to development
+  - Removed Secure flag from cookie configuration
+  - Set COOKIE_DOMAIN to empty string (let browser handle)
+
+#### Static Asset Issues & Resolution
+- **PROBLEM**: CSS/JS files returning 404, site looked broken
+  - Nginx not properly configured for Next.js static files
+  - _next directory not being proxied correctly
+
+- **SOLUTION**:
+  - Updated nginx.conf to proxy /_next paths
+  - Rebuilt Next.js applications with production build
+  - Added manifest.json files to fix console errors
+
+### 2025-09-15 (Earlier)
 - **FIXED**: Docker-based authentication flow between containers
 - **ADDED**: Test member seed script for development
 - **UPDATED**: Fixed user schema to match authentication requirements
@@ -119,6 +224,32 @@
 - **CONFIGURED**: MongoDB integration with Mongoose
 - **ADDED**: JWT authentication strategy
 - **CREATED**: Role-based guards
+
+## Feature Workflow (Operating Rule #7: Confirm → Plan → Do)
+
+### Template for New Features
+```markdown
+#### Feature: [Name]
+**Understanding**: [1-3 lines stating goal and acceptance criteria]
+**Approach**:
+- API Changes: [endpoints, DTOs, validations]
+- Schema Impact: [new collections, indexes, migrations]
+- UI Components: [pages, forms, components]
+- Tests: [unit, integration, e2e]
+**Implementation Steps**:
+1. [ ] Step 1
+2. [ ] Step 2
+3. [ ] Step 3
+**Documentation Updates**:
+- [ ] 01_PRODUCT_ARCHITECTURE.md - [sections to update]
+- [ ] 02_DATA_SCHEMA_AND_CREDENTIALS.md - [sections to update]
+- [ ] 03_TODO_CHANGELOG.md - [add to changelog]
+**PR Checklist**:
+- [ ] Tests passing
+- [ ] Screenshots attached
+- [ ] Docs updated
+- [ ] Reviewed and approved
+```
 
 ## Implementation Plan
 
@@ -239,6 +370,45 @@
 - [ ] Alternative text for images
 - [ ] Form validation messages
 - [ ] Loading state announcements
+
+## Lessons Learned (September 15, 2025)
+
+### What Went Wrong
+1. **MongoDB Authentication**: Initial setup with auth failed due to Docker volume persistence
+2. **Cookie Security**: Production settings don't work with HTTP
+3. **GitHub Actions**: Personal Access Token lacks workflow scope
+4. **Password Hashing**: Multiple attempts needed to get correct hash
+5. **Nginx Configuration**: Default config didn't handle Next.js static files
+
+### What Worked
+1. **Docker Compose**: Simplified multi-service deployment
+2. **Manual SSH Deployment**: Direct control over server
+3. **Development Mode**: Bypassed security for quick demo
+4. **Nginx Reverse Proxy**: Clean URL structure once configured
+
+### Current Security Risks 🚨
+1. **No Authentication on MongoDB** - Anyone with access can read/write
+2. **HTTP Only** - Credentials sent in plain text
+3. **Hardcoded Secrets** - JWT secret in code
+4. **CORS Wide Open** - Any site can call API
+5. **No Rate Limiting** - Vulnerable to DOS attacks
+6. **No Input Validation** - XSS/Injection possible
+7. **Cookies Without Secure Flag** - Session hijacking risk
+8. **Default Ports Open** - MongoDB accessible if firewall fails
+
+### Development vs Production Configuration Differences
+| Setting | Development (Current) | Production (Required) |
+|---------|----------------------|----------------------|
+| Protocol | HTTP | HTTPS with SSL/TLS |
+| MongoDB Auth | None | Username/Password with roles |
+| JWT Secret | Hardcoded | Environment variable (256-bit) |
+| Cookie Secure | false | true |
+| Cookie Domain | Empty | .yourdomain.com |
+| CORS Origins | * (all) | Specific domains only |
+| NODE_ENV | development | production |
+| Rate Limiting | None | 100 req/min per IP |
+| Session Duration | 7 days | 1 hour |
+| Bcrypt Rounds | 10 | 12+ |
 
 ## Implementation Verification Checklist
 
