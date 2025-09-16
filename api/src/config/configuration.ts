@@ -20,7 +20,9 @@ export default () => ({
     name: process.env.COOKIE_NAME || 'opd_session',
     maxAge: parseInt(process.env.COOKIE_MAX_AGE || '604800000', 10),
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE !== undefined
+      ? process.env.COOKIE_SECURE === 'true'
+      : process.env.NODE_ENV === 'production',
     sameSite: (process.env.COOKIE_SAMESITE || 'lax') as 'strict' | 'lax' | 'none',
     domain: process.env.COOKIE_DOMAIN || undefined,
   },

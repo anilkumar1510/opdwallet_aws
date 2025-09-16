@@ -58,16 +58,21 @@ export default function MemberLayout({
 
   const checkAuth = async () => {
     try {
+      console.log('Checking auth status...')
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
       })
+      console.log('Auth check response:', response.status)
       if (response.ok) {
         const userData = await response.json()
+        console.log('User authenticated:', userData)
         setUser(userData)
       } else {
+        console.log('Auth check failed, redirecting to login')
         router.push('/')
       }
     } catch (error) {
+      console.error('Auth check error:', error)
       router.push('/')
     }
   }

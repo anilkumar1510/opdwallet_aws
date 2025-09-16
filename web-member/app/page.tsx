@@ -18,6 +18,7 @@ export default function MemberLoginPage() {
     setLoading(true)
 
     try {
+      console.log('Attempting login with:', email)
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -25,10 +26,16 @@ export default function MemberLoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
+      console.log('Login response status:', response.status)
+      const data = await response.json()
+      console.log('Login response data:', data)
+
       if (response.ok) {
+        console.log('Login successful, redirecting to /member')
         router.push('/member')
       } else {
-        setError('Invalid credentials')
+        console.log('Login failed:', data.message || 'Invalid credentials')
+        setError(data.message || 'Invalid credentials')
       }
     } catch (err) {
       setError('Login failed. Please try again.')
