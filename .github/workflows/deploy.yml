@@ -1,0 +1,121 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push API image
+      run: |
+        docker build -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:latest ./api
+        docker build -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:${{ github.sha }} ./api
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:${{ github.sha }}
+
+    - name: Build and push Admin image
+      run: |
+        docker build -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest ./web-admin
+        docker build -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:${{ github.sha }} ./web-admin
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:${{ github.sha }}
+
+    - name: Build and push Member image
+      run: |
+        docker build -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest ./web-member
+        docker build -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:${{ github.sha }} ./web-member
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:${{ github.sha }}
+
+    - name: Build and push Nginx image
+      run: |
+        # Create Dockerfile for nginx if it doesn't exist
+        cat > nginx/Dockerfile << 'EOF'
+        FROM nginx:alpine
+        COPY nginx.conf /etc/nginx/nginx.conf
+        EOF
+        docker build -t ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest ./nginx
+        docker build -t ${{ env.ECR_REGISTRY }}/opdwallet/nginx:${{ github.sha }} ./nginx
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/nginx:${{ github.sha }}
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Login to ECR
+          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+          # Update docker-compose with ECR images
+          cd /home/ubuntu/opdwallet
+
+          # Pull latest images
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest
+
+          # Stop old containers
+          docker-compose -f docker-compose.prod.yml down || true
+
+          # Start with new images
+          docker run -d --name opd-mongo --network opdwallet_opd-network -v mongo-data:/data/db mongo:7.0 || true
+
+          docker run -d --name opd-api \
+            --network opdwallet_opd-network \
+            -e NODE_ENV=development \
+            -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
+            -e JWT_SECRET=your-super-secret-jwt-key-change-in-production \
+            -e COOKIE_SECURE=false \
+            -e CORS_ORIGIN='*' \
+            ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
+
+          docker run -d --name opd-web-admin \
+            --network opdwallet_opd-network \
+            -e NODE_ENV=development \
+            -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
+            ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
+
+          docker run -d --name opd-web-member \
+            --network opdwallet_opd-network \
+            -e NODE_ENV=development \
+            -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
+            ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+
+          # Update nginx config and restart
+          docker run -d --name opd-nginx \
+            --network opdwallet_opd-network \
+            -p 80:80 -p 443:443 \
+            -v /home/ubuntu/opdwallet/nginx.conf:/etc/nginx/nginx.conf:ro \
+            ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest
+
+          # Health check
+          sleep 10
+          curl -f http://localhost/health || echo "Health check failed"
+          docker ps
