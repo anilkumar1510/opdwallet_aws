@@ -63,12 +63,13 @@ jobs:
         docker push ${{ env.ECR_REGISTRY }}/opdwallet/nginx:${{ github.sha }}
 
     - name: Deploy to EC2
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
+      run: |
+        # Save SSH key to file
+        echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
+        chmod 600 ec2_key.pem
+
+        # SSH and deploy
+        ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
           # Login to ECR
           aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
@@ -119,3 +120,7 @@ jobs:
           sleep 10
           curl -f http://localhost/health || echo "Health check failed"
           docker ps
+        ENDSSH
+
+        # Cleanup
+        rm -f ec2_key.pem
