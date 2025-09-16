@@ -67,7 +67,7 @@ export default function DashboardPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="mb-4 lg:mb-0">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-ink-900">
-              Welcome back, {user?.name?.firstName || 'Member'}!
+              Hi, {user?.name?.firstName || 'Member'}!
             </h1>
             <p className="text-sm sm:text-base text-ink-500 mt-1">Member ID: {user?.memberId || 'OPD000001'}</p>
           </div>
