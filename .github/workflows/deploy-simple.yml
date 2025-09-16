@@ -104,9 +104,12 @@ jobs:
 
     - name: Deploy to EC2
       run: |
-        # Save SSH key
-        echo "${{ secrets.EC2_SSH_KEY }}" > private_key
+        # Save SSH key with proper line endings
+        echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > private_key
         chmod 600 private_key
+
+        # Test SSH connection first
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i private_key ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH connection successful"'
 
         # Copy deployment script
         scp -o StrictHostKeyChecking=no -i private_key deploy.sh ubuntu@${{ secrets.EC2_HOST }}:/tmp/
