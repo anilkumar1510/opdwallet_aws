@@ -1,0 +1,44 @@
+name: Test Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Test SSH Key
+      run: |
+        echo "Testing EC2_SSH_KEY_BASE64..."
+
+        # Check if secret exists
+        if [ -z "${{ secrets.EC2_SSH_KEY_BASE64 }}" ]; then
+          echo "ERROR: EC2_SSH_KEY_BASE64 is empty!"
+          exit 1
+        fi
+
+        # Decode the key
+        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > key.pem 2>&1 || {
+          echo "ERROR: Failed to decode base64"
+          echo "First 50 chars of base64: $(echo '${{ secrets.EC2_SSH_KEY_BASE64 }}' | head -c 50)"
+          exit 1
+        }
+
+        # Check the decoded key
+        chmod 600 key.pem
+
+        echo "Key size: $(wc -c < key.pem) bytes"
+        echo "Key lines: $(wc -l < key.pem)"
+
+        if head -n 1 key.pem | grep -q "BEGIN RSA PRIVATE KEY"; then
+          echo "✅ Key format is correct!"
+        else
+          echo "❌ Key format is wrong!"
+          echo "First line: $(head -n 1 key.pem)"
+          exit 1
+        fi
+
+        # Test SSH
+        echo "Testing SSH to ${{ secrets.EC2_HOST }}..."
+        ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i key.pem ubuntu@${{ secrets.EC2_HOST }} 'echo "✅ SSH WORKS!"' 2>&1 | grep -E "(Authenticated|connected|SSH WORKS)"
