@@ -21,9 +21,31 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ secrets.EC2_HOST }} '
           echo "🚢 Starting deployment..."
 
+          # Pull latest code
+          cd /home/ubuntu/opdwallet
+          git pull origin main
+
           # Stop old containers
           docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
           docker rm opd-api opd-web-admin opd-web-member 2>/dev/null || true
+
+          # Build images for x86 architecture
+          echo "🔨 Building Docker images for x86..."
+          export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
+          # Build API
+          cd /home/ubuntu/opdwallet/api
+          docker build -f Dockerfile.prod -t opdwallet-api:latest .
+
+          # Build Admin
+          cd /home/ubuntu/opdwallet/web-admin
+          docker build -f Dockerfile.prod -t opdwallet-web-admin:latest \
+            --build-arg NEXT_PUBLIC_API_URL=http://13.60.210.156/api .
+
+          # Build Member
+          cd /home/ubuntu/opdwallet/web-member
+          docker build -f Dockerfile.prod -t opdwallet-web-member:latest \
+            --build-arg NEXT_PUBLIC_API_URL=http://13.60.210.156/api .
 
           # Ensure network exists
           docker network create opdwallet_opd-network 2>/dev/null || true
@@ -37,24 +59,29 @@ jobs:
               mongo:7.0
           fi
 
-          # Start containers with existing images
+          # Start containers
           docker run -d --name opd-api \
             --network opdwallet_opd-network \
             -p 4000:4000 \
             -e NODE_ENV=production \
             -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
+            --restart unless-stopped \
             opdwallet-api:latest
 
           docker run -d --name opd-web-admin \
             --network opdwallet_opd-network \
+            -p 3001:3001 \
             -e NODE_ENV=production \
-            -e API_URL=http://opd-api:4000/api \
+            -e NEXT_PUBLIC_API_URL=http://opd-api:4000/api \
+            --restart unless-stopped \
             opdwallet-web-admin:latest
 
           docker run -d --name opd-web-member \
             --network opdwallet_opd-network \
+            -p 3002:3002 \
             -e NODE_ENV=production \
-            -e API_URL=http://opd-api:4000/api \
+            -e NEXT_PUBLIC_API_URL=http://opd-api:4000/api \
+            --restart unless-stopped \
             opdwallet-web-member:latest
 
           # Ensure nginx is running
@@ -63,7 +90,10 @@ jobs:
               --network opdwallet_opd-network \
               -p 80:80 \
               -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf:ro \
-              nginx:alpine 2>/dev/null || true
+              --restart unless-stopped \
+              nginx:alpine
+          else
+            docker restart opd-nginx
           fi
 
           # Status check
