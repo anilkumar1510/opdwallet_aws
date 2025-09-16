@@ -59,17 +59,15 @@ jobs:
 
     - name: Build and push Docker images
       run: |
-        echo "📦 Building Docker images..."
+        echo "📦 Building Docker images for linux/amd64 platform..."
 
-        # Build all images
-        docker build -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:latest ./api
-        docker build -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest ./web-admin
-        docker build -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest ./web-member
+        # Build all images with explicit platform
+        docker buildx create --use --name mybuilder || true
+        docker buildx build --platform linux/amd64 -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:latest --push ./api
+        docker buildx build --platform linux/amd64 -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest --push ./web-admin
+        docker buildx build --platform linux/amd64 -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest --push ./web-member
 
-        echo "🚀 Pushing to ECR..."
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+        echo "✅ Images built and pushed to ECR"
 
     - name: Deploy to EC2
       run: |
