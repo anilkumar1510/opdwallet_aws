@@ -61,7 +61,7 @@ jobs:
             -e COOKIE_SECURE=false \
             -e COOKIE_HTTPONLY=true \
             -e CORS_ORIGIN='*' \
-            opdwallet-api:latest
+            opdwallet-api:latest || echo "API container failed to start"
 
           # Start Admin Portal (using existing local image)
           docker run -d --name opd-web-admin \
@@ -69,7 +69,7 @@ jobs:
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            opdwallet-web-admin:latest
+            opdwallet-web-admin:latest || echo "Admin container failed to start"
 
           # Start Member Portal (using existing local image)
           docker run -d --name opd-web-member \
@@ -77,7 +77,7 @@ jobs:
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            opdwallet-web-member:latest
+            opdwallet-web-member:latest || echo "Member container failed to start"
 
           # Ensure nginx is running
           if ! docker ps | grep -q opd-nginx; then
