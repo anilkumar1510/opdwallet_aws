@@ -1,0 +1,212 @@
+name: Deploy Working Solution
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Test SSH Key Setup
+      id: ssh-test
+      run: |
+        echo "Checking SSH key configuration..."
+
+        # Check which key is available
+        if [ -n "${{ secrets.EC2_SSH_KEY_BASE64 }}" ]; then
+          echo "Using BASE64 encoded key"
+          echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > deploy_key.pem
+          echo "ssh_key_method=base64" >> $GITHUB_OUTPUT
+        elif [ -n "${{ secrets.EC2_SSH_KEY }}" ]; then
+          echo "Using plain text key with line ending fix"
+          # Fix line endings - GitHub sometimes escapes them
+          echo "${{ secrets.EC2_SSH_KEY }}" | sed 's/\\n/\n/g' > deploy_key.pem
+          echo "ssh_key_method=plain" >> $GITHUB_OUTPUT
+        else
+          echo "ERROR: No SSH key found in secrets!"
+          echo "Please add either EC2_SSH_KEY_BASE64 or EC2_SSH_KEY to GitHub Secrets"
+          exit 1
+        fi
+
+        # Set permissions
+        chmod 600 deploy_key.pem
+
+        # Validate key format
+        if ! head -n 1 deploy_key.pem | grep -q "BEGIN RSA PRIVATE KEY"; then
+          echo "WARNING: Key might not be in correct format"
+          echo "First line: $(head -n 1 deploy_key.pem)"
+        else
+          echo "✓ SSH key format looks correct"
+        fi
+
+        # Test connection
+        if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH test successful"'; then
+          echo "✓ SSH connection test passed"
+          echo "ssh_works=true" >> $GITHUB_OUTPUT
+        else
+          echo "✗ SSH connection test failed"
+          echo "ssh_works=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Configure AWS credentials
+      if: steps.ssh-test.outputs.ssh_works == 'true'
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      if: steps.ssh-test.outputs.ssh_works == 'true'
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push images
+      if: steps.ssh-test.outputs.ssh_works == 'true'
+      run: |
+        echo "Building Docker images..."
+
+        # Build API
+        docker build -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:latest ./api
+
+        # Build Admin
+        docker build -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest ./web-admin
+
+        # Build Member
+        docker build -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest ./web-member
+
+        # Push all images
+        echo "Pushing to ECR..."
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+
+    - name: Deploy to EC2
+      if: steps.ssh-test.outputs.ssh_works == 'true'
+      run: |
+        echo "Deploying to EC2..."
+
+        # Use the key that was already validated
+        ssh -o StrictHostKeyChecking=no -i deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
+          set -e
+          echo "Starting deployment on EC2..."
+
+          # Login to ECR
+          aws ecr get-login-password --region eu-north-1 | \
+            docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+          # Pull latest images
+          echo "Pulling latest images..."
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/api:latest || echo "API pull failed"
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest || echo "Admin pull failed"
+          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest || echo "Member pull failed"
+
+          # Restart containers
+          echo "Restarting containers..."
+          docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
+          docker rm opd-api opd-web-admin opd-web-member 2>/dev/null || true
+
+          # Ensure network exists
+          docker network create opdwallet_opd-network 2>/dev/null || true
+
+          # Start MongoDB if not running
+          if ! docker ps | grep -q opd-mongo; then
+            docker run -d --name opd-mongo \
+              --network opdwallet_opd-network \
+              -v mongo-data:/data/db \
+              mongo:7.0
+            echo "Started MongoDB"
+          fi
+
+          # Start API
+          docker run -d --name opd-api \
+            --network opdwallet_opd-network \
+            -e NODE_ENV=production \
+            -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
+            -e JWT_SECRET=your-super-secret-jwt-key-change-in-production \
+            -e COOKIE_SECURE=false \
+            -e COOKIE_HTTPONLY=true \
+            -e CORS_ORIGIN='*' \
+            -p 4000:4000 \
+            ${{ env.ECR_REGISTRY }}/opdwallet/api:latest || \
+            docker run -d --name opd-api \
+              --network opdwallet_opd-network \
+              -e NODE_ENV=production \
+              -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
+              -p 4000:4000 \
+              opdwallet-api:latest
+
+          # Start Admin Portal
+          docker run -d --name opd-web-admin \
+            --network opdwallet_opd-network \
+            -e NODE_ENV=production \
+            -e API_URL=http://opd-api:4000/api \
+            -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
+            ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest || \
+            docker run -d --name opd-web-admin \
+              --network opdwallet_opd-network \
+              opdwallet-web-admin:latest
+
+          # Start Member Portal
+          docker run -d --name opd-web-member \
+            --network opdwallet_opd-network \
+            -e NODE_ENV=production \
+            -e API_URL=http://opd-api:4000/api \
+            -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
+            ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest || \
+            docker run -d --name opd-web-member \
+              --network opdwallet_opd-network \
+              opdwallet-web-member:latest
+
+          # Ensure nginx is running
+          if ! docker ps | grep -q opd-nginx; then
+            docker run -d --name opd-nginx \
+              --network opdwallet_opd-network \
+              -p 80:80 \
+              -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf:ro \
+              nginx:alpine 2>/dev/null || true
+          fi
+
+          # Check deployment
+          sleep 5
+          echo ""
+          echo "=== Deployment Status ==="
+          docker ps --format "table {{.Names}}\t{{.Status}}"
+          echo ""
+          echo "=== Testing endpoints ==="
+          curl -sf http://localhost/health && echo "✓ Nginx health check passed" || echo "✗ Nginx health check failed"
+          echo ""
+          echo "Deployment completed!"
+ENDSSH
+
+        # Cleanup
+        rm -f deploy_key.pem
+
+    - name: Summary
+      if: always()
+      run: |
+        echo ""
+        echo "=== DEPLOYMENT SUMMARY ==="
+        echo "SSH Key Method: ${{ steps.ssh-test.outputs.ssh_key_method || 'NOT FOUND' }}"
+        echo "SSH Connection: ${{ steps.ssh-test.outputs.ssh_works == 'true' && 'SUCCESS' || 'FAILED' }}"
+        echo ""
+        if [ "${{ steps.ssh-test.outputs.ssh_works }}" == "true" ]; then
+          echo "✓ Deployment pipeline executed"
+          echo "🌐 Application URL: http://${{ secrets.EC2_HOST }}"
+        else
+          echo "✗ Deployment skipped due to SSH issues"
+          echo ""
+          echo "TO FIX:"
+          echo "1. Go to: https://github.com/anilkumar1510/opdwallet/settings/secrets/actions"
+          echo "2. Add secret EC2_SSH_KEY_BASE64 with the base64 encoded SSH key"
+          echo "3. The base64 key was saved in: opdwallet-server-base64.txt"
+        fi
