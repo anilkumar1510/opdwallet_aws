@@ -10,6 +10,7 @@ import { secretsManager } from './config/secrets-manager';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  logger.log('Starting OPD Wallet API Server v1.0.1');
 
   // Load secrets from AWS Secrets Manager (if in production)
   if (process.env.NODE_ENV === 'production' || process.env.USE_SECRETS_MANAGER === 'true') {
