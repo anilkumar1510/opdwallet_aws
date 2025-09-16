@@ -83,7 +83,7 @@ jobs:
             -e COOKIE_SECURE=false \
             -e COOKIE_HTTPONLY=true \
             -e CORS_ORIGIN='*' \
-            opdwallet-api:latest || opdwallet-github-api:latest
+            opdwallet-api:latest
 
           # Start Admin Portal (use local image)
           docker run -d --name opd-web-admin \
