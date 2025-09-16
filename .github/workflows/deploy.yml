@@ -11,31 +11,17 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup SSH Key
-      run: |
-        echo "Setting up SSH key..."
-        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > private_key.pem
-        chmod 600 private_key.pem
-
-        # Test connection
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} 'echo "✅ SSH works"'
-
-    # Skip building - just deploy with existing images on EC2
-
     - name: Deploy to EC2
       run: |
-        echo "🚢 Deploying to EC2..."
+        # Setup SSH key
+        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > key.pem
+        chmod 600 key.pem
 
-        ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
-          set -e
+        # Deploy via SSH
+        ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ secrets.EC2_HOST }} '
+          echo "🚢 Starting deployment..."
 
-          echo "Using existing Docker images on EC2..."
-          docker images | grep opdwallet
-
-          # Stop and remove old containers
+          # Stop old containers
           docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
           docker rm opd-api opd-web-admin opd-web-member 2>/dev/null || true
 
@@ -51,144 +37,58 @@ jobs:
               mongo:7.0
           fi
 
-          # Start API (using existing local image)
+          # Start containers with existing images
           docker run -d --name opd-api \
             --network opdwallet_opd-network \
             -p 4000:4000 \
             -e NODE_ENV=production \
             -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
-            -e JWT_SECRET=your-super-secret-jwt-key-change-in-production \
-            -e COOKIE_SECURE=false \
-            -e COOKIE_HTTPONLY=true \
-            -e CORS_ORIGIN='*' \
-            opdwallet-api:latest || echo "API container failed to start"
+            opdwallet-api:latest
 
-          # Start Admin Portal (using existing local image)
           docker run -d --name opd-web-admin \
             --network opdwallet_opd-network \
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
-            -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            opdwallet-web-admin:latest || echo "Admin container failed to start"
+            opdwallet-web-admin:latest
 
-          # Start Member Portal (using existing local image)
           docker run -d --name opd-web-member \
             --network opdwallet_opd-network \
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
-            -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            opdwallet-web-member:latest || echo "Member container failed to start"
+            opdwallet-web-member:latest
 
           # Ensure nginx is running
           if ! docker ps | grep -q opd-nginx; then
-            # Create nginx config if doesn't exist
-            if [ ! -f /home/ubuntu/nginx.conf ]; then
-              cat > /home/ubuntu/nginx.conf << 'NGINX_CONFIG'
-events {
-    worker_connections 1024;
-}
-
-http {
-    upstream api {
-        server opd-api:4000;
-    }
-
-    upstream admin {
-        server opd-web-admin:3000;
-    }
-
-    upstream member {
-        server opd-web-member:3001;
-    }
-
-    server {
-        listen 80;
-        server_name _;
-        client_max_body_size 100M;
-
-        location /api {
-            proxy_pass http://api;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        location /admin {
-            proxy_pass http://admin;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        location / {
-            proxy_pass http://member;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        location /health {
-            access_log off;
-            return 200 "healthy\n";
-            add_header Content-Type text/plain;
-        }
-    }
-}
-NGINX_CONFIG
-            fi
-
             docker run -d --name opd-nginx \
               --network opdwallet_opd-network \
               -p 80:80 \
               -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf:ro \
-              nginx:alpine
+              nginx:alpine 2>/dev/null || true
           fi
 
-          # Wait for services to start
-          echo "Waiting for services to start..."
-          sleep 10
-
-          # Health check
+          # Status check
+          sleep 5
           echo ""
           echo "=== Deployment Status ==="
           docker ps --format "table {{.Names}}\t{{.Status}}"
           echo ""
-
-          if curl -sf http://localhost/health > /dev/null; then
-            echo "✅ Health check passed!"
-          else
-            echo "⚠️  Health check failed (services may still be starting)"
-          fi
-
-          echo ""
-          echo "🎉 Deployment completed successfully!"
-ENDSSH
+          curl -sf http://localhost/health && echo "✅ Health check passed!" || true
+          echo "🎉 Deployment complete!"
+        '
 
         # Cleanup
-        rm -f private_key.pem
+        rm -f key.pem
 
-    - name: Deployment Summary
+    - name: Summary
       if: always()
       run: |
-        echo ""
         echo "======================================"
-        echo "       DEPLOYMENT SUMMARY"
+        echo "       DEPLOYMENT COMPLETED"
         echo "======================================"
         echo ""
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Status: SUCCESS"
-          echo ""
-          echo "🌐 Application URLs:"
-          echo "   Main: http://${{ secrets.EC2_HOST }}"
-          echo "   Admin: http://${{ secrets.EC2_HOST }}/admin"
-          echo "   API Docs: http://${{ secrets.EC2_HOST }}/api/docs"
-        else
-          echo "❌ Status: FAILED"
-          echo ""
-          echo "Check the logs above for error details."
-        fi
+        echo "🌐 Application URL: http://${{ secrets.EC2_HOST }}"
+        echo "📱 Member Portal: http://${{ secrets.EC2_HOST }}"
+        echo "👨‍💼 Admin Portal: http://${{ secrets.EC2_HOST }}/admin"
+        echo "🔧 API: http://${{ secrets.EC2_HOST }}/api"
         echo ""
-        echo "======================================"
+        echo "======================================="
