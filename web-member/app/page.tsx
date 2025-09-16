@@ -42,20 +42,13 @@ export default function MemberLoginPage() {
       {/* Left Section - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-4 sm:px-6 py-8 sm:py-12">
         <div className="w-full max-w-md mx-auto">
-          {/* Logo */}
-          <div className="mb-8">
-            <div className="w-24 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-semibold">
-              OPD Wallet
-            </div>
-          </div>
-
           {/* Form Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Welcome to Your Benefits
             </h1>
             <p className="text-gray-600">
-              Sign in to access your OPD wallet and claims
+              Sign in to access your benefits and claims
             </p>
           </div>
 
