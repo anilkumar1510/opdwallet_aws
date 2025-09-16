@@ -43,8 +43,29 @@ jobs:
           exit 1
         fi
 
-    # Skip build step - images will be built locally and pushed manually
-    # GitHub Actions has issues with multi-platform builds
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and push Docker images
+      run: |
+        echo "📦 Building Docker images for ARM64..."
+
+        # Build all images for ARM64 (matching EC2 ARM instance)
+        docker build -f api/Dockerfile.prod -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/api:latest ./api
+        docker build -f web-admin/Dockerfile.prod -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-admin:latest ./web-admin
+        docker build -f web-member/Dockerfile.prod -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-member:latest ./web-member
+
+        echo "🚀 Pushing to ECR..."
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/api:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-admin:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-member:latest
 
     - name: Deploy to EC2
       run: |
@@ -53,9 +74,15 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
           set -e
 
-          echo "Note: Using existing Docker images. Run ./deploy-from-local.sh to update images."
+          # Login to ECR
+          aws ecr get-login-password --region eu-north-1 | \
+            docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com
 
-          # Skip ECR pull - use existing local images
+          # Pull latest images from ECR
+          echo "Pulling ARM64 images from ECR..."
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/api:latest
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-admin:latest
+          docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-member:latest
 
           # Stop and remove old containers
           docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
@@ -73,7 +100,7 @@ jobs:
               mongo:7.0
           fi
 
-          # Start API (use local image)
+          # Start API
           docker run -d --name opd-api \
             --network opdwallet_opd-network \
             -p 4000:4000 \
@@ -83,23 +110,23 @@ jobs:
             -e COOKIE_SECURE=false \
             -e COOKIE_HTTPONLY=true \
             -e CORS_ORIGIN='*' \
-            opdwallet-api:latest
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/api:latest
 
-          # Start Admin Portal (use local image)
+          # Start Admin Portal
           docker run -d --name opd-web-admin \
             --network opdwallet_opd-network \
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            opdwallet-web-admin:latest
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-admin:latest
 
-          # Start Member Portal (use local image)
+          # Start Member Portal
           docker run -d --name opd-web-member \
             --network opdwallet_opd-network \
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            opdwallet-web-member:latest
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-member:latest
 
           # Ensure nginx is running
           if ! docker ps | grep -q opd-nginx; then
