@@ -28,12 +28,20 @@ jobs:
           exit 1
         fi
 
+        echo "Decoding SSH key..."
         echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > private_key.pem
         chmod 600 private_key.pem
 
+        # Verify key format
+        if ! head -n 1 private_key.pem | grep -q "BEGIN RSA PRIVATE KEY"; then
+          echo "ERROR: Decoded key is not in correct format"
+          exit 1
+        fi
+
         # Test SSH connection
-        if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH OK"' > /dev/null 2>&1; then
-          echo "✅ SSH connection successful"
+        echo "Testing SSH connection to ${{ secrets.EC2_HOST }}..."
+        if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH connection successful"'; then
+          echo "✅ SSH setup complete"
         else
           echo "❌ SSH connection failed"
           exit 1
