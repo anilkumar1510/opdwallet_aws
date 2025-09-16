@@ -18,6 +18,27 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Setup SSH Key
+      id: ssh-setup
+      run: |
+        # Decode SSH key from base64
+        if [ -z "${{ secrets.EC2_SSH_KEY_BASE64 }}" ]; then
+          echo "ERROR: EC2_SSH_KEY_BASE64 secret is not set!"
+          echo "Please add the base64-encoded SSH key to GitHub Secrets"
+          exit 1
+        fi
+
+        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > private_key.pem
+        chmod 600 private_key.pem
+
+        # Test SSH connection
+        if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH OK"' > /dev/null 2>&1; then
+          echo "✅ SSH connection successful"
+        else
+          echo "❌ SSH connection failed"
+          exit 1
+        fi
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -26,101 +47,193 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Login to Amazon ECR
-      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build and push API image
+    - name: Build and push Docker images
       run: |
+        echo "📦 Building Docker images..."
+
+        # Build all images
         docker build -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:latest ./api
-        docker build -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:${{ github.sha }} ./api
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:${{ github.sha }}
-
-    - name: Build and push Admin image
-      run: |
         docker build -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest ./web-admin
-        docker build -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:${{ github.sha }} ./web-admin
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:${{ github.sha }}
-
-    - name: Build and push Member image
-      run: |
         docker build -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest ./web-member
-        docker build -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:${{ github.sha }} ./web-member
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:${{ github.sha }}
 
-    - name: Build and push Nginx image
-      run: |
-        # Create Dockerfile for nginx if it doesn't exist
-        cat > nginx/Dockerfile << 'EOF'
-        FROM nginx:alpine
-        COPY nginx.conf /etc/nginx/nginx.conf
-        EOF
-        docker build -t ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest ./nginx
-        docker build -t ${{ env.ECR_REGISTRY }}/opdwallet/nginx:${{ github.sha }} ./nginx
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest
-        docker push ${{ env.ECR_REGISTRY }}/opdwallet/nginx:${{ github.sha }}
+        echo "🚀 Pushing to ECR..."
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
+        docker push ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
 
     - name: Deploy to EC2
       run: |
-        # Save SSH key to file
-        echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
-        chmod 600 ec2_key.pem
+        echo "🚢 Deploying to EC2..."
 
-        # SSH and deploy
-        ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
+          set -e
+
           # Login to ECR
-          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-
-          # Update docker-compose with ECR images
-          cd /home/ubuntu/opdwallet
+          aws ecr get-login-password --region eu-north-1 | \
+            docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
           # Pull latest images
+          echo "Pulling latest images from ECR..."
           docker pull ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
           docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
           docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
-          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest
 
-          # Stop old containers
-          docker-compose -f docker-compose.prod.yml down || true
+          # Stop and remove old containers
+          docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
+          docker rm opd-api opd-web-admin opd-web-member 2>/dev/null || true
 
-          # Start with new images
-          docker run -d --name opd-mongo --network opdwallet_opd-network -v mongo-data:/data/db mongo:7.0 || true
+          # Ensure network exists
+          docker network create opdwallet_opd-network 2>/dev/null || true
 
+          # Ensure MongoDB is running
+          if ! docker ps | grep -q opd-mongo; then
+            docker run -d --name opd-mongo \
+              --network opdwallet_opd-network \
+              -v mongo-data:/data/db \
+              -p 27017:27017 \
+              mongo:7.0
+          fi
+
+          # Start API
           docker run -d --name opd-api \
             --network opdwallet_opd-network \
-            -e NODE_ENV=development \
+            -p 4000:4000 \
+            -e NODE_ENV=production \
             -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
             -e JWT_SECRET=your-super-secret-jwt-key-change-in-production \
             -e COOKIE_SECURE=false \
+            -e COOKIE_HTTPONLY=true \
             -e CORS_ORIGIN='*' \
             ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
 
+          # Start Admin Portal
           docker run -d --name opd-web-admin \
             --network opdwallet_opd-network \
-            -e NODE_ENV=development \
+            -e NODE_ENV=production \
+            -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
             ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
 
+          # Start Member Portal
           docker run -d --name opd-web-member \
             --network opdwallet_opd-network \
-            -e NODE_ENV=development \
+            -e NODE_ENV=production \
+            -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
             ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
 
-          # Update nginx config and restart
-          docker run -d --name opd-nginx \
-            --network opdwallet_opd-network \
-            -p 80:80 -p 443:443 \
-            -v /home/ubuntu/opdwallet/nginx.conf:/etc/nginx/nginx.conf:ro \
-            ${{ env.ECR_REGISTRY }}/opdwallet/nginx:latest
+          # Ensure nginx is running
+          if ! docker ps | grep -q opd-nginx; then
+            # Create nginx config if doesn't exist
+            if [ ! -f /home/ubuntu/nginx.conf ]; then
+              cat > /home/ubuntu/nginx.conf << 'NGINX_CONFIG'
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream api {
+        server opd-api:4000;
+    }
+
+    upstream admin {
+        server opd-web-admin:3000;
+    }
+
+    upstream member {
+        server opd-web-member:3001;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+        client_max_body_size 100M;
+
+        location /api {
+            proxy_pass http://api;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /admin {
+            proxy_pass http://admin;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location / {
+            proxy_pass http://member;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+    }
+}
+NGINX_CONFIG
+            fi
+
+            docker run -d --name opd-nginx \
+              --network opdwallet_opd-network \
+              -p 80:80 \
+              -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf:ro \
+              nginx:alpine
+          fi
+
+          # Wait for services to start
+          echo "Waiting for services to start..."
+          sleep 10
 
           # Health check
-          sleep 10
-          curl -f http://localhost/health || echo "Health check failed"
-          docker ps
-        ENDSSH
+          echo ""
+          echo "=== Deployment Status ==="
+          docker ps --format "table {{.Names}}\t{{.Status}}"
+          echo ""
+
+          if curl -sf http://localhost/health > /dev/null; then
+            echo "✅ Health check passed!"
+          else
+            echo "⚠️  Health check failed (services may still be starting)"
+          fi
+
+          echo ""
+          echo "🎉 Deployment completed successfully!"
+ENDSSH
 
         # Cleanup
-        rm -f ec2_key.pem
+        rm -f private_key.pem
+
+    - name: Deployment Summary
+      if: always()
+      run: |
+        echo ""
+        echo "======================================"
+        echo "       DEPLOYMENT SUMMARY"
+        echo "======================================"
+        echo ""
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Status: SUCCESS"
+          echo ""
+          echo "🌐 Application URLs:"
+          echo "   Main: http://${{ secrets.EC2_HOST }}"
+          echo "   Admin: http://${{ secrets.EC2_HOST }}/admin"
+          echo "   API Docs: http://${{ secrets.EC2_HOST }}/api/docs"
+        else
+          echo "❌ Status: FAILED"
+          echo ""
+          echo "Check the logs above for error details."
+        fi
+        echo ""
+        echo "======================================"
