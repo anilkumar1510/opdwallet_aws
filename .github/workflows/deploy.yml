@@ -47,27 +47,8 @@ jobs:
           exit 1
         fi
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build and push Docker images
-      run: |
-        echo "📦 Building Docker images for linux/amd64 platform..."
-
-        # Build all images with explicit platform
-        docker buildx create --use --name mybuilder || true
-        docker buildx build --platform linux/amd64 -f api/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/api:latest --push ./api
-        docker buildx build --platform linux/amd64 -f web-admin/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest --push ./web-admin
-        docker buildx build --platform linux/amd64 -f web-member/Dockerfile.prod -t ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest --push ./web-member
-
-        echo "✅ Images built and pushed to ECR"
+    # Skip build step - images will be built locally and pushed manually
+    # GitHub Actions has issues with multi-platform builds
 
     - name: Deploy to EC2
       run: |
@@ -76,15 +57,9 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i private_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'ENDSSH'
           set -e
 
-          # Login to ECR
-          aws ecr get-login-password --region eu-north-1 | \
-            docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+          echo "Note: Using existing Docker images. Run ./deploy-from-local.sh to update images."
 
-          # Pull latest images
-          echo "Pulling latest images from ECR..."
-          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
-          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
-          docker pull ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+          # Skip ECR pull - use existing local images
 
           # Stop and remove old containers
           docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
@@ -102,7 +77,7 @@ jobs:
               mongo:7.0
           fi
 
-          # Start API
+          # Start API (use local image)
           docker run -d --name opd-api \
             --network opdwallet_opd-network \
             -p 4000:4000 \
@@ -112,23 +87,23 @@ jobs:
             -e COOKIE_SECURE=false \
             -e COOKIE_HTTPONLY=true \
             -e CORS_ORIGIN='*' \
-            ${{ env.ECR_REGISTRY }}/opdwallet/api:latest
+            opdwallet-api:latest || opdwallet-github-api:latest
 
-          # Start Admin Portal
+          # Start Admin Portal (use local image)
           docker run -d --name opd-web-admin \
             --network opdwallet_opd-network \
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            ${{ env.ECR_REGISTRY }}/opdwallet/web-admin:latest
+            opdwallet-web-admin:latest
 
-          # Start Member Portal
+          # Start Member Portal (use local image)
           docker run -d --name opd-web-member \
             --network opdwallet_opd-network \
             -e NODE_ENV=production \
             -e API_URL=http://opd-api:4000/api \
             -e NEXT_PUBLIC_API_URL=http://${{ secrets.EC2_HOST }}/api \
-            ${{ env.ECR_REGISTRY }}/opdwallet/web-member:latest
+            opdwallet-web-member:latest
 
           # Ensure nginx is running
           if ! docker ps | grep -q opd-nginx; then
