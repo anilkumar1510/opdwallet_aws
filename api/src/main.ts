@@ -6,9 +6,21 @@ import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
 import rateLimit from 'express-rate-limit';
+import { secretsManager } from './config/secrets-manager';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // Load secrets from AWS Secrets Manager (if in production)
+  if (process.env.NODE_ENV === 'production' || process.env.USE_SECRETS_MANAGER === 'true') {
+    try {
+      await secretsManager.loadSecretsToEnv();
+      logger.log('Secrets loaded from AWS Secrets Manager');
+    } catch (error) {
+      logger.warn('Failed to load secrets from AWS Secrets Manager, using environment variables');
+    }
+  }
+
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log', 'debug'],
   });

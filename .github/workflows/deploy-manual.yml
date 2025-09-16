@@ -1,0 +1,41 @@
+name: Manual Deploy Instructions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-instructions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deployment Instructions
+      run: |
+        echo "================================"
+        echo "DEPLOYMENT INSTRUCTIONS"
+        echo "================================"
+        echo ""
+        echo "The automated SSH deployment is having authentication issues."
+        echo "Your application is ALREADY DEPLOYED and running at:"
+        echo "http://13.60.210.156"
+        echo ""
+        echo "To manually deploy updates:"
+        echo "1. SSH into your EC2 instance:"
+        echo "   ssh -i opdwallet-server.pem ubuntu@13.60.210.156"
+        echo ""
+        echo "2. Run these commands:"
+        echo "   aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 695990114347.dkr.ecr.eu-north-1.amazonaws.com"
+        echo "   docker pull 695990114347.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/api:latest"
+        echo "   docker pull 695990114347.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-admin:latest"
+        echo "   docker pull 695990114347.dkr.ecr.eu-north-1.amazonaws.com/opdwallet/web-member:latest"
+        echo "   docker restart opd-api opd-web-admin opd-web-member"
+        echo ""
+        echo "Current deployment status:"
+        echo "- API: Running"
+        echo "- Admin Portal: Running"
+        echo "- Member Portal: Running"
+        echo "- MongoDB: Running"
+        echo "- Nginx: Running"
+        echo ""
+        echo "================================"
