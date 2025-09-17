@@ -8,84 +8,52 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
     - name: Deploy to EC2
       env:
         EC2_HOST: ${{ secrets.EC2_HOST }}
         EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY_BASE64 }}
       run: |
-        # Setup SSH key
-        echo "$EC2_SSH_KEY" | base64 -d > deploy_key.pem
-        chmod 600 deploy_key.pem
+        echo "$EC2_SSH_KEY" | base64 -d > key.pem
+        chmod 600 key.pem
 
-        # Create deployment script
-        cat > deploy.sh << 'SCRIPT'
-        #!/bin/bash
-        set -e
+        ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST "
+          set -e
+          echo '🚀 Starting deployment...'
 
-        echo "🚀 Starting deployment..."
+          if [ ! -d /home/ubuntu/opdwallet ]; then
+            cd /home/ubuntu
+            git clone https://github.com/anilkumar1510/opdwallet.git
+          fi
 
-        # Clone or update repository
-        if [ ! -d "/home/ubuntu/opdwallet" ]; then
-          echo "📥 Cloning repository..."
-          cd /home/ubuntu
-          git clone https://github.com/anilkumar1510/opdwallet.git
-          cd opdwallet
-        else
-          echo "📥 Pulling latest changes..."
           cd /home/ubuntu/opdwallet
           git pull origin main
-        fi
 
-        # Create environment file
-        if [ ! -f ".env.production" ]; then
-          echo "📝 Creating environment file..."
-          cat > .env.production << 'ENV'
-MONGO_ROOT_USERNAME=admin
-MONGO_ROOT_PASSWORD=secure_password_change_this
-MONGO_DATABASE=opd_wallet
-JWT_SECRET=your-secret-jwt-key-change-in-production
-JWT_EXPIRY=7d
-COOKIE_NAME=opd_session
-COOKIE_DOMAIN=
-COOKIE_SECURE=false
-COOKIE_HTTPONLY=true
-COOKIE_SAMESITE=lax
-COOKIE_MAX_AGE=604800000
-PUBLIC_API_URL=http://13.60.210.156/api
-NODE_ENV=production
-ENV
-        fi
+          if [ ! -f .env.production ]; then
+            echo 'COOKIE_SECURE=false' > .env.production
+            echo 'JWT_SECRET=your-secret-jwt-key' >> .env.production
+            echo 'NODE_ENV=production' >> .env.production
+            echo 'PUBLIC_API_URL=http://13.60.210.156/api' >> .env.production
+            echo 'MONGO_DATABASE=opd_wallet' >> .env.production
+            echo 'COOKIE_NAME=opd_session' >> .env.production
+            echo 'COOKIE_HTTPONLY=true' >> .env.production
+            echo 'COOKIE_SAMESITE=lax' >> .env.production
+            echo 'COOKIE_MAX_AGE=604800000' >> .env.production
+            echo 'MONGO_ROOT_USERNAME=admin' >> .env.production
+            echo 'MONGO_ROOT_PASSWORD=password' >> .env.production
+          fi
 
-        # Stop containers
-        docker-compose -f docker-compose.prod.yml down || true
+          docker-compose -f docker-compose.prod.yml down || true
 
-        # Build and deploy
-        echo "🔨 Building containers..."
-        export DOCKER_DEFAULT_PLATFORM=linux/amd64
-        docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache
+          export DOCKER_DEFAULT_PLATFORM=linux/amd64
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build
+          docker-compose --env-file .env.production -f docker-compose.prod.yml up -d
 
-        echo "🚢 Starting containers..."
-        docker-compose --env-file .env.production -f docker-compose.prod.yml up -d
+          sleep 15
+          docker exec opd-api node dist/scripts/seed.js || true
 
-        # Wait and seed
-        echo "⏳ Waiting for services..."
-        sleep 15
+          docker ps
+          echo '✅ Deployment completed!'
+        "
 
-        echo "🌱 Seeding database..."
-        docker exec opd-api node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
-
-        # Status
-        echo "📊 Container status:"
-        docker-compose -f docker-compose.prod.yml ps
-
-        echo "✅ Deployment completed!"
-        SCRIPT
-
-        # Execute deployment on EC2
-        scp -o StrictHostKeyChecking=no -i deploy_key.pem deploy.sh ubuntu@$EC2_HOST:/tmp/deploy.sh
-        ssh -o StrictHostKeyChecking=no -i deploy_key.pem ubuntu@$EC2_HOST 'bash /tmp/deploy.sh'
-
-        # Cleanup
-        rm -f deploy_key.pem deploy.sh
+        rm -f key.pem
