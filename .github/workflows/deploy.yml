@@ -5,91 +5,87 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  EC2_HOST: ${{ secrets.EC2_HOST }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
     - name: Deploy to EC2
+      env:
+        EC2_HOST: ${{ secrets.EC2_HOST }}
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY_BASE64 }}
       run: |
-        # Setup SSH
-        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > deploy_key.pem
+        # Setup SSH key
+        echo "$EC2_SSH_KEY" | base64 -d > deploy_key.pem
         chmod 600 deploy_key.pem
 
-        # Deploy and build on EC2
-        ssh -o StrictHostKeyChecking=no -i deploy_key.pem ubuntu@$EC2_HOST << 'EOF'
-          set -e
-          echo "🚀 Starting deployment..."
+        # Create deployment script
+        cat > deploy.sh << 'SCRIPT'
+        #!/bin/bash
+        set -e
 
-          # Clone or pull latest code
-          if [ ! -d "/home/ubuntu/opdwallet" ]; then
-            echo "📥 Cloning repository..."
-            cd /home/ubuntu
-            git clone https://github.com/anilkumar1510/opdwallet.git
-            cd opdwallet
-          else
-            echo "📥 Pulling latest changes..."
-            cd /home/ubuntu/opdwallet
-            git pull origin main
-          fi
+        echo "🚀 Starting deployment..."
 
-          # Copy environment file if it doesn't exist
-          if [ ! -f ".env.production" ]; then
-            echo "📝 Creating production environment file..."
-            cat > .env.production << 'ENVFILE'
-# MongoDB Configuration
+        # Clone or update repository
+        if [ ! -d "/home/ubuntu/opdwallet" ]; then
+          echo "📥 Cloning repository..."
+          cd /home/ubuntu
+          git clone https://github.com/anilkumar1510/opdwallet.git
+          cd opdwallet
+        else
+          echo "📥 Pulling latest changes..."
+          cd /home/ubuntu/opdwallet
+          git pull origin main
+        fi
+
+        # Create environment file
+        if [ ! -f ".env.production" ]; then
+          echo "📝 Creating environment file..."
+          cat > .env.production << 'ENV'
 MONGO_ROOT_USERNAME=admin
 MONGO_ROOT_PASSWORD=secure_password_change_this
 MONGO_DATABASE=opd_wallet
-
-# JWT Configuration
 JWT_SECRET=your-secret-jwt-key-change-in-production
 JWT_EXPIRY=7d
-
-# Cookie Configuration
 COOKIE_NAME=opd_session
 COOKIE_DOMAIN=
 COOKIE_SECURE=false
 COOKIE_HTTPONLY=true
 COOKIE_SAMESITE=lax
 COOKIE_MAX_AGE=604800000
-
-# API Configuration
 PUBLIC_API_URL=http://13.60.210.156/api
-
-# Node Environment
 NODE_ENV=production
-ENVFILE
-          fi
+ENV
+        fi
 
-          # Stop existing containers
-          docker-compose -f docker-compose.prod.yml down || true
+        # Stop containers
+        docker-compose -f docker-compose.prod.yml down || true
 
-          # Build with proper environment
-          export DOCKER_DEFAULT_PLATFORM=linux/amd64
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache
+        # Build and deploy
+        echo "🔨 Building containers..."
+        export DOCKER_DEFAULT_PLATFORM=linux/amd64
+        docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache
 
-          # Start services
-          docker-compose --env-file .env.production -f docker-compose.prod.yml up -d
+        echo "🚢 Starting containers..."
+        docker-compose --env-file .env.production -f docker-compose.prod.yml up -d
 
-          # Wait for services to be ready
-          echo "⏳ Waiting for services..."
-          sleep 15
+        # Wait and seed
+        echo "⏳ Waiting for services..."
+        sleep 15
 
-          # Seed database if needed
-          echo "🌱 Seeding database..."
-          docker exec opd-api node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
+        echo "🌱 Seeding database..."
+        docker exec opd-api node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
 
-          # Health check
-          echo "🔍 Checking health..."
-          curl -sf http://localhost/api/health || echo "API health endpoint not configured"
-          curl -sf http://localhost || echo "Frontend check"
+        # Status
+        echo "📊 Container status:"
+        docker-compose -f docker-compose.prod.yml ps
 
-          # Show status
-          docker-compose -f docker-compose.prod.yml ps
-          echo "✅ Deployment completed!"
-        EOF
+        echo "✅ Deployment completed!"
+        SCRIPT
 
-        rm -f deploy_key.pem
+        # Execute deployment on EC2
+        scp -o StrictHostKeyChecking=no -i deploy_key.pem deploy.sh ubuntu@$EC2_HOST:/tmp/deploy.sh
+        ssh -o StrictHostKeyChecking=no -i deploy_key.pem ubuntu@$EC2_HOST 'bash /tmp/deploy.sh'
+
+        # Cleanup
+        rm -f deploy_key.pem deploy.sh

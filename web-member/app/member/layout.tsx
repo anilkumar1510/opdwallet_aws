@@ -56,6 +56,16 @@ export default function MemberLayout({
     checkAuth()
   }, [])
 
+  // Listen for sidebar toggle events from child components
+  useEffect(() => {
+    const handleToggleSidebar = () => {
+      setSidebarOpen(prev => !prev)
+    }
+
+    window.addEventListener('toggleSidebar', handleToggleSidebar)
+    return () => window.removeEventListener('toggleSidebar', handleToggleSidebar)
+  }, [])
+
   const checkAuth = async () => {
     try {
       console.log('Checking auth status...')
@@ -183,34 +193,7 @@ export default function MemberLayout({
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <div className="sticky top-0 z-30 flex h-16 bg-white shadow-sm">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-500 lg:hidden"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </button>
-          <div className="flex flex-1 items-center justify-between px-4">
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold text-gray-900">
-                {sidebarNavigation.find(item => pathname === item.href)?.name || 'Member Portal'}
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Quick actions */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-600">
-                <BellIcon className="h-6 w-6" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-400 to-blue-400 flex items-center justify-center text-white text-sm font-semibold">
-                {user?.name?.fullName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase()}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Page content */}
+        {/* Page content - removed top bar */}
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0" role="main">
           <AnimatePresence mode="wait">
             <motion.div

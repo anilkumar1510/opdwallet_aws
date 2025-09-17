@@ -10,17 +10,38 @@ import {
   SparklesIcon,
   ChevronRightIcon,
   ArrowTrendingUpIcon,
-  CurrencyRupeeIcon
+  CurrencyRupeeIcon,
+  ArrowLeftIcon,
+  Bars3Icon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+  const [selectedProfile, setSelectedProfile] = useState<any>(null)
 
   useEffect(() => {
     fetchUserData()
   }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownOpen) {
+        const target = event.target as HTMLElement
+        if (!target.closest('.profile-dropdown')) {
+          setProfileDropdownOpen(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [profileDropdownOpen])
 
   const fetchUserData = async () => {
     try {
@@ -30,6 +51,14 @@ export default function DashboardPage() {
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)
+        setSelectedProfile(userData) // Set default selected profile
+
+        // Mock dependents data for demo (replace with actual API call)
+        const mockDependents = [
+          { id: '2', name: { firstName: 'Sarah', lastName: 'Doe' }, memberId: 'OPD000002', relationship: 'Spouse' },
+          { id: '3', name: { firstName: 'Emma', lastName: 'Doe' }, memberId: 'OPD000003', relationship: 'Child' },
+        ]
+        userData.dependents = mockDependents
       }
     } catch (error) {
       console.error('Error fetching user data:', error)
@@ -61,28 +90,135 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Welcome Section - Mobile optimized */}
-      <div className="mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-          <div className="mb-4 lg:mb-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-ink-900">
-              Hi, {user?.name?.firstName || 'Member'}!
-            </h1>
-            <p className="text-sm sm:text-base text-ink-500 mt-1">Member ID: {user?.memberId || 'OPD000001'}</p>
+    <div>
+      {/* Modern Header */}
+      <div className="sticky top-0 z-30 bg-white border-b">
+        <div className="p-4 sm:p-6">
+          {/* Top row with back arrow and "go to habit" */}
+          <div className="flex items-center mb-4">
+            <button className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+              <ArrowLeftIcon className="h-5 w-5 mr-2" />
+              <span className="text-sm font-medium">go to habit</span>
+            </button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <Link href="/member/claims/new" className="btn-primary text-sm sm:text-base">
-              <DocumentTextIcon className="h-4 w-4 mr-1 sm:mr-2" />
-              <span>New Claim</span>
-            </Link>
-            <Link href="/member/bookings/new" className="btn-secondary text-sm sm:text-base">
-              <CalendarIcon className="h-4 w-4 mr-1 sm:mr-2" />
-              <span>Book</span>
-            </Link>
+
+          {/* Main header row */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-start">
+              {/* Hamburger menu button for mobile */}
+              <button
+                onClick={() => {
+                  // Trigger sidebar open by dispatching a custom event
+                  window.dispatchEvent(new CustomEvent('toggleSidebar'))
+                }}
+                className="mr-4 text-gray-500 hover:text-gray-700 lg:hidden"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
+
+              {/* Welcome message and member ID */}
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  Hi, {selectedProfile?.name?.firstName || 'Member'}
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  Member ID: {selectedProfile?.memberId || 'OPD000001'}
+                </p>
+              </div>
+            </div>
+
+            {/* Profile selector dropdown */}
+            <div className="relative profile-dropdown">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-white font-semibold hover:shadow-lg transition-all"
+              >
+                {selectedProfile?.name?.firstName?.charAt(0) || 'M'}
+              </button>
+
+              {/* Dropdown menu */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border overflow-hidden z-40">
+                  <div className="p-2">
+                    <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider">
+                      Switch Profile
+                    </div>
+
+                    {/* Current user */}
+                    <button
+                      onClick={() => {
+                        setSelectedProfile(user)
+                        setProfileDropdownOpen(false)
+                      }}
+                      className={`w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                        selectedProfile?.id === user?.id ? 'bg-brand-50' : ''
+                      }`}
+                    >
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-white text-sm font-semibold mr-3">
+                        {user?.name?.firstName?.charAt(0)}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user?.name?.firstName} {user?.name?.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500">Self</p>
+                      </div>
+                      {selectedProfile?.id === user?.id && (
+                        <div className="ml-auto">
+                          <div className="h-2 w-2 bg-brand-600 rounded-full"></div>
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Dependents */}
+                    {user?.dependents?.map((dependent: any) => (
+                      <button
+                        key={dependent.id}
+                        onClick={() => {
+                          setSelectedProfile(dependent)
+                          setProfileDropdownOpen(false)
+                        }}
+                        className={`w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
+                          selectedProfile?.id === dependent.id ? 'bg-brand-50' : ''
+                        }`}
+                      >
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white text-sm font-semibold mr-3">
+                          {dependent.name?.firstName?.charAt(0)}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-gray-900">
+                            {dependent.name?.firstName} {dependent.name?.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">{dependent.relationship}</p>
+                        </div>
+                        {selectedProfile?.id === dependent.id && (
+                          <div className="ml-auto">
+                            <div className="h-2 w-2 bg-brand-600 rounded-full"></div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Add member option */}
+                  <div className="border-t p-2">
+                    <Link
+                      href="/member/family/add"
+                      className="w-full flex items-center px-3 py-2 text-sm text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                    >
+                      <UsersIcon className="h-5 w-5 mr-2" />
+                      Add Family Member
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Main Content */}
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
       {/* Desktop Layout: Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -198,12 +334,14 @@ export default function DashboardPage() {
             <Card title="Family Members">
               <div className="space-y-3">
                 {user.dependents.slice(0, 3).map((dependent: any, index: number) => (
-                  <div key={index} className="flex items-center p-3 bg-surface-alt rounded-xl hover:bg-surface transition-colors">
+                  <div key={dependent.id || index} className="flex items-center p-3 bg-surface-alt rounded-xl hover:bg-surface transition-colors">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-semibold mr-3">
-                      {dependent.name?.charAt(0)}
+                      {dependent.name?.firstName?.charAt(0) || 'D'}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-ink-900">{dependent.name}</p>
+                      <p className="text-sm font-medium text-ink-900">
+                        {dependent.name?.firstName} {dependent.name?.lastName}
+                      </p>
                       <p className="text-xs text-ink-500">{dependent.relationship}</p>
                     </div>
                   </div>
@@ -257,7 +395,7 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-
+      </div>
     </div>
   )
 }
