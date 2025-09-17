@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   basePath: '/admin',
+  output: 'standalone',
   async rewrites() {
     // In Docker, use the container name; otherwise use localhost
     const apiUrl = process.env.API_URL ?
