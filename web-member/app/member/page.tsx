@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import {
   WalletIcon,
@@ -16,11 +17,13 @@ import {
   QuestionMarkCircleIcon,
   PhoneIcon,
   EnvelopeIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
@@ -69,6 +72,18 @@ export default function DashboardPage() {
       console.error('Error fetching user data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      router.push('/')
+    } catch (error) {
+      console.error('Error logging out:', error)
     }
   }
 
@@ -198,6 +213,17 @@ export default function DashboardPage() {
                       <UsersIcon className="h-5 w-5 mr-2" />
                       Add Family Member
                     </Link>
+                  </div>
+
+                  {/* Logout option */}
+                  <div className="border-t p-2">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
+                      Logout
+                    </button>
                   </div>
                 </div>
               )}
