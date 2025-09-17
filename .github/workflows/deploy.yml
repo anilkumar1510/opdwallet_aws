@@ -1,4 +1,4 @@
-name: Deploy Application
+name: Deploy to AWS EC2
 
 on:
   push:
@@ -8,59 +8,99 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
     - name: Deploy to EC2
-      env:
-        EC2_HOST: ${{ secrets.EC2_HOST }}
-        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY_BASE64 }}
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: |
-        echo "$EC2_SSH_KEY" | base64 -d > key.pem
-        chmod 600 key.pem
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        command_timeout: 20m
+        script: |
+          echo "🚀 Starting deployment..."
 
-        # Pass GH_TOKEN as environment variable to SSH
-        ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST "
-          set -e
-          echo '🚀 Starting deployment...'
+          # Navigate to project directory
+          cd ~/opdwallet || {
+            echo "📁 Project directory not found, cloning..."
+            cd ~
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/anilkumar1510/opdwallet.git
+            cd opdwallet
+          }
 
-          export GH_TOKEN='$GH_TOKEN'
+          # Pull latest changes
+          echo "📥 Pulling latest changes..."
+          git pull origin main
 
-          # Clone or update repository using token
-          if [ ! -d /home/ubuntu/opdwallet ]; then
-            echo '📥 Cloning repository...'
-            cd /home/ubuntu
-            git clone https://\${GH_TOKEN}@github.com/anilkumar1510/opdwallet.git
-          fi
-
-          cd /home/ubuntu/opdwallet
-          git config --global --add safe.directory /home/ubuntu/opdwallet
-          git pull https://\${GH_TOKEN}@github.com/anilkumar1510/opdwallet.git main
-
+          # Create .env.production if not exists
           if [ ! -f .env.production ]; then
-            echo 'COOKIE_SECURE=false' > .env.production
-            echo 'JWT_SECRET=your-secret-jwt-key' >> .env.production
-            echo 'NODE_ENV=production' >> .env.production
-            echo 'PUBLIC_API_URL=http://13.60.210.156/api' >> .env.production
-            echo 'MONGO_DATABASE=opd_wallet' >> .env.production
-            echo 'COOKIE_NAME=opd_session' >> .env.production
-            echo 'COOKIE_HTTPONLY=true' >> .env.production
-            echo 'COOKIE_SAMESITE=lax' >> .env.production
-            echo 'COOKIE_MAX_AGE=604800000' >> .env.production
-            echo 'MONGO_ROOT_USERNAME=admin' >> .env.production
-            echo 'MONGO_ROOT_PASSWORD=password' >> .env.production
+            echo "📝 Creating .env.production..."
+            cat > .env.production << EOF
+          MONGO_DATABASE=opd_wallet
+          JWT_SECRET=your-secret-jwt-key-change-in-production
+          JWT_EXPIRY=7d
+          COOKIE_NAME=opd_session
+          COOKIE_SECURE=false
+          COOKIE_HTTPONLY=true
+          COOKIE_SAMESITE=lax
+          COOKIE_MAX_AGE=604800000
+          PUBLIC_API_URL=http://51.20.125.246/api
+          NODE_ENV=production
+          EOF
           fi
 
+          # Stop existing containers gracefully
+          echo "🛑 Stopping existing containers..."
           docker-compose -f docker-compose.prod.yml down || true
 
+          # Clean up to free space
+          echo "🧹 Cleaning Docker system..."
+          docker system prune -f
+
+          # Build images one by one to avoid memory issues
+          echo "🔨 Building Docker images sequentially..."
           export DOCKER_DEFAULT_PLATFORM=linux/amd64
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build
+
+          # Build MongoDB first (just pulls image)
+          docker-compose -f docker-compose.prod.yml pull mongodb
+
+          # Build API
+          echo "📦 Building API..."
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build api
+
+          # Build Admin Portal
+          echo "📦 Building Admin Portal..."
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build web-admin
+
+          # Build Member Portal
+          echo "📦 Building Member Portal..."
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build web-member
+
+          # Start all services
+          echo "🚢 Starting all services..."
           docker-compose --env-file .env.production -f docker-compose.prod.yml up -d
 
-          sleep 15
-          docker exec opd-api node dist/scripts/seed.js || true
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to be ready..."
+          sleep 20
 
-          docker ps
-          echo '✅ Deployment completed!'
-        "
+          # Seed database if needed
+          echo "🌱 Seeding database..."
+          docker exec opd-api node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
 
-        rm -f key.pem
+          # Health check
+          echo "🔍 Performing health check..."
+          docker-compose -f docker-compose.prod.yml ps
+
+          # Check if services are accessible
+          curl -f http://localhost:4000/api/health || echo "API health check endpoint not configured"
+          curl -f http://localhost:3002 || echo "Member portal check"
+          curl -f http://localhost:3001 || echo "Admin portal check"
+
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 Application URLs:"
+          echo "   Member Portal: http://51.20.125.246"
+          echo "   Admin Portal: http://51.20.125.246/admin"
+          echo "   API: http://51.20.125.246/api"
