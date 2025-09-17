@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/lib/api'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -15,8 +16,8 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const [usersRes, policiesRes] = await Promise.all([
-        fetch('/api/users', { credentials: 'include' }),
-        fetch('/api/policies', { credentials: 'include' }),
+        apiFetch('/api/users'),
+        apiFetch('/api/policies'),
       ])
 
       if (usersRes.ok && policiesRes.ok) {

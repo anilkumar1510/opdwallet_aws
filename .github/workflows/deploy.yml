@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
 
     steps:
       - name: Deploy to EC2
@@ -18,46 +18,39 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          command_timeout: 50m
+          command_timeout: 40m
           script: |
-            echo "🚀 Starting deployment..."
+            echo "🚀 Starting deployment on AWS..."
 
-            # Navigate to project
-            cd ~/opdwallet || exit 1
+            # Go to project directory
+            cd ~/opdwallet || {
+              echo "📁 Cloning repository..."
+              cd ~
+              git clone https://github.com/anilkumar1510/opdwallet.git
+              cd opdwallet
+            }
 
             # Pull latest code
-            echo "📥 Pulling latest changes..."
+            echo "📥 Pulling latest code..."
             git pull origin main
 
-            # Stop existing containers
-            echo "🛑 Stopping containers..."
-            docker-compose -f docker-compose.prod.yml down
+            # Stop containers
+            echo "🛑 Stopping old containers..."
+            docker-compose -f docker-compose.prod.yml down || true
 
-            # Clean Docker resources
-            echo "🧹 Cleaning Docker..."
-            docker system prune -f
+            # Clean up Docker
+            echo "🧹 Cleaning up Docker..."
+            docker system prune -af
 
-            # Build services one by one to avoid memory issues on t2.micro
-            echo "🔨 Building containers (one at a time for t2.micro)..."
+            # Start building and running
+            echo "🔨 Building and starting services..."
+            docker-compose -f docker-compose.prod.yml up -d --build
 
-            echo "Building MongoDB..."
-            docker-compose -f docker-compose.prod.yml pull mongodb
+            # Wait a bit
+            sleep 20
 
-            echo "Building API..."
-            docker-compose -f docker-compose.prod.yml build --no-cache api
-
-            echo "Building Admin Portal..."
-            docker-compose -f docker-compose.prod.yml build --no-cache web-admin
-
-            echo "Building Member Portal..."
-            docker-compose -f docker-compose.prod.yml build --no-cache web-member
-
-            # Start services
-            echo "🚢 Starting services..."
-            docker-compose -f docker-compose.prod.yml up -d
-
-            # Verify
+            # Check status
             echo "✅ Deployment complete!"
             docker ps
 
-            echo "🌐 Access at: http://51.20.125.246"
+            echo "🌐 Access at http://51.20.125.246"

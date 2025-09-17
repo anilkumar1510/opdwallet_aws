@@ -284,6 +284,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-white/80">Coverage: 01|04|24 to 31|03|25</p>
                   </div>
                 </Card>
+              </div>
             ))}
 
             {/* Hint card for more */}
@@ -330,7 +331,7 @@ export default function DashboardPage() {
               <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-blue-900">Consultations</span>
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">Active</span>
+                  <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full">Active</span>
                 </div>
                 <p className="text-2xl font-bold text-blue-900">8/10</p>
                 <p className="text-xs text-blue-600 mt-1">Used this year</p>
@@ -345,13 +346,13 @@ export default function DashboardPage() {
                 <p className="text-xs text-purple-600 mt-1">Available</p>
               </div>
 
-              <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
+              <div className="p-4 bg-gradient-to-r from-brand-50 to-brand-100 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-green-900">Pharmacy</span>
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">20% off</span>
+                  <span className="text-sm font-medium text-brand-900">Pharmacy</span>
+                  <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full">20% off</span>
                 </div>
-                <p className="text-2xl font-bold text-green-900">₹3,500</p>
-                <p className="text-xs text-green-600 mt-1">Saved this year</p>
+                <p className="text-2xl font-bold text-brand-900">₹3,500</p>
+                <p className="text-xs text-brand-600 mt-1">Saved this year</p>
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-surface-border">
@@ -380,7 +381,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                activity.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                activity.status === 'Approved' ? 'bg-brand-100 text-brand-800' :
                 activity.status === 'Upcoming' ? 'bg-blue-100 text-blue-800' :
                 'bg-gray-100 text-gray-800'
               }`}>
@@ -465,7 +466,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-4">
           <a
             href="tel:+918001234567"
-            className="flex items-center justify-center p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-sm hover:shadow-md"
+            className="flex items-center justify-center p-4 bg-gradient-to-r from-brand-500 to-brand-600 text-white rounded-xl hover:from-brand-600 hover:to-brand-700 transition-all shadow-sm hover:shadow-md"
           >
             <PhoneIcon className="h-5 w-5 mr-2" />
             <div className="text-left">

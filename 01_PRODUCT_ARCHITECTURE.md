@@ -1,5 +1,5 @@
 # 01_PRODUCT_ARCHITECTURE.md
-**Last Updated: September 15, 2025**
+**Last Updated: September 17, 2025**
 **Current Deployment: http://13.60.210.156**
 
 ## 📋 PROJECT OPERATING RULES (DO NOT DEVIATE)
@@ -100,7 +100,19 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 - Claims processing
 - Report generation
 
-### 3. MEMBER
+### 3. TPA (Third Party Administrator)
+- View member information
+- Process claims
+- Generate reports
+- View policy assignments
+
+### 4. OPS (Operations)
+- View member information
+- Support ticket management
+- Basic reporting
+- Read-only access to policies
+
+### 5. MEMBER
 - View personal benefits
 - Submit claims
 - Book appointments
@@ -128,11 +140,12 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 
 ### Admin User Management Flow
 1. Admin logs into http://localhost:3001
-2. Navigates to Users section
-3. Creates new member account
-4. Assigns policy to member
-5. Sets wallet limits and benefits
-6. Member receives activation email
+2. Navigates to Users section with tabs for Internal/External users
+3. Creates new user account (Member, Admin, TPA, or OPS)
+4. Can set custom password or generate temporary password
+5. For members: assigns policy and sets wallet limits
+6. Can edit all user information including passwords
+7. View and manage dependent relationships
 
 ## API Endpoints
 
@@ -147,6 +160,8 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 - `POST /api/users` - Create new user
 - `PUT /api/users/:id` - Update user
 - `POST /api/users/:id/reset-password` - Reset password
+- `POST /api/users/:id/set-password` - Set custom password
+- `GET /api/users/:id/dependents` - Get user's dependents
 
 ### Policies
 - `GET /api/policies` - List all policies
@@ -168,6 +183,9 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 /
 ├── / (Login page)
 ├── /member (Dashboard)
+│   ├── Top Navigation (Desktop): Profile, Wallet Balance, Logout
+│   ├── OPD E-Cards: Horizontally scrollable member cards
+│   ├── Quick Links: File Claim, Avail Benefits, Health Records, View Benefits
 │   ├── /wallet (Wallet management)
 │   ├── /benefits (Benefits overview)
 │   │   ├── /opd
@@ -184,14 +202,18 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 │   ├── /bookings (Appointments)
 │   │   ├── /new (Book appointment)
 │   │   └── /:id (Booking details)
-│   ├── /family (Family members)
-│   │   └── /add (Add member)
-│   ├── /records (Medical records)
+│   ├── /services (All services menu)
+│   ├── /records (Health records - prescriptions and bills)
 │   ├── /transactions (Transaction history)
 │   ├── /notifications
-│   ├── /help (Support)
+│   ├── /help (Support with FAQ section)
 │   └── /settings (Profile settings)
 ```
+
+Navigation Pattern:
+- Mobile: Bottom navigation bar (Home, Claims, Bookings, Services)
+- Desktop: Top navigation bar with all menu items
+- No hamburger menu on any screen
 
 ### Admin Portal (http://51.20.125.246/admin or localhost:3001)
 ```
@@ -199,8 +221,16 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 ├── / (Login page)
 ├── /dashboard (Admin dashboard)
 ├── /users (User management)
-│   ├── /new (Create user)
-│   └── /:id (User details)
+│   ├── Tabs: External Users (Members) | Internal Users (Admin, TPA, OPS)
+│   ├── Search and filter functionality
+│   ├── Clickable rows for navigation
+│   ├── Password management (Set/Reset)
+│   ├── /new (Create user with role selection)
+│   └── /:id (User details with full edit mode)
+│       ├── Edit all user information
+│       ├── Change password functionality
+│       ├── View dependents (for primary members)
+│       └── Relationship tracking
 ├── /policies (Policy management)
 │   ├── /new (Create policy)
 │   └── /:id (Policy details)
@@ -290,7 +320,17 @@ NODE_ENV=production
 ### Design Tokens
 ```
 Colors:
-- Brand: #0F766E (Teal)
+- Brand: #255a53 (Custom Green)
+  - Brand-50: #e8f0ef
+  - Brand-100: #c5d9d7
+  - Brand-200: #9ebfbb
+  - Brand-300: #77a59f
+  - Brand-400: #4e8b84
+  - Brand-500: #255a53 (Primary)
+  - Brand-600: #1e4b45
+  - Brand-700: #173c37
+  - Brand-800: #102d29
+  - Brand-900: #0a1e1b
 - Ink: #0F172A (Dark), #64748B (Light)
 - Surface: #FFFFFF (Primary), #F8FAFC (Alt)
 - Success: #22C55E
@@ -314,13 +354,19 @@ Breakpoints:
 
 ### Component Architecture
 - **Reusable Components**: Card, StatusBadge, LoadingSpinner, ResponsiveWrapper, BottomNavigation
-- **Layout System**: Responsive sidebar navigation with mobile support
+- **Layout System**: Responsive navigation with mobile/desktop adaptation
 - **Form Wizards**: Multi-step workflows for complex processes
 - **Data Visualization**: Charts and progress indicators
+- **OPD E-Cards**: Compact horizontally scrollable member cards showing:
+  - Member name and photo placeholder
+  - Relationship type (SELF, SPOUSE, SON, DAUGHTER, etc.)
+  - Member ID and Corporate info
+  - Age and coverage period
+  - Quick action buttons
 - **Navigation Pattern**:
   - Mobile: Fixed bottom navigation with 4 main tabs (Home, Claims, Bookings, Services)
-  - Desktop: Full sidebar navigation with all menu items
-  - Hamburger menu on mobile contains additional items (Wallet, Records, Family, etc.)
+  - Desktop: Top navigation bar with profile selector and wallet balance
+  - No hamburger menu anywhere - all items accessible via Services page
 
 ### Responsive Design Implementation
 - **Mobile-First Approach**: All components designed for mobile then enhanced for desktop
@@ -373,8 +419,9 @@ open http://localhost:3002  # Member Portal
 ### Test Accounts
 
 #### Production (AWS EC2 - http://51.20.125.246)
-- Member: member@test.com / Test123!
-- Admin: admin@test.com / Test123!
+- Super Admin: admin@opdwallet.com / Admin@123
+- Member: john.doe@company.com / Member@123
+- Dependent: jane.doe@email.com / Dependent@123
 - Member ID: OPD000001
 - UHID: UH000001
 
@@ -382,6 +429,13 @@ open http://localhost:3002  # Member Portal
 - Same credentials as production
 - Member Portal: http://localhost:3002
 - Admin Portal: http://localhost:3001
+
+#### User Roles Available
+- SUPER_ADMIN: Full system access
+- ADMIN: User and policy management
+- TPA: Claims processing and reporting
+- OPS: Support and read-only access
+- MEMBER: Healthcare members/beneficiaries
 
 ### API Documentation
 - Swagger UI: http://localhost:4000/api/docs

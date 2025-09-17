@@ -79,4 +79,25 @@ export class UsersController {
   resetPassword(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.usersService.resetPassword(id, req.user.userId);
   }
+
+  @Post(':id/set-password')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Set user password' })
+  @ApiResponse({ status: 200, description: 'Password set successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  setPassword(
+    @Param('id') id: string,
+    @Body('password') password: string,
+    @Request() req: AuthRequest,
+  ) {
+    return this.usersService.setPassword(id, password, req.user.userId);
+  }
+
+  @Get(':id/dependents')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.TPA, UserRole.OPS)
+  @ApiOperation({ summary: 'Get user dependents' })
+  @ApiResponse({ status: 200, description: 'Dependents fetched successfully' })
+  getDependents(@Param('id') id: string) {
+    return this.usersService.getUserWithDependents(id);
+  }
 }

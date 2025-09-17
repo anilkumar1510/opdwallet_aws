@@ -68,7 +68,7 @@ export default function BottomNavigation() {
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
             <div className="flex items-center">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-blue-500 mr-3"></div>
+              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 mr-3"></div>
               <span className="text-xl font-bold text-gray-900">OPD Wallet</span>
             </div>
 

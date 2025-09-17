@@ -137,7 +137,7 @@ Primary collection for all system users (admins and members).
 
   // Authentication & Authorization
   passwordHash: String,     // Bcrypt hashed password
-  role: String,             // "SUPER_ADMIN" | "ADMIN" | "MEMBER"
+  role: String,             // "SUPER_ADMIN" | "ADMIN" | "TPA" | "OPS" | "MEMBER"
   status: String,           // "ACTIVE" | "INACTIVE" | "SUSPENDED"
   mustChangePassword: Boolean,
 
@@ -150,13 +150,14 @@ Primary collection for all system users (admins and members).
 ```
 
 **Indexes:**
-- `email`: unique
+- `email`: unique, case-insensitive
 - `phone`: unique
 - `uhid`: unique
 - `memberId`: unique
 - `employeeId`: unique, sparse
 - `userId`: unique
 - `primaryMemberId, relationship`: compound index
+- `role`: for filtering internal vs external users
 
 ### 2. policies
 Healthcare policies that can be assigned to members.
@@ -482,16 +483,32 @@ NEXT_PUBLIC_ENABLE_ANALYTICS=true
 
 #### Current Active Seed Data (September 2025)
 ```javascript
-// Test Users with WORKING password hash for "Test123!"
-// Hash generated with bcrypt.hashSync('Test123!', 10)
+// Production-ready seed script creates the following users:
 [
   {
     userId: "USR000001",
     uhid: "UH000001",
     memberId: "OPD000001",
-    email: "member@test.com",
-    passwordHash: "$2b$10$BlBrAV.EPHlwi8J4AthxAObGm6zhCVKF3SXHbi5ZICs.omu3RQL2S",
-    password: "Test123!",  // For reference only
+    employeeId: "EMP001",
+    email: "admin@opdwallet.com",
+    password: "Admin@123",  // For reference only
+    role: "SUPER_ADMIN",
+    relationship: "SELF",
+    name: {
+      firstName: "Admin",
+      lastName: "User",
+      fullName: "Admin User"
+    },
+    phone: "+91 9876543210",
+    status: "ACTIVE"
+  },
+  {
+    userId: "USR000002",
+    uhid: "UH000002",
+    memberId: "OPD000002",
+    employeeId: "EMP002",
+    email: "john.doe@company.com",
+    password: "Member@123",  // For reference only
     role: "MEMBER",
     relationship: "SELF",
     name: {
@@ -499,28 +516,29 @@ NEXT_PUBLIC_ENABLE_ANALYTICS=true
       lastName: "Doe",
       fullName: "John Doe"
     },
-    phone: "+1234567890",
+    phone: "+91 9876543211",
     status: "ACTIVE",
-    wallet: {
-      balance: 10000,
-      utilized: 0,
-      available: 10000
-    }
+    gender: "MALE",
+    dob: new Date("1985-01-15")
   },
   {
-    userId: "USR000002",
-    uhid: "UH000002",
-    memberId: "OPD000002",
-    email: "admin@test.com",
-    password: "Test123!",
-    role: "ADMIN",
-    relationship: "SELF",
+    userId: "USR000003",
+    uhid: "UH000003",
+    memberId: "OPD000003",
+    email: "jane.doe@email.com",
+    password: "Dependent@123",  // For reference only
+    role: "MEMBER",
+    relationship: "SPOUSE",
+    primaryMemberId: "OPD000002",
     name: {
-      firstName: "Admin",
-      lastName: "User"
+      firstName: "Jane",
+      lastName: "Doe",
+      fullName: "Jane Doe"
     },
-    phone: "+91 9876543211",
-    status: "ACTIVE"
+    phone: "+91 9876543212",
+    status: "ACTIVE",
+    gender: "FEMALE",
+    dob: new Date("1987-03-20")
   }
 ]
 
@@ -606,6 +624,13 @@ NODE_ENV=production
 
 ### Login Request
 ```bash
+# Admin Login
+curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@opdwallet.com","password":"Admin@123"}' \
+  -c cookies.txt
+
+# Member Login
 curl -X POST http://localhost:4000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"john.doe@company.com","password":"Member@123"}' \
@@ -618,8 +643,9 @@ curl http://localhost:4000/api/auth/me \
   -b cookies.txt
 ```
 
-### Create User (Admin Only)
+### User Management (Admin Only)
 ```bash
+# Create Member
 curl -X POST http://localhost:4000/api/users \
   -H "Content-Type: application/json" \
   -b cookies.txt \
@@ -627,8 +653,9 @@ curl -X POST http://localhost:4000/api/users \
     "email": "new.member@company.com",
     "password": "NewMember@123",
     "role": "MEMBER",
-    "uhid": "UH000001",
-    "memberId": "OPD000002",
+    "uhid": "UH000004",
+    "memberId": "OPD000004",
+    "employeeId": "EMP004",
     "relationship": "SELF",
     "name": {
       "firstName": "New",
@@ -636,4 +663,35 @@ curl -X POST http://localhost:4000/api/users \
     },
     "phone": "+1234567890"
   }'
+
+# Create TPA User
+curl -X POST http://localhost:4000/api/users \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "email": "tpa@opdwallet.com",
+    "password": "TPA@123",
+    "role": "TPA",
+    "uhid": "UH000005",
+    "memberId": "OPD000005",
+    "name": {
+      "firstName": "TPA",
+      "lastName": "User"
+    },
+    "phone": "+1234567891"
+  }'
+
+# Set Custom Password
+curl -X POST http://localhost:4000/api/users/:id/set-password \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"password": "CustomPassword@123"}'
+
+# Reset Password (generates temporary)
+curl -X POST http://localhost:4000/api/users/:id/reset-password \
+  -b cookies.txt
+
+# Get User with Dependents
+curl http://localhost:4000/api/users/:id/dependents \
+  -b cookies.txt
 ```

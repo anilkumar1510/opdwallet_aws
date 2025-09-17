@@ -17,12 +17,19 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // Brand colors (Calm Teal + Navy theme)
+        // Brand colors - Based on #255a53
         brand: {
-          DEFAULT: '#0F766E',
-          600: '#0F766E',
-          700: '#115E59',
-          50: '#F0FDFA'
+          DEFAULT: '#255a53',
+          50: '#e8f0ef',   // Lightest shade
+          100: '#c5d9d7',   // Very light
+          200: '#9ebfbb',   // Light
+          300: '#77a59f',   // Light-medium
+          400: '#4e8b84',   // Medium-light
+          500: '#255a53',   // Base color
+          600: '#1e4b45',   // Darker
+          700: '#173c37',   // Darker still
+          800: '#102d29',   // Very dark
+          900: '#0a1e1b',   // Darkest
         },
         ink: {
           900: '#0F172A',

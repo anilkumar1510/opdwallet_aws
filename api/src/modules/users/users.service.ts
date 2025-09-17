@@ -231,6 +231,57 @@ export class UsersService {
     };
   }
 
+  async setPassword(id: string, newPassword: string, setBy: string) {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const rounds = this.configService.get<number>('bcrypt.rounds') || 12;
+    const passwordHash = await bcrypt.hash(newPassword, rounds);
+
+    await this.userModel.findByIdAndUpdate(id, {
+      passwordHash,
+      mustChangePassword: false,
+      updatedBy: setBy,
+      updatedAt: new Date(),
+    });
+
+    return {
+      message: 'Password set successfully',
+    };
+  }
+
+  async getDependents(primaryMemberId: string) {
+    const dependents = await this.userModel
+      .find({
+        primaryMemberId,
+        relationship: { $ne: RelationshipType.SELF }
+      })
+      .select('-passwordHash')
+      .sort({ createdAt: 1 });
+
+    return dependents;
+  }
+
+  async getUserWithDependents(id: string) {
+    const user = await this.userModel.findById(id).select('-passwordHash');
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let dependents: any[] = [];
+    if (user.relationship === RelationshipType.SELF) {
+      // If this is a primary member, fetch their dependents
+      dependents = await this.getDependents(user.memberId);
+    }
+
+    return {
+      user,
+      dependents,
+    };
+  }
+
   private generateRandomPassword(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
     let password = '';

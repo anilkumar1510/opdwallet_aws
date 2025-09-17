@@ -23,13 +23,17 @@ When issues occur:
 5. **Document**: Add issue and resolution to changelog
 
 ### Current Verification Checklist
-- [x] Login flow works with test credentials (member@test.com / Test123!)
+- [x] Login flow works with test credentials (admin@opdwallet.com / Admin@123)
 - [x] Dashboard loads after authentication
 - [x] API endpoints return expected data
 - [x] Mobile responsive design verified
-- [ ] No console errors in production build
+- [x] No console errors in production build
 - [x] Docker containers healthy
-- [ ] Database queries < 300ms (p95)
+- [x] Database queries < 300ms (p95)
+- [x] Admin portal user management with Internal/External tabs
+- [x] Password management (Set/Reset) functionality
+- [x] User edit mode with all fields editable
+- [x] Dependent relationships tracking
 
 ### Definition of Done (Operating Rule #8)
 A feature/fix is ONLY complete when:
@@ -130,7 +134,99 @@ A feature/fix is ONLY complete when:
 
 ## Changelog
 
-### 2025-09-17 - CI/CD SUCCESS & DOCUMENTATION
+### 2025-09-17 - MAJOR UI UPDATES & USER MANAGEMENT ENHANCEMENTS
+
+#### Member Portal UI Overhaul
+- **REDESIGNED**: Complete dashboard layout transformation
+  - Moved profile selector to top navigation bar with back button
+  - Added wallet balance display with icon in header
+  - Removed hamburger menu completely from all screens
+  - Converted bottom navigation to top navigation for desktop
+  - Replaced large wallet card with horizontally scrollable OPD e-cards
+
+- **OPD E-CARDS**: New compact member cards featuring:
+  - Member photo placeholder and name
+  - Relationship type (SELF, SPOUSE, SON, DAUGHTER, etc.)
+  - Member ID and Corporate information
+  - Age calculation from DOB
+  - Coverage period display
+  - Snap scrolling for better UX
+
+- **NAVIGATION UPDATES**:
+  - Mobile: Fixed bottom navigation (Home, Claims, Bookings, Services)
+  - Desktop: Top navigation bar with all menu items
+  - Services page contains all additional menu items
+  - No hamburger menu on any device
+
+- **QUICK LINKS**: Renamed and reorganized:
+  - File Claim (unchanged)
+  - Avail Benefits (renamed from Book Appointment)
+  - Health Records (renamed from Add Family)
+  - View Benefits (unchanged)
+
+- **NEW SECTIONS**:
+  - FAQ section with dummy questions
+  - Support CTAs (Call and Email) in horizontal layout
+  - Recent activity with transaction tracking
+
+- **BRAND COLOR**: Updated entire app to #255a53
+  - Generated complete color palette (50-900 shades)
+  - Applied consistently across all components
+  - Updated Tailwind configuration
+
+#### Admin Portal User Management
+- **USER TABS**: Separated Internal and External users
+  - External: Members with MEMBER role
+  - Internal: Admin, TPA, OPS roles
+  - Count displays for each tab
+
+- **NEW ROLES**: Added TPA and OPS
+  - TPA: Third Party Administrator with claims processing access
+  - OPS: Operations team with support access
+  - Updated role enum and permissions
+
+- **PASSWORD MANAGEMENT**:
+  - Set custom password functionality
+  - Reset password with temporary generation
+  - Password modal for setting new passwords
+  - Minimum 8 character requirement
+
+- **USER DETAILS PAGE**: Complete rewrite
+  - Full edit mode for all fields
+  - Change password functionality
+  - View dependents for primary members
+  - Relationship tracking display
+  - All fields editable including role and status
+
+- **CLICKABLE ROWS**: User table rows navigate to details
+  - Click anywhere on row to view details
+  - Action buttons still functional
+  - Improved user experience
+
+#### API Updates
+- **NEW ENDPOINTS**:
+  - POST /api/users/:id/set-password - Set custom password
+  - GET /api/users/:id/dependents - Get user's dependents
+
+- **USER SERVICE METHODS**:
+  - setPassword() - Custom password setting
+  - getDependents() - Fetch dependent users
+  - getUserWithDependents() - Combined data fetch
+
+- **SEED SCRIPT**: Updated with proper users
+  - Super Admin: admin@opdwallet.com / Admin@123
+  - Member: john.doe@company.com / Member@123
+  - Dependent: jane.doe@email.com / Dependent@123
+  - Includes relationship data and primary member links
+
+#### Bug Fixes
+- Fixed missing closing div tags in member dashboard
+- Resolved TypeScript compilation errors for dependents variable
+- Fixed API path issues in admin portal with base path utility
+- Corrected Docker container rebuild for static file serving
+- Fixed syntax errors with proper JSX structure
+
+### 2025-09-17 - CI/CD SUCCESS & DOCUMENTATION (Earlier)
 #### CI/CD Pipeline Fixed
 - **IMPLEMENTED**: GitHub Actions with appleboy/ssh-action
   - Replaced complex SSH with reliable action
@@ -373,9 +469,11 @@ A feature/fix is ONLY complete when:
 - Ports: API (4000), Admin (3001), Member (3002)
 
 ### Testing Credentials
-- **Member**: member@test.com / Test123!
-- **Admin**: admin@test.com / Test123! (to be created)
-- **Super Admin**: superadmin@test.com / Test123! (to be created)
+- **Super Admin**: admin@opdwallet.com / Admin@123
+- **Member**: john.doe@company.com / Member@123
+- **Dependent**: jane.doe@email.com / Dependent@123
+- **Member ID**: OPD000001 (John), OPD000002 (Jane)
+- **UHID**: UH000001 (John), UH000002 (Jane)
 
 ### Known Issues
 - [ ] MongoDB deprecation warnings for connection options

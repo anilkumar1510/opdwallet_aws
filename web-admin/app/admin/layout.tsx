@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { apiFetch } from '@/lib/api'
 
 export default function AdminLayout({
   children,
@@ -19,9 +20,7 @@ export default function AdminLayout({
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/auth/me')
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)
@@ -38,9 +37,8 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await apiFetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include',
       })
       router.push('/')
     } catch (error) {
