@@ -23,26 +23,64 @@ jobs:
           set -e
           echo "🚀 Starting deployment..."
 
-          # Pull latest code
-          cd /home/ubuntu/opdwallet
-          git pull origin main
+          # Clone or pull latest code
+          if [ ! -d "/home/ubuntu/opdwallet" ]; then
+            echo "📥 Cloning repository..."
+            cd /home/ubuntu
+            git clone https://github.com/anilkumar1510/opdwallet.git
+            cd opdwallet
+          else
+            echo "📥 Pulling latest changes..."
+            cd /home/ubuntu/opdwallet
+            git pull origin main
+          fi
+
+          # Copy environment file if it doesn't exist
+          if [ ! -f ".env.production" ]; then
+            echo "📝 Creating production environment file..."
+            cat > .env.production << 'ENVFILE'
+# MongoDB Configuration
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=secure_password_change_this
+MONGO_DATABASE=opd_wallet
+
+# JWT Configuration
+JWT_SECRET=your-secret-jwt-key-change-in-production
+JWT_EXPIRY=7d
+
+# Cookie Configuration
+COOKIE_NAME=opd_session
+COOKIE_DOMAIN=
+COOKIE_SECURE=false
+COOKIE_HTTPONLY=true
+COOKIE_SAMESITE=lax
+COOKIE_MAX_AGE=604800000
+
+# API Configuration
+PUBLIC_API_URL=http://13.60.210.156/api
+
+# Node Environment
+NODE_ENV=production
+ENVFILE
+          fi
 
           # Stop existing containers
           docker-compose -f docker-compose.prod.yml down || true
 
           # Build with proper environment
           export DOCKER_DEFAULT_PLATFORM=linux/amd64
-          docker-compose -f docker-compose.prod.yml build --no-cache
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache
 
           # Start services
-          docker-compose -f docker-compose.prod.yml up -d
+          docker-compose --env-file .env.production -f docker-compose.prod.yml up -d
 
           # Wait for services to be ready
           echo "⏳ Waiting for services..."
           sleep 15
 
           # Seed database if needed
-          docker exec opdwallet-api-1 node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
+          echo "🌱 Seeding database..."
+          docker exec opd-api node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
 
           # Health check
           echo "🔍 Checking health..."
