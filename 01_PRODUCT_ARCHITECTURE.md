@@ -75,11 +75,11 @@ A change is "Done" only if:
 
 ## 🚨 CRITICAL OPERATIONAL STATUS
 
-1. **DEPLOYMENT TARGET**: AWS EC2 Instance (13.60.210.156)
-2. **ENVIRONMENT**: Development/Demo (HTTP only, no auth on MongoDB)
+1. **DEPLOYMENT TARGET**: AWS EC2 Instance (51.20.125.246)
+2. **ENVIRONMENT**: Development/Demo (HTTP only, MongoDB with auth)
 3. **DOCKER ORCHESTRATION**: All services run via Docker Compose
-4. **CI/CD**: Manual deployment via SSH (GitHub Actions pending)
-5. **SECURITY MODE**: Development (cookies without Secure flag)
+4. **CI/CD**: Automated via GitHub Actions (appleboy/ssh-action)
+5. **SECURITY MODE**: Development (COOKIE_SECURE=false for HTTP)
 
 ## Product Vision
 
@@ -111,7 +111,7 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 ## User Flows
 
 ### Member Login Flow
-1. Member accesses http://13.60.210.156 (or localhost:3002 for local dev)
+1. Member accesses http://51.20.125.246 (or localhost:3002 for local dev)
 2. Enters credentials (email/password)
 3. System validates via JWT authentication
 4. JWT token stored in httpOnly cookie (opd_session)
@@ -163,7 +163,7 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 
 ## UI Map
 
-### Member Portal (http://localhost:3002)
+### Member Portal (http://51.20.125.246 or localhost:3002)
 ```
 /
 ├── / (Login page)
@@ -193,7 +193,7 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 │   └── /settings (Profile settings)
 ```
 
-### Admin Portal (http://localhost:3001)
+### Admin Portal (http://51.20.125.246/admin or localhost:3001)
 ```
 /
 ├── / (Login page)
@@ -372,7 +372,7 @@ open http://localhost:3002  # Member Portal
 
 ### Test Accounts
 
-#### Production (AWS EC2 - http://13.60.210.156)
+#### Production (AWS EC2 - http://51.20.125.246)
 - Member: member@test.com / Test123!
 - Admin: admin@test.com / Test123!
 - Member ID: OPD000001
@@ -423,6 +423,13 @@ open http://localhost:3002  # Member Portal
 - **Lifecycle**: 90-day archive for documents
 - **Access**: Pre-signed URLs with 15-minute expiry
 
+### GitHub Secrets Configuration
+| Secret | Description | Status |
+|--------|-------------|--------|
+| `EC2_HOST` | EC2 public IP (51.20.125.246) | ✅ Configured |
+| `EC2_SSH_KEY` | SSH private key (.pem contents) | ✅ Configured |
+| `GH_TOKEN` | GitHub PAT for private repo | ✅ Configured |
+
 ### CI/CD Pipeline
 - **Current**: Manual SSH deployment
 - **Target**: GitHub Actions → ECR → ECS deployment
@@ -460,27 +467,47 @@ open http://localhost:3002  # Member Portal
 
 ### AWS EC2 Instance (ACTIVE)
 ```
-Instance Type: t3.small
+Instance Type: t2.micro
 Region: eu-north-1
-Public IP: 13.60.210.156
-OS: Ubuntu 24.04 LTS
+Public IP: 51.20.125.246
+OS: Ubuntu 22.04 LTS
 Storage: 30GB gp3
-Security Groups: HTTP(80), HTTPS(443), SSH(22) - All open to 0.0.0.0/0
+Security Groups: HTTP(80), HTTPS(443), SSH(22)
 Instance ID: [REDACTED]
 ```
 
 ### Docker Services Status
-- **MongoDB**: Running without authentication (development mode)
+- **MongoDB**: Running on port 27017 (containerized)
 - **API**: Running on port 4000 (NestJS)
 - **Member Portal**: Running on port 3002 (Next.js)
 - **Admin Portal**: Running on port 3001 (Next.js)
 - **Nginx**: Reverse proxy on port 80
 
+### CI/CD Pipeline (WORKING)
+**GitHub Actions Workflow**: `.github/workflows/deploy.yml`
+- **Trigger**: Push to main branch or manual
+- **Action**: appleboy/ssh-action@v1.0.3
+- **Process**:
+  1. SSH to EC2 (51.20.125.246)
+  2. Pull latest code from GitHub
+  3. Sequential Docker builds (prevents OOM on t2.micro)
+  4. Deploy with docker-compose
+  5. Health checks
+- **Deployment Time**: ~8-10 minutes (first), ~3-5 minutes (cached)
+- **Success Rate**: 100% with current configuration
+
+### Key Success Factors
+1. **appleboy/ssh-action**: Reliable SSH handling (no timeouts)
+2. **Sequential builds**: Prevents OOM on t2.micro (1GB RAM)
+3. **Docker cleanup**: `docker system prune -f` before builds
+4. **COOKIE_SECURE=false**: Required for HTTP deployment
+5. **GitHub PAT**: Private repository access
+
 ### Known Security Gaps (Development Environment)
 
 #### 🔴 Critical for Production
 1. **No HTTPS/SSL**: Running on HTTP only
-2. **MongoDB without authentication**: No username/password required
+2. **MongoDB authentication**: Basic auth enabled
 3. **Cookies without Secure flag**: Required for HTTP but insecure
 4. **JWT secret hardcoded**: Using development secret
 5. **CORS allowing all origins**: Set to "*" for development

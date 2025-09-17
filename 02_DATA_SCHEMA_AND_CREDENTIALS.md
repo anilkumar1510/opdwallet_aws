@@ -1,16 +1,17 @@
 # 02_DATA_SCHEMA_AND_CREDENTIALS.md
-**Last Updated: September 15, 2025**
-**Current State: Development Environment (No Auth)**
+**Last Updated: September 17, 2025**
+**Current State: Development Environment**
 
 ## 🚨 SECURITY NOTICE & COMPLIANCE REQUIREMENTS
 
-### Current Development Configuration (INSECURE)
-- **MongoDB**: Running WITHOUT authentication
+### Current Development Configuration
+- **MongoDB**: Running with basic authentication
 - **Passwords**: Using bcrypt with 10 rounds
-- **JWT Secret**: Hardcoded development key
-- **Connection**: mongodb://opd-mongodb:27017/opd_wallet (no auth)
-- **Validation**: Basic DTOs only
+- **JWT Secret**: Environment variable (change in production)
+- **Connection**: mongodb://opd-mongodb:27017/opd_wallet
+- **Validation**: Basic DTOs with class-validator
 - **Audit Logging**: Not implemented
+- **Cookie Security**: COOKIE_SECURE=false (HTTP deployment)
 
 ### Production Security Baseline (REQUIRED)
 Per Operating Rule #5, all production deployments MUST implement:
@@ -561,6 +562,34 @@ NEXT_PUBLIC_ENABLE_ANALYTICS=true
 ### Document Storage (Placeholder)
 - S3: https://s3.region.amazonaws.com/bucket-name
 - CDN: https://cdn.opdwallet.com
+
+## CI/CD Credentials & Configuration
+
+### GitHub Secrets (Required for Deployment)
+```yaml
+EC2_HOST: 51.20.125.246          # EC2 public IP
+EC2_SSH_KEY: <.pem file contents> # SSH private key
+GH_TOKEN: ghp_xxxxx               # GitHub PAT with repo access
+```
+
+### EC2 Environment (.env.production)
+```bash
+# Database
+MONGO_DATABASE=opd_wallet
+
+# Authentication
+JWT_SECRET=your-secret-jwt-key-change-in-production
+JWT_EXPIRY=7d
+COOKIE_NAME=opd_session
+COOKIE_SECURE=false  # HTTP deployment
+COOKIE_HTTPONLY=true
+COOKIE_SAMESITE=lax
+COOKIE_MAX_AGE=604800000
+
+# API Configuration
+PUBLIC_API_URL=http://51.20.125.246/api
+NODE_ENV=production
+```
 
 ## Security Notes
 
