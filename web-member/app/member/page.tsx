@@ -20,7 +20,6 @@ import Link from 'next/link'
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
 
@@ -50,15 +49,18 @@ export default function DashboardPage() {
       })
       if (response.ok) {
         const userData = await response.json()
-        setUser(userData)
-        setSelectedProfile(userData) // Set default selected profile
 
         // Mock dependents data for demo (replace with actual API call)
         const mockDependents = [
           { id: '2', name: { firstName: 'Sarah', lastName: 'Doe' }, memberId: 'OPD000002', relationship: 'Spouse' },
           { id: '3', name: { firstName: 'Emma', lastName: 'Doe' }, memberId: 'OPD000003', relationship: 'Child' },
         ]
-        userData.dependents = mockDependents
+
+        // Create a new object with dependents
+        const userWithDependents = { ...userData, dependents: mockDependents }
+
+        setUser(userWithDependents)
+        setSelectedProfile(userWithDependents) // Set default selected profile
       }
     } catch (error) {
       console.error('Error fetching user data:', error)
