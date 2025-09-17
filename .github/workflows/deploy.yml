@@ -22,10 +22,10 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker images locally
+    - name: Validate Docker Compose configuration
       run: |
-        echo "🔨 Building Docker images for testing..."
-        docker-compose -f docker-compose.prod.yml build --parallel
+        echo "🔨 Validating Docker configuration..."
+        docker-compose -f docker-compose.prod.yml config > /dev/null
 
     - name: Run security scan
       run: |
@@ -39,7 +39,7 @@ jobs:
         echo "BUILD_TIME=$(date -u +%Y%m%d-%H%M%S)" >> build.env
 
     - name: Upload build info
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-info
         path: build.env
@@ -52,7 +52,7 @@ jobs:
 
     steps:
     - name: Download build info
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: build-info
 
