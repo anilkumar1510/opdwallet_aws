@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Deploy to EC2
@@ -18,39 +19,40 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          command_timeout: 40m
+          command_timeout: 55m
           script: |
-            echo "🚀 Starting deployment on AWS..."
+            echo "🚀 Starting deployment..."
 
-            # Go to project directory
-            cd ~/opdwallet || {
+            # Ensure we're in the right directory
+            if [ -d ~/opdwallet ]; then
+              cd ~/opdwallet
+              echo "📥 Pulling latest code..."
+              git pull origin main || git reset --hard origin/main
+            else
               echo "📁 Cloning repository..."
               cd ~
               git clone https://github.com/anilkumar1510/opdwallet.git
               cd opdwallet
-            }
+            fi
 
-            # Pull latest code
-            echo "📥 Pulling latest code..."
-            git pull origin main
+            # Ensure deployment script is executable
+            chmod +x deploy-production.sh deploy-on-aws.sh 2>/dev/null || true
 
-            # Stop containers
-            echo "🛑 Stopping old containers..."
-            docker-compose -f docker-compose.prod.yml down || true
+            # Try to stop any existing containers
+            docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
 
-            # Clean up Docker
-            echo "🧹 Cleaning up Docker..."
-            docker system prune -af
+            # Clean up Docker to free memory
+            docker system prune -af --volumes 2>/dev/null || true
 
-            # Start building and running
+            # Simple build and run
             echo "🔨 Building and starting services..."
-            docker-compose -f docker-compose.prod.yml up -d --build
+            docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
-            # Wait a bit
-            sleep 20
+            # Wait for services
+            sleep 30
 
             # Check status
-            echo "✅ Deployment complete!"
+            echo "📊 Deployment status:"
             docker ps
 
-            echo "🌐 Access at http://51.20.125.246"
+            echo "✅ Deployment attempt completed"
