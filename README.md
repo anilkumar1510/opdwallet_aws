@@ -11,3 +11,4 @@ Healthcare benefits management platform with member and admin portals.
 
 ## Deployment
 Automatic deployment via GitHub Actions to AWS EC2.
+# Deployment will automatically clone and setup the application
