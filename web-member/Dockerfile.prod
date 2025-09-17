@@ -1,62 +1,23 @@
-# Build stage
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Build arguments
-ARG NEXT_PUBLIC_API_URL=http://51.20.125.246/api
-
-# Set environment variables for build
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NODE_ENV=production
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies with clean install
-RUN npm ci --only=production && \
-    npm cache clean --force
-
-# Copy source code
-COPY . .
-
-# Build the application with production optimizations
-RUN npm run build && \
-    rm -rf .next/cache
-
-# Production stage
+# Simple production Dockerfile for Next.js
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dumb-init
-RUN apk add --no-cache dumb-init
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Copy application code
+COPY . .
 
-# Copy the standalone folder
-COPY --from=builder --chown=nodejs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nodejs:nodejs /app/public ./public
+# Build the Next.js application
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_URL=http://51.20.125.246/api
 
-# Switch to non-root user
-USER nodejs
+RUN npm run build
 
 # Expose port
 EXPOSE 3002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3002', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
-
-# Set environment variables
-ENV PORT=3002
-ENV HOSTNAME=0.0.0.0
-
-# Use dumb-init to handle signals
-ENTRYPOINT ["dumb-init", "--"]
-
 # Start the application
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

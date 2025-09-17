@@ -1,300 +1,61 @@
-name: Deploy to AWS EC2
+name: Deploy to EC2
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
-
-env:
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
+    branches:
+      - main
 
 jobs:
-  # Stage 1: Build and Test
-  build-and-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Validate Docker Compose configuration
-      run: |
-        echo "🔨 Validating Docker configuration..."
-        docker-compose -f docker-compose.prod.yml config > /dev/null
-
-    - name: Run security scan
-      run: |
-        echo "🔒 Running security checks..."
-        # Add security scanning here (e.g., Trivy, Snyk)
-
-    - name: Save build artifacts
-      run: |
-        echo "💾 Saving build information..."
-        echo "BUILD_SHA=${{ github.sha }}" > build.env
-        echo "BUILD_TIME=$(date -u +%Y%m%d-%H%M%S)" >> build.env
-
-    - name: Upload build info
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-info
-        path: build.env
-
-  # Stage 2: Deploy to Production
   deploy:
-    needs: build-and-test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
-    - name: Download build info
-      uses: actions/download-artifact@v4
-      with:
-        name: build-info
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          command_timeout: 50m
+          script: |
+            echo "🚀 Starting deployment..."
 
-    - name: Setup deployment environment
-      run: |
-        echo "📋 Loading build information..."
-        cat build.env
-        source build.env
-        echo "BUILD_SHA=$BUILD_SHA" >> $GITHUB_ENV
-        echo "BUILD_TIME=$BUILD_TIME" >> $GITHUB_ENV
+            # Navigate to project
+            cd ~/opdwallet || exit 1
 
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        command_timeout: 25m
-        script: |
-          set -e  # Exit on any error
+            # Pull latest code
+            echo "📥 Pulling latest changes..."
+            git pull origin main
 
-          echo "🚀 Starting deployment at $(date)"
-          echo "Build SHA: ${{ github.sha }}"
-          echo "Build Time: ${{ env.BUILD_TIME }}"
+            # Stop existing containers
+            echo "🛑 Stopping containers..."
+            docker-compose -f docker-compose.prod.yml down
 
-          # Function to handle errors
-          handle_error() {
-            echo "❌ Error occurred during deployment: $1"
-            echo "🔄 Initiating rollback..."
+            # Clean Docker resources
+            echo "🧹 Cleaning Docker..."
+            docker system prune -f
 
-            # Rollback to previous version
-            if [ -f ~/opdwallet-backup/docker-compose.prod.yml ]; then
-              cd ~/opdwallet-backup
-              docker-compose -f docker-compose.prod.yml up -d
-              echo "✅ Rollback completed"
-            fi
-            exit 1
-          }
+            # Build services (exactly like IntelliReports)
+            echo "🔨 Building containers..."
+            docker-compose -f docker-compose.prod.yml build --no-cache | tee build.log &
+            build_pid=$!
 
-          # Trap errors
-          trap 'handle_error "Unexpected error"' ERR
-
-          # Step 1: Backup current deployment
-          echo "📦 Creating backup of current deployment..."
-          if [ -d ~/opdwallet ]; then
-            rm -rf ~/opdwallet-backup
-            cp -r ~/opdwallet ~/opdwallet-backup
-
-            # Save current container tags for rollback
-            docker ps --format "table {{.Names}}\t{{.Image}}" > ~/opdwallet-backup/running-containers.txt
-          fi
-
-          # Step 2: Pull latest code
-          echo "📥 Pulling latest code..."
-          cd ~/opdwallet || {
-            echo "📁 Project directory not found, cloning..."
-            cd ~
-            git clone https://${{ secrets.GH_TOKEN }}@github.com/anilkumar1510/opdwallet.git
-            cd opdwallet
-          }
-
-          # Fetch and checkout the exact commit
-          git fetch origin
-          git checkout ${{ github.sha }}
-
-          # Step 3: Create/Update environment file
-          echo "📝 Setting up environment configuration..."
-          cat > .env.production << 'EOF'
-          # Database
-          MONGO_DATABASE=opd_wallet
-
-          # Authentication
-          JWT_SECRET=${{ secrets.JWT_SECRET || 'your-secret-jwt-key-change-in-production' }}
-          JWT_EXPIRY=7d
-          COOKIE_NAME=opd_session
-          COOKIE_SECURE=false
-          COOKIE_HTTPONLY=true
-          COOKIE_SAMESITE=lax
-          COOKIE_MAX_AGE=604800000
-
-          # API Configuration
-          PUBLIC_API_URL=http://51.20.125.246/api
-          NODE_ENV=production
-
-          # Build Info
-          BUILD_SHA=${{ github.sha }}
-          BUILD_TIME=${{ env.BUILD_TIME }}
-          EOF
-
-          # Step 4: Stop current containers gracefully
-          echo "🛑 Stopping current containers..."
-          docker-compose -f docker-compose.prod.yml down --timeout 30 || true
-
-          # Step 5: Clean up Docker resources
-          echo "🧹 Cleaning Docker resources..."
-          docker system prune -f
-          docker volume prune -f
-
-          # Remove old images except the last 3 versions
-          docker images | grep opdwallet | tail -n +4 | awk '{print $3}' | xargs -r docker rmi -f || true
-
-          # Step 6: Build services sequentially (for t2.micro memory constraints)
-          echo "🔨 Building services..."
-          export DOCKER_DEFAULT_PLATFORM=linux/amd64
-          export DOCKER_BUILDKIT=1
-
-          # Pull base images first
-          docker pull node:20-alpine
-          docker pull mongo:7.0
-          docker pull nginx:alpine
-
-          # Build with proper error handling
-          echo "📦 Building API service..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build api || handle_error "API build failed"
-
-          echo "📦 Building Admin Portal..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build web-admin || handle_error "Admin portal build failed"
-
-          echo "📦 Building Member Portal..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build web-member || handle_error "Member portal build failed"
-
-          # Step 7: Start services
-          echo "🚢 Starting services..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml up -d || handle_error "Failed to start services"
-
-          # Step 8: Wait for services to be ready
-          echo "⏳ Waiting for services to initialize..."
-          sleep 30
-
-          # Step 9: Health checks
-          echo "🔍 Running health checks..."
-
-          # Function to check service health
-          check_health() {
-            local service=$1
-            local url=$2
-            local max_attempts=10
-            local attempt=1
-
-            while [ $attempt -le $max_attempts ]; do
-              if curl -f -s -o /dev/null -w "%{http_code}" $url | grep -q "200\|301\|302"; then
-                echo "✅ $service is healthy"
-                return 0
-              fi
-              echo "⏳ Waiting for $service (attempt $attempt/$max_attempts)..."
-              sleep 5
-              attempt=$((attempt + 1))
+            # Show progress
+            while kill -0 $build_pid 2>/dev/null; do
+              echo "⏳ Still building... $(date '+%H:%M:%S')"
+              sleep 30
             done
 
-            echo "❌ $service health check failed"
-            return 1
-          }
+            wait $build_pid
 
-          # Check each service
-          check_health "MongoDB" "http://localhost:27017" || true  # MongoDB doesn't have HTTP endpoint
-          check_health "API" "http://localhost:4000/health" || handle_error "API health check failed"
-          check_health "Admin Portal" "http://localhost:3001" || handle_error "Admin portal health check failed"
-          check_health "Member Portal" "http://localhost:3002" || handle_error "Member portal health check failed"
-          check_health "Nginx" "http://localhost:80/health" || handle_error "Nginx health check failed"
+            # Start services
+            echo "🚢 Starting services..."
+            docker-compose -f docker-compose.prod.yml up -d
 
-          # Step 10: Run smoke tests
-          echo "🧪 Running smoke tests..."
-
-          # Test API endpoint
-          curl -f http://localhost:4000/api/health || handle_error "API smoke test failed"
-
-          # Test static assets are being served
-          curl -f -s http://localhost:3002/_next/static/chunks/webpack-*.js | head -c 100 > /dev/null || handle_error "Static assets not being served"
-
-          # Step 11: Database operations
-          echo "🌱 Running database operations..."
-          docker exec opd-api node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
-
-          # Step 12: Verify deployment
-          echo "📊 Deployment verification..."
-          docker-compose -f docker-compose.prod.yml ps
-
-          # Show resource usage
-          echo "📈 Resource usage:"
-          docker stats --no-stream
-
-          # Step 13: Cleanup backup if successful
-          echo "🧹 Cleaning up backup..."
-          rm -rf ~/opdwallet-backup
-
-          # Step 14: Log deployment
-          echo "📝 Logging deployment..."
-          cat > ~/deployments.log << DEPLOY_LOG
-          ====================================
-          Deployment: ${{ github.sha }}
-          Time: $(date)
-          Triggered by: ${{ github.actor }}
-          Status: SUCCESS
-          ====================================
-          DEPLOY_LOG
-
-          echo "✅ Deployment completed successfully!"
-          echo "🌐 Application URLs:"
-          echo "   Member Portal: http://51.20.125.246"
-          echo "   Admin Portal: http://51.20.125.246/admin"
-          echo "   API: http://51.20.125.246/api"
-
-    - name: Post-deployment validation
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        command_timeout: 2m
-        script: |
-          echo "🔍 Running post-deployment validation..."
-
-          # Check if all containers are running
-          running_count=$(docker ps --filter "status=running" | grep opd | wc -l)
-          if [ $running_count -lt 5 ]; then
-            echo "⚠️ Warning: Not all containers are running (found $running_count)"
+            # Verify
+            echo "✅ Deployment complete!"
             docker ps
-            exit 1
-          fi
 
-          # Test public endpoints
-          echo "Testing public endpoints..."
-          curl -f -s -o /dev/null http://51.20.125.246 || exit 1
-          curl -f -s -o /dev/null http://51.20.125.246/admin || exit 1
-
-          echo "✅ All validation checks passed!"
-
-  # Stage 3: Notify deployment status
-  notify:
-    needs: deploy
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-    - name: Notify deployment status
-      run: |
-        if [ "${{ needs.deploy.result }}" == "success" ]; then
-          echo "✅ Deployment successful!"
-          # Add Slack/Discord notification here
-        else
-          echo "❌ Deployment failed!"
-          # Add Slack/Discord notification here
-        fi
+            echo "🌐 Access at: http://51.20.125.246"

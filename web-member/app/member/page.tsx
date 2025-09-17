@@ -12,7 +12,6 @@ import {
   ArrowTrendingUpIcon,
   CurrencyRupeeIcon,
   ArrowLeftIcon,
-  Bars3Icon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -202,28 +201,14 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Greeting and Member ID row with hamburger menu */}
-          <div className="flex items-center">
-            {/* Hamburger menu button for mobile */}
-            <button
-              onClick={() => {
-                // Trigger sidebar open by dispatching a custom event
-                window.dispatchEvent(new CustomEvent('toggleSidebar'))
-              }}
-              className="mr-4 text-gray-500 hover:text-gray-700 lg:hidden"
-            >
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-
-            {/* Welcome message and member ID */}
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Hi, {selectedProfile?.name?.firstName || 'Member'}
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Member ID: {selectedProfile?.memberId || 'OPD000001'}
-              </p>
-            </div>
+          {/* Greeting and Member ID row */}
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Hi, {selectedProfile?.name?.firstName || 'Member'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Member ID: {selectedProfile?.memberId || 'OPD000001'}
+            </p>
           </div>
         </div>
       </div>

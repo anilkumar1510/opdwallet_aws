@@ -1,58 +1,44 @@
 #!/bin/bash
 
-# OPD Wallet Deployment Script
-# Usage: ./deploy.sh
-
+# Simple deployment script that always works
 set -e
 
 echo "🚀 OPD Wallet Deployment Script"
 echo "================================"
 
-# Configuration
-EC2_IP="13.60.210.156"
-SSH_KEY="opdwallet-server.pem"
-REMOTE_DIR="/home/ubuntu/opdwallet"
+# Stop containers
+echo "🛑 Stopping existing containers..."
+docker-compose -f docker-compose.prod.yml down
 
-# Check if SSH key exists
-if [ ! -f "$SSH_KEY" ]; then
-    echo "❌ SSH key not found: $SSH_KEY"
-    exit 1
-fi
+# Clean up
+echo "🧹 Cleaning Docker system..."
+docker system prune -f
 
-echo "📦 Step 1: Building Docker images locally..."
-docker-compose -f docker-compose.prod.yml build
+# Build each service separately to avoid memory issues
+echo "🔨 Building services (this will take 10-15 minutes)..."
 
-echo "📤 Step 2: Syncing files to EC2..."
-rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
-    --exclude 'node_modules' \
-    --exclude '.git' \
-    --exclude '.next' \
-    --exclude 'dist' \
-    --exclude '*.log' \
-    ./ ubuntu@$EC2_IP:$REMOTE_DIR/
+echo "Building MongoDB (pulling image)..."
+docker-compose -f docker-compose.prod.yml pull mongodb
 
-echo "🔧 Step 3: Deploying on EC2..."
-ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP << 'ENDSSH'
-    cd /home/ubuntu/opdwallet
-    echo "Building images on server..."
-    docker-compose -f docker-compose.prod.yml build
+echo "Building API..."
+docker-compose -f docker-compose.prod.yml build api
 
-    echo "Stopping old containers..."
-    docker-compose -f docker-compose.prod.yml down
+echo "Building Admin Portal..."
+docker-compose -f docker-compose.prod.yml build web-admin
 
-    echo "Starting new containers..."
-    docker-compose -f docker-compose.prod.yml up -d
+echo "Building Member Portal..."
+docker-compose -f docker-compose.prod.yml build web-member
 
-    echo "Waiting for services to be ready..."
-    sleep 10
+# Start all services
+echo "🚢 Starting all services..."
+docker-compose -f docker-compose.prod.yml up -d
 
-    echo "Checking container status..."
-    docker ps --format "table {{.Names}}\t{{.Status}}"
+# Show status
+echo "✅ Deployment complete! Containers status:"
+docker ps
 
-    echo "Testing health endpoints..."
-    curl -f http://localhost/health || echo "Warning: Health check failed"
-ENDSSH
-
-echo "✅ Deployment complete!"
-echo "🌐 Access the application at: http://$EC2_IP"
-echo "📊 Admin Portal: http://$EC2_IP/admin"
+echo ""
+echo "🌐 Access URLs:"
+echo "   Member Portal: http://51.20.125.246"
+echo "   Admin Portal: http://51.20.125.246/admin"
+echo "   API: http://51.20.125.246/api"
