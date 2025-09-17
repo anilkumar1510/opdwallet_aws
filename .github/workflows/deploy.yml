@@ -68,15 +68,15 @@ jobs:
 
           # Build API
           echo "📦 Building API..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build api
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache api
 
           # Build Admin Portal
           echo "📦 Building Admin Portal..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build web-admin
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache web-admin
 
           # Build Member Portal
           echo "📦 Building Member Portal..."
-          docker-compose --env-file .env.production -f docker-compose.prod.yml build web-member
+          docker-compose --env-file .env.production -f docker-compose.prod.yml build --no-cache web-member
 
           # Start all services
           echo "🚢 Starting all services..."
