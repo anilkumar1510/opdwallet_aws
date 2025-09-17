@@ -4,22 +4,25 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Build arguments
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL=http://51.20.125.246/api
 
 # Set environment variables for build
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NODE_ENV=production
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with clean install
+RUN npm ci --only=production && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application with production optimizations
+RUN npm run build && \
+    rm -rf .next/cache
 
 # Production stage
 FROM node:20-alpine

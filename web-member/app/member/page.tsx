@@ -96,47 +96,31 @@ export default function DashboardPage() {
       {/* Modern Header */}
       <div className="sticky top-0 z-30 bg-white border-b">
         <div className="p-4 sm:p-6">
-          {/* Top row with back arrow and "go to habit" */}
-          <div className="flex items-center mb-4">
-            <button className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">go to habit</span>
-            </button>
-          </div>
-
-          {/* Main header row */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-start">
-              {/* Hamburger menu button for mobile */}
-              <button
-                onClick={() => {
-                  // Trigger sidebar open by dispatching a custom event
-                  window.dispatchEvent(new CustomEvent('toggleSidebar'))
-                }}
-                className="mr-4 text-gray-500 hover:text-gray-700 lg:hidden"
-              >
-                <Bars3Icon className="h-6 w-6" />
+          {/* Top row with back arrow, profile selector, and wallet balance */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <button className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">go to habit</span>
               </button>
-
-              {/* Welcome message and member ID */}
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  Hi, {selectedProfile?.name?.firstName || 'Member'}
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  Member ID: {selectedProfile?.memberId || 'OPD000001'}
-                </p>
-              </div>
             </div>
 
-            {/* Profile selector dropdown */}
-            <div className="relative profile-dropdown">
-              <button
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-white font-semibold hover:shadow-lg transition-all"
-              >
-                {selectedProfile?.name?.firstName?.charAt(0) || 'M'}
-              </button>
+            {/* Right side: Profile selector and wallet balance */}
+            <div className="flex items-center space-x-4">
+              {/* Wallet balance */}
+              <div className="flex items-center bg-brand-50 px-3 py-1.5 rounded-full">
+                <WalletIcon className="h-5 w-5 text-brand-600 mr-2" />
+                <span className="text-sm font-semibold text-brand-900">₹12,500</span>
+              </div>
+
+              {/* Profile selector dropdown */}
+              <div className="relative profile-dropdown">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-white font-semibold hover:shadow-lg transition-all"
+                >
+                  {selectedProfile?.name?.firstName?.charAt(0) || 'M'}
+                </button>
 
               {/* Dropdown menu */}
               {profileDropdownOpen && (
@@ -214,6 +198,31 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+              </div>
+            </div>
+          </div>
+
+          {/* Greeting and Member ID row with hamburger menu */}
+          <div className="flex items-center">
+            {/* Hamburger menu button for mobile */}
+            <button
+              onClick={() => {
+                // Trigger sidebar open by dispatching a custom event
+                window.dispatchEvent(new CustomEvent('toggleSidebar'))
+              }}
+              className="mr-4 text-gray-500 hover:text-gray-700 lg:hidden"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+
+            {/* Welcome message and member ID */}
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Hi, {selectedProfile?.name?.firstName || 'Member'}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Member ID: {selectedProfile?.memberId || 'OPD000001'}
+              </p>
             </div>
           </div>
         </div>
