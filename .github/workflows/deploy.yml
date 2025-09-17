@@ -21,13 +21,16 @@ jobs:
           set -e
           echo '🚀 Starting deployment...'
 
+          # Clone or update repository using token
           if [ ! -d /home/ubuntu/opdwallet ]; then
+            echo '📥 Cloning repository...'
             cd /home/ubuntu
-            git clone https://github.com/anilkumar1510/opdwallet.git
+            git clone https://${{ secrets.GH_TOKEN }}@github.com/anilkumar1510/opdwallet.git
           fi
 
           cd /home/ubuntu/opdwallet
-          git pull origin main
+          git config --global --add safe.directory /home/ubuntu/opdwallet
+          git pull https://${{ secrets.GH_TOKEN }}@github.com/anilkumar1510/opdwallet.git main
 
           if [ ! -f .env.production ]; then
             echo 'COOKIE_SECURE=false' > .env.production
