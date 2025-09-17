@@ -24,13 +24,8 @@ services:
     image: mongo:7.0
     container_name: opd-mongodb
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
     volumes:
       - mongo-data:/data/db
-      - ./api/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - opd-network
     healthcheck:
@@ -49,14 +44,14 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DATABASE}?authSource=admin
+      MONGODB_URI: mongodb://mongodb:27017/opd_wallet
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_NAME: ${COOKIE_NAME}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
-      COOKIE_SECURE: "true"
-      COOKIE_HTTPONLY: "true"
-      COOKIE_SAMESITE: "lax"
-      COOKIE_MAX_AGE: "604800000"
+      COOKIE_SECURE: ${COOKIE_SECURE}
+      COOKIE_HTTPONLY: ${COOKIE_HTTPONLY}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE}
+      COOKIE_MAX_AGE: ${COOKIE_MAX_AGE}
     depends_on:
       - mongodb
     networks:

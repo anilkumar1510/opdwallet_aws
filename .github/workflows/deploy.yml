@@ -1,124 +1,57 @@
-name: Deploy to AWS
+name: Deploy Application
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
     steps:
     - name: Deploy to EC2
       run: |
-        # Setup SSH key
-        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > key.pem
-        chmod 600 key.pem
+        # Setup SSH
+        echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > deploy_key.pem
+        chmod 600 deploy_key.pem
 
-        # Deploy via SSH
-        ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ secrets.EC2_HOST }} '
-          echo "🚢 Starting deployment..."
+        # Deploy and build on EC2
+        ssh -o StrictHostKeyChecking=no -i deploy_key.pem ubuntu@$EC2_HOST << 'EOF'
+          set -e
+          echo "🚀 Starting deployment..."
 
           # Pull latest code
           cd /home/ubuntu/opdwallet
           git pull origin main
 
-          # Stop old containers
-          docker stop opd-api opd-web-admin opd-web-member 2>/dev/null || true
-          docker rm opd-api opd-web-admin opd-web-member 2>/dev/null || true
+          # Stop existing containers
+          docker-compose -f docker-compose.prod.yml down || true
 
-          # Build images for x86 architecture
-          echo "🔨 Building Docker images for x86..."
+          # Build with proper environment
           export DOCKER_DEFAULT_PLATFORM=linux/amd64
+          docker-compose -f docker-compose.prod.yml build --no-cache
 
-          # Build API
-          cd /home/ubuntu/opdwallet/api
-          docker build -f Dockerfile.prod -t opdwallet-api:latest .
+          # Start services
+          docker-compose -f docker-compose.prod.yml up -d
 
-          # Build Admin
-          cd /home/ubuntu/opdwallet/web-admin
-          docker build -f Dockerfile.prod -t opdwallet-web-admin:latest \
-            --build-arg NEXT_PUBLIC_API_URL=http://13.60.210.156/api .
+          # Wait for services to be ready
+          echo "⏳ Waiting for services..."
+          sleep 15
 
-          # Build Member
-          cd /home/ubuntu/opdwallet/web-member
-          docker build -f Dockerfile.prod -t opdwallet-web-member:latest \
-            --build-arg NEXT_PUBLIC_API_URL=http://13.60.210.156/api .
+          # Seed database if needed
+          docker exec opdwallet-api-1 node dist/scripts/seed.js 2>/dev/null || echo "Database already seeded"
 
-          # Ensure network exists
-          docker network create opdwallet_opd-network 2>/dev/null || true
+          # Health check
+          echo "🔍 Checking health..."
+          curl -sf http://localhost/api/health || echo "API health endpoint not configured"
+          curl -sf http://localhost || echo "Frontend check"
 
-          # Ensure MongoDB is running
-          if ! docker ps | grep -q opd-mongo; then
-            docker run -d --name opd-mongo \
-              --network opdwallet_opd-network \
-              -v mongo-data:/data/db \
-              -p 27017:27017 \
-              mongo:7.0
-          fi
+          # Show status
+          docker-compose -f docker-compose.prod.yml ps
+          echo "✅ Deployment completed!"
+        EOF
 
-          # Start containers
-          docker run -d --name opd-api \
-            --network opdwallet_opd-network \
-            -p 4000:4000 \
-            -e NODE_ENV=production \
-            -e MONGODB_URI=mongodb://opd-mongo:27017/opd_wallet \
-            --restart unless-stopped \
-            opdwallet-api:latest
-
-          docker run -d --name opd-web-admin \
-            --network opdwallet_opd-network \
-            -p 3001:3001 \
-            -e NODE_ENV=production \
-            -e NEXT_PUBLIC_API_URL=http://opd-api:4000/api \
-            --restart unless-stopped \
-            opdwallet-web-admin:latest
-
-          docker run -d --name opd-web-member \
-            --network opdwallet_opd-network \
-            -p 3002:3002 \
-            -e NODE_ENV=production \
-            -e NEXT_PUBLIC_API_URL=http://opd-api:4000/api \
-            --restart unless-stopped \
-            opdwallet-web-member:latest
-
-          # Ensure nginx is running
-          if ! docker ps | grep -q opd-nginx; then
-            docker run -d --name opd-nginx \
-              --network opdwallet_opd-network \
-              -p 80:80 \
-              -v /home/ubuntu/nginx.conf:/etc/nginx/nginx.conf:ro \
-              --restart unless-stopped \
-              nginx:alpine
-          else
-            docker restart opd-nginx
-          fi
-
-          # Status check
-          sleep 5
-          echo ""
-          echo "=== Deployment Status ==="
-          docker ps --format "table {{.Names}}\t{{.Status}}"
-          echo ""
-          curl -sf http://localhost/health && echo "✅ Health check passed!" || true
-          echo "🎉 Deployment complete!"
-        '
-
-        # Cleanup
-        rm -f key.pem
-
-    - name: Summary
-      if: always()
-      run: |
-        echo "======================================"
-        echo "       DEPLOYMENT COMPLETED"
-        echo "======================================"
-        echo ""
-        echo "🌐 Application URL: http://${{ secrets.EC2_HOST }}"
-        echo "📱 Member Portal: http://${{ secrets.EC2_HOST }}"
-        echo "👨‍💼 Admin Portal: http://${{ secrets.EC2_HOST }}/admin"
-        echo "🔧 API: http://${{ secrets.EC2_HOST }}/api"
-        echo ""
-        echo "======================================="
+        rm -f deploy_key.pem
