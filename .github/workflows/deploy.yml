@@ -37,18 +37,20 @@ jobs:
             echo "🧹 Cleaning Docker..."
             docker system prune -f
 
-            # Build services (exactly like IntelliReports)
-            echo "🔨 Building containers..."
-            docker-compose -f docker-compose.prod.yml build --no-cache | tee build.log &
-            build_pid=$!
+            # Build services one by one to avoid memory issues on t2.micro
+            echo "🔨 Building containers (one at a time for t2.micro)..."
 
-            # Show progress
-            while kill -0 $build_pid 2>/dev/null; do
-              echo "⏳ Still building... $(date '+%H:%M:%S')"
-              sleep 30
-            done
+            echo "Building MongoDB..."
+            docker-compose -f docker-compose.prod.yml pull mongodb
 
-            wait $build_pid
+            echo "Building API..."
+            docker-compose -f docker-compose.prod.yml build --no-cache api
+
+            echo "Building Admin Portal..."
+            docker-compose -f docker-compose.prod.yml build --no-cache web-admin
+
+            echo "Building Member Portal..."
+            docker-compose -f docker-compose.prod.yml build --no-cache web-member
 
             # Start services
             echo "🚢 Starting services..."

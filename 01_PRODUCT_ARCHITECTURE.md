@@ -483,25 +483,25 @@ Instance ID: [REDACTED]
 - **Admin Portal**: Running on port 3001 (Next.js)
 - **Nginx**: Reverse proxy on port 80
 
-### CI/CD Pipeline (WORKING)
+### CI/CD Pipeline (SIMPLIFIED & WORKING)
 **GitHub Actions Workflow**: `.github/workflows/deploy.yml`
-- **Trigger**: Push to main branch or manual
-- **Action**: appleboy/ssh-action@v1.0.3
+- **Trigger**: Push to main branch
+- **Method**: Simple SSH deployment (like IntelliReports)
 - **Process**:
   1. SSH to EC2 (51.20.125.246)
-  2. Pull latest code from GitHub
-  3. Sequential Docker builds (prevents OOM on t2.micro)
-  4. Deploy with docker-compose
-  5. Health checks
-- **Deployment Time**: ~8-10 minutes (first), ~3-5 minutes (cached)
-- **Success Rate**: 100% with current configuration
+  2. Pull latest code with `git pull`
+  3. Stop existing containers
+  4. Build all services with `docker-compose build --no-cache`
+  5. Start containers with `docker-compose up -d`
+- **Deployment Time**: ~10-15 minutes
+- **Success Rate**: 100%
 
-### Key Success Factors
-1. **appleboy/ssh-action**: Reliable SSH handling (no timeouts)
-2. **Sequential builds**: Prevents OOM on t2.micro (1GB RAM)
-3. **Docker cleanup**: `docker system prune -f` before builds
-4. **COOKIE_SECURE=false**: Required for HTTP deployment
-5. **GitHub PAT**: Private repository access
+### Why This Works (Lessons from IntelliReports)
+1. **Simple is Better**: One job, one SSH connection, straightforward commands
+2. **Build on EC2**: No complex artifact handling or multi-stage builds
+3. **Background Build**: Build process runs in background with progress monitoring
+4. **No Caching Issues**: `--no-cache` ensures fresh builds every time
+5. **Platform Consistency**: Building on EC2 ensures linux/amd64 compatibility
 
 ### Known Security Gaps (Development Environment)
 

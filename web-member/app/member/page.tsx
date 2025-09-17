@@ -12,7 +12,11 @@ import {
   ArrowTrendingUpIcon,
   CurrencyRupeeIcon,
   ArrowLeftIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  QuestionMarkCircleIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
@@ -70,8 +74,8 @@ export default function DashboardPage() {
 
   const quickActions = [
     { name: 'File Claim', icon: DocumentTextIcon, href: '/member/claims/new', color: 'bg-brand-600' },
-    { name: 'Book Appointment', icon: CalendarIcon, href: '/member/bookings/new', color: 'bg-blue-600' },
-    { name: 'Add Family', icon: UsersIcon, href: '/member/family/add', color: 'bg-purple-600' },
+    { name: 'Avail Benefits', icon: CalendarIcon, href: '/member/bookings/new', color: 'bg-blue-600' },
+    { name: 'Health Records', icon: UsersIcon, href: '/member/health-records', color: 'bg-purple-600' },
     { name: 'View Benefits', icon: SparklesIcon, href: '/member/benefits', color: 'bg-amber-600' },
   ]
 
@@ -216,55 +220,87 @@ export default function DashboardPage() {
       {/* Main Content */}
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
 
-      {/* Desktop Layout: Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Left Column - Wallet & Quick Actions */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Wallet Snapshot - Enhanced for desktop */}
-          <Card className="bg-gradient-to-br from-brand-600 to-brand-700 text-white border-0">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <WalletIcon className="h-6 w-6 mr-2" />
-                  <span className="text-lg font-semibold">OPD Wallet Balance</span>
-                </div>
-                <ArrowTrendingUpIcon className="h-5 w-5 text-green-300" />
-              </div>
+      {/* OPD E-Cards Section - Compact Horizontal Scroll */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Covered Members</h2>
 
-              <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                <div>
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold flex items-center">
-                    <CurrencyRupeeIcon className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 mr-1" />
-                    <span className="truncate">50,000</span>
+        {/* Scrollable container */}
+        <div className="relative">
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+            {/* Self Card */}
+            <div className="min-w-[280px] snap-start">
+              <Card className="bg-gradient-to-br from-brand-600 to-brand-700 text-white border-0 p-3">
+                {/* Download button */}
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-white">{user?.name?.firstName} {user?.name?.lastName}</p>
+                    <span className="px-2 py-0.5 bg-white/20 rounded text-xs">Self</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-brand-100 mt-1">Available Balance</p>
+                  <button className="flex flex-col items-center text-white/80 hover:text-white">
+                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    <span className="text-[10px] mt-0.5">E-Card</span>
+                  </button>
                 </div>
-                <div className="flex items-center justify-end">
-                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-brand-500/30 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-xl sm:text-2xl font-bold">75%</p>
-                      <p className="text-xs text-brand-100">Remaining</p>
+
+                {/* Details */}
+                <div className="space-y-1 text-xs">
+                  <p className="text-white/90">Member ID: <span className="font-medium">MEM002</span></p>
+                  <p className="text-white/90">Corporate: <span className="font-medium">TCS Ltd.</span></p>
+                  <p className="text-white/90">Age: <span className="font-medium">28 years</span></p>
+                </div>
+
+                {/* Coverage Period */}
+                <div className="mt-2 pt-2 border-t border-white/20">
+                  <p className="text-[10px] text-white/80">Coverage: 01|04|24 to 31|03|25</p>
+                </div>
+              </Card>
+            </div>
+
+            {/* Dependent Cards */}
+            {user?.dependents?.map((dependent: any, index: number) => (
+              <div key={dependent.id} className="min-w-[280px] snap-start">
+                <Card className="bg-gradient-to-br from-purple-600 to-purple-700 text-white border-0 p-3">
+                  {/* Download button */}
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-white">{dependent.name?.firstName} {dependent.name?.lastName}</p>
+                      <span className="px-2 py-0.5 bg-white/20 rounded text-xs">{dependent.relationship}</span>
                     </div>
+                    <button className="flex flex-col items-center text-white/80 hover:text-white">
+                      <ArrowDownTrayIcon className="h-4 w-4" />
+                      <span className="text-[10px] mt-0.5">E-Card</span>
+                    </button>
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-brand-500">
-                <div>
-                  <p className="text-brand-100 text-xs sm:text-sm">Used</p>
-                  <p className="text-sm sm:text-lg font-semibold truncate">₹12,500</p>
-                </div>
-                <div>
-                  <p className="text-brand-100 text-xs sm:text-sm">Limit</p>
-                  <p className="text-sm sm:text-lg font-semibold truncate">₹2L</p>
-                </div>
-                <div>
-                  <p className="text-brand-100 text-xs sm:text-sm">Saved</p>
-                  <p className="text-sm sm:text-lg font-semibold truncate">₹8,500</p>
-                </div>
+                  {/* Details */}
+                  <div className="space-y-1 text-xs">
+                    <p className="text-white/90">Member ID: <span className="font-medium">{dependent.memberId}</span></p>
+                    <p className="text-white/90">Corporate: <span className="font-medium">TCS Ltd.</span></p>
+                    <p className="text-white/90">Age: <span className="font-medium">{dependent.relationship === 'Spouse' ? '26' : '5'} years</span></p>
+                  </div>
+
+                  {/* Coverage Period */}
+                  <div className="mt-2 pt-2 border-t border-white/20">
+                    <p className="text-[10px] text-white/80">Coverage: 01|04|24 to 31|03|25</p>
+                  </div>
+                </Card>
+            ))}
+
+            {/* Hint card for more */}
+            <div className="min-w-[80px] snap-start flex items-center justify-center">
+              <div className="text-gray-400 text-center">
+                <ChevronRightIcon className="h-8 w-8 mx-auto" />
+                <p className="text-xs mt-1">Scroll</p>
               </div>
             </div>
-          </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Layout: Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Left Column - Quick Actions */}
+        <div className="lg:col-span-2 space-y-6">
 
           {/* Quick Actions - Desktop enhanced grid */}
           <div>
@@ -325,34 +361,6 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {/* Family Members - Vertical stack for desktop sidebar */}
-          {user?.dependents && user.dependents.length > 0 && (
-            <Card title="Family Members">
-              <div className="space-y-3">
-                {user.dependents.slice(0, 3).map((dependent: any, index: number) => (
-                  <div key={dependent.id || index} className="flex items-center p-3 bg-surface-alt rounded-xl hover:bg-surface transition-colors">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-semibold mr-3">
-                      {dependent.name?.firstName?.charAt(0) || 'D'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-ink-900">
-                        {dependent.name?.firstName} {dependent.name?.lastName}
-                      </p>
-                      <p className="text-xs text-ink-500">{dependent.relationship}</p>
-                    </div>
-                  </div>
-                ))}
-                {user.dependents.length > 3 && (
-                  <p className="text-xs text-ink-500 text-center">+{user.dependents.length - 3} more members</p>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-surface-border">
-                <Link href="/member/family" className="text-sm font-medium text-brand-600 hover:text-brand-700">
-                  Manage family →
-                </Link>
-              </div>
-            </Card>
-          )}
         </div>
       </div>
 
@@ -390,6 +398,93 @@ export default function DashboardPage() {
           </Link>
         </div>
       </Card>
+
+      {/* FAQ Section */}
+      <Card title="Frequently Asked Questions" className="mb-6">
+        <div className="space-y-4">
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="font-medium text-gray-900">How do I file a claim?</span>
+              <ChevronDownIcon className="h-5 w-5 text-gray-500 group-open:rotate-180 transition-transform" />
+            </summary>
+            <div className="pt-3 px-4 text-sm text-gray-600">
+              You can file a claim by clicking on the "File Claim" button on your dashboard or navigating to the Claims section. Upload your bills and prescriptions, fill in the required details, and submit. You'll receive confirmation within 24 hours.
+            </div>
+          </details>
+
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="font-medium text-gray-900">What is covered under OPD benefits?</span>
+              <ChevronDownIcon className="h-5 w-5 text-gray-500 group-open:rotate-180 transition-transform" />
+            </summary>
+            <div className="pt-3 px-4 text-sm text-gray-600">
+              Your OPD benefits cover consultations, diagnostic tests, pharmacy bills, dental care, optical care, and preventive health checkups. The coverage limit is ₹50,000 per year for the primary member and ₹25,000 for each dependent.
+            </div>
+          </details>
+
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="font-medium text-gray-900">How long does claim approval take?</span>
+              <ChevronDownIcon className="h-5 w-5 text-gray-500 group-open:rotate-180 transition-transform" />
+            </summary>
+            <div className="pt-3 px-4 text-sm text-gray-600">
+              Most claims are processed within 3-5 business days. Pre-approved network claims are settled instantly. You can track your claim status in real-time through your dashboard.
+            </div>
+          </details>
+
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="font-medium text-gray-900">Can I add family members to my plan?</span>
+              <ChevronDownIcon className="h-5 w-5 text-gray-500 group-open:rotate-180 transition-transform" />
+            </summary>
+            <div className="pt-3 px-4 text-sm text-gray-600">
+              Yes, you can add up to 5 family members (spouse, children, and parents) to your OPD plan. Each family member gets their own OPD e-card with individual benefit tracking.
+            </div>
+          </details>
+
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <span className="font-medium text-gray-900">How do I find network providers?</span>
+              <ChevronDownIcon className="h-5 w-5 text-gray-500 group-open:rotate-180 transition-transform" />
+            </summary>
+            <div className="pt-3 px-4 text-sm text-gray-600">
+              Navigate to the "Avail Benefits" section to find our network of hospitals, clinics, pharmacies, and diagnostic centers. You can search by location, specialty, or provider name. Network providers offer cashless services and additional discounts.
+            </div>
+          </details>
+        </div>
+        <div className="mt-6 text-center">
+          <Link href="/member/help" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+            View all FAQs →
+          </Link>
+        </div>
+      </Card>
+
+      {/* Support CTAs */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Need Help?</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <a
+            href="tel:+918001234567"
+            className="flex items-center justify-center p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-sm hover:shadow-md"
+          >
+            <PhoneIcon className="h-5 w-5 mr-2" />
+            <div className="text-left">
+              <p className="text-xs opacity-90">Call Support</p>
+              <p className="font-semibold">800-123-4567</p>
+            </div>
+          </a>
+          <a
+            href="mailto:support@opdwallet.com"
+            className="flex items-center justify-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow-md"
+          >
+            <EnvelopeIcon className="h-5 w-5 mr-2" />
+            <div className="text-left">
+              <p className="text-xs opacity-90">Email Us</p>
+              <p className="font-semibold">support@opdwallet.com</p>
+            </div>
+          </a>
+        </div>
+      </div>
 
       </div>
     </div>
