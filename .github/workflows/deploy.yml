@@ -13,24 +13,28 @@ jobs:
       env:
         EC2_HOST: ${{ secrets.EC2_HOST }}
         EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY_BASE64 }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         echo "$EC2_SSH_KEY" | base64 -d > key.pem
         chmod 600 key.pem
 
+        # Pass GH_TOKEN as environment variable to SSH
         ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST "
           set -e
           echo '🚀 Starting deployment...'
+
+          export GH_TOKEN='$GH_TOKEN'
 
           # Clone or update repository using token
           if [ ! -d /home/ubuntu/opdwallet ]; then
             echo '📥 Cloning repository...'
             cd /home/ubuntu
-            git clone https://${{ secrets.GH_TOKEN }}@github.com/anilkumar1510/opdwallet.git
+            git clone https://\${GH_TOKEN}@github.com/anilkumar1510/opdwallet.git
           fi
 
           cd /home/ubuntu/opdwallet
           git config --global --add safe.directory /home/ubuntu/opdwallet
-          git pull https://${{ secrets.GH_TOKEN }}@github.com/anilkumar1510/opdwallet.git main
+          git pull https://\${GH_TOKEN}@github.com/anilkumar1510/opdwallet.git main
 
           if [ ! -f .env.production ]; then
             echo 'COOKIE_SECURE=false' > .env.production
