@@ -108,6 +108,7 @@ const CLAIM_CATEGORIES = [
 
 export default function NewClaimPage() {
   const [currentStep, setCurrentStep] = useState(1)
+  const [walletRules, setWalletRules] = useState<any>(null)
   const [formData, setFormData] = useState<FormData>({
     claimType: '',
     category: '',
@@ -132,6 +133,24 @@ export default function NewClaimPage() {
   const touchStartX = useRef<number>(0)
   const touchStartY = useRef<number>(0)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Fetch wallet rules on component mount
+  useEffect(() => {
+    const fetchWalletRules = async () => {
+      try {
+        const response = await fetch('/api/member/wallet-rules', {
+          credentials: 'include',
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setWalletRules(data)
+        }
+      } catch (error) {
+        console.error('Error fetching wallet rules:', error)
+      }
+    }
+    fetchWalletRules()
+  }, [])
 
   // Auto-save draft functionality
   useEffect(() => {
@@ -754,6 +773,41 @@ export default function NewClaimPage() {
         <h2 className="text-xl font-bold text-ink-900 mb-2">Review & Submit</h2>
         <p className="text-sm text-ink-500">Please verify all details before submitting</p>
       </div>
+
+      {/* Wallet Rules Display */}
+      {walletRules && (
+        <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100 p-4">
+          <h3 className="text-sm font-semibold text-ink-900 mb-3">Your OPD Wallet Details</h3>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-ink-500">Annual Limit</p>
+              <p className="font-bold text-indigo-700">₹{walletRules.totalAnnualAmount?.toLocaleString() || '0'}</p>
+            </div>
+            {walletRules.copay && (
+              <div>
+                <p className="text-ink-500">Your Co-pay</p>
+                <p className="font-bold text-purple-700">
+                  {walletRules.copay.mode === 'PERCENT'
+                    ? `${walletRules.copay.value}%`
+                    : `₹${walletRules.copay.value}`}
+                </p>
+              </div>
+            )}
+            {walletRules.perClaimLimit && (
+              <div>
+                <p className="text-ink-500">Per Claim Cap</p>
+                <p className="font-bold text-blue-700">₹{walletRules.perClaimLimit.toLocaleString()}</p>
+              </div>
+            )}
+            {walletRules.partialPaymentEnabled && (
+              <div>
+                <p className="text-ink-500">Partial Payment</p>
+                <p className="font-bold text-green-700">Allowed</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Claim Summary */}
       <Card className="p-0">

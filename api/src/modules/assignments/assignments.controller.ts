@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Body,
   Param,
   UseGuards,
@@ -12,6 +13,7 @@ import { AuthRequest } from '@/common/interfaces/auth-request.interface';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
+import { UpdatePlanVersionDto } from './dto/update-plan-version.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -85,5 +87,19 @@ export class AssignmentsController {
   @ApiResponse({ status: 404, description: 'Assignment not found' })
   endAssignment(@Param('assignmentId') assignmentId: string) {
     return this.assignmentsService.endAssignment(assignmentId);
+  }
+
+  @Patch('assignments/:assignmentId/plan-version')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update plan version override for assignment' })
+  @ApiResponse({ status: 200, description: 'Plan version override updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid plan version (must be PUBLISHED)' })
+  @ApiResponse({ status: 404, description: 'Assignment or plan version not found' })
+  updatePlanVersion(
+    @Param('assignmentId') assignmentId: string,
+    @Body() dto: UpdatePlanVersionDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.assignmentsService.updatePlanVersion(assignmentId, dto, req.user);
   }
 }

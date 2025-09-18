@@ -50,6 +50,8 @@ export default function AdminLayout({
     if (pathname === '/admin') return 'Dashboard'
     if (pathname.startsWith('/admin/users')) return 'Users'
     if (pathname.startsWith('/admin/policies')) return 'Policies'
+    if (pathname.startsWith('/admin/categories')) return 'Categories'
+    if (pathname.startsWith('/admin/services')) return 'Service Types'
     return 'Admin'
   }
 
@@ -68,6 +70,16 @@ export default function AdminLayout({
       name: 'Policies',
       path: '/admin/policies',
       current: pathname.startsWith('/admin/policies')
+    },
+    {
+      name: 'Categories',
+      path: '/admin/categories',
+      current: pathname.startsWith('/admin/categories')
+    },
+    {
+      name: 'Services',
+      path: '/admin/services',
+      current: pathname.startsWith('/admin/services')
     }
   ]
 

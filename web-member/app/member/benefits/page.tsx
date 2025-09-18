@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import {
   BuildingOffice2Icon,
@@ -19,10 +19,53 @@ import Link from 'next/link'
 
 export default function BenefitsPage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [benefitComponents, setBenefitComponents] = useState<any>(null)
+  const [walletRules, setWalletRules] = useState<any>(null)
+  const [coverageMatrix, setCoverageMatrix] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const benefitCategories = [
+  useEffect(() => {
+    fetchBenefitData()
+  }, [])
+
+  const fetchBenefitData = async () => {
+    try {
+      // Fetch benefit components
+      const componentsResponse = await fetch('/api/member/benefit-components', {
+        credentials: 'include',
+      })
+      if (componentsResponse.ok) {
+        const data = await componentsResponse.json()
+        setBenefitComponents(data.components || {})
+      }
+
+      // Fetch wallet rules
+      const walletResponse = await fetch('/api/member/wallet-rules', {
+        credentials: 'include',
+      })
+      if (walletResponse.ok) {
+        const data = await walletResponse.json()
+        setWalletRules(data)
+      }
+
+      // Fetch coverage matrix
+      const coverageResponse = await fetch('/api/member/coverage-matrix', {
+        credentials: 'include',
+      })
+      if (coverageResponse.ok) {
+        const data = await coverageResponse.json()
+        setCoverageMatrix(data)
+      }
+    } catch (error) {
+      console.error('Error fetching benefit data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const allBenefitCategories = [
     {
-      id: 'consultations',
+      id: 'consultation',
       name: 'Consultations',
       description: 'Doctor visits and specialist care',
       icon: BuildingOffice2Icon,
@@ -52,24 +95,44 @@ export default function BenefitsPage() {
       features: ['Blood tests', 'X-rays', 'MRI/CT scans', 'Health packages']
     },
     {
-      id: 'preventive',
-      name: 'Preventive Care',
-      description: 'Health checkups and vaccinations',
+      id: 'ahc',
+      name: 'Annual Health Checkup',
+      description: 'Comprehensive health assessments',
       icon: ShieldCheckIcon,
       limit: '₹15,000/year',
       used: '13%',
       color: 'bg-amber-600',
-      features: ['Annual checkup', 'Vaccinations', 'Health screening', 'Risk assessment']
+      features: ['Annual checkup', 'Health screening', 'Risk assessment', 'Consultation']
     },
     {
-      id: 'vision-dental',
-      name: 'Vision & Dental',
-      description: 'Eye and dental care services',
+      id: 'vaccination',
+      name: 'Vaccination',
+      description: 'Immunization and preventive care',
+      icon: ShieldCheckIcon,
+      limit: '₹5,000/year',
+      used: '20%',
+      color: 'bg-teal-600',
+      features: ['Adult vaccines', 'Child vaccines', 'Travel vaccines', 'Booster doses']
+    },
+    {
+      id: 'dental',
+      name: 'Dental',
+      description: 'Dental care services',
       icon: EyeIcon,
       limit: '₹10,000/year',
       used: '35%',
+      color: 'bg-orange-600',
+      features: ['Dental cleanings', 'Basic procedures', 'X-rays', 'Consultations']
+    },
+    {
+      id: 'vision',
+      name: 'Vision',
+      description: 'Eye care services',
+      icon: EyeIcon,
+      limit: '₹8,000/year',
+      used: '25%',
       color: 'bg-pink-600',
-      features: ['Eye exams', 'Glasses/contacts', 'Dental cleanings', 'Basic procedures']
+      features: ['Eye exams', 'Glasses/contacts', 'Vision tests', 'Consultations']
     },
     {
       id: 'wellness',
@@ -83,12 +146,67 @@ export default function BenefitsPage() {
     }
   ]
 
+  // Filter categories based on enabled components AND coverage matrix
+  const benefitCategories = benefitComponents
+    ? allBenefitCategories.filter(cat => {
+        // Check if enabled in benefit components
+        const componentEnabled = benefitComponents[cat.id]?.enabled
+
+        // Check if enabled in coverage matrix (if available)
+        const categoryId = getCategoryIdForBenefit(cat.id) // Maps benefit to category
+        const coverageEnabled = !coverageMatrix || coverageMatrix.rows?.some((row: any) =>
+          row.categoryId === categoryId && row.enabled
+        )
+
+        return componentEnabled && coverageEnabled
+      })
+    : []
+
+  // Helper to map benefit component to category ID (would need actual mapping)
+  const getCategoryIdForBenefit = (benefitId: string): string => {
+    const mapping: Record<string, string> = {
+      'consultation': 'CAT001',
+      'pharmacy': 'CAT002',
+      'diagnostics': 'CAT003',
+      'ahc': 'CAT004',
+      'vaccination': 'CAT005',
+      'dental': 'CAT006',
+      'vision': 'CAT007',
+      'wellness': 'CAT008',
+    }
+    return mapping[benefitId] || ''
+  }
+
   const filteredCategories = searchQuery
     ? benefitCategories.filter(cat =>
         cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         cat.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : benefitCategories
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="h-12 w-12 rounded-full border-4 border-brand-600 border-t-transparent animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (!benefitCategories.length) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-ink-900">Your Benefits</h1>
+          <p className="text-ink-500 mt-1">Comprehensive healthcare coverage for you and your family</p>
+        </div>
+        <Card className="text-center py-12">
+          <ShieldCheckIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-600 mb-2">No benefits currently available</p>
+          <p className="text-sm text-gray-500">Please contact your administrator for more information</p>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -141,6 +259,92 @@ export default function BenefitsPage() {
           </div>
         </Card>
       </div>
+
+      {/* Wallet Rules Section - Display OPD Wallet Configuration */}
+      {walletRules && (
+        <Card className="mb-8 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
+          <div className="p-6">
+            <h3 className="text-xl font-bold text-ink-900 mb-6">Your OPD Wallet Configuration</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Annual Wallet */}
+              <div className="bg-white p-5 rounded-xl border border-indigo-100">
+                <div className="flex items-center mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center mr-3">
+                    <HeartIcon className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-ink-500">Annual OPD Wallet</p>
+                    <p className="text-2xl font-bold text-indigo-700">
+                      ₹{walletRules.totalAnnualAmount?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Co-pay */}
+              <div className="bg-white p-5 rounded-xl border border-purple-100">
+                <div className="flex items-center mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                    <CubeIcon className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-ink-500">Co-pay</p>
+                    <p className="text-2xl font-bold text-purple-700">
+                      {walletRules.copay ? (
+                        walletRules.copay.mode === 'PERCENT'
+                          ? `${walletRules.copay.value}%`
+                          : `₹${walletRules.copay.value}`
+                      ) : '0%'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Per Claim Limit */}
+              {walletRules.perClaimLimit && (
+                <div className="bg-white p-5 rounded-xl border border-blue-100">
+                  <div className="flex items-center mb-3">
+                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                      <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-ink-500">Per Claim Cap</p>
+                      <p className="text-2xl font-bold text-blue-700">
+                        ₹{walletRules.perClaimLimit.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Additional Features */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2 text-sm">
+                <div className={`h-2 w-2 rounded-full ${walletRules.partialPaymentEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="text-ink-600">Partial Payments: </span>
+                <span className="font-medium">{walletRules.partialPaymentEnabled ? 'Enabled' : 'Disabled'}</span>
+              </div>
+
+              <div className="flex items-center space-x-2 text-sm">
+                <div className={`h-2 w-2 rounded-full ${walletRules.carryForward?.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="text-ink-600">Carry Forward: </span>
+                <span className="font-medium">
+                  {walletRules.carryForward?.enabled
+                    ? `${walletRules.carryForward.percent || 0}% for ${walletRules.carryForward.months || 0} months`
+                    : 'Not Available'}
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-2 text-sm">
+                <div className={`h-2 w-2 rounded-full ${walletRules.topUpAllowed ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="text-ink-600">Top-up: </span>
+                <span className="font-medium">{walletRules.topUpAllowed ? 'Allowed' : 'Not Allowed'}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Benefits Grid - Enhanced desktop experience */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">

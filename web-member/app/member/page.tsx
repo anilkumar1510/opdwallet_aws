@@ -28,9 +28,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
+  const [benefitComponents, setBenefitComponents] = useState<any>(null)
 
   useEffect(() => {
     fetchUserData()
+    fetchBenefitComponents()
   }, [])
 
   // Close dropdown when clicking outside
@@ -47,6 +49,20 @@ export default function DashboardPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [profileDropdownOpen])
+
+  const fetchBenefitComponents = async () => {
+    try {
+      const response = await fetch('/api/member/benefit-components', {
+        credentials: 'include',
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setBenefitComponents(data.components || {})
+      }
+    } catch (error) {
+      console.error('Error fetching benefit components:', error)
+    }
+  }
 
   const fetchUserData = async () => {
     try {
@@ -87,12 +103,22 @@ export default function DashboardPage() {
     }
   }
 
-  const quickActions = [
+  // Base quick actions always visible
+  const baseQuickActions = [
     { name: 'File Claim', icon: DocumentTextIcon, href: '/member/claims/new', color: 'bg-brand-600' },
-    { name: 'Avail Benefits', icon: CalendarIcon, href: '/member/bookings/new', color: 'bg-blue-600' },
-    { name: 'Health Records', icon: UsersIcon, href: '/member/health-records', color: 'bg-purple-600' },
     { name: 'View Benefits', icon: SparklesIcon, href: '/member/benefits', color: 'bg-amber-600' },
   ]
+
+  // Conditionally add actions based on enabled benefit components
+  const quickActions = [...baseQuickActions]
+
+  // Add "Avail Benefits" if any component is enabled
+  if (benefitComponents && Object.values(benefitComponents).some((comp: any) => comp?.enabled)) {
+    quickActions.splice(1, 0, { name: 'Avail Benefits', icon: CalendarIcon, href: '/member/bookings/new', color: 'bg-blue-600' })
+  }
+
+  // Always show Health Records
+  quickActions.push({ name: 'Health Records', icon: UsersIcon, href: '/member/health-records', color: 'bg-purple-600' })
 
   const recentActivity = [
     { type: 'claim', title: 'Claim #12345', status: 'Approved', amount: '₹5,000', date: '2 days ago' },
@@ -351,35 +377,48 @@ export default function DashboardPage() {
 
         {/* Right Column - Benefits & Family */}
         <div className="space-y-6">
-          {/* Benefits Overview - Compact vertical layout */}
+          {/* Benefits Overview - Show only enabled components */}
           <Card title="Your Benefits">
             <div className="space-y-4">
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-blue-900">Consultations</span>
-                  <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full">Active</span>
+              {benefitComponents?.consultation?.enabled && (
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">Consultations</span>
+                    <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full">Active</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-900">8/10</p>
+                  <p className="text-xs text-blue-600 mt-1">Used this year</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-900">8/10</p>
-                <p className="text-xs text-blue-600 mt-1">Used this year</p>
-              </div>
+              )}
 
-              <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-purple-900">Health Checkup</span>
-                  <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Due</span>
+              {benefitComponents?.ahc?.enabled && (
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-purple-900">Health Checkup</span>
+                    <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Due</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900">1</p>
+                  <p className="text-xs text-purple-600 mt-1">Available</p>
                 </div>
-                <p className="text-2xl font-bold text-purple-900">1</p>
-                <p className="text-xs text-purple-600 mt-1">Available</p>
-              </div>
+              )}
 
-              <div className="p-4 bg-gradient-to-r from-brand-50 to-brand-100 rounded-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-brand-900">Pharmacy</span>
-                  <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full">20% off</span>
+              {benefitComponents?.pharmacy?.enabled && (
+                <div className="p-4 bg-gradient-to-r from-brand-50 to-brand-100 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-brand-900">Pharmacy</span>
+                    <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full">20% off</span>
+                  </div>
+                  <p className="text-2xl font-bold text-brand-900">₹3,500</p>
+                  <p className="text-xs text-brand-600 mt-1">Saved this year</p>
                 </div>
-                <p className="text-2xl font-bold text-brand-900">₹3,500</p>
-                <p className="text-xs text-brand-600 mt-1">Saved this year</p>
-              </div>
+              )}
+
+              {!Object.values(benefitComponents || {}).some((comp: any) => comp?.enabled) && (
+                <div className="text-center py-4 text-gray-500">
+                  <p className="text-sm">No benefits currently enabled</p>
+                  <p className="text-xs mt-1">Contact your administrator for details</p>
+                </div>
+              )}
             </div>
             <div className="mt-4 pt-4 border-t border-surface-border">
               <Link href="/member/benefits" className="text-sm font-medium text-brand-600 hover:text-brand-700">

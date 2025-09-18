@@ -6,6 +6,13 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PoliciesModule } from './modules/policies/policies.module';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
+import { ServicesModule } from './modules/services/services.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { PlanVersionsModule } from './modules/plan-versions/plan-versions.module';
+import { BenefitComponentsModule } from './modules/benefit-components/benefit-components.module';
+import { WalletRulesModule } from './modules/wallet-rules/wallet-rules.module';
+import { BenefitCoverageMatrixModule } from './modules/benefit-coverage-matrix/benefit-coverage-matrix.module';
+import { PlanConfigResolverModule } from './modules/plan-config-resolver/plan-config-resolver.module';
 import { HealthModule } from './health/health.module';
 import configuration from './config/configuration';
 
@@ -31,6 +38,13 @@ import configuration from './config/configuration';
     UsersModule,
     PoliciesModule,
     AssignmentsModule,
+    ServicesModule,
+    CategoriesModule,
+    PlanVersionsModule,
+    BenefitComponentsModule,
+    WalletRulesModule,
+    BenefitCoverageMatrixModule,
+    PlanConfigResolverModule,
   ],
 })
 export class AppModule {}

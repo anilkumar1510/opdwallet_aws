@@ -8,7 +8,7 @@ export interface AuditLogDto {
   userId: string;
   userEmail: string;
   userRole: string;
-  action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'AUTH_FAILURE';
+  action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'AUTH_FAILURE' | 'ASSIGNMENT_PLAN_VERSION_UPDATE' | 'PLAN_VERSION_CREATE' | 'PLAN_VERSION_PUBLISH' | 'PLAN_VERSION_MAKE_CURRENT' | 'BENEFIT_COMPONENTS_UPSERT' | 'WALLET_RULES_UPSERT';
   resource: string;
   resourceId?: string;
   before?: Record<string, any>;
@@ -20,6 +20,7 @@ export interface AuditLogDto {
     path?: string;
     statusCode?: number;
     duration?: number;
+    [key: string]: any; // Allow additional fields
   };
   description?: string;
   isSystemAction?: boolean;

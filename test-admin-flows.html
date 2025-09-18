@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Admin Flows</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button {
+      background: #255a53;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #1a3f39;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Admin Portal Flows</h1>
+
+  <div class="test-section">
+    <h2>1. Test Policy Creation</h2>
+    <input type="text" id="policyName" placeholder="Policy Name" value="Test Policy from UI">
+    <input type="text" id="policyDesc" placeholder="Description" value="Testing policy creation">
+    <select id="policyStatus">
+      <option value="DRAFT">Draft</option>
+      <option value="ACTIVE" selected>Active</option>
+      <option value="RETIRED">Retired</option>
+    </select>
+    <input type="date" id="effectiveFrom" value="2025-01-01">
+    <button onclick="testPolicyCreation()">Create Policy</button>
+    <div id="policyResult" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>2. Test Policy Assignment</h2>
+    <input type="text" id="userId" placeholder="User ID" value="68ca9706a49ab4810eab69a1">
+    <select id="policySelect">
+      <option value="">Loading policies...</option>
+    </select>
+    <button onclick="testPolicyAssignment()">Assign Policy</button>
+    <div id="assignResult" class="result"></div>
+  </div>
+
+  <script>
+    const SESSION_COOKIE = 'opd_session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG9wZHdhbGxldC5jb20iLCJzdWIiOiI2OGNhOTcwNWE0OWFiNDgxMGVhYjY5OTUiLCJyb2xlIjoiU1VQRVJfQURNSU4iLCJtZW1iZXJJZCI6Ik1FTTAwMSIsImlhdCI6MTc1ODExNDk0NywiZXhwIjoxNzU4NzE5NzQ3fQ.uBV1xbBC8CGXMa859P4tMb8kdkeArw7r8ObVjiDi_A8';
+
+    // Load policies on page load
+    async function loadPolicies() {
+      try {
+        const response = await fetch('http://localhost:3001/admin/api/policies', {
+          credentials: 'include',
+          headers: {
+            'Cookie': SESSION_COOKIE
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const select = document.getElementById('policySelect');
+          select.innerHTML = '<option value="">Select a policy</option>';
+          data.data.forEach(policy => {
+            const option = document.createElement('option');
+            option.value = policy._id;
+            option.textContent = `${policy.name} (${policy.policyNumber})`;
+            select.appendChild(option);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading policies:', error);
+      }
+    }
+
+    async function testPolicyCreation() {
+      const resultDiv = document.getElementById('policyResult');
+      resultDiv.textContent = 'Creating policy...';
+      resultDiv.className = 'result';
+
+      try {
+        const payload = {
+          name: document.getElementById('policyName').value,
+          description: document.getElementById('policyDesc').value,
+          status: document.getElementById('policyStatus').value,
+          effectiveFrom: document.getElementById('effectiveFrom').value
+        };
+
+        const response = await fetch('http://localhost:3001/admin/api/policies', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': SESSION_COOKIE
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          resultDiv.textContent = 'SUCCESS! Policy created:\n' + JSON.stringify(data, null, 2);
+          resultDiv.className = 'result success';
+          // Reload policies
+          loadPolicies();
+        } else {
+          resultDiv.textContent = 'ERROR: ' + JSON.stringify(data, null, 2);
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent = 'ERROR: ' + error.message;
+        resultDiv.className = 'result error';
+      }
+    }
+
+    async function testPolicyAssignment() {
+      const resultDiv = document.getElementById('assignResult');
+      resultDiv.textContent = 'Assigning policy...';
+      resultDiv.className = 'result';
+
+      try {
+        const userId = document.getElementById('userId').value;
+        const policyId = document.getElementById('policySelect').value;
+
+        if (!policyId) {
+          resultDiv.textContent = 'Please select a policy';
+          resultDiv.className = 'result error';
+          return;
+        }
+
+        const response = await fetch(`http://localhost:3001/admin/api/users/${userId}/assignments`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': SESSION_COOKIE
+          },
+          body: JSON.stringify({ policyId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          resultDiv.textContent = 'SUCCESS! Policy assigned:\n' + JSON.stringify(data, null, 2);
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.textContent = 'ERROR: ' + JSON.stringify(data, null, 2);
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent = 'ERROR: ' + error.message;
+        resultDiv.className = 'result error';
+      }
+    }
+
+    // Load policies when page loads
+    loadPolicies();
+  </script>
+</body>
+</html>

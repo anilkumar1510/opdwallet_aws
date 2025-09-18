@@ -17,7 +17,7 @@ export class AuditLog {
   @Prop({ required: true })
   userRole: string;
 
-  @Prop({ required: true, enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'AUTH_FAILURE'] })
+  @Prop({ required: true, enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'AUTH_FAILURE', 'ASSIGNMENT_PLAN_VERSION_UPDATE', 'PLAN_VERSION_CREATE', 'PLAN_VERSION_PUBLISH', 'PLAN_VERSION_MAKE_CURRENT', 'BENEFIT_COMPONENTS_UPSERT', 'WALLET_RULES_UPSERT'] })
   action: string;
 
   @Prop({ required: true })

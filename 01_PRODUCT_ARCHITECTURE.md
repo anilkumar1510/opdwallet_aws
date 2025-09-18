@@ -147,6 +147,66 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 6. Can edit all user information including passwords
 7. View and manage dependent relationships
 
+### Policy Configuration Flow
+1. Admin creates policy rules defining wallet limits
+2. Sets total wallet amount and category-wise limits
+3. Maps policy rules to specific policies
+4. When member is assigned a policy, they inherit the rules
+5. System enforces category limits during claims/benefits
+
+### Plan Versions & Benefit Components Flow (v1)
+1. Admin navigates to Policy → Plan Versions tab
+2. Creates new plan version (initially in DRAFT status)
+3. Clicks "Configure" for any version to access tabbed configuration page
+4. **Benefits Tab**: Toggles individual OPD benefit components on/off:
+   - Consultation, Pharmacy, Diagnostics, AHC (Annual Health Checkup)
+   - Vaccination, Dental, Vision, Wellness
+   - Sets optional limits per component (annual amount, visits, Rx required)
+   - Adds notes field (500 chars) for additional context per component
+5. **Wallet Tab**: Configures wallet rules and payment parameters
+6. **Edit Rule**: Only DRAFT versions can be edited; PUBLISHED versions are read-only
+7. **Publish Guardrails**: System validates completeness before allowing publish:
+   - At least one benefit component must be enabled
+   - Wallet rules must have valid annual limit
+   - Date ranges must be valid (effectiveTo > effectiveFrom)
+8. Publishes version when ready (cannot be unpublished)
+9. Makes a published version "Current" for the policy
+10. Members see only enabled components in their portal via Effective Config Resolver
+
+### Wallet Rules Configuration Flow (v1)
+1. Admin navigates to Policy → Plan Versions tab
+2. Clicks "Configure" button for any plan version (navigates to config page)
+3. Switches to "Wallet" tab and configures OPD wallet parameters:
+   - **Total Annual Amount**: Maximum wallet funding per year (required)
+   - **Per Claim Limit**: Optional cap on individual claim amounts
+   - **Co-pay**: Member's share (percentage or fixed amount)
+   - **Partial Payment**: Enable/disable partial claim payments
+   - **Carry Forward**: Configure unused balance carry-over (percentage, duration)
+   - **Top-up**: Allow members to add funds beyond annual limit
+4. **Edit Rule**: Only DRAFT versions can be edited; PUBLISHED versions are read-only
+5. **Validation**: System enforces business rules:
+   - Annual amount must be positive
+   - Co-pay percentage between 0-100%
+   - Carry forward percentage between 0-100%
+6. Member portal displays wallet rules via Effective Config Resolver:
+   - Benefits page: Shows annual limit, co-pay, carry-forward status
+   - Claims submission: Displays applicable limits and co-pay before submit
+
+### Plan Version Configuration Page
+1. **Route**: `/admin/policies/:policyId/plan-versions/:version/config`
+2. **Tabbed Interface**:
+   - **Benefits Tab**: Configure which OPD tiles are enabled/disabled (v0)
+   - **Wallet Tab**: Configure wallet rules and payment parameters (v0)
+   - **Coverage Tab**: Map categories and services availability (v1)
+3. **Coverage Matrix (v1)**:
+   - Maps Categories (CAT###) and Service Types to policy + planVersion
+   - Controls availability only (no pricing/adjudication)
+   - Table with filters: category dropdown, search, "show enabled only"
+   - Bulk actions: enable/disable all in category
+   - Inline edits with optimistic UI
+4. **Edit Permissions**: Only DRAFT plan versions can be edited
+5. **Member Impact**: Coverage matrix filters what members see in benefits portal
+
 ## API Endpoints
 
 ### Authentication
@@ -164,7 +224,11 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 - `GET /api/users/:id/dependents` - Get user's dependents
 
 ### Policies
-- `GET /api/policies` - List all policies
+- `GET /api/policies` - List all policies with advanced filtering
+  - Query params: page, pageSize, q (search), status[], ownerPayer[], dateFrom, dateTo, sortBy, sortDir
+  - Returns paginated response with data/items array, total count, page info
+  - Supports multi-select filters for status and ownerPayer
+  - Search works across policyNumber, name, and sponsorName fields
 - `GET /api/policies/:id` - Get policy by ID
 - `POST /api/policies` - Create policy
 - `PUT /api/policies/:id` - Update policy
@@ -175,6 +239,53 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 - `PUT /api/assignments/:id` - Update assignment
 - `POST /api/assignments/:id/end` - End assignment
 - `GET /api/member/assignments` - Get member's own assignments
+
+### Policy Rules
+- `GET /api/policy-rules/rules` - List all policy rules
+- `GET /api/policy-rules/rules/:id` - Get policy rule by ID
+- `POST /api/policy-rules/rules` - Create policy rule (auto-generates code)
+- `PUT /api/policy-rules/rules/:id` - Update policy rule
+- `DELETE /api/policy-rules/rules/:id` - Delete policy rule
+- `PUT /api/policy-rules/rules/:id/toggle-active` - Toggle rule active status
+
+### Categories
+- `GET /api/categories` - List all categories
+- `GET /api/categories/:id` - Get category by ID
+- `POST /api/categories` - Create category (requires CAT### identifier, stored uppercase)
+- `PUT /api/categories/:id` - Update category (name/description/display order only)
+- `DELETE /api/categories/:id` - Not allowed (API responds with validation error; use toggle active)
+
+### Service Types
+- `GET /api/service-types` - List all service types
+- `GET /api/service-types/:id` - Get service type by ID
+- `POST /api/service-types` - Create service type (requires business-defined code)
+- `PUT /api/service-types/:id` - Update service type
+- `DELETE /api/service-types/:id` - Delete service type
+
+### Plan Versions & Configuration
+- `GET /api/admin/policies/:id/plan-versions` - List versions for a policy
+- `POST /api/admin/policies/:id/plan-versions` - Create new version (DRAFT)
+- `POST /api/admin/policies/:id/plan-versions/:ver/publish` - Publish version with guardrails
+- `PATCH /api/admin/policies/:id/plan-versions/current` - Make version current
+- `GET /api/admin/policies/:id/plan-versions/:ver/benefit-components` - Get benefit config
+- `PUT /api/admin/policies/:id/plan-versions/:ver/benefit-components` - Update benefit config (DRAFT only)
+- `GET /api/admin/policies/:id/plan-versions/:ver/wallet-rules` - Get wallet rules
+- `PUT /api/admin/policies/:id/plan-versions/:ver/wallet-rules` - Update wallet rules (DRAFT only)
+- `GET /api/admin/policies/:id/plan-versions/:ver/readiness` - Check publish readiness
+- `GET /api/plan-config/effective?policyId=X&planVersion=Y` - Admin effective config
+- `GET /api/member/plan-config` - Member's effective configuration
+- `GET /api/member/benefit-components` - Get member's enabled benefits
+
+### Effective Config Resolver
+- `GET /api/plan-config/effective?policyId=X&planVersion=Y` - Get effective config for admin
+- `GET /api/member/plan-config` - Get member's effective configuration
+- `GET /api/admin/policies/:id/plan-versions/:ver/readiness` - Check publish readiness
+  - Returns validation status, missing requirements, and preview diff
+
+### Coverage Matrix
+- `GET /api/admin/policies/:id/plan-versions/:ver/coverage` - Get coverage matrix for a plan version
+- `PUT /api/admin/policies/:id/plan-versions/:ver/coverage` - Update coverage matrix (DRAFT only)
+- `GET /api/member/coverage-matrix` - Get member's applicable coverage (enabled items only)
 
 ## UI Map
 
@@ -232,13 +343,53 @@ Navigation Pattern:
 │       ├── View dependents (for primary members)
 │       └── Relationship tracking
 ├── /policies (Policy management)
+│   ├── Advanced filtering with URL state management
+│   ├── Multi-select filters for status and ownerPayer
+│   ├── Search across policy number, name, and sponsor
+│   ├── Desktop table view / Mobile card view
+│   ├── Row actions: View, Versions, Assign, Edit
+│   ├── RBAC enforcement (ADMIN/SUPER_ADMIN only)
+│   ├── Server-side pagination with bookmarkable URLs
 │   ├── /new (Create policy)
-│   └── /:id (Policy details)
+│   └── /:id (Policy details with rule mapping)
+│       ├── Edit policy information
+│       ├── Map/unmap policy rules
+│       ├── View rule details and wallet limits
+│       └── Plan versions management
+├── /policy-rules (Policy Rules management)
+│   ├── List all rules with search
+│   ├── Clickable rows for details
+│   ├── /new (Create rule with auto-generated code)
+│   └── /:id (Rule details page)
+│       ├── View/edit mode toggle
+│       ├── Total wallet amount
+│       ├── Category-wise limits
+│       └── Delete with confirmation
+├── /categories (Category Master)
+│   ├── List with search and filter
+│   ├── Category IDs follow CAT### pattern (entered manually, enforced uppercase)
+│   ├── Immutable category IDs with editable name/description/order
+│   └── Status toggle instead of hard delete
+├── /service-types (Service Types)
+│   ├── List with search and category filter
+│   ├── Codes follow domain-specific convention (e.g., CON001) and must be provided on create
+│   ├── Coverage, copay, document requirements, and limits surfaced in form
+│   └── Active/inactive and compliance flags (pre-auth/referral) configurable
 ├── /assignments (Assignment management)
 ├── /claims (Claims processing)
 ├── /reports (Analytics)
 └── /settings (System settings)
 ```
+
+Admin Portal highlights:
+- Guarded by `/admin` base path; unauthenticated or member-role access redirects to `/`.
+- Dashboard shows aggregate counts (users, policies, active members) with quick navigation cards.
+- Users module defaults to External vs Internal tabs, inline search, and exposes reset/set password actions plus policy assignment workflow on the detail page.
+- Policy, Category, and Service Type forms share consistent validation messaging and rely on the API's structured DTO rules.
+- Policies feature Plan Versions with full lifecycle: create draft, publish, and make current.
+- Assignments support plan version override (cohorting): admins can assign specific published versions to individual members, overriding the policy's current version.
+- Plan Versions workflow: DRAFT → PUBLISHED, with version auto-incrementing and date validation.
+- Shared fetch utility prefixes `/admin` requests so all client calls route through Next.js rewrites to the API container.
 
 ## Tech Stack & Integrations
 
@@ -260,22 +411,35 @@ Navigation Pattern:
 
 ## Environment Configuration
 
-### Development Environment
+### Development Environment (docker-compose)
 ```
-API_URL=http://localhost:4000
-MONGODB_URI=mongodb://admin:admin123@localhost:27017/opd_wallet?authSource=admin
+API_PORT=4000
+MONGODB_URI=mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
 JWT_SECRET=dev_jwt_secret_change_in_production
 COOKIE_NAME=opd_session
+COOKIE_SECURE=false
 NODE_ENV=development
+CORS_ORIGIN=http://localhost:3001,http://localhost:3002
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_GLOBAL=100
+RATE_LIMIT_AUTH=5
+RATE_LIMIT_API=1000
 ```
 
-### Production Environment
+### Production Environment (target)
 ```
-API_URL=https://api.opdwallet.com
+API_PORT=4000
 MONGODB_URI=mongodb://[PROD_USER]:[PROD_PASS]@[PROD_HOST]:27017/opd_wallet?authSource=admin
 JWT_SECRET=[SECURE_RANDOM_STRING]
-COOKIE_NAME=opd_session_prod
+COOKIE_NAME=opd_session
+COOKIE_SECURE=true
+COOKIE_DOMAIN=.yourdomain.com
 NODE_ENV=production
+CORS_ORIGIN=https://portal.yourdomain.com,https://admin.yourdomain.com
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_GLOBAL=100
+RATE_LIMIT_AUTH=5
+RATE_LIMIT_API=1000
 ```
 
 ## Deployment Notes
@@ -564,8 +728,8 @@ Instance ID: [REDACTED]
 2. **MongoDB authentication**: Basic auth enabled
 3. **Cookies without Secure flag**: Required for HTTP but insecure
 4. **JWT secret hardcoded**: Using development secret
-5. **CORS allowing all origins**: Set to "*" for development
-6. **No rate limiting implemented**: API vulnerable to abuse
+5. **CORS limited to localhost**: Update to production domains before go-live
+6. **Rate limiting configured for demo**: Global (100/15min) and auth (5/15min) limits active; revisit thresholds for prod scale
 7. **Secrets in docker-compose**: Should use secrets management
 
 #### 🟡 Important Improvements
@@ -585,7 +749,7 @@ Instance ID: [REDACTED]
 - [ ] Enable COOKIE_SECURE=true
 - [ ] Configure MongoDB authentication
 - [ ] Use environment-specific secrets
-- [ ] Implement rate limiting
+- [x] Implement rate limiting
 - [ ] Add input validation and sanitization
 
 #### Phase 2: Infrastructure

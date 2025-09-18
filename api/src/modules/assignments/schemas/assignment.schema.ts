@@ -47,6 +47,12 @@ export class Assignment {
 
   @Prop()
   notes?: string;
+
+  @Prop({
+    type: Number,
+    required: false,
+  })
+  planVersion?: number;
 }
 
 export const AssignmentSchema = SchemaFactory.createForClass(Assignment);

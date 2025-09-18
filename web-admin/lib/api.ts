@@ -2,13 +2,18 @@
 export function apiUrl(path: string): string {
   // Ensure path starts with /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  // Add /admin prefix for API calls
-  return `/admin${cleanPath}`;
+  // No longer need /admin prefix since we removed basePath
+  const fullUrl = cleanPath;
+  console.log('[DEBUG API] Converting path:', path, '→', fullUrl);
+  return fullUrl;
 }
 
 // Wrapper for fetch with correct base path
 export async function apiFetch(path: string, options?: RequestInit) {
-  return fetch(apiUrl(path), {
+  const url = apiUrl(path);
+  console.log('[DEBUG API] Fetching:', url, 'Method:', options?.method || 'GET');
+
+  const response = await fetch(url, {
     ...options,
     credentials: 'include',
     headers: {
@@ -16,4 +21,7 @@ export async function apiFetch(path: string, options?: RequestInit) {
       ...options?.headers,
     },
   });
+
+  console.log('[DEBUG API] Response:', url, 'Status:', response.status);
+  return response;
 }

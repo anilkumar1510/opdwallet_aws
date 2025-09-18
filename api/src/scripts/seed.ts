@@ -79,7 +79,7 @@ async function seed() {
       effectiveFrom: new Date('2025-01-01'),
       effectiveTo: new Date('2025-12-31'),
       description: 'Standard outpatient department policy covering consultations, pharmacy, diagnostics, and preventive care',
-      ownerPayer: 'Corporate',
+      ownerPayer: 'CORPORATE',
       createdBy: superAdmin._id.toString(),
     });
     console.log('✅ Created Sample Policy');

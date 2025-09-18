@@ -6,7 +6,14 @@ export enum UserStatus {
 export enum PolicyStatus {
   DRAFT = 'DRAFT',
   ACTIVE = 'ACTIVE',
-  RETIRED = 'RETIRED',
+  INACTIVE = 'INACTIVE',
+  EXPIRED = 'EXPIRED',
+}
+
+export enum OwnerPayerType {
+  CORPORATE = 'CORPORATE',
+  INSURER = 'INSURER',
+  HYBRID = 'HYBRID',
 }
 
 export enum AssignmentStatus {

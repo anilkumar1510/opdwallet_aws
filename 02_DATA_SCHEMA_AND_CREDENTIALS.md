@@ -6,11 +6,11 @@
 
 ### Current Development Configuration
 - **MongoDB**: Running with basic authentication
-- **Passwords**: Using bcrypt with 10 rounds
+- **Passwords**: Using bcrypt with 12 rounds
 - **JWT Secret**: Environment variable (change in production)
-- **Connection**: mongodb://opd-mongodb:27017/opd_wallet
-- **Validation**: Basic DTOs with class-validator
-- **Audit Logging**: Not implemented
+- **Connection**: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
+- **Validation**: DTOs with class-validator + Nest ValidationPipe (whitelist/transform)
+- **Audit Logging**: Module present but disabled unless `AUDIT_LOG_ENABLED=true`
 - **Cookie Security**: COOKIE_SECURE=false (HTTP deployment)
 
 ### Production Security Baseline (REQUIRED)
@@ -67,9 +67,8 @@ Per Operating Rule #5, all production deployments MUST implement:
 
 // Rate limiting
 {
-  "global": "100 req/min per IP",
-  "auth": "5 login attempts per 15 min",
-  "api": "1000 req/hour per user"
+  "global": "100 requests per 15 min per IP",
+  "auth": "5 login attempts per 15 min"
 }
 ```
 
@@ -112,7 +111,7 @@ Primary collection for all system users (admins and members).
   employeeId: String,       // Employee ID (optional, for employees)
 
   // Relationship tracking
-  relationship: String,     // "SELF" | "SPOUSE" | "CHILD" | "PARENT" | "OTHER"
+  relationship: String,     // "SELF" | "SPOUSE" | "CHILD" | "MOTHER" | "FATHER" | "OTHER"
   primaryMemberId: String,  // For dependents, links to primary member
 
   // Personal information
@@ -138,7 +137,7 @@ Primary collection for all system users (admins and members).
   // Authentication & Authorization
   passwordHash: String,     // Bcrypt hashed password
   role: String,             // "SUPER_ADMIN" | "ADMIN" | "TPA" | "OPS" | "MEMBER"
-  status: String,           // "ACTIVE" | "INACTIVE" | "SUSPENDED"
+  status: String,           // "ACTIVE" | "INACTIVE"
   mustChangePassword: Boolean,
 
   // Metadata
@@ -157,7 +156,6 @@ Primary collection for all system users (admins and members).
 - `employeeId`: unique, sparse
 - `userId`: unique
 - `primaryMemberId, relationship`: compound index
-- `role`: for filtering internal vs external users
 
 ### 2. policies
 Healthcare policies that can be assigned to members.
@@ -165,17 +163,21 @@ Healthcare policies that can be assigned to members.
 ```javascript
 {
   _id: ObjectId,
-  policyNumber: String,     // Unique policy number (e.g., "POL000001") - immutable
-  name: String,             // Policy name
-  description: String,      // Policy description
+  policyNumber: String,     // Unique policy number (e.g., "POL-2025-0001") - auto-generated, immutable
+  name: String,             // Policy name (3-80 chars, trimmed)
+  description: String,      // Policy description (optional)
+
+  // Ownership
+  ownerPayer: String,       // "CORPORATE" | "INSURER" | "HYBRID" (required)
+  sponsorName: String,      // Sponsor organization name (optional)
+
+  // Status & Validity
   status: String,           // "DRAFT" | "ACTIVE" | "INACTIVE" | "EXPIRED"
+  effectiveFrom: Date,      // Policy start date (required)
+  effectiveTo: Date,        // Policy end date (optional, must be >= effectiveFrom)
 
-  // Validity period
-  effectiveFrom: Date,      // Policy start date
-  effectiveTo: Date,        // Policy end date (optional)
-
-  // Policy details
-  ownerPayer: String,       // Organization/entity paying for the policy
+  // Version tracking
+  currentPlanVersion: Number, // Always starts at 1, read-only
 
   // Metadata
   createdAt: Date,
@@ -188,6 +190,18 @@ Healthcare policies that can be assigned to members.
 **Indexes:**
 - `policyNumber`: unique
 - `status, effectiveFrom`: compound index
+- `status, ownerPayer`: compound index for filtering
+- `updatedAt`: single index for sorting
+- `name`: text index for search
+- `sponsorName`: text index for search
+
+**Business Rules:**
+- Status transitions:
+  - DRAFT → ACTIVE: Only if effectiveFrom <= today
+  - ACTIVE → INACTIVE/EXPIRED: Allowed (requires confirmation in UI)
+  - INACTIVE/EXPIRED → Any: Not allowed
+- policyNumber is immutable after creation
+- effectiveTo must be >= effectiveFrom
 
 ### 3. userPolicyAssignments (assignments)
 Links users to policies with specific terms.
@@ -197,7 +211,7 @@ Links users to policies with specific terms.
   _id: ObjectId,
   userId: ObjectId,         // Reference to users._id
   policyId: ObjectId,       // Reference to policies._id
-  status: String,           // "ACTIVE" | "INACTIVE" | "EXPIRED" | "TERMINATED"
+  status: String,           // "ACTIVE" | "ENDED"
 
   // Assignment period
   effectiveFrom: Date,      // Assignment start date (defaults to now)
@@ -207,6 +221,11 @@ Links users to policies with specific terms.
   assignedAt: Date,         // When the assignment was created
   assignedBy: String,       // User ID who created the assignment
   notes: String,            // Optional notes about the assignment
+
+  // Plan version override (cohorting)
+  planVersion: Number,      // Optional: Override policy's current version (must be PUBLISHED)
+                           // When null/undefined: uses policy.currentPlanVersion
+                           // Computed effectivePlanVersion = planVersion ?? policy.currentPlanVersion
 
   // Timestamps
   createdAt: Date,
@@ -365,35 +384,355 @@ Auto-increment counters for IDs.
 }
 ```
 
+### 8. planVersions
+Plan versions track historical changes to policy configurations.
+
+```javascript
+{
+  _id: ObjectId,
+  policyId: ObjectId,       // Reference to policies._id
+  planVersion: Number,      // Version number (starts at 1, increments)
+
+  // Status
+  status: String,           // DRAFT | PUBLISHED | ARCHIVED (default: DRAFT)
+
+  // Effective dates
+  effectiveFrom: Date,      // When this version becomes active
+  effectiveTo: Date,        // When this version expires (optional)
+
+  // Publishing info
+  publishedAt: Date,        // When this version was published (auto-set on publish)
+  publishedBy: String,      // User ID who published
+
+  // Metadata
+  createdAt: Date,
+  updatedAt: Date,
+  createdBy: String,        // User ID who created
+  updatedBy: String         // User ID who last updated
+}
+```
+
+**Indexes:**
+- Compound: `{ policyId: 1, planVersion: 1 }` - unique
+- `{ status: 1, effectiveFrom: 1 }` - for querying active versions
+
+### 9. benefitComponents
+Benefit component configuration per policy and plan version.
+
+```javascript
+{
+  _id: ObjectId,
+  policyId: ObjectId,       // Reference to policies._id
+  planVersion: Number,      // Specific plan version number
+
+  // Component configurations
+  components: {
+    consultation: {
+      enabled: Boolean,           // Whether this component is available
+      annualAmountLimit: Number,  // Optional: Max annual spend
+      visitsLimit: Number,        // Optional: Max visits per year
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    pharmacy: {
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      rxRequired: Boolean,        // Optional: Prescription required
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    diagnostics: {
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      rxRequired: Boolean,
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    ahc: {                       // Annual Health Checkup
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      visitsLimit: Number,
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    vaccination: {
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    dental: {
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      visitsLimit: Number,
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    vision: {
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      visitsLimit: Number,
+      notes: String              // Optional: Admin notes (max 500 chars)
+    },
+    wellness: {
+      enabled: Boolean,
+      annualAmountLimit: Number,
+      notes: String              // Optional: Admin notes (max 500 chars)
+    }
+  },
+
+  // Metadata
+  createdAt: Date,
+  updatedAt: Date,
+  createdBy: String,        // User ID who created
+  updatedBy: String         // User ID who last updated
+}
+```
+
+**Indexes:**
+- Compound: `{ policyId: 1, planVersion: 1 }` - unique
+
+**DTO Constraints:**
+- Only DRAFT plan versions can have their benefit components edited
+- PUBLISHED versions are read-only for benefit configuration
+- All component fields are optional except `enabled`
+- Notes field limited to 500 characters for additional context
+
+**RBAC:**
+- Admin endpoints require SUPER_ADMIN or ADMIN roles
+- Member endpoint automatically fetches based on their assignment's effective plan version
+- Effective Config Resolver provides unified access to components
+
+### 10. walletRules
+OPD wallet configuration per policy and plan version.
+
+```javascript
+{
+  _id: ObjectId,
+  policyId: ObjectId,           // Reference to policies._id
+  planVersion: Number,          // Specific plan version number
+
+  // Wallet configuration
+  totalAnnualAmount: Number,    // Annual wallet funding amount
+  perClaimLimit: Number,        // Optional: Max amount per claim
+
+  copay: {
+    mode: String,               // 'PERCENT' or 'AMOUNT'
+    value: Number               // Percentage (0-100) or fixed amount
+  },
+
+  partialPaymentEnabled: Boolean,  // Allow partial claim payments
+
+  carryForward: {
+    enabled: Boolean,
+    percent: Number,            // Percentage of unused balance to carry (0-100)
+    months: Number              // Duration in months (e.g., 3, 6, 12)
+  },
+
+  topUpAllowed: Boolean,        // Allow members to add funds beyond annual limit
+  notes: String,                // Optional admin notes
+
+  // Metadata
+  createdBy: ObjectId,
+  createdAt: Date,
+  updatedBy: ObjectId,
+  updatedAt: Date
+}
+```
+
+**Indexes:**
+- Compound unique: `{ policyId: 1, planVersion: 1 }`
+- Query optimization: `{ policyId: 1 }`, `{ planVersion: 1 }`
+
+**DTO Constraints:**
+- `totalAnnualAmount`: Required, must be positive number
+- `perClaimLimit`: Optional, if provided must be positive
+- `copay.mode`: Must be 'PERCENT' or 'AMOUNT'
+- `copay.value`: For PERCENT mode, must be 0-100; for AMOUNT mode, must be positive
+- `carryForward.percent`: If enabled, must be 0-100
+- `carryForward.months`: If enabled, must be positive integer
+- Only DRAFT plan versions can have their wallet rules edited
+- PUBLISHED versions are read-only
+
+**RBAC:**
+- Admin endpoints require SUPER_ADMIN or ADMIN roles
+- Member endpoint automatically fetches based on their assignment's effective plan version
+
+**Audit Actions:**
+- `WALLET_RULES_UPSERT`: Logged when wallet rules are created or updated
+- Captures before/after snapshots with user context
+
+### 11. categories
+Category master for services and claims (`category_master` collection).
+
+```javascript
+{
+  _id: ObjectId,
+  categoryId: String,       // Unique category code (e.g., "CAT001") - provided on create, immutable, stored uppercase
+  name: String,             // Category name (editable)
+  description: String,      // Optional description
+
+  // Status
+  isActive: Boolean,        // Whether category is active
+
+  // Ordering
+  displayOrder: Number,     // Preferred sort order in UI grids
+
+  // Metadata
+  createdAt: Date,
+  updatedAt: Date,
+  createdBy: String,        // User ID who created
+  updatedBy: String         // User ID who last updated
+}
+```
+
+**Indexes:**
+- `categoryId`: unique (schema enforced)
+- Additional indexes to be added based on query patterns (e.g., `isActive`, `displayOrder`)
+
+### 12. serviceTypes
+Service catalogue entries (`service_master` collection).
+
+```javascript
+{
+  _id: ObjectId,
+  code: String,             // Unique service code (e.g., "CON001") - provided on create, immutable
+  name: String,             // Service name
+  description: String,      // Optional description
+  category: String,         // CONSULTATION | DIAGNOSTIC | PHARMACY | PROCEDURE | PREVENTIVE | EMERGENCY | WELLNESS | OTHER
+  isActive: Boolean,        // Whether service type is active
+  priceRange: {
+    min: Number,
+    max: Number,
+  },
+  requiredDocuments: [String],
+  coveragePercentage: Number,
+  copayAmount: Number,
+  requiresPreAuth: Boolean,
+  requiresReferral: Boolean,
+  waitingPeriodDays: Number,
+  annualLimit: Number,
+  perClaimLimit: Number,
+
+  // Metadata
+  createdAt: Date,
+  updatedAt: Date,
+  createdBy: String,        // User ID who created
+  updatedBy: String         // User ID who last updated
+}
+```
+
+**Indexes:**
+- `code`: unique (schema enforced)
+- Additional indexes TBD (e.g., `category`, `isActive`)
+
+### 13. benefitCoverageMatrix
+Coverage matrix for mapping categories and services to policy plan versions.
+
+```javascript
+{
+  _id: ObjectId,
+  policyId: ObjectId,           // Reference to policies._id
+  planVersion: Number,          // Specific plan version number
+
+  rows: [{
+    categoryId: String,         // CAT### format, must exist in categories
+    serviceCode: String,        // Optional: service code from serviceTypes
+    enabled: Boolean,           // Whether this category/service is available
+    notes: String               // Optional notes
+  }],
+
+  // Metadata
+  createdBy: ObjectId,
+  createdAt: Date,
+  updatedBy: ObjectId,
+  updatedAt: Date
+}
+```
+
+**Indexes:**
+- Compound unique: `{ policyId: 1, planVersion: 1 }`
+- Query optimization: `{ policyId: 1 }`, `{ planVersion: 1 }`
+
+**Integrity Rules:**
+- `categoryId` must exist in categories collection and be isActive=true
+- If `serviceCode` present, must exist in serviceTypes and belong to the category
+- Only DRAFT plan versions can have their coverage matrix edited
+
+**DTO Constraints:**
+- `categoryId`: Required, must match format CAT### (e.g., CAT001)
+- `serviceCode`: Optional, must exist if provided
+- `enabled`: Required boolean
+- `notes`: Optional string, sanitized
+
+**RBAC:**
+- Admin endpoints require SUPER_ADMIN or ADMIN roles
+- Member endpoint returns only enabled items for effective plan version
+
+**Audit Actions:**
+- `COVERAGE_MATRIX_UPSERT`: Logged when coverage matrix is created or updated
+- Captures before/after snapshots with row count and user context
+
+### 14. auditLogs
+Immutable audit trail entries (feature flag controlled).
+
+```javascript
+{
+  _id: ObjectId,
+  userId: String,           // Acting user (User.userId or system)
+  userEmail: String,
+  userRole: String,
+  action: String,           // CREATE | READ | UPDATE | DELETE | LOGIN | LOGOUT | AUTH_FAILURE |
+                            // ASSIGNMENT_PLAN_VERSION_UPDATE | PLAN_VERSION_CREATE |
+                            // PLAN_VERSION_PUBLISH | PLAN_VERSION_MAKE_CURRENT |
+                            // BENEFIT_COMPONENTS_UPSERT
+  resource: String,         // e.g., "users", "policies"
+  resourceId: ObjectId,     // Optional resource reference
+  before: Object,           // Snapshot before change (optional)
+  after: Object,            // Snapshot after change (optional)
+  metadata: {
+    ip: String,
+    userAgent: String,
+    method: String,
+    path: String,
+    statusCode: Number,
+    duration: Number,
+  },
+  description: String,
+  isSystemAction: Boolean,
+  createdAt: Date           // Indexed with 2-year TTL (63072000 seconds)
+}
+```
+
+**Indexes:**
+- `createdAt`: TTL index (2 years)
+- Add secondary indexes (`resource`, `userId`) when enabling audit UI
+
 ## Configuration Keys
 
 ### Current Development Configuration (ACTIVE)
 ```bash
-# Database (NO AUTH - DEVELOPMENT ONLY)
-MONGODB_URI=mongodb://opd-mongodb:27017/opd_wallet
+# Database (docker-compose)
+MONGODB_URI=mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
 MONGODB_DATABASE=opd_wallet
 
 # Authentication
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_SECRET=dev_jwt_secret_change_in_production
 JWT_EXPIRY=7d
 COOKIE_NAME=opd_session
-COOKIE_DOMAIN=
-COOKIE_SECURE=false  # MUST BE true in production
-COOKIE_HTTPONLY=true
+COOKIE_SECURE=false
 COOKIE_SAMESITE=lax
 COOKIE_MAX_AGE=604800000
 
 # Security
-BCRYPT_ROUNDS=10
+BCRYPT_ROUNDS=12
 MAX_LOGIN_ATTEMPTS=5
-LOCK_TIME=2h
+LOCK_TIME=86400000      # 24h in ms
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_GLOBAL=100
+RATE_LIMIT_AUTH=5
+RATE_LIMIT_API=1000
 
 # Server
-PORT=4000
-NODE_ENV=development  # MUST BE production for live
+API_PORT=4000
+NODE_ENV=development
 
 # CORS
-CORS_ORIGIN=*  # DANGEROUS - restrict in production
+CORS_ORIGIN=http://localhost:3001,http://localhost:3002
 ```
 
 ### Production Configuration (REQUIRED)
@@ -404,25 +743,28 @@ MONGODB_DATABASE=opd_wallet
 
 # Authentication
 JWT_SECRET=[GENERATE_SECURE_256_BIT_KEY]
-JWT_EXPIRY=1h  # Shorter for production
+JWT_EXPIRY=1h
 COOKIE_NAME=opd_session
 COOKIE_DOMAIN=.yourdomain.com
 COOKIE_SECURE=true
-COOKIE_HTTPONLY=true
 COOKIE_SAMESITE=strict
-COOKIE_MAX_AGE=3600000  # 1 hour
+COOKIE_MAX_AGE=3600000   # 1 hour
 
 # Security
 BCRYPT_ROUNDS=12
 MAX_LOGIN_ATTEMPTS=3
-LOCK_TIME=24h
+LOCK_TIME=86400000
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_GLOBAL=100
+RATE_LIMIT_AUTH=5
+RATE_LIMIT_API=1000
 
 # Server
-PORT=4000
+API_PORT=4000
 NODE_ENV=production
 
 # CORS
-CORS_ORIGIN=https://yourdomain.com,https://admin.yourdomain.com
+CORS_ORIGIN=https://portal.yourdomain.com,https://admin.yourdomain.com
 
 # Email (Placeholder)
 SMTP_HOST=[SMTP_HOST]
@@ -450,7 +792,7 @@ PAYMENT_GATEWAY_SECRET=[PAYMENT_SECRET]
 ```bash
 # API Configuration
 NEXT_PUBLIC_API_URL=https://api.opdwallet.com
-API_URL=http://api:4000/api
+API_URL=http://opd-api:4000/api
 
 # App Configuration
 NEXT_PUBLIC_APP_NAME=OPD Wallet
@@ -464,6 +806,96 @@ NEXT_PUBLIC_GTM_ID=[GOOGLE_TAG_MANAGER_ID]
 NEXT_PUBLIC_ENABLE_PWA=true
 NEXT_PUBLIC_ENABLE_ANALYTICS=true
 ```
+
+**Note:** The admin portal is served from the `/admin` base path. All client-side fetches go through the Next.js rewrite layer (see `web-admin/lib/api.ts`) which prepends `/admin` so requests correctly proxy to the Nest API container.
+
+## Effective Config Resolver Service
+
+### Purpose
+The Effective Config Resolver (`PlanConfigResolverService`) provides a unified, single-source-of-truth access to plan configuration by merging benefit components and wallet rules for a specific policy and plan version.
+
+### Resolution Logic
+1. **For Admins**: Directly queries specified policyId and planVersion
+2. **For Members**: Resolves through their assignment to get the effective plan version (considering overrides)
+3. **Graceful Fallbacks**: Returns empty configurations if documents don't exist yet
+
+### Response Structure
+```javascript
+{
+  policyId: ObjectId,
+  planVersion: Number,
+  benefitComponents: {
+    // Merged from benefitComponents collection
+    consultation: { enabled, annualAmountLimit, visitsLimit, notes },
+    pharmacy: { enabled, annualAmountLimit, rxRequired, notes },
+    // ... all other components
+  },
+  walletRules: {
+    // Merged from walletRules collection
+    totalAnnualAmount: Number,
+    perClaimLimit: Number,
+    copay: { mode, value },
+    partialPaymentEnabled: Boolean,
+    carryForward: { enabled, percent, months },
+    topUpAllowed: Boolean
+  }
+}
+```
+
+### Publish Readiness Check
+The resolver also validates if a plan version is ready for publishing:
+- At least one benefit component must be enabled
+- Wallet rules must have a valid annual limit
+- Date ranges must be valid (effectiveTo > effectiveFrom)
+
+### API Endpoints
+- `GET /api/plan-config/effective?policyId=X&planVersion=Y` - Admin effective config
+- `GET /api/member/plan-config` - Member's effective configuration
+- `GET /api/admin/policies/:id/plan-versions/:ver/readiness` - Check publish readiness
+
+## Query Performance Evidence
+
+### Policy Listing Query Performance
+The policy listing page uses optimized MongoDB queries with proper indexes:
+
+```javascript
+// Query pattern for GET /api/policies
+{
+  // Multi-field filtering with compound indexes
+  status: { $in: ['ACTIVE', 'DRAFT'] },      // Uses status, ownerPayer index
+  ownerPayer: { $in: ['CORPORATE'] },        // Uses status, ownerPayer index
+
+  // Text search across multiple fields
+  $or: [
+    { policyNumber: { $regex: 'search', $options: 'i' } },
+    { name: { $regex: 'search', $options: 'i' } },          // Uses text index
+    { sponsorName: { $regex: 'search', $options: 'i' } }    // Uses text index
+  ],
+
+  // Date range filtering
+  effectiveFrom: { $gte: new Date('2025-01-01') },
+  effectiveTo: { $lte: new Date('2025-12-31') }
+}
+
+// Sort uses indexed field
+.sort({ updatedAt: -1 })  // Uses updatedAt index
+
+// Pagination for efficient data transfer
+.skip(0).limit(20)
+```
+
+**Performance Metrics (Target):**
+- Query execution time: < 50ms for 10,000 policies
+- With pagination (20 items): < 30ms
+- Text search: < 100ms with text indexes
+- Multi-select filter: < 40ms with compound indexes
+
+**Optimization Strategies Applied:**
+1. Compound indexes for multi-field filters
+2. Text indexes for search functionality
+3. Server-side pagination to limit data transfer
+4. Query params in URL for caching and bookmarking
+5. Debounced search (300ms) to reduce API calls
 
 ## Migration Notes
 

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { PolicyStatus } from '@/common/constants/status.enum';
+import { PolicyStatus, OwnerPayerType } from '@/common/constants/status.enum';
 
 export type PolicyDocument = Policy & Document;
 
@@ -16,8 +16,25 @@ export class Policy {
   })
   policyNumber!: string;
 
-  @Prop({ required: true })
+  @Prop({
+    required: true,
+    minlength: 3,
+    maxlength: 80,
+    trim: true,
+  })
   name!: string;
+
+  @Prop()
+  description?: string;
+
+  @Prop({
+    required: true,
+    enum: OwnerPayerType,
+  })
+  ownerPayer!: OwnerPayerType;
+
+  @Prop()
+  sponsorName?: string;
 
   @Prop({
     required: true,
@@ -32,11 +49,12 @@ export class Policy {
   @Prop({ type: Date })
   effectiveTo?: Date;
 
-  @Prop()
-  description?: string;
-
-  @Prop()
-  ownerPayer?: string;
+  @Prop({
+    type: Number,
+    default: 1,
+    immutable: true,
+  })
+  currentPlanVersion!: number;
 
   @Prop()
   createdBy?: string;

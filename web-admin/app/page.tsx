@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
-import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -173,19 +172,36 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Section - Image/Illustration */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <Image
-          src="/assets/images/login-page.jpg"
-          alt="Team collaboration"
-          fill
-          priority
-          quality={85}
-          className="object-cover"
-          sizes="50vw"
-        />
-        {/* Overlay for better text readability if needed */}
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/10 via-transparent to-orange-50/10" />
+      {/* Right Section - Gradient Background */}
+      <div className="hidden lg:block lg:w-1/2 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-400">
+        <div className="h-full flex items-center justify-center p-12">
+          <div className="text-white max-w-md">
+            <h2 className="text-4xl font-bold mb-6">OPD Wallet Platform</h2>
+            <p className="text-xl mb-8 text-yellow-50">
+              Comprehensive healthcare benefits management system for seamless outpatient services.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <svg className="w-6 h-6 text-yellow-200 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-yellow-50">Manage insurance policies and member benefits</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <svg className="w-6 h-6 text-yellow-200 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-yellow-50">Process claims and track healthcare services</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <svg className="w-6 h-6 text-yellow-200 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-yellow-50">Real-time analytics and reporting</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

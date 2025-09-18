@@ -47,15 +47,22 @@ export default function AdminDashboard() {
       name: 'Manage Users',
       description: 'View, create, and manage user accounts',
       icon: '👥',
-      path: '/admin/users',
+      path: '/users',
       color: 'bg-blue-50 hover:bg-blue-100 border-blue-200'
     },
     {
       name: 'Manage Policies',
       description: 'Create and manage insurance policies',
       icon: '📋',
-      path: '/admin/policies',
+      path: '/policies',
       color: 'bg-purple-50 hover:bg-purple-100 border-purple-200'
+    },
+    {
+      name: 'Service Types',
+      description: 'Define and manage service types and coverage',
+      icon: '🏥',
+      path: '/services',
+      color: 'bg-green-50 hover:bg-green-100 border-green-200'
     }
   ]
 

@@ -194,14 +194,25 @@ export class UsersService {
       }
     }
 
+    // If name is being updated, calculate fullName
+    const updateData: any = {
+      ...updateUserDto,
+      ...(updateUserDto.email && { email: updateUserDto.email.toLowerCase() }),
+      updatedBy,
+      updatedAt: new Date(),
+    };
+
+    // Add fullName if name is being updated
+    if (updateUserDto.name && updateUserDto.name.firstName && updateUserDto.name.lastName) {
+      updateData.name = {
+        ...updateUserDto.name,
+        fullName: `${updateUserDto.name.firstName} ${updateUserDto.name.lastName}`,
+      };
+    }
+
     const updatedUser = await this.userModel.findByIdAndUpdate(
       id,
-      {
-        ...updateUserDto,
-        ...(updateUserDto.email && { email: updateUserDto.email.toLowerCase() }),
-        updatedBy,
-        updatedAt: new Date(),
-      },
+      updateData,
       { new: true },
     ).select('-passwordHash');
 

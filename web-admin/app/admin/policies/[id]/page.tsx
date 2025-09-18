@@ -2,13 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { apiFetch } from '@/lib/api'
+
+interface PlanVersion {
+  planVersion: number
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  effectiveFrom: string
+  effectiveTo?: string
+  copay?: number
+  coinsurance?: number
+  deductible?: number
+  maxCoverage?: number
+}
 
 export default function PolicyDetailPage() {
   const router = useRouter()
   const params = useParams()
   const [policy, setPolicy] = useState<any>(null)
-  const [assignments, setAssignments] = useState<any[]>([])
+  const [planVersions, setPlanVersions] = useState<PlanVersion[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('details')
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -23,15 +36,13 @@ export default function PolicyDetailPage() {
   useEffect(() => {
     if (params.id) {
       fetchPolicy()
-      fetchPolicyAssignments()
+      fetchPlanVersions()
     }
   }, [params.id])
 
   const fetchPolicy = async () => {
     try {
-      const response = await fetch(`/api/policies/${params.id}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/policies/${params.id}`)
       if (response.ok) {
         const data = await response.json()
         setPolicy(data)
@@ -51,24 +62,27 @@ export default function PolicyDetailPage() {
     }
   }
 
-  const fetchPolicyAssignments = async () => {
+  const fetchPlanVersions = async () => {
     try {
-      // This endpoint would need to be added to get assignments by policy
-      // For now, we'll just show the policy details
-      setAssignments([])
+      const response = await apiFetch(`/api/admin/policies/${params.id}/plan-versions`)
+      if (response.ok) {
+        const data = await response.json()
+        // Handle both direct array and nested data structure
+        const versions = Array.isArray(data) ? data : (data.data || data.planVersions || [])
+        setPlanVersions(versions)
+      }
     } catch (error) {
-      console.error('Failed to fetch assignments')
+      console.error('Failed to fetch plan versions')
+      setPlanVersions([])
     }
   }
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (isSaving) return // Prevent duplicate submissions
+    if (isSaving) return
     setIsSaving(true)
 
     try {
-      // Clean up the data before sending
       const payload = {
         name: editForm.name,
         description: editForm.description,
@@ -78,12 +92,8 @@ export default function PolicyDetailPage() {
         ownerPayer: editForm.ownerPayer || undefined,
       }
 
-      const response = await fetch(`/api/policies/${params.id}`, {
+      const response = await apiFetch(`/api/policies/${params.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify(payload),
       })
 
@@ -99,7 +109,6 @@ export default function PolicyDetailPage() {
           ownerPayer: updatedPolicy.ownerPayer || '',
         })
         setIsEditing(false)
-        alert('Policy updated successfully!')
       } else {
         const error = await response.json()
         alert(`Failed to update policy: ${error.message || 'Unknown error'}`)
@@ -112,321 +121,315 @@ export default function PolicyDetailPage() {
     }
   }
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    })
-    router.push('/')
+  const handleCreatePlanVersion = async () => {
+    try {
+      console.log('Creating new plan version...')
+
+      const response = await apiFetch(`/api/admin/policies/${params.id}/plan-versions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          effectiveFrom: new Date().toISOString()
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Plan version created:', result)
+        alert('Plan version created successfully!')
+        fetchPlanVersions()
+      } else {
+        const error = await response.text()
+        console.error('API error:', error)
+        alert(`Failed to create plan version: ${response.status} ${response.statusText}`)
+      }
+    } catch (error) {
+      console.error('Failed to create plan version:', error)
+      alert(`Error creating plan version: ${error.message}`)
+    }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold">OPD Wallet Admin</h1>
-              <button
-                onClick={() => router.push('/admin/policies')}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                ← Back to Policies
-              </button>
-            </div>
-            <div className="flex items-center">
-              <button
-                onClick={handleLogout}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Logout
-              </button>
-            </div>
+    <div className="space-y-6">
+      {/* Back Button & Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => router.push('/admin/policies')}
+            className="btn-ghost p-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{policy?.name}</h1>
+            <p className="text-sm text-gray-500">Policy Number: {policy?.policyNumber}</p>
           </div>
         </div>
-      </nav>
+        <div className="flex items-center space-x-2">
+          <span className={policy?.status === 'ACTIVE' ? 'badge-success' : policy?.status === 'DRAFT' ? 'badge-warning' : 'badge-default'}>
+            {policy?.status}
+          </span>
+        </div>
+      </div>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {policy && (
-            <>
-              <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-                <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Policy Information
-                    </h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                      Policy Number: {policy.policyNumber}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsEditing(!isEditing)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {['details', 'plan-versions'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab
+                  ? 'border-yellow-400 text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab === 'details' ? 'Policy Details' : 'Plan Versions'}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'details' && policy && (
+        <div className="card">
+          <div className="card-header flex justify-between items-center">
+            <h3 className="card-title">Policy Information</h3>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="btn-secondary"
+            >
+              {isEditing ? 'Cancel' : 'Edit'}
+            </button>
+          </div>
+
+          {!isEditing ? (
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Policy Number</label>
+                  <p className="text-gray-900">{policy.policyNumber}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Name</label>
+                  <p className="text-gray-900">{policy.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
+                  <span className={policy.status === 'ACTIVE' ? 'badge-success' : policy.status === 'DRAFT' ? 'badge-warning' : 'badge-default'}>
+                    {policy.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Owner/Payer</label>
+                  <p className="text-gray-900">{policy.ownerPayer || 'Not specified'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Effective From</label>
+                  <p className="text-gray-900">{new Date(policy.effectiveFrom).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Effective To</label>
+                  <p className="text-gray-900">{policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString() : 'Ongoing'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Description</label>
+                  <p className="text-gray-900">{policy.description || 'No description provided'}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Policy Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="input"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    className="input"
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   >
-                    {isEditing ? 'Cancel' : 'Edit Policy'}
-                  </button>
+                    <option value="DRAFT">Draft</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="RETIRED">Retired</option>
+                  </select>
                 </div>
-
-                {!isEditing ? (
-                  <div className="border-t border-gray-200">
-                    <dl>
-                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Policy Number</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {policy.policyNumber}
-                          <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            Immutable
-                          </span>
-                        </dd>
-                      </div>
-                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Name</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {policy.name}
-                        </dd>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Status</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            policy.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-800'
-                              : policy.status === 'DRAFT'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {policy.status}
-                          </span>
-                        </dd>
-                      </div>
-                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Description</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {policy.description || 'No description provided'}
-                        </dd>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Effective From</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {new Date(policy.effectiveFrom).toLocaleDateString()}
-                        </dd>
-                      </div>
-                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Effective To</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {policy.effectiveTo
-                            ? new Date(policy.effectiveTo).toLocaleDateString()
-                            : 'No end date'}
-                        </dd>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Owner/Payer</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {policy.ownerPayer || 'Not specified'}
-                        </dd>
-                      </div>
-                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Created By</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {policy.createdBy || 'System'}
-                        </dd>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt className="text-sm font-medium text-gray-500">Created At</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {new Date(policy.createdAt).toLocaleString()}
-                        </dd>
-                      </div>
-                      {policy.updatedAt && (
-                        <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                          <dt className="text-sm font-medium text-gray-500">Last Updated</dt>
-                          <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                            {new Date(policy.updatedAt).toLocaleString()}
-                            {policy.updatedBy && ` by ${policy.updatedBy}`}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-                ) : (
-                  <form onSubmit={handleUpdate} className="border-t border-gray-200 p-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Policy Name
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border"
-                          value={editForm.name}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, name: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Description
-                        </label>
-                        <textarea
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border"
-                          rows={3}
-                          value={editForm.description}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, description: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Status
-                        </label>
-                        <select
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border"
-                          value={editForm.status}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, status: e.target.value })
-                          }
-                        >
-                          <option value="DRAFT">Draft</option>
-                          <option value="ACTIVE">Active</option>
-                          <option value="RETIRED">Retired</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Effective From
-                        </label>
-                        <input
-                          type="date"
-                          required
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border"
-                          value={editForm.effectiveFrom}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, effectiveFrom: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Effective To (Optional)
-                        </label>
-                        <input
-                          type="date"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border"
-                          value={editForm.effectiveTo}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, effectiveTo: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Owner/Payer
-                        </label>
-                        <select
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 border"
-                          value={editForm.ownerPayer}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, ownerPayer: e.target.value })
-                          }
-                        >
-                          <option value="">Select...</option>
-                          <option value="Corporate">Corporate</option>
-                          <option value="Insurer">Insurer</option>
-                          <option value="Hybrid">Hybrid</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mt-6 flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsEditing(false)}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-
-              {/* Policy Statistics */}
-              <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Policy Statistics
-                  </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Effective From</label>
+                  <input
+                    type="date"
+                    required
+                    className="input"
+                    value={editForm.effectiveFrom}
+                    onChange={(e) => setEditForm({ ...editForm, effectiveFrom: e.target.value })}
+                  />
                 </div>
-                <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                    <div className="bg-gray-50 overflow-hidden rounded-lg px-4 py-5">
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total Assignments
-                      </dt>
-                      <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                        {assignments.length}
-                      </dd>
-                    </div>
-                    <div className="bg-gray-50 overflow-hidden rounded-lg px-4 py-5">
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Active Assignments
-                      </dt>
-                      <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                        {assignments.filter(a => a.status === 'ACTIVE').length}
-                      </dd>
-                    </div>
-                    <div className="bg-gray-50 overflow-hidden rounded-lg px-4 py-5">
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Coverage Period
-                      </dt>
-                      <dd className="mt-1 text-lg font-semibold text-gray-900">
-                        {policy && policy.effectiveFrom && policy.effectiveTo
-                          ? `${Math.ceil((new Date(policy.effectiveTo).getTime() - new Date(policy.effectiveFrom).getTime()) / (1000 * 60 * 60 * 24))} days`
-                          : 'Ongoing'}
-                      </dd>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Effective To</label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={editForm.effectiveTo}
+                    onChange={(e) => setEditForm({ ...editForm, effectiveTo: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Owner/Payer</label>
+                  <select
+                    className="input"
+                    value={editForm.ownerPayer}
+                    onChange={(e) => setEditForm({ ...editForm, ownerPayer: e.target.value })}
+                  >
+                    <option value="">Select...</option>
+                    <option value="Corporate">Corporate</option>
+                    <option value="Insurer">Insurer</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  />
                 </div>
               </div>
-
-              {/* Future Enhancement: List of users assigned to this policy */}
-              <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Assigned Users
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    List of users currently assigned to this policy
-                  </p>
-                </div>
-                <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-                  <p className="text-sm text-gray-500">
-                    This feature will show users assigned to this policy in a future update.
-                  </p>
-                </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="btn-ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="btn-primary"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
-            </>
+            </form>
           )}
         </div>
-      </main>
+      )}
+
+      {activeTab === 'plan-versions' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Plan Versions</h3>
+            <button
+              onClick={handleCreatePlanVersion}
+              className="btn-primary"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create New Version
+            </button>
+          </div>
+
+          {planVersions.length === 0 ? (
+            <div className="card">
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a4 4 0 01-4-4V9a4 4 0 014-4h10a4 4 0 014 4v8a4 4 0 01-4 4z" />
+                  </svg>
+                </div>
+                <h4 className="empty-state-title">No Plan Versions</h4>
+                <p className="empty-state-description">Create your first plan version to configure benefits and coverage.</p>
+                <button
+                  onClick={handleCreatePlanVersion}
+                  className="btn-primary mt-4"
+                >
+                  Create First Version
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="card">
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Version</th>
+                      <th>Status</th>
+                      <th>Effective From</th>
+                      <th>Effective To</th>
+                      <th>Copay</th>
+                      <th>Coinsurance</th>
+                      <th>Deductible</th>
+                      <th>Max Coverage</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(Array.isArray(planVersions) ? planVersions : []).map((version) => (
+                      <tr key={version.planVersion}>
+                        <td className="font-medium">v{version.planVersion}</td>
+                        <td>
+                          <span className={
+                            version.status === 'PUBLISHED'
+                              ? 'badge-success'
+                              : version.status === 'DRAFT'
+                              ? 'badge-warning'
+                              : 'badge-default'
+                          }>
+                            {version.status}
+                          </span>
+                        </td>
+                        <td>{new Date(version.effectiveFrom).toLocaleDateString()}</td>
+                        <td>{version.effectiveTo ? new Date(version.effectiveTo).toLocaleDateString() : 'Ongoing'}</td>
+                        <td>${version.copay || 0}</td>
+                        <td>{(version.coinsurance || 0) * 100}%</td>
+                        <td>${version.deductible || 0}</td>
+                        <td>${version.maxCoverage || 0}</td>
+                        <td>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => router.push(`/admin/policies/${params.id}/plan-versions/${version.planVersion}/config`)}
+                              className="btn-ghost p-1 text-xs"
+                              title="Configure Benefits"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -133,3 +133,10 @@ deploy-aws:
 	@if [ -z "$(PEM_FILE)" ]; then echo "Error: PEM_FILE not set. Usage: make deploy-aws EC2_IP=xx.xx.xx.xx PEM_FILE=path/to/key.pem"; exit 1; fi
 	chmod +x scripts/deploy-aws.sh
 	./scripts/deploy-aws.sh $(EC2_IP) $(PEM_FILE)
+
+# Migrate to Plan Versions v1
+.PHONY: migrate-planv1
+migrate-planv1:
+	@echo "🚀 Running Plan Versions v1 migration..."
+	@cd scripts && npx ts-node migrate_plan_versions_v1.ts
+	@echo "✅ Migration completed"
