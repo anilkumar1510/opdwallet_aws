@@ -1,193 +1,246 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import PolicyTable from './_components/PolicyTable'
+import PolicyFilters from './_components/PolicyFilters'
+import { PolicyListResponse, PolicyQueryParams } from './_lib/types'
+import { fetchPolicies } from './_lib/api'
+import { parseQueryParams, buildQueryString, getDefaultParams } from './_lib/query'
+import { apiFetch } from '@/lib/api'
 
 export default function PoliciesPage() {
   const router = useRouter()
-  const [policies, setPolicies] = useState<any[]>([])
+  const searchParams = useSearchParams()
+  const [policies, setPolicies] = useState<PolicyListResponse>({
+    data: [],
+    items: [],
+    page: 1,
+    pageSize: 20,
+    total: 0
+  })
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
+  // Parse query params from URL
+  const queryParams: PolicyQueryParams = {
+    ...getDefaultParams(),
+    ...parseQueryParams(searchParams)
+  }
+
+  // Check auth and role on mount
   useEffect(() => {
-    fetchPolicies()
+    checkAuth()
   }, [])
 
-  const fetchPolicies = async () => {
+  // Fetch policies when query params change
+  useEffect(() => {
+    if (currentUser) {
+      loadPolicies()
+    }
+  }, [searchParams, currentUser])
+
+  const checkAuth = async () => {
+    console.log('[DEBUG PoliciesPage] checkAuth called')
     try {
-      const response = await fetch('/api/policies?limit=50', {
-        credentials: 'include',
-      })
+      console.log('[DEBUG PoliciesPage] Fetching /api/auth/me...')
+      const response = await apiFetch('/api/auth/me')
+      console.log('[DEBUG PoliciesPage] Auth response status:', response.status)
+      console.log('[DEBUG PoliciesPage] Auth response ok:', response.ok)
+
       if (response.ok) {
-        const data = await response.json()
-        setPolicies(data.data || [])
+        const userData = await response.json()
+        console.log('[DEBUG PoliciesPage] User data:', userData)
+        console.log('[DEBUG PoliciesPage] User role:', userData.role)
+
+        // Check RBAC - only ADMIN and SUPER_ADMIN can access
+        if (userData.role !== 'ADMIN' && userData.role !== 'SUPER_ADMIN') {
+          console.error('[DEBUG PoliciesPage] Access denied for role:', userData.role)
+          setError('Access denied. Admin privileges required.')
+          return
+        }
+
+        console.log('[DEBUG PoliciesPage] User authorized, setting currentUser')
+        setCurrentUser(userData)
+      } else {
+        console.error('[DEBUG PoliciesPage] Auth failed, redirecting to /')
+        router.push('/')
       }
     } catch (error) {
-      console.error('Failed to fetch policies')
-    } finally {
-      setLoading(false)
+      console.error('[DEBUG PoliciesPage] Auth error:', error)
+      router.push('/')
     }
   }
 
+  const loadPolicies = async () => {
+    console.log('[DEBUG PoliciesPage] loadPolicies called')
+    console.log('[DEBUG PoliciesPage] currentUser:', currentUser)
+    console.log('[DEBUG PoliciesPage] queryParams:', queryParams)
 
-  const filteredPolicies = policies.filter(policy => {
-    const matchesSearch = policy.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          policy.policyNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !filterStatus || policy.status === filterStatus
-    return matchesSearch && matchesStatus
-  })
+    try {
+      setLoading(true)
+      setError(null)
+      console.log('[DEBUG PoliciesPage] Calling fetchPolicies...')
+      const data = await fetchPolicies(queryParams)
+      console.log('[DEBUG PoliciesPage] Received data:', data)
+      setPolicies(data)
+      console.log('[DEBUG PoliciesPage] State updated with policies')
+    } catch (err) {
+      console.error('[DEBUG PoliciesPage] Error in loadPolicies:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load policies'
+      console.error('[DEBUG PoliciesPage] Setting error:', errorMessage)
+      setError(errorMessage)
+    } finally {
+      setLoading(false)
+      console.log('[DEBUG PoliciesPage] Loading set to false')
+    }
+  }
 
-  if (loading) {
+  const handleParamsChange = useCallback((newParams: PolicyQueryParams) => {
+    const queryString = buildQueryString(newParams)
+    router.push(`/admin/policies${queryString ? `?${queryString}` : ''}`)
+  }, [router])
+
+  const handlePageChange = (newPage: number) => {
+    handleParamsChange({ ...queryParams, page: newPage })
+  }
+
+  // RBAC error state
+  if (error === 'Access denied. Admin privileges required.') {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="card max-w-md">
+          <div className="p-8 text-center">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">
+              You need administrator privileges to access this page.
+            </p>
+            <button
+              onClick={() => router.push('/admin')}
+              className="btn-primary"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
+  const totalPages = Math.ceil(policies.total / (queryParams.pageSize || 20))
+  const currentPage = queryParams.page || 1
+
   return (
     <div className="space-y-6">
-      {/* Page Actions */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="flex-1 max-w-lg">
-            <input
-              type="text"
-              placeholder="Search by name or policy number..."
-              className="input"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="w-full sm:w-auto">
-            <select
-              className="input"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="DRAFT">Draft</option>
-              <option value="ACTIVE">Active</option>
-              <option value="RETIRED">Retired</option>
-            </select>
-          </div>
+      {/* Page Header with Create Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Policies</h1>
+          <p className="text-gray-600 mt-1">
+            Manage insurance policies and plan versions
+          </p>
         </div>
-        <button
-          onClick={() => router.push('/admin/policies/new')}
-          className="btn-primary"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Policy
-        </button>
-      </div>
-
-      {/* Policies Table */}
-      <div className="table-container">
-        {filteredPolicies.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a4 4 0 01-4-4V9a4 4 0 014-4h10a4 4 0 014 4v8a4 4 0 01-4 4z" />
-              </svg>
-            </div>
-            <h4 className="empty-state-title">No policies found</h4>
-            <p className="empty-state-description">
-              {searchTerm || filterStatus ? 'Try adjusting your search criteria.' : 'Get started by creating your first policy.'}
-            </p>
-            {!searchTerm && !filterStatus && (
-              <button
-                onClick={() => router.push('/admin/policies/new')}
-                className="btn-primary mt-4"
-              >
-                Create Policy
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Policy Number</th>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th className="hidden lg:table-cell">Effective Period</th>
-                  <th className="hidden xl:table-cell">Owner/Payer</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPolicies.map((policy) => (
-                  <tr key={policy._id}>
-                    <td>
-                      <div className="font-mono text-sm font-medium">
-                        {policy.policyNumber}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="font-medium text-gray-900">{policy.name}</div>
-                      {policy.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-xs lg:max-w-none">
-                          {policy.description.substring(0, 60)}...
-                        </div>
-                      )}
-                      <div className="text-xs text-gray-400 mt-1 lg:hidden">
-                        {new Date(policy.effectiveFrom).toLocaleDateString()} - {policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString() : 'Ongoing'}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={
-                        policy.status === 'ACTIVE'
-                          ? 'badge-success'
-                          : policy.status === 'DRAFT'
-                          ? 'badge-warning'
-                          : 'badge-default'
-                      }>
-                        <span className={`status-dot mr-1 ${
-                          policy.status === 'ACTIVE'
-                            ? 'status-active'
-                            : policy.status === 'DRAFT'
-                            ? 'status-pending'
-                            : 'status-inactive'
-                        }`}></span>
-                        {policy.status}
-                      </span>
-                    </td>
-                    <td className="hidden lg:table-cell">
-                      <div className="text-sm text-gray-900">
-                        {new Date(policy.effectiveFrom).toLocaleDateString()}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        to {policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString() : 'Ongoing'}
-                      </div>
-                    </td>
-                    <td className="hidden xl:table-cell">
-                      <div className="text-sm text-gray-900">
-                        {policy.ownerPayer || 'Not specified'}
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => router.push(`/admin/policies/${policy._id}`)}
-                        className="btn-ghost p-1 text-xs"
-                        title="View Details"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN') && (
+          <button
+            onClick={() => router.push('/admin/policies/new')}
+            className="btn-primary"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Policy
+          </button>
         )}
       </div>
+
+      {/* Result Count */}
+      {!loading && policies.total > 0 && (
+        <div className="text-sm text-gray-600" role="status" aria-live="polite">
+          Showing {((currentPage - 1) * (queryParams.pageSize || 20)) + 1} to{' '}
+          {Math.min(currentPage * (queryParams.pageSize || 20), policies.total)} of{' '}
+          {policies.total} policies
+          {totalPages > 1 && `, page ${currentPage} of ${totalPages}`}
+        </div>
+      )}
+
+      {/* Filters */}
+      <PolicyFilters
+        params={queryParams}
+        onParamsChange={handleParamsChange}
+      />
+
+      {/* Table */}
+      <PolicyTable
+        policies={policies.data}
+        loading={loading}
+        error={error}
+        params={queryParams}
+        total={policies.total}
+        currentUserRole={currentUser?.role}
+      />
+
+      {/* Pagination */}
+      {!loading && policies.total > (queryParams.pageSize || 20) && (
+        <div className="flex items-center justify-between bg-white px-4 py-3 rounded-lg shadow-sm">
+          <div className="hidden sm:block">
+            <p className="text-sm text-gray-700">
+              Page <span className="font-medium">{currentPage}</span> of{' '}
+              <span className="font-medium">{totalPages}</span>
+            </p>
+          </div>
+          <div className="flex-1 flex justify-between sm:justify-end space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="btn-ghost"
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            <div className="hidden sm:flex space-x-1">
+              {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                let pageNum: number
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={pageNum === currentPage ? 'btn-primary px-3 py-1' : 'btn-ghost px-3 py-1'}
+                    aria-label={`Go to page ${pageNum}`}
+                    aria-current={pageNum === currentPage ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+            </div>
+
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="btn-ghost"
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

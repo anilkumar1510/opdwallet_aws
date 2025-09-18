@@ -211,9 +211,9 @@ export default function NewPolicyPage() {
                         onChange={(e) => setFormData({ ...formData, ownerPayer: e.target.value })}
                       >
                         <option value="">Select...</option>
-                        <option value="Corporate">Corporate</option>
-                        <option value="Insurer">Insurer</option>
-                        <option value="Hybrid">Hybrid</option>
+                        <option value="CORPORATE">Corporate</option>
+                        <option value="INSURER">Insurer</option>
+                        <option value="HYBRID">Hybrid</option>
                       </select>
                     </div>
                   </div>
