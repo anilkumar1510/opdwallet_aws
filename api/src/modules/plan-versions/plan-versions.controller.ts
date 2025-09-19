@@ -17,6 +17,8 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { CoverageService } from '../benefits/coverage.service';
+import { UpdateCoverageDto } from '../benefits/dto/update-coverage.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -29,7 +31,10 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class PlanVersionsController {
-  constructor(private readonly planVersionsService: PlanVersionsService) {}
+  constructor(
+    private readonly planVersionsService: PlanVersionsService,
+    private readonly coverageService: CoverageService,
+  ) {}
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
@@ -76,6 +81,30 @@ export class PlanVersionsController {
     return this.planVersionsService.publish(policyId, parseInt(version), req.user);
   }
 
+  @Get(':version/readiness')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Check readiness for publishing a plan version' })
+  @ApiResponse({ status: 200, description: 'Readiness check completed' })
+  @ApiResponse({ status: 404, description: 'Plan version not found' })
+  async checkReadiness(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+  ) {
+    return this.planVersionsService.checkPublishReadiness(policyId, parseInt(version));
+  }
+
+  @Get(':version/effective-config')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get effective configuration for a plan version' })
+  @ApiResponse({ status: 200, description: 'Effective configuration retrieved' })
+  @ApiResponse({ status: 404, description: 'Plan version not found' })
+  async getEffectiveConfig(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+  ) {
+    return this.planVersionsService.getEffectiveConfig(policyId, parseInt(version));
+  }
+
   @Patch('current')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Set the current plan version for a policy' })
@@ -88,5 +117,93 @@ export class PlanVersionsController {
     @Request() req: any,
   ) {
     return this.planVersionsService.setCurrentVersion(policyId, dto.planVersion, req.user);
+  }
+
+  @Get(':version/coverage')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get coverage matrix for a plan version' })
+  @ApiResponse({ status: 200, description: 'Coverage matrix retrieved successfully' })
+  async getCoverageMatrix(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('search') searchQuery?: string,
+    @Query('enabledOnly') enabledOnly?: string,
+  ) {
+    const planVersion = await this.planVersionsService.findByVersion(policyId, parseInt(version));
+    return this.coverageService.getCoverageMatrix(
+      (planVersion as any)._id.toString(),
+      categoryId,
+      searchQuery,
+      enabledOnly === 'true',
+    );
+  }
+
+  @Get(':version/coverage/categories')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get categories for a plan version' })
+  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  async getCoverageCategories(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+  ) {
+    const planVersion = await this.planVersionsService.findByVersion(policyId, parseInt(version));
+    return this.coverageService.getCategoriesForPlanVersion((planVersion as any)._id.toString());
+  }
+
+  @Patch(':version/coverage')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update coverage matrix for a plan version' })
+  @ApiResponse({ status: 200, description: 'Coverage matrix updated successfully' })
+  async updateCoverageMatrix(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+    @Body() updateCoverageDto: UpdateCoverageDto,
+    @Request() req: any,
+  ) {
+    const planVersion = await this.planVersionsService.findByVersion(policyId, parseInt(version));
+    return this.coverageService.updateCoverageMatrix(
+      (planVersion as any)._id.toString(),
+      updateCoverageDto,
+      req.user?.email,
+    );
+  }
+
+  @Post(':version/coverage/bulk-enable')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Enable all services for specific categories' })
+  @ApiResponse({ status: 200, description: 'Services enabled successfully' })
+  async bulkEnableServices(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+    @Body() body: { categoryIds: string[] },
+    @Request() req: any,
+  ) {
+    const planVersion = await this.planVersionsService.findByVersion(policyId, parseInt(version));
+    return this.coverageService.bulkUpdateCategoryServices(
+      (planVersion as any)._id.toString(),
+      body.categoryIds,
+      true,
+      req.user?.email,
+    );
+  }
+
+  @Post(':version/coverage/bulk-disable')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Disable all services for specific categories' })
+  @ApiResponse({ status: 200, description: 'Services disabled successfully' })
+  async bulkDisableServices(
+    @Param('policyId') policyId: string,
+    @Param('version') version: string,
+    @Body() body: { categoryIds: string[] },
+    @Request() req: any,
+  ) {
+    const planVersion = await this.planVersionsService.findByVersion(policyId, parseInt(version));
+    return this.coverageService.bulkUpdateCategoryServices(
+      (planVersion as any)._id.toString(),
+      body.categoryIds,
+      false,
+      req.user?.email,
+    );
   }
 }

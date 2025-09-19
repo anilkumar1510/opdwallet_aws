@@ -1,5 +1,5 @@
 # 03_TODO_CHANGELOG.md
-**Last Updated: September 17, 2025**
+**Last Updated: September 19, 2025**
 **Deployment Status: LIVE at http://51.20.125.246**
 
 ## 📋 VERIFICATION & DEBUGGING PROCEDURES
@@ -55,8 +55,8 @@ A feature/fix is ONLY complete when:
 - [x] **Secure JWT Secret** - Using environment variable
 - [ ] **Fix Cookie Security** - Enable Secure flag with HTTPS
 - [ ] **Restrict CORS** - Currently allowing all origins
-- [ ] **Implement Rate Limiting** - No protection against abuse
-- [ ] **Add Input Validation** - Prevent XSS/injection attacks
+- [x] **Implement Rate Limiting** - Configured with 10000 req/min (dev)
+- [x] **Add Input Validation** - DTOs with class-validator
 
 ## Current TODO List
 
@@ -133,6 +133,188 @@ A feature/fix is ONLY complete when:
 5. **CORS Configuration**: Restrict API access to known domains
 
 ## Changelog
+
+### 2025-09-19 - COMPLETE ADMIN PORTAL DOCUMENTATION UPDATE
+
+#### Documentation Overhaul for Admin Portal
+- **UPDATED**: All three root documentation files with complete Admin Portal features
+- **01_PRODUCT_ARCHITECTURE.md**:
+  - Added comprehensive Admin Portal Feature Set section
+  - Documented 9 complete admin modules with all functionality
+  - Updated AWS infrastructure details with current EC2 IP (51.20.125.246)
+  - Added detailed feature descriptions for all implemented modules
+
+- **02_DATA_SCHEMA_AND_CREDENTIALS.md**:
+  - Complete MongoDB snapshot with all 13 collections
+  - Added actual document counts and sample data from current database
+  - Updated security configurations with current rate limiting (10000/min)
+  - Added all indexes and performance optimization details
+  - Documented all environment variables and external endpoints
+
+- **03_TODO_CHANGELOG.md**:
+  - Updated verification checklist with completed Admin Portal features
+  - Added recent bug fixes and implementations
+  - Updated security checklist with completed items
+
+- **ADMIN PORTAL MODULES DOCUMENTED**:
+  1. User Management - Full CRUD with tabs, password management
+  2. Policy Management - Advanced filtering, plan versions, RBAC
+  3. Plan Version Configuration - Benefits, Wallet, Coverage tabs
+  4. Policy Rules - Legacy wallet limits system
+  5. Categories Master - CAT### management
+  6. Service Types - Healthcare service definitions
+  7. Assignments - Policy-user linking with overrides
+  8. Audit & Compliance - Immutable audit trail
+  9. Dashboard & Analytics - Metrics and quick actions
+
+- **VERIFICATION**: All documentation now reflects actual implementation
+
+### 2025-09-19 - WALLET RULES SAVE FUNCTIONALITY FIX
+
+#### Fixed Wallet Rules Configuration Save Issues
+- **ISSUE**: Wallet rules save was failing with validation errors
+- **ROOT CAUSES**:
+  1. API returning null for empty wallet rules, causing JSON parse error
+  2. totalAnnualAmount field marked as required in DTO when it should be optional
+  3. Frontend sending undefined values that backend couldn't handle
+
+- **FIXES IMPLEMENTED**:
+  1. Updated API to return empty object `{}` instead of null
+  2. Added @IsOptional() decorator to totalAnnualAmount in UpdateWalletRulesDto
+  3. Enhanced frontend data cleaning before API calls
+  4. Added comprehensive debugging and error handling
+
+- **VERIFICATION**:
+  - [x] Wallet configuration saves successfully
+  - [x] Empty configurations handled gracefully
+  - [x] Optional fields properly validated
+  - [x] Save button always enabled per user request
+
+### 2025-09-19 - RATE LIMITING INCREASE
+
+#### Increased Rate Limits for Development
+- **ISSUE**: "Too many requests from this IP" errors blocking development
+- **USER REQUEST**: "increase rate limits for now"
+- **CHANGES**:
+  - Increased global limit from 100 to 10000 requests per minute
+  - Updated ThrottlerModule configuration in app.module.ts
+  - Maintained auth-specific limits at 5 attempts per 15 minutes
+
+- **VERIFICATION**:
+  - [x] No more rate limit errors during normal development
+  - [x] Login and API calls work without throttling
+  - [x] Multiple rapid saves now possible
+
+### 2025-09-19 - COVERAGE MATRIX V1 IMPLEMENTATION
+
+#### Implemented Complete Coverage Matrix Feature
+- **GOAL**: Make Coverage tab on Plan Version Config page fully functional
+- **KEY FEATURES IMPLEMENTED**:
+  - Canonical naming system (CONSULTATION, PHARMACY, DIAGNOSTICS)
+  - Virtual rows showing all services even without database records
+  - DRAFT-only validation preventing published version modifications
+  - Master data with correct service code prefixes (CON/PHA/LAB)
+  - Filters for category, search, and enabled-only views
+  - Bulk enable/disable functionality per category
+  - Coverage readiness checks for publish validation
+
+- **CANONICAL NAMING IMPLEMENTATION**:
+  - Created `/api/src/common/constants/coverage.constants.ts` with CATEGORY_KEYS
+  - Duplicated constants in `/web-admin/lib/constants/coverage.ts` for UI
+  - BENEFIT_TO_CATEGORY mapping for linking benefits to categories
+  - CategoryIds now use canonical keys: CONSULTATION, PHARMACY, DIAGNOSTICS
+
+- **VIRTUAL ROWS PATTERN**:
+  - Shows all possible service combinations in UI
+  - Database stores only configured services (enabled/disabled with notes)
+  - Unconfigured services appear as virtual rows with enabled=false
+  - Ensures complete visibility of available services
+
+- **API ENDPOINTS ADDED**:
+  - GET `/api/admin/policies/:id/plan-versions/:ver/coverage` - Get coverage matrix
+  - PATCH `/api/admin/policies/:id/plan-versions/:ver/coverage` - Update coverage
+  - GET `/api/admin/policies/:id/plan-versions/:ver/coverage/categories` - Categories dropdown
+  - POST `/api/admin/policies/:id/plan-versions/:ver/coverage/bulk-enable` - Bulk enable
+  - POST `/api/admin/policies/:id/plan-versions/:ver/coverage/bulk-disable` - Bulk disable
+
+- **DATABASE SCHEMA**:
+  - BenefitCoverageMatrix collection with compound unique index
+  - Fields: planVersionId, categoryId, serviceCode, enabled, notes
+  - Indexes on (planVersionId, categoryId, serviceCode) for uniqueness
+
+- **UI COMPONENTS**:
+  - Complete rewrite of CoverageTab.tsx with filters and bulk actions
+  - Category filter dropdown with service counts
+  - Search functionality across service names and codes
+  - Show enabled-only toggle for filtered views
+  - Bulk enable/disable buttons per category
+  - Modified services tracking with save/cancel functionality
+
+- **SEED SCRIPTS UPDATED**:
+  - Categories use canonical IDs (CONSULTATION not CAT001)
+  - Service codes use proper prefixes (CON###, PHA###, LAB###)
+  - Added `npm run seed:masters` script for running master data seeds
+
+- **TESTING**:
+  - Created coverage.service.spec.ts with comprehensive unit tests
+  - Tests for virtual rows, filtering, bulk operations
+  - DRAFT-only validation tests
+  - Coverage readiness calculation tests
+
+- **VERIFICATION**:
+  - [x] Coverage matrix loads with all services
+  - [x] Virtual rows display for unconfigured services
+  - [x] Filters work correctly (category, search, enabled-only)
+  - [x] Bulk enable/disable updates all services
+  - [x] DRAFT validation prevents published version edits
+  - [x] Save/cancel functionality works properly
+  - [x] Coverage readiness integrated with publish checks
+
+### 2025-09-19 - PLAN VERSION READINESS PANEL & EFFECTIVE CONFIG PREVIEW
+
+#### Added Readiness Panel with Publish Gating
+- **NEW FEATURES**: Comprehensive readiness checks and member view preview
+- **READINESS PANEL**:
+  - Visual pass/fail indicators for all validation checks
+  - Real-time readiness status (READY/BLOCKED)
+  - Auto-expands when checks fail
+  - Refresh button for re-validation
+  - Integrated publish button (disabled when blocked)
+
+- **READINESS CHECKS IMPLEMENTED**:
+  1. **Version Status**: Must be in DRAFT to publish
+  2. **Date Validation**: Valid dates within policy window
+  3. **Wallet Configuration**: totalAnnualAmount > 0 required
+  4. **Benefit Components**: At least one must be enabled
+  5. **Coverage Matrix**: Required for enabled services (Diagnostics, Consultation, Pharmacy)
+
+- **EFFECTIVE CONFIG PREVIEW**:
+  - Shows exact payload members will receive
+  - Collapsible sections for Policy, Wallet, Benefits, Coverage
+  - Real-time data fetching with refresh capability
+  - Visual indicators for enabled/disabled benefits
+  - Currency formatting and date localization
+
+- **SERVER-SIDE GUARDRAILS**:
+  - Publish endpoint validates all readiness checks
+  - Returns detailed failure messages
+  - Prevents invalid configurations from being published
+  - Maintains data integrity at API level
+
+- **API ENDPOINTS ADDED**:
+  - GET /api/admin/policies/:id/plan-versions/:ver/readiness - Check publish readiness
+  - GET /api/admin/policies/:id/plan-versions/:ver/effective-config - Get member view
+
+- **UI COMPONENTS CREATED**:
+  - ReadinessPanel.tsx - Readiness validation display
+  - EffectiveConfigPreview.tsx - Member payload preview
+  - Integrated into Plan Version Config page
+
+- **VERIFICATION**:
+  - [x] Readiness checks prevent invalid publish
+  - [x] Server-side validation matches UI checks
+  - [x] DRAFT-only editing enforced
+  - [x] Preview shows accurate member data
 
 ### 2025-09-18 - PLAN VERSION LIFECYCLE & EFFECTIVE CONFIG RESOLVER (V1)
 

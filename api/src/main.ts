@@ -61,6 +61,7 @@ async function bootstrap() {
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:3002',
+        'http://localhost:3003',
         'http://13.60.210.156',
         'https://13.60.210.156',
       ];
@@ -88,7 +89,7 @@ async function bootstrap() {
     '/api/auth/login',
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 5, // limit each IP to 5 login attempts per windowMs
+      max: 50, // limit each IP to 50 login attempts per windowMs (increased for development)
       message: 'Too many login attempts, please try again later.',
       skipSuccessfulRequests: true,
     }),

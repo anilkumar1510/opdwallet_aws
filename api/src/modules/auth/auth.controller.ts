@@ -39,6 +39,14 @@ export class AuthController {
     @Request() req: ExpressRequest,
     @Response({ passthrough: true }) res: ExpressResponse,
   ) {
+    console.log('[AUTH CONTROLLER DEBUG] Login endpoint hit');
+    console.log('[AUTH CONTROLLER DEBUG] Request body:', loginDto);
+    console.log('[AUTH CONTROLLER DEBUG] Request user (after validation):', req.user);
+
+    if (!req.user) {
+      console.log('[AUTH CONTROLLER DEBUG] ERROR: No user attached to request - authentication failed');
+    }
+
     const result = await this.authService.login(req.user);
 
     const cookieConfig = this.configService.get('cookie');

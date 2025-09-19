@@ -37,14 +37,53 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
 
   const fetchWalletRules = async () => {
     try {
+      console.log('🔄 FETCHING WALLET RULES...')
+      console.log('URL:', `/api/admin/policies/${policyId}/plan-versions/${planVersion}/wallet-rules`)
+
       const response = await apiFetch(
         `/api/admin/policies/${policyId}/plan-versions/${planVersion}/wallet-rules`
       )
+
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+
       if (!response.ok) throw new Error('Failed to fetch wallet rules')
-      const data = await response.json()
-      setWalletRules(data || {})
+
+      // Check if response has content
+      const text = await response.text()
+      console.log('Raw response text:', text)
+
+      let data = {}
+      if (text && text.trim()) {
+        try {
+          data = JSON.parse(text)
+          console.log('Parsed wallet rules data:', data)
+        } catch (parseError) {
+          console.error('Failed to parse JSON:', parseError)
+          console.log('Using empty object as fallback')
+          data = {}
+        }
+      } else {
+        console.log('Empty response, using default empty object')
+        data = {}
+      }
+
+      setWalletRules(data)
+
+      // Notify parent component of the initial data
+      console.log('📤 Notifying parent with initial data:', data)
+      if (onUpdate) {
+        onUpdate(data)
+      }
     } catch (error) {
       console.error('Error fetching wallet rules:', error)
+      // If no data exists, notify parent with empty object
+      const emptyData = {}
+      setWalletRules(emptyData)
+      console.log('📤 Notifying parent with empty data due to error')
+      if (onUpdate) {
+        onUpdate(emptyData)
+      }
     } finally {
       setLoading(false)
     }
@@ -71,13 +110,24 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
   }
 
   const handleChange = (field: string, value: any) => {
+    console.log(`🔄 HANDLE CHANGE: ${field}`, {
+      field,
+      newValue: value,
+      valueType: typeof value,
+      currentRules: walletRules
+    })
+
     const updatedRules = {
       ...walletRules,
       [field]: value
     }
+
+    console.log('Updated rules after change:', updatedRules)
     setWalletRules(updatedRules)
+
     // Call onUpdate to notify parent component of changes
     if (onUpdate) {
+      console.log('📤 Notifying parent with updated rules:', updatedRules)
       onUpdate(updatedRules)
     }
   }
@@ -104,11 +154,12 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
               </label>
               <input
                 type="number"
-                value={walletRules.totalAnnualAmount || ''}
-                onChange={(e) => handleChange('totalAnnualAmount', e.target.value ? Number(e.target.value) : undefined)}
+                value={walletRules.totalAnnualAmount ?? ''}
+                onChange={(e) => handleChange('totalAnnualAmount', e.target.value === '' ? undefined : Number(e.target.value))}
                 disabled={!isEditable}
+                min="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-100"
-                placeholder="Enter amount"
+                placeholder="Enter amount (optional)"
               />
             </div>
             <div>
@@ -117,11 +168,12 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
               </label>
               <input
                 type="number"
-                value={walletRules.perClaimLimit || ''}
-                onChange={(e) => handleChange('perClaimLimit', e.target.value ? Number(e.target.value) : undefined)}
+                value={walletRules.perClaimLimit ?? ''}
+                onChange={(e) => handleChange('perClaimLimit', e.target.value === '' ? undefined : Number(e.target.value))}
                 disabled={!isEditable}
+                min="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-100"
-                placeholder="No limit"
+                placeholder="No limit (optional)"
               />
             </div>
           </div>
@@ -139,8 +191,8 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
                 value={walletRules.copay?.mode || 'PERCENT'}
                 onChange={(e) =>
                   handleChange('copay', {
-                    ...walletRules.copay,
                     mode: e.target.value as 'PERCENT' | 'AMOUNT',
+                    value: walletRules.copay?.value || 0,
                   })
                 }
                 disabled={!isEditable}
@@ -156,16 +208,18 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
               </label>
               <input
                 type="number"
-                value={walletRules.copay?.value || ''}
+                value={walletRules.copay?.value ?? ''}
                 onChange={(e) =>
-                  handleChange('copay', {
-                    ...walletRules.copay,
-                    value: e.target.value ? Number(e.target.value) : 0,
+                  handleChange('copay', e.target.value === '' ? undefined : {
+                    mode: walletRules.copay?.mode || 'PERCENT',
+                    value: Number(e.target.value),
                   })
                 }
                 disabled={!isEditable}
+                min="0"
+                max={walletRules.copay?.mode === 'PERCENT' ? '100' : undefined}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-500 focus:border-brand-500 disabled:bg-gray-100"
-                placeholder="Enter value"
+                placeholder="Enter value (optional)"
               />
             </div>
           </div>
@@ -231,11 +285,11 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
                   </label>
                   <input
                     type="number"
-                    value={walletRules.carryForward?.percent || ''}
+                    value={walletRules.carryForward?.percent ?? ''}
                     onChange={(e) =>
                       handleChange('carryForward', {
                         ...walletRules.carryForward,
-                        percent: e.target.value ? Number(e.target.value) : undefined,
+                        percent: e.target.value === '' ? undefined : Number(e.target.value),
                       })
                     }
                     disabled={!isEditable}
@@ -251,11 +305,11 @@ export default function WalletTab({ policyId, planVersion, isEditable, onUpdate 
                   </label>
                   <input
                     type="number"
-                    value={walletRules.carryForward?.months || ''}
+                    value={walletRules.carryForward?.months ?? ''}
                     onChange={(e) =>
                       handleChange('carryForward', {
                         ...walletRules.carryForward,
-                        months: e.target.value ? Number(e.target.value) : undefined,
+                        months: e.target.value === '' ? undefined : Number(e.target.value),
                       })
                     }
                     disabled={!isEditable}

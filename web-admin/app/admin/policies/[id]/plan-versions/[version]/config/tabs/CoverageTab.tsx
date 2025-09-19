@@ -1,7 +1,10 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { apiFetch } from '@/lib/api'
 import { Switch } from '@/components/ui/switch'
 import { MagnifyingGlassIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { CATEGORY_KEYS, BENEFIT_TO_CATEGORY } from '@/lib/constants/coverage'
 
 interface CoverageTabProps {
   policyId: string
@@ -9,35 +12,47 @@ interface CoverageTabProps {
   isEditable: boolean
 }
 
-interface CoverageRow {
+interface ServiceCoverage {
+  serviceCode: string
+  serviceName: string
   categoryId: string
-  categoryName?: string
-  serviceCode?: string
-  serviceName?: string
   enabled: boolean
   notes?: string
+  isVirtual: boolean
 }
 
-interface Category {
+interface CategoryCoverage {
   categoryId: string
+  code: string
   name: string
-  isActive: boolean
+  services: ServiceCoverage[]
+  servicesCount: number
+  enabledCount: number
 }
 
-interface Service {
+interface CoverageMatrix {
+  planVersionId: string
+  categories: CategoryCoverage[]
+  summary: {
+    totalServices: number
+    enabledServices: number
+    disabledServices: number
+  }
+}
+
+interface CategoryInfo {
+  categoryId: string
   code: string
-  serviceType: string
-  category: string
-  isActive: boolean
+  name: string
+  servicesCount: number
 }
 
 export default function CoverageTab({ policyId, planVersion, isEditable }: CoverageTabProps) {
-  const [coverageRows, setCoverageRows] = useState<CoverageRow[]>([])
-  const [filteredRows, setFilteredRows] = useState<CoverageRow[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [services, setServices] = useState<Service[]>([])
+  const [coverageData, setCoverageData] = useState<CoverageMatrix | null>(null)
+  const [categories, setCategories] = useState<CategoryInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [modifiedServices, setModifiedServices] = useState<Map<string, boolean>>(new Map())
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -48,339 +63,321 @@ export default function CoverageTab({ policyId, planVersion, isEditable }: Cover
     fetchData()
   }, [policyId, planVersion])
 
-  useEffect(() => {
-    applyFilters()
-  }, [coverageRows, selectedCategory, searchQuery, showEnabledOnly])
-
   const fetchData = async () => {
     try {
       setLoading(true)
 
-      // Fetch categories
-      const categoriesResponse = await apiFetch('/api/categories')
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json()
-        setCategories(categoriesData.filter((c: Category) => c.isActive))
-      }
+      // Build query params
+      const params = new URLSearchParams()
+      if (selectedCategory !== 'all') params.append('categoryId', selectedCategory)
+      if (searchQuery) params.append('search', searchQuery)
+      if (showEnabledOnly) params.append('enabledOnly', 'true')
 
-      // Fetch services
-      const servicesResponse = await apiFetch('/api/services')
-      if (servicesResponse.ok) {
-        const servicesData = await servicesResponse.json()
-        setServices(servicesData.filter((s: Service) => s.isActive))
-      }
-
-      // Fetch coverage matrix
+      // Fetch coverage matrix with filters
       const coverageResponse = await apiFetch(
-        `/api/admin/policies/${policyId}/plan-versions/${planVersion}/coverage`
+        `/api/admin/policies/${policyId}/plan-versions/${planVersion}/coverage?${params}`
       )
-      if (coverageResponse.ok) {
-        const coverageData = await coverageResponse.json()
-        const existingRows = coverageData.rows || []
 
-        // Build complete matrix with all categories and services
-        const completeMatrix = buildCompleteMatrix(existingRows)
-        setCoverageRows(completeMatrix)
+      if (coverageResponse.ok) {
+        const data = await coverageResponse.json()
+        setCoverageData(data)
+      }
+
+      // Fetch categories for dropdown if needed
+      if (selectedCategory === 'all' || categories.length === 0) {
+        const categoriesResponse = await apiFetch(
+          `/api/admin/policies/${policyId}/plan-versions/${planVersion}/coverage/categories`
+        )
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json()
+          setCategories(categoriesData)
+        }
       }
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching coverage data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const buildCompleteMatrix = (existingRows: CoverageRow[]) => {
-    const matrix: CoverageRow[] = []
+  const toggleService = (categoryId: string, serviceCode: string, currentValue: boolean) => {
+    if (!isEditable) return
 
-    // Create a map of existing rows for quick lookup
-    const existingMap = new Map<string, CoverageRow>()
-    existingRows.forEach(row => {
-      const key = `${row.categoryId}-${row.serviceCode || 'category'}`
-      existingMap.set(key, row)
-    })
+    const key = `${categoryId}-${serviceCode}`
+    const newModified = new Map(modifiedServices)
+    newModified.set(key, !currentValue)
+    setModifiedServices(newModified)
 
-    // Add category-level entries
-    categories.forEach(category => {
-      const key = `${category.categoryId}-category`
-      const existing = existingMap.get(key)
-      matrix.push({
-        categoryId: category.categoryId,
-        categoryName: category.name,
-        enabled: existing?.enabled || false,
-        notes: existing?.notes,
-      })
-
-      // Add service-level entries for this category
-      services
-        .filter(service => service.category === category.categoryId)
-        .forEach(service => {
-          const serviceKey = `${category.categoryId}-${service.code}`
-          const existingService = existingMap.get(serviceKey)
-          matrix.push({
-            categoryId: category.categoryId,
-            categoryName: category.name,
-            serviceCode: service.code,
-            serviceName: service.serviceType,
-            enabled: existingService?.enabled || false,
-            notes: existingService?.notes,
-          })
-        })
-    })
-
-    return matrix
-  }
-
-  const applyFilters = () => {
-    let filtered = [...coverageRows]
-
-    // Category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(row => row.categoryId === selectedCategory)
-    }
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(row =>
-        row.categoryName?.toLowerCase().includes(query) ||
-        row.serviceCode?.toLowerCase().includes(query) ||
-        row.serviceName?.toLowerCase().includes(query)
-      )
-    }
-
-    // Enabled only filter
-    if (showEnabledOnly) {
-      filtered = filtered.filter(row => row.enabled)
-    }
-
-    setFilteredRows(filtered)
-  }
-
-  const updateRow = (index: number, field: keyof CoverageRow, value: any) => {
-    const updatedRows = [...coverageRows]
-    const rowIndex = coverageRows.findIndex(
-      r => r === filteredRows[index]
-    )
-    if (rowIndex !== -1) {
-      updatedRows[rowIndex] = {
-        ...updatedRows[rowIndex],
-        [field]: value,
+    // Update local state
+    if (coverageData) {
+      const updatedData = { ...coverageData }
+      const category = updatedData.categories.find(c => c.categoryId === categoryId)
+      if (category) {
+        const service = category.services.find(s => s.serviceCode === serviceCode)
+        if (service) {
+          service.enabled = !currentValue
+          // Update counts
+          if (!currentValue) {
+            category.enabledCount++
+            updatedData.summary.enabledServices++
+            updatedData.summary.disabledServices--
+          } else {
+            category.enabledCount--
+            updatedData.summary.enabledServices--
+            updatedData.summary.disabledServices++
+          }
+        }
       }
-      setCoverageRows(updatedRows)
+      setCoverageData(updatedData)
     }
   }
 
-  const saveCoverage = async () => {
+  const bulkToggleCategory = async (categoryId: string, enable: boolean) => {
     if (!isEditable) return
 
     try {
       setSaving(true)
-
-      // Filter out rows that match default state (not enabled, no notes)
-      const rowsToSave = coverageRows
-        .filter(row => row.enabled || row.notes)
-        .map(({ categoryId, serviceCode, enabled, notes }) => ({
-          categoryId,
-          serviceCode,
-          enabled,
-          notes,
-        }))
-
+      const endpoint = enable ? 'bulk-enable' : 'bulk-disable'
       const response = await apiFetch(
-        `/api/admin/policies/${policyId}/plan-versions/${planVersion}/coverage`,
+        `/api/admin/policies/${policyId}/plan-versions/${planVersion}/coverage/${endpoint}`,
         {
-          method: 'PUT',
-          body: JSON.stringify({ rows: rowsToSave }),
+          method: 'POST',
+          body: JSON.stringify({ categoryIds: [categoryId] }),
         }
       )
 
-      if (!response.ok) throw new Error('Failed to save coverage matrix')
+      if (!response.ok) throw new Error(`Failed to ${enable ? 'enable' : 'disable'} services`)
 
-      // Show success message
-      alert('Coverage matrix saved successfully')
+      // Refresh data
+      await fetchData()
+      setModifiedServices(new Map())
     } catch (error) {
-      console.error('Error saving:', error)
-      alert('Failed to save coverage matrix')
+      console.error(`Error ${enable ? 'enabling' : 'disabling'} services:`, error)
     } finally {
       setSaving(false)
     }
   }
 
-  const toggleAllInCategory = (categoryId: string, enabled: boolean) => {
-    const updatedRows = coverageRows.map(row =>
-      row.categoryId === categoryId ? { ...row, enabled } : row
-    )
-    setCoverageRows(updatedRows)
+  const saveCoverage = async () => {
+    if (!isEditable || modifiedServices.size === 0) return
+
+    try {
+      setSaving(true)
+
+      // Build items array from modified services
+      const items: Array<{
+        categoryId: string
+        serviceCode: string
+        enabled: boolean
+        notes?: string
+      }> = []
+
+      modifiedServices.forEach((enabled, key) => {
+        const [categoryId, serviceCode] = key.split('-')
+        items.push({ categoryId, serviceCode, enabled })
+      })
+
+      const response = await apiFetch(
+        `/api/admin/policies/${policyId}/plan-versions/${planVersion}/coverage`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ items }),
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to save coverage matrix')
+
+      // Clear modified state
+      setModifiedServices(new Map())
+
+      // Refresh data
+      await fetchData()
+    } catch (error) {
+      console.error('Error saving coverage:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  if (loading) return <div>Loading coverage configuration...</div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b">
-        <h2 className="text-lg font-medium">Coverage Matrix</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Map categories and services availability for this plan version
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* Filters */}
-      <div className="px-6 py-4 border-b bg-gray-50">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-500 focus:border-brand-500"
-            >
-              <option value="all">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.categoryId} value={cat.categoryId}>
-                  {cat.name} ({cat.categoryId})
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="flex flex-wrap gap-4 items-center">
+        <div>
+          <label className="text-sm font-medium mr-2">Category:</label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value)
+              fetchData()
+            }}
+            className="px-3 py-1 border rounded-md"
+          >
+            <option value="all">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat.categoryId} value={cat.categoryId}>
+                {cat.name} ({cat.servicesCount} services)
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Search
-            </label>
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by service code or name..."
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-brand-500 focus:border-brand-500"
-              />
+        <div className="flex items-center gap-2">
+          <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search services..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              fetchData()
+            }}
+            className="px-3 py-1 border rounded-md"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={showEnabledOnly}
+            onCheckedChange={(checked) => {
+              setShowEnabledOnly(checked)
+              fetchData()
+            }}
+          />
+          <label className="text-sm">Show enabled only</label>
+        </div>
+      </div>
+
+      {/* Summary */}
+      {coverageData && (
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-600">Coverage Summary</p>
+              <p className="text-lg font-medium">
+                {coverageData.summary.enabledServices} / {coverageData.summary.totalServices} services enabled
+              </p>
             </div>
-          </div>
-
-          <div className="flex items-end">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={showEnabledOnly}
-                onChange={(e) => setShowEnabledOnly(e.target.checked)}
-                className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-sm text-gray-700">Show enabled only</span>
-            </label>
-          </div>
-        </div>
-
-        {selectedCategory !== 'all' && isEditable && (
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => toggleAllInCategory(selectedCategory, true)}
-              className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-            >
-              Enable All in Category
-            </button>
-            <button
-              onClick={() => toggleAllInCategory(selectedCategory, false)}
-              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-            >
-              Disable All in Category
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Service Code
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Service Name
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Enabled
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Notes
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredRows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
-                  No services found. Try adjusting your filters.
-                </td>
-              </tr>
-            ) : (
-              filteredRows.map((row, index) => (
-                <tr key={`${row.categoryId}-${row.serviceCode || 'category'}`}
-                    className={!row.serviceCode ? 'bg-gray-50 font-medium' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {row.categoryName} ({row.categoryId})
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {row.serviceCode || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {row.serviceName || 'Category Level'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <Switch
-                      checked={row.enabled}
-                      onCheckedChange={(checked) => updateRow(index, 'enabled', checked)}
-                      disabled={!isEditable}
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input
-                      type="text"
-                      value={row.notes || ''}
-                      onChange={(e) => updateRow(index, 'notes', e.target.value)}
-                      disabled={!isEditable}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-gray-100"
-                      placeholder="Add notes..."
-                    />
-                  </td>
-                </tr>
-              ))
+            {modifiedServices.size > 0 && isEditable && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setModifiedServices(new Map())
+                    fetchData()
+                  }}
+                  className="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveCoverage}
+                  className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/90"
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : `Save Changes (${modifiedServices.size})`}
+                </button>
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Actions */}
-      <div className="px-6 py-4 border-t bg-gray-50">
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            {filteredRows.length} items • {filteredRows.filter(r => r.enabled).length} enabled
           </div>
-          {isEditable && (
-            <button
-              onClick={saveCoverage}
-              disabled={saving}
-              className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Coverage Matrix'}
-            </button>
-          )}
         </div>
+      )}
 
-        {!isEditable && (
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-            This plan version is not in DRAFT status and cannot be edited.
+      {/* Coverage Matrix */}
+      {coverageData?.categories.map((category) => (
+        <div key={category.categoryId} className="border rounded-lg overflow-hidden">
+          {/* Category Header */}
+          <div className="bg-gray-100 px-4 py-3 flex justify-between items-center">
+            <div>
+              <h3 className="font-medium">{category.name}</h3>
+              <p className="text-sm text-gray-600">
+                {category.enabledCount} / {category.servicesCount} services enabled
+              </p>
+            </div>
+            {isEditable && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => bulkToggleCategory(category.categoryId, true)}
+                  className="text-sm px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                  disabled={saving}
+                >
+                  Enable All
+                </button>
+                <button
+                  onClick={() => bulkToggleCategory(category.categoryId, false)}
+                  className="text-sm px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                  disabled={saving}
+                >
+                  Disable All
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Services */}
+          <div className="divide-y">
+            {category.services.map((service) => {
+              const key = `${category.categoryId}-${service.serviceCode}`
+              const isModified = modifiedServices.has(key)
+              const enabled = isModified
+                ? modifiedServices.get(key)!
+                : service.enabled
+
+              return (
+                <div
+                  key={service.serviceCode}
+                  className={`px-4 py-3 flex justify-between items-center ${
+                    isModified ? 'bg-yellow-50' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={() =>
+                        toggleService(category.categoryId, service.serviceCode, service.enabled)
+                      }
+                      disabled={!isEditable}
+                    />
+                    <div>
+                      <p className="font-medium">{service.serviceName}</p>
+                      <p className="text-sm text-gray-500">{service.serviceCode}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {service.isVirtual && (
+                      <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                        Not configured
+                      </span>
+                    )}
+                    {enabled ? (
+                      <CheckIcon className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XMarkIcon className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* Empty State */}
+      {coverageData?.categories.length === 0 && (
+        <div className="text-center py-12 border rounded-lg">
+          <p className="text-gray-500">
+            No services found matching your filters
+          </p>
+        </div>
+      )}
     </div>
   )
 }

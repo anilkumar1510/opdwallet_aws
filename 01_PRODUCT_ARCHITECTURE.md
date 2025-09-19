@@ -1,6 +1,6 @@
 # 01_PRODUCT_ARCHITECTURE.md
-**Last Updated: September 17, 2025**
-**Current Deployment: http://13.60.210.156**
+**Last Updated: September 19, 2025**
+**Current Deployment: http://51.20.125.246**
 
 ## 📋 PROJECT OPERATING RULES (DO NOT DEVIATE)
 
@@ -120,6 +120,87 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 - Track wallet balance
 - View transaction history
 
+## Admin Portal Complete Feature Set
+
+### Implemented Admin Modules
+
+#### 1. User Management Module
+- **User Creation**: Support for all roles (SUPER_ADMIN, ADMIN, TPA, OPS, MEMBER)
+- **Tabbed Interface**: External Users (Members) vs Internal Users (Admin/TPA/OPS)
+- **Password Management**: Set custom or generate temporary passwords
+- **User Editing**: Full edit capabilities for all user fields
+- **Dependent Management**: View and manage family relationships
+- **Policy Assignment**: Assign policies to members with date tracking
+- **Search & Filter**: Advanced filtering by role, status, and text search
+- **Bulk Actions**: Export user lists, bulk status updates
+
+#### 2. Policy Management Module
+- **Policy CRUD**: Create, read, update policies with full field control
+- **Advanced Filtering**: Multi-select filters for status and ownerPayer
+- **Search**: Across policy number, name, and sponsor name
+- **Plan Versions**: Full lifecycle management (DRAFT → PUBLISHED → CURRENT)
+- **Version Configuration**: Tabbed interface for Benefits, Wallet, Coverage
+- **Policy Rules Mapping**: Map/unmap rules with wallet limits
+- **Assignment Override**: Cohort-specific plan version assignments
+- **Audit Trail**: Track all policy changes and version publications
+
+#### 3. Plan Version Configuration
+- **Benefits Tab**: Configure 8 OPD benefit components
+  - Consultation, Pharmacy, Diagnostics, AHC
+  - Vaccination, Dental, Vision, Wellness
+  - Set limits: annual amount, visits, Rx requirements
+- **Wallet Tab**: Configure wallet rules
+  - Total annual amount, per claim limits
+  - Co-pay (percentage or fixed amount)
+  - Partial payment, carry forward, top-up settings
+- **Edit Control**: Only DRAFT versions editable, PUBLISHED locked
+- **Validation**: Business rule enforcement before publishing
+- **Save Functionality**: Persistent save button with real-time updates
+
+#### 4. Policy Rules Module
+- **Rule Creation**: Auto-generated rule codes (RULE###)
+- **Wallet Configuration**: Total amount and category-wise limits
+- **12 Categories**: Predefined healthcare service categories
+- **Rule Mapping**: Associate rules with multiple policies
+- **Active/Inactive Toggle**: Enable/disable rules without deletion
+- **Impact Preview**: See affected policies before changes
+
+#### 5. Categories Master Module
+- **Category Management**: CAT### identifier pattern (enforced uppercase)
+- **Immutable IDs**: Category IDs cannot be changed after creation
+- **Editable Fields**: Name, description, display order
+- **No Hard Delete**: Toggle active/inactive status only
+- **Service Mapping**: Link categories to service types
+
+#### 6. Service Types Module
+- **Service Definition**: Domain-specific codes (e.g., CON001)
+- **Coverage Configuration**: Set coverage percentages and copay
+- **Document Requirements**: Configure required documents
+- **Pre-authorization**: Set pre-auth and referral flags
+- **Price Ranges**: Define min/max pricing bands
+- **Category Association**: Link services to categories
+
+#### 7. Assignments Module
+- **Policy Assignment**: Assign policies to members
+- **Plan Version Override**: Cohort-specific version assignments
+- **Date Management**: Effective from/to date tracking
+- **Assignment History**: View all past assignments
+- **Bulk Assignment**: Assign policies to multiple members
+- **End Assignment**: Terminate with reason tracking
+
+#### 8. Audit & Compliance Module
+- **Audit Logs**: Track all admin actions (who/what/when)
+- **Before/After States**: Record state changes
+- **System Actions**: Differentiate system vs user actions
+- **Export Capability**: Download audit logs for compliance
+- **2-Year Retention**: Automatic cleanup after retention period
+
+#### 9. Dashboard & Analytics
+- **Aggregate Metrics**: Total users, active policies, assignments
+- **Quick Navigation**: Action cards for common tasks
+- **Recent Activity**: Last 10 admin actions
+- **System Health**: Service status indicators
+
 ## User Flows
 
 ### Member Login Flow
@@ -192,20 +273,37 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
    - Benefits page: Shows annual limit, co-pay, carry-forward status
    - Claims submission: Displays applicable limits and co-pay before submit
 
-### Plan Version Configuration Page
+### Plan Version Configuration Page (v2 - Enhanced)
 1. **Route**: `/admin/policies/:policyId/plan-versions/:version/config`
-2. **Tabbed Interface**:
+2. **Readiness Panel** (NEW):
+   - Real-time validation status display (READY/BLOCKED)
+   - Visual pass/fail indicators for each check
+   - Auto-expands when validation fails
+   - Integrated publish button (disabled when blocked)
+   - Refresh button for re-validation
+3. **Effective Config Preview** (NEW):
+   - Shows exact payload members will receive
+   - Collapsible sections: Policy, Wallet, Benefits, Coverage
+   - Visual indicators for enabled/disabled benefits
+   - Currency formatting and date localization
+4. **Tabbed Interface**:
    - **Benefits Tab**: Configure which OPD tiles are enabled/disabled (v0)
    - **Wallet Tab**: Configure wallet rules and payment parameters (v0)
    - **Coverage Tab**: Map categories and services availability (v1)
-3. **Coverage Matrix (v1)**:
+5. **Readiness Checks** (Server-Side Guardrails):
+   - Version must be in DRAFT status to publish
+   - Valid dates within policy window
+   - Wallet configuration: totalAnnualAmount > 0 required
+   - At least one benefit component enabled
+   - Coverage matrix required for enabled services (Diagnostics, Consultation, Pharmacy)
+6. **Coverage Matrix (v1)**:
    - Maps Categories (CAT###) and Service Types to policy + planVersion
    - Controls availability only (no pricing/adjudication)
    - Table with filters: category dropdown, search, "show enabled only"
    - Bulk actions: enable/disable all in category
    - Inline edits with optimistic UI
-4. **Edit Permissions**: Only DRAFT plan versions can be edited
-5. **Member Impact**: Coverage matrix filters what members see in benefits portal
+7. **Edit Permissions**: Only DRAFT plan versions can be edited
+8. **Member Impact**: Coverage matrix filters what members see in benefits portal
 
 ## API Endpoints
 
@@ -271,7 +369,8 @@ OPD Wallet is a comprehensive healthcare benefits management system designed to 
 - `PUT /api/admin/policies/:id/plan-versions/:ver/benefit-components` - Update benefit config (DRAFT only)
 - `GET /api/admin/policies/:id/plan-versions/:ver/wallet-rules` - Get wallet rules
 - `PUT /api/admin/policies/:id/plan-versions/:ver/wallet-rules` - Update wallet rules (DRAFT only)
-- `GET /api/admin/policies/:id/plan-versions/:ver/readiness` - Check publish readiness
+- `GET /api/admin/policies/:id/plan-versions/:ver/readiness` - Check publish readiness (NEW)
+- `GET /api/admin/policies/:id/plan-versions/:ver/effective-config` - Get member view config (NEW)
 - `GET /api/plan-config/effective?policyId=X&planVersion=Y` - Admin effective config
 - `GET /api/member/plan-config` - Member's effective configuration
 - `GET /api/member/benefit-components` - Get member's enabled benefits
@@ -608,8 +707,9 @@ open http://localhost:3002  # Member Portal
 ## Environments (AWS)
 
 ### AWS Account & Infrastructure
-- **Account**: OPD Wallet Development (placeholder-account-id)
+- **Account**: OPD Wallet Development
 - **Primary Region**: eu-north-1 (Stockholm)
+- **Current EC2 Instance**: 51.20.125.246 (t2.micro)
 - **Disaster Recovery Region**: eu-west-1 (Ireland) - planned
 
 ### Runtime Configuration
@@ -681,7 +781,7 @@ open http://localhost:3002  # Member Portal
 - **Break-glass Process**: Root account MFA, documented escalation
 - **SSH Access**: Key-based only (opdwallet-server.pem)
 
-## Current Deployment State (September 2025)
+## Current Deployment State (September 19, 2025)
 
 ### AWS EC2 Instance (ACTIVE)
 ```

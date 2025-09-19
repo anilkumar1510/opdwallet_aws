@@ -40,7 +40,9 @@ export class WalletRulesController {
     @Param('policyId') policyId: string,
     @Param('version', ParseIntPipe) version: number,
   ) {
-    return this.walletRulesService.getWalletRules(policyId, version);
+    const rules = await this.walletRulesService.getWalletRules(policyId, version);
+    // Return empty object instead of null to avoid JSON parse errors on frontend
+    return rules || {};
   }
 
   @Put('admin/policies/:policyId/plan-versions/:version/wallet-rules')

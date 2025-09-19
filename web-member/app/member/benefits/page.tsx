@@ -146,22 +146,6 @@ export default function BenefitsPage() {
     }
   ]
 
-  // Filter categories based on enabled components AND coverage matrix
-  const benefitCategories = benefitComponents
-    ? allBenefitCategories.filter(cat => {
-        // Check if enabled in benefit components
-        const componentEnabled = benefitComponents[cat.id]?.enabled
-
-        // Check if enabled in coverage matrix (if available)
-        const categoryId = getCategoryIdForBenefit(cat.id) // Maps benefit to category
-        const coverageEnabled = !coverageMatrix || coverageMatrix.rows?.some((row: any) =>
-          row.categoryId === categoryId && row.enabled
-        )
-
-        return componentEnabled && coverageEnabled
-      })
-    : []
-
   // Helper to map benefit component to category ID (would need actual mapping)
   const getCategoryIdForBenefit = (benefitId: string): string => {
     const mapping: Record<string, string> = {
@@ -176,6 +160,29 @@ export default function BenefitsPage() {
     }
     return mapping[benefitId] || ''
   }
+
+  // Filter categories based on enabled components AND coverage matrix
+  // NOTE: Currently showing all categories if none are configured (for demo/dev)
+  const benefitCategories = benefitComponents
+    ? allBenefitCategories.filter(cat => {
+        // Check if enabled in benefit components
+        const componentEnabled = benefitComponents[cat.id]?.enabled
+
+        // If no components are enabled at all, show all for demo
+        const anyEnabled = Object.values(benefitComponents).some((c: any) => c?.enabled)
+        if (!anyEnabled) {
+          return true // Show all categories if none configured
+        }
+
+        // Check if enabled in coverage matrix (if available)
+        const categoryId = getCategoryIdForBenefit(cat.id) // Maps benefit to category
+        const coverageEnabled = !coverageMatrix || coverageMatrix.rows?.some((row: any) =>
+          row.categoryId === categoryId && row.enabled
+        )
+
+        return componentEnabled && coverageEnabled
+      })
+    : allBenefitCategories // Show all if no config
 
   const filteredCategories = searchQuery
     ? benefitCategories.filter(cat =>

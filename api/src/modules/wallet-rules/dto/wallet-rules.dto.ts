@@ -39,9 +39,10 @@ export class CarryForwardDto {
 }
 
 export class UpdateWalletRulesDto {
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  totalAnnualAmount: number;
+  totalAnnualAmount?: number;
 
   @IsOptional()
   @IsNumber()

@@ -14,6 +14,8 @@ import { WalletRulesModule } from './modules/wallet-rules/wallet-rules.module';
 import { BenefitCoverageMatrixModule } from './modules/benefit-coverage-matrix/benefit-coverage-matrix.module';
 import { PlanConfigResolverModule } from './modules/plan-config-resolver/plan-config-resolver.module';
 import { HealthModule } from './health/health.module';
+import { MastersModule } from './modules/masters/masters.module';
+import { BenefitsModule } from './modules/benefits/benefits.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -31,7 +33,7 @@ import configuration from './config/configuration';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 100,
+      limit: 10000,
     }]),
     HealthModule,
     AuthModule,
@@ -45,6 +47,8 @@ import configuration from './config/configuration';
     WalletRulesModule,
     BenefitCoverageMatrixModule,
     PlanConfigResolverModule,
+    MastersModule,
+    BenefitsModule,
   ],
 })
 export class AppModule {}

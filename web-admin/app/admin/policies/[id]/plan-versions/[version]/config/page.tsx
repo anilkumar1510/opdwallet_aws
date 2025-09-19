@@ -8,6 +8,8 @@ import { apiFetch } from '@/lib/api'
 import BenefitsTab from './tabs/BenefitsTab'
 import WalletTab from './tabs/WalletTab'
 import CoverageTab from './tabs/CoverageTab'
+import ReadinessPanel from '@/components/plan-versions/ReadinessPanel'
+import EffectiveConfigPreview from '@/components/plan-versions/EffectiveConfigPreview'
 
 interface Policy {
   _id: string
@@ -39,6 +41,9 @@ export default function PlanVersionConfigPage() {
     wallet: null,
     coverage: null
   })
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0) // Add refresh trigger
 
   useEffect(() => {
     fetchData()
@@ -76,26 +81,227 @@ export default function PlanVersionConfigPage() {
   }
 
   const handleConfigUpdate = (tab: 'benefits' | 'wallet' | 'coverage', data: any) => {
-    setConfigData(prev => ({
-      ...prev,
-      [tab]: data
-    }))
+    console.log(`📥 PARENT RECEIVED UPDATE FROM ${tab.toUpperCase()} TAB:`, {
+      tab,
+      data,
+      dataType: typeof data,
+      dataKeys: Object.keys(data || {}),
+      dataStringified: JSON.stringify(data)
+    })
+
+    setConfigData(prev => {
+      const newData = {
+        ...prev,
+        [tab]: data
+      }
+      console.log('📦 Updated configData state:', newData)
+      return newData
+    })
     setHasChanges(true)
+  }
+
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true)
+
+      const response = await apiFetch(
+        `/api/admin/policies/${policyId}/plan-versions/${version}/publish`,
+        {
+          method: 'POST'
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        if (error.readinessResponse) {
+          // Show detailed readiness errors
+          const failedChecks = error.failedChecks || []
+          alert(`Cannot publish: \n${failedChecks.join('\n')}`)
+        } else {
+          throw new Error(error.message || 'Failed to publish')
+        }
+        return
+      }
+
+      alert('Plan version published successfully!')
+
+      // Refresh the page to update status
+      await fetchData()
+    } catch (err) {
+      console.error('Publish error:', err)
+      alert(err instanceof Error ? err.message : 'Failed to publish version')
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
   const handleSaveAll = async () => {
     try {
       setIsSaving(true)
 
-      // Always save the current data regardless of tracking changes
-      const dataToSave = configData[activeTab]
+      console.log('=== SAVE BUTTON CLICKED ===')
+      console.log('Active tab:', activeTab)
+      console.log('Config data state:', configData)
 
-      if (activeTab === 'wallet' && dataToSave) {
+      // Always save the current data regardless of tracking changes
+      let dataToSave = configData[activeTab]
+
+      console.log('Raw data for active tab:', dataToSave)
+      console.log('Type of dataToSave:', typeof dataToSave)
+
+      if (activeTab === 'wallet') {
+        // If no data has been collected, use empty object
+        if (!dataToSave) {
+          console.log('No data to save, using empty object')
+          dataToSave = {}
+        }
+
+        console.log('=== CHECKING EACH FIELD ===')
+
+        // Debug each field
+        console.log('totalAnnualAmount:', {
+          value: dataToSave.totalAnnualAmount,
+          type: typeof dataToSave.totalAnnualAmount,
+          isNumber: typeof dataToSave.totalAnnualAmount === 'number',
+          isPositive: dataToSave.totalAnnualAmount >= 0,
+          willInclude: typeof dataToSave.totalAnnualAmount === 'number' && dataToSave.totalAnnualAmount >= 0
+        })
+
+        console.log('perClaimLimit:', {
+          value: dataToSave.perClaimLimit,
+          type: typeof dataToSave.perClaimLimit,
+          isNumber: typeof dataToSave.perClaimLimit === 'number',
+          isPositive: dataToSave.perClaimLimit >= 0,
+          willInclude: typeof dataToSave.perClaimLimit === 'number' && dataToSave.perClaimLimit >= 0
+        })
+
+        console.log('copay:', {
+          exists: !!dataToSave.copay,
+          value: dataToSave.copay?.value,
+          mode: dataToSave.copay?.mode,
+          valueType: typeof dataToSave.copay?.value,
+          isValidValue: typeof dataToSave.copay?.value === 'number' && dataToSave.copay?.value >= 0,
+          willInclude: dataToSave.copay && typeof dataToSave.copay.value === 'number' && dataToSave.copay.value >= 0
+        })
+
+        console.log('partialPaymentEnabled:', {
+          value: dataToSave.partialPaymentEnabled,
+          type: typeof dataToSave.partialPaymentEnabled,
+          isBoolean: typeof dataToSave.partialPaymentEnabled === 'boolean',
+          willInclude: typeof dataToSave.partialPaymentEnabled === 'boolean'
+        })
+
+        console.log('topUpAllowed:', {
+          value: dataToSave.topUpAllowed,
+          type: typeof dataToSave.topUpAllowed,
+          isBoolean: typeof dataToSave.topUpAllowed === 'boolean',
+          willInclude: typeof dataToSave.topUpAllowed === 'boolean'
+        })
+
+        console.log('carryForward:', {
+          exists: !!dataToSave.carryForward,
+          enabled: dataToSave.carryForward?.enabled,
+          enabledType: typeof dataToSave.carryForward?.enabled,
+          percent: dataToSave.carryForward?.percent,
+          percentType: typeof dataToSave.carryForward?.percent,
+          months: dataToSave.carryForward?.months,
+          monthsType: typeof dataToSave.carryForward?.months,
+          willInclude: dataToSave.carryForward && typeof dataToSave.carryForward.enabled === 'boolean'
+        })
+
+        console.log('notes:', {
+          value: dataToSave.notes,
+          type: typeof dataToSave.notes,
+          trimmed: dataToSave.notes?.trim?.(),
+          willInclude: typeof dataToSave.notes === 'string' && dataToSave.notes.trim()
+        })
+
+        // Clean the wallet data before sending
+        const cleanedData: any = {}
+
+        // Only include numeric fields if they have valid positive numbers
+        if (typeof dataToSave.totalAnnualAmount === 'number' && dataToSave.totalAnnualAmount >= 0) {
+          cleanedData.totalAnnualAmount = dataToSave.totalAnnualAmount
+          console.log('✅ Including totalAnnualAmount:', dataToSave.totalAnnualAmount)
+        } else {
+          console.log('❌ Excluding totalAnnualAmount')
+        }
+
+        if (typeof dataToSave.perClaimLimit === 'number' && dataToSave.perClaimLimit >= 0) {
+          cleanedData.perClaimLimit = dataToSave.perClaimLimit
+          console.log('✅ Including perClaimLimit:', dataToSave.perClaimLimit)
+        } else {
+          console.log('❌ Excluding perClaimLimit')
+        }
+
+        // Handle copay - only include if it has a valid value
+        if (dataToSave.copay && typeof dataToSave.copay.value === 'number' && dataToSave.copay.value >= 0) {
+          cleanedData.copay = {
+            mode: dataToSave.copay.mode || 'PERCENT',
+            value: dataToSave.copay.value
+          }
+          console.log('✅ Including copay:', cleanedData.copay)
+        } else {
+          console.log('❌ Excluding copay')
+        }
+
+        // Boolean fields - only include if explicitly set
+        if (typeof dataToSave.partialPaymentEnabled === 'boolean') {
+          cleanedData.partialPaymentEnabled = dataToSave.partialPaymentEnabled
+          console.log('✅ Including partialPaymentEnabled:', dataToSave.partialPaymentEnabled)
+        } else {
+          console.log('❌ Excluding partialPaymentEnabled')
+        }
+
+        if (typeof dataToSave.topUpAllowed === 'boolean') {
+          cleanedData.topUpAllowed = dataToSave.topUpAllowed
+          console.log('✅ Including topUpAllowed:', dataToSave.topUpAllowed)
+        } else {
+          console.log('❌ Excluding topUpAllowed')
+        }
+
+        // Carry forward - handle carefully
+        if (dataToSave.carryForward && typeof dataToSave.carryForward.enabled === 'boolean') {
+          cleanedData.carryForward = {
+            enabled: dataToSave.carryForward.enabled
+          }
+          console.log('✅ Including carryForward.enabled:', dataToSave.carryForward.enabled)
+
+          if (dataToSave.carryForward.enabled) {
+            if (typeof dataToSave.carryForward.percent === 'number' && dataToSave.carryForward.percent >= 0) {
+              cleanedData.carryForward.percent = dataToSave.carryForward.percent
+              console.log('✅ Including carryForward.percent:', dataToSave.carryForward.percent)
+            } else {
+              console.log('❌ Excluding carryForward.percent')
+            }
+            if (typeof dataToSave.carryForward.months === 'number' && dataToSave.carryForward.months > 0) {
+              cleanedData.carryForward.months = dataToSave.carryForward.months
+              console.log('✅ Including carryForward.months:', dataToSave.carryForward.months)
+            } else {
+              console.log('❌ Excluding carryForward.months')
+            }
+          }
+        } else {
+          console.log('❌ Excluding carryForward')
+        }
+
+        // Include notes only if it's a non-empty string
+        if (typeof dataToSave.notes === 'string' && dataToSave.notes.trim()) {
+          cleanedData.notes = dataToSave.notes.trim()
+          console.log('✅ Including notes:', cleanedData.notes)
+        } else {
+          console.log('❌ Excluding notes')
+        }
+
+        console.log('=== FINAL DATA ===')
+        console.log('Final cleaned data:', cleanedData)
+        console.log('JSON stringified:', JSON.stringify(cleanedData))
+
         const walletResponse = await apiFetch(
           `/api/admin/policies/${policyId}/plan-versions/${version}/wallet-rules`,
           {
             method: 'PUT',
-            body: JSON.stringify(dataToSave)
+            body: JSON.stringify(cleanedData)
           }
         )
         if (!walletResponse.ok) {
@@ -133,8 +339,15 @@ export default function PlanVersionConfigPage() {
         return
       }
 
+      // Add telemetry
+      console.info(`[TELEMETRY] PUT ${activeTab} success at:`, new Date().toISOString())
+
       alert('Changes saved successfully!')
       setHasChanges(false)
+
+      // Trigger refresh of ReadinessPanel and EffectiveConfigPreview
+      console.info(`[TELEMETRY] Triggering refresh at:`, new Date().toISOString())
+      setRefreshKey(prev => prev + 1)
 
     } catch (err) {
       console.error('Save error:', err)
@@ -243,6 +456,41 @@ export default function PlanVersionConfigPage() {
 
       {/* Tab Content */}
       <div className="p-6">
+        {/* Readiness Panel - Only show for DRAFT versions */}
+        {planVersion.status === 'DRAFT' && (
+          <div className="mb-6">
+            <ReadinessPanel
+              key={`readiness-${refreshKey}`}
+              policyId={policyId}
+              planVersion={parseInt(version)}
+              onPublishClick={handlePublish}
+              isPublishing={isPublishing}
+            />
+          </div>
+        )}
+
+        {/* Config Preview Toggle */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {showPreview ? 'Hide Effective Config Preview' : 'Show Effective Config Preview'}
+          </button>
+        </div>
+
+        {/* Effective Config Preview */}
+        {showPreview && (
+          <div className="mb-6">
+            <EffectiveConfigPreview
+              key={`preview-${refreshKey}`}
+              policyId={policyId}
+              planVersion={parseInt(version)}
+            />
+          </div>
+        )}
+
+        {/* Tab Content */}
         <ActiveTabComponent
           policyId={policyId}
           planVersion={parseInt(version)}

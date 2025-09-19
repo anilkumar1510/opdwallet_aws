@@ -16,20 +16,51 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
+    console.log('[AUTH DEBUG] Login attempt for email:', email);
+    console.log('[AUTH DEBUG] Looking for user with email:', email.toLowerCase());
+
     const user = await this.userModel.findOne({
       email: email.toLowerCase(),
       status: UserStatus.ACTIVE,
     });
 
     if (!user) {
+      console.log('[AUTH DEBUG] User not found or not active');
+      console.log('[AUTH DEBUG] Checking if user exists with any status...');
+      const anyUser = await this.userModel.findOne({ email: email.toLowerCase() });
+      if (anyUser) {
+        console.log('[AUTH DEBUG] User exists but status is:', anyUser.status);
+        console.log('[AUTH DEBUG] User details:', {
+          id: anyUser._id,
+          email: anyUser.email,
+          name: anyUser.name,
+          role: anyUser.role,
+          status: anyUser.status,
+        });
+      } else {
+        console.log('[AUTH DEBUG] No user found with this email at all');
+      }
       return null;
     }
+
+    console.log('[AUTH DEBUG] User found:', {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+      hasPassword: !!user.passwordHash,
+    });
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    console.log('[AUTH DEBUG] Password validation result:', isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log('[AUTH DEBUG] Password does not match');
       return null;
     }
 
+    console.log('[AUTH DEBUG] Authentication successful for user:', user.email);
     const { passwordHash, ...result } = user.toObject();
     return result;
   }
