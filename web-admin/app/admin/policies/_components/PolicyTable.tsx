@@ -170,7 +170,7 @@ export default function PolicyTable({
                   <td role="cell">
                     <button
                       onClick={() => router.push(`/admin/policies/${policy._id}`)}
-                      className="text-left hover:text-yellow-600 transition-colors"
+                      className="text-left hover:text-blue-600 transition-colors"
                     >
                       <div className="font-medium text-gray-900">{policy.name}</div>
                       <div className="font-mono text-sm text-gray-500">{policy.policyNumber}</div>
@@ -198,8 +198,7 @@ export default function PolicyTable({
                   </td>
                   <td role="cell">
                     <span className="badge-default">
-                      v{policy.currentPlanVersion}
-                      <span className="ml-1 text-xs text-gray-500">Current</span>
+                      {(policy as any).planConfigs?.length > 0 ? `${(policy as any).planConfigs.length} configs` : 'No config'}
                     </span>
                   </td>
                   <td role="cell">
@@ -310,7 +309,7 @@ export default function PolicyTable({
                     <span className="text-gray-400">•</span>
                     <span className="text-sm text-gray-600">{policy.ownerPayer}</span>
                     <span className="text-gray-400">•</span>
-                    <span className="badge-default text-xs">v{policy.currentPlanVersion}</span>
+                    <span className="badge-default text-xs">{(policy as any).planConfigs?.length > 0 ? `${(policy as any).planConfigs.length} configs` : 'No config'}</span>
                   </div>
                 </div>
                 <span className={getStatusBadgeClass(policy.status)}>

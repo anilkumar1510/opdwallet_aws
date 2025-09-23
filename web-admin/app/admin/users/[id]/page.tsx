@@ -228,7 +228,15 @@ export default function UserDetailPage() {
               ) : (
                 <>
                   <h1 className="text-2xl font-bold text-gray-900">{user.name?.fullName}</h1>
-                  <p className="text-sm text-gray-500">{user.email}</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-400">ID:</span>
+                      <span className="font-mono text-sm font-semibold text-brand-600 bg-brand-50 px-2 py-1 rounded">
+                        {user.memberId}
+                      </span>
+                    </div>
+                  </div>
                   {user.relationship !== 'SELF' && (
                     <p className="text-sm text-blue-600 mt-1">
                       Primary Member: {user.primaryMemberId}
@@ -613,22 +621,43 @@ export default function UserDetailPage() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Assignment ID</th>
                   <th>Policy Name</th>
-                  <th>Coverage Amount</th>
-                  <th>Valid From</th>
-                  <th>Valid Until</th>
+                  <th>Policy Number</th>
+                  <th>Effective From</th>
+                  <th>Effective To</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {assignments.map((assignment: any) => (
                   <tr key={assignment._id}>
-                    <td className="font-medium">{assignment.policyName}</td>
-                    <td>₹{assignment.coverageAmount?.toLocaleString()}</td>
-                    <td>{new Date(assignment.validFrom).toLocaleDateString()}</td>
-                    <td>{new Date(assignment.validUntil).toLocaleDateString()}</td>
+                    <td className="font-mono text-xs">{assignment.assignmentId}</td>
+                    <td className="font-medium">
+                      {assignment.policyId?.name || 'N/A'}
+                      <div className="text-xs text-gray-500">
+                        {assignment.policyId?.description || ''}
+                      </div>
+                    </td>
+                    <td className="font-mono text-sm">
+                      {assignment.policyId?.policyNumber || 'N/A'}
+                    </td>
                     <td>
-                      <span className="badge-success">Active</span>
+                      {assignment.effectiveFrom
+                        ? new Date(assignment.effectiveFrom).toLocaleDateString()
+                        : 'N/A'
+                      }
+                    </td>
+                    <td>
+                      {assignment.effectiveTo
+                        ? new Date(assignment.effectiveTo).toLocaleDateString()
+                        : 'Ongoing'
+                      }
+                    </td>
+                    <td>
+                      <span className={assignment.isActive ? 'badge-success' : 'badge-default'}>
+                        {assignment.isActive ? 'Active' : 'Inactive'}
+                      </span>
                     </td>
                   </tr>
                 ))}

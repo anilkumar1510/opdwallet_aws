@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api'
-import { PolicyListResponse, PolicyQueryParams, Policy, PlanVersion } from './types'
+import { PolicyListResponse, PolicyQueryParams, Policy } from './types'
 import { buildQueryString } from './query'
 
 export async function fetchPolicies(params: PolicyQueryParams): Promise<PolicyListResponse> {
@@ -72,13 +72,3 @@ export async function fetchPolicyById(id: string): Promise<Policy> {
   return response.json()
 }
 
-export async function fetchPlanVersions(policyId: string): Promise<PlanVersion[]> {
-  const response = await apiFetch(`/api/admin/policies/${policyId}/plan-versions`)
-
-  if (!response.ok) {
-    // Return empty array if plan versions endpoint doesn't exist yet
-    return []
-  }
-
-  return response.json()
-}

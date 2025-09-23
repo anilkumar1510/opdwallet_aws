@@ -10,6 +10,7 @@ interface ServiceType {
   name: string
   description?: string
   category: string
+  categoryName?: string
   isActive: boolean
 }
 
@@ -28,7 +29,7 @@ export default function ServicesPage() {
     code: '',
     name: '',
     description: '',
-    category: 'Consultation Services',
+    category: '',
     isActive: true,
   })
 
@@ -60,6 +61,14 @@ export default function ServicesPage() {
           .filter((cat: any) => cat.isActive)
           .map((cat: any) => cat.categoryId)
         setCategories(activeCategories)
+
+        // Set first category as default if form category is empty
+        if (activeCategories.length > 0 && !formData.category) {
+          setFormData(prev => ({
+            ...prev,
+            category: activeCategories[0]
+          }))
+        }
       }
     } catch (error) {
       console.error('Failed to fetch categories')
@@ -159,7 +168,7 @@ export default function ServicesPage() {
       code: '',
       name: '',
       description: '',
-      category: 'Consultation Services',
+      category: categories.length > 0 ? categories[0] : '',
       isActive: true,
     })
   }
@@ -256,6 +265,7 @@ export default function ServicesPage() {
                   <th>Name</th>
                   <th>Description</th>
                   <th>Category</th>
+                  <th>Category ID</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -277,7 +287,10 @@ export default function ServicesPage() {
                       </div>
                     </td>
                     <td>
-                      <span className="badge badge-default">{service.category}</span>
+                      <span className="badge badge-default">{service.categoryName || service.category}</span>
+                    </td>
+                    <td>
+                      <span className="font-mono text-sm text-gray-600">{service.category}</span>
                     </td>
                     <td>
                       <button

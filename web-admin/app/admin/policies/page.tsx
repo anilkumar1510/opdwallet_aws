@@ -26,7 +26,7 @@ export default function PoliciesPage() {
   // Parse query params from URL
   const queryParams: PolicyQueryParams = {
     ...getDefaultParams(),
-    ...parseQueryParams(searchParams)
+    ...parseQueryParams(new URLSearchParams(searchParams.toString()))
   }
 
   // Check auth and role on mount

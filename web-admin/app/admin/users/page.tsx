@@ -164,9 +164,12 @@ export default function UsersPage() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>User ID</th>
+                  <th>Member ID</th>
+                  <th>UHID</th>
+                  <th className="hidden sm:table-cell">Employee ID</th>
                   <th>Name</th>
-                  <th className="hidden sm:table-cell">Email</th>
-                  <th>IDs</th>
+                  <th className="hidden md:table-cell">Email</th>
                   <th className="hidden lg:table-cell">
                     {activeTab === 'external' ? 'Relationship' : 'Role'}
                   </th>
@@ -182,6 +185,26 @@ export default function UsersPage() {
                     onClick={() => router.push(`/admin/users/${user._id}`)}
                   >
                     <td>
+                      <div className="font-mono text-sm font-semibold text-brand-600">
+                        {user.userId || 'N/A'}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="font-mono text-sm font-semibold text-gray-900">
+                        {user.memberId || 'N/A'}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="font-mono text-sm text-gray-900">
+                        {user.uhid || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="hidden sm:table-cell">
+                      <div className="font-mono text-sm text-gray-900">
+                        {user.employeeId || '-'}
+                      </div>
+                    </td>
+                    <td>
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium text-gray-600">
@@ -192,7 +215,7 @@ export default function UsersPage() {
                           <div className="font-medium text-gray-900">
                             {user.name?.fullName || 'N/A'}
                           </div>
-                          <div className="text-sm text-gray-500 sm:hidden">
+                          <div className="text-sm text-gray-500 md:hidden">
                             {user.email}
                           </div>
                           {activeTab === 'external' && user.relationship !== 'SELF' && (
@@ -203,18 +226,9 @@ export default function UsersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="hidden sm:table-cell">
+                    <td className="hidden md:table-cell">
                       <div className="text-gray-900">{user.email}</div>
                       <div className="text-xs text-gray-500">{user.phone}</div>
-                    </td>
-                    <td>
-                      <div className="text-xs space-y-1">
-                        <div className="font-mono">MID: {user.memberId}</div>
-                        <div className="font-mono">UHID: {user.uhid}</div>
-                        {user.employeeId && (
-                          <div className="font-mono">EID: {user.employeeId}</div>
-                        )}
-                      </div>
                     </td>
                     <td className="hidden lg:table-cell">
                       {activeTab === 'external' ? (

@@ -12,31 +12,80 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
+  const fillSuperAdminCredentials = () => {
+    console.log('🔧 [LOGIN DEBUG] Quick-filling super admin credentials')
+    setEmail('admin@opdwallet.com')
+    setPassword('Admin@123')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
+    console.log('🚀 [LOGIN DEBUG] Starting login process')
+    console.log('📧 [LOGIN DEBUG] Email:', email)
+    console.log('🔐 [LOGIN DEBUG] Password length:', password.length)
+    console.log('⏰ [LOGIN DEBUG] Timestamp:', new Date().toISOString())
+    console.log('🌐 [LOGIN DEBUG] User Agent:', navigator.userAgent)
+    console.log('📍 [LOGIN DEBUG] Current URL:', window.location.href)
+    console.log('🔗 [LOGIN DEBUG] API Base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api')
+
     try {
+      console.log('📡 [LOGIN DEBUG] Making API request to /api/auth/login')
+
+      const requestBody = { email, password }
+      console.log('📦 [LOGIN DEBUG] Request body:', JSON.stringify(requestBody, null, 2))
+
       const response = await apiFetch('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(requestBody),
       })
 
+      console.log('📨 [LOGIN DEBUG] Response status:', response.status)
+      console.log('📨 [LOGIN DEBUG] Response statusText:', response.statusText)
+      console.log('📨 [LOGIN DEBUG] Response headers:', Object.fromEntries(response.headers.entries()))
+      console.log('📨 [LOGIN DEBUG] Response ok:', response.ok)
+
       if (response.ok) {
+        console.log('✅ [LOGIN DEBUG] Response is OK, parsing JSON')
         const user = await response.json()
+        console.log('👤 [LOGIN DEBUG] User data received:', JSON.stringify(user, null, 2))
+        console.log('👤 [LOGIN DEBUG] User role:', user.role)
+
         if (user.role === 'MEMBER') {
+          console.log('❌ [LOGIN DEBUG] Access denied - user is MEMBER role')
           setError('Access denied. Admin only.')
         } else {
+          console.log('✅ [LOGIN DEBUG] Access granted - redirecting to admin')
+          console.log('🔄 [LOGIN DEBUG] Calling router.push("/admin")')
           router.push('/admin')
         }
       } else {
-        setError('Invalid credentials')
+        console.log('❌ [LOGIN DEBUG] Response not OK')
+        let errorData
+        try {
+          errorData = await response.json()
+          console.log('📄 [LOGIN DEBUG] Error response data:', JSON.stringify(errorData, null, 2))
+        } catch (parseError) {
+          console.log('📄 [LOGIN DEBUG] Could not parse error response as JSON:', parseError)
+          errorData = await response.text()
+          console.log('📄 [LOGIN DEBUG] Error response text:', errorData)
+        }
+
+        setError(`Invalid credentials (${response.status}: ${response.statusText})`)
       }
-    } catch (err) {
-      setError('Login failed. Please try again.')
+    } catch (err: any) {
+      console.log('💥 [LOGIN DEBUG] Caught exception during login:')
+      console.log('💥 [LOGIN DEBUG] Error name:', err?.constructor?.name)
+      console.log('💥 [LOGIN DEBUG] Error message:', err?.message)
+      console.log('💥 [LOGIN DEBUG] Error stack:', err?.stack)
+      console.log('💥 [LOGIN DEBUG] Full error object:', err)
+
+      setError(`Login failed: ${err?.message || 'Unknown error'}`)
     } finally {
       setLoading(false)
+      console.log('🏁 [LOGIN DEBUG] Login process completed')
     }
   }
 
@@ -124,6 +173,17 @@ export default function LoginPage() {
                   </svg>
                 </button>
               </div>
+            </div>
+
+            {/* Super Admin Quick Fill */}
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={fillSuperAdminCredentials}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                🚀 Quick Fill Super Admin
+              </button>
             </div>
 
             {/* Error Message */}

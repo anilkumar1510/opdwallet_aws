@@ -125,8 +125,6 @@ export default function PolicyFilters({ params, onParamsChange }: PolicyFiltersP
             <option value="name-desc">Name (Z-A)</option>
             <option value="policyNumber-asc">Policy Number (Asc)</option>
             <option value="policyNumber-desc">Policy Number (Desc)</option>
-            <option value="currentPlanVersion-desc">Version (Highest)</option>
-            <option value="currentPlanVersion-asc">Version (Lowest)</option>
           </select>
 
           <select

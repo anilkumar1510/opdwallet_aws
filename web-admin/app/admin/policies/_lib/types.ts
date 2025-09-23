@@ -21,7 +21,6 @@ export interface Policy {
   status: PolicyStatus
   effectiveFrom: string
   effectiveTo?: string | null
-  currentPlanVersion: number
   createdAt: string
   updatedAt: string
   createdBy?: string
@@ -44,17 +43,7 @@ export interface PolicyQueryParams {
   ownerPayer?: string | string[]
   dateFrom?: string
   dateTo?: string
-  sortBy?: 'effectiveFrom' | 'updatedAt' | 'name' | 'policyNumber' | 'status' | 'currentPlanVersion'
+  sortBy?: 'effectiveFrom' | 'updatedAt' | 'name' | 'policyNumber' | 'status'
   sortDir?: 'asc' | 'desc'
 }
 
-export interface PlanVersion {
-  planVersion: number
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-  effectiveFrom: string
-  effectiveTo?: string
-  copay?: number
-  coinsurance?: number
-  deductible?: number
-  maxCoverage?: number
-}

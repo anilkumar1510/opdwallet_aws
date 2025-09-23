@@ -11,17 +11,57 @@ export function apiUrl(path: string): string {
 // Wrapper for fetch with correct base path
 export async function apiFetch(path: string, options?: RequestInit) {
   const url = apiUrl(path);
-  console.log('[DEBUG API] Fetching:', url, 'Method:', options?.method || 'GET');
+  console.log('\n\n=== 📡 [API DEBUG] STARTING REQUEST ===');
+  console.log('🔗 [API DEBUG] URL:', url);
+  console.log('📝 [API DEBUG] Method:', options?.method || 'GET');
+  console.log('🕒 [API DEBUG] Timestamp:', new Date().toISOString());
+  console.log('🌐 [API DEBUG] User Agent:', navigator.userAgent);
+  console.log('📍 [API DEBUG] Current Location:', window.location.href);
 
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+  if (options?.body) {
+    console.log('📦 [API DEBUG] Request body:', options.body);
+  }
 
-  console.log('[DEBUG API] Response:', url, 'Status:', response.status);
-  return response;
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  };
+  console.log('📄 [API DEBUG] Request headers:', requestHeaders);
+  console.log('🍪 [API DEBUG] Credentials mode: include');
+
+  try {
+    console.log('📡 [API DEBUG] Making fetch request...');
+
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: requestHeaders,
+    });
+
+    console.log('📨 [API DEBUG] Response received!');
+    console.log('📨 [API DEBUG] Status:', response.status, response.statusText);
+    console.log('📨 [API DEBUG] Response OK:', response.ok);
+    console.log('📨 [API DEBUG] Response type:', response.type);
+    console.log('📨 [API DEBUG] Response redirected:', response.redirected);
+    console.log('📨 [API DEBUG] Response URL:', response.url);
+
+    const responseHeaders = Object.fromEntries(response.headers.entries());
+    console.log('📄 [API DEBUG] Response headers:', responseHeaders);
+
+    if (response.headers.get('set-cookie')) {
+      console.log('🍪 [API DEBUG] Cookies being set:', response.headers.get('set-cookie'));
+    }
+
+    console.log('=== 🏁 [API DEBUG] REQUEST COMPLETE ===\n\n');
+
+    return response;
+  } catch (error: any) {
+    console.log('\n\n=== 💥 [API DEBUG] FETCH ERROR ===');
+    console.log('💥 [API DEBUG] Error name:', error?.constructor?.name);
+    console.log('💥 [API DEBUG] Error message:', error?.message);
+    console.log('💥 [API DEBUG] Error stack:', error?.stack);
+    console.log('💥 [API DEBUG] Full error:', error);
+    console.log('=== 💥 [API DEBUG] ERROR END ===\n\n');
+    throw error;
+  }
 }

@@ -4,22 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 
-interface PlanVersion {
-  planVersion: number
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
-  effectiveFrom: string
-  effectiveTo?: string
-  copay?: number
-  coinsurance?: number
-  deductible?: number
-  maxCoverage?: number
-}
-
 export default function PolicyDetailPage() {
   const router = useRouter()
   const params = useParams()
   const [policy, setPolicy] = useState<any>(null)
-  const [planVersions, setPlanVersions] = useState<PlanVersion[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('details')
   const [isEditing, setIsEditing] = useState(false)
@@ -36,7 +24,6 @@ export default function PolicyDetailPage() {
   useEffect(() => {
     if (params.id) {
       fetchPolicy()
-      fetchPlanVersions()
     }
   }, [params.id])
 
@@ -59,21 +46,6 @@ export default function PolicyDetailPage() {
       console.error('Failed to fetch policy')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchPlanVersions = async () => {
-    try {
-      const response = await apiFetch(`/api/admin/policies/${params.id}/plan-versions`)
-      if (response.ok) {
-        const data = await response.json()
-        // Handle both direct array and nested data structure
-        const versions = Array.isArray(data) ? data : (data.data || data.planVersions || [])
-        setPlanVersions(versions)
-      }
-    } catch (error) {
-      console.error('Failed to fetch plan versions')
-      setPlanVersions([])
     }
   }
 
@@ -121,33 +93,6 @@ export default function PolicyDetailPage() {
     }
   }
 
-  const handleCreatePlanVersion = async () => {
-    try {
-      console.log('Creating new plan version...')
-
-      const response = await apiFetch(`/api/admin/policies/${params.id}/plan-versions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          effectiveFrom: new Date().toISOString()
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Plan version created:', result)
-        alert('Plan version created successfully!')
-        fetchPlanVersions()
-      } else {
-        const error = await response.text()
-        console.error('API error:', error)
-        alert(`Failed to create plan version: ${response.status} ${response.statusText}`)
-      }
-    } catch (error) {
-      console.error('Failed to create plan version:', error)
-      alert(`Error creating plan version: ${error.message}`)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -184,19 +129,28 @@ export default function PolicyDetailPage() {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          {['details', 'plan-versions'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab
-                  ? 'border-yellow-400 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab === 'details' ? 'Policy Details' : 'Plan Versions'}
-            </button>
-          ))}
+          <button
+            onClick={() => setActiveTab('details')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'details'
+                ? 'border-blue-500 text-gray-900'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Policy Details
+          </button>
+          <button
+            onClick={() => router.push(`/admin/policies/${params.id}/plan-config`)}
+            className="py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          >
+            Plan Configuration
+          </button>
+          <button
+            onClick={() => router.push(`/admin/policies/${params.id}/assignments`)}
+            className="py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          >
+            Assignments
+          </button>
         </nav>
       </div>
 
@@ -332,101 +286,6 @@ export default function PolicyDetailPage() {
                 </button>
               </div>
             </form>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'plan-versions' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Plan Versions</h3>
-            <button
-              onClick={handleCreatePlanVersion}
-              className="btn-primary"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create New Version
-            </button>
-          </div>
-
-          {planVersions.length === 0 ? (
-            <div className="card">
-              <div className="empty-state">
-                <div className="empty-state-icon">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a4 4 0 01-4-4V9a4 4 0 014-4h10a4 4 0 014 4v8a4 4 0 01-4 4z" />
-                  </svg>
-                </div>
-                <h4 className="empty-state-title">No Plan Versions</h4>
-                <p className="empty-state-description">Create your first plan version to configure benefits and coverage.</p>
-                <button
-                  onClick={handleCreatePlanVersion}
-                  className="btn-primary mt-4"
-                >
-                  Create First Version
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="card">
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Version</th>
-                      <th>Status</th>
-                      <th>Effective From</th>
-                      <th>Effective To</th>
-                      <th>Copay</th>
-                      <th>Coinsurance</th>
-                      <th>Deductible</th>
-                      <th>Max Coverage</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(Array.isArray(planVersions) ? planVersions : []).map((version) => (
-                      <tr key={version.planVersion}>
-                        <td className="font-medium">v{version.planVersion}</td>
-                        <td>
-                          <span className={
-                            version.status === 'PUBLISHED'
-                              ? 'badge-success'
-                              : version.status === 'DRAFT'
-                              ? 'badge-warning'
-                              : 'badge-default'
-                          }>
-                            {version.status}
-                          </span>
-                        </td>
-                        <td>{new Date(version.effectiveFrom).toLocaleDateString()}</td>
-                        <td>{version.effectiveTo ? new Date(version.effectiveTo).toLocaleDateString() : 'Ongoing'}</td>
-                        <td>${version.copay || 0}</td>
-                        <td>{(version.coinsurance || 0) * 100}%</td>
-                        <td>${version.deductible || 0}</td>
-                        <td>${version.maxCoverage || 0}</td>
-                        <td>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => router.push(`/admin/policies/${params.id}/plan-versions/${version.planVersion}/config`)}
-                              className="btn-ghost p-1 text-xs"
-                              title="Configure Benefits"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           )}
         </div>
       )}

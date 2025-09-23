@@ -28,22 +28,72 @@ export default function CategoriesPage() {
   })
 
   useEffect(() => {
+    console.log('🌟🌟🌟 [CategoriesPage] Component mounted, calling fetchCategories 🌟🌟🌟')
     fetchCategories()
   }, [])
 
   const fetchCategories = async () => {
+    console.log('📡📡📡 [CategoriesPage.fetchCategories] START 📡📡📡')
+    console.log('[CategoriesPage] Current categories state before fetch:', categories)
+    console.log('[CategoriesPage] Categories count before fetch:', categories.length)
+
     try {
-      const response = await apiFetch('/api/categories?limit=100')
+      const url = '/api/categories?limit=100'
+      console.log('[CategoriesPage] Fetching from URL:', url)
+
+      const response = await apiFetch(url)
+      console.log('[CategoriesPage] Response status:', response.status)
+      console.log('[CategoriesPage] Response ok:', response.ok)
+      console.log('[CategoriesPage] Response headers:', response.headers)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('[CategoriesPage] RAW API Response:', JSON.stringify(data, null, 2))
+        console.log('[CategoriesPage] Response structure:', {
+          hasData: !!data.data,
+          dataIsArray: Array.isArray(data.data),
+          dataLength: data.data?.length,
+          total: data.total,
+          page: data.page,
+          pages: data.pages
+        })
+
+        if (data.data) {
+          console.log('[CategoriesPage] Categories from API:')
+          data.data.forEach((cat: any, idx: number) => {
+            console.log(`  [${idx}] ID: ${cat._id}, CategoryID: ${cat.categoryId}, Name: ${cat.name}, Active: ${cat.isActive}`)
+          })
+        }
+
+        console.log('[CategoriesPage] Setting categories state with:', data.data || [])
         setCategories(data.data || [])
+
+        console.log('[CategoriesPage] State update triggered')
+      } else {
+        console.error('[CategoriesPage] Response not OK:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('[CategoriesPage] Error response body:', errorText)
       }
     } catch (error) {
-      console.error('Failed to fetch categories')
+      console.error('[CategoriesPage] Fetch error:', error)
+      console.error('[CategoriesPage] Error stack:', (error as any).stack)
     } finally {
+      console.log('[CategoriesPage] Setting loading to false')
       setLoading(false)
+      console.log('📡📡📡 [CategoriesPage.fetchCategories] END 📡📡📡')
     }
   }
+
+  // Add a useEffect to monitor state changes
+  useEffect(() => {
+    console.log('🔄🔄🔄 [CategoriesPage] Categories state updated 🔄🔄🔄')
+    console.log('[CategoriesPage] New categories count:', categories.length)
+    console.log('[CategoriesPage] New categories:', categories.map(c => ({
+      id: c._id,
+      categoryId: c.categoryId,
+      name: c.name
+    })))
+  }, [categories])
 
   const handleCreate = async () => {
     if (!formData.categoryId || !formData.name) {
@@ -159,6 +209,15 @@ export default function CategoriesPage() {
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     category.description?.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  console.log('🔍🔍🔍 [CategoriesPage] Filtering categories 🔍🔍🔍')
+  console.log('[CategoriesPage] Search term:', searchTerm)
+  console.log('[CategoriesPage] Categories before filter:', categories.length)
+  console.log('[CategoriesPage] Categories after filter:', filteredCategories.length)
+  console.log('[CategoriesPage] Filtered categories:', filteredCategories.map(c => ({
+    categoryId: c.categoryId,
+    name: c.name
+  })))
 
   if (loading) {
     return (
@@ -343,8 +402,8 @@ export default function CategoriesPage() {
                 </div>
 
                 {showCreateModal && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
                       <strong>Note:</strong> Category ID cannot be changed after creation.
                     </p>
                   </div>
