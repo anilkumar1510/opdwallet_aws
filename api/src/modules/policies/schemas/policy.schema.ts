@@ -49,13 +49,6 @@ export class Policy {
   @Prop({ type: Date })
   effectiveTo?: Date;
 
-  @Prop({
-    type: Number,
-    default: 1,
-    immutable: true,
-  })
-  currentPlanVersion!: number;
-
   @Prop()
   createdBy?: string;
 

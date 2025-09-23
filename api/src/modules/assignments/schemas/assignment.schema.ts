@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { AssignmentStatus } from '@/common/constants/status.enum';
 
 export type AssignmentDocument = Assignment & Document;
 
@@ -10,53 +9,58 @@ export type AssignmentDocument = Assignment & Document;
 })
 export class Assignment {
   @Prop({
+    required: true,
+    unique: true,
+  })
+  assignmentId: string;
+
+  @Prop({
     type: Types.ObjectId,
     ref: 'User',
     required: true,
   })
-  userId!: Types.ObjectId;
+  userId: Types.ObjectId;
 
   @Prop({
     type: Types.ObjectId,
     ref: 'Policy',
     required: true,
   })
-  policyId!: Types.ObjectId;
-
-  @Prop({
-    required: true,
-    enum: AssignmentStatus,
-    default: AssignmentStatus.ACTIVE,
-  })
-  status!: AssignmentStatus;
+  policyId: Types.ObjectId;
 
   @Prop({
     type: Date,
+    required: true,
     default: Date.now,
   })
-  effectiveFrom!: Date;
+  effectiveFrom: Date;
 
-  @Prop({ type: Date })
+  @Prop({
+    type: Date,
+  })
   effectiveTo?: Date;
-
-  @Prop({ type: Date, default: Date.now })
-  assignedAt!: Date;
-
-  @Prop()
-  assignedBy?: string;
-
-  @Prop()
-  notes?: string;
 
   @Prop({
     type: Number,
-    required: false,
   })
-  planVersion?: number;
+  planVersionOverride?: number;
+
+  @Prop({
+    type: Boolean,
+    default: true,
+  })
+  isActive: boolean;
+
+  @Prop()
+  createdBy?: string;
+
+  @Prop()
+  updatedBy?: string;
 }
 
 export const AssignmentSchema = SchemaFactory.createForClass(Assignment);
 
-AssignmentSchema.index({ userId: 1, status: 1 });
-AssignmentSchema.index({ policyId: 1, status: 1 });
-AssignmentSchema.index({ userId: 1, policyId: 1, effectiveFrom: 1 });
+// Indexes
+AssignmentSchema.index({ userId: 1, isActive: 1 });
+AssignmentSchema.index({ policyId: 1, isActive: 1 });
+AssignmentSchema.index({ assignmentId: 1 }, { unique: true });

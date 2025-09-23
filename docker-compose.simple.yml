@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:7.0
-    container_name: opd-mongodb
+    container_name: opd-mongodb-simple
     restart: unless-stopped
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
@@ -18,7 +18,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.simple
-    container_name: opd-api
+    container_name: opd-api-simple
     restart: unless-stopped
     environment:
       - NODE_ENV=development
@@ -26,8 +26,8 @@ services:
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/opdwallet?authSource=admin
       - JWT_SECRET=your-jwt-secret-key
       - CORS_ORIGIN=http://51.20.125.246
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     depends_on:
       - mongodb
     networks:
@@ -37,14 +37,14 @@ services:
     build:
       context: ./web-member
       dockerfile: Dockerfile.simple
-    container_name: opd-web-member
+    container_name: opd-web-member-simple
     restart: unless-stopped
     environment:
       - NODE_ENV=development
       - PORT=3002
       - NEXT_PUBLIC_API_URL=http://51.20.125.246/api
-    ports:
-      - "3002:3002"
+    expose:
+      - "3002"
     depends_on:
       - api
     networks:
@@ -54,14 +54,14 @@ services:
     build:
       context: ./web-admin
       dockerfile: Dockerfile.simple
-    container_name: opd-web-admin
+    container_name: opd-web-admin-simple
     restart: unless-stopped
     environment:
       - NODE_ENV=development
       - PORT=3001
       - NEXT_PUBLIC_API_URL=http://51.20.125.246/api
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     depends_on:
       - api
     networks:
@@ -69,7 +69,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: opd-nginx
+    container_name: opd-nginx-simple
     restart: unless-stopped
     ports:
       - "80:80"

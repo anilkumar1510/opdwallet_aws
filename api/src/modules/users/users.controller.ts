@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { AssignmentsService } from '../assignments/assignments.service';
 import {
   ApiTags,
   ApiOperation,
@@ -30,7 +31,10 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly assignmentsService: AssignmentsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
@@ -99,5 +103,14 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Dependents fetched successfully' })
   getDependents(@Param('id') id: string) {
     return this.usersService.getUserWithDependents(id);
+  }
+
+  @Get(':id/assignments')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MEMBER)
+  @ApiOperation({ summary: 'Get assignments for a specific user' })
+  @ApiResponse({ status: 200, description: 'User assignments retrieved' })
+  @ApiResponse({ status: 400, description: 'Invalid userId format' })
+  getUserAssignments(@Param('id') userId: string) {
+    return this.assignmentsService.getUserAssignments(userId);
   }
 }

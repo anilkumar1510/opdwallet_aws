@@ -2,18 +2,15 @@ import {
   Controller,
   Get,
   Post,
-  Put,
-  Patch,
+  Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { AuthRequest } from '@/common/interfaces/auth-request.interface';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
-import { UpdateAssignmentDto } from './dto/update-assignment.dto';
-import { UpdatePlanVersionDto } from './dto/update-plan-version.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -26,80 +23,78 @@ import {
 } from '@nestjs/swagger';
 
 @ApiTags('assignments')
-@Controller()
+@Controller('assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
 
-  @Post('users/:userId/assignments')
+  @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Create assignment for user' })
-  @ApiResponse({ status: 201, description: 'Assignment created successfully' })
-  @ApiResponse({ status: 404, description: 'User or Policy not found' })
-  @ApiResponse({ status: 409, description: 'Active assignment already exists' })
-  createAssignment(
-    @Param('userId') userId: string,
+  @ApiOperation({ summary: 'Assign policy to user' })
+  @ApiResponse({ status: 201, description: 'Policy assigned successfully' })
+  @ApiResponse({ status: 409, description: 'User already assigned to this policy' })
+  @ApiResponse({ status: 400, description: 'Invalid userId or policyId format' })
+  async createAssignment(
     @Body() createAssignmentDto: CreateAssignmentDto,
-    @Request() req: AuthRequest,
+    @Request() req: any,
   ) {
-    return this.assignmentsService.createAssignment(
-      userId,
-      createAssignmentDto,
-      req.user.userId,
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] POST /assignments');
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] Request body:', createAssignmentDto);
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] User:', req.user?.email);
+
+    try {
+      const result = await this.assignmentsService.createAssignment(
+        createAssignmentDto,
+        req.user?.userId,
+      );
+      console.log('✅ [ASSIGNMENTS CONTROLLER] Assignment created:', result.assignmentId);
+      return result;
+    } catch (error) {
+      console.error('❌ [ASSIGNMENTS CONTROLLER] Error creating assignment:', error);
+      throw error;
+    }
+  }
+
+  @Get()
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get all assignments with pagination' })
+  @ApiResponse({ status: 200, description: 'Assignments retrieved successfully' })
+  async getAllAssignments(
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+  ) {
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments');
+    return this.assignmentsService.getAllAssignments(
+      parseInt(page),
+      parseInt(limit),
     );
   }
 
-  @Get('users/:userId/assignments')
+
+  @Get('policy/:policyId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get all assignments for a user' })
-  @ApiResponse({ status: 200, description: 'Assignments retrieved successfully' })
-  getUserAssignments(@Param('userId') userId: string) {
-    return this.assignmentsService.getUserAssignments(userId);
+  @ApiOperation({ summary: 'Get assignments for a specific policy' })
+  @ApiResponse({ status: 200, description: 'Policy assignments retrieved' })
+  @ApiResponse({ status: 400, description: 'Invalid policyId format' })
+  async getPolicyAssignments(@Param('policyId') policyId: string) {
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/policy/' + policyId);
+    return this.assignmentsService.getPolicyAssignments(policyId);
   }
 
-  @Get('member/assignments')
-  @ApiOperation({ summary: 'Get current member assignments' })
-  @ApiResponse({ status: 200, description: 'Assignments retrieved successfully' })
-  getMemberAssignments(@Request() req: AuthRequest) {
-    return this.assignmentsService.getMemberAssignments(req.user.userId);
-  }
-
-  @Put('assignments/:assignmentId')
+  @Delete(':assignmentId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Update assignment' })
-  @ApiResponse({ status: 200, description: 'Assignment updated successfully' })
+  @ApiOperation({ summary: 'Remove assignment (deactivate)' })
+  @ApiResponse({ status: 200, description: 'Assignment removed successfully' })
   @ApiResponse({ status: 404, description: 'Assignment not found' })
-  updateAssignment(
+  async removeAssignment(
     @Param('assignmentId') assignmentId: string,
-    @Body() updateAssignmentDto: UpdateAssignmentDto,
+    @Request() req: any,
   ) {
-    return this.assignmentsService.updateAssignment(
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] DELETE /assignments/' + assignmentId);
+    return this.assignmentsService.removeAssignment(
       assignmentId,
-      updateAssignmentDto,
+      req.user?.userId,
     );
-  }
-
-  @Post('assignments/:assignmentId/end')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @ApiOperation({ summary: 'End assignment' })
-  @ApiResponse({ status: 200, description: 'Assignment ended successfully' })
-  @ApiResponse({ status: 404, description: 'Assignment not found' })
-  endAssignment(@Param('assignmentId') assignmentId: string) {
-    return this.assignmentsService.endAssignment(assignmentId);
-  }
-
-  @Patch('assignments/:assignmentId/plan-version')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Update plan version override for assignment' })
-  @ApiResponse({ status: 200, description: 'Plan version override updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid plan version (must be PUBLISHED)' })
-  @ApiResponse({ status: 404, description: 'Assignment or plan version not found' })
-  updatePlanVersion(
-    @Param('assignmentId') assignmentId: string,
-    @Body() dto: UpdatePlanVersionDto,
-    @Request() req: AuthRequest,
-  ) {
-    return this.assignmentsService.updatePlanVersion(assignmentId, dto, req.user);
   }
 }

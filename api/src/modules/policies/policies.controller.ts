@@ -15,8 +15,6 @@ import { PoliciesService } from './policies.service';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { QueryPolicyDto } from './dto/query-policy.dto';
-import { UpdateCurrentVersionDto } from '../plan-versions/dto/update-current-version.dto';
-import { PlanVersionsService } from '../plan-versions/plan-versions.service';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -37,7 +35,6 @@ export class PoliciesController {
   constructor(
     private readonly policiesService: PoliciesService,
     private readonly auditService: AuditService,
-    private readonly planVersionsService: PlanVersionsService,
   ) {}
 
   @Post()
@@ -112,17 +109,4 @@ export class PoliciesController {
     return policy;
   }
 
-  @Patch(':id/current-plan-version')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Update the current plan version for a policy' })
-  @ApiResponse({ status: 200, description: 'Current plan version updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid version or status' })
-  @ApiResponse({ status: 404, description: 'Policy or version not found' })
-  async updateCurrentVersion(
-    @Param('id') id: string,
-    @Body() dto: UpdateCurrentVersionDto,
-    @Request() req: AuthRequest,
-  ) {
-    return this.planVersionsService.makeCurrent(id, dto, req.user);
-  }
 }

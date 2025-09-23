@@ -7,7 +7,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    container_name: opd-nginx
+    container_name: opd-nginx-ecr
     ports:
       - "80:80"
       - "443:443"
@@ -24,7 +24,7 @@ services:
   # MongoDB Database (using public image)
   mongodb:
     image: mongo:7.0
-    container_name: opd-mongo
+    container_name: opd-mongo-ecr
     restart: unless-stopped
     environment:
       MONGO_INITDB_DATABASE: opd_wallet
@@ -44,7 +44,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.prod
-    container_name: opd-api
+    container_name: opd-api-ecr
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -73,7 +73,7 @@ services:
     build:
       context: ./web-admin
       dockerfile: Dockerfile.prod
-    container_name: opd-web-admin
+    container_name: opd-web-admin-ecr
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -90,7 +90,7 @@ services:
     build:
       context: ./web-member
       dockerfile: Dockerfile.prod
-    container_name: opd-web-member
+    container_name: opd-web-member-ecr
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-development}

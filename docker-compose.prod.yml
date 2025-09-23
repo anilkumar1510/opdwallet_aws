@@ -4,7 +4,7 @@ services:
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
-    container_name: opd-nginx
+    container_name: opd-nginx-prod
     ports:
       - "80:80"
       - "443:443"
@@ -22,7 +22,7 @@ services:
   # MongoDB Database
   mongodb:
     image: mongo:7.0
-    container_name: opd-mongodb
+    container_name: opd-mongodb-prod
     restart: unless-stopped
     volumes:
       - mongo-data:/data/db
@@ -39,7 +39,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile.prod
-    container_name: opd-api
+    container_name: opd-api-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -69,7 +69,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
-    container_name: opd-web-admin
+    container_name: opd-web-admin-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -87,7 +87,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
-    container_name: opd-web-member
+    container_name: opd-web-member-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production

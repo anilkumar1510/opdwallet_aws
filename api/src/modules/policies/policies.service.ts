@@ -35,7 +35,6 @@ export class PoliciesService {
       ...createPolicyDto,
       policyNumber,
       status: createPolicyDto.status || PolicyStatus.DRAFT,
-      currentPlanVersion: 1,
       createdBy,
     });
 
@@ -109,7 +108,7 @@ export class PoliciesService {
     }
 
     // Remove policyNumber if it was accidentally included (it's immutable)
-    const { policyNumber, currentPlanVersion, ...updateData } = updatePolicyDto as any;
+    const { policyNumber, ...updateData } = updatePolicyDto as any;
 
     const policy = await this.policyModel.findByIdAndUpdate(
       id,

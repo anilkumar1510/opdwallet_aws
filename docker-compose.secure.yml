@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:7.0
-    container_name: opd-mongodb
+    container_name: opd-mongodb-secure
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME}
@@ -29,7 +29,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: opd-api
+    container_name: opd-api-secure
     restart: always
     env_file: .env.production
     depends_on:
@@ -50,7 +50,7 @@ services:
     build:
       context: ./web-admin
       dockerfile: Dockerfile
-    container_name: opd-web-admin
+    container_name: opd-web-admin-secure
     restart: always
     environment:
       NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
@@ -71,7 +71,7 @@ services:
     build:
       context: ./web-member
       dockerfile: Dockerfile
-    container_name: opd-web-member
+    container_name: opd-web-member-secure
     restart: always
     environment:
       NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
@@ -90,7 +90,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: opd-nginx
+    container_name: opd-nginx-secure
     restart: always
     ports:
       - "80:80"
@@ -110,7 +110,7 @@ services:
 
   certbot:
     image: certbot/certbot
-    container_name: opd-certbot
+    container_name: opd-certbot-secure
     restart: unless-stopped
     volumes:
       - ./certbot/conf:/etc/letsencrypt

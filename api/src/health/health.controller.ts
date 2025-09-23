@@ -24,8 +24,4 @@ export class HealthController {
     };
   }
 
-  @Get('api/health')
-  async checkApiHealth() {
-    return this.checkHealth();
-  }
 }

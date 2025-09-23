@@ -1,29 +1,30 @@
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsDateString,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional, IsDate, IsNumber, IsBoolean } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateAssignmentDto {
-  @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  policyId!: string;
+  userId: string;
 
-  @ApiPropertyOptional()
-  @IsDateString()
-  @IsOptional()
-  effectiveFrom?: string;
-
-  @ApiPropertyOptional()
-  @IsDateString()
-  @IsOptional()
-  effectiveTo?: string;
-
-  @ApiPropertyOptional()
   @IsString()
+  @IsNotEmpty()
+  policyId: string;
+
   @IsOptional()
-  notes?: string;
+  @IsDate()
+  @Type(() => Date)
+  effectiveFrom?: Date;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  effectiveTo?: Date;
+
+  @IsOptional()
+  @IsNumber()
+  planVersionOverride?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

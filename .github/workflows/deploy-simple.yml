@@ -25,13 +25,35 @@ jobs:
             cd ~/opdwallet
             git pull origin main
 
-            echo "🛠 Restarting containers..."
+            echo "🧹 Running container cleanup to prevent port conflicts..."
+            chmod +x scripts/cleanup-containers.sh 2>/dev/null || true
+            ./scripts/cleanup-containers.sh || echo "⚠️ Cleanup script not found, proceeding with manual cleanup"
+
+            echo "🛠 Stopping existing containers..."
             docker-compose -f docker-compose.simple.yml down
+
+            # Manual fallback cleanup
+            docker stop $(docker ps -q --filter name="opd-") 2>/dev/null || true
+            docker rm $(docker ps -aq --filter name="opd-") 2>/dev/null || true
+
+            # Check for port conflicts
+            echo "🔍 Checking for port conflicts..."
+            CONFLICTS=$(netstat -tuln 2>/dev/null | grep -E ":(4000|3001|3002|80) " || true)
+            if [ ! -z "$CONFLICTS" ]; then
+              echo "⚠️ Warning: Found services using deployment ports:"
+              echo "$CONFLICTS"
+              sudo fuser -k 4000/tcp 3001/tcp 3002/tcp 80/tcp 2>/dev/null || true
+              sleep 3
+            fi
 
             echo "♻️ Building containers..."
             docker-compose -f docker-compose.simple.yml build --no-cache
 
             docker-compose -f docker-compose.simple.yml up -d
 
-            echo "✅ Deployment complete"
+            # Verify deployment
+            echo "🔍 Post-deployment verification..."
+            sleep 10
             docker ps
+
+            echo "✅ Deployment complete"

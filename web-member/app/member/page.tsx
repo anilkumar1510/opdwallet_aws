@@ -30,6 +30,38 @@ export default function DashboardPage() {
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
   const [benefitComponents, setBenefitComponents] = useState<any>(null)
 
+  // Helper function to get policy information for a user
+  const getPolicyForUser = (userId: string) => {
+    if (!user?.assignments) return null
+    const assignment = user.assignments.find((a: any) => a.userId === userId)
+    return assignment?.assignment?.policyId || null
+  }
+
+  // Helper function to get coverage period for a user
+  const getCoveragePeriodForUser = (userId: string) => {
+    if (!user?.assignments) return 'No Coverage'
+    const assignment = user.assignments.find((a: any) => a.userId === userId)
+    if (!assignment?.assignment) return 'No Coverage'
+
+    const effectiveFrom = assignment.assignment.effectiveFrom
+    const effectiveTo = assignment.assignment.effectiveTo
+
+    if (!effectiveFrom) return 'No Coverage'
+
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr)
+      const day = date.getDate().toString().padStart(2, '0')
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const year = date.getFullYear().toString().slice(-2)
+      return `${day}|${month}|${year}`
+    }
+
+    const fromDate = formatDate(effectiveFrom)
+    const toDate = effectiveTo ? formatDate(effectiveTo) : 'Ongoing'
+
+    return `${fromDate} to ${toDate}`
+  }
+
   useEffect(() => {
     fetchUserData()
     fetchBenefitComponents()
@@ -66,26 +98,49 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      // Fetch user profile with family members from the new member API
+      const response = await fetch('/api/member/profile', {
         credentials: 'include',
       })
       if (response.ok) {
-        const userData = await response.json()
+        const profileData = await response.json()
 
-        // Mock dependents data for demo (replace with actual API call)
-        const mockDependents = [
-          { id: '2', name: { firstName: 'Sarah', lastName: 'Doe' }, memberId: 'OPD000002', relationship: 'Spouse' },
-          { id: '3', name: { firstName: 'Emma', lastName: 'Doe' }, memberId: 'OPD000003', relationship: 'Child' },
-        ]
-
-        // Create a new object with dependents
-        const userWithDependents = { ...userData, dependents: mockDependents }
+        // profileData contains: { user, dependents, familyMembers, assignments }
+        const userWithDependents = {
+          ...profileData.user,
+          dependents: profileData.dependents,
+          familyMembers: profileData.familyMembers,
+          assignments: profileData.assignments || []
+        }
 
         setUser(userWithDependents)
         setSelectedProfile(userWithDependents) // Set default selected profile
+      } else {
+        // Fallback to basic user data if member API fails
+        const authResponse = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        if (authResponse.ok) {
+          const userData = await authResponse.json()
+          setUser(userData)
+          setSelectedProfile(userData)
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error)
+      // Try fallback to basic user data
+      try {
+        const authResponse = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        if (authResponse.ok) {
+          const userData = await authResponse.json()
+          setUser(userData)
+          setSelectedProfile(userData)
+        }
+      } catch (fallbackError) {
+        console.error('Error fetching fallback user data:', fallbackError)
+      }
     } finally {
       setLoading(false)
     }
@@ -203,13 +258,13 @@ export default function DashboardPage() {
                     {/* Dependents */}
                     {user?.dependents?.map((dependent: any) => (
                       <button
-                        key={dependent.id}
+                        key={dependent._id || dependent.id}
                         onClick={() => {
                           setSelectedProfile(dependent)
                           setProfileDropdownOpen(false)
                         }}
                         className={`w-full flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                          selectedProfile?.id === dependent.id ? 'bg-brand-50' : ''
+                          selectedProfile?._id === dependent._id || selectedProfile?.id === dependent.id ? 'bg-brand-50' : ''
                         }`}
                       >
                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white text-sm font-semibold mr-3">
@@ -221,7 +276,7 @@ export default function DashboardPage() {
                           </p>
                           <p className="text-xs text-gray-500">{dependent.relationship}</p>
                         </div>
-                        {selectedProfile?.id === dependent.id && (
+                        {(selectedProfile?._id === dependent._id || selectedProfile?.id === dependent.id) && (
                           <div className="ml-auto">
                             <div className="h-2 w-2 bg-brand-600 rounded-full"></div>
                           </div>
@@ -296,14 +351,15 @@ export default function DashboardPage() {
 
                 {/* Details */}
                 <div className="space-y-1 text-xs">
-                  <p className="text-white/90">Member ID: <span className="font-medium">MEM002</span></p>
-                  <p className="text-white/90">Corporate: <span className="font-medium">TCS Ltd.</span></p>
-                  <p className="text-white/90">Age: <span className="font-medium">28 years</span></p>
+                  <p className="text-white/90">Member ID: <span className="font-medium">{user?.memberId || 'N/A'}</span></p>
+                  <p className="text-white/90">UHID: <span className="font-medium">{user?.uhid || 'N/A'}</span></p>
+                  <p className="text-white/90">Policy: <span className="font-medium">{getPolicyForUser(user?._id)?.policyNumber || 'No Policy Mapped'}</span></p>
+                  <p className="text-white/90">Relationship: <span className="font-medium">Primary Member</span></p>
                 </div>
 
                 {/* Coverage Period */}
                 <div className="mt-2 pt-2 border-t border-white/20">
-                  <p className="text-[10px] text-white/80">Coverage: 01|04|24 to 31|03|25</p>
+                  <p className="text-[10px] text-white/80">Coverage: {getCoveragePeriodForUser(user?._id)}</p>
                 </div>
               </Card>
             </div>
@@ -326,14 +382,15 @@ export default function DashboardPage() {
 
                   {/* Details */}
                   <div className="space-y-1 text-xs">
-                    <p className="text-white/90">Member ID: <span className="font-medium">{dependent.memberId}</span></p>
-                    <p className="text-white/90">Corporate: <span className="font-medium">TCS Ltd.</span></p>
-                    <p className="text-white/90">Age: <span className="font-medium">{dependent.relationship === 'Spouse' ? '26' : '5'} years</span></p>
+                    <p className="text-white/90">Member ID: <span className="font-medium">{dependent.memberId || 'N/A'}</span></p>
+                    <p className="text-white/90">UHID: <span className="font-medium">{dependent.uhid || 'N/A'}</span></p>
+                    <p className="text-white/90">Policy: <span className="font-medium">{getPolicyForUser(dependent._id)?.policyNumber || 'No Policy Mapped'}</span></p>
+                    <p className="text-white/90">Relationship: <span className="font-medium">{dependent.relationship}</span></p>
                   </div>
 
                   {/* Coverage Period */}
                   <div className="mt-2 pt-2 border-t border-white/20">
-                    <p className="text-[10px] text-white/80">Coverage: 01|04|24 to 31|03|25</p>
+                    <p className="text-[10px] text-white/80">Coverage: {getCoveragePeriodForUser(dependent._id)}</p>
                   </div>
                 </Card>
               </div>

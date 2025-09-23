@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongo:7.0
-    container_name: opd-mongo
+    container_name: opd-mongo-dev
     restart: unless-stopped
     ports:
       - "27017:27017"
@@ -18,7 +16,7 @@ services:
 
   api:
     image: node:20-alpine
-    container_name: opd-api
+    container_name: opd-api-dev
     restart: unless-stopped
     working_dir: /app
     ports:
@@ -39,14 +37,14 @@ services:
 
   web-admin:
     image: node:20-alpine
-    container_name: opd-web-admin
+    container_name: opd-web-admin-dev
     restart: unless-stopped
     working_dir: /app
     ports:
       - "3001:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api:4000/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
@@ -58,14 +56,14 @@ services:
 
   web-member:
     image: node:20-alpine
-    container_name: opd-web-member
+    container_name: opd-web-member-dev
     restart: unless-stopped
     working_dir: /app
     ports:
       - "3002:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api:4000/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
