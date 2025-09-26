@@ -10,38 +10,47 @@ import {
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class CreateCategoryDto {
+export class CreateCugDto {
   @ApiProperty({
-    description: 'Unique category ID in format: 3 letters + 3 digits',
-    example: 'CAT001',
+    description: 'Unique CUG ID in format: 3 letters + 3 digits',
+    example: 'CUG001',
     pattern: '^[A-Z]{3}\\d{3}$',
   })
   @IsNotEmpty()
   @IsString()
   @Transform(({ value }) => value?.toUpperCase())
   @Matches(/^[A-Z]{3}\d{3}$/, {
-    message: 'Category ID must be in format: 3 uppercase letters followed by 3 digits (e.g., CAT001)',
+    message: 'CUG ID must be in format: 3 uppercase letters followed by 3 digits (e.g., CUG001)',
   })
-  categoryId: string;
+  cugId: string;
 
   @ApiProperty({
-    description: 'Category name',
-    example: 'Consultation Services',
+    description: 'CUG code',
+    example: 'GOOGLE',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value?.toUpperCase())
+  code: string;
+
+  @ApiProperty({
+    description: 'CUG name',
+    example: 'Google Inc.',
   })
   @IsNotEmpty()
   @IsString()
   name: string;
 
   @ApiPropertyOptional({
-    description: 'Category description',
-    example: 'Medical consultation services',
+    description: 'CUG description',
+    example: 'Google corporate group',
   })
   @IsOptional()
   @IsString()
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Whether the category is active',
+    description: 'Whether the CUG is active',
     default: true,
   })
   @IsOptional()
@@ -57,28 +66,36 @@ export class CreateCategoryDto {
   @IsNumber()
   @Min(0)
   displayOrder?: number = 0;
-
 }
 
-export class UpdateCategoryDto {
+export class UpdateCugDto {
   @ApiPropertyOptional({
-    description: 'Category name',
-    example: 'Consultation Services',
+    description: 'CUG code',
+    example: 'GOOGLE',
+  })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value?.toUpperCase())
+  code?: string;
+
+  @ApiPropertyOptional({
+    description: 'CUG name',
+    example: 'Google Inc.',
   })
   @IsOptional()
   @IsString()
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Category description',
-    example: 'Medical consultation services',
+    description: 'CUG description',
+    example: 'Google corporate group',
   })
   @IsOptional()
   @IsString()
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Whether the category is active',
+    description: 'Whether the CUG is active',
   })
   @IsOptional()
   @IsBoolean()
@@ -92,5 +109,4 @@ export class UpdateCategoryDto {
   @IsNumber()
   @Min(0)
   displayOrder?: number;
-
 }

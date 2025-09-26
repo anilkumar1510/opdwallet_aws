@@ -97,4 +97,23 @@ export class AssignmentsController {
       req.user?.userId,
     );
   }
+
+  @Delete('user/:userId/policy/:policyId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Unassign policy from user' })
+  @ApiResponse({ status: 200, description: 'Policy unassigned successfully' })
+  @ApiResponse({ status: 404, description: 'Assignment not found' })
+  @ApiResponse({ status: 400, description: 'Invalid userId or policyId format' })
+  async unassignPolicyFromUser(
+    @Param('userId') userId: string,
+    @Param('policyId') policyId: string,
+    @Request() req: any,
+  ) {
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] DELETE /assignments/user/' + userId + '/policy/' + policyId);
+    return this.assignmentsService.unassignPolicyFromUser(
+      userId,
+      policyId,
+      req.user?.userId,
+    );
+  }
 }

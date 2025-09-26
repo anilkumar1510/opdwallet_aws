@@ -110,8 +110,10 @@ export class PlanConfigController {
   @Delete(':version')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete plan configuration' })
-  @ApiResponse({ status: 200, description: 'Configuration deleted' })
-  @ApiResponse({ status: 400, description: 'Cannot delete published or current configurations' })
+  @ApiResponse({ status: 200, description: 'Configuration deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Cannot delete published configurations that are current' })
+  @ApiResponse({ status: 404, description: 'Configuration not found' })
+  @ApiResponse({ status: 409, description: 'Cannot delete current configuration with active user assignments' })
   async deleteConfig(
     @Param('policyId') policyId: string,
     @Param('version') version: number,

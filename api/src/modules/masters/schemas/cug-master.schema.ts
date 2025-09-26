@@ -1,20 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type CategoryMasterDocument = CategoryMaster & Document;
+export type CugMasterDocument = CugMaster & Document;
 
 @Schema({
-  collection: 'category_master',
+  collection: 'cug_master',
   timestamps: true,
 })
-export class CategoryMaster {
+export class CugMaster {
   @Prop({
     required: true,
     unique: true,
     index: true,
     uppercase: true
   })
-  categoryId: string;
+  cugId: string;
 
   @Prop({
     required: true,
@@ -44,12 +44,11 @@ export class CategoryMaster {
     type: String
   })
   description?: string;
-
 }
 
-export const CategoryMasterSchema = SchemaFactory.createForClass(CategoryMaster);
+export const CugMasterSchema = SchemaFactory.createForClass(CugMaster);
 
 // Indexes
-CategoryMasterSchema.index({ categoryId: 1 }, { unique: true });
-CategoryMasterSchema.index({ code: 1 }, { unique: true });
-CategoryMasterSchema.index({ isActive: 1, displayOrder: 1 });
+CugMasterSchema.index({ cugId: 1 }, { unique: true });
+CugMasterSchema.index({ code: 1 }, { unique: true });
+CugMasterSchema.index({ isActive: 1, displayOrder: 1 });

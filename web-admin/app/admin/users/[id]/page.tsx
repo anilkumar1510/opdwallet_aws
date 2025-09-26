@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import { apiFetch, getActiveCugs, CugMaster } from '@/lib/api'
 
 export default function UserDetailPage() {
   const router = useRouter()
@@ -18,14 +18,26 @@ export default function UserDetailPage() {
   const [editedUser, setEditedUser] = useState<any>(null)
   const [newPassword, setNewPassword] = useState('')
   const [showPasswordField, setShowPasswordField] = useState(false)
+  const [cugs, setCugs] = useState<CugMaster[]>([])
+  const [selectedCugId, setSelectedCugId] = useState('')
 
   useEffect(() => {
     if (params.id) {
       fetchUserWithDependents()
       fetchAssignments()
       fetchPolicies()
+      fetchCugs()
     }
   }, [params.id])
+
+  useEffect(() => {
+    if (user && cugs.length > 0 && user.corporateName) {
+      const matchingCug = cugs.find(cug => cug.name === user.corporateName)
+      if (matchingCug) {
+        setSelectedCugId(matchingCug._id)
+      }
+    }
+  }, [user, cugs])
 
   const fetchUserWithDependents = async () => {
     try {
@@ -75,6 +87,15 @@ export default function UserDetailPage() {
     }
   }
 
+  const fetchCugs = async () => {
+    try {
+      const cugsData = await getActiveCugs()
+      setCugs(cugsData)
+    } catch (error) {
+      console.error('Failed to fetch CUGs')
+    }
+  }
+
   const handleAssignPolicy = async () => {
     if (!selectedPolicyId) return
 
@@ -98,23 +119,61 @@ export default function UserDetailPage() {
     }
   }
 
+  const handleUnassignPolicy = async (assignment: any) => {
+    const policyName = assignment.policyId?.name || 'Unknown Policy'
+
+    if (!confirm(`Are you sure you want to unassign "${policyName}" from this user? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await apiFetch(`/api/assignments/user/${params.id}/policy/${assignment.policyId._id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        alert('Policy unassigned successfully')
+        fetchAssignments()
+      } else {
+        const error = await response.json()
+        alert(`Failed to unassign policy: ${error.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      alert('Failed to unassign policy')
+    }
+  }
+
   const handleSave = async () => {
     try {
-      // Update user data
-      const updateData = {
-        name: editedUser.name,
+      // Clean and prepare update data
+      const updateData: any = {
+        name: {
+          firstName: editedUser.name?.firstName || '',
+          lastName: editedUser.name?.lastName || ''
+        },
         email: editedUser.email,
         phone: editedUser.phone,
         dob: editedUser.dob,
         gender: editedUser.gender,
-        address: editedUser.address,
         status: editedUser.status,
         role: editedUser.role,
         relationship: editedUser.relationship,
         primaryMemberId: editedUser.primaryMemberId,
         memberId: editedUser.memberId,
         uhid: editedUser.uhid,
-        employeeId: editedUser.employeeId
+        employeeId: editedUser.employeeId,
+        corporateName: editedUser.corporateName
+      }
+
+      // Clean address object if it exists
+      if (editedUser.address) {
+        updateData.address = {
+          line1: editedUser.address.line1 || '',
+          line2: editedUser.address.line2 || '',
+          city: editedUser.address.city || '',
+          state: editedUser.address.state || '',
+          pincode: editedUser.address.pincode || ''
+        }
       }
 
       const response = await apiFetch(`/api/users/${params.id}`, {
@@ -360,8 +419,8 @@ export default function UserDetailPage() {
                     <option value="SPOUSE">SPOUSE</option>
                     <option value="FATHER">FATHER</option>
                     <option value="MOTHER">MOTHER</option>
-                    <option value="DAUGHTER">DAUGHTER</option>
-                    <option value="SON">SON</option>
+                    <option value="CHILD">CHILD</option>
+                    <option value="OTHER">OTHER</option>
                   </>
                 )}
               </select>
@@ -384,6 +443,34 @@ export default function UserDetailPage() {
                 />
               ) : (
                 <p className="text-gray-900">{user.primaryMemberId || '-'}</p>
+              )}
+            </div>
+          )}
+          {!isInternalUser && (
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Corporate Name</p>
+              {isEditing ? (
+                <select
+                  value={selectedCugId || ''}
+                  onChange={(e) => {
+                    const selectedCug = cugs.find(cug => cug._id === e.target.value)
+                    setSelectedCugId(e.target.value)
+                    setEditedUser({
+                      ...editedUser,
+                      corporateName: selectedCug ? selectedCug.name : ''
+                    })
+                  }}
+                  className="input"
+                >
+                  <option value="">Select Corporate Group</option>
+                  {cugs.map((cug) => (
+                    <option key={cug._id} value={cug._id}>
+                      {cug.name} ({cug.code})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-gray-900">{user.corporateName || '-'}</p>
               )}
             </div>
           )}
@@ -627,6 +714,7 @@ export default function UserDetailPage() {
                   <th>Effective From</th>
                   <th>Effective To</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -658,6 +746,20 @@ export default function UserDetailPage() {
                       <span className={assignment.isActive ? 'badge-success' : 'badge-default'}>
                         {assignment.isActive ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td>
+                      {assignment.isActive && (
+                        <button
+                          onClick={() => handleUnassignPolicy(assignment)}
+                          className="btn-ghost text-sm text-red-600 hover:text-red-700"
+                          title="Unassign Policy"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Unassign
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

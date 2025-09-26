@@ -41,10 +41,10 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=development
-      - PORT=3002
+      - PORT=3000
       - NEXT_PUBLIC_API_URL=http://51.20.125.246/api
     expose:
-      - "3002"
+      - "3000"
     depends_on:
       - api
     networks:
@@ -58,10 +58,10 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=development
-      - PORT=3001
+      - PORT=3000
       - NEXT_PUBLIC_API_URL=http://51.20.125.246/api
     expose:
-      - "3001"
+      - "3000"
     depends_on:
       - api
     networks:
@@ -74,7 +74,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.simple.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
       - web-member

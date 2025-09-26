@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -107,6 +108,33 @@ export class PoliciesController {
     }
 
     return policy;
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete policy' })
+  @ApiResponse({ status: 200, description: 'Policy deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Policy not found' })
+  @ApiResponse({ status: 409, description: 'Policy is assigned to users and cannot be deleted' })
+  async delete(@Param('id') id: string, @Request() req: AuthRequest) {
+    // Get policy details for audit before deletion
+    const policy = await this.policiesService.findOne(id);
+
+    const result = await this.policiesService.delete(id);
+
+    // Log audit
+    await this.auditService.log({
+      userId: req.user.userId,
+      userEmail: req.user.email,
+      userRole: req.user.role,
+      action: 'DELETE',
+      resource: 'policies',
+      resourceId: id,
+      before: (policy as any).toObject(),
+      description: `Deleted policy: ${policy.name} (${policy.policyNumber})`,
+    });
+
+    return result;
   }
 
 }

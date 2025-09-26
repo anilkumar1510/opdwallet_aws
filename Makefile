@@ -4,16 +4,29 @@
 help:
 	@echo "OPD Wallet Docker Management"
 	@echo "============================"
-	@echo "make up          - Start all services with Docker"
-	@echo "make down        - Stop all services"
-	@echo "make restart     - Restart all services"
-	@echo "make logs        - View logs for all services"
-	@echo "make logs-api    - View API logs"
-	@echo "make logs-admin  - View Admin portal logs"
-	@echo "make logs-member - View Member portal logs"
-	@echo "make clean       - Stop services and remove volumes"
-	@echo "make build       - Rebuild all images"
-	@echo "make status      - Check status of all services"
+	@echo ""
+	@echo "Development:"
+	@echo "  make up          - Start all services with Docker"
+	@echo "  make down        - Stop all services"
+	@echo "  make restart     - Restart all services"
+	@echo "  make logs        - View logs for all services"
+	@echo "  make logs-api    - View API logs"
+	@echo "  make logs-admin  - View Admin portal logs"
+	@echo "  make logs-member - View Member portal logs"
+	@echo "  make clean       - Stop services and remove volumes"
+	@echo "  make build       - Rebuild all images"
+	@echo "  make status      - Check status of all services"
+	@echo ""
+	@echo "Production Deployments:"
+	@echo "  make prod-up     - Start production deployment"
+	@echo "  make simple-up   - Start simple deployment"
+	@echo "  make secure-up   - Start secure deployment (SSL)"
+	@echo "  make ecr-up      - Start ECR deployment"
+	@echo "  make secrets-up  - Start AWS Secrets deployment"
+	@echo ""
+	@echo "Database:"
+	@echo "  make reset-db    - Reset MongoDB database"
+	@echo "  make mongo-shell - Access MongoDB shell"
 
 # Start all services
 .PHONY: up
@@ -87,16 +100,16 @@ frontend:
 # Reset database
 .PHONY: reset-db
 reset-db:
-	docker-compose stop mongo
-	docker-compose rm -f mongo
+	docker-compose stop mongodb
+	docker-compose rm -f mongodb
 	docker volume rm opdwallet_mongo-data 2>/dev/null || true
-	docker-compose up -d mongo
+	docker-compose up -d mongodb
 	@echo "MongoDB has been reset"
 
 # Access MongoDB shell
 .PHONY: mongo-shell
 mongo-shell:
-	docker exec -it opd-mongo mongosh -u admin -p admin123 --authenticationDatabase admin
+	docker exec -it opd-mongo-dev mongosh -u admin -p admin123 --authenticationDatabase admin
 
 # Install dependencies for all services
 .PHONY: install
@@ -125,6 +138,88 @@ prod-logs:
 .PHONY: prod-status
 prod-status:
 	docker-compose -f docker-compose.prod.yml ps
+
+# Simple deployment commands
+.PHONY: simple-build
+simple-build:
+	docker-compose -f docker-compose.simple.yml build
+
+.PHONY: simple-up
+simple-up:
+	docker-compose -f docker-compose.simple.yml up -d
+	@echo "Simple deployment started!"
+	@echo "Application: http://localhost"
+
+.PHONY: simple-down
+simple-down:
+	docker-compose -f docker-compose.simple.yml down
+
+.PHONY: simple-logs
+simple-logs:
+	docker-compose -f docker-compose.simple.yml logs -f
+
+.PHONY: simple-status
+simple-status:
+	docker-compose -f docker-compose.simple.yml ps
+
+# Secure deployment commands
+.PHONY: secure-build
+secure-build:
+	docker-compose -f docker-compose.secure.yml build
+
+.PHONY: secure-up
+secure-up:
+	docker-compose -f docker-compose.secure.yml up -d
+	@echo "Secure deployment started with SSL/TLS!"
+	@echo "Application: https://localhost"
+
+.PHONY: secure-down
+secure-down:
+	docker-compose -f docker-compose.secure.yml down
+
+.PHONY: secure-logs
+secure-logs:
+	docker-compose -f docker-compose.secure.yml logs -f
+
+.PHONY: secure-status
+secure-status:
+	docker-compose -f docker-compose.secure.yml ps
+
+# ECR deployment commands
+.PHONY: ecr-up
+ecr-up:
+	docker-compose -f docker-compose.ecr.yml up -d
+	@echo "ECR deployment started!"
+
+.PHONY: ecr-down
+ecr-down:
+	docker-compose -f docker-compose.ecr.yml down
+
+.PHONY: ecr-logs
+ecr-logs:
+	docker-compose -f docker-compose.ecr.yml logs -f
+
+.PHONY: ecr-status
+ecr-status:
+	docker-compose -f docker-compose.ecr.yml ps
+
+# Secrets deployment commands
+.PHONY: secrets-up
+secrets-up:
+	docker-compose -f docker-compose.secrets.yml up -d
+	@echo "Secrets deployment started!"
+
+.PHONY: secrets-down
+secrets-down:
+	docker-compose -f docker-compose.secrets.yml down
+
+.PHONY: secrets-logs
+secrets-logs:
+	docker-compose -f docker-compose.secrets.yml logs -f
+
+.PHONY: secrets-status
+secrets-status:
+	docker-compose -f docker-compose.secrets.yml ps
 
 # Deploy to AWS EC2
 .PHONY: deploy-aws

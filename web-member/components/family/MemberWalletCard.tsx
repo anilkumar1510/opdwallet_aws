@@ -6,7 +6,8 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   CreditCardIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
 
 interface Transaction {
@@ -82,6 +83,12 @@ export function MemberWalletCard() {
             <div className="ml-3">
               <h3 className="font-semibold text-lg">{activeMember.name}</h3>
               <p className="text-teal-100 text-sm">{activeMember.relationship} • {activeMember.memberId}</p>
+              {activeMember.corporateName && (
+                <div className="flex items-center mt-1">
+                  <BuildingOfficeIcon className="h-3 w-3 text-teal-200 mr-1" />
+                  <p className="text-teal-200 text-xs">{activeMember.corporateName}</p>
+                </div>
+              )}
             </div>
           </div>
           <WalletIcon className="h-6 w-6 text-teal-100" />
@@ -158,7 +165,15 @@ export function MemberWalletCardCompact() {
           <div className="h-8 w-8 rounded-full bg-white/20 text-white font-semibold flex items-center justify-center text-sm">
             {getInitials(activeMember.name)}
           </div>
-          <span className="ml-2 font-medium text-sm">{activeMember.name}</span>
+          <div className="ml-2">
+            <span className="font-medium text-sm">{activeMember.name}</span>
+            {activeMember.corporateName && (
+              <div className="flex items-center">
+                <BuildingOfficeIcon className="h-2.5 w-2.5 text-teal-200 mr-1" />
+                <span className="text-teal-200 text-xs">{activeMember.corporateName}</span>
+              </div>
+            )}
+          </div>
         </div>
         <WalletIcon className="h-5 w-5 text-teal-100" />
       </div>

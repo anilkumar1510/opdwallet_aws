@@ -34,4 +34,5 @@ export class RelationshipsService {
       .sort({ sortOrder: 1 })
       .lean();
   }
+
 }

@@ -68,7 +68,7 @@ export class AssignmentsService {
         isActive: true,
       })
       .populate('userId', 'memberId firstName lastName email')
-      .populate('policyId', 'policyNumber name description status')
+      .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
       .sort({ createdAt: -1 });
   }
 
@@ -83,7 +83,7 @@ export class AssignmentsService {
         isActive: true,
       })
       .populate('userId', 'memberId firstName lastName email')
-      .populate('policyId', 'policyNumber name description status')
+      .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
       .sort({ createdAt: -1 });
   }
 
@@ -104,6 +104,42 @@ export class AssignmentsService {
     return { message: 'Assignment removed successfully' };
   }
 
+  async unassignPolicyFromUser(userId: string, policyId: string, updatedBy: string) {
+    console.log('🟡 [ASSIGNMENTS SERVICE] Unassigning policy from user:', { userId, policyId });
+
+    // Validate ObjectIds
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid userId format');
+    }
+    if (!Types.ObjectId.isValid(policyId)) {
+      throw new BadRequestException('Invalid policyId format');
+    }
+
+    // Find active assignment
+    const assignment = await this.assignmentModel.findOne({
+      userId: new Types.ObjectId(userId),
+      policyId: new Types.ObjectId(policyId),
+      isActive: true,
+    });
+
+    if (!assignment) {
+      throw new NotFoundException('Assignment not found or already inactive');
+    }
+
+    // Deactivate assignment
+    assignment.isActive = false;
+    assignment.updatedBy = updatedBy;
+    assignment.effectiveTo = new Date();
+
+    await assignment.save();
+    console.log('✅ [ASSIGNMENTS SERVICE] Policy unassigned from user:', assignment.assignmentId);
+
+    return {
+      message: 'Policy unassigned successfully',
+      assignmentId: assignment.assignmentId
+    };
+  }
+
   async getAllAssignments(page = 1, limit = 10) {
     const skip = (page - 1) * limit;
 
@@ -111,7 +147,7 @@ export class AssignmentsService {
       this.assignmentModel
         .find({ isActive: true })
         .populate('userId', 'memberId firstName lastName email')
-        .populate('policyId', 'policyNumber name description status')
+        .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),

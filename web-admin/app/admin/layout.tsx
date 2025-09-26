@@ -80,7 +80,7 @@ export default function AdminLayout({
       name: 'Services',
       path: '/admin/services',
       current: pathname.startsWith('/admin/services')
-    }
+    },
   ]
 
   if (loading) {

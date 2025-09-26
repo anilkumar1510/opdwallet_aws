@@ -81,6 +81,9 @@ export class User {
   @Prop({ enum: ['MALE', 'FEMALE', 'OTHER'] })
   gender?: string;
 
+  @Prop()
+  corporateName?: string;
+
   @Prop({
     type: {
       line1: String,

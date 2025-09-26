@@ -11,6 +11,7 @@ import { MastersModule } from './modules/masters/masters.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { PlanConfigModule } from './modules/plan-config/plan-config.module';
 import { MemberModule } from './modules/member/member.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 import { MigrationModule } from './modules/migration/migration.module';
 import configuration from './config/configuration';
 
@@ -40,6 +41,7 @@ import configuration from './config/configuration';
     AuditModule,
     PlanConfigModule,
     MemberModule,
+    WalletModule,
     MigrationModule,
   ],
 })

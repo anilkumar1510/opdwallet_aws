@@ -32,6 +32,7 @@ export default function PlanConfigEdit() {
   const [servicesLoading, setServicesLoading] = useState(false);
   const [relationships, setRelationships] = useState<any[]>([]);
   const [relationshipsLoading, setRelationshipsLoading] = useState(true);
+  const [selectedRelationship, setSelectedRelationship] = useState<string>('PRIMARY'); // Default to Primary Member
   const [config, setConfig] = useState<Partial<PlanConfig>>({
     benefits: {},
     wallet: {
@@ -43,7 +44,7 @@ export default function PlanConfigEdit() {
       topUpAllowed: false,
     },
     enabledServices: {},
-    coveredRelationships: ['SELF'], // Array of enabled relationship codes - SELF is always included
+    coveredRelationships: [], // Array of enabled relationship codes (only dependents, PRIMARY is implicit)
     memberConfigs: {}, // Individual configurations per relationship
   });
 
@@ -63,6 +64,7 @@ export default function PlanConfigEdit() {
       loadServicesForEnabledCategories();
     }
   }, [categories, config.benefits]);
+
 
   const loadCategories = async () => {
     try {
@@ -84,17 +86,20 @@ export default function PlanConfigEdit() {
       const response = await fetch('/api/relationships');
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 [DEBUG] Loaded relationships from API:', data);
         setRelationships(data || []);
       }
     } catch (error) {
       console.error('Error loading relationships:', error);
-      // Fallback to default relationships
-      setRelationships([
-        { relationshipCode: 'SELF', displayName: 'Primary Member', sortOrder: 1 },
-        { relationshipCode: 'SPOUSE', displayName: 'Spouse', sortOrder: 2 },
-        { relationshipCode: 'CHILD', displayName: 'Child', sortOrder: 3 },
-        { relationshipCode: 'PARENT', displayName: 'Parent', sortOrder: 4 }
-      ]);
+      // Fallback to default relationships (only dependents, no Self)
+      const fallbackData = [
+        { relationshipCode: 'REL002', displayName: 'Spouse', sortOrder: 1 },
+        { relationshipCode: 'REL003', displayName: 'Child', sortOrder: 2 },
+        { relationshipCode: 'REL004', displayName: 'Father', sortOrder: 3 },
+        { relationshipCode: 'REL005', displayName: 'Mother', sortOrder: 4 }
+      ];
+      console.log('🔍 [DEBUG] Using fallback relationships:', fallbackData);
+      setRelationships(fallbackData);
     } finally {
       setRelationshipsLoading(false);
     }
@@ -235,91 +240,230 @@ export default function PlanConfigEdit() {
   };
 
   const updateBenefit = (key: string, field: string, value: any) => {
-    setConfig(prev => ({
-      ...prev,
-      benefits: {
-        ...prev.benefits,
-        [key]: {
-          ...prev.benefits?.[key as keyof typeof prev.benefits],
-          [field]: value,
-        },
-      },
-    }));
+    setConfig(prev => {
+      if (selectedRelationship === 'PRIMARY') {
+        // Update primary member benefits
+        return {
+          ...prev,
+          benefits: {
+            ...prev.benefits,
+            [key]: {
+              ...prev.benefits?.[key as keyof typeof prev.benefits],
+              [field]: value,
+            },
+          },
+        };
+      } else {
+        // Update specific relationship member benefits
+        const newMemberConfigs = { ...prev.memberConfigs };
+        const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
+          inheritFromPrimary: false,
+          benefits: {},
+          wallet: {},
+          enabledServices: {}
+        };
+
+        newMemberConfigs[selectedRelationship] = {
+          ...currentMemberConfig,
+          benefits: {
+            ...currentMemberConfig.benefits,
+            [key]: {
+              ...currentMemberConfig.benefits?.[key],
+              [field]: value,
+            },
+          },
+        };
+
+        return {
+          ...prev,
+          memberConfigs: newMemberConfigs,
+        };
+      }
+    });
   };
 
   const updateWallet = (field: string, value: any) => {
-    setConfig(prev => ({
-      ...prev,
-      wallet: {
-        ...prev.wallet,
-        [field]: value,
-      },
-    }));
+    setConfig(prev => {
+      if (selectedRelationship === 'PRIMARY') {
+        // Update primary member wallet
+        return {
+          ...prev,
+          wallet: {
+            ...prev.wallet,
+            [field]: value,
+          },
+        };
+      } else {
+        // Update specific relationship member wallet
+        const newMemberConfigs = { ...prev.memberConfigs };
+        const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
+          inheritFromPrimary: false,
+          benefits: {},
+          wallet: {},
+          enabledServices: {}
+        };
+
+        newMemberConfigs[selectedRelationship] = {
+          ...currentMemberConfig,
+          wallet: {
+            ...currentMemberConfig.wallet,
+            [field]: value,
+          },
+        };
+
+        return {
+          ...prev,
+          memberConfigs: newMemberConfigs,
+        };
+      }
+    });
   };
 
   const updateCopay = (field: string, value: any) => {
-    setConfig(prev => ({
-      ...prev,
-      wallet: {
-        ...prev.wallet,
-        copay: {
-          ...prev.wallet?.copay,
-          [field]: value,
-        } as any,
-      },
-    }));
+    setConfig(prev => {
+      if (selectedRelationship === 'PRIMARY') {
+        // Update primary member copay
+        return {
+          ...prev,
+          wallet: {
+            ...prev.wallet,
+            copay: {
+              ...prev.wallet?.copay,
+              [field]: value,
+            } as any,
+          },
+        };
+      } else {
+        // Update specific relationship member copay
+        const newMemberConfigs = { ...prev.memberConfigs };
+        const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
+          inheritFromPrimary: false,
+          benefits: {},
+          wallet: {},
+          enabledServices: {}
+        };
+
+        newMemberConfigs[selectedRelationship] = {
+          ...currentMemberConfig,
+          wallet: {
+            ...currentMemberConfig.wallet,
+            copay: {
+              ...currentMemberConfig.wallet?.copay,
+              [field]: value,
+            } as any,
+          },
+        };
+
+        return {
+          ...prev,
+          memberConfigs: newMemberConfigs,
+        };
+      }
+    });
   };
 
   const updateCarryForward = (field: string, value: any) => {
-    setConfig(prev => ({
-      ...prev,
-      wallet: {
-        ...prev.wallet,
-        carryForward: {
-          ...prev.wallet?.carryForward,
-          [field]: value,
-        } as any,
-      },
-    }));
+    setConfig(prev => {
+      if (selectedRelationship === 'PRIMARY') {
+        // Update primary member carry forward
+        return {
+          ...prev,
+          wallet: {
+            ...prev.wallet,
+            carryForward: {
+              ...prev.wallet?.carryForward,
+              [field]: value,
+            } as any,
+          },
+        };
+      } else {
+        // Update specific relationship member carry forward
+        const newMemberConfigs = { ...prev.memberConfigs };
+        const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
+          inheritFromPrimary: false,
+          benefits: {},
+          wallet: {},
+          enabledServices: {}
+        };
+
+        newMemberConfigs[selectedRelationship] = {
+          ...currentMemberConfig,
+          wallet: {
+            ...currentMemberConfig.wallet,
+            carryForward: {
+              ...currentMemberConfig.wallet?.carryForward,
+              [field]: value,
+            } as any,
+          },
+        };
+
+        return {
+          ...prev,
+          memberConfigs: newMemberConfigs,
+        };
+      }
+    });
   };
 
   const updateService = (serviceCode: string, enabled: boolean) => {
     console.log('🟢 [SERVICE UPDATE DEBUG] Updating service:', serviceCode, 'enabled:', enabled);
 
     setConfig(prev => {
-      const newEnabledServices = { ...prev.enabledServices };
+      if (selectedRelationship === 'PRIMARY') {
+        // Update primary member services
+        const newEnabledServices = { ...prev.enabledServices };
 
-      if (enabled) {
-        newEnabledServices[serviceCode] = { enabled: true };
+        if (enabled) {
+          newEnabledServices[serviceCode] = { enabled: true };
+        } else {
+          delete newEnabledServices[serviceCode];
+        }
+
+        console.log('🟢 [SERVICE UPDATE DEBUG] New enabled services (primary):', newEnabledServices);
+
+        return {
+          ...prev,
+          enabledServices: newEnabledServices,
+        };
       } else {
-        delete newEnabledServices[serviceCode];
+        // Update specific relationship member services
+        const newMemberConfigs = { ...prev.memberConfigs };
+        const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
+          inheritFromPrimary: false,
+          benefits: {},
+          wallet: {},
+          enabledServices: {}
+        };
+
+        const newEnabledServices = { ...currentMemberConfig.enabledServices };
+
+        if (enabled) {
+          newEnabledServices[serviceCode] = { enabled: true };
+        } else {
+          delete newEnabledServices[serviceCode];
+        }
+
+        newMemberConfigs[selectedRelationship] = {
+          ...currentMemberConfig,
+          enabledServices: newEnabledServices,
+        };
+
+        console.log('🟢 [SERVICE UPDATE DEBUG] New enabled services (relationship):', newEnabledServices);
+
+        return {
+          ...prev,
+          memberConfigs: newMemberConfigs,
+        };
       }
-
-      console.log('🟢 [SERVICE UPDATE DEBUG] New enabled services:', newEnabledServices);
-
-      return {
-        ...prev,
-        enabledServices: newEnabledServices,
-      };
     });
   };
 
   const toggleRelationship = (relationshipCode: string, enabled: boolean) => {
-    // Prevent disabling SELF relationship
-    if (relationshipCode === 'SELF') {
-      return;
-    }
-
     setConfig(prev => {
-      const currentRelationships = prev.coveredRelationships || ['SELF'];
+      const currentRelationships = prev.coveredRelationships || [];
       const newCoveredRelationships = enabled
         ? [...currentRelationships, relationshipCode]
         : currentRelationships.filter(code => code !== relationshipCode);
-
-      // Ensure SELF is always included
-      if (!newCoveredRelationships.includes('SELF')) {
-        newCoveredRelationships.unshift('SELF');
-      }
 
       // Initialize member config for newly enabled relationships
       const newMemberConfigs = { ...prev.memberConfigs };
@@ -359,7 +503,7 @@ export default function PlanConfigEdit() {
 
       if (inherit) {
         // Copy primary member configuration
-        const primaryConfig = newMemberConfigs['SELF'] || {};
+        const primaryConfig = newMemberConfigs['REL001'] || {};
         newMemberConfigs[relationshipCode] = {
           ...newMemberConfigs[relationshipCode],
           inheritFromPrimary: true,
@@ -383,6 +527,46 @@ export default function PlanConfigEdit() {
         memberConfigs: newMemberConfigs,
       };
     });
+  };
+
+  // Helper functions to get relationship-specific data
+  const getCurrentMemberConfig = () => {
+    if (selectedRelationship === 'PRIMARY') {
+      return null; // Primary member uses main config
+    }
+    return config.memberConfigs?.[selectedRelationship];
+  };
+
+  const getCurrentBenefits = () => {
+    if (selectedRelationship === 'PRIMARY') {
+      return config.benefits || {};
+    }
+    const memberConfig = getCurrentMemberConfig();
+    return memberConfig?.benefits || {};
+  };
+
+  const getCurrentWallet = () => {
+    if (selectedRelationship === 'PRIMARY') {
+      return config.wallet || {};
+    }
+    const memberConfig = getCurrentMemberConfig();
+    return memberConfig?.wallet || {};
+  };
+
+  const getCurrentEnabledServices = () => {
+    if (selectedRelationship === 'PRIMARY') {
+      return config.enabledServices || {};
+    }
+    const memberConfig = getCurrentMemberConfig();
+    return memberConfig?.enabledServices || {};
+  };
+
+  const isCurrentMemberInheriting = () => {
+    if (selectedRelationship === 'PRIMARY') {
+      return false; // Primary member doesn't inherit
+    }
+    const memberConfig = getCurrentMemberConfig();
+    return memberConfig?.inheritFromPrimary !== false; // Default to true
   };
 
   if (loading) {
@@ -420,6 +604,84 @@ export default function PlanConfigEdit() {
             {saving ? 'Saving...' : 'Save'}
           </Button>
         )}
+      </div>
+
+      {/* Relationship Selector - Only show for Benefits, Wallet, and Services tabs */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Configure for Relationship</h3>
+            <p className="text-sm text-gray-600">
+              Select the relationship to configure benefits, wallet, and services. Coverage settings are managed in the Coverage tab.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="relationship-selector" className="text-sm font-medium">
+                Relationship:
+              </Label>
+              <Select
+                value={selectedRelationship}
+                onValueChange={setSelectedRelationship}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger id="relationship-selector" className="w-48 bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Primary Member Configuration (Always Available) */}
+                  <SelectItem value="PRIMARY">
+                    Primary Member (REL001)
+                  </SelectItem>
+                  {/* Show only enabled dependent relationships */}
+                  {(config.coveredRelationships || []).map((relationshipCode) => {
+                    const relationship = relationships.find(r => r.relationshipCode === relationshipCode);
+                    return (
+                      <SelectItem key={relationshipCode} value={relationshipCode}>
+                        {relationship?.displayName || relationshipCode} ({relationshipCode})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Inheritance Toggle for relationships (not for primary) */}
+            {selectedRelationship && selectedRelationship !== 'PRIMARY' && (
+              <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
+                <Label htmlFor="inherit-toggle" className="text-sm font-medium">
+                  Inherit from Primary:
+                </Label>
+                <Switch
+                  id="inherit-toggle"
+                  checked={isCurrentMemberInheriting()}
+                  onCheckedChange={(checked) => toggleInheritance(selectedRelationship, checked)}
+                  disabled={isReadOnly}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Status indicator */}
+        <div className="mt-3 text-sm">
+          {selectedRelationship === 'PRIMARY' ? (
+            <div className="text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
+              ⭐ Primary Member Configuration (REL001)
+            </div>
+          ) : selectedRelationship && isCurrentMemberInheriting() ? (
+            <div className="text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block">
+              ✓ Inheriting from Primary Member
+            </div>
+          ) : selectedRelationship ? (
+            <div className="text-orange-600 bg-orange-50 px-3 py-1 rounded-full inline-block">
+              ⚙️ Custom Configuration
+            </div>
+          ) : (
+            <div className="text-gray-600 bg-gray-50 px-3 py-1 rounded-full inline-block">
+              Select a relationship to configure
+            </div>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="coverage" className="space-y-4">
@@ -467,9 +729,9 @@ export default function PlanConfigEdit() {
                             </div>
                           </div>
                           <Switch
-                            checked={relationship.relationshipCode === 'SELF' ? true : (config.coveredRelationships?.includes(relationship.relationshipCode) || false)}
+                            checked={config.coveredRelationships?.includes(relationship.relationshipCode) || false}
                             onCheckedChange={(checked) => toggleRelationship(relationship.relationshipCode, checked)}
-                            disabled={isReadOnly || relationship.relationshipCode === 'SELF'} // SELF is always enabled
+                            disabled={isReadOnly}
                           />
                         </div>
                       ))}
@@ -480,7 +742,7 @@ export default function PlanConfigEdit() {
                         <strong>Selected relationships:</strong> {(config.coveredRelationships || []).length === 0 ? 'None' : (config.coveredRelationships || []).join(', ')}
                       </div>
                       <div className="text-xs text-blue-600 mt-1">
-                        Note: Primary Member (SELF) is always included and cannot be disabled.
+                        Note: Primary Member is always covered and cannot be disabled.
                       </div>
                     </div>
                   </div>
@@ -491,13 +753,13 @@ export default function PlanConfigEdit() {
                       Configure benefits and wallet settings for each covered relationship. You can choose to inherit from primary member or create custom configurations.
                     </p>
 
-                    {(config.coveredRelationships || ['SELF']).length === 1 ? (
+                    {(config.coveredRelationships || []).length === 0 ? (
                       <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded">
-                        Add more relationships above to configure individual member settings
+                        Add relationships above to configure individual member settings
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {(config.coveredRelationships || ['SELF']).map((relationshipCode) => {
+                        {(config.coveredRelationships || []).map((relationshipCode) => {
                           const relationship = relationships.find(r => r.relationshipCode === relationshipCode);
                           const memberConfig = config.memberConfigs?.[relationshipCode];
                           const isInheriting = memberConfig?.inheritFromPrimary !== false;
@@ -514,63 +776,28 @@ export default function PlanConfigEdit() {
                                   </div>
                                 </div>
 
-                                {relationshipCode !== 'SELF' && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600">Inherit from Primary:</span>
-                                    <Switch
-                                      checked={isInheriting}
-                                      onCheckedChange={(checked) => toggleInheritance(relationshipCode, checked)}
-                                      disabled={isReadOnly}
-                                    />
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-600">Inherit from Primary:</span>
+                                  <Switch
+                                    checked={isInheriting}
+                                    onCheckedChange={(checked) => toggleInheritance(relationshipCode, checked)}
+                                    disabled={isReadOnly}
+                                  />
+                                </div>
                               </div>
 
-                              {relationshipCode === 'SELF' && (
-                                <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
-                                  This is the primary member configuration. Other relationships can inherit from this.
-                                </div>
-                              )}
-
-                              {relationshipCode !== 'SELF' && isInheriting && (
+                              {isInheriting && (
                                 <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                                  ✓ Inheriting all settings from Primary Member (SELF)
+                                  ✓ Inheriting all settings from Primary Member
                                 </div>
                               )}
 
-                              {relationshipCode !== 'SELF' && !isInheriting && (
+                              {!isInheriting && (
                                 <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
                                   ⚙️ Custom configuration - Settings will be defined individually for this relationship
                                 </div>
                               )}
 
-                              {/* Copy Configuration Button */}
-                              {relationshipCode !== 'SELF' && !isInheriting && (
-                                <div className="mt-3 flex gap-2">
-                                  <button
-                                    onClick={() => toggleInheritance(relationshipCode, true)}
-                                    className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                    disabled={isReadOnly}
-                                  >
-                                    Copy from Primary Member
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      // Copy from spouse if available
-                                      const spouseConfig = config.memberConfigs?.['SPOUSE'];
-                                      if (spouseConfig && relationshipCode !== 'SPOUSE') {
-                                        updateMemberConfig(relationshipCode, 'benefits', spouseConfig.benefits);
-                                        updateMemberConfig(relationshipCode, 'wallet', spouseConfig.wallet);
-                                        updateMemberConfig(relationshipCode, 'enabledServices', spouseConfig.enabledServices);
-                                      }
-                                    }}
-                                    className="text-sm px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
-                                    disabled={isReadOnly || !config.memberConfigs?.['SPOUSE'] || relationshipCode === 'SPOUSE'}
-                                  >
-                                    Copy from Spouse
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           );
                         })}
@@ -592,7 +819,22 @@ export default function PlanConfigEdit() {
         <TabsContent value="benefits">
           <Card className="bg-white">
             <CardHeader className="bg-white">
-              <CardTitle className="text-gray-900">Benefits Configuration</CardTitle>
+              <CardTitle className="text-gray-900">
+                Benefits Configuration
+                {selectedRelationship !== 'PRIMARY' && (
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    for {relationships.find(r => r.relationshipCode === selectedRelationship)?.displayName || selectedRelationship}
+                  </span>
+                )}
+              </CardTitle>
+              {selectedRelationship !== 'PRIMARY' && isCurrentMemberInheriting() && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                  <div className="text-sm text-green-800">
+                    <strong>Note:</strong> This relationship is inheriting benefits from the Primary Member.
+                    Turn off "Inherit from Primary" above to create custom benefit configurations.
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6 bg-white">
               {categoriesLoading ? (
@@ -605,7 +847,11 @@ export default function PlanConfigEdit() {
                 </div>
               ) : (
                 categories.map((category) => {
-                  const benefit = config.benefits?.[category.categoryId as keyof typeof config.benefits];
+                  const currentBenefits = getCurrentBenefits();
+                  const benefit = currentBenefits[category.categoryId];
+                  const isInheriting = isCurrentMemberInheriting();
+                  const isDisabled = isReadOnly || (selectedRelationship !== 'PRIMARY' && isInheriting);
+
                   return (
                     <div key={category.categoryId} className="border border-gray-200 rounded-lg p-4 bg-white">
                       <div className="bg-white">
@@ -617,12 +863,17 @@ export default function PlanConfigEdit() {
                             <div className="text-sm text-gray-500 mt-1">
                               Category ID: {category.categoryId}
                             </div>
+                            {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                              <div className="text-xs text-green-600 mt-1">
+                                ✓ Inherited from Primary Member
+                              </div>
+                            )}
                           </div>
                           <Switch
                             id={`${category.categoryId}-enabled`}
                             checked={benefit?.enabled || false}
                             onCheckedChange={(checked) => updateBenefit(category.categoryId, 'enabled', checked)}
-                            disabled={isReadOnly}
+                            disabled={isDisabled}
                           />
                         </div>
 
@@ -635,7 +886,7 @@ export default function PlanConfigEdit() {
                                 type="number"
                                 value={benefit.annualLimit || ''}
                                 onChange={(e) => updateBenefit(category.categoryId, 'annualLimit', parseInt(e.target.value) || 0)}
-                                disabled={isReadOnly}
+                                disabled={isDisabled}
                                 placeholder="Enter annual limit"
                                 className="bg-white"
                               />
@@ -647,7 +898,7 @@ export default function PlanConfigEdit() {
                                 id={`${category.categoryId}-notes`}
                                 value={benefit.notes || ''}
                                 onChange={(e) => updateBenefit(category.categoryId, 'notes', e.target.value)}
-                                disabled={isReadOnly}
+                                disabled={isDisabled}
                                 placeholder="Additional notes or conditions"
                                 rows={2}
                                 className="bg-white"
@@ -673,134 +924,192 @@ export default function PlanConfigEdit() {
         <TabsContent value="wallet">
           <Card className="bg-white">
             <CardHeader className="bg-white">
-              <CardTitle className="text-gray-900">Wallet Configuration</CardTitle>
+              <CardTitle className="text-gray-900">
+                Wallet Configuration
+                {selectedRelationship !== 'PRIMARY' && (
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    for {relationships.find(r => r.relationshipCode === selectedRelationship)?.displayName || selectedRelationship}
+                  </span>
+                )}
+              </CardTitle>
+              {selectedRelationship !== 'PRIMARY' && isCurrentMemberInheriting() && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                  <div className="text-sm text-green-800">
+                    <strong>Note:</strong> This relationship is inheriting wallet settings from the Primary Member.
+                    Turn off "Inherit from Primary" above to create custom wallet configurations.
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6 bg-white">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="total-amount">Total Annual Amount (₹)</Label>
-                  <Input
-                    id="total-amount"
-                    type="number"
-                    value={config.wallet?.totalAnnualAmount || ''}
-                    onChange={(e) => updateWallet('totalAnnualAmount', parseInt(e.target.value) || 0)}
-                    disabled={isReadOnly}
-                    className="bg-white"
-                  />
-                </div>
+              {(() => {
+                const currentWallet = getCurrentWallet();
+                const isInheriting = isCurrentMemberInheriting();
+                const isDisabled = isReadOnly || (selectedRelationship !== 'PRIMARY' && isInheriting);
 
-                <div>
-                  <Label htmlFor="claim-limit">Per Claim Limit (₹)</Label>
-                  <Input
-                    id="claim-limit"
-                    type="number"
-                    value={config.wallet?.perClaimLimit || ''}
-                    onChange={(e) => updateWallet('perClaimLimit', parseInt(e.target.value) || 0)}
-                    disabled={isReadOnly}
-                    className="bg-white"
-                  />
-                </div>
-              </div>
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="total-amount">Total Annual Amount (₹)</Label>
+                        <Input
+                          id="total-amount"
+                          type="number"
+                          value={currentWallet?.totalAnnualAmount || ''}
+                          onChange={(e) => updateWallet('totalAnnualAmount', parseInt(e.target.value) || 0)}
+                          disabled={isDisabled}
+                          className="bg-white"
+                        />
+                        {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                          <div className="text-xs text-green-600 mt-1">
+                            ✓ Inherited from Primary Member
+                          </div>
+                        )}
+                      </div>
 
-              <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                <div className="bg-white">
-                  <h4 className="font-medium mb-4 text-gray-900">Copay Settings</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="copay-mode">Copay Mode</Label>
-                      <Select
-                        value={config.wallet?.copay?.mode || 'PERCENT'}
-                        onValueChange={(value) => updateCopay('mode', value)}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger id="copay-mode" className="bg-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PERCENT">Percentage</SelectItem>
-                          <SelectItem value="AMOUNT">Fixed Amount</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div>
+                        <Label htmlFor="claim-limit">Per Claim Limit (₹)</Label>
+                        <Input
+                          id="claim-limit"
+                          type="number"
+                          value={currentWallet?.perClaimLimit || ''}
+                          onChange={(e) => updateWallet('perClaimLimit', parseInt(e.target.value) || 0)}
+                          disabled={isDisabled}
+                          className="bg-white"
+                        />
+                        {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                          <div className="text-xs text-green-600 mt-1">
+                            ✓ Inherited from Primary Member
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div>
-                      <Label htmlFor="copay-value">
-                        Copay Value {config.wallet?.copay?.mode === 'PERCENT' ? '(%)' : '(₹)'}
-                      </Label>
-                      <Input
-                        id="copay-value"
-                        type="number"
-                        value={config.wallet?.copay?.value || ''}
-                        onChange={(e) => updateCopay('value', parseInt(e.target.value) || 0)}
-                        disabled={isReadOnly}
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                      <div className="bg-white">
+                        <h4 className="font-medium mb-4 text-gray-900">Copay Settings</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="copay-mode">Copay Mode</Label>
+                            <Select
+                              value={currentWallet?.copay?.mode || 'PERCENT'}
+                              onValueChange={(value) => updateCopay('mode', value)}
+                              disabled={isDisabled}
+                            >
+                              <SelectTrigger id="copay-mode" className="bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="PERCENT">Percentage</SelectItem>
+                                <SelectItem value="AMOUNT">Fixed Amount</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="partial-payment"
-                    checked={config.wallet?.partialPaymentEnabled || false}
-                    onCheckedChange={(checked) => updateWallet('partialPaymentEnabled', checked)}
-                    disabled={isReadOnly}
-                  />
-                  <Label htmlFor="partial-payment">Enable Partial Payments</Label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="topup"
-                    checked={config.wallet?.topUpAllowed || false}
-                    onCheckedChange={(checked) => updateWallet('topUpAllowed', checked)}
-                    disabled={isReadOnly}
-                  />
-                  <Label htmlFor="topup">Allow Top-ups</Label>
-                </div>
-
-                <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                  <div className="bg-white">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">Carry Forward Settings</h4>
-                      <Switch
-                        checked={config.wallet?.carryForward?.enabled || false}
-                        onCheckedChange={(checked) => updateCarryForward('enabled', checked)}
-                        disabled={isReadOnly}
-                      />
-                    </div>
-
-                    {config.wallet?.carryForward?.enabled && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="carry-percent">Carry Forward Percentage (%)</Label>
-                          <Input
-                            id="carry-percent"
-                            type="number"
-                            value={config.wallet?.carryForward?.percent || ''}
-                            onChange={(e) => updateCarryForward('percent', parseInt(e.target.value) || 0)}
-                            disabled={isReadOnly}
-                            className="bg-white"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="carry-months">Valid for (Months)</Label>
-                          <Input
-                            id="carry-months"
-                            type="number"
-                            value={config.wallet?.carryForward?.months || ''}
-                            onChange={(e) => updateCarryForward('months', parseInt(e.target.value) || 0)}
-                            disabled={isReadOnly}
-                            className="bg-white"
-                          />
+                          <div>
+                            <Label htmlFor="copay-value">
+                              Copay Value {currentWallet?.copay?.mode === 'PERCENT' ? '(%)' : '(₹)'}
+                            </Label>
+                            <Input
+                              id="copay-value"
+                              type="number"
+                              min="0"
+                              step={currentWallet?.copay?.mode === 'PERCENT' ? "0.01" : "1"}
+                              value={currentWallet?.copay?.value !== undefined ? currentWallet.copay.value : ''}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                                updateCopay('value', value);
+                              }}
+                              disabled={isDisabled}
+                              className="bg-white"
+                              placeholder="0"
+                            />
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="partial-payment"
+                          checked={currentWallet?.partialPaymentEnabled || false}
+                          onCheckedChange={(checked) => updateWallet('partialPaymentEnabled', checked)}
+                          disabled={isDisabled}
+                        />
+                        <Label htmlFor="partial-payment">Enable Partial Payments</Label>
+                        {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                          <span className="text-xs text-green-600 ml-2">
+                            ✓ Inherited
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="topup"
+                          checked={currentWallet?.topUpAllowed || false}
+                          onCheckedChange={(checked) => updateWallet('topUpAllowed', checked)}
+                          disabled={isDisabled}
+                        />
+                        <Label htmlFor="topup">Allow Top-ups</Label>
+                        {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                          <span className="text-xs text-green-600 ml-2">
+                            ✓ Inherited
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div className="bg-white">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium text-gray-900">Carry Forward Settings</h4>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={currentWallet?.carryForward?.enabled || false}
+                                onCheckedChange={(checked) => updateCarryForward('enabled', checked)}
+                                disabled={isDisabled}
+                              />
+                              {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                                <span className="text-xs text-green-600">
+                                  ✓ Inherited
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {currentWallet?.carryForward?.enabled && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="carry-percent">Carry Forward Percentage (%)</Label>
+                                <Input
+                                  id="carry-percent"
+                                  type="number"
+                                  value={currentWallet?.carryForward?.percent || ''}
+                                  onChange={(e) => updateCarryForward('percent', parseInt(e.target.value) || 0)}
+                                  disabled={isDisabled}
+                                  className="bg-white"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="carry-months">Valid for (Months)</Label>
+                                <Input
+                                  id="carry-months"
+                                  type="number"
+                                  value={currentWallet?.carryForward?.months || ''}
+                                  onChange={(e) => updateCarryForward('months', parseInt(e.target.value) || 0)}
+                                  disabled={isDisabled}
+                                  className="bg-white"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
@@ -808,10 +1117,25 @@ export default function PlanConfigEdit() {
         <TabsContent value="services">
           <Card className="bg-white">
             <CardHeader className="bg-white">
-              <CardTitle className="text-gray-900">Services Configuration</CardTitle>
+              <CardTitle className="text-gray-900">
+                Services Configuration
+                {selectedRelationship !== 'PRIMARY' && (
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    for {relationships.find(r => r.relationshipCode === selectedRelationship)?.displayName || selectedRelationship}
+                  </span>
+                )}
+              </CardTitle>
               <p className="text-sm text-gray-600">
                 Services are automatically loaded based on enabled categories in the Benefits tab.
               </p>
+              {selectedRelationship !== 'PRIMARY' && isCurrentMemberInheriting() && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                  <div className="text-sm text-green-800">
+                    <strong>Note:</strong> This relationship is inheriting services from the Primary Member.
+                    Turn off "Inherit from Primary" above to create custom service configurations.
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6 bg-white">
               {servicesLoading ? (
@@ -825,6 +1149,9 @@ export default function PlanConfigEdit() {
               ) : (
                 Object.entries(services).map(([categoryId, categoryServices]) => {
                   const category = categories.find(cat => cat.categoryId === categoryId);
+                  const currentEnabledServices = getCurrentEnabledServices();
+                  const isInheriting = isCurrentMemberInheriting();
+                  const isDisabled = isReadOnly || (selectedRelationship !== 'PRIMARY' && isInheriting);
 
                   return (
                     <div key={categoryId} className="border border-gray-200 rounded-lg p-4 bg-white">
@@ -836,6 +1163,11 @@ export default function PlanConfigEdit() {
                           <div className="text-sm text-gray-500 mt-1">
                             Category ID: {categoryId} • {categoryServices.length} service(s) available
                           </div>
+                          {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                            <div className="text-xs text-green-600 mt-1">
+                              ✓ Services inherited from Primary Member
+                            </div>
+                          )}
                         </div>
 
                         {categoryServices.length === 0 ? (
@@ -856,13 +1188,18 @@ export default function PlanConfigEdit() {
                                         Code: {service.code}
                                         {service.description && ` • ${service.description}`}
                                       </div>
+                                      {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                                        <div className="text-xs text-green-600 mt-1">
+                                          ✓ Inherited from Primary Member
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
                                 <Switch
-                                  checked={config.enabledServices?.[service.code]?.enabled || false}
+                                  checked={currentEnabledServices?.[service.code]?.enabled || false}
                                   onCheckedChange={(checked) => updateService(service.code, checked)}
-                                  disabled={isReadOnly}
+                                  disabled={isDisabled}
                                 />
                               </div>
                             ))}
@@ -876,12 +1213,27 @@ export default function PlanConfigEdit() {
 
               {Object.keys(services).length > 0 && (
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="text-sm text-blue-800">
-                    <strong>Total enabled services:</strong> {Object.keys(config.enabledServices || {}).length}
-                  </div>
-                  <div className="text-xs text-blue-600 mt-1">
-                    Enabled services: {Object.keys(config.enabledServices || {}).join(', ') || 'None'}
-                  </div>
+                  {(() => {
+                    const currentEnabledServices = getCurrentEnabledServices();
+                    const enabledCount = Object.keys(currentEnabledServices || {}).length;
+                    const enabledServicesList = Object.keys(currentEnabledServices || {}).join(', ') || 'None';
+
+                    return (
+                      <>
+                        <div className="text-sm text-blue-800">
+                          <strong>Total enabled services for {selectedRelationship === 'PRIMARY' ? 'Primary Member' : (relationships.find(r => r.relationshipCode === selectedRelationship)?.displayName || selectedRelationship)}:</strong> {enabledCount}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          Enabled services: {enabledServicesList}
+                        </div>
+                        {selectedRelationship !== 'PRIMARY' && isCurrentMemberInheriting() && (
+                          <div className="text-xs text-green-600 mt-1">
+                            ✓ These services are inherited from the Primary Member
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </CardContent>

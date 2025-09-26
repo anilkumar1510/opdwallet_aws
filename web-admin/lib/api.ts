@@ -65,3 +65,48 @@ export async function apiFetch(path: string, options?: RequestInit) {
     throw error;
   }
 }
+
+// CUG Master API functions
+export interface CugMaster {
+  _id: string;
+  cugId: string;
+  code: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function getCugs(params?: {
+  page?: number;
+  limit?: number;
+  isActive?: boolean;
+  search?: string;
+}): Promise<{ data: CugMaster[]; total: number; page: number; limit: number }> {
+  const searchParams = new URLSearchParams();
+
+  if (params?.page) searchParams.append('page', params.page.toString());
+  if (params?.limit) searchParams.append('limit', params.limit.toString());
+  if (params?.isActive !== undefined) searchParams.append('isActive', params.isActive.toString());
+  if (params?.search) searchParams.append('search', params.search);
+
+  const response = await apiFetch(`/api/cugs?${searchParams.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch CUGs: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getActiveCugs(): Promise<CugMaster[]> {
+  const response = await apiFetch('/api/cugs/active');
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch active CUGs: ${response.statusText}`);
+  }
+
+  return response.json();
+}

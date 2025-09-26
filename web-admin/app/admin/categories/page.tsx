@@ -182,6 +182,7 @@ export default function CategoriesPage() {
     }
   }
 
+
   const resetForm = () => {
     setFormData({
       categoryId: '',
@@ -189,7 +190,7 @@ export default function CategoriesPage() {
       description: '',
       isActive: true,
       displayOrder: 0,
-    })
+      })
   }
 
   const openEditModal = (category: Category) => {
@@ -376,6 +377,7 @@ export default function CategoriesPage() {
                     placeholder="Brief description of the category"
                   />
                 </div>
+
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>

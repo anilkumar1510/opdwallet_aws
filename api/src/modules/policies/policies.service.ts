@@ -1,7 +1,8 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
+  ConflictException
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,11 +12,13 @@ import { UpdatePolicyDto } from './dto/update-policy.dto';
 import { QueryPolicyDto } from './dto/query-policy.dto';
 import { CounterService } from '../counters/counter.service';
 import { PolicyStatus } from '@/common/constants/status.enum';
+import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
 
 @Injectable()
 export class PoliciesService {
   constructor(
     @InjectModel(Policy.name) private policyModel: Model<PolicyDocument>,
+    @InjectModel(Assignment.name) private assignmentModel: Model<AssignmentDocument>,
     private counterService: CounterService,
   ) {}
 
@@ -147,5 +150,35 @@ export class PoliciesService {
     if ((currentStatus === PolicyStatus.INACTIVE || currentStatus === PolicyStatus.EXPIRED) && newStatus !== currentStatus) {
       throw new BadRequestException(`Cannot change status from ${currentStatus}`);
     }
+  }
+
+  async delete(id: string) {
+    console.log('🟡 [POLICIES SERVICE] Attempting to delete policy:', id);
+
+    // Check if policy exists
+    const policy = await this.policyModel.findById(id);
+    if (!policy) {
+      throw new NotFoundException('Policy not found');
+    }
+
+    // Check if policy is assigned to any users
+    const activeAssignments = await this.assignmentModel.countDocuments({
+      policyId: id,
+      isActive: true,
+    });
+
+    if (activeAssignments > 0) {
+      throw new ConflictException(`Cannot delete policy. It is currently assigned to ${activeAssignments} user(s). Please unassign all users from this policy before deleting.`);
+    }
+
+    // Delete the policy
+    await this.policyModel.findByIdAndDelete(id);
+    console.log('✅ [POLICIES SERVICE] Policy deleted successfully:', policy.policyNumber);
+
+    return {
+      message: 'Policy deleted successfully',
+      policyNumber: policy.policyNumber,
+      policyName: policy.name
+    };
   }
 }

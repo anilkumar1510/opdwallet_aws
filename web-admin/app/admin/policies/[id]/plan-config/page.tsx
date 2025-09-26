@@ -98,11 +98,20 @@ export default function PlanConfigList() {
 
     try {
       await planConfigApi.delete(policyId, deleteConfig.version);
-      toast.success('Configuration deleted');
+      toast.success(`Configuration v${deleteConfig.version} deleted successfully`);
       setDeleteConfig(null);
       loadConfigs();
-    } catch (error) {
-      toast.error('Failed to delete configuration');
+    } catch (error: any) {
+      console.error('Delete error:', error);
+
+      // Check if it's a conflict error (assignment check failed)
+      if (error?.message?.includes('assigned to') || error?.message?.includes('Cannot delete')) {
+        toast.error(error.message || 'Cannot delete configuration - it is assigned to users');
+      } else if (error?.message?.includes('current configuration')) {
+        toast.error('Cannot delete current configuration that has active user assignments');
+      } else {
+        toast.error('Failed to delete configuration');
+      }
     }
   };
 
@@ -225,6 +234,13 @@ export default function PlanConfigList() {
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDeleteConfig(config)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </>
                         )}
                       </div>
@@ -242,7 +258,15 @@ export default function PlanConfigList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Configuration</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete version {deleteConfig?.version}? This action cannot be undone.
+              Are you sure you want to delete version {deleteConfig?.version}?
+              {deleteConfig?.isCurrent && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  ⚠️ This is the current configuration. Deletion will be blocked if this policy is assigned to any users.
+                </span>
+              )}
+              <span className="block mt-2 text-gray-600">
+                This action cannot be undone.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

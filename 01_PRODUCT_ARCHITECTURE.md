@@ -1,515 +1,555 @@
-# 01_PRODUCT_ARCHITECTURE.md
-**Last Updated: September 21, 2025**
-**Current Deployment: http://51.20.125.246**
+# OPD Wallet Product Architecture
 
-## 📋 CURRENT IMPLEMENTATION STATUS (DOCUMENTED FROM ACTUAL CODE)
+**Last Updated**: September 24, 2025
+**Current Deployment**: http://51.20.125.246
+**Production Status**: Active with Core Features Implemented
+**Architecture**: Microservices with Docker Orchestration
 
-### IMPLEMENTATION OVERVIEW
-- **Status**: PRODUCTION-READY MVP with simplified architecture
-- **Database**: 8 MongoDB collections with clean, optimized structure
-- **API**: 37 endpoints across 7 controllers with complete CRUD operations
-- **Admin UI**: 15+ pages/components with full policy/user/configuration management
-- **Authentication**: JWT-based auth with role-based access control (RBAC)
-- **Deployment**: Docker Compose on AWS EC2 with automated CI/CD
+---
 
-### DOCUMENTATION: Single Source of Truth
-This file reflects the ACTUAL implementation as of the current codebase scan:
-1. **01_PRODUCT_ARCHITECTURE.md** — Actual system architecture, implemented endpoints, real UI flows
-2. **02_DATA_SCHEMA_AND_CREDENTIALS.md** — Real MongoDB schemas with field names, actual credentials
-3. **03_TODO_CHANGELOG.md** — Implementation status tracking (currently empty - no pending tasks)
+## 🏗️ SYSTEM ARCHITECTURE OVERVIEW
 
-**Rule**: These docs reflect reality, not plans. All information verified against actual code.
+### Core Technology Stack
+- **Backend**: NestJS (Node.js) + TypeScript
+- **Database**: MongoDB with Mongoose ODM
+- **Frontend**: Next.js 15 (Admin), Next.js 14 (Member)
+- **Authentication**: JWT + bcrypt
+- **Deployment**: Docker Compose + Nginx Reverse Proxy
+- **Infrastructure**: AWS EC2 + GitHub Actions CI/CD
 
-### 3. Read Before You Build
-- Read all three docs before coding
-- Confirm understanding & approach in one short paragraph
-- Proceed step-by-step with verification at each stage
+### System Components
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Admin Portal  │    │  Member Portal  │    │   Nginx Proxy   │
+│   (Next.js 15)  │    │  (Next.js 14)  │    │  (Load Balancer)│
+│   Port: 3001    │    │   Port: 3002    │    │   Port: 80/443  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                        │                        │
+         └────────────────────────┼────────────────────────┘
+                                  │
+                    ┌─────────────────┐
+                    │   NestJS API    │
+                    │  (TypeScript)   │
+                    │   Port: 4000    │
+                    └─────────────────┘
+                              │
+                    ┌─────────────────┐
+                    │    MongoDB      │
+                    │  (12 Collections)│
+                    │   Port: 27017   │
+                    └─────────────────┘
+```
 
-### 4. Docker-Only Runtime
-- Everything runs via Docker and docker-compose (no local services outside containers)
-- Provide: Dockerfiles, docker-compose.yml, make/npx scripts for: up, down, logs, seed, test, lint, typecheck
-- Current implementation: ✅ Docker Compose with all services
+---
 
-### 5. Security Baseline (Apply Everywhere)
-- **AuthN**: httpOnly secure cookies + JWT rotation; session invalidation
-- **AuthZ**: Strict RBAC + resource checks (prevent IDOR)
-- **Validation**: Input & output validation (server & client)
-- **Files**: Scan (AV), store privately, serve via short-lived signed URLs
-- **Headers**: Prod-grade CSP/CORS/CSRF, rate-limits, dependency scanning
-- **Audit**: Immutable log on admin/ops/member actions (who/what/when/before/after)
-- **Secrets**: Never in code or docs—environment/secret manager only
+## 📊 CURRENT IMPLEMENTATION STATUS
 
-### 6. Database Quality (MongoDB)
-- Design optimized schemas with explicit indexes
-- Critical queries: Attach explain() evidence, target p95: reads < 300ms, writes < 800ms
-- Case-insensitive unique email (collection collation)
-- Maintain migrations & seed scripts; no silent schema changes
+### ✅ COMPLETED MODULES
 
-### 7. Feature Workflow (Confirm → Plan → Do)
-1. **Understanding**: 1–3 lines stating goal and acceptance criteria
-2. **Approach**: Define API, schema impact, UI, tests
-3. **Implement**: Small, reviewable steps behind feature flags if needed
-4. **Update**: All 3 documentation files
-5. **PR**: Include tests + screenshots (for UI)
+#### 1. **Authentication & User Management**
+- **JWT-based Authentication** with refresh tokens
+- **Role-based Access Control** (SUPER_ADMIN, MEMBER)
+- **Password Security**: bcrypt hashing (12 rounds)
+- **Session Management**: HTTP-only cookies with security headers
+- **User Profiles**: Complete CRUD with family relationships
 
-### 8. Definition of Done
-A change is "Done" only if:
-- ✅ Lint + typecheck + unit/integration/e2e tests pass in CI
-- ✅ Images build and containers are healthy
-- ✅ Security checks pass (dep scan/SAST; basic DAST on changed endpoints)
-- ✅ Responsive UI verified (mobile-first), accessible focus states
-- ✅ The 3 docs are updated
+#### 2. **Policy Management System**
+- **Policy CRUD**: Create, read, update, delete policies
+- **Versioned Configurations**: Plan configs with version control
+- **Benefits Management**: Category-based benefit configuration
+- **Wallet Rules**: Configurable wallet limits and copay settings
+- **Assignment System**: User-policy assignment with effective periods
 
-### 9. Verification
-- After delivery, explicitly ask: "Please verify this in UI/API"
-- Convert feedback into tests where feasible
+#### 3. **Master Data Management**
+- **Service Categories**: Consult, Pharmacy, Labs
+- **Service Definitions**: Coverage rules and requirements
+- **Relationship Management**: Family relationship definitions
+- **Corporate Groups**: CUG management for enterprise clients
 
-### 10. Debugging
-- On failure: Add targeted logs/asserts, reproduce minimally, read container logs
-- After fix confirmed: Remove debug artifacts and test scaffolds
+#### 4. **API Layer (37 Endpoints)**
+```
+Authentication (5 endpoints)
+├── POST /api/auth/login
+├── POST /api/auth/logout
+├── GET  /api/auth/me
+├── POST /api/auth/refresh
+└── POST /api/auth/change-password
 
-### 11. No Shortcuts
-- If something risks quality/security, stop and discuss options
-- Prefer slower + correct over fast + fragile
+Users (8 endpoints)
+├── GET    /api/users
+├── POST   /api/users
+├── GET    /api/users/:id
+├── PUT    /api/users/:id
+├── DELETE /api/users/:id
+├── GET    /api/users/profile
+├── PUT    /api/users/profile
+└── GET    /api/users/family/:memberId
 
-### 12. SSO & Long-term Alignment
-- Design with SSO (OIDC/SAML) in mind from day-1 (stub routes now, integrate later)
-- All stubs/dummy flows must align with final architecture (routing, RBAC, error contracts, upload security)
+Policies (7 endpoints)
+├── GET    /api/policies
+├── POST   /api/policies
+├── GET    /api/policies/:id
+├── PUT    /api/policies/:id
+├── DELETE /api/policies/:id
+├── GET    /api/policies/:id/configs
+└── POST   /api/policies/:id/configs
 
-## 🚨 CRITICAL OPERATIONAL STATUS
+Plan Configs (6 endpoints)
+├── GET    /api/plan-configs
+├── POST   /api/plan-configs
+├── GET    /api/plan-configs/:id
+├── PUT    /api/plan-configs/:id
+├── POST   /api/plan-configs/:id/publish
+└── GET    /api/plan-configs/policy/:policyId
 
-1. **DEPLOYMENT TARGET**: AWS EC2 Instance (51.20.125.246)
-2. **ENVIRONMENT**: Development/Demo (HTTP only, MongoDB with auth)
-3. **DOCKER ORCHESTRATION**: All services run via Docker Compose
-4. **CI/CD**: Automated via GitHub Actions (appleboy/ssh-action)
-5. **SECURITY MODE**: Development (COOKIE_SECURE=false for HTTP)
+Assignments (5 endpoints)
+├── GET    /api/assignments
+├── POST   /api/assignments
+├── GET    /api/assignments/:id
+├── PUT    /api/assignments/:id
+└── DELETE /api/assignments/:id
 
-## Product Vision
+Masters (4 endpoints)
+├── GET    /api/masters/categories
+├── GET    /api/masters/services
+├── GET    /api/masters/relationships
+└── GET    /api/masters/cugs
 
-OPD Wallet is a comprehensive healthcare benefits management system designed to streamline outpatient department services, insurance claims processing, and member benefits administration. The platform provides a seamless experience for healthcare members while giving administrators powerful tools to manage policies and plan configurations.
+Health (2 endpoints)
+├── GET    /api/health
+└── GET    /api/health/db
+```
 
-## User Roles
+#### 5. **Security Implementation**
+- **Rate Limiting**: Express-rate-limit with tiered limits
+  - Global: 100 req/15min (production), 1000 req/15min (development)
+  - Auth: 50 login attempts/15min (production)
+- **Security Headers**: Helmet.js with CSP, HSTS, XSS protection
+- **Input Validation**: Class-validator with comprehensive schemas
+- **CORS Configuration**: Environment-specific allowed origins
 
-### 1. SUPER_ADMIN
-- Full system access
-- User management (create, update, delete)
-- Policy management
-- System configuration
-- Analytics and reporting
+#### 6. **Deployment Infrastructure**
+- **6 Docker Compose Configurations**:
+  - `docker-compose.yml` (Development)
+  - `docker-compose.prod.yml` (Production with Nginx)
+  - `docker-compose.simple.yml` (Simple deployment)
+  - `docker-compose.secure.yml` (SSL/TLS enabled)
+  - `docker-compose.ecr.yml` (AWS ECR images)
+  - `docker-compose.secrets.yml` (AWS Secrets Manager)
 
-### 2. ADMIN
-- User management (limited to members)
-- Policy assignment
-- Claims processing
-- Report generation
+- **Container Orchestration**:
+  - Unique container naming across environments
+  - Health checks for all services
+  - Volume management for data persistence
+  - Network isolation with custom bridge networks
 
-### 3. TPA (Third Party Administrator)
-- View member information
-- Process claims
-- Generate reports
-- View policy assignments
+- **CI/CD Pipeline**:
+  - GitHub Actions workflows
+  - Automated deployment to AWS EC2
+  - Container cleanup and conflict prevention
+  - Build optimization with caching
 
-### 4. OPS (Operations)
-- View member information
-- Support ticket management
-- Basic reporting
-- Read-only access to policies
+---
 
-### 5. MEMBER
-- View personal benefits
-- Submit claims
-- Book appointments
-- Manage family members
-- Track wallet balance
-- View transaction history
+## 🏛️ DATABASE ARCHITECTURE
 
-## Admin Portal ACTUAL Implementation Status
+### MongoDB Collections (12 Total, 28 Documents)
 
-### ✅ FULLY IMPLEMENTED Admin Modules
+#### **Core Business Collections** (9 Active)
+```javascript
+users (3 docs)              // User management & authentication
+├── Super Admin (1)
+├── Primary Members (1)
+└── Dependent Members (1)
 
-#### 1. Authentication & Security
-**File**: `web-admin/app/page.tsx`
-- ✅ Professional login form with password visibility toggle
-- ✅ Role-based access control (blocks MEMBER role access)
-- ✅ Demo credentials: admin@opdwallet.com / Admin@123
-- ✅ Error handling and loading states
-- ✅ Responsive design with branded styling
+policies (1 doc)             // Insurance policy definitions
+└── Comprehensive Health Policy
 
-#### 2. User Management Module
-**Files**: `web-admin/app/admin/users/page.tsx`, `web-admin/app/admin/users/[id]/page.tsx`
-- ✅ Tabbed interface: External Users (Members) vs Internal Users (Admin/TPA/OPS)
-- ✅ Advanced search: name, email, member ID, UHID
-- ✅ User statistics with role-based counts
-- ✅ Password management (Set/Reset with confirmation dialogs)
-- ✅ Full user editing with all fields
-- ✅ Dependent relationship tracking
-- ✅ Policy assignment workflow
-- ✅ Responsive table design with mobile-friendly cards
+plan_configs (3 docs)       // Versioned policy configurations
+├── Version 1 (Draft)
+├── Version 2 (Published)
+└── Version 3 (Current)
 
-#### 3. Policy Management Module
-**Files**: `web-admin/app/admin/policies/page.tsx`, `web-admin/app/admin/policies/[id]/page.tsx`
-- ✅ Complete CRUD operations with validation
-- ✅ Advanced filtering: status, owner, date ranges
-- ✅ Search across policy number, name, sponsor
-- ✅ Pagination with configurable page sizes
-- ✅ URL-based state management for bookmarkable filters
-- ✅ Role-based access control (Admin/Super Admin only)
-- ✅ Policy status lifecycle management
+userPolicyAssignments (4 docs) // User-policy relationships
+├── Active Assignments (2)
+└── Orphaned Records (2) ⚠️
 
-#### 4. Plan Configuration System
-**Files**: `web-admin/app/admin/policies/[id]/plan-config/`
+category_master (3 docs)     // Service categories
+├── CAT001: Consult
+├── CAT002: Pharmacy
+└── CAT003: Labs
 
-**Main Configuration Page** (`page.tsx`):
-- ✅ Real-time configuration management
-- ✅ Single document approach for all plan data
-- ✅ Version control with DRAFT/PUBLISHED/CURRENT status lifecycle
-- ✅ Comprehensive validation and publish workflow
-- ✅ Real-time save functionality
+service_master (4 docs)      // Available medical services
+├── CON001: General Physician
+├── CON002: Gynecologist
+├── CON003: Pharmacy
+└── CON004: Labs
 
-**Version-Specific Configuration** (`[version]/page.tsx`):
-- ✅ Tabbed interface: Benefits, Wallet, Services (not Coverage)
-- ✅ DRAFT-only editing validation
-- ✅ Version lifecycle management
-- ✅ Publish workflow with guardrails
-- ✅ Single-file tab implementation (not separate tab components)
+relationship_masters (5 docs) // Family relationships
+├── REL001: Self
+├── REL002: Spouse
+├── REL003: Child
+├── REL004: Father
+└── REL005: Mother
 
-#### 5. Master Data Management
+counters (2 docs)           // Auto-increment sequences
+├── user: 3 (next: USR-2025-0004)
+└── policy: 3 (next: POL-2025-0004)
 
-**Categories Management** (`web-admin/app/admin/categories/page.tsx`):
-- ✅ CRUD operations with validation
-- ✅ CAT### identifier pattern (enforced uppercase)
-- ✅ Immutable category IDs after creation
-- ✅ Display order management
-- ✅ Active/inactive status toggles
-- ✅ Search and filtering
-- ✅ Modal-based create/edit forms
-- ✅ Soft delete prevention (deactivate only)
+cug_master (8 docs)         // Corporate user groups
+└── Tech Companies: Google, Microsoft, Amazon, Apple, Meta, Netflix, Tesla, IBM
+```
 
-**Services Management** (`web-admin/app/admin/services/page.tsx`):
-- ✅ Service type CRUD operations
-- ✅ Category-based filtering with dropdown
-- ✅ Search functionality across code and name
-- ✅ Status management (active/inactive)
-- ✅ Modal-based forms with validation
-- ✅ Service code immutability after creation
-- ✅ Category relationship management
-- ✅ Display order configuration
+#### **Planned Collections** (3 Empty)
+```javascript
+user_wallets (0 docs)       // Wallet balances (not implemented)
+wallet_transactions (0 docs) // Transaction history (not implemented)
+auditLogs (0 docs)          // Audit trail (not functioning)
+```
 
-### ⚠️ PARTIALLY IMPLEMENTED Features
+### Data Relationships
+```
+users._id ← userPolicyAssignments.userId ⚠️
+users._id ← userPolicyAssignments.createdBy
+policies._id ← userPolicyAssignments.policyId
+policies._id ← plan_configs.policyId
+category_master.categoryId ← service_master.category
+relationship_masters.relationshipCode ← users.relationship
+users.memberId ← users.primaryMemberId (family tree)
+```
 
-#### Dashboard Analytics
-**File**: `web-admin/app/admin/page.tsx`
-- ✅ Real-time statistics (users, policies, active members)
-- ✅ Quick action cards for navigation
-- ✅ Loading states and error handling
-- ❌ Recent activity feed (placeholder only)
-- ❌ Advanced analytics and charts
-- ❌ System health monitoring
+---
 
-### ❌ NOT IMPLEMENTED Features
+## 🎨 FRONTEND ARCHITECTURE
 
-1. **Audit Reporting UI**: Audit schema exists, but no admin interface for viewing logs
-2. **Claims Management**: No claims processing interface
-3. **Financial Reporting**: No financial analytics or reporting
-4. **Advanced Notifications**: No notification system UI
-5. **Bulk Operations UI**: Limited bulk data management interfaces
+### Admin Portal (web-admin)
+**Technology**: Next.js 15.5.3 + TypeScript
+**UI Framework**: Radix UI + Tailwind CSS
+**State Management**: Zustand + TanStack Query
 
-## User Flows
+**Features**:
+- 🔐 **Authentication**: Login/logout with JWT
+- 👥 **User Management**: CRUD operations with family relationships
+- 📋 **Policy Management**: Policy creation and configuration
+- ⚙️ **Plan Configuration**: Benefits and wallet rules setup
+- 📊 **Assignment Management**: User-policy assignments
+- 🏢 **Master Data**: Categories, services, relationships, CUGs
 
-### Member Login Flow
-1. Member accesses http://51.20.125.246 (or localhost:3002 for local dev)
-2. Enters credentials (email/password)
-3. System validates via JWT authentication
-4. JWT token stored in httpOnly cookie (opd_session)
-5. Redirects to member dashboard
-6. Dashboard shows wallet balance, benefits, and quick actions
+**Page Structure**:
+```
+/admin
+├── /dashboard          # Overview and statistics
+├── /users              # User management
+│   ├── /create        # Add new users
+│   └── /[id]/edit     # Edit user details
+├── /policies          # Policy management
+│   ├── /create        # Create new policies
+│   └── /[id]/config   # Configure plan versions
+├── /assignments       # User-policy assignments
+├── /masters           # Master data management
+└── /settings          # System settings
+```
 
-### Admin User Management Flow
-1. Admin logs into http://localhost:3001
-2. Navigates to Users section with tabs for Internal/External users
-3. Creates new user account (Member, Admin, TPA, or OPS)
-4. Can set custom password or generate temporary password
-5. For members: assigns policy and sets wallet limits
-6. Can edit all user information including passwords
-7. View and manage dependent relationships
+### Member Portal (web-member)
+**Technology**: Next.js 14.0.4 + TypeScript
+**UI Framework**: Headless UI + Tailwind CSS
+**State Management**: React Context + SWR
 
-### Policy Configuration Flow
-1. Admin creates new policy with basic information
-2. Navigates to Plan Config section for the policy
-3. Creates plan configuration versions (starts in DRAFT)
-4. Configures benefit components, wallet rules, and coverage matrix
-5. Runs readiness checks and publishes when ready
-6. Sets published version as current for member access
+**Features**:
+- 🔐 **Authentication**: Member login and profile
+- 🏥 **Health Records**: View medical history and documents
+- 💳 **Wallet Management**: View balance and transactions (planned)
+- 👨‍👩‍👧‍👦 **Family Management**: View covered family members
+- 📞 **Support**: Contact and help features
 
-## API Endpoints (ACTUAL IMPLEMENTATION)
-
-### Authentication Controller
-**File**: `api/src/modules/auth/auth.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `POST /api/auth/login` - User authentication with cookie-based sessions
-- `POST /api/auth/logout` - Clear authentication cookie
-- `GET /api/auth/me` - Get current user profile (JWT protected)
-
-### Users Controller
-**File**: `api/src/modules/users/users.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `POST /api/users` - Create user (SUPER_ADMIN, ADMIN only)
-- `GET /api/users` - List users with pagination (SUPER_ADMIN, ADMIN only)
-- `GET /api/users/:id` - Get user details (SUPER_ADMIN, ADMIN only)
-- `PUT /api/users/:id` - Update user (SUPER_ADMIN, ADMIN only)
-- `POST /api/users/:id/reset-password` - Reset password (SUPER_ADMIN, ADMIN only)
-- `POST /api/users/:id/set-password` - Set password (SUPER_ADMIN, ADMIN only)
-- `GET /api/users/:id/dependents` - Get user dependents (SUPER_ADMIN, ADMIN, TPA, OPS)
-
-### Policies Controller
-**File**: `api/src/modules/policies/policies.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `GET /api/policies` - List policies with advanced filtering (SUPER_ADMIN, ADMIN only)
-- `GET /api/policies/:id` - Get policy details (SUPER_ADMIN, ADMIN only)
-- `POST /api/policies` - Create policy (SUPER_ADMIN, ADMIN only)
-- `PUT /api/policies/:id` - Update policy (SUPER_ADMIN, ADMIN only)
-
-### Plan Config Controller
-**File**: `api/src/modules/plan-config/plan-config.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `POST /api/policies/:policyId/config` - Create plan configuration
-- `GET /api/policies/:policyId/config` - Get plan configuration (with optional version)
-- `GET /api/policies/:policyId/config/all` - Get all configurations for a policy
-- `PUT /api/policies/:policyId/config/:version` - Update specific version
-- `POST /api/policies/:policyId/config/:version/publish` - Publish configuration
-- `POST /api/policies/:policyId/config/:version/set-current` - Set as current configuration
-- `DELETE /api/policies/:policyId/config/:version` - Delete configuration
-
-### Categories Controller (Master Data)
-**File**: `api/src/modules/masters/categories.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `GET /api/categories` - List all categories with search/filter
-- `GET /api/categories/ids` - Get category IDs for dropdowns
-- `GET /api/categories/:id` - Get category by ID
-- `POST /api/categories` - Create category (CAT### pattern enforced)
-- `PUT /api/categories/:id` - Update category
-- `PUT /api/categories/:id/toggle-active` - Toggle active status
-- `DELETE /api/categories/:id` - Delete category
-
-### Services Controller (Master Data)
-**File**: `api/src/modules/masters/services.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `POST /api/services/types` - Create service type
-- `GET /api/services/types` - List service types with search/filter
-- `GET /api/services/types/codes` - Get service codes for dropdowns
-- `GET /api/services/types/:id` - Get service type by ID
-- `PUT /api/services/types/:id` - Update service type
-- `DELETE /api/services/types/:id` - Delete service type
-- `PUT /api/services/types/:id/toggle-active` - Toggle active status
-- `GET /api/services/categories/:category` - Get services by category
-
-### Health Controller
-**File**: `api/src/health/health.controller.ts`
-**Status**: ✅ FULLY IMPLEMENTED
-- `GET /api/health` - System health check endpoint
-
-### API Security & Middleware (IMPLEMENTED)
-- **Authentication**: JWT-based with Passport local strategy
-- **Authorization**: Role-based access control (RBAC) with decorators
-- **Validation**: Class-validator with comprehensive DTOs
-- **Rate Limiting**: Express rate limiting (100 req/15min global, 5 login attempts)
-- **CORS**: Configured for frontend origins
-- **Security Headers**: Helmet middleware applied
-
-## UI Map (ACTUAL IMPLEMENTATION)
-
-### Member Portal (http://51.20.125.246 or localhost:3002)
-**Status**: ⚠️ PARTIALLY IMPLEMENTED
+**Page Structure**:
 ```
 /
-├── / (Login page)
-├── /member (Dashboard)
-│   ├── Top Navigation (Desktop): Profile, Wallet Balance, Logout
-│   ├── OPD E-Cards: Horizontally scrollable member cards
-│   ├── Quick Links: File Claim, Avail Benefits, Health Records, View Benefits
-│   ├── /wallet (Wallet management)
-│   ├── /benefits (Benefits overview)
-│   ├── /claims (Claims management)
-│   │   ├── /new (Submit claim)
-│   │   └── /:id (Claim details)
-│   ├── /bookings (Appointments)
-│   ├── /services (All services menu)
-│   ├── /records (Health records)
-│   ├── /transactions (Transaction history)
-│   ├── /notifications
-│   ├── /help (Support with FAQ section)
-│   └── /settings (Profile settings)
+├── /dashboard          # Member dashboard
+├── /profile            # Profile management
+├── /health-records     # Medical history
+├── /family             # Family member details
+├── /wallet             # Wallet and transactions (planned)
+└── /support            # Help and contact
 ```
 
-### Admin Portal (http://51.20.125.246/admin or localhost:3001)
+---
+
+## 🔒 SECURITY ARCHITECTURE
+
+### Authentication Flow
 ```
-/
-├── / (Login page)
-├── /admin (Admin dashboard)
-├── /admin/users (User management)
-│   ├── Tabs: External Users (Members) | Internal Users (Admin, TPA, OPS)
-│   ├── Search and filter functionality
-│   ├── Password management (Set/Reset)
-│   ├── /new (Create user with role selection)
-│   └── /:id (User details with full edit mode)
-├── /admin/policies (Policy management)
-│   ├── Filter/search UI (status chips, owner chips, keyword search)
-│   ├── Sort + page size selectors with bookmarkable URLs
-│   ├── /new (Create policy)
-│   └── /:id (Policy details)
-│       ├── /plan-config (Plan configuration management)
-│       │   ├── / (Configuration overview)
-│       │   └── /:version (Version-specific configuration)
-│       │       ├── Benefits tab: component coverage & limits
-│       │       ├── Wallet tab: budgets, co-pay, carry-forward
-│       │       └── Services tab: service availability
-├── /admin/categories (Category Master)
-│   ├── List with search and filter
-│   ├── Category IDs follow CAT### pattern
-│   └── Status toggle instead of hard delete
-└── /admin/services (Service Types)
-    ├── List with search and category filter
-    └── Service code management
+1. User Login (email/password)
+   ↓
+2. Server validates credentials
+   ↓
+3. Generate JWT access token (7d expiry)
+   ↓
+4. Generate refresh token (30d expiry)
+   ↓
+5. Set HTTP-only secure cookies
+   ↓
+6. Return user profile data
 ```
 
-## Tech Stack & Integrations
+### Authorization Levels
+```javascript
+SUPER_ADMIN
+├── Full system access
+├── User management
+├── Policy configuration
+├── System settings
+└── Master data management
 
-### Core Technologies
-- **Backend**: NestJS 10.x with TypeScript
-- **Database**: MongoDB 7.0
-- **Frontend**: Next.js 14 with App Router
-- **Styling**: Tailwind CSS 3.x
-- **Animation**: Framer Motion
-- **State Management**: React Context API
-- **Authentication**: JWT with HTTP-only cookies
-
-### External Integrations (Planned)
-- SMS Gateway (OTP verification)
-- Email Service (Notifications)
-- Payment Gateway (Wallet top-up)
-- Document Storage (S3-compatible)
-- Hospital Network APIs
-
-## Environment Configuration
-
-### Development Environment (docker-compose)
+MEMBER
+├── Profile management
+├── Health records access
+├── Family member view
+└── Wallet transactions (planned)
 ```
-API_PORT=4000
-MONGODB_URI=mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
-JWT_SECRET=dev_jwt_secret_change_in_production
-COOKIE_NAME=opd_session
-COOKIE_SECURE=false
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:3001,http://localhost:3002
-```
-
-### Production Environment (target)
-```
-API_PORT=4000
-MONGODB_URI=mongodb://[PROD_USER]:[PROD_PASS]@[PROD_HOST]:27017/opd_wallet?authSource=admin
-JWT_SECRET=[SECURE_RANDOM_STRING]
-COOKIE_NAME=opd_session
-COOKIE_SECURE=true
-COOKIE_DOMAIN=.yourdomain.com
-NODE_ENV=production
-CORS_ORIGIN=https://portal.yourdomain.com,https://admin.yourdomain.com
-```
-
-## Deployment Notes
-
-### Docker Deployment
-1. All services run in Docker containers
-2. Docker Compose orchestrates the stack
-3. Containers auto-restart on failure
-4. Volumes persist MongoDB data
-5. Network isolation between services
-
-### Port Mapping
-- MongoDB: 27017 (internal only in production)
-- API Server: 4000
-- Admin Portal: 3001
-- Member Portal: 3002
-
-### Health Checks
-- API: GET /api/health
-- MongoDB: Connection pool monitoring
-- Next.js: Built-in health checks
 
 ### Security Measures
-- JWT tokens with expiration
-- HTTP-only cookies for token storage
-- CORS configuration
-- Rate limiting on API endpoints
-- Input validation and sanitization
-- Role-based access control (RBAC)
-- Encrypted passwords with bcrypt
-- HTTPS enforcement in production
+- **Password Hashing**: bcrypt with 12 rounds
+- **JWT Security**: RS256 signing, secure storage
+- **Session Management**: HTTP-only cookies with SameSite protection
+- **Rate Limiting**: Tiered limits for different endpoint types
+- **Input Validation**: Comprehensive validation with sanitization
+- **CORS**: Environment-specific origin controls
+- **Security Headers**: CSP, HSTS, XSS protection via Helmet.js
 
-## Setup & Installation
+---
 
-### Prerequisites
-- Docker Desktop (recommended) or Node.js 20+ with MongoDB 7.0+
-- Git for version control
+## 📡 API DESIGN PATTERNS
 
-### Quick Start
+### RESTful Architecture
+- **Resource-based URLs**: `/api/users`, `/api/policies`
+- **HTTP Methods**: GET, POST, PUT, DELETE
+- **Status Codes**: Proper HTTP status code usage
+- **Error Handling**: Consistent error response format
+
+### Response Patterns
+```javascript
+// Success Response
+{
+  "success": true,
+  "data": { /* resource data */ },
+  "message": "Operation completed successfully"
+}
+
+// Error Response
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid input data",
+    "details": { /* validation errors */ }
+  }
+}
+
+// Paginated Response
+{
+  "success": true,
+  "data": [ /* array of resources */ ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "pages": 3
+  }
+}
+```
+
+### Middleware Stack
+```
+1. CORS Handler
+2. Rate Limiting
+3. Security Headers (Helmet)
+4. Body Parsing
+5. Authentication (JWT)
+6. Authorization (Role-based)
+7. Input Validation
+8. Request Logging
+9. Route Handler
+10. Error Handling
+11. Response Formatting
+```
+
+---
+
+## 🐳 DEPLOYMENT ARCHITECTURE
+
+### Environment Configurations
+
+#### **Development** (`docker-compose.yml`)
+```yaml
+Services:
+- api: Direct port 4000:4000
+- web-admin: Direct port 3001:3000
+- web-member: Direct port 3002:3000
+- mongo: Direct port 27017:27017
+- Container names: *-dev suffix
+```
+
+#### **Production** (`docker-compose.prod.yml`)
+```yaml
+Services:
+- nginx: Reverse proxy (80:80, 443:443)
+- api: Internal port 4000 (no external access)
+- web-admin: Internal port 3000 (via nginx /admin)
+- web-member: Internal port 3000 (via nginx /)
+- mongodb: Internal port 27017 (no external access)
+- Container names: *-prod suffix
+```
+
+#### **Simple Deployment** (`docker-compose.simple.yml`)
+```yaml
+Services:
+- nginx: Load balancer (80:80)
+- api: Direct port 4000:4000
+- web-admin: Direct port 3001:3001
+- web-member: Direct port 3002:3002
+- mongodb: Internal MongoDB
+- Container names: *-simple suffix
+```
+
+### Container Strategy
+- **Unique Naming**: Environment-specific suffixes prevent conflicts
+- **Health Checks**: All services have health monitoring
+- **Resource Limits**: Production containers have resource constraints
+- **Volume Management**: Persistent data storage with named volumes
+- **Network Isolation**: Custom bridge networks for security
+
+---
+
+## ⚠️ KNOWN ISSUES & TECHNICAL DEBT
+
+### **Critical Security Issues** 🚨
+1. **Hardcoded Credentials**: MongoDB credentials `admin:admin123` in source code
+2. **Weak JWT Secrets**: Development secrets used in production
+3. **No Production Auth**: MongoDB runs without authentication in production
+4. **SSL/TLS Missing**: HTTPS configuration commented out
+
+### **Data Integrity Issues** ⚠️
+1. **Orphaned Records**: 2 policy assignments reference deleted policies
+2. **Type Inconsistency**: userPolicyAssignments.userId uses ObjectId vs string
+3. **Missing Audit Trail**: Audit logging configured but not functioning
+4. **Incomplete Wallet System**: Wallet collections created but not implemented
+
+### **Performance & Maintenance Issues** 🔧
+1. **Excessive Logging**: 355 console.log statements in production code
+2. **Version Inconsistency**: Admin portal (Next.js 15) vs Member portal (Next.js 14)
+3. **High Throttle Limits**: 50,000 requests/minute may allow DoS
+4. **No Structured Logging**: Console logging instead of proper log framework
+
+---
+
+## 🛠️ DEVELOPMENT WORKFLOW
+
+### Local Development Setup
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/anilkumar1510/opdwallet.git
 cd opdwallet
 
-# Start with Docker
-docker-compose up -d
+# Start development environment
+make up
 
-# Wait 30 seconds for services to initialize
-
-# Access portals
-open http://localhost:3001  # Admin Portal
-open http://localhost:3002  # Member Portal
+# Access services
+Admin Portal: http://localhost:3001
+Member Portal: http://localhost:3002
+API: http://localhost:4000
+MongoDB: localhost:27017
 ```
 
-### Test Accounts
+### Deployment Commands
+```bash
+# Production deployment
+make prod-up
 
-#### Production (AWS EC2 - http://51.20.125.246)
-- Super Admin: admin@opdwallet.com / Admin@123
-- Member: john.doe@company.com / Test123!
-- Dependent: jane.doe@email.com / Test123!
+# Simple deployment
+docker-compose -f docker-compose.simple.yml up -d
 
-#### Local Development
-- Same credentials as production
-- Member Portal: http://localhost:3002
-- Admin Portal: http://localhost:3001
+# Container cleanup
+./scripts/cleanup-containers.sh
 
-### API Documentation
-- Swagger UI: http://localhost:4000/api/docs
-- Base URL: http://localhost:4000/api
-
-## Current Deployment State (September 21, 2025)
-
-### AWS EC2 Instance (ACTIVE)
-```
-Instance Type: t2.micro
-Region: eu-north-1
-Public IP: 51.20.125.246
-OS: Ubuntu 22.04 LTS
-Storage: 30GB gp3
-Security Groups: HTTP(80), HTTPS(443), SSH(22)
+# Check deployment status
+make status
 ```
 
-### Docker Services Status
-- **MongoDB**: Running on port 27017 (containerized)
-- **API**: Running on port 4000 (NestJS)
-- **Member Portal**: Running on port 3002 (Next.js)
-- **Admin Portal**: Running on port 3001 (Next.js)
+### Database Management
+```bash
+# Access MongoDB shell
+make mongo-shell
 
-### CI/CD Pipeline (WORKING)
-**GitHub Actions Workflow**: `.github/workflows/deploy.yml`
-- **Trigger**: Push to main branch
-- **Method**: SSH deployment
-- **Process**:
-  1. SSH to EC2 (51.20.125.246)
-  2. Pull latest code with `git pull`
-  3. Stop existing containers
-  4. Build all services with `docker-compose build --no-cache`
-  5. Start containers with `docker-compose up -d`
-- **Deployment Time**: ~10-15 minutes
-- **Success Rate**: 100%
+# Reset database
+make reset-db
+
+# Run migrations
+make migrate-planv1
+```
+
+---
+
+## 📈 SCALABILITY CONSIDERATIONS
+
+### Current Limitations
+- **Single Database**: MongoDB without clustering
+- **No Caching Layer**: Direct database queries without Redis
+- **Monolithic Frontend**: Single-page applications instead of micro-frontends
+- **Manual Scaling**: No auto-scaling capabilities
+
+### Planned Improvements
+- **Database Clustering**: MongoDB replica sets for high availability
+- **Caching Strategy**: Redis for session management and query caching
+- **API Gateway**: Rate limiting and request routing optimization
+- **CDN Integration**: Static asset optimization and global distribution
+- **Monitoring**: Application performance monitoring and alerting
+
+---
+
+## 🔄 INTEGRATION POINTS
+
+### External Service Integration (Planned)
+- **Payment Gateway**: For wallet top-ups and premium features
+- **SMS/Email Service**: For notifications and OTP verification
+- **Document Management**: For health record storage and retrieval
+- **Healthcare Providers**: For real-time service booking
+- **Insurance APIs**: For claims processing and policy validation
+
+### Internal Integration Points
+```
+Authentication Service ←→ All Modules
+├── User Management ←→ Policy Assignments
+├── Policy Management ←→ Plan Configurations
+├── Master Data ←→ Service Definitions
+└── Wallet System ←→ Transaction Processing (planned)
+```
+
+---
+
+## 📋 MAINTENANCE & OPERATIONS
+
+### Monitoring & Health Checks
+- **Application Health**: `/api/health` endpoint
+- **Database Health**: `/api/health/db` endpoint
+- **Container Health**: Docker health checks for all services
+- **Log Management**: Centralized logging with rotation
+
+### Backup & Recovery
+- **Database Backups**: MongoDB dump scripts (planned)
+- **Code Repository**: Git with GitHub for version control
+- **Environment Configuration**: Docker Compose version control
+- **Documentation**: Comprehensive system documentation
+
+### Security Auditing
+- **Dependency Scanning**: Regular npm audit for vulnerabilities
+- **Code Analysis**: ESLint and TypeScript for code quality
+- **Security Headers**: Regular security header validation
+- **Access Logging**: Request logging for security monitoring
+
+---
+
+**Architecture Version**: 3.0
+**Last System Audit**: September 24, 2025
+**Next Architecture Review**: Quarterly
+**Critical Security Review**: IMMEDIATE - Multiple vulnerabilities identified

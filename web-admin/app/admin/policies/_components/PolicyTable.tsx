@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Policy, PolicyStatus, PolicyQueryParams } from '../_lib/types'
+import { apiFetch } from '@/lib/api'
 
 interface PolicyTableProps {
   policies: Policy[]
@@ -11,6 +12,7 @@ interface PolicyTableProps {
   params: PolicyQueryParams
   total: number
   currentUserRole?: string
+  onRefresh?: () => void
 }
 
 export default function PolicyTable({
@@ -19,11 +21,13 @@ export default function PolicyTable({
   error,
   params,
   total,
-  currentUserRole = 'ADMIN'
+  currentUserRole = 'ADMIN',
+  onRefresh
 }: PolicyTableProps) {
   const router = useRouter()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [deletingPolicyId, setDeletingPolicyId] = useState<string | null>(null)
 
   const handleCopyId = async (policy: Policy) => {
     try {
@@ -32,6 +36,39 @@ export default function PolicyTable({
       setTimeout(() => setCopiedId(null), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
+    }
+  }
+
+  const handleDeletePolicy = async (policy: Policy) => {
+    const confirmed = confirm(
+      `Are you sure you want to delete "${policy.name}" (${policy.policyNumber})?\n\n` +
+      `This action cannot be undone. The policy can only be deleted if it has no active user assignments.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      setDeletingPolicyId(policy._id)
+      const response = await apiFetch(`/api/policies/${policy._id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        alert(`Policy "${result.policyName}" deleted successfully`)
+        setOpenMenuId(null)
+        if (onRefresh) {
+          onRefresh()
+        }
+      } else {
+        const error = await response.json()
+        alert(`Failed to delete policy: ${error.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting policy:', error)
+      alert(`Failed to delete policy: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setDeletingPolicyId(null)
     }
   }
 
@@ -126,11 +163,9 @@ export default function PolicyTable({
           </div>
           <h4 className="empty-state-title">No policies found</h4>
           <p className="empty-state-description">
-            {params.q || params.status || params.ownerPayer ?
-              'Try adjusting your search criteria.' :
-              'Get started by creating your first policy.'}
+            Get started by creating your first policy.
           </p>
-          {!params.q && !params.status && !params.ownerPayer && (
+          {(
             <button
               onClick={() => router.push('/admin/policies/new')}
               className="btn-primary mt-4"
@@ -165,16 +200,14 @@ export default function PolicyTable({
                 <tr
                   key={policy._id}
                   role="row"
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/admin/policies/${policy._id}`)}
                 >
                   <td role="cell">
-                    <button
-                      onClick={() => router.push(`/admin/policies/${policy._id}`)}
-                      className="text-left hover:text-blue-600 transition-colors"
-                    >
+                    <div>
                       <div className="font-medium text-gray-900">{policy.name}</div>
                       <div className="font-mono text-sm text-gray-500">{policy.policyNumber}</div>
-                    </button>
+                    </div>
                   </td>
                   <td role="cell">
                     <div className="text-sm text-gray-900">{policy.ownerPayer}</div>
@@ -198,7 +231,7 @@ export default function PolicyTable({
                   </td>
                   <td role="cell">
                     <span className="badge-default">
-                      {(policy as any).planConfigs?.length > 0 ? `${(policy as any).planConfigs.length} configs` : 'No config'}
+                      Has Configurations
                     </span>
                   </td>
                   <td role="cell">
@@ -212,15 +245,10 @@ export default function PolicyTable({
                   <td role="cell">
                     <div className="flex items-center justify-end space-x-2">
                       <button
-                        onClick={() => router.push(`/admin/policies/${policy._id}`)}
-                        className="btn-ghost p-1 text-xs"
-                        title="View Details"
-                        aria-label={`View ${policy.name} details`}
-                      >
-                        View
-                      </button>
-                      <button
-                        onClick={() => router.push(`/admin/policies/${policy._id}#versions`)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/admin/policies/${policy._id}#versions`)
+                        }}
                         className="btn-ghost p-1 text-xs"
                         title="View Plan Versions"
                         aria-label={`View ${policy.name} versions`}
@@ -228,7 +256,10 @@ export default function PolicyTable({
                         Versions
                       </button>
                       <button
-                        onClick={() => router.push(`/admin/users?policyId=${policy._id}`)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/admin/users?policyId=${policy._id}`)
+                        }}
                         className="btn-ghost p-1 text-xs"
                         title="Assign Users"
                         aria-label={`Assign users to ${policy.name}`}
@@ -239,7 +270,10 @@ export default function PolicyTable({
                       {/* More Actions Menu */}
                       <div className="relative">
                         <button
-                          onClick={() => setOpenMenuId(openMenuId === policy._id ? null : policy._id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === policy._id ? null : policy._id)
+                          }}
                           className="btn-ghost p-1"
                           aria-label="More actions"
                           aria-expanded={openMenuId === policy._id}
@@ -277,6 +311,16 @@ export default function PolicyTable({
                               </svg>
                               {copiedId === policy._id ? 'Copied!' : 'Copy ID'}
                             </button>
+                            <button
+                              onClick={() => handleDeletePolicy(policy)}
+                              disabled={deletingPolicyId === policy._id}
+                              className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <svg className="w-4 h-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              {deletingPolicyId === policy._id ? 'Deleting...' : 'Delete Policy'}
+                            </button>
                           </div>
                         )}
                       </div>
@@ -309,7 +353,7 @@ export default function PolicyTable({
                     <span className="text-gray-400">•</span>
                     <span className="text-sm text-gray-600">{policy.ownerPayer}</span>
                     <span className="text-gray-400">•</span>
-                    <span className="badge-default text-xs">{(policy as any).planConfigs?.length > 0 ? `${(policy as any).planConfigs.length} configs` : 'No config'}</span>
+                    <span className="badge-default text-xs">Has Configurations</span>
                   </div>
                 </div>
                 <span className={getStatusBadgeClass(policy.status)}>
@@ -328,18 +372,9 @@ export default function PolicyTable({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    router.push(`/admin/policies/${policy._id}`)
-                  }}
-                  className="btn-primary flex-1 text-sm"
-                >
-                  View
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
                     router.push(`/admin/policies/${policy._id}#versions`)
                   }}
-                  className="btn-ghost flex-1 text-sm"
+                  className="btn-primary flex-1 text-sm"
                 >
                   Versions
                 </button>

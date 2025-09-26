@@ -8,16 +8,17 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 
 @ApiTags('relationships')
 @Controller('relationships')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@ApiBearerAuth()
 export class RelationshipsController {
   constructor(private readonly relationshipsService: RelationshipsService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all active relationships' })
   @ApiResponse({ status: 200, description: 'Relationships retrieved successfully' })
   async findAll() {
     return this.relationshipsService.findAll();
   }
+
 }

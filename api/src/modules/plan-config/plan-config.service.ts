@@ -1,15 +1,18 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PlanConfig, PlanConfigDocument } from './schemas/plan-config.schema';
 import { CreatePlanConfigDto } from './dto/create-plan-config.dto';
 import { UpdatePlanConfigDto } from './dto/update-plan-config.dto';
+import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
 
 @Injectable()
 export class PlanConfigService {
   constructor(
     @InjectModel(PlanConfig.name)
     private planConfigModel: Model<PlanConfigDocument>,
+    @InjectModel(Assignment.name)
+    private assignmentModel: Model<AssignmentDocument>,
   ) {}
 
   async createConfig(policyId: string, dto: CreatePlanConfigDto, userId: string) {
@@ -127,21 +130,42 @@ export class PlanConfigService {
   }
 
   async deleteConfig(policyId: string, version: number) {
+    console.log('🟡 [PLAN CONFIG SERVICE] Attempting to delete plan configuration:', { policyId, version });
+
     const config = await this.planConfigModel.findOne({ policyId, version });
     if (!config) {
       throw new NotFoundException('Configuration not found');
     }
 
-    if (config.status === 'PUBLISHED') {
-      throw new BadRequestException('Cannot delete published configurations');
+    // Check if configuration is current and has user assignments
+    if (config.isCurrent) {
+      console.log('🟡 [PLAN CONFIG SERVICE] Configuration is current, checking for user assignments...');
+
+      const activeAssignments = await this.assignmentModel.countDocuments({
+        policyId: policyId,
+        isActive: true,
+      });
+
+      if (activeAssignments > 0) {
+        throw new ConflictException(
+          `Cannot delete current plan configuration. This policy is assigned to ${activeAssignments} user(s). ` +
+          `Please unassign all users from this policy or set a different plan configuration as current before deleting.`
+        );
+      }
     }
 
-    if (config.isCurrent) {
-      throw new BadRequestException('Cannot delete current configuration');
+    // Additional business rules
+    if (config.status === 'PUBLISHED' && config.isCurrent) {
+      throw new BadRequestException('Cannot delete a published configuration that is current');
     }
 
     await this.planConfigModel.deleteOne({ policyId, version });
-    return { success: true, message: `Version ${version} deleted` };
+    console.log('✅ [PLAN CONFIG SERVICE] Plan configuration deleted successfully');
+
+    return {
+      success: true,
+      message: `Version ${version} deleted successfully`
+    };
   }
 
   async migrateSpouseCoverage() {

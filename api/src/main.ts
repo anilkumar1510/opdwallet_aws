@@ -77,7 +77,7 @@ async function bootstrap() {
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
+      max: isProduction ? 100 : 1000, // limit each IP to 1000 requests per windowMs in dev, 100 in prod
       message: 'Too many requests from this IP, please try again later.',
       standardHeaders: true,
       legacyHeaders: false,
@@ -89,7 +89,7 @@ async function bootstrap() {
     '/api/auth/login',
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 50, // limit each IP to 50 login attempts per windowMs (increased for development)
+      max: isProduction ? 50 : 500, // limit each IP to 500 login attempts per windowMs in dev, 50 in prod
       message: 'Too many login attempts, please try again later.',
       skipSuccessfulRequests: true,
     }),
@@ -121,7 +121,7 @@ async function bootstrap() {
       .setDescription('Corporate OPD Wallet Platform API Documentation')
       .setVersion('1.0')
       .addCookieAuth('opd_session')
-      .addServer(`http://localhost:${configService.get<number>('PORT', 4000)}`)
+      .addServer(`http://localhost:${configService.get<number>('PORT', 4001)}`)
       .addServer('https://api.opdwallet.com')
       .build();
 
@@ -129,7 +129,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = configService.get<number>('PORT', 4000);
+  const port = configService.get<number>('PORT', 4001);
   await app.listen(port);
 
   logger.log(`🚀 Application is running on: http://localhost:${port}`);

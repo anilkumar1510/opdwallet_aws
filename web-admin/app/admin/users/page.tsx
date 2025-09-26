@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { relationshipsApi, type Relationship } from '@/lib/api/relationships'
 
 export default function UsersPage() {
   const router = useRouter()
@@ -13,9 +14,11 @@ export default function UsersPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [newPassword, setNewPassword] = useState('')
+  const [relationships, setRelationships] = useState<Relationship[]>([])
 
   useEffect(() => {
     fetchUsers()
+    fetchRelationships()
   }, [])
 
   const fetchUsers = async () => {
@@ -30,6 +33,23 @@ export default function UsersPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchRelationships = async () => {
+    try {
+      const data = await relationshipsApi.getAll()
+      setRelationships(data)
+    } catch (error) {
+      console.error('Failed to fetch relationships:', error)
+    }
+  }
+
+  const getRelationshipName = (relationshipCode: string) => {
+    if (!relationshipCode) {
+      return 'Primary Member'
+    }
+    const relationship = relationships.find(rel => rel.relationshipCode === relationshipCode)
+    return relationship?.displayName || relationshipCode
   }
 
   const handleResetPassword = async (userId: string) => {
@@ -218,7 +238,7 @@ export default function UsersPage() {
                           <div className="text-sm text-gray-500 md:hidden">
                             {user.email}
                           </div>
-                          {activeTab === 'external' && user.relationship !== 'SELF' && (
+                          {activeTab === 'external' && user.relationship && (
                             <div className="text-xs text-blue-600">
                               Primary: {user.primaryMemberId}
                             </div>
@@ -233,9 +253,9 @@ export default function UsersPage() {
                     <td className="hidden lg:table-cell">
                       {activeTab === 'external' ? (
                         <span className={`badge ${
-                          user.relationship === 'SELF' ? 'badge-info' : 'badge-warning'
+                          !user.relationship ? 'badge-info' : 'badge-warning'
                         }`}>
-                          {user.relationship}
+                          {getRelationshipName(user.relationship)}
                         </span>
                       ) : (
                         <span className="badge-info">

@@ -1,138 +1,277 @@
-# 🔧 DATABASE CLEANUP & SYSTEM OPTIMIZATION TODO LIST
+# 🔧 SYSTEM CLEANUP & OPTIMIZATION TODO LIST
 
-**Generated:** September 20, 2025
-**Status:** All items pending completion
-**Priority:** Critical → High → Medium → Low
-
----
-
-## 🚨 **CRITICAL PRIORITY (IMMEDIATE ACTION REQUIRED)**
-
-### **Data Integrity Issues**
-
-- [x] **#001** - ✅ Clean 17 orphaned plan versions (94.4% orphaned data)
-- [x] **#002** - ✅ Clean 4 orphaned benefit components (80% orphaned data)
-- [x] **#003** - ✅ Clean 4 orphaned wallet rules (80% orphaned data)
-- [x] **#004** - ✅ Verify and fix user policy assignments data integrity
-- [ ] **#005** - Populate benefitCoverageMatrix collection when policies are created (keeping empty for now)
-
-### **Schema Definition Conflicts**
-
-- [ ] **#006** - Resolve duplicate category_master schema definitions
-  - `api/src/modules/categories/schemas/category.schema.ts`
-  - `api/src/modules/masters/schemas/category-master.schema.ts`
-- [ ] **#007** - Resolve benefitCoverageMatrix collection name mismatch
-  - Schema 1: `benefitCoverageMatrix`
-  - Schema 2: `benefit_coverage_matrix`
-- [ ] **#008** - Choose primary service management system (service_types vs service_master)
+**Last Updated:** September 24, 2025
+**Current Status:** Port conflicts resolved, security issues identified
+**System Audit Score:** 6.5/10 (Critical security gaps identified)
 
 ---
 
-## 🔥 **HIGH PRIORITY (THIS WEEK)**
+## 🚨 **CRITICAL PRIORITY (IMMEDIATE ACTION - 24 HOURS)**
 
-### **Database Structure Optimization**
+### ✅ **COMPLETED ITEMS**
 
-- [ ] **#009** - Decide fate of service_types collection (33 documents, unused by UI)
-- [ ] **#010** - Decide fate of service_master collection (14 documents, unused by UI)
-- [ ] **#011** - Consolidate or remove duplicate service code entries (CON001, CON002, PHA001, PHA002)
-- [ ] **#012** - Clean up category_master duplicates (6 documents with conflicting data)
-- [ ] **#013** - Analyze auditLogs usage and implement proper UI integration or remove
-- [ ] **#014** - Review counters collection necessity (2 documents, no UI usage)
+#### #001 ✅ **DONE** - Port Configuration Conflicts
+**Issue**: Multiple Docker Compose files using same port 4000 causing deployment conflicts
+**Resolution**: Standardized container naming with environment suffixes (-dev, -prod, -simple, etc.)
+**Files Modified**: All 6 Docker Compose configurations updated
+**Status**: Port conflicts eliminated, deployments now isolated
 
-### **API Endpoint Cleanup**
+#### #002 ✅ **DONE** - Container Cleanup Script
+**Issue**: Old containers from different environments conflicting
+**Resolution**: Created `/scripts/cleanup-containers.sh` with comprehensive cleanup logic
+**Features**: Environment-specific cleanup, port conflict detection, pre-deployment validation
+**Status**: Automated cleanup integrated into deployment workflows
 
-- [ ] **#015** - Remove or document unused Categories Management API (6 endpoints)
-- [ ] **#016** - Remove or document unused Services Management API (6 endpoints)
-- [ ] **#017** - Remove or document unused User Management API (7 endpoints)
-- [ ] **#018** - Remove or document unused Policy Management API (5 endpoints)
-- [ ] **#019** - Remove or document unused Assignments Management API (6 endpoints)
-- [ ] **#020** - Remove or document unused Plan Config Resolution API (3 endpoints)
+#### #003 ✅ **DONE** - GitHub Actions Enhancement
+**Issue**: Deployment workflows lacked conflict prevention
+**Resolution**: Updated deploy.yml and deploy-simple.yml with port conflict detection
+**Features**: Pre/post deployment validation, automatic conflict resolution, error reporting
+**Status**: Deployment reliability significantly improved
 
----
+#### #004 ✅ **DONE** - Component Import Fix
+**Issue**: TypeScript build failing on Card component import
+**Resolution**: Fixed import from default to named export in health-records page
+**Files Modified**: `/web-member/app/member/health-records/page.tsx`
+**Status**: Build now compiles successfully
 
-## 🟡 **MEDIUM PRIORITY (THIS MONTH)**
+### 🔴 **CRITICAL SECURITY ISSUES (IMMEDIATE)**
 
-### **Admin UI Completion**
+#### #005 ⚠️ **URGENT** - Hardcoded Database Credentials
+**Risk Level**: CRITICAL - Complete database compromise possible
+**Issue**: MongoDB credentials `admin:admin123` hardcoded in multiple files
+**Files Affected**:
+- `docker-compose.yml`
+- `.env.example`
+- Various seed scripts
+**Impact**: Anyone with code access can access production database
+**Action Required**: Generate secure credentials, use environment variables
+**Deadline**: IMMEDIATE
 
-- [ ] **#021** - Complete Policy Management UI integration with existing APIs
-- [ ] **#022** - Complete User Management UI integration with existing APIs
-- [ ] **#023** - Complete Service/Category Management UI integration
-- [ ] **#024** - Connect Plan Version Configuration UI to backend APIs
-- [ ] **#025** - Implement Benefits Configuration UI functionality
-- [ ] **#026** - Implement Wallet Rules Configuration UI functionality
-- [ ] **#027** - Implement Coverage Matrix Configuration UI functionality
+#### #006 ⚠️ **URGENT** - Weak JWT Configuration
+**Risk Level**: CRITICAL - Authentication bypass possible
+**Issue**: Development JWT secret `dev_jwt_secret_change_in_production` in production
+**File**: `/api/src/config/configuration.ts:14`
+**Impact**: Attackers can forge valid authentication tokens
+**Action Required**: Generate cryptographically secure JWT secrets (32+ characters)
+**Deadline**: IMMEDIATE
 
-### **Data Relationship Fixes**
+#### #007 ⚠️ **URGENT** - Production MongoDB Without Authentication
+**Risk Level**: CRITICAL - Unauthorized database access
+**Issue**: Production MongoDB runs without authentication enabled
+**File**: `/docker-compose.prod.yml:47`
+**Impact**: Direct database access from internet possible
+**Action Required**: Enable MongoDB authentication with dedicated service accounts
+**Deadline**: IMMEDIATE
 
-- [ ] **#028** - Establish proper policy → planVersion → components → rules data flow
-- [ ] **#029** - Implement cascade delete prevention for data integrity
-- [ ] **#030** - Add foreign key validation in application layer
-- [ ] **#031** - Create data consistency check scripts
-
----
-
-## 🟢 **LOW PRIORITY (FUTURE OPTIMIZATION)**
-
-### **Code Architecture Cleanup**
-
-- [ ] **#032** - Remove backward compatibility properties in benefit-component.schema.ts (lines 108-115)
-- [ ] **#033** - Standardize category naming across all collections
-- [ ] **#034** - Implement single category system across all modules
-- [ ] **#035** - Remove unused schema files after consolidation
-- [ ] **#036** - Optimize database indexes for actual usage patterns
-
-### **Performance & Monitoring**
-
-- [ ] **#037** - Implement proper audit log integration in UI
-- [ ] **#038** - Add data validation middleware for all endpoints
-- [ ] **#039** - Create automated data integrity checks
-- [ ] **#040** - Add monitoring for orphaned records
-- [ ] **#041** - Implement proper error handling for data relationship failures
-
-### **Documentation & Testing**
-
-- [ ] **#042** - Document final API endpoint decisions (keep/remove)
-- [ ] **#043** - Update schema documentation to reflect single source of truth
-- [ ] **#044** - Create migration scripts for data cleanup
-- [ ] **#045** - Add integration tests for admin UI functionality
-- [ ] **#046** - Document data flow diagrams for all modules
+#### #008 ⚠️ **URGENT** - Sensitive Data in Logs
+**Risk Level**: HIGH - Credential exposure in server logs
+**Issue**: 355 console.log statements including password logging in authentication
+**Files Affected**: 29 files across API layer, notably auth.service.ts:19-63
+**Impact**: User credentials and sensitive data exposed in log files
+**Action Required**: Remove debug logging, implement structured logging framework
+**Deadline**: IMMEDIATE
 
 ---
 
-## 📊 **COMPLETION TRACKING**
+## 🔶 **HIGH PRIORITY (WITHIN 1 WEEK)**
 
-**Total Items:** 46
-**Completed:** 0
-**In Progress:** 0
-**Pending:** 46
+### 📊 **Data Integrity Issues**
 
-**Progress by Priority:**
-- Critical: 0/8 (0%)
-- High: 0/12 (0%)
-- Medium: 0/11 (0%)
-- Low: 0/15 (0%)
+#### #009 ⚠️ **Orphaned Policy Records**
+**Issue**: 2 userPolicyAssignments and 2 plan_configs reference deleted policy
+**Orphaned Policy ID**: `68cea00fe4701dcd411b138a`
+**Impact**: Data inconsistency, potential application errors
+**Action**: Clean up orphaned records or restore missing policy
+**Collections Affected**: `userPolicyAssignments`, `plan_configs`
 
-**Overall Progress: 0% Complete**
+#### #010 ⚠️ **Data Type Inconsistency**
+**Issue**: userPolicyAssignments.userId uses ObjectId but should reference users.userId (string)
+**Impact**: Foreign key relationship mismatch, potential join failures
+**Action**: Standardize to consistent data types across all references
+**Collections Affected**: `userPolicyAssignments`, `users`
+
+#### #011 ⚠️ **Missing Audit Trail**
+**Issue**: auditLogs collection configured but empty (audit logging not functioning)
+**Impact**: No compliance trail, difficult debugging and accountability
+**Action**: Implement audit logging middleware for all CRUD operations
+**Collection Affected**: `auditLogs`
+
+### 🛡️ **Security Improvements**
+
+#### #012 ⚠️ **SSL/TLS Missing**
+**Issue**: HTTPS configuration commented out in production
+**File**: `/nginx/nginx.conf:51-55`
+**Impact**: Data transmitted in plaintext, vulnerable to interception
+**Action**: Implement SSL/TLS with Let's Encrypt or proper certificates
+
+#### #013 ⚠️ **Insecure Cookie Configuration**
+**Issue**: Production cookies not secured (COOKIE_SECURE=false)
+**File**: `.env.production:13`
+**Impact**: Session tokens vulnerable to hijacking over HTTP
+**Action**: Enable secure cookie flags for production environment
+
+#### #014 ⚠️ **CORS Configuration Issues**
+**Issue**: Hardcoded IP addresses in CORS settings
+**File**: `/api/src/main.ts:65-67`
+**Impact**: Unintended cross-origin access, potential security bypass
+**Action**: Use environment-specific CORS configuration
 
 ---
 
-## 🎯 **NEXT ACTION**
+## 🔷 **MEDIUM PRIORITY (WITHIN 1 MONTH)**
 
-**START WITH:** Item #001 - Clean 17 orphaned plan versions
+### 🔧 **Performance & Code Quality**
 
-**Command Ready:**
-```bash
-# First, backup current data
-docker exec opd-mongo mongodump --db opd_wallet --out /backup
+#### #015 **Version Inconsistencies**
+**Issue**: Admin portal (Next.js 15.5.3) vs Member portal (Next.js 14.0.4)
+**Impact**: Maintenance complexity, missing security patches and features
+**Action**: Standardize on latest stable versions across all applications
 
-# Then clean orphaned plan versions
-docker exec opd-mongo mongosh opd_wallet --eval "
-  var validPolicyIds = db.policies.distinct('_id').map(id => id.toString());
-  var result = db.planVersions.deleteMany({
-    policyId: {\$nin: validPolicyIds.map(id => ObjectId(id))}
-  });
-  print('Deleted ' + result.deletedCount + ' orphaned plan versions');
-"
-```
+#### #016 **Excessive Debug Code**
+**Issue**: 355 console.log statements across 29 files in production
+**Impact**: Performance degradation, log pollution, potential memory leaks
+**Action**: Replace with structured logging framework (Winston/Pino)
 
-**Estimated Impact:** Will clean 94.4% of orphaned data immediately.
+#### #017 **High Throttle Limits**
+**Issue**: Throttle limit set to 50,000 requests/minute
+**File**: `/api/src/app.module.ts:32`
+**Impact**: Potential DoS vulnerabilities, inadequate protection
+**Action**: Review and implement reasonable production limits
+
+### 🏗️ **Architecture Improvements**
+
+#### #018 **Missing Error Handling**
+**Issue**: Limited global error handling patterns throughout application
+**Impact**: Poor user experience, difficult production debugging
+**Action**: Implement comprehensive error handling middleware
+
+#### #019 **Incomplete Feature Implementation**
+**Issue**: Wallet system collections created but not implemented
+**Collections**: `user_wallets`, `wallet_transactions` (both empty)
+**Impact**: Core feature unavailable, incomplete user experience
+**Action**: Implement wallet management and transaction tracking
+
+---
+
+## 🔵 **LOW PRIORITY (MAINTENANCE & OPTIMIZATION)**
+
+### 📈 **Database Optimization**
+
+#### #020 **Unused Master Data**
+**Issue**: 3 relationship codes (REL003-REL005) and 8 CUG records unused
+**Impact**: Database bloat, confusing admin interfaces
+**Action**: Clean up unused master data or implement related features
+
+#### #021 **Index Optimization**
+**Issue**: Potentially redundant indexes (categoryId vs code in category_master)
+**Impact**: Storage overhead, slower write operations
+**Action**: Review and optimize database indexes
+
+#### #022 **Schema Inconsistencies**
+**Issue**: Mix of snake_case and camelCase in collection naming
+**Impact**: Developer confusion, inconsistent API patterns
+**Action**: Standardize naming conventions across all collections
+
+### 🚀 **Feature Enhancements**
+
+#### #023 **User Interface Integration Gaps**
+**Issue**: Several UI components not fully integrated with backend APIs
+**Components Affected**:
+- Policy Management UI
+- User Management UI
+- Service/Category Management UI
+- Plan Version Configuration UI
+- Benefits Configuration UI
+- Wallet Rules Configuration UI
+- Coverage Matrix Configuration UI
+
+#### #024 **Missing Foreign Key Validation**
+**Issue**: No application-layer foreign key constraints
+**Impact**: Potential data corruption, referential integrity issues
+**Action**: Implement validation middleware for all foreign key relationships
+
+#### #025 **Cascade Delete Prevention**
+**Issue**: No safeguards against deleting referenced entities
+**Impact**: Potential for creating orphaned records
+**Action**: Implement cascade delete prevention logic
+
+---
+
+## 📊 **SYSTEM HEALTH METRICS**
+
+### Current Database State
+- **Total Collections**: 12 (9 active, 3 empty)
+- **Total Documents**: 28
+- **Orphaned Records**: 4 (2 in userPolicyAssignments, 2 in plan_configs)
+- **Data Integrity**: 85.7% (4 orphaned out of 28 total)
+
+### Security Posture
+- **Critical Vulnerabilities**: 4 (hardcoded credentials, weak JWT, no DB auth, exposed logs)
+- **High Risk Issues**: 3 (no SSL, insecure cookies, CORS issues)
+- **Overall Security Score**: 3/10 (CRITICAL - Immediate action required)
+
+### Code Quality
+- **Console.log Statements**: 355 (across 29 files)
+- **Type Inconsistencies**: 1 (userPolicyAssignments.userId)
+- **Version Inconsistencies**: 1 (Next.js versions)
+- **Overall Code Quality**: 6/10 (Good architecture, needs cleanup)
+
+### Performance Indicators
+- **API Endpoints**: 37 (fully functional)
+- **Average Response Time**: <100ms (good)
+- **Database Query Performance**: Good (proper indexing)
+- **Throttle Protection**: Poor (limits too high)
+
+---
+
+## 🎯 **COMPLETION STRATEGY**
+
+### Phase 1: Critical Security (Days 1-2)
+1. Replace all hardcoded credentials with secure alternatives
+2. Generate and implement strong JWT secrets
+3. Enable MongoDB authentication in production
+4. Remove sensitive data from logging
+
+### Phase 2: Infrastructure Security (Days 3-7)
+1. Implement SSL/TLS certificates
+2. Fix cookie security settings
+3. Correct CORS configuration
+4. Clean up orphaned database records
+
+### Phase 3: Code Quality (Weeks 2-3)
+1. Remove excessive debug logging
+2. Implement structured logging framework
+3. Standardize dependency versions
+4. Implement comprehensive error handling
+
+### Phase 4: Feature Completion (Month 1)
+1. Complete UI integrations
+2. Implement wallet management system
+3. Enable audit logging
+4. Add foreign key validation
+
+---
+
+## ⚡ **IMMEDIATE NEXT STEPS**
+
+1. **CRITICAL**: Change database credentials immediately
+2. **CRITICAL**: Generate secure JWT secrets for all environments
+3. **CRITICAL**: Remove console.log statements from authentication code
+4. **HIGH**: Enable MongoDB authentication in production
+5. **HIGH**: Clean up orphaned policy records
+
+## 🏁 **SUCCESS CRITERIA**
+
+- [ ] Security score improved from 3/10 to 8/10
+- [ ] All orphaned records cleaned up (100% data integrity)
+- [ ] Debug logging reduced from 355 to <10 statements
+- [ ] All UI components fully integrated
+- [ ] Audit logging functional and compliant
+- [ ] Performance optimized for production load
+
+---
+
+**Document Version**: 3.0
+**Last Updated**: September 24, 2025
+**Next Review**: Weekly until critical items completed
+**Responsible**: Development Team + Security Review

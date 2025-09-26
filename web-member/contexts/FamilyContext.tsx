@@ -17,6 +17,7 @@ export interface FamilyMember {
   isPrimary: boolean
   walletBalance?: number
   avatar?: string
+  corporateName?: string
   benefitsUsed?: {
     consultations: number
     medicines: number
@@ -51,6 +52,7 @@ const sampleFamilyMembers: FamilyMember[] = [
     used: 125000,
     isPrimary: true,
     walletBalance: 2500,
+    corporateName: 'Google Inc.',
     benefitsUsed: {
       consultations: 8,
       medicines: 15,
@@ -71,6 +73,7 @@ const sampleFamilyMembers: FamilyMember[] = [
     used: 45000,
     isPrimary: false,
     walletBalance: 1800,
+    corporateName: 'Google Inc.',
     benefitsUsed: {
       consultations: 5,
       medicines: 8,
@@ -91,6 +94,7 @@ const sampleFamilyMembers: FamilyMember[] = [
     used: 12000,
     isPrimary: false,
     walletBalance: 500,
+    corporateName: 'Google Inc.',
     benefitsUsed: {
       consultations: 3,
       medicines: 5,
@@ -111,6 +115,7 @@ const sampleFamilyMembers: FamilyMember[] = [
     used: 0,
     isPrimary: false,
     walletBalance: 0,
+    corporateName: 'Microsoft Corporation',
     benefitsUsed: {
       consultations: 0,
       medicines: 0,

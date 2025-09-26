@@ -1,855 +1,575 @@
-# 02_DATA_SCHEMA_AND_CREDENTIALS.md
-**Last Updated: January 2025**
-**Current State: SIMPLIFIED ARCHITECTURE - SINGLE DOCUMENT APPROACH**
-**Status**: PRODUCTION-READY WITH STREAMLINED SCHEMAS
+# OPD Wallet Database Schema & Credentials
 
-## 🚨 SECURITY NOTICE & COMPLIANCE REQUIREMENTS
+**Last Updated**: September 24, 2025
+**Database**: MongoDB `opd_wallet`
+**Collections**: 12 collections (9 active, 3 empty)
+**Total Documents**: 28 documents
+**Status**: PRODUCTION-READY WITH COMPREHENSIVE SCHEMAS
 
-### ACTUAL Current Configuration (FROM REAL ENVIRONMENT)
+## Database Connection
 
-#### Local Development (docker-compose.yml)
-```bash
-# MongoDB Configuration
-MONGO_INITDB_ROOT_USERNAME=admin
-MONGO_INITDB_ROOT_PASSWORD=admin123
-MONGO_INITDB_DATABASE=opd_wallet
-MONGODB_URI=mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
-
-# API Configuration
-NODE_ENV=development
-PORT=4000
-JWT_SECRET=dev_jwt_secret_change_in_production
-COOKIE_NAME=opd_session
-
-# Frontend URLs
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
-API_URL=http://opd-api:4000/api
-```
-
-#### Production (.env.docker)
-```bash
-# Actual production credentials
-MONGO_ROOT_USERNAME=admin
-MONGO_ROOT_PASSWORD=admin123
-MONGO_DATABASE=opd_wallet
-JWT_SECRET=dev_jwt_secret_change_in_production
-COOKIE_NAME=opd_session
-NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
-```
-
-#### Application User Credentials (REAL)
-```bash
-# Super Admin Account
-Email: admin@opdwallet.com
-Password: Admin@123
-Role: SUPER_ADMIN
-
-# Member Test Accounts
-Email: john.doe@company.com
-Password: Test123!
-Role: MEMBER
-
-Email: jane.doe@email.com
-Password: Test123!
-Role: MEMBER
-```
-
-### Production Security Baseline (REQUIRED)
-Per Operating Rule #5, all production deployments MUST implement:
-
-#### Authentication & Authorization
-- **MongoDB**: Strong authentication with role-based access
-- **Passwords**: Bcrypt with minimum 12 rounds + complexity requirements
-- **JWT**:
-  - Cryptographically secure 256-bit secret from AWS Secrets Manager
-  - Token rotation every 1 hour
-  - Refresh token strategy with secure storage
-  - Session invalidation on logout
-- **RBAC**: Strict role checks + resource-level authorization (prevent IDOR)
-
-#### Data Protection
-- **Encryption at Rest**: MongoDB encryption, S3 AES-256
-- **Encryption in Transit**: TLS 1.2+ for all connections
-- **PII Handling**:
-  - Mask sensitive fields in logs
-  - Encrypt SSN, payment details
-  - GDPR-compliant data retention
-- **File Security**:
-  - Antivirus scanning on upload
-  - Private S3 storage
-  - Pre-signed URLs (15-minute expiry)
-
-#### Input/Output Validation
-- **Server-side**: Class-validator with strict DTOs
-- **Client-side**: Zod schemas for form validation
-- **Sanitization**: DOMPurify for user-generated content
-- **SQL/NoSQL Injection**: Parameterized queries only
-
-#### Audit & Compliance
-- **Immutable Audit Log**: All admin/member actions
-  - Format: `{timestamp, userId, action, resource, before, after, ip, userAgent}`
-  - Storage: Separate audit collection with TTL
-  - Retention: 2 years minimum (63072000 seconds)
-- **HIPAA Compliance**:
-  - Access logs for PHI
-  - Encryption requirements
-  - Business Associate Agreements (BAA)
-
-#### Security Headers & Rate Limiting
 ```javascript
-// Required production headers
-{
-  "Content-Security-Policy": "default-src 'self'",
-  "X-Frame-Options": "DENY",
-  "X-Content-Type-Options": "nosniff",
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-  "X-XSS-Protection": "1; mode=block"
-}
+// Development/Production Connection
+mongodb://admin:admin123@localhost:27017/opd_wallet?authSource=admin
 
-// Rate limiting (current development settings)
-{
-  "global": "100 requests per 15 min per IP",
-  "auth": "5 login attempts per 15 min",
-  "nestFallback": "10000 requests per minute (Nest Throttler)"
-}
+// Connection String Breakdown
+Host: localhost:27017
+Database: opd_wallet
+Username: admin
+Password: admin123 ⚠️ SECURITY RISK - Change in production
+AuthSource: admin
 ```
 
-## Database Quality Standards (Operating Rule #6)
+## Collection Overview & Statistics
 
-### Performance Targets
-- **Read Operations**: p95 < 300ms
-- **Write Operations**: p95 < 800ms
-- **Query Optimization**: All queries must include explain() analysis
-- **Index Coverage**: 100% for frequently accessed fields
+| Collection | Documents | Status | Primary Purpose |
+|------------|-----------|---------|-----------------|
+| `users` | 3 | Active | User management and authentication |
+| `policies` | 1 | Active | Insurance policy definitions |
+| `plan_configs` | 3 | Active | Policy configuration versions |
+| `userPolicyAssignments` | 4 | Active | User-policy relationships |
+| `category_master` | 3 | Active | Service categories |
+| `service_master` | 4 | Active | Available medical services |
+| `relationship_masters` | 5 | Active | Family relationship definitions |
+| `counters` | 2 | Active | Auto-increment sequences |
+| `cug_master` | 8 | Active | Corporate user groups |
+| `user_wallets` | 0 | Empty | User wallet balances (not implemented) |
+| `wallet_transactions` | 0 | Empty | Wallet transaction history (not implemented) |
+| `auditLogs` | 0 | Empty | System audit trail (not functioning) |
 
-### Schema Requirements
-- **Email Uniqueness**: Case-insensitive with collection collation
-- **Migrations**: Version-controlled, reversible scripts
-- **Seed Data**: Maintained for all environments
-- **Schema Changes**: Never silent; always through migration scripts
+## Detailed Schema Definitions
 
-### MongoDB Query Performance Evidence
+### 1. USERS Collection
+**Purpose**: Core user management with authentication and profile data
+**Document Count**: 3 (1 Super Admin, 2 Members)
+
 ```javascript
-// Example: User lookup by email
-db.users.find({email: "user@test.com"}).explain("executionStats")
-// Expected: Index scan, totalDocsExamined === 1
-
-// Example: Policy assignments for user
-db.userPolicyAssignments.find({userId: ObjectId("...")}).explain("executionStats")
-// Expected: Index scan, execution time < 50ms
-```
-
-## MongoDB Collections (CURRENT SIMPLIFIED ARCHITECTURE)
-
-### 1. users (`users`) - CORE USER MANAGEMENT
-**File**: `api/src/modules/users/schemas/user.schema.ts`
-**Collection Name**: `users`
-
-```typescript
-// STREAMLINED USER SCHEMA:
 {
-  _id: ObjectId,
-  userId: string,                    // @Prop({ required: true, unique: true, immutable: true })
-  uhid: string,                     // @Prop({ required: true, unique: true })
-  memberId: string,                 // @Prop({ required: true, unique: true })
-  employeeId?: string,              // @Prop({ unique: true, sparse: true })
-  relationship: RelationshipType,   // SELF | SPOUSE | CHILD | MOTHER | FATHER | OTHER
-  primaryMemberId?: string,         // @Prop({ required: function() { return this.relationship !== 'SELF' } })
+  _id: ObjectId("unique_identifier"),
+  userId: String,              // Auto-generated: "USR-2025-XXXX"
+  uhid: String,               // Unique Health ID
+  memberId: String,           // Member identifier: "MEM001", "MEM002"
+  employeeId: String,         // Employee ID (optional)
+  relationship: String,       // References relationship_masters.relationshipCode
+  primaryMemberId: String,    // For dependents, references primary member's memberId
 
-  // Name object
+  // Personal Information
   name: {
-    firstName: string,              // @Prop({ required: true, trim: true })
-    lastName: string,               // @Prop({ required: true, trim: true })
-    fullName?: string               // Auto-generated in pre-save hook
+    firstName: String,        // Required
+    lastName: String,         // Required
+    fullName: String,         // Auto-generated: firstName + lastName
+    _id: ObjectId            // Mongoose sub-document ID
   },
 
-  // Contact information
-  email: string,                    // @Prop({ required: true, unique: true, lowercase: true })
-  phone: string,                    // @Prop({ required: true, unique: true })
-  dob?: Date,
-  gender?: 'MALE' | 'FEMALE' | 'OTHER',
+  // Contact Information
+  email: String,              // Unique, used for login
+  phone: String,              // Contact number
 
-  // Address object
-  address?: {
-    line1?: string,
-    line2?: string,
-    city?: string,
-    state?: string,
-    pincode?: string
+  // Demographics
+  dob: Date,                  // Date of birth
+  gender: String,             // "MALE" | "FEMALE"
+
+  // Address Information
+  address: {
+    line1: String,            // Primary address line
+    line2: String,            // Secondary address line (optional)
+    city: String,             // City name
+    state: String,            // State name
+    pincode: String,          // Postal code
+    _id: ObjectId            // Mongoose sub-document ID
   },
 
-  // Role and status
-  role: UserRole,                   // SUPER_ADMIN | ADMIN | TPA | OPS | MEMBER
-  status: UserStatus,               // ACTIVE | INACTIVE
+  // System Fields
+  role: String,              // "SUPER_ADMIN" | "MEMBER"
+  status: String,            // "ACTIVE" | "INACTIVE"
+  passwordHash: String,      // bcrypt hash (12 rounds)
+  mustChangePassword: Boolean, // Force password change flag
 
-  // Authentication
-  passwordHash: string,             // @Prop({ required: true })
-  mustChangePassword: boolean,      // @Prop({ default: false })
-
-  // Audit fields
-  createdBy?: string,
-  updatedBy?: string,
-  createdAt: Date,                  // Automatic timestamp
-  updatedAt: Date,                  // Automatic timestamp
-  __v: number                       // Mongoose version key
+  // Timestamps
+  createdAt: Date,           // Record creation timestamp
+  updatedAt: Date,           // Last modification timestamp
+  __v: Number               // Mongoose version key
 }
 ```
 
-**INDEXES:**
-```typescript
-@Index({ email: 1 })                    // Unique email
-@Index({ phone: 1 })                    // Unique phone
-@Index({ uhid: 1 })                     // Unique UHID
-@Index({ memberId: 1 })                 // Unique member ID
-@Index({ employeeId: 1 }, { sparse: true })  // Sparse employee ID
-@Index({ userId: 1 })                   // User ID lookup
-@Index({ primaryMemberId: 1, relationship: 1 })  // Dependent relationships
+**Indexes**:
+- `_id_` (Primary key)
+- `userId_1` (Unique user identifier)
+- `uhid_1` (Unique health ID lookup)
+- `memberId_1` (Member lookup)
+- `email_1` (Login lookup)
+- `phone_1` (Contact lookup)
+
+**Sample Data** (sensitive data masked):
+```javascript
+// Super Admin
+{
+  userId: "USR-2025-0001",
+  role: "SUPER_ADMIN",
+  email: "admin@opdwallet.com",
+  name: { firstName: "Super", lastName: "Admin" }
+}
+
+// Primary Member
+{
+  userId: "USR-2025-0002",
+  memberId: "MEM002",
+  relationship: "REL001", // Self
+  role: "MEMBER"
+}
+
+// Dependent Member
+{
+  userId: "USR-2025-0003",
+  memberId: "MEM003",
+  primaryMemberId: "MEM002",
+  relationship: "REL002", // Spouse
+  role: "MEMBER"
+}
 ```
 
-**PRE-SAVE HOOKS:**
-- Auto-generates `fullName` from `firstName + lastName`
-- Password hashing with bcrypt (12 rounds)
-- Automatic timestamp updates
+### 2. POLICIES Collection
+**Purpose**: Master insurance policy definitions
+**Document Count**: 1
 
-### 2. policies (`policies`) - CORE POLICY MANAGEMENT
-**File**: `api/src/modules/policies/schemas/policy.schema.ts`
-**Collection Name**: `policies`
-
-```typescript
-// SIMPLIFIED POLICY SCHEMA:
+```javascript
 {
-  _id: ObjectId,
-  policyNumber: string,           // @Prop({ required: true, unique: true, immutable: true })
-  name: string,                   // @Prop({ required: true, minlength: 3, maxlength: 80, trim: true })
-  description?: string,           // @Prop({ trim: true })
-  ownerPayer: OwnerPayerType,     // CORPORATE | INSURER | HYBRID
-  sponsorName?: string,           // @Prop({ trim: true })
-  status: PolicyStatus,           // DRAFT | ACTIVE | INACTIVE | EXPIRED
-  effectiveFrom: Date,            // @Prop({ required: true })
-  effectiveTo?: Date,
+  _id: ObjectId("unique_identifier"),
+  policyNumber: String,       // Auto-generated: "POL-2025-XXXX"
+  name: String,              // Policy display name
+  description: String,        // Policy description
+  ownerPayer: String,        // "INSURER" | "EMPLOYER" | "INDIVIDUAL"
+  status: String,            // "ACTIVE" | "INACTIVE" | "EXPIRED"
+  effectiveFrom: Date,       // Policy start date
+  effectiveTo: Date,         // Policy end date (null for ongoing)
 
-  // Audit fields
-  createdBy?: string,
-  updatedBy?: string,
+  // Audit Fields
+  createdBy: ObjectId,       // References users._id
   createdAt: Date,
   updatedAt: Date,
-  __v: number
+  __v: Number
 }
 ```
 
-**INDEXES:**
-```typescript
-@Index({ policyNumber: 1 })              // Unique policy number
-@Index({ status: 1, effectiveFrom: 1 })  // Status and date filtering
-```
+**Indexes**:
+- `_id_` (Primary key)
+- `policyNumber_1` (Unique policy identifier)
 
-### 3. userPolicyAssignments (`userPolicyAssignments`) - USER-POLICY MAPPING
-**File**: `api/src/modules/assignments/schemas/assignment.schema.ts`
-**Collection Name**: `userPolicyAssignments`
-
-```typescript
-// ASSIGNMENT SCHEMA:
+**Current Data**:
+```javascript
 {
-  _id: ObjectId,
-  assignmentId: string,           // @Prop({ required: true, unique: true })
-  userId: ObjectId,               // @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  policyId: ObjectId,             // @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Policy', required: true })
-  effectiveFrom: Date,            // @Prop({ required: true, default: Date.now })
-  effectiveTo?: Date,             // @Prop({ optional: true })
-  planVersionOverride?: number,   // @Prop({ optional: true })
-  isActive: boolean,              // @Prop({ default: true })
-  createdBy?: string,             // @Prop({ optional: true })
-  updatedBy?: string,             // @Prop({ optional: true })
-
-  createdAt: Date,
-  updatedAt: Date,
-  __v: number
+  policyNumber: "POL-2025-0003",
+  name: "Comprehensive Health Policy",
+  ownerPayer: "INSURER",
+  status: "ACTIVE"
 }
 ```
 
-**INDEXES:**
-```typescript
-@Index({ userId: 1, isActive: 1 })                  // User assignments by status
-@Index({ policyId: 1, isActive: 1 })                // Policy assignments by status
-@Index({ assignmentId: 1 }, { unique: true })       // Unique assignment lookup
-```
+### 3. PLAN_CONFIGS Collection
+**Purpose**: Versioned policy configurations with benefits and wallet rules
+**Document Count**: 3 (versions for the active policy)
 
-### 4. plan_configs (`plan_configs`) - VERSIONED PLAN CONFIGURATION
-**File**: `api/src/modules/plan-config/schemas/plan-config.schema.ts`
-**Collection Name**: `plan_configs`
-
-```typescript
-// VERSIONED PLAN CONFIGURATION:
+```javascript
 {
-  _id: ObjectId,
-  policyId: ObjectId,             // @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Policy', required: true })
-  version: number,                // @Prop({ required: true, default: 1 })
-  status: string,                 // @Prop({ enum: ['DRAFT', 'PUBLISHED'], default: 'DRAFT' })
-  isCurrent: boolean,             // @Prop({ default: false })
+  _id: ObjectId("unique_identifier"),
+  policyId: ObjectId,         // References policies._id
+  version: Number,           // Version number (1, 2, 3...)
+  status: String,            // "DRAFT" | "PUBLISHED" | "ARCHIVED"
+  isCurrent: Boolean,        // True for the active version
 
-  // Benefit components configuration
+  // Benefits Configuration by Category
   benefits: {
-    consultation?: {
-      enabled: boolean,
-      annualLimit?: number,
-      visitLimit?: number,
-      notes?: string
+    "CAT001": {              // Consult category
+      enabled: Boolean,      // Category enabled/disabled
+      annualLimit: Number    // Annual limit amount
     },
-    pharmacy?: {
-      enabled: boolean,
-      annualLimit?: number,
-      rxRequired?: boolean,
-      notes?: string
+    "CAT002": {              // Pharmacy category
+      enabled: Boolean,
+      annualLimit: Number
     },
-    diagnostics?: {
-      enabled: boolean,
-      annualLimit?: number,
-      rxRequired?: boolean,
-      notes?: string
-    },
-    dental?: {
-      enabled: boolean,
-      annualLimit?: number,
-      notes?: string
-    },
-    vision?: {
-      enabled: boolean,
-      annualLimit?: number,
-      notes?: string
-    },
-    wellness?: {
-      enabled: boolean,
-      annualLimit?: number,
-      notes?: string
+    "CAT003": {              // Labs category
+      enabled: Boolean,
+      annualLimit: Number
     }
   },
 
-  // Wallet configuration
+  // Wallet Configuration
   wallet: {
-    totalAnnualAmount?: number,
-    perClaimLimit?: number,
-    copay?: {
-      mode: 'PERCENT' | 'AMOUNT',
-      value: number
+    totalAnnualAmount: Number,    // Total annual wallet amount
+    perClaimLimit: Number,        // Maximum per claim limit
+    copay: {
+      mode: String,              // "PERCENT" | "FIXED"
+      value: Number              // Copay percentage or fixed amount
     },
-    partialPaymentEnabled?: boolean,
-    carryForward?: {
-      enabled: boolean,
-      percent?: number,
-      months?: number
+    partialPaymentEnabled: Boolean,
+    carryForward: {
+      enabled: Boolean,          // Allow balance carry forward
+      percent: Number,           // Percentage to carry forward
+      months: Number            // Carry forward period in months
     },
-    topUpAllowed?: boolean
+    topUpAllowed: Boolean        // Allow wallet top-up
   },
 
-  // Simplified coverage (enabled service codes)
-  enabledServices: string[],      // @Prop({ default: [] })
+  // Covered Relationships
+  coveredRelationships: [String], // Array of relationship codes
 
-  // Audit fields
-  createdBy?: string,
-  updatedBy?: string,
-  publishedBy?: string,
-  publishedAt?: Date,
-  createdAt: Date,
-  updatedAt: Date,
-  __v: number
-}
-```
-
-**INDEXES:**
-```typescript
-@Index({ policyId: 1, version: 1 }, { unique: true })  // Unique policy-version combination
-```
-
-### 5. category_master (`category_master`) - MASTER DATA
-**File**: `api/src/modules/masters/schemas/category-master.schema.ts`
-**Collection Name**: `category_master`
-
-```typescript
-// CATEGORY MASTER SCHEMA:
-{
-  _id: ObjectId,
-  categoryId: string,             // @Prop({ required: true, unique: true, uppercase: true, immutable: true })
-  code: string,                   // @Prop({ required: true, unique: true, uppercase: true })
-  name: string,                   // @Prop({ required: true })
-  description?: string,
-  displayOrder: number,           // @Prop({ required: true })
-  isActive: boolean,              // @Prop({ default: true })
-
-  // Audit fields
-  createdBy?: string,
-  updatedBy?: string,
-  createdAt: Date,
-  updatedAt: Date,
-  __v: number
-}
-```
-
-**INDEXES:**
-```typescript
-@Index({ categoryId: 1 }, { unique: true })             // Unique category ID
-@Index({ code: 1 }, { unique: true })                   // Unique code
-@Index({ isActive: 1, displayOrder: 1 })                // Active categories by order
-```
-
-### 6. service_master (`service_master`) - MASTER DATA
-**File**: `api/src/modules/masters/schemas/service-master.schema.ts`
-**Collection Name**: `service_master`
-
-```typescript
-// SERVICE MASTER SCHEMA:
-{
-  _id: ObjectId,
-  code: string,                   // @Prop({ required: true, unique: true, uppercase: true })
-  name: string,                   // @Prop({ required: true })
-  description?: string,           // @Prop({ optional: true })
-  category: string,               // @Prop({ required: true, uppercase: true })
-  isActive: boolean,              // @Prop({ default: true })
-  coveragePercentage: number,     // @Prop({ default: 100 })
-  copayAmount: number,            // @Prop({ default: 0 })
-  requiresPreAuth: boolean,       // @Prop({ default: false })
-  requiresReferral: boolean,      // @Prop({ default: false })
-  priceRange?: {                  // @Prop({ optional: true })
-    min: number,
-    max: number
-  },
-  annualLimit?: number,           // @Prop({ optional: true })
-  waitingPeriodDays: number,      // @Prop({ default: 0 })
-  requiredDocuments: string[],    // @Prop({ default: [] })
-
-  // Audit fields
-  createdBy?: string,
-  updatedBy?: string,
-  createdAt: Date,
-  updatedAt: Date,
-  __v: number
-}
-```
-
-**INDEXES:**
-```typescript
-@Index({ code: 1 }, { unique: true })                   // Unique service code
-@Index({ category: 1, isActive: 1 })                    // Category filtering
-```
-
-### 7. counters (`counters`) - AUTO-INCREMENT
-**File**: `api/src/modules/counters/schemas/counter.schema.ts`
-**Collection Name**: `counters`
-
-```typescript
-// COUNTER SCHEMA:
-{
-  _id: string,                    // @Prop({ required: true }) - e.g., "user", "policy"
-  seq: number                     // @Prop({ required: true, default: 0 })
-}
-```
-
-**Usage**: Auto-increment sequences for generating unique IDs like USR-001, POL-001, etc.
-
-### 8. auditLogs (`auditLogs`) - AUDIT TRAIL
-**File**: `api/src/modules/audit/schemas/audit-log.schema.ts`
-**Collection Name**: `auditLogs`
-
-```typescript
-// AUDIT LOG SCHEMA:
-{
-  _id: ObjectId,
-  userId?: string,                // User who performed the action
-  userEmail?: string,             // User's email
-  userRole?: string,              // User's role at time of action
-  action: string,                 // @Prop({ required: true }) - CREATE, UPDATE, DELETE, etc.
-  resource: string,               // @Prop({ required: true }) - Resource type (User, Policy, etc.)
-  resourceId?: ObjectId,          // ID of the affected resource
-
-  // State tracking
-  before?: Record<string, any>,   // State before change
-  after?: Record<string, any>,    // State after change
-
-  // Request metadata
-  metadata?: {
-    ip?: string,
-    userAgent?: string,
-    method?: string,              // HTTP method
-    path?: string,                // Request path
-    statusCode?: number,          // Response status
-    duration?: number             // Request duration in ms
+  // Relationship-specific Overrides
+  memberConfigs: {
+    "REL002": {                 // Spouse-specific config
+      inheritFromPrimary: Boolean,
+      benefits: Object,         // Override benefits structure
+      wallet: Object,           // Override wallet structure
+      enabledServices: Object   // Override service enablement
+    }
   },
 
-  description?: string,           // Human-readable description
-  isSystemAction: boolean,        // @Prop({ default: false })
-  createdAt: Date,                // @Prop({ default: Date.now, expires: 63072000 }) - 2 year TTL
-  __v: number
+  // Service Enablement by Service Code
+  enabledServices: {
+    "CON001": { enabled: Boolean }, // General Physician
+    "CON002": { enabled: Boolean }, // Gynecologist
+    "CON003": { enabled: Boolean }, // Pharmacy
+    "CON004": { enabled: Boolean }  // Labs
+  },
+
+  // Audit Fields
+  createdBy: ObjectId,
+  updatedBy: ObjectId,
+  publishedBy: ObjectId,
+  createdAt: Date,
+  updatedAt: Date,
+  publishedAt: Date,
+  __v: Number
 }
 ```
 
-**INDEXES:**
-```typescript
-@Index({ createdAt: 1 }, { expireAfterSeconds: 63072000 })  // TTL index - 2 years
-@Index({ resource: 1, createdAt: -1 })                      // Resource-based queries
-@Index({ userId: 1, createdAt: -1 })                        // User-based queries
-```
+### 4. USER_POLICY_ASSIGNMENTS Collection
+**Purpose**: Links users to policies with effective periods
+**Document Count**: 4 (2 active, 2 orphaned)
 
-**Key Features:**
-- **Automatic TTL**: 2-year retention policy
-- **Comprehensive Tracking**: Before/after state, metadata, user context
-- **System vs User Actions**: Distinguishes between system and user actions
-
-### CURRENT MONGODB STATUS (8 COLLECTIONS)
-
-**Active Collections:**
-```typescript
-1. users (3 documents)
-2. policies (1 document)
-3. userPolicyAssignments (2 documents)
-4. plan_configs (1 document) // Consolidated approach
-5. category_master (12 documents)
-6. service_master (14 documents)
-7. auditLogs (7 documents)
-8. counters (2 documents)
-```
-
-## Docker Configuration (ACTUAL IMPLEMENTATION)
-
-### Docker Compose Files
-
-#### 1. Development Environment (`docker-compose.yml`)
-**Status**: ✅ ACTIVE CONFIGURATION
-```yaml
-version: '3.8'
-
-services:
-  # MongoDB Database
-  mongo:
-    image: mongo:7.0
-    container_name: opd-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE: opd_wallet
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - opd-network
-
-  # NestJS API
-  api:
-    image: node:20-alpine
-    container_name: opd-api
-    restart: unless-stopped
-    working_dir: /app
-    ports:
-      - "4000:4000"
-    environment:
-      NODE_ENV: development
-      MONGODB_URI: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
-      JWT_SECRET: dev_jwt_secret_change_in_production
-      COOKIE_NAME: opd_session
-      PORT: 4000
-    depends_on:
-      - mongo
-    volumes:
-      - ./api:/app
-    networks:
-      - opd-network
-    command: sh -c "npm install && npm run start:dev"
-
-  # Admin Portal (Next.js)
-  web-admin:
-    image: node:20-alpine
-    container_name: opd-web-admin
-    restart: unless-stopped
-    working_dir: /app
-    ports:
-      - "3001:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api:4000/api
-      NODE_ENV: development
-    depends_on:
-      - api
-    volumes:
-      - ./web-admin:/app
-    networks:
-      - opd-network
-    command: sh -c "npm install && npm run dev"
-
-  # Member Portal (Next.js)
-  web-member:
-    image: node:20-alpine
-    container_name: opd-web-member
-    restart: unless-stopped
-    working_dir: /app
-    ports:
-      - "3002:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api:4000/api
-      NODE_ENV: development
-    depends_on:
-      - api
-    volumes:
-      - ./web-member:/app
-    networks:
-      - opd-network
-    command: sh -c "npm install && npm run dev"
-
-volumes:
-  mongo-data:
-
-networks:
-  opd-network:
-    driver: bridge
-```
-
-#### 2. Production Environment (`docker-compose.prod.yml`)
-**Status**: ✅ ACTIVE ON AWS EC2 (51.20.125.246)
-```yaml
-version: '3.8'
-
-services:
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: opd-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - api
-      - web-admin
-      - web-member
-    restart: unless-stopped
-    networks:
-      - opd-network
-
-  # MongoDB Database
-  mongodb:
-    image: mongo:7.0
-    container_name: opd-mongodb
-    restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - opd-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # NestJS API
-  api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile.prod
-    container_name: opd-api
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 4000
-      MONGODB_URI: mongodb://mongodb:27017/opd_wallet
-      JWT_SECRET: ${JWT_SECRET}
-      COOKIE_NAME: ${COOKIE_NAME}
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
-      COOKIE_SECURE: ${COOKIE_SECURE}
-      COOKIE_HTTPONLY: ${COOKIE_HTTPONLY}
-      COOKIE_SAMESITE: ${COOKIE_SAMESITE}
-      COOKIE_MAX_AGE: ${COOKIE_MAX_AGE}
-    depends_on:
-      - mongodb
-    networks:
-      - opd-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Admin Portal (Next.js)
-  web-admin:
-    build:
-      context: ./web-admin
-      dockerfile: Dockerfile.prod
-      args:
-        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
-    container_name: opd-web-admin
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      API_URL: http://api:4000/api
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
-    depends_on:
-      - api
-    networks:
-      - opd-network
-
-  # Member Portal (Next.js)
-  web-member:
-    build:
-      context: ./web-member
-      dockerfile: Dockerfile.prod
-      args:
-        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
-    container_name: opd-web-member
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      API_URL: http://api:4000/api
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
-    depends_on:
-      - api
-    networks:
-      - opd-network
-
-networks:
-  opd-network:
-    driver: bridge
-
-volumes:
-  mongo-data:
-    driver: local
-```
-
-### Container Details
-
-#### Service Ports
-- **MongoDB**: 27017 (internal only in production)
-- **API**: 4000 (NestJS)
-- **Admin Portal**: 3001 (Next.js)
-- **Member Portal**: 3002 (Next.js)
-- **Nginx**: 80/443 (production only)
-
-#### Volume Mounts
-- **Development**: Source code mounted for hot reload
-- **Production**: Built Docker images, persistent MongoDB data
-- **MongoDB Data**: Persistent volume `mongo-data`
-
-#### Network Configuration
-- **Internal Network**: `opd-network` (bridge driver)
-- **Service Discovery**: Containers communicate via service names
-- **Port Mapping**: Development exposes all ports, production only 80/443
-
-#### Health Checks
-- **MongoDB**: Connection ping check (30s interval)
-- **API**: HTTP health endpoint check (30s interval)
-- **Restart Policy**: `unless-stopped` for all services
-
-### Environment Variables (ACTUAL VALUES)
-
-#### `.env.docker` (Current Configuration)
-```bash
-# Ports
-ADMIN_PORT=3001
-MEMBER_PORT=3002
-API_PORT=4000
-MONGO_PORT=27017
-
-# MongoDB Configuration
-MONGO_ROOT_USERNAME=admin
-MONGO_ROOT_PASSWORD=admin123
-MONGO_DATABASE=opd_wallet
-
-# API Configuration
-JWT_SECRET=dev_jwt_secret_change_in_production
-COOKIE_NAME=opd_session
-NODE_ENV=development
-
-# Frontend Configuration
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
-```
-
-#### Production Environment Variables
-```bash
-# From production deployment
-PUBLIC_API_URL=http://51.20.125.246/api
-JWT_SECRET=${JWT_SECRET}
-COOKIE_NAME=${COOKIE_NAME}
-COOKIE_DOMAIN=${COOKIE_DOMAIN}
-COOKIE_SECURE=${COOKIE_SECURE}
-COOKIE_HTTPONLY=${COOKIE_HTTPONLY}
-COOKIE_SAMESITE=${COOKIE_SAMESITE}
-COOKIE_MAX_AGE=${COOKIE_MAX_AGE}
-```
-
-### CI/CD Integration
-
-#### GitHub Actions Workflow (`.github/workflows/deploy.yml`)
-```yaml
-name: Deploy to EC2
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          command_timeout: 55m
-          script: |
-            cd ~/opdwallet
-            git pull origin main
-            docker-compose -f docker-compose.prod.yml down
-            docker system prune -af --volumes
-            docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
-```
-
-#### GitHub Secrets (Configured)
-- `EC2_HOST`: 51.20.125.246
-- `EC2_SSH_KEY`: SSH private key content
-- `GH_TOKEN`: GitHub personal access token
-
-### Security Configuration
-
-#### MongoDB Authentication
-```javascript
-// Current configuration
-{
-  username: "admin",
-  password: "admin123",
-  authSource: "admin",
-  database: "opd_wallet"
-}
-```
-
-#### Cookie Configuration (Development)
 ```javascript
 {
-  name: "opd_session",
-  httpOnly: true,
-  secure: false,        // HTTP deployment
-  sameSite: "lax",
-  maxAge: 604800000     // 7 days
+  _id: ObjectId("unique_identifier"),
+  assignmentId: String,       // Auto-generated: "ASG-[timestamp]-[random]"
+  userId: ObjectId,          // ⚠️ References users._id (data type inconsistency)
+  policyId: ObjectId,        // References policies._id
+  effectiveFrom: Date,       // Assignment start date
+  effectiveTo: Date,         // Assignment end date (null for active)
+  isActive: Boolean,         // Assignment status
+
+  // Audit Fields
+  createdBy: ObjectId,       // References users._id
+  updatedBy: ObjectId,       // References users._id (optional)
+  createdAt: Date,
+  updatedAt: Date,
+  __v: Number
 }
 ```
 
-#### API Security Headers
+**⚠️ Data Integrity Issues**:
+- 2 assignments reference non-existent policy `68cea00fe4701dcd411b138a`
+- userId field uses ObjectId but should reference users.userId string
+
+### 5. CATEGORY_MASTER Collection
+**Purpose**: Medical service categories for organizing services
+**Document Count**: 3
+
 ```javascript
-// Applied via Helmet middleware
 {
-  "X-Frame-Options": "DENY",
-  "X-Content-Type-Options": "nosniff",
-  "X-XSS-Protection": "1; mode=block"
+  _id: ObjectId("unique_identifier"),
+  categoryId: String,         // "CAT001", "CAT002", "CAT003"
+  code: String,              // Same as categoryId (duplicate field)
+  name: String,              // Display name
+  description: String,        // Category description
+  isActive: Boolean,         // Active status
+  displayOrder: Number,      // Sort order for UI
+  createdAt: Date,
+  updatedAt: Date,
+  __v: Number
 }
 ```
 
-### Deployment Status
-- **Local Development**: ✅ Fully functional
-- **AWS Production**: ✅ Deployed and running
-- **CI/CD Pipeline**: ✅ Automated deployment working
-- **Health Monitoring**: ✅ Container health checks active
-- **Data Persistence**: ✅ MongoDB volumes persistent across restarts
+**Master Data**:
+```javascript
+[
+  { categoryId: "CAT001", name: "Consult", displayOrder: 1 },
+  { categoryId: "CAT002", name: "Pharmacy", displayOrder: 2 },
+  { categoryId: "CAT003", name: "Labs", displayOrder: 3 }
+]
+```
+
+### 6. SERVICE_MASTER Collection
+**Purpose**: Available medical services with coverage details
+**Document Count**: 4
+
+```javascript
+{
+  _id: ObjectId("unique_identifier"),
+  code: String,              // Unique service code: "CON001", "CON002", etc.
+  name: String,              // Service display name
+  description: String,        // Service description
+  category: String,          // References category_master.categoryId
+  isActive: Boolean,         // Service availability
+
+  // Coverage Details
+  coveragePercentage: Number,    // Coverage percentage (0-100)
+  copayAmount: Number,           // Fixed copay amount
+  requiresPreAuth: Boolean,      // Pre-authorization required
+  requiresReferral: Boolean,     // Referral required
+  waitingPeriodDays: Number,     // Waiting period in days
+  requiredDocuments: [String],   // Required document types
+
+  // Timestamps
+  createdAt: Date,
+  updatedAt: Date,
+  __v: Number
+}
+```
+
+**Service Data**:
+```javascript
+[
+  { code: "CON001", name: "General Physician", category: "CAT001" },
+  { code: "CON002", name: "Gynecologist", category: "CAT001" },
+  { code: "CON003", name: "Pharmacy", category: "CAT002" },
+  { code: "CON004", name: "Labs", category: "CAT003" }
+]
+```
+
+### 7. RELATIONSHIP_MASTERS Collection
+**Purpose**: Family relationship definitions for policy coverage
+**Document Count**: 5
+
+```javascript
+{
+  _id: ObjectId("unique_identifier"),
+  relationshipCode: String,   // "REL001", "REL002", etc.
+  relationshipName: String,   // "Self", "Spouse", "Child", etc.
+  displayName: String,        // UI display name
+  description: String,        // Relationship description
+  isActive: Boolean,         // Relationship status
+  sortOrder: Number,         // Display sort order
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+**Relationship Data**:
+```javascript
+[
+  { relationshipCode: "REL001", relationshipName: "Self", sortOrder: 1 },
+  { relationshipCode: "REL002", relationshipName: "Spouse", sortOrder: 2 },
+  { relationshipCode: "REL003", relationshipName: "Child", sortOrder: 3 },
+  { relationshipCode: "REL004", relationshipName: "Father", sortOrder: 4 },
+  { relationshipCode: "REL005", relationshipName: "Mother", sortOrder: 5 }
+]
+```
+
+### 8. COUNTERS Collection
+**Purpose**: Auto-increment sequences for generating unique IDs
+**Document Count**: 2
+
+```javascript
+{
+  _id: String,               // Counter name: "user", "policy"
+  seq: Number,               // Current sequence number
+  __v: Number               // Mongoose version key
+}
+```
+
+**Current Sequences**:
+```javascript
+[
+  { _id: "user", seq: 3 },    // Next user: USR-2025-0004
+  { _id: "policy", seq: 3 }   // Next policy: POL-2025-0004
+]
+```
+
+### 9. CUG_MASTER Collection
+**Purpose**: Corporate User Groups for enterprise customers
+**Document Count**: 8
+
+```javascript
+{
+  _id: ObjectId("unique_identifier"),
+  cugId: String,             // "CUG001", "CUG002", etc.
+  code: String,              // Company code: "GOOGLE", "MICROSOFT", etc.
+  name: String,              // Full company name
+  description: String,        // Company description
+  isActive: Boolean,         // CUG status
+  displayOrder: Number,      // Sort order for UI
+  createdAt: Date,
+  updatedAt: Date,
+  __v: Number
+}
+```
+
+**Corporate Data**: Google, Microsoft, Amazon, Apple, Meta, Netflix, Tesla, IBM
+
+### 10. USER_WALLETS Collection (Empty - Not Implemented)
+**Purpose**: User wallet balances and policy-specific limits
+**Document Count**: 0
+
+**Expected Schema**:
+```javascript
+{
+  _id: ObjectId("unique_identifier"),
+  userId: String,                    // References users.userId
+  policyAssignmentId: ObjectId,      // References userPolicyAssignments._id
+  isActive: Boolean,                 // Wallet active status
+  effectiveFrom: Date,               // Wallet validity start
+  effectiveTo: Date,                 // Wallet validity end
+  totalBalance: Number,              // Current wallet balance
+  allocatedAmount: Number,           // Originally allocated amount
+  utilizedAmount: Number,            // Amount utilized to date
+  categoryBalances: Object,          // Category-wise balances
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### 11. WALLET_TRANSACTIONS Collection (Empty - Not Implemented)
+**Purpose**: Complete history of wallet transactions
+**Document Count**: 0
+
+**Expected Schema**:
+```javascript
+{
+  _id: ObjectId("unique_identifier"),
+  userId: String,                    // References users.userId
+  userWalletId: ObjectId,           // References user_wallets._id
+  transactionId: String,            // Unique transaction identifier
+  type: String,                     // "CREDIT" | "DEBIT" | "REFUND" | "TOPUP"
+  amount: Number,                   // Transaction amount
+  balanceBefore: Number,            // Wallet balance before transaction
+  balanceAfter: Number,             // Wallet balance after transaction
+  bookingId: String,                // Related booking/claim ID
+  serviceCode: String,              // Service availed
+  description: String,              // Transaction description
+  createdAt: Date
+}
+```
+
+### 12. AUDIT_LOGS Collection (Empty - Not Functioning)
+**Purpose**: System audit trail for compliance
+**Document Count**: 0
+
+**Expected Schema**:
+```javascript
+{
+  _id: ObjectId("unique_identifier"),
+  userId: ObjectId,                 // User who performed action
+  action: String,                   // Action type: "CREATE", "UPDATE", "DELETE"
+  entity: String,                   // Entity type: "USER", "POLICY", etc.
+  entityId: String,                 // ID of the affected entity
+  oldValues: Object,                // Previous values
+  newValues: Object,                // New values
+  ipAddress: String,                // Client IP address
+  userAgent: String,                // Client user agent
+  createdAt: Date                   // Action timestamp
+}
+```
+
+## Collection Relationships & Foreign Keys
+
+### Active Relationships
+```
+users._id ← userPolicyAssignments.userId (⚠️ Type mismatch)
+users._id ← userPolicyAssignments.createdBy
+users._id ← userPolicyAssignments.updatedBy
+
+policies._id ← userPolicyAssignments.policyId
+policies._id ← plan_configs.policyId
+
+users._id ← plan_configs.createdBy
+users._id ← plan_configs.updatedBy
+users._id ← plan_configs.publishedBy
+
+category_master.categoryId ← service_master.category
+relationship_masters.relationshipCode ← users.relationship
+users.memberId ← users.primaryMemberId (family relationships)
+```
+
+### Expected Relationships (Empty Collections)
+```
+userPolicyAssignments._id ← user_wallets.policyAssignmentId
+user_wallets._id ← wallet_transactions.userWalletId
+users.userId ← user_wallets.userId
+users.userId ← wallet_transactions.userId
+```
+
+## Data Integrity Issues & Recommendations
+
+### Critical Issues ⚠️
+
+1. **Orphaned Policy References** (HIGH PRIORITY)
+   - 2 `userPolicyAssignments` reference deleted policy `68cea00fe4701dcd411b138a`
+   - 2 `plan_configs` reference deleted policy `68cea00fe4701dcd411b138a`
+
+2. **Data Type Inconsistency** (HIGH PRIORITY)
+   - `userPolicyAssignments.userId` uses ObjectId format
+   - Should reference `users.userId` (string) consistently
+
+3. **Missing Implementations** (MEDIUM PRIORITY)
+   - Audit logging not functioning
+   - Wallet management not implemented
+   - Transaction tracking missing
+
+### Security Issues 🚨
+
+1. **Database Credentials**
+   ```
+   Username: admin
+   Password: admin123 ⚠️ WEAK/DEFAULT PASSWORD
+   ```
+
+2. **Production Configuration**
+   - MongoDB runs without authentication in production
+   - No SSL/TLS encryption
+   - Hardcoded credentials in source code
+
+### Immediate Actions Required
+
+1. **Data Cleanup**:
+   - Remove orphaned userPolicyAssignments and plan_configs
+   - Fix userId reference type consistency
+   - Clean up unused master data
+
+2. **Security Fixes**:
+   - Generate strong database credentials
+   - Enable MongoDB authentication in production
+   - Remove hardcoded credentials from code
+   - Implement SSL/TLS encryption
+
+3. **Feature Implementation**:
+   - Enable audit logging functionality
+   - Implement user wallet management
+   - Add transaction tracking
+
+## API Integration Points
+
+### Authentication
+- `users` collection for login validation
+- Email/password authentication
+- Role-based access control
+
+### Policy Management
+- `policies` → `plan_configs` → `userPolicyAssignments` flow
+- Version control for policy configurations
+- Family member coverage through relationship mappings
+
+### Master Data
+- Service categories and services for UI dropdowns
+- Relationship definitions for family coverage
+- Corporate groups for enterprise features
+
+### Wallet System (Planned)
+- Policy assignment → wallet creation
+- Transaction tracking for claims
+- Balance management and reporting
+
+---
+
+**Document Version**: 4.0
+**Last Database Analysis**: September 24, 2025
+**Next Review**: Monthly or when schema changes occur
+**Critical Security Review**: IMMEDIATE - Production credentials exposed

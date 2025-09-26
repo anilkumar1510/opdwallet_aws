@@ -108,9 +108,12 @@ export default function ServicesPage() {
     if (!currentService) return
 
     try {
+      // Remove code field from update payload since codes are immutable
+      const { code, ...updateData } = formData
+
       const response = await apiFetch(`/api/services/types/${currentService._id}`, {
         method: 'PUT',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updateData),
       })
 
       if (response.ok) {

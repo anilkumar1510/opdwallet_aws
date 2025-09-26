@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import PolicyTable from './_components/PolicyTable'
-import PolicyFilters from './_components/PolicyFilters'
 import { PolicyListResponse, PolicyQueryParams } from './_lib/types'
 import { fetchPolicies } from './_lib/api'
 import { parseQueryParams, buildQueryString, getDefaultParams } from './_lib/query'
@@ -136,14 +135,8 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header with Create Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Policies</h1>
-          <p className="text-gray-600 mt-1">
-            Manage insurance policies and plan versions
-          </p>
-        </div>
+      {/* Create Button */}
+      <div className="flex justify-end">
         {currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN') && (
           <button
             onClick={() => router.push('/admin/policies/new')}
@@ -167,11 +160,6 @@ export default function PoliciesPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <PolicyFilters
-        params={queryParams}
-        onParamsChange={handleParamsChange}
-      />
 
       {/* Table */}
       <PolicyTable
@@ -181,6 +169,7 @@ export default function PoliciesPage() {
         params={queryParams}
         total={policies.total}
         currentUserRole={currentUser?.role}
+        onRefresh={loadPolicies}
       />
 
       {/* Pagination */}

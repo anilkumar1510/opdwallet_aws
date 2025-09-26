@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { relationshipsApi, type Relationship } from '@/lib/api/relationships'
 
 export default function NewUserPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [relationships, setRelationships] = useState<Relationship[]>([])
+  const [relationshipsLoading, setRelationshipsLoading] = useState(true)
   const [formData, setFormData] = useState({
     uhid: '',
     memberId: '',
@@ -16,7 +19,7 @@ export default function NewUserPage() {
     confirmPassword: '',
     role: 'MEMBER',
     status: 'ACTIVE',
-    relationship: 'SELF',
+    relationship: 'REL002', // Default to Spouse (since Self is not a relationship)
     firstName: '',
     lastName: '',
     dateOfBirth: '',
@@ -35,6 +38,23 @@ export default function NewUserPage() {
       relationship: '',
     },
   })
+
+  useEffect(() => {
+    fetchRelationships()
+  }, [])
+
+  const fetchRelationships = async () => {
+    try {
+      setRelationshipsLoading(true)
+      const data = await relationshipsApi.getAll()
+      setRelationships(data.filter(rel => rel.isActive))
+    } catch (error) {
+      console.error('Failed to fetch relationships:', error)
+      setError('Failed to load relationships')
+    } finally {
+      setRelationshipsLoading(false)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -338,13 +358,23 @@ export default function NewUserPage() {
                 value={formData.relationship}
                 onChange={handleInputChange}
                 className="input"
+                disabled={relationshipsLoading}
               >
-                <option value="SELF">Self</option>
-                <option value="SPOUSE">Spouse</option>
-                <option value="CHILD">Child</option>
-                <option value="PARENT">Parent</option>
-                <option value="OTHER">Other</option>
+                {relationshipsLoading ? (
+                  <option value="">Loading relationships...</option>
+                ) : relationships.length > 0 ? (
+                  relationships.map((rel) => (
+                    <option key={rel._id} value={rel.relationshipCode}>
+                      {rel.displayName}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No relationships available</option>
+                )}
               </select>
+              {relationshipsLoading && (
+                <p className="text-xs text-gray-500 mt-1">Loading relationships from master data...</p>
+              )}
             </div>
           </div>
         </div>

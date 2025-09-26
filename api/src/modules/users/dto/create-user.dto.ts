@@ -125,4 +125,9 @@ export class CreateUserDto {
   @MinLength(8)
   @IsOptional()
   password?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  corporateName?: string;
 }
