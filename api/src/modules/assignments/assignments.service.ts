@@ -14,7 +14,7 @@ export class AssignmentsService {
   async createAssignment(createAssignmentDto: CreateAssignmentDto, createdBy: string) {
     console.log('🟡 [ASSIGNMENTS SERVICE] Creating assignment:', createAssignmentDto);
 
-    const { userId, policyId, effectiveFrom, effectiveTo, planVersionOverride, isActive } = createAssignmentDto;
+    const { userId, policyId, effectiveFrom, effectiveTo, planVersionOverride, isActive, relationshipId, primaryMemberId, planConfigId } = createAssignmentDto;
 
     // Validate ObjectIds
     if (!Types.ObjectId.isValid(userId)) {
@@ -38,6 +38,16 @@ export class AssignmentsService {
     // Generate unique assignment ID
     const assignmentId = `ASG-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
+    // Validate relationshipId and primaryMemberId
+    if (relationshipId && relationshipId !== 'REL001' && !primaryMemberId) {
+      throw new BadRequestException('primaryMemberId is required when relationshipId is not REL001 (SELF)');
+    }
+
+    // Validate planConfigId if provided
+    if (planConfigId && !Types.ObjectId.isValid(planConfigId)) {
+      throw new BadRequestException('Invalid planConfigId format');
+    }
+
     // Create assignment
     const assignment = new this.assignmentModel({
       assignmentId,
@@ -47,6 +57,9 @@ export class AssignmentsService {
       effectiveTo,
       planVersionOverride,
       isActive: isActive !== undefined ? isActive : true,
+      relationshipId,
+      primaryMemberId,
+      planConfigId: planConfigId ? new Types.ObjectId(planConfigId) : undefined,
       createdBy,
       updatedBy: createdBy,
     });
@@ -94,12 +107,9 @@ export class AssignmentsService {
       throw new NotFoundException('Assignment not found');
     }
 
-    assignment.isActive = false;
-    assignment.updatedBy = updatedBy;
-    assignment.effectiveTo = new Date();
-
-    await assignment.save();
-    console.log('✅ [ASSIGNMENTS SERVICE] Assignment deactivated:', assignmentId);
+    // Delete the assignment permanently
+    await this.assignmentModel.deleteOne({ assignmentId });
+    console.log('✅ [ASSIGNMENTS SERVICE] Assignment deleted:', assignmentId);
 
     return { message: 'Assignment removed successfully' };
   }
@@ -126,17 +136,17 @@ export class AssignmentsService {
       throw new NotFoundException('Assignment not found or already inactive');
     }
 
-    // Deactivate assignment
-    assignment.isActive = false;
-    assignment.updatedBy = updatedBy;
-    assignment.effectiveTo = new Date();
-
-    await assignment.save();
-    console.log('✅ [ASSIGNMENTS SERVICE] Policy unassigned from user:', assignment.assignmentId);
+    // Delete the assignment permanently
+    const assignmentId = assignment.assignmentId;
+    await this.assignmentModel.deleteOne({
+      userId: new Types.ObjectId(userId),
+      policyId: new Types.ObjectId(policyId),
+    });
+    console.log('✅ [ASSIGNMENTS SERVICE] Policy unassigned from user (deleted):', assignmentId);
 
     return {
       message: 'Policy unassigned successfully',
-      assignmentId: assignment.assignmentId
+      assignmentId
     };
   }
 

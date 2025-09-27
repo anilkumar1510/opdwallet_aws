@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -112,5 +113,14 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid userId format' })
   getUserAssignments(@Param('id') userId: string) {
     return this.assignmentsService.getUserAssignments(userId);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete user' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  delete(@Param('id') id: string, @Request() req: AuthRequest) {
+    return this.usersService.delete(id, req.user.userId);
   }
 }

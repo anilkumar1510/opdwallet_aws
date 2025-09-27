@@ -27,4 +27,16 @@ export class CreateAssignmentDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  relationshipId?: string;
+
+  @IsOptional()
+  @IsString()
+  primaryMemberId?: string;
+
+  @IsOptional()
+  @IsString()
+  planConfigId?: string;
 }

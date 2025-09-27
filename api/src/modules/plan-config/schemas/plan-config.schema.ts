@@ -33,12 +33,57 @@ export class PlanConfig {
   // Consolidated Benefits Configuration
   @Prop({ type: Object, default: {} })
   benefits: {
-    consultation?: { enabled: boolean; annualLimit?: number; visitLimit?: number; notes?: string };
-    pharmacy?: { enabled: boolean; annualLimit?: number; rxRequired?: boolean; notes?: string };
-    diagnostics?: { enabled: boolean; annualLimit?: number; rxRequired?: boolean; notes?: string };
-    dental?: { enabled: boolean; annualLimit?: number; notes?: string };
-    vision?: { enabled: boolean; annualLimit?: number; notes?: string };
-    wellness?: { enabled: boolean; annualLimit?: number; notes?: string };
+    consultation?: {
+      enabled: boolean;
+      annualLimit?: number;
+      visitLimit?: number;
+      notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
+    };
+    pharmacy?: {
+      enabled: boolean;
+      annualLimit?: number;
+      rxRequired?: boolean;
+      notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
+    };
+    diagnostics?: {
+      enabled: boolean;
+      annualLimit?: number;
+      rxRequired?: boolean;
+      notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
+    };
+    dental?: {
+      enabled: boolean;
+      annualLimit?: number;
+      notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
+    };
+    vision?: {
+      enabled: boolean;
+      annualLimit?: number;
+      notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
+    };
+    wellness?: {
+      enabled: boolean;
+      annualLimit?: number;
+      notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
+    };
   };
 
   // Consolidated Wallet Configuration
@@ -52,10 +97,6 @@ export class PlanConfig {
     topUpAllowed?: boolean;
   };
 
-  // Simplified Coverage (object with service codes as keys and their configuration)
-  @Prop({ type: Object, default: {} })
-  enabledServices: { [serviceCode: string]: { enabled: boolean } };
-
   // Covered Relationships Configuration
   @Prop({ type: [String], default: ['SELF'] })
   coveredRelationships: string[];
@@ -65,12 +106,57 @@ export class PlanConfig {
   memberConfigs: {
     [relationshipCode: string]: {
       benefits?: {
-        consultation?: { enabled: boolean; annualLimit?: number; visitLimit?: number; notes?: string };
-        pharmacy?: { enabled: boolean; annualLimit?: number; rxRequired?: boolean; notes?: string };
-        diagnostics?: { enabled: boolean; annualLimit?: number; rxRequired?: boolean; notes?: string };
-        dental?: { enabled: boolean; annualLimit?: number; notes?: string };
-        vision?: { enabled: boolean; annualLimit?: number; notes?: string };
-        wellness?: { enabled: boolean; annualLimit?: number; notes?: string };
+        consultation?: {
+          enabled: boolean;
+          annualLimit?: number;
+          visitLimit?: number;
+          notes?: string;
+          onlineEnabled?: boolean;
+          offlineEnabled?: boolean;
+          vasEnabled?: boolean;
+        };
+        pharmacy?: {
+          enabled: boolean;
+          annualLimit?: number;
+          rxRequired?: boolean;
+          notes?: string;
+          onlineEnabled?: boolean;
+          offlineEnabled?: boolean;
+          vasEnabled?: boolean;
+        };
+        diagnostics?: {
+          enabled: boolean;
+          annualLimit?: number;
+          rxRequired?: boolean;
+          notes?: string;
+          onlineEnabled?: boolean;
+          offlineEnabled?: boolean;
+          vasEnabled?: boolean;
+        };
+        dental?: {
+          enabled: boolean;
+          annualLimit?: number;
+          notes?: string;
+          onlineEnabled?: boolean;
+          offlineEnabled?: boolean;
+          vasEnabled?: boolean;
+        };
+        vision?: {
+          enabled: boolean;
+          annualLimit?: number;
+          notes?: string;
+          onlineEnabled?: boolean;
+          offlineEnabled?: boolean;
+          vasEnabled?: boolean;
+        };
+        wellness?: {
+          enabled: boolean;
+          annualLimit?: number;
+          notes?: string;
+          onlineEnabled?: boolean;
+          offlineEnabled?: boolean;
+          vasEnabled?: boolean;
+        };
       };
       wallet?: {
         totalAnnualAmount?: number;
@@ -82,7 +168,6 @@ export class PlanConfig {
         isFloater?: boolean; // Whether this wallet amount is shared across relationships
         floaterSharedWith?: string[]; // Array of relationship codes sharing this wallet
       };
-      enabledServices?: { [serviceCode: string]: { enabled: boolean } };
       inheritFromPrimary?: boolean; // Whether to inherit benefits from SELF relationship
     };
   };

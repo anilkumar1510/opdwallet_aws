@@ -11,6 +11,9 @@ export interface PlanConfig {
       enabled: boolean;
       annualLimit?: number;
       notes?: string;
+      onlineEnabled?: boolean;
+      offlineEnabled?: boolean;
+      vasEnabled?: boolean;
     };
   };
   wallet: {
@@ -21,7 +24,6 @@ export interface PlanConfig {
     carryForward?: { enabled: boolean; percent?: number; months?: number };
     topUpAllowed?: boolean;
   };
-  enabledServices: { [serviceCode: string]: { enabled: boolean } };
   createdBy?: string;
   updatedBy?: string;
   publishedBy?: string;

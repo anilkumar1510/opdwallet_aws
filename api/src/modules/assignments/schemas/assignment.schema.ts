@@ -51,6 +51,22 @@ export class Assignment {
   })
   isActive: boolean;
 
+  @Prop({
+    type: String,
+  })
+  relationshipId?: string;
+
+  @Prop({
+    type: String,
+  })
+  primaryMemberId?: string;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'PlanConfig',
+  })
+  planConfigId?: Types.ObjectId;
+
   @Prop()
   createdBy?: string;
 

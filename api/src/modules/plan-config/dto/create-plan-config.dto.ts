@@ -14,10 +14,6 @@ export class CreatePlanConfigDto {
   wallet?: any;
 
   @IsOptional()
-  @IsObject()
-  enabledServices?: { [serviceCode: string]: { enabled: boolean } };
-
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   coveredRelationships?: string[];

@@ -31,7 +31,6 @@ export class PlanConfigService {
       isCurrent: false,
       benefits: dto.benefits || {},
       wallet: dto.wallet || {},
-      enabledServices: dto.enabledServices || {},
       coveredRelationships: dto.coveredRelationships || ['SELF'],
       memberConfigs: dto.memberConfigs || {},
       createdBy: userId,
@@ -198,8 +197,7 @@ export class PlanConfigService {
         memberConfigs.SPOUSE = {
           benefits: planConfig.benefits || {},
           wallet: planConfig.wallet || {},
-          enabledServices: planConfig.enabledServices || {},
-          inheritFromPrimary: false // Start with custom config to preserve existing setup
+          inheritFromPrimary: false
         };
         hasChanges = true;
         console.log(`✅ Copied primary member configuration to SPOUSE for policy ${planConfig.policyId}, version ${planConfig.version}`);
@@ -210,8 +208,7 @@ export class PlanConfigService {
         memberConfigs.SELF = {
           benefits: planConfig.benefits || {},
           wallet: planConfig.wallet || {},
-          enabledServices: planConfig.enabledServices || {},
-          inheritFromPrimary: false // SELF is the primary, so doesn't inherit
+          inheritFromPrimary: false
         };
         hasChanges = true;
         console.log(`✅ Created SELF member configuration for policy ${planConfig.policyId}, version ${planConfig.version}`);

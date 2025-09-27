@@ -293,6 +293,19 @@ export class UsersService {
     };
   }
 
+  async delete(id: string, deletedBy: string) {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.userModel.findByIdAndDelete(id);
+
+    return {
+      message: 'User deleted successfully',
+    };
+  }
+
   private generateRandomPassword(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
     let password = '';

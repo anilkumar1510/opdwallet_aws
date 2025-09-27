@@ -13,12 +13,14 @@ import { QueryPolicyDto } from './dto/query-policy.dto';
 import { CounterService } from '../counters/counter.service';
 import { PolicyStatus } from '@/common/constants/status.enum';
 import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
+import { PlanConfig, PlanConfigDocument } from '../plan-config/schemas/plan-config.schema';
 
 @Injectable()
 export class PoliciesService {
   constructor(
     @InjectModel(Policy.name) private policyModel: Model<PolicyDocument>,
     @InjectModel(Assignment.name) private assignmentModel: Model<AssignmentDocument>,
+    @InjectModel(PlanConfig.name) private planConfigModel: Model<PlanConfigDocument>,
     private counterService: CounterService,
   ) {}
 
@@ -171,6 +173,10 @@ export class PoliciesService {
       throw new ConflictException(`Cannot delete policy. It is currently assigned to ${activeAssignments} user(s). Please unassign all users from this policy before deleting.`);
     }
 
+    // Delete all plan configurations for this policy
+    const planConfigsDeleted = await this.planConfigModel.deleteMany({ policyId: id });
+    console.log(`🟡 [POLICIES SERVICE] Deleted ${planConfigsDeleted.deletedCount} plan configurations for policy`);
+
     // Delete the policy
     await this.policyModel.findByIdAndDelete(id);
     console.log('✅ [POLICIES SERVICE] Policy deleted successfully:', policy.policyNumber);
@@ -178,7 +184,8 @@ export class PoliciesService {
     return {
       message: 'Policy deleted successfully',
       policyNumber: policy.policyNumber,
-      policyName: policy.name
+      policyName: policy.name,
+      planConfigsDeleted: planConfigsDeleted.deletedCount
     };
   }
 }

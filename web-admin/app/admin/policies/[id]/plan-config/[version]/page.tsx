@@ -13,7 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Save, ArrowLeft } from 'lucide-react';
 import { planConfigApi, PlanConfig } from '@/lib/api/plan-config';
 import { categoriesApi, Category } from '@/lib/api/categories';
-import { servicesApi, Service } from '@/lib/api/services';
 import { toast } from 'sonner';
 
 
@@ -28,8 +27,6 @@ export default function PlanConfigEdit() {
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [services, setServices] = useState<{ [categoryId: string]: Service[] }>({});
-  const [servicesLoading, setServicesLoading] = useState(false);
   const [relationships, setRelationships] = useState<any[]>([]);
   const [relationshipsLoading, setRelationshipsLoading] = useState(true);
   const [selectedRelationship, setSelectedRelationship] = useState<string>('PRIMARY'); // Default to Primary Member
@@ -43,7 +40,6 @@ export default function PlanConfigEdit() {
       carryForward: { enabled: false, percent: 0, months: 0 },
       topUpAllowed: false,
     },
-    enabledServices: {},
     coveredRelationships: [], // Array of enabled relationship codes (only dependents, PRIMARY is implicit)
     memberConfigs: {}, // Individual configurations per relationship
   });
@@ -58,12 +54,6 @@ export default function PlanConfigEdit() {
     }
   }, [policyId, version]);
 
-  // Load services when categories change
-  useEffect(() => {
-    if (categories.length > 0) {
-      loadServicesForEnabledCategories();
-    }
-  }, [categories, config.benefits]);
 
 
   const loadCategories = async () => {
@@ -120,52 +110,6 @@ export default function PlanConfigEdit() {
     }
   };
 
-  const loadServicesForEnabledCategories = async () => {
-    console.log('🟢 [SERVICES DEBUG] Loading services for enabled categories');
-
-    if (!config.benefits) {
-      console.log('🟢 [SERVICES DEBUG] No benefits configured yet');
-      return;
-    }
-
-    const enabledCategories = Object.keys(config.benefits).filter(
-      categoryId => config.benefits?.[categoryId]?.enabled
-    );
-
-    console.log('🟢 [SERVICES DEBUG] Enabled categories:', enabledCategories);
-
-    if (enabledCategories.length === 0) {
-      console.log('🟢 [SERVICES DEBUG] No categories enabled, clearing services');
-      setServices({});
-      return;
-    }
-
-    try {
-      setServicesLoading(true);
-      const servicesData: { [categoryId: string]: Service[] } = {};
-
-      for (const categoryId of enabledCategories) {
-        console.log('🟢 [SERVICES DEBUG] Loading services for category:', categoryId);
-        try {
-          const categoryServices = await servicesApi.getByCategory(categoryId);
-          servicesData[categoryId] = categoryServices || [];
-          console.log('🟢 [SERVICES DEBUG] Loaded services for', categoryId, ':', categoryServices);
-        } catch (error) {
-          console.error('🟢 [SERVICES DEBUG] Error loading services for category', categoryId, ':', error);
-          servicesData[categoryId] = [];
-        }
-      }
-
-      console.log('🟢 [SERVICES DEBUG] All services loaded:', servicesData);
-      setServices(servicesData);
-
-    } catch (error) {
-      console.error('🟢 [SERVICES DEBUG] Error loading services:', error);
-      toast.error('Failed to load services');
-    } finally {
-      setServicesLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     console.log('🔵 [EDIT SAVE DEBUG] Button clicked - handleSave started');
@@ -890,6 +834,50 @@ export default function PlanConfigEdit() {
                                 placeholder="Enter annual limit"
                                 className="bg-white"
                               />
+                            </div>
+
+                            {category.isAvailableOnline && (
+                              <div className="flex items-center space-x-6">
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`${category.categoryId}-online`}
+                                    checked={benefit.onlineEnabled || false}
+                                    onCheckedChange={(checked) => updateBenefit(category.categoryId, 'onlineEnabled', checked)}
+                                    disabled={isDisabled}
+                                  />
+                                  <Label htmlFor={`${category.categoryId}-online`}>Online</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    id={`${category.categoryId}-offline`}
+                                    checked={benefit.offlineEnabled || false}
+                                    onCheckedChange={(checked) => updateBenefit(category.categoryId, 'offlineEnabled', checked)}
+                                    disabled={isDisabled}
+                                  />
+                                  <Label htmlFor={`${category.categoryId}-offline`}>Offline</Label>
+                                </div>
+                              </div>
+                            )}
+                            {!category.isAvailableOnline && (
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id={`${category.categoryId}-offline`}
+                                  checked={benefit.offlineEnabled || false}
+                                  onCheckedChange={(checked) => updateBenefit(category.categoryId, 'offlineEnabled', checked)}
+                                  disabled={isDisabled}
+                                />
+                                <Label htmlFor={`${category.categoryId}-offline`}>Offline</Label>
+                              </div>
+                            )}
+
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id={`${category.categoryId}-vas`}
+                                checked={benefit.vasEnabled || false}
+                                onCheckedChange={(checked) => updateBenefit(category.categoryId, 'vasEnabled', checked)}
+                                disabled={isDisabled}
+                              />
+                              <Label htmlFor={`${category.categoryId}-vas`}>VAS Enabled</Label>
                             </div>
 
                             <div>

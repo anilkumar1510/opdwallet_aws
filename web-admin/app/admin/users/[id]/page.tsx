@@ -20,6 +20,12 @@ export default function UserDetailPage() {
   const [showPasswordField, setShowPasswordField] = useState(false)
   const [cugs, setCugs] = useState<CugMaster[]>([])
   const [selectedCugId, setSelectedCugId] = useState('')
+  const [relationships, setRelationships] = useState<any[]>([])
+  const [selectedRelationshipId, setSelectedRelationshipId] = useState('')
+  const [selectedPrimaryMemberId, setSelectedPrimaryMemberId] = useState('')
+  const [members, setMembers] = useState<any[]>([])
+  const [planConfigs, setPlanConfigs] = useState<any[]>([])
+  const [selectedPlanConfigId, setSelectedPlanConfigId] = useState('')
 
   useEffect(() => {
     if (params.id) {
@@ -27,6 +33,8 @@ export default function UserDetailPage() {
       fetchAssignments()
       fetchPolicies()
       fetchCugs()
+      fetchRelationships()
+      fetchAllMembers()
     }
   }, [params.id])
 
@@ -96,23 +104,90 @@ export default function UserDetailPage() {
     }
   }
 
+  const fetchRelationships = async () => {
+    try {
+      const response = await apiFetch('/api/relationships')
+      if (response.ok) {
+        const data = await response.json()
+        setRelationships(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch relationships')
+    }
+  }
+
+  const fetchAllMembers = async () => {
+    try {
+      const response = await apiFetch('/api/users?limit=100')
+      if (response.ok) {
+        const data = await response.json()
+        setMembers(data.data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch members')
+    }
+  }
+
+  const fetchPlanConfigsForPolicy = async (policyId: string) => {
+    try {
+      const response = await apiFetch(`/api/policies/${policyId}/plan-configs`)
+      if (response.ok) {
+        const data = await response.json()
+        setPlanConfigs(data)
+        // Auto-select active config
+        const activeConfig = data.find((c: any) => c.status === 'PUBLISHED' && c.isCurrent)
+        if (activeConfig) {
+          setSelectedPlanConfigId(activeConfig._id)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch plan configs')
+    }
+  }
+
   const handleAssignPolicy = async () => {
-    if (!selectedPolicyId) return
+    if (!selectedPolicyId || !selectedRelationshipId) {
+      alert('Please select policy and relationship')
+      return
+    }
+
+    // Validate primaryMemberId requirement
+    if (selectedRelationshipId !== 'REL001' && !selectedPrimaryMemberId) {
+      alert('Primary Member ID is required for non-SELF relationships')
+      return
+    }
 
     try {
+      const payload: any = {
+        policyId: selectedPolicyId,
+        userId: params.id,
+        relationshipId: selectedRelationshipId,
+      }
+
+      if (selectedRelationshipId !== 'REL001') {
+        payload.primaryMemberId = selectedPrimaryMemberId
+      }
+
+      if (selectedPlanConfigId) {
+        payload.planConfigId = selectedPlanConfigId
+      }
+
       const response = await apiFetch('/api/assignments', {
         method: 'POST',
-        body: JSON.stringify({
-          policyId: selectedPolicyId,
-          userId: params.id,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
         alert('Policy assigned successfully')
         setShowAssignModal(false)
         setSelectedPolicyId('')
+        setSelectedRelationshipId('')
+        setSelectedPrimaryMemberId('')
+        setSelectedPlanConfigId('')
         fetchAssignments()
+      } else {
+        const error = await response.json()
+        alert(`Failed to assign policy: ${error.message}`)
       }
     } catch (error) {
       alert('Failed to assign policy')
@@ -209,6 +284,28 @@ export default function UserDetailPage() {
     setIsEditing(false)
     setShowPasswordField(false)
     setNewPassword('')
+  }
+
+  const handleDeleteUser = async () => {
+    if (!confirm(`Are you sure you want to delete "${user.name?.firstName} ${user.name?.lastName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await apiFetch(`/api/users/${params.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        alert('User deleted successfully')
+        router.push('/admin/users')
+      } else {
+        const error = await response.json()
+        alert(`Failed to delete user: ${error.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      alert('Failed to delete user')
+    }
   }
 
   if (loading) {
@@ -322,6 +419,12 @@ export default function UserDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                   Edit User
+                </button>
+                <button onClick={handleDeleteUser} className="btn-secondary text-red-600 hover:bg-red-50">
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
                 </button>
                 <span className={user.status === 'ACTIVE' ? 'badge-success' : 'badge-default'}>
                   {user.status}
@@ -777,26 +880,92 @@ export default function UserDetailPage() {
             <div className="modal-header">
               <h3 className="text-lg font-semibold">Assign Policy</h3>
             </div>
-            <div className="modal-body">
-              <label className="label">Select Policy</label>
-              <select
-                className="input"
-                value={selectedPolicyId}
-                onChange={(e) => setSelectedPolicyId(e.target.value)}
-              >
-                <option value="">Choose a policy...</option>
-                {policies.map((policy) => (
-                  <option key={policy._id} value={policy._id}>
-                    {policy.name} - ₹{policy.coverageAmount?.toLocaleString()}
-                  </option>
-                ))}
-              </select>
+            <div className="modal-body space-y-4">
+              <div>
+                <label className="label">Select Policy</label>
+                <select
+                  className="input"
+                  value={selectedPolicyId}
+                  onChange={(e) => {
+                    setSelectedPolicyId(e.target.value)
+                    if (e.target.value) {
+                      fetchPlanConfigsForPolicy(e.target.value)
+                    }
+                  }}
+                >
+                  <option value="">Choose a policy...</option>
+                  {policies.map((policy) => (
+                    <option key={policy._id} value={policy._id}>
+                      {policy.name} - {policy.policyNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="label">Relationship *</label>
+                <select
+                  className="input"
+                  value={selectedRelationshipId}
+                  onChange={(e) => setSelectedRelationshipId(e.target.value)}
+                  required
+                >
+                  <option value="">Choose relationship...</option>
+                  {relationships.map((rel) => (
+                    <option key={rel.relationshipCode} value={rel.relationshipCode}>
+                      {rel.displayName} ({rel.relationshipCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedRelationshipId && selectedRelationshipId !== 'REL001' && (
+                <div>
+                  <label className="label">Primary Member ID *</label>
+                  <select
+                    className="input"
+                    value={selectedPrimaryMemberId}
+                    onChange={(e) => setSelectedPrimaryMemberId(e.target.value)}
+                    required
+                  >
+                    <option value="">Choose primary member...</option>
+                    {members.filter(m => m.relationship === 'SELF').map((member) => (
+                      <option key={member._id} value={member.memberId}>
+                        {member.memberId} - {member.name?.fullName}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Required for dependents</p>
+                </div>
+              )}
+
+              {planConfigs.length > 0 && (
+                <div>
+                  <label className="label">Plan Configuration</label>
+                  <select
+                    className="input"
+                    value={selectedPlanConfigId}
+                    onChange={(e) => setSelectedPlanConfigId(e.target.value)}
+                  >
+                    <option value="">Choose plan config...</option>
+                    {planConfigs.map((config) => (
+                      <option key={config._id} value={config._id}>
+                        Version {config.version} - {config.status} {config.isCurrent ? '(Current)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Auto-selected active configuration</p>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button
                 onClick={() => {
                   setShowAssignModal(false)
                   setSelectedPolicyId('')
+                  setSelectedRelationshipId('')
+                  setSelectedPrimaryMemberId('')
+                  setSelectedPlanConfigId('')
                 }}
                 className="btn-secondary"
               >

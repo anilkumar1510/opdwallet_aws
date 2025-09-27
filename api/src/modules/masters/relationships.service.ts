@@ -13,7 +13,7 @@ export class RelationshipsService {
   async findAll() {
     return this.relationshipMasterModel
       .find({ isActive: true })
-      .sort({ sortOrder: 1 })
+      .sort({ relationshipCode: 1 })
       .select('-__v')
       .lean();
   }
@@ -31,7 +31,7 @@ export class RelationshipsService {
         relationshipCode: { $in: upperCaseCodes },
         isActive: true
       })
-      .sort({ sortOrder: 1 })
+      .sort({ relationshipCode: 1 })
       .lean();
   }
 
