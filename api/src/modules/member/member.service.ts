@@ -133,26 +133,27 @@ export class MemberService {
                 console.log('✅ Added wallet category:', categoryInfo.name, 'with limit:', benefit.annualLimit);
               }
             });
+            // Map to health benefits using dynamic category lookup
+            if (planConfig.benefits && categories.length > 0) {
+              categoryIds.forEach(catId => {
+                const benefit = (planConfig.benefits as any)[catId];
+                const categoryInfo = categories.find(cat => cat.categoryId === catId);
+
+                if (benefit?.enabled && categoryInfo) {
+                  const categoryWallet = walletData.categories.find(c => (c as any).categoryCode === catId);
+                  const amount = benefit.annualLimit || categoryWallet?.total || 0;
+                  healthBenefits.push({
+                    name: categoryInfo.name, // Real name from database
+                    description: `${categoryInfo.name} upto Rs ${amount}`,
+                    categoryCode: catId
+                  });
+                  console.log('✅ Added health benefit:', categoryInfo.name, 'with amount:', amount);
+                }
+              });
+            }
           }
 
-          // Map to health benefits using dynamic category lookup
-          if (planConfig.benefits && categories.length > 0) {
-            categoryIds.forEach(catId => {
-              const benefit = (planConfig.benefits as any)[catId];
-              const categoryInfo = categories.find(cat => cat.categoryId === catId);
-
-              if (benefit?.enabled && categoryInfo) {
-                const categoryWallet = walletData.categories.find(c => (c as any).categoryCode === catId);
-                const amount = benefit.annualLimit || categoryWallet?.total || 0;
-                healthBenefits.push({
-                  name: categoryInfo.name, // Real name from database
-                  description: `${categoryInfo.name} upto Rs ${amount}`,
-                  categoryCode: catId
-                });
-                console.log('✅ Added health benefit:', categoryInfo.name, 'with amount:', amount);
-              }
-            });
-          }
+          
         }
       } catch (error) {
         console.error('Error fetching policy benefits:', error);

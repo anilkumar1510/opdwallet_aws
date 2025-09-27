@@ -153,6 +153,7 @@ async function seed() {
     // Create Assignments
     await assignmentModel.create([
       {
+        assignmentId: 'ASN-2025-0001',
         userId: employee._id,
         policyId: policy._id,
         status: AssignmentStatus.ACTIVE,
@@ -161,6 +162,7 @@ async function seed() {
         notes: 'Initial assignment for employee',
       },
       {
+        assignmentId: 'ASN-2025-0002',
         userId: dependent._id,
         policyId: policy._id,
         status: AssignmentStatus.ACTIVE,
