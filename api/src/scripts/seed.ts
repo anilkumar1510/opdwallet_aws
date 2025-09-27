@@ -7,6 +7,9 @@ import { User } from '../modules/users/schemas/user.schema';
 import { Policy } from '../modules/policies/schemas/policy.schema';
 import { Assignment } from '../modules/assignments/schemas/assignment.schema';
 import { Counter } from '../modules/counters/schemas/counter.schema';
+import { RelationshipMaster } from '../modules/masters/schemas/relationship-master.schema';
+import { CategoryMaster } from '../modules/masters/schemas/category-master.schema';
+import { ServiceMaster } from '../modules/masters/schemas/service-master.schema';
 import { UserRole } from '../common/constants/roles.enum';
 import { UserStatus, PolicyStatus, AssignmentStatus, RelationshipType } from '../common/constants/status.enum';
 
@@ -17,6 +20,9 @@ async function seed() {
   const policyModel = app.get<Model<Policy>>(getModelToken(Policy.name));
   const assignmentModel = app.get<Model<Assignment>>(getModelToken(Assignment.name));
   const counterModel = app.get<Model<Counter>>(getModelToken(Counter.name));
+  const relationshipModel = app.get<Model<RelationshipMaster>>(getModelToken(RelationshipMaster.name));
+  const categoryModel = app.get<Model<CategoryMaster>>(getModelToken(CategoryMaster.name));
+  const serviceModel = app.get<Model<ServiceMaster>>(getModelToken(ServiceMaster.name));
 
   try {
     console.log('🌱 Starting seed process...');
@@ -27,6 +33,9 @@ async function seed() {
       policyModel.deleteMany({}),
       assignmentModel.deleteMany({}),
       counterModel.deleteMany({}),
+      relationshipModel.deleteMany({}),
+      categoryModel.deleteMany({}),
+      serviceModel.deleteMany({}),
     ]);
     console.log('✅ Cleared existing data');
 
@@ -36,6 +45,77 @@ async function seed() {
       { _id: 'policy', seq: 0 },
     ]);
     console.log('✅ Initialized counters');
+
+    // Seed Relationship Master data
+    const relationships = [
+      {
+        relationshipCode: 'REL002',
+        relationshipName: 'SPOUSE',
+        displayName: 'Spouse',
+        description: 'Husband or Wife of the primary member',
+        sortOrder: 1,
+        isActive: true,
+      },
+      {
+        relationshipCode: 'REL003',
+        relationshipName: 'CHILD',
+        displayName: 'Child',
+        description: 'Son or Daughter of the primary member',
+        sortOrder: 2,
+        isActive: true,
+      },
+      {
+        relationshipCode: 'REL004',
+        relationshipName: 'FATHER',
+        displayName: 'Father',
+        description: 'Father of the primary member',
+        sortOrder: 3,
+        isActive: true,
+      },
+      {
+        relationshipCode: 'REL005',
+        relationshipName: 'MOTHER',
+        displayName: 'Mother',
+        description: 'Mother of the primary member',
+        sortOrder: 4,
+        isActive: true,
+      }
+    ];
+
+    await relationshipModel.insertMany(relationships);
+    console.log('✅ Seeded Relationship Master data');
+
+    // Seed Category Master data
+    const categories = [
+      { categoryId: 'CONSULTATION', code: 'CAT001', name: 'Consultation Services', displayOrder: 1, isActive: true },
+      { categoryId: 'PHARMACY', code: 'CAT002', name: 'Pharmacy Services', displayOrder: 2, isActive: true },
+      { categoryId: 'DIAGNOSTICS', code: 'CAT003', name: 'Diagnostic Services', displayOrder: 3, isActive: true },
+    ];
+
+    await categoryModel.insertMany(categories);
+    console.log('✅ Seeded Category Master data');
+
+    // Seed Service Master data
+    const serviceTypes = [
+      // Consultation Services - CON prefix
+      { code: 'CON001', name: 'General Medicine', category: 'CONSULTATION', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'CON002', name: 'Pediatrics', category: 'CONSULTATION', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'CON003', name: 'Gynecology', category: 'CONSULTATION', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+
+      // Pharmacy Services - PHA prefix
+      { code: 'PHA001', name: 'Retail Pharmacy', category: 'PHARMACY', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'PHA002', name: 'E-Pharmacy', category: 'PHARMACY', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+
+      // Diagnostic Services - LAB prefix
+      { code: 'LAB001', name: 'CBC', category: 'DIAGNOSTICS', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'LAB002', name: 'LFT', category: 'DIAGNOSTICS', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'LAB003', name: 'Lipid Profile', category: 'DIAGNOSTICS', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'LAB004', name: 'Thyroid Panel', category: 'DIAGNOSTICS', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+      { code: 'LAB005', name: 'X-Ray', category: 'DIAGNOSTICS', isActive: true, coveragePercentage: 100, copayAmount: 0, requiresPreAuth: false, requiresReferral: false, waitingPeriodDays: 0, requiredDocuments: [] },
+    ];
+
+    await serviceModel.insertMany(serviceTypes);
+    console.log('✅ Seeded Service Master data');
 
     // Create Super Admin
     const passwordHash = await bcrypt.hash('Admin@123', 12);
