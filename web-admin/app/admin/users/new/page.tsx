@@ -326,6 +326,7 @@ export default function NewUserPage() {
                 className="input"
               >
                 <option value="MEMBER">Member</option>
+                <option value="OPS">Operations</option>
                 <option value="ADMIN">Admin</option>
                 <option value="SUPER_ADMIN">Super Admin</option>
               </select>

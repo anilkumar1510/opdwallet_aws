@@ -26,6 +26,10 @@ export class CreateAppointmentDto {
   @IsString()
   specialty?: string;
 
+  @IsNotEmpty()
+  @IsString()
+  slotId: string;
+
   @IsOptional()
   @IsString()
   clinicId?: string;

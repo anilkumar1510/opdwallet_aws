@@ -2,13 +2,13 @@
 // MongoDB Database Replica Script
 // Database: opd_wallet
 // Generated: 2025-09-28
-// Total Collections: 15
-// Total Documents: 44
+// Total Collections: 17
+// Total Documents: 66
 // ========================================
 //
 // This script recreates the entire opd_wallet database with:
-// - All 15 collections
-// - All 44 documents
+// - All 17 collections
+// - All 66 documents
 // - All indexes
 // - Complete data preservation
 //
@@ -21,14 +21,14 @@ use opd_wallet;
 print("========================================");
 print("Starting database replication...");
 print("Database: opd_wallet");
-print("Total Collections: 15");
-print("Total Documents: 44");
+print("Total Collections: 17");
+print("Total Documents: 66");
 print("========================================");
 
 // ========================================
 // COLLECTION: cug_master (8 documents)
 // ========================================
-print("\n[1/15] Creating cug_master collection...");
+print("\n[1/17] Creating cug_master collection...");
 
 db.cug_master.drop();
 
@@ -141,7 +141,7 @@ print("✓ cug_master created with 8 documents");
 // ========================================
 // COLLECTION: specialty_master (9 documents)
 // ========================================
-print("\n[2/15] Creating specialty_master collection...");
+print("\n[2/17] Creating specialty_master collection...");
 
 db.specialty_master.drop();
 
@@ -246,9 +246,595 @@ db.specialty_master.createIndex({ "isActive": 1, "displayOrder": 1 });
 print("✓ specialty_master created with 9 documents");
 
 // ========================================
+// COLLECTION: clinics (5 documents)
+// ========================================
+print("\n[3/17] Creating clinics collection...");
+
+db.clinics.drop();
+
+db.clinics.insertMany([
+  {
+    "_id": ObjectId("68d8f1bf847633d78c923b15"),
+    "clinicId": "CLINIC001",
+    "name": "Manipal Hospital",
+    "phone": "+911123456789",
+    "email": "contact@manipalhospitals.com",
+    "address": {
+      "street": "Sector 6, Dwarka",
+      "city": "Delhi",
+      "state": "Delhi",
+      "pincode": "110075",
+      "country": "India"
+    },
+    "location": {
+      "latitude": 28.5921,
+      "longitude": 77.046
+    },
+    "operatingHours": {
+      "monday": { "open": "08:00", "close": "20:00", "closed": false },
+      "tuesday": { "open": "08:00", "close": "20:00", "closed": false },
+      "wednesday": { "open": "08:00", "close": "20:00", "closed": false },
+      "thursday": { "open": "08:00", "close": "20:00", "closed": false },
+      "friday": { "open": "08:00", "close": "20:00", "closed": false },
+      "saturday": { "open": "09:00", "close": "18:00", "closed": false },
+      "sunday": { "open": "09:00", "close": "14:00", "closed": false }
+    },
+    "facilities": ["Pharmacy", "Lab", "X-Ray", "ECG", "Emergency"],
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f1bf847633d78c923b16"),
+    "clinicId": "CLINIC002",
+    "name": "Max Super Specialty Hospital",
+    "phone": "+911198765432",
+    "email": "info@maxhealthcare.com",
+    "address": {
+      "street": "Saket",
+      "city": "Delhi",
+      "state": "Delhi",
+      "pincode": "110017",
+      "country": "India"
+    },
+    "location": {
+      "latitude": 28.5244,
+      "longitude": 77.2066
+    },
+    "operatingHours": {
+      "monday": { "open": "07:00", "close": "21:00", "closed": false },
+      "tuesday": { "open": "07:00", "close": "21:00", "closed": false },
+      "wednesday": { "open": "07:00", "close": "21:00", "closed": false },
+      "thursday": { "open": "07:00", "close": "21:00", "closed": false },
+      "friday": { "open": "07:00", "close": "21:00", "closed": false },
+      "saturday": { "open": "08:00", "close": "20:00", "closed": false },
+      "sunday": { "open": "08:00", "close": "16:00", "closed": false }
+    },
+    "facilities": ["Pharmacy", "Lab", "X-Ray", "CT Scan", "MRI", "ICU", "Emergency"],
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f1bf847633d78c923b17"),
+    "clinicId": "CLINIC003",
+    "name": "Fortis Hospital",
+    "phone": "+911187654321",
+    "email": "care@fortishealthcare.com",
+    "address": {
+      "street": "Vasant Kunj",
+      "city": "Delhi",
+      "state": "Delhi",
+      "pincode": "110070",
+      "country": "India"
+    },
+    "location": {
+      "latitude": 28.5167,
+      "longitude": 77.1598
+    },
+    "operatingHours": {
+      "monday": { "open": "08:00", "close": "20:00", "closed": false },
+      "tuesday": { "open": "08:00", "close": "20:00", "closed": false },
+      "wednesday": { "open": "08:00", "close": "20:00", "closed": false },
+      "thursday": { "open": "08:00", "close": "20:00", "closed": false },
+      "friday": { "open": "08:00", "close": "20:00", "closed": false },
+      "saturday": { "open": "09:00", "close": "18:00", "closed": false },
+      "sunday": { "open": "10:00", "close": "14:00", "closed": false }
+    },
+    "facilities": ["Pharmacy", "Lab", "X-Ray", "Ultrasound", "Emergency"],
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f1bf847633d78c923b18"),
+    "clinicId": "CLINIC004",
+    "name": "Apollo Clinic",
+    "phone": "+911176543210",
+    "email": "info@apolloclinic.com",
+    "address": {
+      "street": "Nehru Place",
+      "city": "Delhi",
+      "state": "Delhi",
+      "pincode": "110019",
+      "country": "India"
+    },
+    "location": {
+      "latitude": 28.5494,
+      "longitude": 77.2501
+    },
+    "operatingHours": {
+      "monday": { "open": "09:00", "close": "19:00", "closed": false },
+      "tuesday": { "open": "09:00", "close": "19:00", "closed": false },
+      "wednesday": { "open": "09:00", "close": "19:00", "closed": false },
+      "thursday": { "open": "09:00", "close": "19:00", "closed": false },
+      "friday": { "open": "09:00", "close": "19:00", "closed": false },
+      "saturday": { "open": "09:00", "close": "17:00", "closed": false },
+      "sunday": { "open": "09:00", "close": "13:00", "closed": true }
+    },
+    "facilities": ["Pharmacy", "Lab", "X-Ray"],
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f1bf847633d78c923b19"),
+    "clinicId": "CLINIC005",
+    "name": "Sir Ganga Ram Hospital",
+    "phone": "+911165432109",
+    "email": "contact@sgrh.com",
+    "address": {
+      "street": "Rajinder Nagar",
+      "city": "Delhi",
+      "state": "Delhi",
+      "pincode": "110060",
+      "country": "India"
+    },
+    "location": {
+      "latitude": 28.6409,
+      "longitude": 77.1924
+    },
+    "operatingHours": {
+      "monday": { "open": "08:00", "close": "20:00", "closed": false },
+      "tuesday": { "open": "08:00", "close": "20:00", "closed": false },
+      "wednesday": { "open": "08:00", "close": "20:00", "closed": false },
+      "thursday": { "open": "08:00", "close": "20:00", "closed": false },
+      "friday": { "open": "08:00", "close": "20:00", "closed": false },
+      "saturday": { "open": "08:00", "close": "18:00", "closed": false },
+      "sunday": { "open": "09:00", "close": "14:00", "closed": false }
+    },
+    "facilities": ["Pharmacy", "Lab", "X-Ray", "CT Scan", "Emergency", "ICU"],
+    "isActive": true
+  }
+]);
+
+// Create indexes
+db.clinics.createIndex({ "clinicId": 1 }, { unique: true });
+db.clinics.createIndex({ "address.city": 1 });
+db.clinics.createIndex({ "isActive": 1 });
+
+print("✓ clinics created with 5 documents");
+
+// ========================================
+// COLLECTION: doctor_slots (17 documents)
+// ========================================
+print("\n[4/17] Creating doctor_slots collection...");
+
+db.doctor_slots.drop();
+
+db.doctor_slots.insertMany([
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a644"),
+    "slotId": "SLOT001",
+    "doctorId": "DOC001",
+    "clinicId": "CLINIC001",
+    "dayOfWeek": "MONDAY",
+    "startTime": "09:00",
+    "endTime": "13:00",
+    "slotDuration": 30,
+    "consultationFee": 1000,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a645"),
+    "slotId": "SLOT002",
+    "doctorId": "DOC001",
+    "clinicId": "CLINIC001",
+    "dayOfWeek": "WEDNESDAY",
+    "startTime": "14:00",
+    "endTime": "18:00",
+    "slotDuration": 30,
+    "consultationFee": 1000,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a646"),
+    "slotId": "SLOT003",
+    "doctorId": "DOC001",
+    "clinicId": "CLINIC001",
+    "dayOfWeek": "FRIDAY",
+    "startTime": "10:00",
+    "endTime": "14:00",
+    "slotDuration": 30,
+    "consultationFee": 900,
+    "consultationType": "ONLINE",
+    "maxAppointments": 10,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a647"),
+    "slotId": "SLOT004",
+    "doctorId": "DOC002",
+    "clinicId": "CLINIC002",
+    "dayOfWeek": "TUESDAY",
+    "startTime": "08:00",
+    "endTime": "12:00",
+    "slotDuration": 30,
+    "consultationFee": 1500,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a648"),
+    "slotId": "SLOT005",
+    "doctorId": "DOC002",
+    "clinicId": "CLINIC002",
+    "dayOfWeek": "THURSDAY",
+    "startTime": "15:00",
+    "endTime": "19:00",
+    "slotDuration": 30,
+    "consultationFee": 1500,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a649"),
+    "slotId": "SLOT006",
+    "doctorId": "DOC002",
+    "clinicId": "CLINIC002",
+    "dayOfWeek": "SATURDAY",
+    "startTime": "09:00",
+    "endTime": "13:00",
+    "slotDuration": 30,
+    "consultationFee": 1400,
+    "consultationType": "ONLINE",
+    "maxAppointments": 10,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a64a"),
+    "slotId": "SLOT007",
+    "doctorId": "DOC003",
+    "clinicId": "CLINIC003",
+    "dayOfWeek": "MONDAY",
+    "startTime": "10:00",
+    "endTime": "14:00",
+    "slotDuration": 20,
+    "consultationFee": 1200,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 12,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a64b"),
+    "slotId": "SLOT008",
+    "doctorId": "DOC003",
+    "clinicId": "CLINIC003",
+    "dayOfWeek": "WEDNESDAY",
+    "startTime": "15:00",
+    "endTime": "19:00",
+    "slotDuration": 20,
+    "consultationFee": 1200,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 12,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a64c"),
+    "slotId": "SLOT009",
+    "doctorId": "DOC003",
+    "clinicId": "CLINIC003",
+    "dayOfWeek": "FRIDAY",
+    "startTime": "16:00",
+    "endTime": "20:00",
+    "slotDuration": 20,
+    "consultationFee": 1000,
+    "consultationType": "ONLINE",
+    "maxAppointments": 15,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a64d"),
+    "slotId": "SLOT010",
+    "doctorId": "DOC004",
+    "clinicId": "CLINIC004",
+    "dayOfWeek": "MONDAY",
+    "startTime": "09:00",
+    "endTime": "13:00",
+    "slotDuration": 30,
+    "consultationFee": 1300,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a64e"),
+    "slotId": "SLOT011",
+    "doctorId": "DOC004",
+    "clinicId": "CLINIC004",
+    "dayOfWeek": "THURSDAY",
+    "startTime": "14:00",
+    "endTime": "18:00",
+    "slotDuration": 30,
+    "consultationFee": 1300,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a64f"),
+    "slotId": "SLOT012",
+    "doctorId": "DOC005",
+    "clinicId": "CLINIC005",
+    "dayOfWeek": "TUESDAY",
+    "startTime": "09:00",
+    "endTime": "13:00",
+    "slotDuration": 20,
+    "consultationFee": 900,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 12,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a650"),
+    "slotId": "SLOT013",
+    "doctorId": "DOC005",
+    "clinicId": "CLINIC005",
+    "dayOfWeek": "THURSDAY",
+    "startTime": "10:00",
+    "endTime": "14:00",
+    "slotDuration": 20,
+    "consultationFee": 900,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 12,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a651"),
+    "slotId": "SLOT014",
+    "doctorId": "DOC005",
+    "clinicId": "CLINIC005",
+    "dayOfWeek": "SATURDAY",
+    "startTime": "15:00",
+    "endTime": "18:00",
+    "slotDuration": 20,
+    "consultationFee": 800,
+    "consultationType": "ONLINE",
+    "maxAppointments": 15,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a652"),
+    "slotId": "SLOT015",
+    "doctorId": "DOC006",
+    "clinicId": "CLINIC001",
+    "dayOfWeek": "WEDNESDAY",
+    "startTime": "09:00",
+    "endTime": "13:00",
+    "slotDuration": 30,
+    "consultationFee": 1100,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a653"),
+    "slotId": "SLOT016",
+    "doctorId": "DOC006",
+    "clinicId": "CLINIC001",
+    "dayOfWeek": "FRIDAY",
+    "startTime": "14:00",
+    "endTime": "18:00",
+    "slotDuration": 30,
+    "consultationFee": 1100,
+    "consultationType": "IN_CLINIC",
+    "maxAppointments": 8,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f3be7062d1aac546a654"),
+    "slotId": "SLOT017",
+    "doctorId": "DOC006",
+    "clinicId": "CLINIC001",
+    "dayOfWeek": "SATURDAY",
+    "startTime": "10:00",
+    "endTime": "13:00",
+    "slotDuration": 30,
+    "consultationFee": 1000,
+    "consultationType": "ONLINE",
+    "maxAppointments": 10,
+    "isActive": true
+  }
+]);
+
+// Create indexes
+db.doctor_slots.createIndex({ "slotId": 1 }, { unique: true });
+db.doctor_slots.createIndex({ "doctorId": 1, "dayOfWeek": 1 });
+db.doctor_slots.createIndex({ "clinicId": 1 });
+db.doctor_slots.createIndex({ "isActive": 1 });
+
+print("✓ doctor_slots created with 17 documents");
+
+// ========================================
+// COLLECTION: doctors (6 documents)
+// ========================================
+print("\n[5/17] Creating doctors collection...");
+
+db.doctors.drop();
+
+db.doctors.insertMany([
+  {
+    "_id": ObjectId("68d8f32515b884ab1eb3b35c"),
+    "doctorId": "DOC001",
+    "name": "Dr. Vikas Mittal",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MD (Pulmonary Medicine)",
+    "specializations": ["Pulmonary Medicine", "Tuberculosis & Respiratory Diseases"],
+    "specialtyId": "SPEC001",
+    "specialty": "General Physician",
+    "phone": "+919876543210",
+    "email": "vikas.mittal@hospital.com",
+    "registrationNumber": "DMC/12345/2009",
+    "languages": ["English", "Hindi"],
+    "experienceYears": 16,
+    "rating": 4.7,
+    "reviewCount": 156,
+    "consultationFee": 1000,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": false,
+    "allowDirectBooking": true,
+    "availableOnline": true,
+    "availableOffline": true,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f32515b884ab1eb3b35d"),
+    "doctorId": "DOC002",
+    "name": "Dr. Amit Kumar",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MD (Cardiology)",
+    "specializations": ["Cardiology", "Interventional Cardiology"],
+    "specialtyId": "SPEC002",
+    "specialty": "Cardiologist",
+    "phone": "+919876543211",
+    "email": "amit.kumar@hospital.com",
+    "registrationNumber": "DMC/23456/2005",
+    "languages": ["English", "Hindi", "Punjabi"],
+    "experienceYears": 20,
+    "rating": 4.9,
+    "reviewCount": 289,
+    "consultationFee": 1500,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": false,
+    "allowDirectBooking": true,
+    "availableOnline": true,
+    "availableOffline": true,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f32515b884ab1eb3b35e"),
+    "doctorId": "DOC003",
+    "name": "Dr. Priya Sharma",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MD (Dermatology)",
+    "specializations": ["Dermatology", "Cosmetology", "Hair Transplant"],
+    "specialtyId": "SPEC004",
+    "specialty": "Dermatologist",
+    "phone": "+919876543212",
+    "email": "priya.sharma@hospital.com",
+    "registrationNumber": "DMC/34567/2013",
+    "languages": ["English", "Hindi"],
+    "experienceYears": 12,
+    "rating": 4.8,
+    "reviewCount": 234,
+    "consultationFee": 1200,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": false,
+    "allowDirectBooking": true,
+    "availableOnline": true,
+    "availableOffline": true,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f32515b884ab1eb3b35f"),
+    "doctorId": "DOC004",
+    "name": "Dr. Rajesh Verma",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MS (Orthopedics)",
+    "specializations": ["Orthopedic Surgery", "Sports Medicine", "Joint Replacement"],
+    "specialtyId": "SPEC005",
+    "specialty": "Orthopedic",
+    "phone": "+919876543213",
+    "email": "rajesh.verma@hospital.com",
+    "registrationNumber": "DMC/45678/2007",
+    "languages": ["English", "Hindi"],
+    "experienceYears": 18,
+    "rating": 4.6,
+    "reviewCount": 178,
+    "consultationFee": 1300,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": true,
+    "allowDirectBooking": false,
+    "availableOnline": false,
+    "availableOffline": true,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f32515b884ab1eb3b360"),
+    "doctorId": "DOC005",
+    "name": "Dr. Sunita Mehta",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MD (Pediatrics)",
+    "specializations": ["Pediatrics", "Child Development", "Neonatology"],
+    "specialtyId": "SPEC003",
+    "specialty": "Pediatrician",
+    "phone": "+919876543214",
+    "email": "sunita.mehta@hospital.com",
+    "registrationNumber": "DMC/56789/2010",
+    "languages": ["English", "Hindi", "Bengali"],
+    "experienceYears": 15,
+    "rating": 4.9,
+    "reviewCount": 312,
+    "consultationFee": 900,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": false,
+    "allowDirectBooking": true,
+    "availableOnline": true,
+    "availableOffline": true,
+    "isActive": true
+  },
+  {
+    "_id": ObjectId("68d8f32515b884ab1eb3b361"),
+    "doctorId": "DOC006",
+    "name": "Dr. Anil Kapoor",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MS (ENT)",
+    "specializations": ["ENT Surgery", "Head and Neck Surgery", "Voice Disorders"],
+    "specialtyId": "SPEC006",
+    "specialty": "ENT Specialist",
+    "phone": "+919876543215",
+    "email": "anil.kapoor@hospital.com",
+    "registrationNumber": "DMC/67890/2011",
+    "languages": ["English", "Hindi"],
+    "experienceYears": 14,
+    "rating": 4.5,
+    "reviewCount": 145,
+    "consultationFee": 1100,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": false,
+    "allowDirectBooking": true,
+    "availableOnline": true,
+    "availableOffline": true,
+    "isActive": true
+  }
+]);
+
+// Create indexes
+db.doctors.createIndex({ "doctorId": 1 }, { unique: true });
+db.doctors.createIndex({ "specialtyId": 1, "isActive": 1 });
+db.doctors.createIndex({ "email": 1 });
+db.doctors.createIndex({ "phone": 1 });
+
+print("✓ doctors created with 6 documents");
+
+// ========================================
 // COLLECTION: relationship_masters (5 documents)
 // ========================================
-print("\n[3/15] Creating relationship_masters collection...");
+print("\n[6/17] Creating relationship_masters collection...");
 
 db.relationship_masters.drop();
 
@@ -314,7 +900,7 @@ print("✓ relationship_masters created with 5 documents");
 // ========================================
 // COLLECTION: category_master (4 documents)
 // ========================================
-print("\n[4/15] Creating category_master collection...");
+print("\n[7/17] Creating category_master collection...");
 
 db.category_master.drop();
 
@@ -383,7 +969,7 @@ print("✓ category_master created with 4 documents");
 // ========================================
 // COLLECTION: service_master (4 documents)
 // ========================================
-print("\n[5/15] Creating service_master collection...");
+print("\n[8/17] Creating service_master collection...");
 
 db.service_master.drop();
 
@@ -468,7 +1054,7 @@ print("✓ service_master created with 4 documents");
 // ========================================
 // COLLECTION: policies (1 document)
 // ========================================
-print("\n[6/15] Creating policies collection...");
+print("\n[9/17] Creating policies collection...");
 
 db.policies.drop();
 
@@ -498,7 +1084,7 @@ print("✓ policies created with 1 document");
 // ========================================
 // COLLECTION: plan_configs (1 document)
 // ========================================
-print("\n[7/15] Creating plan_configs collection...");
+print("\n[10/17] Creating plan_configs collection...");
 
 db.plan_configs.drop();
 
@@ -569,9 +1155,9 @@ db.plan_configs.createIndex({ "status": 1 });
 print("✓ plan_configs created with 1 document");
 
 // ========================================
-// COLLECTION: users (3 documents)
+// COLLECTION: users (4 documents)
 // ========================================
-print("\n[8/15] Creating users collection...");
+print("\n[11/17] Creating users collection...");
 
 db.users.drop();
 
@@ -676,6 +1262,29 @@ db.users.insertMany([
     "__v": 0,
     "corporateName": "Google Inc.",
     "updatedBy": "68ce7f937ca7c61fde3135f3"
+  },
+  {
+    "_id": ObjectId("68d8dbbf3c628cae98b34a45"),
+    "userId": "USR-2025-0004",
+    "uhid": "OPS001",
+    "memberId": "OPS001",
+    "relationship": "SELF",
+    "name": {
+      "firstName": "Operations",
+      "lastName": "User",
+      "_id": ObjectId("68d8dbbf3c628cae98b34a46"),
+      "fullName": "Operations User"
+    },
+    "email": "ops@opdwallet.com",
+    "phone": "+919077349172",
+    "role": "OPS",
+    "status": "ACTIVE",
+    "passwordHash": "$2b$12$QsSAT/gv5LL0mBBRruuame4SJYUgn9mY5Hi4ozYVsIrzryTWWH6xm",
+    "mustChangePassword": false,
+    "createdBy": "68ce7f937ca7c61fde3135f3",
+    "createdAt": ISODate("2025-09-28T06:54:55.600Z"),
+    "updatedAt": ISODate("2025-09-28T06:54:55.600Z"),
+    "__v": 0
   }
 ]);
 
@@ -687,385 +1296,12 @@ db.users.createIndex({ "employeeId": 1 }, { sparse: true });
 db.users.createIndex({ "status": 1 });
 db.users.createIndex({ "role": 1 });
 
-print("✓ users created with 3 documents");
-
-// ========================================
-// COLLECTION: doctors (4 documents)
-// ========================================
-print("\n[9/15] Creating doctors collection...");
-
-db.doctors.drop();
-
-db.doctors.insertMany([
-  {
-    "_id": ObjectId("68d8ab8e6cd3c49c7e4f87fe"),
-    "doctorId": "DOC001",
-    "name": "Dr. Vikas Mittal",
-    "profilePhoto": "",
-    "qualifications": "MBBS, MD",
-    "specializations": [
-      "Pulmonary Medicine",
-      "Tuberculosis & Respiratory Diseases",
-      "Pulmonary Medicine, Fellow"
-    ],
-    "specialtyId": "SPEC001",
-    "specialty": "General Physician",
-    "experienceYears": 16,
-    "rating": 4.7,
-    "reviewCount": 156,
-    "clinics": [
-      {
-        "clinicId": "CLINIC001",
-        "name": "Manipal Hospital",
-        "address": "Sector 6, Dwarka, New Delhi",
-        "city": "Delhi (NCR)",
-        "state": "Delhi",
-        "pincode": "110075",
-        "location": {
-          "latitude": 28.5921,
-          "longitude": 77.046
-        },
-        "distanceKm": 12.67,
-        "consultationFee": 1000
-      }
-    ],
-    "consultationFee": 1000,
-    "cashlessAvailable": true,
-    "insuranceAccepted": [
-      "MCLTech"
-    ],
-    "requiresConfirmation": true,
-    "allowDirectBooking": false,
-    "availableSlots": [
-      {
-        "date": "2025-09-28",
-        "slots": [
-          "09:00 AM",
-          "10:00 AM",
-          "11:00 AM",
-          "02:00 PM",
-          "03:00 PM"
-        ]
-      },
-      {
-        "date": "2025-09-29",
-        "slots": [
-          "09:00 AM",
-          "10:00 AM",
-          "11:00 AM",
-          "02:00 PM",
-          "03:00 PM"
-        ]
-      }
-    ],
-    "isActive": true,
-    "availableOffline": true,
-    "availableOnline": true
-  },
-  {
-    "_id": ObjectId("68d8ab8e6cd3c49c7e4f87ff"),
-    "doctorId": "DOC002",
-    "name": "Dr. Rajesh Madan",
-    "profilePhoto": "",
-    "qualifications": "MBBS, MD",
-    "specializations": [
-      "General Medicine",
-      "DNB - Cardiology",
-      "Fellowship in Interventional Cardiology"
-    ],
-    "specialtyId": "SPEC001",
-    "specialty": "General Physician",
-    "experienceYears": 14,
-    "rating": 4.5,
-    "reviewCount": 98,
-    "clinics": [
-      {
-        "clinicId": "CLINIC002",
-        "name": "Max Hospital",
-        "address": "Saket, New Delhi",
-        "city": "Delhi (NCR)",
-        "state": "Delhi",
-        "pincode": "110017",
-        "location": {
-          "latitude": 28.5244,
-          "longitude": 77.2066
-        },
-        "distanceKm": 22.34,
-        "consultationFee": 800
-      }
-    ],
-    "consultationFee": 800,
-    "cashlessAvailable": true,
-    "insuranceAccepted": [
-      "MCLTech"
-    ],
-    "requiresConfirmation": false,
-    "allowDirectBooking": true,
-    "availableSlots": [
-      {
-        "date": "2025-09-28",
-        "slots": [
-          "10:00 AM",
-          "11:00 AM",
-          "04:00 PM",
-          "05:00 PM"
-        ]
-      },
-      {
-        "date": "2025-09-29",
-        "slots": [
-          "10:00 AM",
-          "11:00 AM",
-          "04:00 PM",
-          "05:00 PM"
-        ]
-      }
-    ],
-    "isActive": true,
-    "availableOffline": true,
-    "availableOnline": true
-  },
-  {
-    "_id": ObjectId("68d8ab8e6cd3c49c7e4f8800"),
-    "doctorId": "DOC003",
-    "name": "Dr. Priya Sharma",
-    "profilePhoto": "",
-    "qualifications": "MBBS, MD (Dermatology)",
-    "specializations": [
-      "Dermatology",
-      "Cosmetology",
-      "Hair Transplant"
-    ],
-    "specialtyId": "SPEC004",
-    "specialty": "Dermatologist",
-    "experienceYears": 12,
-    "rating": 4.8,
-    "reviewCount": 234,
-    "clinics": [
-      {
-        "clinicId": "CLINIC003",
-        "name": "Fortis Hospital",
-        "address": "Vasant Kunj, New Delhi",
-        "city": "Delhi (NCR)",
-        "state": "Delhi",
-        "pincode": "110070",
-        "location": {
-          "latitude": 28.5167,
-          "longitude": 77.1598
-        },
-        "distanceKm": 8.5,
-        "consultationFee": 1200
-      }
-    ],
-    "consultationFee": 1200,
-    "cashlessAvailable": true,
-    "insuranceAccepted": [
-      "MCLTech"
-    ],
-    "requiresConfirmation": false,
-    "allowDirectBooking": true,
-    "availableSlots": [
-      {
-        "date": "2025-09-28",
-        "slots": [
-          "09:30 AM",
-          "10:30 AM",
-          "11:30 AM",
-          "03:00 PM",
-          "04:00 PM"
-        ]
-      },
-      {
-        "date": "2025-09-29",
-        "slots": [
-          "09:30 AM",
-          "10:30 AM",
-          "11:30 AM",
-          "03:00 PM",
-          "04:00 PM"
-        ]
-      }
-    ],
-    "isActive": true,
-    "availableOffline": true,
-    "availableOnline": true
-  },
-  {
-    "_id": ObjectId("68d8ab8e6cd3c49c7e4f8801"),
-    "doctorId": "DOC004",
-    "name": "Dr. Anjali Verma",
-    "profilePhoto": "",
-    "qualifications": "MBBS, MD (Obstetrics & Gynecology)",
-    "specializations": [
-      "Gynecology",
-      "Obstetrics",
-      "Infertility"
-    ],
-    "specialtyId": "SPEC002",
-    "specialty": "Gynaecologist",
-    "experienceYears": 18,
-    "rating": 4.9,
-    "reviewCount": 342,
-    "clinics": [
-      {
-        "clinicId": "CLINIC004",
-        "name": "Apollo Hospital",
-        "address": "Jasola, New Delhi",
-        "city": "Delhi (NCR)",
-        "state": "Delhi",
-        "pincode": "110025",
-        "location": {
-          "latitude": 28.5403,
-          "longitude": 77.2717
-        },
-        "distanceKm": 15.2,
-        "consultationFee": 1500
-      }
-    ],
-    "consultationFee": 1500,
-    "cashlessAvailable": true,
-    "insuranceAccepted": [
-      "MCLTech"
-    ],
-    "requiresConfirmation": true,
-    "allowDirectBooking": false,
-    "availableSlots": [
-      {
-        "date": "2025-09-28",
-        "slots": [
-          "11:00 AM",
-          "12:00 PM",
-          "02:00 PM",
-          "03:00 PM"
-        ]
-      },
-      {
-        "date": "2025-09-29",
-        "slots": [
-          "11:00 AM",
-          "12:00 PM",
-          "02:00 PM",
-          "03:00 PM"
-        ]
-      }
-    ],
-    "isActive": true,
-    "availableOffline": true,
-    "availableOnline": true
-  }
-]);
-
-// Create indexes
-db.doctors.createIndex({ "doctorId": 1 }, { unique: true });
-db.doctors.createIndex({ "specialtyId": 1, "isActive": 1 });
-db.doctors.createIndex({ "clinics.city": 1 });
-
-print("✓ doctors created with 4 documents");
-
-// ========================================
-// COLLECTION: appointments (3 documents)
-// ========================================
-print("\n[10/15] Creating appointments collection...");
-
-db.appointments.drop();
-
-db.appointments.insertMany([
-  {
-    "_id": ObjectId("68d8be547598aaf2c62c42c7"),
-    "appointmentId": "APT34078",
-    "appointmentNumber": "34078",
-    "userId": ObjectId("68ce7f937ca7c61fde3135fb"),
-    "patientName": "John Doe",
-    "patientId": "68ce7f937ca7c61fde3135fb",
-    "doctorId": "DOC001",
-    "doctorName": "Dr. Vikas Mittal",
-    "specialty": "General Physician",
-    "clinicId": "CLINIC001",
-    "clinicName": "Manipal Hospital",
-    "clinicAddress": "Sector 6, Dwarka, New Delhi",
-    "appointmentType": "IN_CLINIC",
-    "appointmentDate": "2025-09-28",
-    "timeSlot": "10:00 AM",
-    "consultationFee": 1000,
-    "status": "PENDING_CONFIRMATION",
-    "requestedAt": ISODate("2025-09-28T04:49:24.134Z"),
-    "paymentStatus": "PENDING",
-    "amountPaid": 0,
-    "coveredByInsurance": true,
-    "createdAt": ISODate("2025-09-28T04:49:24.138Z"),
-    "updatedAt": ISODate("2025-09-28T04:49:24.138Z"),
-    "__v": 0
-  },
-  {
-    "_id": ObjectId("68d8c3b7c3ca66e96a35f082"),
-    "appointmentId": "APT34079",
-    "appointmentNumber": "34079",
-    "userId": ObjectId("68ce7f937ca7c61fde3135fb"),
-    "patientName": "John Doe",
-    "patientId": "SELF",
-    "doctorId": "DOC004",
-    "doctorName": "Dr. Anjali Verma",
-    "specialty": "Gynaecologist",
-    "clinicId": "",
-    "clinicName": "",
-    "clinicAddress": "",
-    "appointmentType": "ONLINE",
-    "appointmentDate": "2025-09-28",
-    "timeSlot": "Immediate",
-    "consultationFee": 1500,
-    "status": "PENDING_CONFIRMATION",
-    "requestedAt": ISODate("2025-09-28T05:12:23.851Z"),
-    "paymentStatus": "PENDING",
-    "amountPaid": 0,
-    "coveredByInsurance": true,
-    "contactNumber": "+919876543210",
-    "callPreference": "BOTH",
-    "createdAt": ISODate("2025-09-28T05:12:23.860Z"),
-    "updatedAt": ISODate("2025-09-28T05:12:23.860Z"),
-    "__v": 0
-  },
-  {
-    "_id": ObjectId("68d8c3d7c3ca66e96a35f0cd"),
-    "appointmentId": "APT34080",
-    "appointmentNumber": "34080",
-    "userId": ObjectId("68ce7f937ca7c61fde3135fb"),
-    "patientName": "John Doe",
-    "patientId": "SELF",
-    "doctorId": "DOC001",
-    "doctorName": "Dr. Vikas Mittal",
-    "specialty": "General Physician",
-    "clinicId": "",
-    "clinicName": "",
-    "clinicAddress": "",
-    "appointmentType": "ONLINE",
-    "appointmentDate": "2025-09-28",
-    "timeSlot": "Immediate",
-    "consultationFee": 1000,
-    "status": "PENDING_CONFIRMATION",
-    "requestedAt": ISODate("2025-09-28T05:12:55.296Z"),
-    "paymentStatus": "PENDING",
-    "amountPaid": 0,
-    "coveredByInsurance": true,
-    "contactNumber": "+919876543210",
-    "callPreference": "BOTH",
-    "createdAt": ISODate("2025-09-28T05:12:55.299Z"),
-    "updatedAt": ISODate("2025-09-28T05:12:55.299Z"),
-    "__v": 0
-  }
-]);
-
-// Create indexes
-db.appointments.createIndex({ "appointmentId": 1 }, { unique: true });
-db.appointments.createIndex({ "appointmentNumber": 1 }, { unique: true });
-db.appointments.createIndex({ "userId": 1, "status": 1 });
-db.appointments.createIndex({ "doctorId": 1, "appointmentDate": 1 });
-
-print("✓ appointments created with 3 documents");
+print("✓ users created with 4 documents");
 
 // ========================================
 // COLLECTION: counters (2 documents)
 // ========================================
-print("\n[11/15] Creating counters collection...");
+print("\n[12/17] Creating counters collection...");
 
 db.counters.drop();
 
@@ -1077,7 +1313,7 @@ db.counters.insertMany([
   },
   {
     "_id": "user",
-    "seq": 3,
+    "seq": 4,
     "__v": 0
   }
 ]);
@@ -1090,7 +1326,7 @@ print("✓ counters created with 2 documents");
 // ========================================
 // COLLECTION: wallet_transactions (0 documents)
 // ========================================
-print("\n[12/15] Creating wallet_transactions collection...");
+print("\n[13/17] Creating wallet_transactions collection...");
 
 db.wallet_transactions.drop();
 db.createCollection("wallet_transactions");
@@ -1107,7 +1343,7 @@ print("✓ wallet_transactions created (empty)");
 // ========================================
 // COLLECTION: user_wallets (0 documents)
 // ========================================
-print("\n[13/15] Creating user_wallets collection...");
+print("\n[14/17] Creating user_wallets collection...");
 
 db.user_wallets.drop();
 db.createCollection("user_wallets");
@@ -1122,7 +1358,7 @@ print("✓ user_wallets created (empty)");
 // ========================================
 // COLLECTION: userPolicyAssignments (0 documents)
 // ========================================
-print("\n[14/15] Creating userPolicyAssignments collection...");
+print("\n[15/17] Creating userPolicyAssignments collection...");
 
 db.userPolicyAssignments.drop();
 db.createCollection("userPolicyAssignments");
@@ -1135,9 +1371,26 @@ db.userPolicyAssignments.createIndex({ "status": 1 });
 print("✓ userPolicyAssignments created (empty)");
 
 // ========================================
+// COLLECTION: appointments (0 documents)
+// ========================================
+print("\n[16/17] Creating appointments collection...");
+
+db.appointments.drop();
+db.createCollection("appointments");
+
+// Create indexes
+db.appointments.createIndex({ "appointmentId": 1 }, { unique: true });
+db.appointments.createIndex({ "appointmentNumber": 1 }, { unique: true });
+db.appointments.createIndex({ "userId": 1, "status": 1 });
+db.appointments.createIndex({ "doctorId": 1, "appointmentDate": 1 });
+db.appointments.createIndex({ "slotId": 1 });
+
+print("✓ appointments created (empty)");
+
+// ========================================
 // COLLECTION: auditLogs (0 documents)
 // ========================================
-print("\n[15/15] Creating auditLogs collection...");
+print("\n[17/17] Creating auditLogs collection...");
 
 db.auditLogs.drop();
 db.createCollection("auditLogs");
@@ -1157,14 +1410,24 @@ print("\n========================================");
 print("Database replication completed successfully!");
 print("========================================");
 print("\nSummary:");
-print("- Total Collections: 15");
-print("- Total Documents: 44");
-print("- Master Data: 30 documents");
-print("- User Data: 3 documents");
-print("- Doctor Data: 4 documents");
-print("- Appointment Data: 3 documents");
-print("- Policy Data: 2 documents");
+print("- Total Collections: 17");
+print("- Total Documents: 66");
+print("- Master Data:");
+print("  • CUG Master: 8 documents");
+print("  • Specialty Master: 9 documents");
+print("  • Relationship Masters: 5 documents");
+print("  • Category Master: 4 documents");
+print("  • Service Master: 4 documents");
+print("- Healthcare Data:");
+print("  • Clinics: 5 documents");
+print("  • Doctor Slots: 17 documents");
+print("  • Doctors: 6 documents (with phone, email, registrationNumber, languages)");
+print("- User Data:");
+print("  • Users: 4 documents (including 1 OPS user)");
+print("- Policy Data:");
+print("  • Policies: 1 document");
+print("  • Plan Configs: 1 document");
 print("- Counter Data: 2 documents");
-print("- Empty Collections: 4 (wallet_transactions, user_wallets, userPolicyAssignments, auditLogs)");
+print("- Empty Collections: 5 (wallet_transactions, user_wallets, userPolicyAssignments, appointments, auditLogs)");
 print("\nAll indexes created successfully!");
 print("========================================");

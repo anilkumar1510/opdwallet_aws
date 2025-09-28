@@ -1,0 +1,111 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Clinic, ClinicDocument } from './schemas/clinic.schema';
+import { CreateClinicDto } from './dto/create-clinic.dto';
+import { UpdateClinicDto } from './dto/update-clinic.dto';
+
+@Injectable()
+export class ClinicsService {
+  constructor(
+    @InjectModel(Clinic.name) private clinicModel: Model<ClinicDocument>,
+  ) {}
+
+  async create(createClinicDto: CreateClinicDto): Promise<Clinic> {
+    const counter = await this.getNextClinicNumber();
+    const clinicId = `CL${String(counter).padStart(3, '0')}`;
+
+    const clinicData = {
+      ...createClinicDto,
+      clinicId,
+      isActive: createClinicDto.isActive !== undefined ? createClinicDto.isActive : true,
+    };
+
+    const clinic = new this.clinicModel(clinicData);
+    return clinic.save();
+  }
+
+  async findAll(query?: any): Promise<Clinic[]> {
+    const filter: any = {};
+
+    if (query?.city) {
+      filter['address.city'] = new RegExp(query.city, 'i');
+    }
+
+    if (query?.state) {
+      filter['address.state'] = new RegExp(query.state, 'i');
+    }
+
+    if (query?.search) {
+      filter.$or = [
+        { name: new RegExp(query.search, 'i') },
+        { 'address.city': new RegExp(query.search, 'i') },
+      ];
+    }
+
+    if (query?.isActive !== undefined) {
+      filter.isActive = query.isActive === 'true';
+    }
+
+    return this.clinicModel.find(filter).sort({ createdAt: -1 }).exec();
+  }
+
+  async findOne(clinicId: string): Promise<Clinic> {
+    const clinic = await this.clinicModel.findOne({ clinicId }).exec();
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+    return clinic;
+  }
+
+  async update(clinicId: string, updateClinicDto: UpdateClinicDto): Promise<Clinic> {
+    const clinic = await this.clinicModel.findOne({ clinicId });
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    Object.assign(clinic, updateClinicDto);
+    return clinic.save();
+  }
+
+  async activate(clinicId: string): Promise<Clinic> {
+    const clinic = await this.clinicModel.findOne({ clinicId });
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    clinic.isActive = true;
+    return clinic.save();
+  }
+
+  async deactivate(clinicId: string): Promise<Clinic> {
+    const clinic = await this.clinicModel.findOne({ clinicId });
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    clinic.isActive = false;
+    return clinic.save();
+  }
+
+  async remove(clinicId: string): Promise<void> {
+    const result = await this.clinicModel.deleteOne({ clinicId }).exec();
+    if (result.deletedCount === 0) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+  }
+
+  private async getNextClinicNumber(): Promise<number> {
+    const lastClinic = await this.clinicModel
+      .findOne()
+      .sort({ createdAt: -1 })
+      .exec();
+
+    if (!lastClinic) {
+      return 1;
+    }
+
+    const lastNumber = parseInt(lastClinic.clinicId.replace('CL', ''));
+    return lastNumber + 1;
+  }
+}

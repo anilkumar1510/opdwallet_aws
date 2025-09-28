@@ -1,9 +1,9 @@
 # OPD WALLET - DATA SCHEMA AND CREDENTIALS DOCUMENTATION
 
-**Document Version:** 2.1
-**Last Updated:** 2025-09-28
+**Document Version:** 2.2
+**Last Updated:** September 28, 2025 (Evening Update)
 **Database:** MongoDB (opd_wallet)
-**Total Collections:** 15
+**Total Collections:** 17
 
 ---
 
@@ -40,14 +40,14 @@
 
 **Database Name:** `opd_wallet`
 **Authentication:** MongoDB Admin Auth
-**Total Collections:** 15
-**Total Documents:** 44 (actual count)
+**Total Collections:** 17
+**Total Documents:** 66 (actual count)
 
 ### Current Data Distribution
 
 | Collection | Document Count | Status |
 |-----------|----------------|--------|
-| users | 3 | Active |
+| users | 4 | Active |
 | policies | 1 | Active |
 | plan_configs | 1 | Active |
 | userPolicyAssignments | 0 | Empty |
@@ -60,8 +60,10 @@
 | wallet_transactions | 0 | Empty |
 | auditLogs | 0 | Empty |
 | specialty_master | 9 | Active |
-| doctors | 4 | Active |
-| appointments | 3 | Active |
+| doctors | 6 | Active |
+| clinics | 5 | Active |
+| doctor_slots | 17 | Active |
+| appointments | 0 | Empty |
 
 ---
 
@@ -100,7 +102,7 @@
 
 **Collection Name:** `users`
 **Purpose:** Core user management for all system users including admins, employees, members, and dependents
-**Document Count:** 3
+**Document Count:** 4 (includes new OPS user)
 **Timestamps:** Yes (createdAt, updatedAt)
 
 #### Schema Definition
@@ -1247,7 +1249,7 @@ enum OwnerPayerType {
 
 **Collection Name:** `doctors`
 **Purpose:** Doctor profiles with clinic locations, specializations, and availability
-**Document Count:** 4
+**Document Count:** 6
 **Timestamps:** Yes (createdAt, updatedAt)
 
 #### Schema Definition
@@ -1261,6 +1263,10 @@ enum OwnerPayerType {
   qualifications: string,   // REQUIRED - Educational qualifications (e.g., "MBBS, MD")
   specializations: string[], // REQUIRED - Array of specialization areas
   specialtyId: string,      // REQUIRED - References specialty_master.specialtyId
+  phone?: string,           // OPTIONAL - Contact phone number
+  email?: string,           // OPTIONAL - Contact email address
+  registrationNumber?: string, // OPTIONAL - Medical registration number
+  languages?: string[],     // OPTIONAL - Languages spoken by doctor
   specialty: string,        // REQUIRED - Specialty name (from specialty_master)
   experienceYears: number,  // REQUIRED - Years of experience
   rating: number,           // DEFAULT: 0 - Doctor rating (0-5)
@@ -1421,11 +1427,175 @@ enum OwnerPayerType {
 
 ---
 
-### 15. appointments
+### 15. clinics
+
+**Collection Name:** `clinics`
+**Purpose:** Store clinic/hospital locations with operating hours and contact information
+**Document Count:** 5
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,                    // MongoDB auto-generated
+  clinicId: string,                 // REQUIRED, UNIQUE - Clinic identifier (e.g., "CLINIC001")
+  name: string,                     // REQUIRED - Clinic/hospital name
+  address: string,                  // REQUIRED - Full clinic address
+  city: string,                     // REQUIRED - City name
+  state?: string,                   // OPTIONAL - State name
+  pincode?: string,                 // OPTIONAL - Postal code
+  phone?: string,                   // OPTIONAL - Contact phone number
+  email?: string,                   // OPTIONAL - Contact email address
+  location?: {                      // OPTIONAL - Geo-coordinates
+    latitude: number,
+    longitude: number
+  },
+  operatingHours?: {                // OPTIONAL - Operating hours by day
+    [day: string]: {                // Day name (e.g., "Monday", "Tuesday")
+      open: string,                 // Opening time (e.g., "09:00")
+      close: string,                // Closing time (e.g., "18:00")
+      isClosed: boolean             // Whether clinic is closed on this day
+    }
+  },
+  facilities?: string[],            // OPTIONAL - Available facilities/services
+  isActive: boolean,                // DEFAULT: true - Is clinic active
+  createdAt: Date,                  // AUTO - Timestamp
+  updatedAt: Date                   // AUTO - Timestamp
+}
+```
+
+#### Indexes
+
+```typescript
+{ clinicId: 1 }, { unique: true }             // Unique index
+{ city: 1, isActive: 1 }                      // Compound index for location queries
+```
+
+#### Validation Rules
+
+1. **clinicId** - Must be unique across all clinics
+2. **name** - Required, clinic/hospital name
+3. **address** - Required, full street address
+4. **city** - Required for location-based filtering
+5. **operatingHours** - Optional, but if provided must have valid time formats
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012500"),
+  "clinicId": "CLINIC001",
+  "name": "Manipal Hospital Dwarka",
+  "address": "Sector 6, Dwarka, New Delhi",
+  "city": "Delhi (NCR)",
+  "state": "Delhi",
+  "pincode": "110075",
+  "phone": "+91-11-45801234",
+  "email": "dwarka@manipalhospitals.com",
+  "location": {
+    "latitude": 28.5921,
+    "longitude": 77.046
+  },
+  "operatingHours": {
+    "Monday": { "open": "08:00", "close": "20:00", "isClosed": false },
+    "Tuesday": { "open": "08:00", "close": "20:00", "isClosed": false },
+    "Wednesday": { "open": "08:00", "close": "20:00", "isClosed": false },
+    "Thursday": { "open": "08:00", "close": "20:00", "isClosed": false },
+    "Friday": { "open": "08:00", "close": "20:00", "isClosed": false },
+    "Saturday": { "open": "09:00", "close": "18:00", "isClosed": false },
+    "Sunday": { "open": "09:00", "close": "14:00", "isClosed": false }
+  },
+  "facilities": ["Emergency", "ICU", "Laboratory", "Pharmacy", "Radiology"],
+  "isActive": true,
+  "createdAt": ISODate("2025-09-28T00:00:00Z"),
+  "updatedAt": ISODate("2025-09-28T00:00:00Z")
+}
+```
+
+---
+
+### 16. doctor_slots
+
+**Collection Name:** `doctor_slots`
+**Purpose:** Store weekly recurring time slots for doctor availability at specific clinics
+**Document Count:** 17
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,                    // MongoDB auto-generated
+  doctorId: string,                 // REQUIRED - References doctors.doctorId
+  clinicId: string,                 // REQUIRED - References clinics.clinicId
+  dayOfWeek: string,                // REQUIRED - Day name (e.g., "Monday", "Tuesday")
+  startTime: string,                // REQUIRED - Start time (e.g., "09:00")
+  endTime: string,                  // REQUIRED - End time (e.g., "10:00")
+  slotDuration: number,             // DEFAULT: 30 - Duration in minutes
+  maxPatients: number,              // DEFAULT: 1 - Maximum patients per slot
+  isActive: boolean,                // DEFAULT: true - Is slot active
+  consultationFee: number,          // REQUIRED - Consultation fee for this slot
+  consultationType: string,         // REQUIRED, ENUM: ['IN_CLINIC', 'ONLINE', 'BOTH']
+  createdAt: Date,                  // AUTO - Timestamp
+  updatedAt: Date                   // AUTO - Timestamp
+}
+```
+
+#### Enums
+
+**ConsultationType:**
+```typescript
+enum ConsultationType {
+  IN_CLINIC = 'IN_CLINIC',      // In-person clinic consultation
+  ONLINE = 'ONLINE',            // Online/telemedicine consultation
+  BOTH = 'BOTH'                 // Both in-clinic and online available
+}
+```
+
+#### Indexes
+
+```typescript
+{ doctorId: 1, clinicId: 1, dayOfWeek: 1 }   // Compound index for slot queries
+{ isActive: 1 }                               // Single field index for active slots
+```
+
+#### Validation Rules
+
+1. **doctorId** - Must reference a valid doctor from doctors collection
+2. **clinicId** - Must reference a valid clinic from clinics collection
+3. **dayOfWeek** - Must be a valid day name (Monday-Sunday)
+4. **startTime/endTime** - Must be valid time format (HH:MM)
+5. **endTime** - Must be after startTime
+6. **consultationType** - Must be one of the defined enum values
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012600"),
+  "doctorId": "DOC001",
+  "clinicId": "CLINIC001",
+  "dayOfWeek": "Monday",
+  "startTime": "09:00",
+  "endTime": "10:00",
+  "slotDuration": 30,
+  "maxPatients": 1,
+  "isActive": true,
+  "consultationFee": 1000,
+  "consultationType": "IN_CLINIC",
+  "createdAt": ISODate("2025-09-28T00:00:00Z"),
+  "updatedAt": ISODate("2025-09-28T00:00:00Z")
+}
+```
+
+---
+
+### 17. appointments
 
 **Collection Name:** `appointments`
 **Purpose:** Store appointment bookings with status tracking and payment information
-**Document Count:** 3 (1 IN_CLINIC, 2 ONLINE)
+**Document Count:** 0 (collection reset, data deleted)
 **Timestamps:** Yes (createdAt, updatedAt)
 
 #### Schema Definition
@@ -1439,6 +1609,7 @@ enum OwnerPayerType {
   patientName: string,          // REQUIRED
   patientId: string,            // REQUIRED
   doctorId: string,             // REQUIRED
+  slotId?: ObjectId,            // OPTIONAL, REF: 'DoctorSlot' - Links to doctor_slots collection
   doctorName: string,           // REQUIRED
   specialty: string,            // REQUIRED
   clinicId?: string,            // OPTIONAL - Required for IN_CLINIC, not required for ONLINE appointments
@@ -1713,11 +1884,56 @@ None currently identified
 
 ---
 
-**Document Version:** 2.1
-**Last Updated:** 2025-09-28
+**Document Version:** 2.2
+**Last Updated:** September 28, 2025 (Evening Update)
 **For Questions:** Contact development team
 
 ---
+
+## RECENT CHANGES (Version 2.2)
+
+### 2025-09-28 Evening Updates
+
+1. **Database Expansion** - Collections increased from 15 to 17
+   - Total documents increased from 44 to 66
+   - Added clinics collection with 5 clinic locations
+   - Added doctor_slots collection with 17 weekly recurring slots
+
+2. **Clinics Module** - NEW
+   - Complete clinic/hospital management system
+   - Operating hours configuration by day of week
+   - Location coordinates for distance calculations
+   - Contact information and facilities tracking
+   - 5 clinics configured with full details
+
+3. **Doctor Slots Module** - NEW
+   - Weekly recurring slot scheduling system
+   - Links doctors to specific clinics with time slots
+   - Supports IN_CLINIC, ONLINE, and BOTH consultation types
+   - Configurable slot duration and patient capacity
+   - 17 slots configured across different doctors and clinics
+
+4. **Doctors Collection** - Enhanced
+   - Document count increased from 4 to 6 doctors
+   - Added phone, email, registrationNumber fields
+   - Added languages array for multilingual support
+   - Enhanced schema documentation with new fields
+
+5. **Users Collection** - Updated
+   - Document count increased from 3 to 4
+   - Added new OPS (Operations) user role
+   - Enhanced user management capabilities
+
+6. **Appointments Collection** - Schema Enhancement
+   - Added slotId field linking to doctor_slots collection
+   - Enables slot-based booking and availability management
+   - Collection reset (0 documents) for fresh start with new architecture
+
+7. **Slot-Based Scheduling Architecture**
+   - Appointments now integrate with doctor_slots for availability
+   - Weekly recurring slots enable consistent scheduling
+   - Clinic-specific slots support multi-location doctors
+   - Consultation type flexibility (in-clinic vs online)
 
 ## RECENT CHANGES (Version 2.1)
 

@@ -16,6 +16,8 @@ import { MigrationModule } from './modules/migration/migration.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
 import { DoctorsModule } from './modules/doctors/doctors.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { ClinicsModule } from './modules/clinics/clinics.module';
+import { DoctorSlotsModule } from './modules/doctor-slots/doctor-slots.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -49,6 +51,8 @@ import configuration from './config/configuration';
     SpecialtiesModule,
     DoctorsModule,
     AppointmentsModule,
+    ClinicsModule,
+    DoctorSlotsModule,
   ],
 })
 export class AppModule {}

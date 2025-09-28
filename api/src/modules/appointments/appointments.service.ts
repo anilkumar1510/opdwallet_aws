@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment, AppointmentDocument, AppointmentStatus } from './schemas/appointment.schema';
@@ -25,6 +25,7 @@ export class AppointmentsService {
       userId: new Types.ObjectId(createAppointmentDto.userId),
       status: AppointmentStatus.PENDING_CONFIRMATION,
       requestedAt: new Date(),
+      slotId: createAppointmentDto.slotId,
       doctorName: createAppointmentDto.doctorName || '',
       specialty: createAppointmentDto.specialty || '',
       clinicId: createAppointmentDto.clinicId || '',
@@ -71,6 +72,95 @@ export class AppointmentsService {
 
   async findOne(appointmentId: string): Promise<Appointment | null> {
     return this.appointmentModel.findOne({ appointmentId }).exec();
+  }
+
+  async findAll(query: any): Promise<{ data: Appointment[]; total: number; page: number; pages: number }> {
+    const page = parseInt(query.page || '1');
+    const limit = parseInt(query.limit || '20');
+    const skip = (page - 1) * limit;
+
+    const filter: any = {};
+
+    if (query.status) {
+      filter.status = query.status;
+    }
+
+    if (query.doctorId) {
+      filter.doctorId = query.doctorId;
+    }
+
+    if (query.specialtyId || query.specialty) {
+      filter.specialty = query.specialtyId || query.specialty;
+    }
+
+    if (query.type) {
+      filter.appointmentType = query.type;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    if (query.dateFrom) {
+      filter.appointmentDate = { $gte: query.dateFrom };
+    } else if (!query.includeOld) {
+      filter.appointmentDate = { $gte: today };
+    }
+
+    if (query.dateTo) {
+      filter.appointmentDate = filter.appointmentDate || {};
+      filter.appointmentDate.$lte = query.dateTo;
+    }
+
+    const [appointments, total] = await Promise.all([
+      this.appointmentModel
+        .find(filter)
+        .sort({ appointmentDate: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.appointmentModel.countDocuments(filter),
+    ]);
+
+    return {
+      data: appointments,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  async confirmAppointment(appointmentId: string): Promise<Appointment> {
+    const appointment = await this.appointmentModel.findOne({ appointmentId });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status !== AppointmentStatus.PENDING_CONFIRMATION) {
+      throw new BadRequestException('Only pending appointments can be confirmed');
+    }
+
+    appointment.status = AppointmentStatus.CONFIRMED;
+    appointment.confirmedAt = new Date();
+    await appointment.save();
+
+    return appointment;
+  }
+
+  async cancelAppointment(appointmentId: string, reason?: string): Promise<Appointment> {
+    const appointment = await this.appointmentModel.findOne({ appointmentId });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new BadRequestException('Appointment is already cancelled');
+    }
+
+    appointment.status = AppointmentStatus.CANCELLED;
+    await appointment.save();
+
+    return appointment;
   }
 
   private async getNextAppointmentNumber(): Promise<number> {

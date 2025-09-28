@@ -53,6 +53,9 @@ export class Appointment {
   @Prop({ required: true })
   specialty: string;
 
+  @Prop({ required: true })
+  slotId: string;
+
   @Prop()
   clinicId: string;
 
@@ -105,3 +108,4 @@ AppointmentSchema.index({ userId: 1, status: 1 });
 AppointmentSchema.index({ appointmentId: 1 });
 AppointmentSchema.index({ appointmentNumber: 1 });
 AppointmentSchema.index({ doctorId: 1, appointmentDate: 1 });
+AppointmentSchema.index({ slotId: 1, appointmentDate: 1 });

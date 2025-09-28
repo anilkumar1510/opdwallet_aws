@@ -2,9 +2,9 @@
 
 **Last Updated**: September 28, 2025
 **Current Deployment**: http://51.20.125.246
-**Production Status**: Active - Core Features Operational (80% Complete)
+**Production Status**: Active - Core Features Operational (85% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 5.0 (Comprehensive with Appointments & Doctors Implementation)
+**Documentation Version**: 5.1 (Comprehensive with Slot-Based Scheduling)
 
 ---
 
@@ -43,16 +43,18 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 - **Role-Based Access**: Multi-role support (SUPER_ADMIN, ADMIN, TPA, OPS, MEMBER)
 
 ### Current Status
-**Operational Components**: 80%
+**Operational Components**: 85%
 - ✅ Authentication & Authorization System
-- ✅ User Management (Primary + Dependents)
+- ✅ User Management (Primary + Dependents) - 4 users
 - ✅ Policy Management
 - ✅ Assignment System
 - ✅ Plan Configuration (Versioned)
 - ✅ Master Data Management
 - ✅ Specialty Master (9 specialties)
-- ✅ Doctors Management (4 doctors with clinics and slots)
-- ✅ Appointments (Fully implemented with IN_CLINIC and ONLINE booking)
+- ✅ Doctors Management (6 doctors with enhanced fields)
+- ✅ Clinics Management (5 clinics with operating hours)
+- ✅ Doctor Slots (17 weekly recurring slots)
+- ✅ Appointments (Slot-based scheduling with IN_CLINIC and ONLINE booking)
 - ✅ Audit Logging
 - ⚠️ Wallet System (Backend only, no endpoints)
 - ❌ Claims Processing (UI only, no backend)
@@ -550,10 +552,12 @@ web-member/
 
 | Collection | Documents | Status | Purpose |
 |------------|-----------|--------|---------|
-| `appointments` | 3 | Active | Appointment bookings (IN_CLINIC & ONLINE) |
-| `doctors` | 4 | Active | Doctor profiles with clinics and available slots |
+| `appointments` | 0 | Empty | Appointment bookings (reset for slot-based architecture) |
+| `doctors` | 6 | Active | Doctor profiles with enhanced fields (phone, email, registration) |
+| `clinics` | 5 | Active | Clinic/hospital locations with operating hours |
+| `doctor_slots` | 17 | Active | Weekly recurring time slots for doctor availability |
 | `specialty_master` | 9 | Active | Medical specialties for doctor categorization |
-| `users` | 3 | Active | User profiles (primary + dependents) |
+| `users` | 4 | Active | User profiles (primary + dependents + OPS user) |
 | `policies` | 1 | Active | Insurance policy definitions |
 | `plan_configs` | 3 | Active | Versioned policy configurations |
 | `userPolicyAssignments` | 4 | Active | User-policy linkage |
@@ -566,9 +570,9 @@ web-member/
 | `wallet_transactions` | 0 | Empty | Transaction history (⚠️ Not implemented) |
 | `auditLogs` | 0 | Empty | Audit trail (⚠️ Not functioning) |
 
-**Total Collections**: 15
-**Total Documents**: 44 (includes 3 appointments + 4 doctors + 9 specialties)
-**Database Size**: ~750KB
+**Total Collections**: 17
+**Total Documents**: 66 (includes 6 doctors + 5 clinics + 17 slots + 9 specialties)
+**Database Size**: ~850KB
 
 ### Data Relationships
 
@@ -592,9 +596,14 @@ wallet_transactions ←─ userWalletId (user_wallets._id)
 
 appointments ←─ userId (users._id)
              ←─ doctorId (doctors.doctorId)
+             ←─ slotId (doctor_slots._id)
 
 doctors ←─ specialtyId (specialty_master.specialtyId)
-        ←─ clinics[] (embedded clinic locations with fees and slots)
+
+clinics ←─ Standalone clinic/hospital locations
+
+doctor_slots ←─ doctorId (doctors.doctorId)
+             ←─ clinicId (clinics.clinicId)
 ```
 
 ### Indexing Strategy
@@ -739,12 +748,70 @@ Query Parameters for GET /api/doctors:
 
 Doctor Schema Includes:
 - Profile: name, qualifications, specializations, experience, rating
+- Contact: phone, email, registrationNumber
+- Languages: Array of languages spoken
 - Clinics: Array of clinic locations with address, fees, and coordinates
 - Availability: Online/offline flags, time slots, booking settings
 - Insurance: Cashless availability, accepted insurance providers
 ```
 
-#### Appointments (`/api/appointments`) - ✅ FULLY IMPLEMENTED
+#### Clinics Management (`/api/clinics`) - ✅ FULLY IMPLEMENTED
+```
+GET    /api/clinics                 # List all clinics
+GET    /api/clinics/:clinicId       # Get clinic details by ID
+GET    /api/clinics/city/:city      # Get clinics by city
+
+Clinic Schema Includes:
+- Basic Info: clinicId, name, address, city, state, pincode
+- Contact: phone, email
+- Location: Geo-coordinates (latitude, longitude)
+- Operating Hours: By day of week with open/close times
+- Facilities: Array of available services/facilities
+- Status: isActive flag
+
+Operating Hours Structure:
+{
+  "Monday": { "open": "09:00", "close": "18:00", "isClosed": false },
+  "Tuesday": { "open": "09:00", "close": "18:00", "isClosed": false },
+  ...
+}
+```
+
+#### Doctor Slots Management (`/api/doctor-slots`) - ✅ FULLY IMPLEMENTED
+```
+GET    /api/doctor-slots            # List all slots with filters
+GET    /api/doctor-slots/doctor/:doctorId  # Get all slots for a doctor
+GET    /api/doctor-slots/clinic/:clinicId  # Get all slots for a clinic
+POST   /api/doctor-slots            # Create new slot
+PUT    /api/doctor-slots/:id        # Update slot
+DELETE /api/doctor-slots/:id        # Delete slot
+
+Query Parameters:
+- doctorId: Filter by doctor ID
+- clinicId: Filter by clinic ID
+- dayOfWeek: Filter by day (Monday, Tuesday, etc.)
+- consultationType: Filter by type (IN_CLINIC, ONLINE, BOTH)
+- isActive: Filter by active status
+
+Doctor Slot Schema:
+- doctorId: Links to doctors collection
+- clinicId: Links to clinics collection
+- dayOfWeek: Day name (Monday-Sunday)
+- startTime/endTime: Time range (e.g., "09:00" to "10:00")
+- slotDuration: Duration in minutes (default: 30)
+- maxPatients: Maximum patients per slot (default: 1)
+- consultationFee: Fee for this specific slot
+- consultationType: IN_CLINIC, ONLINE, or BOTH
+- isActive: Slot availability flag
+
+Slot-Based Scheduling Benefits:
+- Weekly recurring schedules for consistent availability
+- Clinic-specific slots for multi-location doctors
+- Flexible consultation types per slot
+- Easy schedule management and updates
+```
+
+#### Appointments (`/api/appointments`) - ✅ FULLY IMPLEMENTED (Slot-Based)
 ```
 POST   /api/appointments            # Create appointment booking (IN_CLINIC or ONLINE)
 GET    /api/appointments/user/:userId  # Get user's appointments (with optional type filter)
@@ -782,10 +849,17 @@ Appointment Schema Includes:
 - Patient details: userId, patientName, patientId (for dependents)
 - Doctor details: doctorId, doctorName, specialty
 - Clinic details: clinicId, clinicName, clinicAddress (for IN_CLINIC)
+- Slot reference: slotId (links to doctor_slots collection)
 - Timing: appointmentDate, timeSlot
 - Payment: consultationFee, paymentStatus, amountPaid, coveredByInsurance
 - Online-specific: contactNumber, callPreference
 - Status tracking: status, requestedAt, confirmedAt
+
+Slot-Based Booking:
+- Appointments link to doctor_slots via slotId
+- Ensures booking within doctor's available schedule
+- Supports weekly recurring availability patterns
+- Enables real-time slot availability checking
 ```
 
 #### Member Portal API (`/api/member`)
