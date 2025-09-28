@@ -43,9 +43,18 @@ export class AppointmentsService {
     return saved;
   }
 
-  async getUserAppointments(userId: string): Promise<Appointment[]> {
+  async getUserAppointments(userId: string, appointmentType?: string): Promise<Appointment[]> {
+    const filter: any = { userId: new Types.ObjectId(userId) };
+
+    if (appointmentType) {
+      filter.appointmentType = appointmentType;
+      console.log('[AppointmentsService] Filtering by appointmentType:', appointmentType);
+    }
+
+    console.log('[AppointmentsService] Query filter:', filter);
+
     return this.appointmentModel
-      .find({ userId: new Types.ObjectId(userId) })
+      .find(filter)
       .sort({ createdAt: -1 })
       .exec();
   }

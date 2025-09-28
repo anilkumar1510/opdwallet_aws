@@ -64,8 +64,8 @@ export default function AppointmentsPage() {
 
   const fetchAppointments = async (userId: string) => {
     try {
-      console.log('[Appointments] Fetching appointments for user:', userId)
-      const response = await fetch(`/api/appointments/user/${userId}`, {
+      console.log('[Appointments] Fetching IN_CLINIC appointments for user:', userId)
+      const response = await fetch(`/api/appointments/user/${userId}?type=IN_CLINIC`, {
         credentials: 'include',
       })
 
@@ -74,7 +74,7 @@ export default function AppointmentsPage() {
       }
 
       const data = await response.json()
-      console.log('[Appointments] Appointments received:', { count: data.length })
+      console.log('[Appointments] IN_CLINIC appointments received:', { count: data.length })
       setAppointments(data)
     } catch (error) {
       console.error('[Appointments] Error fetching appointments:', error)
@@ -145,7 +145,7 @@ export default function AppointmentsPage() {
             >
               <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">Appointments</h1>
+            <h1 className="text-xl font-semibold text-gray-900">In-Clinic Appointments</h1>
           </div>
         </div>
       </div>

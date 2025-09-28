@@ -1,7 +1,7 @@
 # OPD WALLET - DATA SCHEMA AND CREDENTIALS DOCUMENTATION
 
-**Document Version:** 2.0
-**Last Updated:** 2025-09-27
+**Document Version:** 2.1
+**Last Updated:** 2025-09-28
 **Database:** MongoDB (opd_wallet)
 **Total Collections:** 15
 
@@ -41,7 +41,7 @@
 **Database Name:** `opd_wallet`
 **Authentication:** MongoDB Admin Auth
 **Total Collections:** 15
-**Total Documents:** ~45 (excluding empty collections)
+**Total Documents:** 44 (actual count)
 
 ### Current Data Distribution
 
@@ -61,7 +61,7 @@
 | auditLogs | 0 | Empty |
 | specialty_master | 9 | Active |
 | doctors | 4 | Active |
-| appointments | 0 | Empty |
+| appointments | 3 | Active |
 
 ---
 
@@ -1288,6 +1288,8 @@ enum OwnerPayerType {
     date: string,           // Date in YYYY-MM-DD format
     slots: string[]         // Array of time slots (e.g., "09:00 AM")
   }>,
+  availableOnline: boolean, // DEFAULT: true - Available for online consultations
+  availableOffline: boolean,// DEFAULT: true - Available for in-clinic consultations
   isActive: boolean,        // DEFAULT: true - Is doctor profile active
   createdAt: Date,          // AUTO - Creation timestamp
   updatedAt: Date           // AUTO - Last update timestamp
@@ -1297,7 +1299,7 @@ enum OwnerPayerType {
 #### Indexes
 
 ```typescript
-{ doctorId: 1 }, { unique: true }          // Unique index on doctorId
+{ doctorId: 1 }                            // Single field index
 { specialtyId: 1, isActive: 1 }            // Compound index for specialty queries
 { 'clinics.city': 1 }                      // Index on clinic city for location filtering
 ```
@@ -1363,6 +1365,8 @@ enum OwnerPayerType {
         "slots": ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM"]
       }
     ],
+    "availableOnline": true,
+    "availableOffline": true,
     "isActive": true,
     "createdAt": ISODate("2025-09-27T00:00:00Z"),
     "updatedAt": ISODate("2025-09-27T00:00:00Z")
@@ -1406,6 +1410,8 @@ enum OwnerPayerType {
         "slots": ["09:30 AM", "10:30 AM", "11:30 AM", "03:00 PM", "04:00 PM"]
       }
     ],
+    "availableOnline": true,
+    "availableOffline": false,
     "isActive": true,
     "createdAt": ISODate("2025-09-27T00:00:00Z"),
     "updatedAt": ISODate("2025-09-27T00:00:00Z")
@@ -1419,7 +1425,7 @@ enum OwnerPayerType {
 
 **Collection Name:** `appointments`
 **Purpose:** Store appointment bookings with status tracking and payment information
-**Document Count:** 0 (Empty)
+**Document Count:** 3 (1 IN_CLINIC, 2 ONLINE)
 **Timestamps:** Yes (createdAt, updatedAt)
 
 #### Schema Definition
@@ -1435,9 +1441,9 @@ enum OwnerPayerType {
   doctorId: string,             // REQUIRED
   doctorName: string,           // REQUIRED
   specialty: string,            // REQUIRED
-  clinicId?: string,            // OPTIONAL - Not required for online appointments
-  clinicName?: string,          // OPTIONAL - Not required for online appointments
-  clinicAddress?: string,       // OPTIONAL - Not required for online appointments
+  clinicId?: string,            // OPTIONAL - Required for IN_CLINIC, not required for ONLINE appointments
+  clinicName?: string,          // OPTIONAL - Required for IN_CLINIC, not required for ONLINE appointments
+  clinicAddress?: string,       // OPTIONAL - Required for IN_CLINIC, not required for ONLINE appointments
   appointmentType: string,      // REQUIRED, ENUM: 'IN_CLINIC', 'ONLINE'
   appointmentDate: string,      // REQUIRED, Format: YYYY-MM-DD
   timeSlot: string,             // REQUIRED
@@ -1448,20 +1454,154 @@ enum OwnerPayerType {
   paymentStatus: string,        // REQUIRED, ENUM: 'PENDING', 'PAID', 'FREE', DEFAULT: 'PENDING'
   amountPaid: number,           // DEFAULT: 0
   coveredByInsurance: boolean,  // DEFAULT: true
-  contactNumber?: string,       // OPTIONAL - Contact for appointment
-  callPreference?: string,      // OPTIONAL, ENUM: 'VOICE', 'VIDEO', 'BOTH' - For online appointments
+  contactNumber?: string,       // OPTIONAL - Contact for appointment (required for ONLINE appointments)
+  callPreference?: string,      // OPTIONAL, ENUM: 'VOICE', 'VIDEO', 'BOTH' - Required for ONLINE appointments
   createdAt: Date,              // AUTO - Timestamp
   updatedAt: Date               // AUTO - Timestamp
+}
+```
+
+#### Enums
+
+**AppointmentType:**
+```typescript
+enum AppointmentType {
+  IN_CLINIC = 'IN_CLINIC',      // In-person clinic appointment
+  ONLINE = 'ONLINE'             // Online/teleconsultation appointment
+}
+```
+
+**AppointmentStatus:**
+```typescript
+enum AppointmentStatus {
+  PENDING_CONFIRMATION = 'PENDING_CONFIRMATION',  // Awaiting confirmation
+  CONFIRMED = 'CONFIRMED',                        // Confirmed appointment
+  COMPLETED = 'COMPLETED',                        // Appointment completed
+  CANCELLED = 'CANCELLED'                         // Appointment cancelled
+}
+```
+
+**PaymentStatus:**
+```typescript
+enum PaymentStatus {
+  PENDING = 'PENDING',          // Payment pending
+  PAID = 'PAID',                // Payment completed
+  FREE = 'FREE'                 // Free/complimentary appointment
+}
+```
+
+**CallPreference:**
+```typescript
+enum CallPreference {
+  VOICE = 'VOICE',              // Voice call only
+  VIDEO = 'VIDEO',              // Video call only
+  BOTH = 'BOTH'                 // Both voice and video supported
 }
 ```
 
 #### Indexes
 
 ```typescript
-{ userId: 1, status: 1 }
-{ appointmentId: 1 }
-{ appointmentNumber: 1 }
-{ doctorId: 1, appointmentDate: 1 }
+{ userId: 1, status: 1 }                      // Compound index for user queries
+{ appointmentId: 1 }                          // Single field index
+{ appointmentNumber: 1 }                      // Single field index
+{ doctorId: 1, appointmentDate: 1 }          // Compound index for doctor schedule
+```
+
+#### Validation Rules
+
+1. **appointmentId** - Must be unique across all appointments
+2. **appointmentType** - Must be either 'IN_CLINIC' or 'ONLINE'
+3. **For IN_CLINIC appointments:**
+   - clinicId, clinicName, and clinicAddress are typically provided
+4. **For ONLINE appointments:**
+   - contactNumber is required
+   - callPreference is required (VOICE, VIDEO, or BOTH)
+   - clinicId, clinicName, and clinicAddress are optional
+5. **appointmentDate** - Must be in YYYY-MM-DD format
+6. **status** - Must be one of the defined enum values
+7. **paymentStatus** - Must be one of the defined enum values
+
+#### Sample Data Examples
+
+```json
+[
+  {
+    "_id": ObjectId("68d9f5e66cd3c49c7e4f8801"),
+    "appointmentId": "APT-001",
+    "appointmentNumber": "APT20250928001",
+    "userId": ObjectId("674d8e123abc456789012345"),
+    "patientName": "John Doe",
+    "patientId": "USR001",
+    "doctorId": "DOC001",
+    "doctorName": "Dr. Vikas Mittal",
+    "specialty": "General Physician",
+    "clinicId": "CLINIC001",
+    "clinicName": "Manipal Hospital",
+    "clinicAddress": "Sector 6, Dwarka, New Delhi",
+    "appointmentType": "IN_CLINIC",
+    "appointmentDate": "2025-09-30",
+    "timeSlot": "10:00 AM",
+    "consultationFee": 1000,
+    "status": "CONFIRMED",
+    "requestedAt": ISODate("2025-09-28T10:00:00Z"),
+    "confirmedAt": ISODate("2025-09-28T10:30:00Z"),
+    "paymentStatus": "PAID",
+    "amountPaid": 1000,
+    "coveredByInsurance": true,
+    "createdAt": ISODate("2025-09-28T10:00:00Z"),
+    "updatedAt": ISODate("2025-09-28T10:30:00Z")
+  },
+  {
+    "_id": ObjectId("68d9f5e66cd3c49c7e4f8802"),
+    "appointmentId": "APT-002",
+    "appointmentNumber": "APT20250928002",
+    "userId": ObjectId("674d8e123abc456789012345"),
+    "patientName": "Jane Smith",
+    "patientId": "USR002",
+    "doctorId": "DOC003",
+    "doctorName": "Dr. Priya Sharma",
+    "specialty": "Dermatologist",
+    "appointmentType": "ONLINE",
+    "appointmentDate": "2025-09-29",
+    "timeSlot": "03:00 PM",
+    "consultationFee": 800,
+    "status": "PENDING_CONFIRMATION",
+    "requestedAt": ISODate("2025-09-28T11:00:00Z"),
+    "paymentStatus": "PENDING",
+    "amountPaid": 0,
+    "coveredByInsurance": true,
+    "contactNumber": "+919876543210",
+    "callPreference": "VIDEO",
+    "createdAt": ISODate("2025-09-28T11:00:00Z"),
+    "updatedAt": ISODate("2025-09-28T11:00:00Z")
+  },
+  {
+    "_id": ObjectId("68d9f5e66cd3c49c7e4f8803"),
+    "appointmentId": "APT-003",
+    "appointmentNumber": "APT20250928003",
+    "userId": ObjectId("674d8e123abc456789012346"),
+    "patientName": "Robert Johnson",
+    "patientId": "USR003",
+    "doctorId": "DOC002",
+    "doctorName": "Dr. Amit Kumar",
+    "specialty": "Cardiologist",
+    "appointmentType": "ONLINE",
+    "appointmentDate": "2025-10-01",
+    "timeSlot": "11:00 AM",
+    "consultationFee": 1500,
+    "status": "CONFIRMED",
+    "requestedAt": ISODate("2025-09-28T09:00:00Z"),
+    "confirmedAt": ISODate("2025-09-28T09:15:00Z"),
+    "paymentStatus": "PAID",
+    "amountPaid": 1500,
+    "coveredByInsurance": true,
+    "contactNumber": "+919123456789",
+    "callPreference": "BOTH",
+    "createdAt": ISODate("2025-09-28T09:00:00Z"),
+    "updatedAt": ISODate("2025-09-28T09:15:00Z")
+  }
+]
 ```
 
 ---
@@ -1573,6 +1713,31 @@ None currently identified
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** 2025-09-27
+**Document Version:** 2.1
+**Last Updated:** 2025-09-28
 **For Questions:** Contact development team
+
+---
+
+## RECENT CHANGES (Version 2.1)
+
+### 2025-09-28 Updates
+
+1. **Appointments Collection** - Updated from 0 to 3 documents
+   - Added support for both IN_CLINIC and ONLINE appointment types
+   - ONLINE appointments require contactNumber and callPreference fields
+   - Clinic details (clinicId, clinicName, clinicAddress) are optional for ONLINE appointments
+   - Added comprehensive enum definitions for AppointmentType, AppointmentStatus, PaymentStatus, and CallPreference
+   - Added sample data showing both IN_CLINIC and ONLINE appointment examples
+
+2. **Doctors Collection** - Enhanced schema documentation
+   - Added availableOnline and availableOffline boolean fields (both default: true)
+   - These fields control whether a doctor is available for online consultations and/or in-clinic appointments
+   - Updated sample data to reflect these new fields
+
+3. **Total Document Count** - Updated from ~45 to exact count of 44 documents
+
+4. **Documentation Improvements**
+   - Added detailed validation rules for appointments
+   - Enhanced field descriptions with appointment-type-specific requirements
+   - Added realistic sample data with proper ObjectId references and timestamps

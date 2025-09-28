@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -9,7 +9,7 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  async create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req) {
+  async create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req: any) {
     const userId = req.user.userId;
     console.log('[AppointmentsController] Creating appointment for user:', userId);
     console.log('[AppointmentsController] Appointment data:', createAppointmentDto);
@@ -17,8 +17,12 @@ export class AppointmentsController {
   }
 
   @Get('user/:userId')
-  async getUserAppointments(@Param('userId') userId: string) {
-    return this.appointmentsService.getUserAppointments(userId);
+  async getUserAppointments(
+    @Param('userId') userId: string,
+    @Query('type') appointmentType?: string,
+  ) {
+    console.log('[AppointmentsController] Fetching appointments:', { userId, appointmentType });
+    return this.appointmentsService.getUserAppointments(userId, appointmentType);
   }
 
   @Get('user/:userId/ongoing')

@@ -28,16 +28,37 @@ export default function OnlineConsultPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [ongoingAppointments, setOngoingAppointments] = useState<Appointment[]>([])
+  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
-    console.log('[OnlineConsult] Fetching ongoing appointments')
-    fetchOngoingAppointments()
+    console.log('[OnlineConsult] Fetching user data')
+    fetchUserData()
   }, [])
 
-  const fetchOngoingAppointments = async () => {
+  const fetchUserData = async () => {
     try {
-      console.log('[OnlineConsult] Fetching appointments with filters')
-      const response = await fetch('/api/appointments', {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const data = await response.json()
+      console.log('[OnlineConsult] User ID received:', data._id)
+      setUserId(data._id)
+      await fetchOngoingAppointments(data._id)
+    } catch (error) {
+      console.error('[OnlineConsult] Error fetching user data:', error)
+      setLoading(false)
+    }
+  }
+
+  const fetchOngoingAppointments = async (userId: string) => {
+    try {
+      console.log('[OnlineConsult] Fetching ONLINE appointments for user:', userId)
+      const response = await fetch(`/api/appointments/user/${userId}?type=ONLINE`, {
         credentials: 'include',
       })
 
@@ -47,15 +68,14 @@ export default function OnlineConsultPage() {
       }
 
       const data = await response.json()
-      console.log('[OnlineConsult] All appointments received:', data.length)
+      console.log('[OnlineConsult] ONLINE appointments received:', data.length)
 
-      const onlineAppointments = data.filter((apt: Appointment) =>
-        apt.appointmentType === 'ONLINE' &&
-        (apt.status === 'CONFIRMED' || apt.status === 'PENDING_CONFIRMATION')
+      const ongoingOnline = data.filter((apt: Appointment) =>
+        apt.status === 'CONFIRMED' || apt.status === 'PENDING_CONFIRMATION'
       )
 
-      console.log('[OnlineConsult] Filtered online appointments:', onlineAppointments.length)
-      setOngoingAppointments(onlineAppointments)
+      console.log('[OnlineConsult] Filtered ongoing appointments:', ongoingOnline.length)
+      setOngoingAppointments(ongoingOnline)
     } catch (error) {
       console.error('[OnlineConsult] Error fetching appointments:', error)
     } finally {

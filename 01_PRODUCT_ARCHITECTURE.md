@@ -1,10 +1,10 @@
 # OPD Wallet - Complete Product Architecture
 
-**Last Updated**: September 27, 2025
+**Last Updated**: September 28, 2025
 **Current Deployment**: http://51.20.125.246
-**Production Status**: Active - Core Features Operational (70% Complete)
+**Production Status**: Active - Core Features Operational (80% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 4.0 (Comprehensive Audit-Based)
+**Documentation Version**: 5.0 (Comprehensive with Appointments & Doctors Implementation)
 
 ---
 
@@ -43,7 +43,7 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 - **Role-Based Access**: Multi-role support (SUPER_ADMIN, ADMIN, TPA, OPS, MEMBER)
 
 ### Current Status
-**Operational Components**: 75%
+**Operational Components**: 80%
 - ✅ Authentication & Authorization System
 - ✅ User Management (Primary + Dependents)
 - ✅ Policy Management
@@ -51,10 +51,10 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 - ✅ Plan Configuration (Versioned)
 - ✅ Master Data Management
 - ✅ Specialty Master (9 specialties)
-- ✅ Doctors Management (4 doctors with clinics)
+- ✅ Doctors Management (4 doctors with clinics and slots)
+- ✅ Appointments (Fully implemented with IN_CLINIC and ONLINE booking)
 - ✅ Audit Logging
 - ⚠️ Wallet System (Backend only, no endpoints)
-- ⚠️ Appointments (Schema ready, booking logic pending)
 - ❌ Claims Processing (UI only, no backend)
 - ❌ Health Records (UI only, no backend)
 - ❌ Reimbursements (UI only, no backend)
@@ -285,24 +285,28 @@ api/src/
 │   │   └── schemas/
 │   │       ├── user-wallet.schema.ts
 │   │       └── wallet-transaction.schema.ts
-│   ├── specialty-master/         # Medical specialty master module
+│   ├── specialty-master/         # Medical specialty master module (✅ FULLY IMPLEMENTED)
 │   │   ├── specialty-master.module.ts
 │   │   ├── specialty-master.controller.ts
 │   │   ├── specialty-master.service.ts
 │   │   └── schemas/
 │   │       └── specialty-master.schema.ts
-│   ├── doctors/                  # Doctor management module
+│   ├── doctors/                  # Doctor management module (✅ FULLY IMPLEMENTED)
 │   │   ├── doctors.module.ts
 │   │   ├── doctors.controller.ts
 │   │   ├── doctors.service.ts
-│   │   └── schemas/
-│   │       └── doctor.schema.ts
-│   ├── appointments/             # Appointment booking module
+│   │   ├── schemas/
+│   │   │   └── doctor.schema.ts
+│   │   └── dto/
+│   │       └── query-doctors.dto.ts
+│   ├── appointments/             # Appointment booking module (✅ FULLY IMPLEMENTED)
 │   │   ├── appointments.module.ts
 │   │   ├── appointments.controller.ts
 │   │   ├── appointments.service.ts
-│   │   └── schemas/
-│   │       └── appointment.schema.ts
+│   │   ├── schemas/
+│   │   │   └── appointment.schema.ts
+│   │   └── dto/
+│   │       └── create-appointment.dto.ts
 │   ├── member/                   # Member portal API module
 │   │   ├── member.module.ts
 │   │   ├── member.controller.ts
@@ -546,6 +550,9 @@ web-member/
 
 | Collection | Documents | Status | Purpose |
 |------------|-----------|--------|---------|
+| `appointments` | 3 | Active | Appointment bookings (IN_CLINIC & ONLINE) |
+| `doctors` | 4 | Active | Doctor profiles with clinics and available slots |
+| `specialty_master` | 9 | Active | Medical specialties for doctor categorization |
 | `users` | 3 | Active | User profiles (primary + dependents) |
 | `policies` | 1 | Active | Insurance policy definitions |
 | `plan_configs` | 3 | Active | Versioned policy configurations |
@@ -559,9 +566,9 @@ web-member/
 | `wallet_transactions` | 0 | Empty | Transaction history (⚠️ Not implemented) |
 | `auditLogs` | 0 | Empty | Audit trail (⚠️ Not functioning) |
 
-**Total Collections**: 12
-**Total Documents**: 28
-**Database Size**: ~500KB
+**Total Collections**: 15
+**Total Documents**: 44 (includes 3 appointments + 4 doctors + 9 specialties)
+**Database Size**: ~750KB
 
 ### Data Relationships
 
@@ -582,6 +589,12 @@ relationship_masters                           service_master
 
 user_wallets ←─ userId (users._id)
 wallet_transactions ←─ userWalletId (user_wallets._id)
+
+appointments ←─ userId (users._id)
+             ←─ doctorId (doctors.doctorId)
+
+doctors ←─ specialtyId (specialty_master.specialtyId)
+        ←─ clinics[] (embedded clinic locations with fees and slots)
 ```
 
 ### Indexing Strategy
@@ -712,30 +725,67 @@ DELETE /api/specialties/:id         # Delete specialty
 PATCH  /api/specialties/:id/toggle-active  # Toggle active status
 ```
 
-#### Doctors Management (`/api/doctors`)
+#### Doctors Management (`/api/doctors`) - ✅ FULLY IMPLEMENTED
 ```
-POST   /api/doctors                 # Create doctor profile
-GET    /api/doctors                 # List all doctors (with filters)
-GET    /api/doctors/:id             # Get doctor by ID
-GET    /api/doctors/specialty/:specialtyId  # Get doctors by specialty
-PUT    /api/doctors/:id             # Update doctor profile
-DELETE /api/doctors/:id             # Delete doctor profile
-PATCH  /api/doctors/:id/toggle-active  # Toggle active status
+GET    /api/doctors                 # List all doctors with filters
+GET    /api/doctors/:doctorId       # Get doctor by ID with clinic details
+GET    /api/doctors/:doctorId/slots # Get available time slots for doctor
+
+Query Parameters for GET /api/doctors:
+- specialtyId: Filter by specialty ID
+- city: Filter by clinic city
+- availableOnline: Filter online consultation doctors (boolean)
+- availableOffline: Filter in-clinic consultation doctors (boolean)
+
+Doctor Schema Includes:
+- Profile: name, qualifications, specializations, experience, rating
+- Clinics: Array of clinic locations with address, fees, and coordinates
+- Availability: Online/offline flags, time slots, booking settings
+- Insurance: Cashless availability, accepted insurance providers
 ```
 
-#### Appointments (`/api/appointments`)
+#### Appointments (`/api/appointments`) - ✅ FULLY IMPLEMENTED
 ```
 POST   /api/appointments            # Create appointment booking (IN_CLINIC or ONLINE)
-GET    /api/appointments            # List appointments (with filters)
-GET    /api/appointments/:id        # Get appointment by ID
-GET    /api/appointments/user/:userId  # Get user's appointments
-PUT    /api/appointments/:id        # Update appointment
-DELETE /api/appointments/:id        # Cancel appointment
-PATCH  /api/appointments/:id/status # Update appointment status
+GET    /api/appointments/user/:userId  # Get user's appointments (with optional type filter)
+GET    /api/appointments/user/:userId/ongoing  # Get ongoing appointments
+GET    /api/appointments/:appointmentId  # Get appointment details by ID
+
+Query Parameters for GET /api/appointments/user/:userId:
+- type: Filter by appointment type (IN_CLINIC or ONLINE)
 
 Appointment Types:
-- IN_CLINIC: Requires clinicId, clinicName, clinicAddress
-- ONLINE: clinicId/clinicName/clinicAddress are optional, supports callPreference (VOICE/VIDEO/BOTH)
+- IN_CLINIC: Requires clinicId, clinicName, clinicAddress, appointmentDate, timeSlot
+  Flow: Specialty → Doctor → Clinic → Patient → Time Slot → Confirmation
+- ONLINE: Optional clinic details, requires contactNumber, callPreference (VOICE/VIDEO/BOTH)
+  Flow: Specialty → Doctor → Patient → Contact → Immediate/Scheduled → Confirmation
+
+Appointment Status Flow:
+- PENDING_CONFIRMATION: Initial state after booking
+- CONFIRMED: Appointment confirmed by clinic/doctor
+- COMPLETED: Appointment completed successfully
+- CANCELLED: Appointment cancelled by user or clinic
+
+Payment Status:
+- PENDING: Payment not yet processed
+- PAID: Payment completed
+- FREE: No payment required (covered by insurance)
+
+Call Preferences (ONLINE appointments only):
+- VOICE: Voice call consultation
+- VIDEO: Video call consultation
+- BOTH: Either voice or video (doctor's choice)
+
+Appointment Schema Includes:
+- appointmentId: Unique identifier (APT-YYYYMMDD-XXXX format)
+- appointmentNumber: Human-readable number
+- Patient details: userId, patientName, patientId (for dependents)
+- Doctor details: doctorId, doctorName, specialty
+- Clinic details: clinicId, clinicName, clinicAddress (for IN_CLINIC)
+- Timing: appointmentDate, timeSlot
+- Payment: consultationFee, paymentStatus, amountPaid, coveredByInsurance
+- Online-specific: contactNumber, callPreference
+- Status tracking: status, requestedAt, confirmedAt
 ```
 
 #### Member Portal API (`/api/member`)
@@ -751,12 +801,233 @@ GET    /api/health                  # Basic health check
 
 ### Missing Endpoints (UI exists, no backend)
 ```
-❌ /api/wallet/*                    # Wallet operations (schema ready)
-⚠️ /api/appointments/*              # Appointment booking logic (schema ready, endpoints partial)
-❌ /api/claims/*                    # Claims processing
-❌ /api/health-records/*            # Health records
-❌ /api/reimbursements/*            # Reimbursement requests
+❌ /api/wallet/*                    # Wallet operations (schema ready, service exists)
+❌ /api/claims/*                    # Claims processing (not started)
+❌ /api/health-records/*            # Health records management (not started)
+❌ /api/reimbursements/*            # Reimbursement requests (not started)
 ```
+
+---
+
+## 📅 APPOINTMENT BOOKING FLOW
+
+### Overview
+The appointment booking system supports two types of appointments: **IN_CLINIC** (physical consultations) and **ONLINE** (telemedicine consultations). Both flows are fully implemented with end-to-end functionality.
+
+### IN_CLINIC Appointment Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    IN_CLINIC BOOKING FLOW                        │
+└─────────────────────────────────────────────────────────────────┘
+
+1. SPECIALTY SELECTION (/member/appointments/specialties)
+   └─> User selects medical specialty from 9 available options
+       API: GET /api/specialties/active
+       └─> Returns list of active specialties with icons and names
+
+2. DOCTOR SELECTION (/member/appointments/doctors?specialtyId=X)
+   └─> User browses doctors filtered by selected specialty
+       API: GET /api/doctors?specialtyId=X&availableOffline=true
+       └─> Returns doctors with:
+           - Profile (name, qualifications, experience, rating)
+           - Clinic locations with addresses and fees
+           - Distance from user (if location provided)
+           - Insurance acceptance
+
+3. CLINIC SELECTION (Embedded in doctor card)
+   └─> User selects specific clinic location from doctor's clinics
+       - Displays clinic name, address, consultation fee
+       - Shows distance if coordinates available
+
+4. PATIENT SELECTION (/member/appointments/select-patient)
+   └─> User selects patient (self or dependent)
+       API: GET /api/auth/me (includes relationships)
+       └─> Returns user profile with family members
+
+5. TIME SLOT SELECTION (/member/appointments/select-slot)
+   └─> User selects date and available time slot
+       API: GET /api/doctors/:doctorId/slots?date=YYYY-MM-DD
+       └─> Returns available slots for selected doctor/clinic
+
+6. CONFIRMATION (/member/appointments/confirm)
+   └─> User reviews all details and confirms booking
+       API: POST /api/appointments
+       Request Body: {
+         doctorId, doctorName, specialty,
+         clinicId, clinicName, clinicAddress,
+         patientName, patientId,
+         appointmentType: 'IN_CLINIC',
+         appointmentDate, timeSlot,
+         consultationFee
+       }
+       └─> Creates appointment with PENDING_CONFIRMATION status
+       └─> Returns appointmentId and appointmentNumber
+
+7. SUCCESS
+   └─> Displays appointment confirmation with:
+       - Appointment ID (APT-YYYYMMDD-XXXX)
+       - Doctor and clinic details
+       - Date and time
+       - Payment information
+```
+
+### ONLINE Consultation Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   ONLINE CONSULTATION FLOW                       │
+└─────────────────────────────────────────────────────────────────┘
+
+1. SPECIALTY SELECTION (/member/online-consult/specialties)
+   └─> User selects medical specialty
+       API: GET /api/specialties/active
+       └─> Returns list of active specialties
+
+2. DOCTOR SELECTION (/member/online-consult/doctors?specialtyId=X)
+   └─> User browses online consultation doctors
+       API: GET /api/doctors?specialtyId=X&availableOnline=true
+       └─> Returns doctors with online consultation availability
+           - Shows "Available now" or "Available in X mins" status
+           - Displays online consultation fee
+           - Shows rating and experience
+
+3. CONFIRMATION (/member/online-consult/confirm)
+   └─> Single-page confirmation with all details:
+
+   A. PATIENT SELECTION
+      └─> Select self or dependent (embedded)
+
+   B. CONTACT NUMBER
+      └─> Enter phone number for doctor callback
+          - Pre-filled with user's registered number
+
+   C. CALL PREFERENCE
+      └─> Select consultation mode:
+          - VOICE: Audio call only
+          - VIDEO: Video call only
+          - BOTH: Either audio or video (doctor decides)
+
+   D. TIMING SELECTION
+      └─> Choose consultation timing:
+          - CONSULT NOW: Immediate consultation
+            └─> appointmentDate: Today's date
+            └─> timeSlot: "Immediate"
+
+          - SCHEDULE LATER: Select future date/time
+            └─> Opens slot selection modal
+            └─> API: GET /api/doctors/:doctorId/slots
+            └─> User picks date and time slot
+
+   E. BOOKING CONFIRMATION
+      API: POST /api/appointments
+      Request Body: {
+        doctorId, doctorName, specialty,
+        patientName, patientId,
+        appointmentType: 'ONLINE',
+        appointmentDate, timeSlot,
+        contactNumber, callPreference,
+        consultationFee,
+        clinicId: '', clinicName: '', clinicAddress: ''
+      }
+      └─> Creates ONLINE appointment with PENDING_CONFIRMATION
+      └─> Doctor will call on provided contactNumber
+
+4. SUCCESS
+   └─> Redirects to appointments list (/member/appointments)
+   └─> Shows appointment in "Upcoming" or "Ongoing" section
+```
+
+### Appointment Data Model
+
+```typescript
+interface Appointment {
+  // Identifiers
+  appointmentId: string;           // APT-20250928-0001
+  appointmentNumber: string;       // Human-readable number
+
+  // User & Patient
+  userId: ObjectId;                // Reference to users collection
+  patientName: string;             // Patient's full name
+  patientId: string;               // SELF or relationship ID
+
+  // Doctor & Specialty
+  doctorId: string;                // Reference to doctors collection
+  doctorName: string;              // Doctor's full name
+  specialty: string;               // Medical specialty
+
+  // Clinic Details (optional for ONLINE)
+  clinicId?: string;               // Clinic identifier
+  clinicName?: string;             // Clinic name
+  clinicAddress?: string;          // Full clinic address
+
+  // Appointment Details
+  appointmentType: 'IN_CLINIC' | 'ONLINE';
+  appointmentDate: string;         // YYYY-MM-DD format
+  timeSlot: string;                // "10:00 AM - 10:30 AM" or "Immediate"
+
+  // Payment
+  consultationFee: number;         // Fee in INR
+  paymentStatus: 'PENDING' | 'PAID' | 'FREE';
+  amountPaid: number;              // Amount paid by user
+  coveredByInsurance: boolean;     // Insurance coverage flag
+
+  // Status Tracking
+  status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  requestedAt: Date;               // Booking request timestamp
+  confirmedAt?: Date;              // Confirmation timestamp
+
+  // Online Consultation Specific
+  contactNumber?: string;          // Phone for callback (ONLINE only)
+  callPreference?: 'VOICE' | 'VIDEO' | 'BOTH';  // Call type (ONLINE only)
+}
+```
+
+### Frontend Pages Structure
+
+#### IN_CLINIC Appointment Pages
+- `/member/appointments` - Appointments list (all appointments)
+- `/member/appointments/specialties` - Specialty selection
+- `/member/appointments/doctors?specialtyId=X` - Doctor selection
+- `/member/appointments/select-patient?...` - Patient selection
+- `/member/appointments/select-slot?...` - Time slot selection
+- `/member/appointments/confirm?...` - Final confirmation
+
+#### ONLINE Consultation Pages
+- `/member/online-consult` - Online consultation entry (redirects to specialties)
+- `/member/online-consult/specialties` - Specialty selection
+- `/member/online-consult/doctors?specialtyId=X` - Online doctor selection
+- `/member/online-consult/confirm?...` - All-in-one confirmation page
+
+### Key Features
+
+#### For IN_CLINIC Appointments
+- ✅ Multi-step booking wizard (6 steps)
+- ✅ Specialty-based doctor filtering
+- ✅ Multiple clinic locations per doctor
+- ✅ Real-time slot availability
+- ✅ Distance calculation from user location
+- ✅ Clinic address and directions
+- ✅ Insurance and cashless support indication
+- ✅ Booking confirmation with appointment ID
+
+#### For ONLINE Consultations
+- ✅ Simplified 3-step flow
+- ✅ "Available now" status indicator
+- ✅ Immediate or scheduled consultation
+- ✅ Call preference selection (Voice/Video/Both)
+- ✅ Contact number for callback
+- ✅ Single-page confirmation flow
+- ✅ Quick booking experience
+
+#### Common Features
+- ✅ Family member selection (self + dependents)
+- ✅ Doctor ratings and reviews display
+- ✅ Consultation fee display
+- ✅ Insurance coverage indication
+- ✅ Appointment history tracking
+- ✅ Appointment status tracking
+- ✅ Responsive design for mobile/desktop
 
 ---
 
@@ -1433,8 +1704,9 @@ export class PoliciesService {
 #### 1. Missing Backend Implementations
 | Feature | Frontend | Backend | Status |
 |---------|----------|---------|--------|
+| Appointments | ✅ Full UI | ✅ Fully implemented | ✅ COMPLETED |
+| Doctors Management | ✅ Full UI | ✅ Fully implemented | ✅ COMPLETED |
 | Wallet Management | ✅ UI exists | ❌ No endpoints | Service exists |
-| Bookings | ✅ Full UI | ❌ No endpoints | Not started |
 | Claims | ✅ Full UI | ❌ No endpoints | Not started |
 | Health Records | ✅ Full UI | ❌ No endpoints | Not started |
 | Reimbursements | ✅ Full UI | ❌ No endpoints | Not started |
@@ -1567,12 +1839,15 @@ async someMethod(): Promise<any> {
 ### Phase 2: Feature Completion (Weeks 3-6)
 **Priority**: 🟡 HIGH
 
-1. **Booking System**
-   - [ ] Design booking schema
-   - [ ] Create booking endpoints
-   - [ ] Implement booking service
-   - [ ] Connect frontend booking UI
-   - [ ] Add service provider integration
+1. **Appointment System** ✅ COMPLETED
+   - [x] Design appointment schema (IN_CLINIC & ONLINE)
+   - [x] Create appointment booking endpoints
+   - [x] Implement appointment service with status tracking
+   - [x] Connect frontend appointment UI (both flows)
+   - [x] Add doctor management with specialties
+   - [x] Implement slot availability system
+   - [x] Add call preference for online consultations
+   - [x] Integrate with user relationships for dependent booking
 
 2. **Claims Processing**
    - [ ] Design claims schema
