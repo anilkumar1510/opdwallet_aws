@@ -1430,26 +1430,28 @@ enum OwnerPayerType {
   appointmentId: string,        // REQUIRED, UNIQUE
   appointmentNumber: string,    // REQUIRED
   userId: ObjectId,             // REQUIRED, REF: 'User'
-  patientName: string,
-  patientId: string,
-  doctorId: string,
-  doctorName: string,
-  specialty: string,
-  clinicId: string,
-  clinicName: string,
-  clinicAddress: string,
-  appointmentType: string,      // ENUM: 'IN_CLINIC', 'ONLINE'
-  appointmentDate: string,      // YYYY-MM-DD
-  timeSlot: string,
-  consultationFee: number,
-  status: string,               // ENUM: 'PENDING_CONFIRMATION', 'CONFIRMED', 'COMPLETED', 'CANCELLED'
+  patientName: string,          // REQUIRED
+  patientId: string,            // REQUIRED
+  doctorId: string,             // REQUIRED
+  doctorName: string,           // REQUIRED
+  specialty: string,            // REQUIRED
+  clinicId?: string,            // OPTIONAL - Not required for online appointments
+  clinicName?: string,          // OPTIONAL - Not required for online appointments
+  clinicAddress?: string,       // OPTIONAL - Not required for online appointments
+  appointmentType: string,      // REQUIRED, ENUM: 'IN_CLINIC', 'ONLINE'
+  appointmentDate: string,      // REQUIRED, Format: YYYY-MM-DD
+  timeSlot: string,             // REQUIRED
+  consultationFee: number,      // REQUIRED
+  status: string,               // REQUIRED, ENUM: 'PENDING_CONFIRMATION', 'CONFIRMED', 'COMPLETED', 'CANCELLED', DEFAULT: 'PENDING_CONFIRMATION'
   requestedAt?: Date,
   confirmedAt?: Date,
-  paymentStatus: string,        // ENUM: 'PENDING', 'PAID', 'FREE'
-  amountPaid: number,
-  coveredByInsurance: boolean,
-  createdAt: Date,
-  updatedAt: Date
+  paymentStatus: string,        // REQUIRED, ENUM: 'PENDING', 'PAID', 'FREE', DEFAULT: 'PENDING'
+  amountPaid: number,           // DEFAULT: 0
+  coveredByInsurance: boolean,  // DEFAULT: true
+  contactNumber?: string,       // OPTIONAL - Contact for appointment
+  callPreference?: string,      // OPTIONAL, ENUM: 'VOICE', 'VIDEO', 'BOTH' - For online appointments
+  createdAt: Date,              // AUTO - Timestamp
+  updatedAt: Date               // AUTO - Timestamp
 }
 ```
 

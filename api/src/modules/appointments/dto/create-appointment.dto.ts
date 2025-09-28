@@ -1,10 +1,10 @@
-import { IsString, IsNotEmpty, IsNumber, IsEnum } from 'class-validator';
-import { AppointmentType } from '../schemas/appointment.schema';
+import { IsString, IsNotEmpty, IsNumber, IsEnum, IsOptional } from 'class-validator';
+import { AppointmentType, CallPreference } from '../schemas/appointment.schema';
 
 export class CreateAppointmentDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  userId: string;
+  userId?: string;
 
   @IsNotEmpty()
   @IsString()
@@ -18,25 +18,25 @@ export class CreateAppointmentDto {
   @IsString()
   doctorId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  doctorName: string;
+  doctorName?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  specialty: string;
+  specialty?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  clinicId: string;
+  clinicId?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  clinicName: string;
+  clinicName?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  clinicAddress: string;
+  clinicAddress?: string;
 
   @IsNotEmpty()
   @IsEnum(AppointmentType)
@@ -50,7 +50,15 @@ export class CreateAppointmentDto {
   @IsString()
   timeSlot: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  consultationFee: number;
+  consultationFee?: number;
+
+  @IsOptional()
+  @IsString()
+  contactNumber?: string;
+
+  @IsOptional()
+  @IsEnum(CallPreference)
+  callPreference?: string;
 }

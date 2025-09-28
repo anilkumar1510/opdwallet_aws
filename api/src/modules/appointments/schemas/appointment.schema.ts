@@ -53,13 +53,13 @@ export class Appointment {
   @Prop({ required: true })
   specialty: string;
 
-  @Prop({ required: true })
+  @Prop()
   clinicId: string;
 
-  @Prop({ required: true })
+  @Prop()
   clinicName: string;
 
-  @Prop({ required: true })
+  @Prop()
   clinicAddress: string;
 
   @Prop({ required: true, enum: AppointmentType })

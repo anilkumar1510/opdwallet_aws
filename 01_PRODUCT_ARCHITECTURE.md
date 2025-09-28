@@ -725,13 +725,17 @@ PATCH  /api/doctors/:id/toggle-active  # Toggle active status
 
 #### Appointments (`/api/appointments`)
 ```
-POST   /api/appointments            # Create appointment booking
+POST   /api/appointments            # Create appointment booking (IN_CLINIC or ONLINE)
 GET    /api/appointments            # List appointments (with filters)
 GET    /api/appointments/:id        # Get appointment by ID
 GET    /api/appointments/user/:userId  # Get user's appointments
 PUT    /api/appointments/:id        # Update appointment
 DELETE /api/appointments/:id        # Cancel appointment
 PATCH  /api/appointments/:id/status # Update appointment status
+
+Appointment Types:
+- IN_CLINIC: Requires clinicId, clinicName, clinicAddress
+- ONLINE: clinicId/clinicName/clinicAddress are optional, supports callPreference (VOICE/VIDEO/BOTH)
 ```
 
 #### Member Portal API (`/api/member`)

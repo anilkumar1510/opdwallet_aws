@@ -9,8 +9,11 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  async create(@Body() createAppointmentDto: CreateAppointmentDto) {
-    return this.appointmentsService.create(createAppointmentDto);
+  async create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req) {
+    const userId = req.user.userId;
+    console.log('[AppointmentsController] Creating appointment for user:', userId);
+    console.log('[AppointmentsController] Appointment data:', createAppointmentDto);
+    return this.appointmentsService.create({ ...createAppointmentDto, userId });
   }
 
   @Get('user/:userId')

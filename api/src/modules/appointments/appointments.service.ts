@@ -11,19 +11,36 @@ export class AppointmentsService {
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
+    console.log('[AppointmentsService] Creating appointment with DTO:', createAppointmentDto);
+
     const counter = await this.getNextAppointmentNumber();
     const appointmentId = `APT${counter}`;
 
-    const appointment = new this.appointmentModel({
+    console.log('[AppointmentsService] Generated appointmentId:', appointmentId, 'counter:', counter);
+
+    const appointmentData = {
       ...createAppointmentDto,
       appointmentId,
       appointmentNumber: counter.toString(),
       userId: new Types.ObjectId(createAppointmentDto.userId),
       status: AppointmentStatus.PENDING_CONFIRMATION,
       requestedAt: new Date(),
-    });
+      doctorName: createAppointmentDto.doctorName || '',
+      specialty: createAppointmentDto.specialty || '',
+      clinicId: createAppointmentDto.clinicId || '',
+      clinicName: createAppointmentDto.clinicName || '',
+      clinicAddress: createAppointmentDto.clinicAddress || '',
+      consultationFee: createAppointmentDto.consultationFee || 0,
+    };
 
-    return appointment.save();
+    console.log('[AppointmentsService] Final appointment data:', appointmentData);
+
+    const appointment = new this.appointmentModel(appointmentData);
+
+    const saved = await appointment.save();
+    console.log('[AppointmentsService] Appointment saved successfully:', saved.appointmentId);
+
+    return saved;
   }
 
   async getUserAppointments(userId: string): Promise<Appointment[]> {

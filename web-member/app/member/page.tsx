@@ -649,6 +649,13 @@ export default function DashboardPage() {
                     <Link
                       key={index}
                       href={benefit.href}
+                      onClick={() => {
+                        console.log(`[Dashboard] Navigating to ${benefit.name}`, {
+                          categoryCode: benefit.categoryCode,
+                          href: benefit.href,
+                          userId: user?._id
+                        })
+                      }}
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center space-x-4">

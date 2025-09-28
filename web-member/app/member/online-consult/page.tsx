@@ -36,17 +36,26 @@ export default function OnlineConsultPage() {
 
   const fetchOngoingAppointments = async () => {
     try {
-      const response = await fetch('/api/appointments?type=ONLINE&status=CONFIRMED,PENDING_CONFIRMATION', {
+      console.log('[OnlineConsult] Fetching appointments with filters')
+      const response = await fetch('/api/appointments', {
         credentials: 'include',
       })
 
       if (!response.ok) {
+        console.error('[OnlineConsult] API response not OK:', response.status, response.statusText)
         throw new Error('Failed to fetch appointments')
       }
 
       const data = await response.json()
-      console.log('[OnlineConsult] Ongoing appointments:', data.length)
-      setOngoingAppointments(data)
+      console.log('[OnlineConsult] All appointments received:', data.length)
+
+      const onlineAppointments = data.filter((apt: Appointment) =>
+        apt.appointmentType === 'ONLINE' &&
+        (apt.status === 'CONFIRMED' || apt.status === 'PENDING_CONFIRMATION')
+      )
+
+      console.log('[OnlineConsult] Filtered online appointments:', onlineAppointments.length)
+      setOngoingAppointments(onlineAppointments)
     } catch (error) {
       console.error('[OnlineConsult] Error fetching appointments:', error)
     } finally {
