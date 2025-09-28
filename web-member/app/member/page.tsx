@@ -181,12 +181,43 @@ export default function DashboardPage() {
     }
   }
 
-  // Health benefits data from API or show empty if no policy
-  const healthBenefits = (user?.healthBenefits || []).map((benefit: any) => ({
-    ...benefit,
-    icon: getCategoryIcon(benefit.categoryCode),
-    href: getServiceHref(benefit.categoryCode)
-  }))
+  const healthBenefits = [
+    {
+      name: 'In Clinic Consult',
+      description: 'Book appointments with doctors',
+      icon: UserIcon,
+      href: '/member/appointments',
+      categoryCode: 'IN_CLINIC_CONSULT'
+    },
+    {
+      name: 'Online Consult',
+      description: 'Video consultation with doctors',
+      icon: VideoCameraIcon,
+      href: '/member/online-consult',
+      categoryCode: 'ONLINE_CONSULT'
+    },
+    {
+      name: 'Pharmacy',
+      description: 'Order medicines online',
+      icon: CubeIcon,
+      href: '/member/pharmacy',
+      categoryCode: 'PHARMACY'
+    },
+    {
+      name: 'Lab',
+      description: 'Book lab tests',
+      icon: BeakerIcon,
+      href: '/member/lab',
+      categoryCode: 'LAB'
+    },
+    {
+      name: 'Annual Health Check',
+      description: 'Schedule health checkup',
+      icon: ClipboardDocumentCheckIcon,
+      href: '/member/health-checkup',
+      categoryCode: 'ANNUAL_HEALTH_CHECK'
+    }
+  ]
 
   // Helper function to get service booking URLs
   const getServiceHref = (categoryCode: string) => {
@@ -396,6 +427,13 @@ export default function DashboardPage() {
               <Link
                 key={index}
                 href={benefit.href}
+                onClick={() => {
+                  console.log(`[Dashboard] Navigating to ${benefit.name}`, {
+                    categoryCode: benefit.categoryCode,
+                    href: benefit.href,
+                    userId: user?._id
+                  })
+                }}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center space-x-3">

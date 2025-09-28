@@ -136,7 +136,6 @@ export default function PlanConfigEdit() {
         const updateData = {
           benefits: config.benefits,
           wallet: config.wallet,
-          enabledServices: config.enabledServices,
           coveredRelationships: config.coveredRelationships,
           memberConfigs: config.memberConfigs
         };
@@ -203,8 +202,7 @@ export default function PlanConfigEdit() {
         const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
           inheritFromPrimary: false,
           benefits: {},
-          wallet: {},
-          enabledServices: {}
+          wallet: {}
         };
 
         newMemberConfigs[selectedRelationship] = {
@@ -243,8 +241,7 @@ export default function PlanConfigEdit() {
         const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
           inheritFromPrimary: false,
           benefits: {},
-          wallet: {},
-          enabledServices: {}
+          wallet: {}
         };
 
         newMemberConfigs[selectedRelationship] = {
@@ -283,8 +280,7 @@ export default function PlanConfigEdit() {
         const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
           inheritFromPrimary: false,
           benefits: {},
-          wallet: {},
-          enabledServices: {}
+          wallet: {}
         };
 
         newMemberConfigs[selectedRelationship] = {
@@ -326,8 +322,7 @@ export default function PlanConfigEdit() {
         const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
           inheritFromPrimary: false,
           benefits: {},
-          wallet: {},
-          enabledServices: {}
+          wallet: {}
         };
 
         newMemberConfigs[selectedRelationship] = {
@@ -349,58 +344,6 @@ export default function PlanConfigEdit() {
     });
   };
 
-  const updateService = (serviceCode: string, enabled: boolean) => {
-    console.log('🟢 [SERVICE UPDATE DEBUG] Updating service:', serviceCode, 'enabled:', enabled);
-
-    setConfig(prev => {
-      if (selectedRelationship === 'PRIMARY') {
-        // Update primary member services
-        const newEnabledServices = { ...prev.enabledServices };
-
-        if (enabled) {
-          newEnabledServices[serviceCode] = { enabled: true };
-        } else {
-          delete newEnabledServices[serviceCode];
-        }
-
-        console.log('🟢 [SERVICE UPDATE DEBUG] New enabled services (primary):', newEnabledServices);
-
-        return {
-          ...prev,
-          enabledServices: newEnabledServices,
-        };
-      } else {
-        // Update specific relationship member services
-        const newMemberConfigs = { ...prev.memberConfigs };
-        const currentMemberConfig = newMemberConfigs[selectedRelationship] || {
-          inheritFromPrimary: false,
-          benefits: {},
-          wallet: {},
-          enabledServices: {}
-        };
-
-        const newEnabledServices = { ...currentMemberConfig.enabledServices };
-
-        if (enabled) {
-          newEnabledServices[serviceCode] = { enabled: true };
-        } else {
-          delete newEnabledServices[serviceCode];
-        }
-
-        newMemberConfigs[selectedRelationship] = {
-          ...currentMemberConfig,
-          enabledServices: newEnabledServices,
-        };
-
-        console.log('🟢 [SERVICE UPDATE DEBUG] New enabled services (relationship):', newEnabledServices);
-
-        return {
-          ...prev,
-          memberConfigs: newMemberConfigs,
-        };
-      }
-    });
-  };
 
   const toggleRelationship = (relationshipCode: string, enabled: boolean) => {
     setConfig(prev => {
@@ -415,8 +358,7 @@ export default function PlanConfigEdit() {
         newMemberConfigs[relationshipCode] = {
           inheritFromPrimary: true, // Default to inheriting from primary
           benefits: {},
-          wallet: {},
-          enabledServices: {}
+          wallet: {}
         };
       }
 
@@ -452,8 +394,7 @@ export default function PlanConfigEdit() {
           ...newMemberConfigs[relationshipCode],
           inheritFromPrimary: true,
           benefits: primaryConfig.benefits || prev.benefits || {},
-          wallet: primaryConfig.wallet || prev.wallet || {},
-          enabledServices: primaryConfig.enabledServices || prev.enabledServices || {}
+          wallet: primaryConfig.wallet || prev.wallet || {}
         };
       } else {
         // Set to custom configuration
@@ -461,8 +402,7 @@ export default function PlanConfigEdit() {
           ...newMemberConfigs[relationshipCode],
           inheritFromPrimary: false,
           benefits: {},
-          wallet: {},
-          enabledServices: {}
+          wallet: {}
         };
       }
 
@@ -497,13 +437,6 @@ export default function PlanConfigEdit() {
     return memberConfig?.wallet || {};
   };
 
-  const getCurrentEnabledServices = () => {
-    if (selectedRelationship === 'PRIMARY') {
-      return config.enabledServices || {};
-    }
-    const memberConfig = getCurrentMemberConfig();
-    return memberConfig?.enabledServices || {};
-  };
 
   const isCurrentMemberInheriting = () => {
     if (selectedRelationship === 'PRIMARY') {
@@ -550,13 +483,13 @@ export default function PlanConfigEdit() {
         )}
       </div>
 
-      {/* Relationship Selector - Only show for Benefits, Wallet, and Services tabs */}
+      {/* Relationship Selector - Only show for Benefits and Wallet tabs */}
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-medium text-gray-900">Configure for Relationship</h3>
             <p className="text-sm text-gray-600">
-              Select the relationship to configure benefits, wallet, and services. Coverage settings are managed in the Coverage tab.
+              Select the relationship to configure benefits and wallet. Coverage settings are managed in the Coverage tab.
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -633,7 +566,6 @@ export default function PlanConfigEdit() {
           <TabsTrigger value="coverage" className="data-[state=active]:bg-white data-[state=active]:text-black">Coverage</TabsTrigger>
           <TabsTrigger value="benefits" className="data-[state=active]:bg-white data-[state=active]:text-black">Benefits</TabsTrigger>
           <TabsTrigger value="wallet" className="data-[state=active]:bg-white data-[state=active]:text-black">Wallet</TabsTrigger>
-          <TabsTrigger value="services" className="data-[state=active]:bg-white data-[state=active]:text-black">Services</TabsTrigger>
         </TabsList>
 
         <TabsContent value="coverage">
@@ -748,7 +680,7 @@ export default function PlanConfigEdit() {
 
                         <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                           <div className="text-sm text-yellow-800">
-                            <strong>Note:</strong> Individual configurations for benefits, wallet settings, and services will be available in their respective tabs once relationships are configured here.
+                            <strong>Note:</strong> Individual configurations for benefits and wallet settings will be available in their respective tabs once relationships are configured here.
                           </div>
                         </div>
                       </div>
@@ -1098,132 +1030,6 @@ export default function PlanConfigEdit() {
                   </>
                 );
               })()}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="services">
-          <Card className="bg-white">
-            <CardHeader className="bg-white">
-              <CardTitle className="text-gray-900">
-                Services Configuration
-                {selectedRelationship !== 'PRIMARY' && (
-                  <span className="ml-2 text-sm font-normal text-gray-600">
-                    for {relationships.find(r => r.relationshipCode === selectedRelationship)?.displayName || selectedRelationship}
-                  </span>
-                )}
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Services are automatically loaded based on enabled categories in the Benefits tab.
-              </p>
-              {selectedRelationship !== 'PRIMARY' && isCurrentMemberInheriting() && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                  <div className="text-sm text-green-800">
-                    <strong>Note:</strong> This relationship is inheriting services from the Primary Member.
-                    Turn off "Inherit from Primary" above to create custom service configurations.
-                  </div>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-6 bg-white">
-              {servicesLoading ? (
-                <div className="text-center py-8 text-gray-600">
-                  Loading services...
-                </div>
-              ) : Object.keys(services).length === 0 ? (
-                <div className="text-center py-8 text-gray-600">
-                  No services available. Please enable categories in the Benefits tab first.
-                </div>
-              ) : (
-                Object.entries(services).map(([categoryId, categoryServices]) => {
-                  const category = categories.find(cat => cat.categoryId === categoryId);
-                  const currentEnabledServices = getCurrentEnabledServices();
-                  const isInheriting = isCurrentMemberInheriting();
-                  const isDisabled = isReadOnly || (selectedRelationship !== 'PRIMARY' && isInheriting);
-
-                  return (
-                    <div key={categoryId} className="border border-gray-200 rounded-lg p-4 bg-white">
-                      <div className="bg-white">
-                        <div className="mb-4">
-                          <h4 className="text-lg font-medium text-gray-900">
-                            {category?.name || categoryId}
-                          </h4>
-                          <div className="text-sm text-gray-500 mt-1">
-                            Category ID: {categoryId} • {categoryServices.length} service(s) available
-                          </div>
-                          {selectedRelationship !== 'PRIMARY' && isInheriting && (
-                            <div className="text-xs text-green-600 mt-1">
-                              ✓ Services inherited from Primary Member
-                            </div>
-                          )}
-                        </div>
-
-                        {categoryServices.length === 0 ? (
-                          <div className="text-center py-4 text-gray-500">
-                            No services found for this category.
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {categoryServices.map((service) => (
-                              <div key={service.code} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-gray-50">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3">
-                                    <div>
-                                      <div className="font-medium text-gray-900">
-                                        {service.name}
-                                      </div>
-                                      <div className="text-sm text-gray-600">
-                                        Code: {service.code}
-                                        {service.description && ` • ${service.description}`}
-                                      </div>
-                                      {selectedRelationship !== 'PRIMARY' && isInheriting && (
-                                        <div className="text-xs text-green-600 mt-1">
-                                          ✓ Inherited from Primary Member
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <Switch
-                                  checked={currentEnabledServices?.[service.code]?.enabled || false}
-                                  onCheckedChange={(checked) => updateService(service.code, checked)}
-                                  disabled={isDisabled}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-
-              {Object.keys(services).length > 0 && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  {(() => {
-                    const currentEnabledServices = getCurrentEnabledServices();
-                    const enabledCount = Object.keys(currentEnabledServices || {}).length;
-                    const enabledServicesList = Object.keys(currentEnabledServices || {}).join(', ') || 'None';
-
-                    return (
-                      <>
-                        <div className="text-sm text-blue-800">
-                          <strong>Total enabled services for {selectedRelationship === 'PRIMARY' ? 'Primary Member' : (relationships.find(r => r.relationshipCode === selectedRelationship)?.displayName || selectedRelationship)}:</strong> {enabledCount}
-                        </div>
-                        <div className="text-xs text-blue-600 mt-1">
-                          Enabled services: {enabledServicesList}
-                        </div>
-                        {selectedRelationship !== 'PRIMARY' && isCurrentMemberInheriting() && (
-                          <div className="text-xs text-green-600 mt-1">
-                            ✓ These services are inherited from the Primary Member
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

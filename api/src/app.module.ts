@@ -13,6 +13,9 @@ import { PlanConfigModule } from './modules/plan-config/plan-config.module';
 import { MemberModule } from './modules/member/member.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { MigrationModule } from './modules/migration/migration.module';
+import { SpecialtiesModule } from './modules/specialties/specialties.module';
+import { DoctorsModule } from './modules/doctors/doctors.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -43,6 +46,9 @@ import configuration from './config/configuration';
     MemberModule,
     WalletModule,
     MigrationModule,
+    SpecialtiesModule,
+    DoctorsModule,
+    AppointmentsModule,
   ],
 })
 export class AppModule {}
