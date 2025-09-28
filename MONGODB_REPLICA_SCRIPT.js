@@ -308,7 +308,7 @@ db.doctors.drop();
 // Insert data
 db.doctors.insertMany([
   {
-    "_id": ObjectId("68d81a03f7b245c8044f87fe"),
+    "_id": ObjectId("68d8ab8e6cd3c49c7e4f87fe"),
     "doctorId": "DOC001",
     "name": "Dr. Vikas Mittal",
     "profilePhoto": "",
@@ -319,7 +319,10 @@ db.doctors.insertMany([
       "Pulmonary Medicine, Fellow"
     ],
     "specialtyId": "SPEC001",
+    "specialty": "General Physician",
     "experienceYears": 16,
+    "rating": 4.7,
+    "reviewCount": 156,
     "clinics": [
       {
         "clinicId": "CLINIC001",
@@ -332,7 +335,8 @@ db.doctors.insertMany([
           "latitude": 28.5921,
           "longitude": 77.046
         },
-        "distanceKm": 12.67
+        "distanceKm": 12.67,
+        "consultationFee": 1000
       }
     ],
     "consultationFee": 1000,
@@ -353,7 +357,7 @@ db.doctors.insertMany([
     "isActive": true
   },
   {
-    "_id": ObjectId("68d81a03f7b245c8044f87ff"),
+    "_id": ObjectId("68d8ab8e6cd3c49c7e4f87ff"),
     "doctorId": "DOC002",
     "name": "Dr. Rajesh Madan",
     "profilePhoto": "",
@@ -364,7 +368,10 @@ db.doctors.insertMany([
       "Fellowship in Interventional Cardiology"
     ],
     "specialtyId": "SPEC001",
+    "specialty": "General Physician",
     "experienceYears": 14,
+    "rating": 4.5,
+    "reviewCount": 98,
     "clinics": [
       {
         "clinicId": "CLINIC002",
@@ -377,7 +384,8 @@ db.doctors.insertMany([
           "latitude": 28.5244,
           "longitude": 77.2066
         },
-        "distanceKm": 22.34
+        "distanceKm": 22.34,
+        "consultationFee": 800
       }
     ],
     "consultationFee": 800,
@@ -398,7 +406,7 @@ db.doctors.insertMany([
     "isActive": true
   },
   {
-    "_id": ObjectId("68d81a03f7b245c8044f8800"),
+    "_id": ObjectId("68d8ab8e6cd3c49c7e4f8800"),
     "doctorId": "DOC003",
     "name": "Dr. Priya Sharma",
     "profilePhoto": "",
@@ -409,7 +417,10 @@ db.doctors.insertMany([
       "Hair Transplant"
     ],
     "specialtyId": "SPEC004",
+    "specialty": "Dermatologist",
     "experienceYears": 12,
+    "rating": 4.8,
+    "reviewCount": 234,
     "clinics": [
       {
         "clinicId": "CLINIC003",
@@ -422,7 +433,8 @@ db.doctors.insertMany([
           "latitude": 28.5167,
           "longitude": 77.1598
         },
-        "distanceKm": 8.5
+        "distanceKm": 8.5,
+        "consultationFee": 1200
       }
     ],
     "consultationFee": 1200,
@@ -443,7 +455,7 @@ db.doctors.insertMany([
     "isActive": true
   },
   {
-    "_id": ObjectId("68d81a03f7b245c8044f8801"),
+    "_id": ObjectId("68d8ab8e6cd3c49c7e4f8801"),
     "doctorId": "DOC004",
     "name": "Dr. Anjali Verma",
     "profilePhoto": "",
@@ -454,7 +466,10 @@ db.doctors.insertMany([
       "Infertility"
     ],
     "specialtyId": "SPEC002",
+    "specialty": "Gynaecologist",
     "experienceYears": 18,
+    "rating": 4.9,
+    "reviewCount": 342,
     "clinics": [
       {
         "clinicId": "CLINIC004",
@@ -467,7 +482,8 @@ db.doctors.insertMany([
           "latitude": 28.5403,
           "longitude": 77.2717
         },
-        "distanceKm": 15.2
+        "distanceKm": 15.2,
+        "consultationFee": 1500
       }
     ],
     "consultationFee": 1500,

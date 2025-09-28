@@ -43,16 +43,18 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 - **Role-Based Access**: Multi-role support (SUPER_ADMIN, ADMIN, TPA, OPS, MEMBER)
 
 ### Current Status
-**Operational Components**: 70%
+**Operational Components**: 75%
 - ✅ Authentication & Authorization System
 - ✅ User Management (Primary + Dependents)
 - ✅ Policy Management
 - ✅ Assignment System
 - ✅ Plan Configuration (Versioned)
 - ✅ Master Data Management
+- ✅ Specialty Master (9 specialties)
+- ✅ Doctors Management (4 doctors with clinics)
 - ✅ Audit Logging
 - ⚠️ Wallet System (Backend only, no endpoints)
-- ❌ Booking System (UI only, no backend)
+- ⚠️ Appointments (Schema ready, booking logic pending)
 - ❌ Claims Processing (UI only, no backend)
 - ❌ Health Records (UI only, no backend)
 - ❌ Reimbursements (UI only, no backend)
@@ -283,6 +285,24 @@ api/src/
 │   │   └── schemas/
 │   │       ├── user-wallet.schema.ts
 │   │       └── wallet-transaction.schema.ts
+│   ├── specialty-master/         # Medical specialty master module
+│   │   ├── specialty-master.module.ts
+│   │   ├── specialty-master.controller.ts
+│   │   ├── specialty-master.service.ts
+│   │   └── schemas/
+│   │       └── specialty-master.schema.ts
+│   ├── doctors/                  # Doctor management module
+│   │   ├── doctors.module.ts
+│   │   ├── doctors.controller.ts
+│   │   ├── doctors.service.ts
+│   │   └── schemas/
+│   │       └── doctor.schema.ts
+│   ├── appointments/             # Appointment booking module
+│   │   ├── appointments.module.ts
+│   │   ├── appointments.controller.ts
+│   │   ├── appointments.service.ts
+│   │   └── schemas/
+│   │       └── appointment.schema.ts
 │   ├── member/                   # Member portal API module
 │   │   ├── member.module.ts
 │   │   ├── member.controller.ts
@@ -681,6 +701,39 @@ POST   /api/cugs/seed               # Seed default CUGs
 GET    /api/relationships           # Get all active relationships
 ```
 
+#### Specialty Master (`/api/specialties`)
+```
+POST   /api/specialties             # Create specialty
+GET    /api/specialties             # List all specialties
+GET    /api/specialties/active      # List active specialties
+GET    /api/specialties/:id         # Get specialty by ID
+PUT    /api/specialties/:id         # Update specialty
+DELETE /api/specialties/:id         # Delete specialty
+PATCH  /api/specialties/:id/toggle-active  # Toggle active status
+```
+
+#### Doctors Management (`/api/doctors`)
+```
+POST   /api/doctors                 # Create doctor profile
+GET    /api/doctors                 # List all doctors (with filters)
+GET    /api/doctors/:id             # Get doctor by ID
+GET    /api/doctors/specialty/:specialtyId  # Get doctors by specialty
+PUT    /api/doctors/:id             # Update doctor profile
+DELETE /api/doctors/:id             # Delete doctor profile
+PATCH  /api/doctors/:id/toggle-active  # Toggle active status
+```
+
+#### Appointments (`/api/appointments`)
+```
+POST   /api/appointments            # Create appointment booking
+GET    /api/appointments            # List appointments (with filters)
+GET    /api/appointments/:id        # Get appointment by ID
+GET    /api/appointments/user/:userId  # Get user's appointments
+PUT    /api/appointments/:id        # Update appointment
+DELETE /api/appointments/:id        # Cancel appointment
+PATCH  /api/appointments/:id/status # Update appointment status
+```
+
 #### Member Portal API (`/api/member`)
 ```
 GET    /api/member/profile          # Get member profile with family
@@ -694,8 +747,8 @@ GET    /api/health                  # Basic health check
 
 ### Missing Endpoints (UI exists, no backend)
 ```
-❌ /api/wallet/*                    # Wallet operations
-❌ /api/bookings/*                  # Service bookings
+❌ /api/wallet/*                    # Wallet operations (schema ready)
+⚠️ /api/appointments/*              # Appointment booking logic (schema ready, endpoints partial)
 ❌ /api/claims/*                    # Claims processing
 ❌ /api/health-records/*            # Health records
 ❌ /api/reimbursements/*            # Reimbursement requests

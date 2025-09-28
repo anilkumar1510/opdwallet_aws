@@ -66,7 +66,16 @@ export class Doctor {
   specialtyId: string;
 
   @Prop({ required: true })
+  specialty: string;
+
+  @Prop({ required: true })
   experienceYears: number;
+
+  @Prop({ default: 0 })
+  rating: number;
+
+  @Prop({ default: 0 })
+  reviewCount: number;
 
   @Prop({ type: [ClinicLocation], required: true })
   clinics: ClinicLocation[];
@@ -88,6 +97,12 @@ export class Doctor {
 
   @Prop({ type: [TimeSlot] })
   availableSlots: TimeSlot[];
+
+  @Prop({ default: true })
+  availableOnline: boolean;
+
+  @Prop({ default: true })
+  availableOffline: boolean;
 
   @Prop({ default: true })
   isActive: boolean;

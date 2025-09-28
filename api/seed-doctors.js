@@ -6,7 +6,10 @@ const doctors = [
     qualifications: 'MBBS, MD',
     specializations: ['Pulmonary Medicine', 'Tuberculosis & Respiratory Diseases', 'Pulmonary Medicine, Fellow'],
     specialtyId: 'SPEC001',
+    specialty: 'General Physician',
     experienceYears: 16,
+    rating: 4.7,
+    reviewCount: 156,
     clinics: [
       {
         clinicId: 'CLINIC001',
@@ -30,14 +33,16 @@ const doctors = [
     allowDirectBooking: false,
     availableSlots: [
       {
-        date: '2025-09-28',
+        date: new Date().toISOString().split('T')[0],
         slots: ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM']
       },
       {
-        date: '2025-09-29',
+        date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         slots: ['09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM']
       }
     ],
+    availableOnline: true,
+    availableOffline: true,
     isActive: true
   },
   {
@@ -47,7 +52,10 @@ const doctors = [
     qualifications: 'MBBS, MD',
     specializations: ['General Medicine', 'DNB - Cardiology', 'Fellowship in Interventional Cardiology'],
     specialtyId: 'SPEC001',
+    specialty: 'General Physician',
     experienceYears: 14,
+    rating: 4.5,
+    reviewCount: 98,
     clinics: [
       {
         clinicId: 'CLINIC002',
@@ -79,6 +87,8 @@ const doctors = [
         slots: ['10:00 AM', '11:00 AM', '04:00 PM', '05:00 PM']
       }
     ],
+    availableOnline: true,
+    availableOffline: true,
     isActive: true
   },
   {
@@ -88,7 +98,10 @@ const doctors = [
     qualifications: 'MBBS, MD (Dermatology)',
     specializations: ['Dermatology', 'Cosmetology', 'Hair Transplant'],
     specialtyId: 'SPEC004',
+    specialty: 'Dermatologist',
     experienceYears: 12,
+    rating: 4.8,
+    reviewCount: 234,
     clinics: [
       {
         clinicId: 'CLINIC003',
@@ -120,6 +133,8 @@ const doctors = [
         slots: ['09:30 AM', '10:30 AM', '11:30 AM', '03:00 PM', '04:00 PM']
       }
     ],
+    availableOnline: true,
+    availableOffline: true,
     isActive: true
   },
   {
@@ -129,7 +144,10 @@ const doctors = [
     qualifications: 'MBBS, MD (Obstetrics & Gynecology)',
     specializations: ['Gynecology', 'Obstetrics', 'Infertility'],
     specialtyId: 'SPEC002',
+    specialty: 'Gynaecologist',
     experienceYears: 18,
+    rating: 4.9,
+    reviewCount: 342,
     clinics: [
       {
         clinicId: 'CLINIC004',

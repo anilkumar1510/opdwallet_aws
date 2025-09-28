@@ -78,7 +78,12 @@
 - `/api/src/doctors/doctors.controller.ts`
 - `/api/src/doctors/doctors.service.ts`
 - `/api/src/doctors/schemas/doctor.schema.ts`
-**Features**: Specialty linkage, availability management, consultation fees
+**Doctor Schema Features**:
+- specialtyId (REQUIRED) - Links to specialty_master
+- specialty (REQUIRED) - Specialty name for display
+- consultationFee (REQUIRED) - Base doctor consultation fee
+- rating & reviewCount - Patient feedback metrics
+- clinics array with individual consultationFee per location
 **Status**: Fully functional with CRUD operations
 **Completed**: September 27, 2025
 
@@ -121,9 +126,26 @@
 **Status**: Full CRUD operations now available for users
 **Completed**: September 27, 2025
 
+#### #015 ✅ **DONE** - Comprehensive Documentation Update
+**Issue**: Documentation not reflecting latest doctor schema enhancements
+**Resolution**: Updated all documentation files with complete doctor schema details
+**Files Updated**:
+- `/MONGODB_REPLICA_SCRIPT.js` - Added specialty, rating, reviewCount, consultationFee fields
+- `/02_DATA_SCHEMA_AND_CREDENTIALS.md` - Complete doctor schema with all fields documented
+- `/01_PRODUCT_ARCHITECTURE.md` - Added doctors/specialty/appointments modules to architecture
+- `/DATABASE_CLEANUP_TODOLIST.md` - Enhanced with schema feature details
+**Schema Changes Documented**:
+- specialtyId (REQUIRED) - Foreign key to specialty_master
+- specialty (REQUIRED) - Denormalized specialty name
+- consultationFee (REQUIRED) - Doctor-level consultation fee
+- rating & reviewCount - Patient feedback system
+- clinics[].consultationFee (REQUIRED) - Clinic-specific consultation fees
+**Status**: All documentation 100% accurate with codebase
+**Completed**: September 28, 2025
+
 ### 🔴 **CRITICAL SECURITY ISSUES (IMMEDIATE)**
 
-#### #015 ⚠️ **URGENT** - Hardcoded Database Credentials
+#### #016 ⚠️ **URGENT** - Hardcoded Database Credentials
 **Risk Level**: CRITICAL - Complete database compromise possible
 **Issue**: MongoDB credentials `admin:admin123` hardcoded in multiple files
 **Files Affected**:
@@ -135,7 +157,7 @@
 **Deadline**: IMMEDIATE
 **Status**: ❌ UNRESOLVED
 
-#### #016 ⚠️ **URGENT** - Weak JWT Configuration
+#### #017 ⚠️ **URGENT** - Weak JWT Configuration
 **Risk Level**: CRITICAL - Authentication bypass possible
 **Issue**: Development JWT secret `dev_jwt_secret_change_in_production` in production
 **File**: `/api/src/config/configuration.ts:14`
@@ -144,7 +166,7 @@
 **Deadline**: IMMEDIATE
 **Status**: ❌ UNRESOLVED
 
-#### #017 ⚠️ **URGENT** - Production MongoDB Without Authentication
+#### #018 ⚠️ **URGENT** - Production MongoDB Without Authentication
 **Risk Level**: CRITICAL - Unauthorized database access
 **Issue**: Production MongoDB runs without authentication enabled
 **File**: `/docker-compose.prod.yml:47`
@@ -153,7 +175,7 @@
 **Deadline**: IMMEDIATE
 **Status**: ❌ UNRESOLVED
 
-#### #018 ⚠️ **URGENT** - Sensitive Data in Logs
+#### #019 ⚠️ **URGENT** - Sensitive Data in Logs
 **Risk Level**: HIGH - Credential exposure in server logs
 **Issue**: 355 console.log statements including password logging in authentication
 **Files Affected**: 29 files across API layer, notably auth.service.ts:19-63
@@ -168,20 +190,20 @@
 
 ### 📊 **Data Integrity Issues**
 
-#### #019 ✅ **RESOLVED** - Orphaned Policy Records
+#### #020 ✅ **RESOLVED** - Orphaned Policy Records
 **Issue**: 2 userPolicyAssignments and 2 plan_configs referenced deleted policy
 **Resolution**: Cascade delete implemented in policies service
 **Status**: ✅ RESOLVED via #007 - Future deletions will maintain integrity
 **Completed**: September 27, 2025
 
-#### #020 ⚠️ **Data Type Inconsistency**
+#### #021 ⚠️ **Data Type Inconsistency**
 **Issue**: userPolicyAssignments.userId uses ObjectId but should reference users.userId (string)
 **Impact**: Foreign key relationship mismatch, potential join failures
 **Action**: Standardize to consistent data types across all references
 **Collections Affected**: `userPolicyAssignments`, `users`
 **Status**: ❌ UNRESOLVED
 
-#### #021 ⚠️ **Missing Audit Trail Implementation**
+#### #022 ⚠️ **Missing Audit Trail Implementation**
 **Issue**: auditLogs collection configured but empty (audit logging not functioning)
 **Impact**: No compliance trail, difficult debugging and accountability
 **Action**: Implement audit logging middleware for all CRUD operations
@@ -190,21 +212,21 @@
 
 ### 🛡️ **Security Improvements**
 
-#### #022 ⚠️ **SSL/TLS Missing**
+#### #023 ⚠️ **SSL/TLS Missing**
 **Issue**: HTTPS configuration commented out in production
 **File**: `/nginx/nginx.conf:51-55`
 **Impact**: Data transmitted in plaintext, vulnerable to interception
 **Action**: Implement SSL/TLS with Let's Encrypt or proper certificates
 **Status**: ❌ UNRESOLVED
 
-#### #023 ⚠️ **Insecure Cookie Configuration**
+#### #024 ⚠️ **Insecure Cookie Configuration**
 **Issue**: Production cookies not secured (COOKIE_SECURE=false)
 **File**: `.env.production:13`
 **Impact**: Session tokens vulnerable to hijacking over HTTP
 **Action**: Enable secure cookie flags for production environment
 **Status**: ❌ UNRESOLVED
 
-#### #024 ⚠️ **CORS Configuration Issues**
+#### #025 ⚠️ **CORS Configuration Issues**
 **Issue**: Hardcoded IP addresses in CORS settings
 **File**: `/api/src/main.ts:65-67`
 **Impact**: Unintended cross-origin access, potential security bypass

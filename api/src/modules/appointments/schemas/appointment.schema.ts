@@ -21,6 +21,12 @@ export enum PaymentStatus {
   FREE = 'FREE',
 }
 
+export enum CallPreference {
+  VOICE = 'VOICE',
+  VIDEO = 'VIDEO',
+  BOTH = 'BOTH',
+}
+
 @Schema({ timestamps: true, collection: 'appointments' })
 export class Appointment {
   @Prop({ required: true, unique: true })
@@ -85,6 +91,12 @@ export class Appointment {
 
   @Prop({ default: true })
   coveredByInsurance: boolean;
+
+  @Prop()
+  contactNumber: string;
+
+  @Prop({ enum: CallPreference })
+  callPreference: string;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

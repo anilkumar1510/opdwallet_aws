@@ -5,10 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeftIcon,
   MagnifyingGlassIcon,
-  MapPinIcon,
   FunnelIcon,
   UserIcon,
-  StarIcon
+  StarIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline'
 
 interface ClinicLocation {
@@ -28,13 +28,15 @@ interface Doctor {
   specialtyId: string
   specialty: string
   qualifications: string
-  experience: number
+  experienceYears: number
   rating: number
   reviewCount: number
   clinics: ClinicLocation[]
+  consultationFee: number
+  availableInMinutes: number | null
 }
 
-function DoctorsContent() {
+function OnlineDoctorsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const specialtyId = searchParams.get('specialtyId')
@@ -44,8 +46,7 @@ function DoctorsContent() {
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')
-  const [cities, setCities] = useState<string[]>([])
+  const [showAvailableNow, setShowAvailableNow] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
@@ -55,7 +56,7 @@ function DoctorsContent() {
   }, [specialtyId])
 
   useEffect(() => {
-    console.log('[Doctors] Filtering doctors:', { searchQuery, selectedCity })
+    console.log('[OnlineDoctors] Filtering doctors:', { searchQuery, showAvailableNow })
     let filtered = doctors
 
     if (searchQuery.trim() !== '') {
@@ -65,20 +66,20 @@ function DoctorsContent() {
       )
     }
 
-    if (selectedCity !== '') {
+    if (showAvailableNow) {
       filtered = filtered.filter((doctor) =>
-        doctor.clinics.some((clinic) => clinic.city === selectedCity)
+        doctor.availableInMinutes !== null && doctor.availableInMinutes <= 5
       )
     }
 
-    console.log('[Doctors] Filtered results:', { count: filtered.length })
+    console.log('[OnlineDoctors] Filtered results:', { count: filtered.length })
     setFilteredDoctors(filtered)
-  }, [searchQuery, selectedCity, doctors])
+  }, [searchQuery, showAvailableNow, doctors])
 
   const fetchDoctors = async () => {
     try {
-      console.log('[Doctors] Fetching doctors for specialty:', specialtyId)
-      const response = await fetch(`/api/doctors?specialtyId=${specialtyId}`, {
+      console.log('[OnlineDoctors] Fetching online doctors for specialty:', specialtyId)
+      const response = await fetch(`/api/doctors?specialtyId=${specialtyId}&type=ONLINE`, {
         credentials: 'include',
       })
 
@@ -87,43 +88,37 @@ function DoctorsContent() {
       }
 
       const data = await response.json()
-      console.log('[Doctors] Doctors received:', { count: data.length })
+      console.log('[OnlineDoctors] Doctors received:', { count: data.length })
       setDoctors(data)
       setFilteredDoctors(data)
-
-      const uniqueCities = Array.from(
-        new Set(
-          data.flatMap((doctor: Doctor) =>
-            doctor.clinics.map((clinic) => clinic.city)
-          )
-        )
-      ).sort()
-      setCities(uniqueCities as string[])
-      console.log('[Doctors] Available cities:', uniqueCities)
     } catch (error) {
-      console.error('[Doctors] Error fetching doctors:', error)
+      console.error('[OnlineDoctors] Error fetching doctors:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleBookAppointment = (doctor: Doctor, clinic: ClinicLocation) => {
-    console.log('[Doctors] Book appointment clicked:', {
+  const handleSelectDoctor = (doctor: Doctor) => {
+    console.log('[OnlineDoctors] Doctor selected:', {
       doctorId: doctor.doctorId,
       doctorName: doctor.name,
-      clinicId: clinic.clinicId,
-      clinicName: clinic.name
+      availableInMinutes: doctor.availableInMinutes
     })
     const params = new URLSearchParams({
       doctorId: doctor.doctorId,
       doctorName: doctor.name,
       specialty: doctor.specialty,
-      clinicId: clinic.clinicId,
-      clinicName: clinic.name,
-      clinicAddress: clinic.address,
-      consultationFee: clinic.consultationFee.toString()
+      consultationFee: doctor.consultationFee.toString(),
+      availableInMinutes: (doctor.availableInMinutes || 0).toString()
     })
-    router.push(`/member/appointments/select-patient?${params.toString()}`)
+    router.push(`/member/online-consult/confirm?${params.toString()}`)
+  }
+
+  const formatAvailability = (minutes: number | null) => {
+    if (minutes === null) return null
+    if (minutes === 0) return 'Available now'
+    if (minutes <= 5) return `Available in ${minutes} min`
+    return `Available in ${minutes} mins`
   }
 
   if (loading) {
@@ -175,39 +170,17 @@ function DoctorsContent() {
               <span className="text-sm">Filters</span>
             </button>
 
-            {selectedCity && (
-              <button
-                onClick={() => setSelectedCity('')}
-                className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
-              >
-                {selectedCity} ×
-              </button>
-            )}
+            <button
+              onClick={() => setShowAvailableNow(!showAvailableNow)}
+              className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                showAvailableNow
+                  ? 'bg-green-600 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Available Now (5 mins)
+            </button>
           </div>
-
-          {showFilters && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="mb-2 text-sm font-medium text-gray-700">Filter by City</div>
-              <div className="flex flex-wrap gap-2">
-                {cities.map((city) => (
-                  <button
-                    key={city}
-                    onClick={() => {
-                      setSelectedCity(city === selectedCity ? '' : city)
-                      console.log('[Doctors] City filter changed:', city)
-                    }}
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      city === selectedCity
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {city}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -226,9 +199,21 @@ function DoctorsContent() {
                     <UserIcon className="h-8 w-8 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
+                      {doctor.availableInMinutes !== null && (
+                        <span className={`text-xs px-2 py-1 rounded-full flex items-center space-x-1 ${
+                          doctor.availableInMinutes <= 5
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          <ClockIcon className="h-3 w-3" />
+                          <span>{formatAvailability(doctor.availableInMinutes)}</span>
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">{doctor.qualifications}</p>
-                    <p className="text-sm text-gray-600">{doctor.experience} years experience</p>
+                    <p className="text-sm text-gray-600">{doctor.experienceYears} years experience</p>
                     <div className="flex items-center space-x-1 mt-1">
                       <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
                       <span className="text-sm font-medium text-gray-900">{doctor.rating}</span>
@@ -237,36 +222,19 @@ function DoctorsContent() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {doctor.clinics.map((clinic, index) => (
-                    <div
-                      key={index}
-                      className="bg-gray-50 rounded-xl p-3 border border-gray-200"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900">{clinic.name}</div>
-                          <div className="flex items-start space-x-1 text-sm text-gray-600 mt-1">
-                            <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                            <span className="line-clamp-2">{clinic.address}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <div className="text-sm">
-                          <span className="text-gray-600">Consultation: </span>
-                          <span className="font-semibold text-blue-600">₹{clinic.consultationFee}</span>
-                        </div>
-                        <button
-                          onClick={() => handleBookAppointment(doctor, clinic)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Book Appointment
-                        </button>
-                      </div>
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className="text-gray-600">Consultation: </span>
+                      <span className="font-semibold text-blue-600">₹{doctor.consultationFee}</span>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => handleSelectDoctor(doctor)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Select
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -277,14 +245,14 @@ function DoctorsContent() {
   )
 }
 
-export default function DoctorsPage() {
+export default function OnlineDoctorsPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
         <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
       </div>
     }>
-      <DoctorsContent />
+      <OnlineDoctorsContent />
     </Suspense>
   )
 }

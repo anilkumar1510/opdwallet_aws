@@ -1255,42 +1255,162 @@ enum OwnerPayerType {
 ```typescript
 {
   _id: ObjectId,
-  doctorId: string,         // REQUIRED, UNIQUE
-  name: string,             // REQUIRED
-  profilePhoto?: string,
-  qualifications: string,   // REQUIRED
-  specializations: string[],
-  specialtyId: string,      // REQUIRED
-  experienceYears: number,  // REQUIRED
-  clinics: Array<{
-    clinicId: string,
-    name: string,
-    address: string,
-    city?: string,
-    state?: string,
-    pincode?: string,
-    location?: { latitude: number; longitude: number },
-    distanceKm?: number,
-    consultationFee: number
+  doctorId: string,         // REQUIRED, UNIQUE - Doctor identifier
+  name: string,             // REQUIRED - Doctor's full name
+  profilePhoto?: string,    // OPTIONAL - Profile photo URL
+  qualifications: string,   // REQUIRED - Educational qualifications (e.g., "MBBS, MD")
+  specializations: string[], // REQUIRED - Array of specialization areas
+  specialtyId: string,      // REQUIRED - References specialty_master.specialtyId
+  specialty: string,        // REQUIRED - Specialty name (from specialty_master)
+  experienceYears: number,  // REQUIRED - Years of experience
+  rating: number,           // DEFAULT: 0 - Doctor rating (0-5)
+  reviewCount: number,      // DEFAULT: 0 - Number of reviews
+  clinics: Array<{          // REQUIRED - Array of clinic locations
+    clinicId: string,       // REQUIRED - Clinic identifier
+    name: string,           // REQUIRED - Clinic name
+    address: string,        // REQUIRED - Clinic address
+    city?: string,          // OPTIONAL - City name
+    state?: string,         // OPTIONAL - State name
+    pincode?: string,       // OPTIONAL - Postal code
+    location?: {            // OPTIONAL - Geo-coordinates
+      latitude: number,
+      longitude: number
+    },
+    distanceKm?: number,    // OPTIONAL - Distance from user location
+    consultationFee: number // REQUIRED - Consultation fee at this clinic
   }>,
-  consultationFee: number,
-  cashlessAvailable: boolean,
-  insuranceAccepted?: string[],
-  requiresConfirmation: boolean,
-  allowDirectBooking: boolean,
-  availableSlots?: Array<{ date: string; slots: string[] }>,
-  isActive: boolean,
-  createdAt: Date,
-  updatedAt: Date
+  consultationFee: number,  // REQUIRED - Base consultation fee
+  cashlessAvailable: boolean, // DEFAULT: true - Cashless payment available
+  insuranceAccepted?: string[], // OPTIONAL - Array of accepted insurance providers
+  requiresConfirmation: boolean, // DEFAULT: false - Appointment requires confirmation
+  allowDirectBooking: boolean,   // DEFAULT: true - Allow direct booking without confirmation
+  availableSlots?: Array<{  // OPTIONAL - Available appointment slots
+    date: string,           // Date in YYYY-MM-DD format
+    slots: string[]         // Array of time slots (e.g., "09:00 AM")
+  }>,
+  isActive: boolean,        // DEFAULT: true - Is doctor profile active
+  createdAt: Date,          // AUTO - Creation timestamp
+  updatedAt: Date           // AUTO - Last update timestamp
 }
 ```
 
 #### Indexes
 
 ```typescript
-{ specialtyId: 1, isActive: 1 }
-{ doctorId: 1 }
-{ 'clinics.city': 1 }
+{ doctorId: 1 }, { unique: true }          // Unique index on doctorId
+{ specialtyId: 1, isActive: 1 }            // Compound index for specialty queries
+{ 'clinics.city': 1 }                      // Index on clinic city for location filtering
+```
+
+#### Validation Rules
+
+1. **doctorId** - Must be unique, used for doctor identification
+2. **specialtyId** - Must reference a valid specialty from specialty_master
+3. **specialty** - Should match the name from specialty_master
+4. **consultationFee** - Must be >= 0 (both at doctor and clinic level)
+5. **clinics** - At least one clinic location required
+6. **rating** - Should be between 0 and 5
+7. **availableSlots** - Dates should be in YYYY-MM-DD format, times in 12-hour format
+
+#### Sample Data Examples
+
+```json
+[
+  {
+    "_id": ObjectId("68d8ab8e6cd3c49c7e4f87fe"),
+    "doctorId": "DOC001",
+    "name": "Dr. Vikas Mittal",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MD",
+    "specializations": [
+      "Pulmonary Medicine",
+      "Tuberculosis & Respiratory Diseases",
+      "Pulmonary Medicine, Fellow"
+    ],
+    "specialtyId": "SPEC001",
+    "specialty": "General Physician",
+    "experienceYears": 16,
+    "rating": 4.7,
+    "reviewCount": 156,
+    "clinics": [
+      {
+        "clinicId": "CLINIC001",
+        "name": "Manipal Hospital",
+        "address": "Sector 6, Dwarka, New Delhi",
+        "city": "Delhi (NCR)",
+        "state": "Delhi",
+        "pincode": "110075",
+        "location": {
+          "latitude": 28.5921,
+          "longitude": 77.046
+        },
+        "distanceKm": 12.67,
+        "consultationFee": 1000
+      }
+    ],
+    "consultationFee": 1000,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": true,
+    "allowDirectBooking": false,
+    "availableSlots": [
+      {
+        "date": "2025-09-28",
+        "slots": ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM"]
+      },
+      {
+        "date": "2025-09-29",
+        "slots": ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM"]
+      }
+    ],
+    "isActive": true,
+    "createdAt": ISODate("2025-09-27T00:00:00Z"),
+    "updatedAt": ISODate("2025-09-27T00:00:00Z")
+  },
+  {
+    "_id": ObjectId("68d8ab8e6cd3c49c7e4f8800"),
+    "doctorId": "DOC003",
+    "name": "Dr. Priya Sharma",
+    "profilePhoto": "",
+    "qualifications": "MBBS, MD (Dermatology)",
+    "specializations": ["Dermatology", "Cosmetology", "Hair Transplant"],
+    "specialtyId": "SPEC004",
+    "specialty": "Dermatologist",
+    "experienceYears": 12,
+    "rating": 4.8,
+    "reviewCount": 234,
+    "clinics": [
+      {
+        "clinicId": "CLINIC003",
+        "name": "Fortis Hospital",
+        "address": "Vasant Kunj, New Delhi",
+        "city": "Delhi (NCR)",
+        "state": "Delhi",
+        "pincode": "110070",
+        "location": {
+          "latitude": 28.5167,
+          "longitude": 77.1598
+        },
+        "distanceKm": 8.5,
+        "consultationFee": 1200
+      }
+    ],
+    "consultationFee": 1200,
+    "cashlessAvailable": true,
+    "insuranceAccepted": ["MCLTech"],
+    "requiresConfirmation": false,
+    "allowDirectBooking": true,
+    "availableSlots": [
+      {
+        "date": "2025-09-28",
+        "slots": ["09:30 AM", "10:30 AM", "11:30 AM", "03:00 PM", "04:00 PM"]
+      }
+    ],
+    "isActive": true,
+    "createdAt": ISODate("2025-09-27T00:00:00Z"),
+    "updatedAt": ISODate("2025-09-27T00:00:00Z")
+  }
+]
 ```
 
 ---
