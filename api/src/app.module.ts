@@ -18,6 +18,8 @@ import { DoctorsModule } from './modules/doctors/doctors.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ClinicsModule } from './modules/clinics/clinics.module';
 import { DoctorSlotsModule } from './modules/doctor-slots/doctor-slots.module';
+import { MemberClaimsModule } from './modules/memberclaims/memberclaims.module';
+import { TpaModule } from './modules/tpa/tpa.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -53,6 +55,8 @@ import configuration from './config/configuration';
     AppointmentsModule,
     ClinicsModule,
     DoctorSlotsModule,
+    MemberClaimsModule,
+    TpaModule,
   ],
 })
 export class AppModule {}

@@ -2,6 +2,9 @@ export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   TPA = 'TPA',
+  TPA_ADMIN = 'TPA_ADMIN',
+  TPA_USER = 'TPA_USER',
+  FINANCE_USER = 'FINANCE_USER',
   OPS = 'OPS',
   MEMBER = 'MEMBER',
 }

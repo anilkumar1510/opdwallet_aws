@@ -1,0 +1,254 @@
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { LabVendor } from '../schemas/lab-vendor.schema';
+import { LabVendorPricing } from '../schemas/lab-vendor-pricing.schema';
+import { LabVendorSlot } from '../schemas/lab-vendor-slot.schema';
+import { CreateVendorDto } from '../dto/create-vendor.dto';
+import { CreatePricingDto } from '../dto/create-pricing.dto';
+
+@Injectable()
+export class LabVendorService {
+  constructor(
+    @InjectModel(LabVendor.name)
+    private vendorModel: Model<LabVendor>,
+    @InjectModel(LabVendorPricing.name)
+    private pricingModel: Model<LabVendorPricing>,
+    @InjectModel(LabVendorSlot.name)
+    private slotModel: Model<LabVendorSlot>,
+  ) {}
+
+  async createVendor(createDto: CreateVendorDto): Promise<LabVendor> {
+    const vendorId = `VEN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Check if vendor code already exists
+    const existingVendor = await this.vendorModel.findOne({
+      code: createDto.code.toUpperCase(),
+    });
+
+    if (existingVendor) {
+      throw new ConflictException(`Vendor with code ${createDto.code} already exists`);
+    }
+
+    const vendor = new this.vendorModel({
+      vendorId,
+      name: createDto.name,
+      code: createDto.code.toUpperCase(),
+      contactInfo: createDto.contactInfo,
+      serviceablePincodes: createDto.serviceablePincodes,
+      homeCollection: createDto.homeCollection ?? true,
+      centerVisit: createDto.centerVisit ?? true,
+      description: createDto.description,
+      isActive: true,
+    });
+
+    return vendor.save();
+  }
+
+  async getVendorById(vendorId: string): Promise<LabVendor> {
+    const vendor = await this.vendorModel.findOne({ vendorId });
+
+    if (!vendor) {
+      throw new NotFoundException(`Vendor ${vendorId} not found`);
+    }
+
+    return vendor;
+  }
+
+  async getAllVendors(): Promise<LabVendor[]> {
+    return this.vendorModel.find({ isActive: true }).sort({ name: 1 }).exec();
+  }
+
+  async getVendorsByPincode(pincode: string): Promise<LabVendor[]> {
+    return this.vendorModel
+      .find({
+        isActive: true,
+        serviceablePincodes: pincode,
+      })
+      .sort({ name: 1 })
+      .exec();
+  }
+
+  async updateVendor(
+    vendorId: string,
+    updateDto: Partial<CreateVendorDto>,
+  ): Promise<LabVendor> {
+    const vendor = await this.getVendorById(vendorId);
+
+    if (updateDto.name) {
+      vendor.name = updateDto.name;
+    }
+
+    if (updateDto.code) {
+      const existingVendor = await this.vendorModel.findOne({
+        code: updateDto.code.toUpperCase(),
+        vendorId: { $ne: vendorId },
+      });
+
+      if (existingVendor) {
+        throw new ConflictException(`Vendor with code ${updateDto.code} already exists`);
+      }
+
+      vendor.code = updateDto.code.toUpperCase();
+    }
+
+    if (updateDto.contactInfo) {
+      vendor.contactInfo = updateDto.contactInfo;
+    }
+
+    if (updateDto.serviceablePincodes) {
+      vendor.serviceablePincodes = updateDto.serviceablePincodes;
+    }
+
+    if (updateDto.homeCollection !== undefined) {
+      vendor.homeCollection = updateDto.homeCollection;
+    }
+
+    if (updateDto.centerVisit !== undefined) {
+      vendor.centerVisit = updateDto.centerVisit;
+    }
+
+    if (updateDto.description !== undefined) {
+      vendor.description = updateDto.description;
+    }
+
+    return vendor.save();
+  }
+
+  // Pricing Management
+  async createPricing(createDto: CreatePricingDto): Promise<LabVendorPricing> {
+    // Check if pricing already exists
+    const existingPricing = await this.pricingModel.findOne({
+      vendorId: new Types.ObjectId(createDto.vendorId),
+      serviceId: new Types.ObjectId(createDto.serviceId),
+    });
+
+    if (existingPricing) {
+      throw new ConflictException('Pricing for this vendor and service already exists');
+    }
+
+    const pricing = new this.pricingModel({
+      vendorId: new Types.ObjectId(createDto.vendorId),
+      serviceId: new Types.ObjectId(createDto.serviceId),
+      actualPrice: createDto.actualPrice,
+      discountedPrice: createDto.discountedPrice,
+      homeCollectionCharges: createDto.homeCollectionCharges ?? 0,
+      isActive: true,
+    });
+
+    return pricing.save();
+  }
+
+  async getVendorPricing(vendorId: string): Promise<LabVendorPricing[]> {
+    return this.pricingModel
+      .find({
+        vendorId: new Types.ObjectId(vendorId),
+        isActive: true,
+      })
+      .populate('serviceId', 'name code category')
+      .exec();
+  }
+
+  async getPricingForService(
+    vendorId: string,
+    serviceId: string,
+  ): Promise<LabVendorPricing | null> {
+    return this.pricingModel
+      .findOne({
+        vendorId: new Types.ObjectId(vendorId),
+        serviceId: new Types.ObjectId(serviceId),
+        isActive: true,
+      })
+      .populate('serviceId', 'name code category')
+      .exec();
+  }
+
+  async updatePricing(
+    vendorId: string,
+    serviceId: string,
+    updateDto: Partial<CreatePricingDto>,
+  ): Promise<LabVendorPricing> {
+    const pricing = await this.pricingModel.findOne({
+      vendorId: new Types.ObjectId(vendorId),
+      serviceId: new Types.ObjectId(serviceId),
+    });
+
+    if (!pricing) {
+      throw new NotFoundException('Pricing not found');
+    }
+
+    if (updateDto.actualPrice !== undefined) {
+      pricing.actualPrice = updateDto.actualPrice;
+    }
+
+    if (updateDto.discountedPrice !== undefined) {
+      pricing.discountedPrice = updateDto.discountedPrice;
+    }
+
+    if (updateDto.homeCollectionCharges !== undefined) {
+      pricing.homeCollectionCharges = updateDto.homeCollectionCharges;
+    }
+
+    return pricing.save();
+  }
+
+  // Slot Management
+  async createSlot(
+    vendorId: string,
+    pincode: string,
+    date: string,
+    timeSlot: string,
+    startTime: string,
+    endTime: string,
+    maxBookings: number = 5,
+  ): Promise<LabVendorSlot> {
+    const slotId = `SLOT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    const slot = new this.slotModel({
+      slotId,
+      vendorId: new Types.ObjectId(vendorId),
+      pincode,
+      date,
+      timeSlot,
+      startTime,
+      endTime,
+      maxBookings,
+      currentBookings: 0,
+      isActive: true,
+    });
+
+    return slot.save();
+  }
+
+  async getAvailableSlots(
+    vendorId: string,
+    pincode: string,
+    date: string,
+  ): Promise<LabVendorSlot[]> {
+    return this.slotModel
+      .find({
+        vendorId: new Types.ObjectId(vendorId),
+        pincode,
+        date,
+        isActive: true,
+        $expr: { $lt: ['$currentBookings', '$maxBookings'] },
+      })
+      .sort({ startTime: 1 })
+      .exec();
+  }
+
+  async bookSlot(slotId: string): Promise<LabVendorSlot> {
+    const slot = await this.slotModel.findOne({ slotId });
+
+    if (!slot) {
+      throw new NotFoundException(`Slot ${slotId} not found`);
+    }
+
+    if (slot.currentBookings >= slot.maxBookings) {
+      throw new ConflictException('Slot is fully booked');
+    }
+
+    slot.currentBookings += 1;
+    return slot.save();
+  }
+}
