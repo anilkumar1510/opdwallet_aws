@@ -3,11 +3,11 @@ import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 export class UploadPrescriptionDto {
   @IsNotEmpty()
   @IsString()
-  fileName: string;
+  patientId: string;
 
   @IsNotEmpty()
   @IsString()
-  filePath: string;
+  patientName: string;
 
   @IsOptional()
   @IsString()

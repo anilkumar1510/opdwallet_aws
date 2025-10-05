@@ -71,6 +71,14 @@ export class LabOrderService {
       await this.vendorService.bookSlot(createDto.slotId);
     }
 
+    // Calculate prices server-side for security
+    const totalActualPrice = orderItems.reduce((sum, item) => sum + item.actualPrice, 0);
+    const totalDiscountedPrice = orderItems.reduce((sum, item) => sum + item.discountedPrice, 0);
+    const homeCollectionCharges = createDto.collectionType === 'HOME_COLLECTION'
+      ? (vendor.homeCollectionCharges || 50)
+      : 0;
+    const finalAmount = totalDiscountedPrice + homeCollectionCharges;
+
     // Create order
     const order = new this.orderModel({
       orderId,
@@ -86,14 +94,13 @@ export class LabOrderService {
       collectionDate: createDto.collectionDate,
       collectionTime: createDto.collectionTime,
       slotId: createDto.slotId ? new Types.ObjectId(createDto.slotId) : undefined,
-      subtotal: createDto.subtotal,
-      homeCollectionCharges: createDto.homeCollectionCharges ?? 0,
-      discount: createDto.discount ?? 0,
-      totalAmount: createDto.totalAmount,
-      paymentInfo: {
-        status: PaymentStatus.PENDING,
-        amount: createDto.totalAmount,
-      },
+      totalActualPrice,
+      totalDiscountedPrice,
+      homeCollectionCharges,
+      finalAmount,
+      paymentStatus: PaymentStatus.PENDING,
+      placedAt: new Date(),
+      reports: [],
       notes: createDto.notes,
     });
 
@@ -159,10 +166,25 @@ export class LabOrderService {
   async updateOrderStatus(
     orderId: string,
     updateDto: UpdateOrderStatusDto,
+    userId?: string,
   ): Promise<LabOrder> {
     const order = await this.getOrderById(orderId);
 
     order.status = updateDto.status;
+
+    // Set timestamps based on status
+    if (updateDto.status === OrderStatus.CONFIRMED) {
+      order.confirmedAt = new Date();
+      order.confirmedBy = userId;
+    }
+
+    if (updateDto.status === OrderStatus.SAMPLE_COLLECTED) {
+      order.collectedAt = new Date();
+    }
+
+    if (updateDto.status === OrderStatus.COMPLETED) {
+      order.completedAt = new Date();
+    }
 
     if (updateDto.reportUrl) {
       order.reportUrl = updateDto.reportUrl;
@@ -189,18 +211,18 @@ export class LabOrderService {
   ): Promise<LabOrder> {
     const order = await this.getOrderById(orderId);
 
-    order.paymentInfo.status = paymentStatus;
+    order.paymentStatus = paymentStatus;
 
-    if (transactionId) {
+    if (transactionId && order.paymentInfo) {
       order.paymentInfo.transactionId = transactionId;
     }
 
     if (paymentMethod) {
-      order.paymentInfo.paymentMethod = paymentMethod;
+      order.paymentMode = paymentMethod;
     }
 
     if (paymentStatus === PaymentStatus.COMPLETED) {
-      order.paymentInfo.paidAt = new Date();
+      order.paymentDate = new Date();
     }
 
     return order.save();

@@ -28,8 +28,6 @@ export class MemberService {
     let dependents: any[] = [];
     let familyMembers: any[] = [];
 
-    console.log(`🔍 User is ${(user.relationship as string) === 'REL001' ? 'primary member' : 'dependent'}, searching for dependents with primaryMemberId: ${user.memberId}`);
-
     if ((user.relationship as string) === 'REL001') {
       // If this is a primary member (REL001), fetch their dependents
       dependents = await this.userModel
@@ -40,46 +38,37 @@ export class MemberService {
         .select('-passwordHash')
         .sort({ createdAt: 1 });
 
-      console.log(`👥 Found dependents: ${dependents.length}`, dependents.map(d => ({ memberId: d.memberId, name: `${d.name.firstName} ${d.name.lastName}`, relationship: d.relationship })));
-
       familyMembers = [user, ...dependents];
     } else {
       // If this is a dependent (non-REL001), they can only see themselves
       familyMembers = [user];
-    }
+    };
 
-    console.log(`📋 Returning: { user: '${user.name.firstName} ${user.name.lastName}', dependents: ${dependents.length}, familyMembers: ${familyMembers.length} }`);;
+    // Fetch policy assignments for all family members - OPTIMIZED: Batch query
+    const memberIds = familyMembers.map(m => m._id.toString());
+    const allAssignments = await this.assignmentsService.getBatchUserAssignments(memberIds);
 
-    // Fetch policy assignments for all family members
-    const assignments = [];
-    for (const member of familyMembers) {
-      try {
-        const memberAssignments = await this.assignmentsService.getUserAssignments(member._id.toString());
-        if (memberAssignments && memberAssignments.length > 0) {
-          assignments.push({
-            userId: member._id,
-            memberId: member.memberId,
-            memberName: `${member.name.firstName} ${member.name.lastName}`,
-            assignment: memberAssignments[0], // Get the first (most recent) active assignment
-          });
-        } else {
-          assignments.push({
-            userId: member._id,
-            memberId: member.memberId,
-            memberName: `${member.name.firstName} ${member.name.lastName}`,
-            assignment: null, // No policy assignment
-          });
-        }
-      } catch (error) {
-        console.error(`Error fetching assignments for user ${member._id}:`, error);
-        assignments.push({
-          userId: member._id,
-          memberId: member.memberId,
-          memberName: `${member.name.firstName} ${member.name.lastName}`,
-          assignment: null,
-        });
+    // Create assignment map for quick lookup
+    const assignmentMap = new Map();
+    allAssignments.forEach(assignment => {
+      // After populate, userId is an object with _id field
+      const userId = (assignment.userId as any)?._id?.toString() || assignment.userId.toString();
+      if (!assignmentMap.has(userId)) {
+        assignmentMap.set(userId, []);
       }
-    }
+      assignmentMap.get(userId).push(assignment);
+    });
+
+    // Build assignments array with batched data
+    const assignments = familyMembers.map(member => {
+      const memberAssignments = assignmentMap.get(member._id.toString()) || [];
+      return {
+        userId: member._id,
+        memberId: member.memberId,
+        memberName: `${member.name.firstName} ${member.name.lastName}`,
+        assignment: memberAssignments.length > 0 ? memberAssignments[0] : null,
+      };
+    });
 
     // Fetch wallet data for user
     const userWallet = await this.walletService.getUserWallet(userId);
@@ -93,29 +82,21 @@ export class MemberService {
     if (assignments.length > 0 && assignments[0].assignment?.policyId) {
       try {
         const policyId = assignments[0].assignment.policyId._id || assignments[0].assignment.policyId;
-        console.log('🔍 Fetching plan config for policy:', policyId);
         const planConfig = await this.planConfigService.getConfig(policyId.toString());
 
-        console.log('📋 Plan config found:', !!planConfig);
         if (planConfig) {
-          console.log('📋 Plan config status:', planConfig.status);
-          console.log('📋 Plan config isCurrent:', planConfig.isCurrent);
-          console.log('📋 Plan config benefits:', JSON.stringify(planConfig.benefits));
-
           policyBenefits = planConfig.benefits;
 
           // Map policy benefits to wallet categories using dynamic category lookup
           if (planConfig.benefits) {
             // Get category codes from benefits (CAT001, CAT002, CAT003)
             const categoryIds = Object.keys(planConfig.benefits);
-            console.log('🔍 Category IDs from benefits:', categoryIds);
 
             // Fetch category names from category_master collection
             const categories = await this.categoryMasterModel.find({
               categoryId: { $in: categoryIds },
               isActive: true
             });
-            console.log('📋 Categories found in master:', categories.map(c => ({ id: c.categoryId, name: c.name })));
 
             // Map benefits using real database category names
             categoryIds.forEach(catId => {
@@ -130,7 +111,6 @@ export class MemberService {
                   total: benefit.annualLimit || categoryWallet?.total || 0,
                   categoryCode: catId
                 });
-                console.log('✅ Added wallet category:', categoryInfo.name, 'with limit:', benefit.annualLimit);
               }
             });
 
@@ -148,14 +128,13 @@ export class MemberService {
                     description: `${categoryInfo.name} upto Rs ${amount}`,
                     categoryCode: catId
                   });
-                  console.log('✅ Added health benefit:', categoryInfo.name, 'with amount:', amount);
                 }
               });
             }
           }
         }
       } catch (error) {
-        console.error('Error fetching policy benefits:', error);
+        // Error fetching policy benefits - continue with empty benefits
       }
     }
 

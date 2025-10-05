@@ -27,6 +27,7 @@ function ConfirmAppointmentContent() {
   const patientName = searchParams.get('patientName')
   const appointmentDate = searchParams.get('appointmentDate')
   const timeSlot = searchParams.get('timeSlot')
+  const slotId = searchParams.get('slotId')
 
   const [loading, setLoading] = useState(false)
   const [bookingSuccess, setBookingSuccess] = useState(false)
@@ -71,6 +72,7 @@ function ConfirmAppointmentContent() {
         doctorId: doctorId,
         doctorName: doctorName,
         specialty: specialty,
+        slotId: slotId || `${doctorId}_${clinicId}_${appointmentDate}_${timeSlot}`,
         clinicId: clinicId,
         clinicName: clinicName,
         clinicAddress: clinicAddress,
@@ -92,7 +94,9 @@ function ConfirmAppointmentContent() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create appointment')
+        const errorData = await response.json()
+        console.error('[ConfirmAppointment] API Error:', errorData)
+        throw new Error(errorData.message || 'Failed to create appointment')
       }
 
       const result = await response.json()

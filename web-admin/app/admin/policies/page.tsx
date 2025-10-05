@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import PolicyTable from './_components/PolicyTable'
 import { PolicyListResponse, PolicyQueryParams } from './_lib/types'
@@ -8,7 +8,7 @@ import { fetchPolicies } from './_lib/api'
 import { parseQueryParams, buildQueryString, getDefaultParams } from './_lib/query'
 import { apiFetch } from '@/lib/api'
 
-export default function PoliciesPage() {
+function PoliciesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [policies, setPolicies] = useState<PolicyListResponse>({
@@ -231,5 +231,17 @@ export default function PoliciesPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function PoliciesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
+      </div>
+    }>
+      <PoliciesContent />
+    </Suspense>
   )
 }

@@ -1,230 +1,487 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Card } from '../../../components/Card'
-import { StatusBadge } from '../../../components/StatusBadge'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   CalendarIcon,
   ClockIcon,
   MapPinIcon,
   UserIcon,
-  PhoneIcon,
-  PlusIcon,
-  MagnifyingGlassIcon
+  ChevronLeftIcon,
+  BeakerIcon,
+  BuildingStorefrontIcon
 } from '@heroicons/react/24/outline'
 
+interface Appointment {
+  _id: string
+  appointmentId: string
+  appointmentNumber: string
+  patientName: string
+  patientId: string
+  doctorId: string
+  doctorName: string
+  specialty: string
+  clinicName: string
+  clinicAddress: string
+  appointmentType: string
+  appointmentDate: string
+  timeSlot: string
+  consultationFee: number
+  status: string
+  requestedAt: string
+  createdAt: string
+}
+
 export default function BookingsPage() {
-  const [activeTab, setActiveTab] = useState('upcoming')
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState('doctors')
+  const [loading, setLoading] = useState(true)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
+  const [pastAppointments, setPastAppointments] = useState<Appointment[]>([])
 
-  const upcomingBookings = [
-    {
-      id: 1,
-      type: 'appointment',
-      doctor: 'Dr. Sarah Smith',
-      specialty: 'General Physician',
-      hospital: 'Apollo Clinic, Bandra',
-      date: '2024-01-25',
-      time: '10:30 AM',
-      status: 'confirmed',
-      bookingId: 'APT-2024-001'
-    },
-    {
-      id: 2,
-      type: 'lab-test',
-      test: 'Complete Blood Count',
-      lab: 'PathLab Diagnostics',
-      date: '2024-01-26',
-      time: '8:00 AM',
-      status: 'confirmed',
-      bookingId: 'LAB-2024-001',
-      instructions: 'Fasting required'
-    },
-    {
-      id: 3,
-      type: 'appointment',
-      doctor: 'Dr. John Doe',
-      specialty: 'Dentist',
-      hospital: 'SmileCare Dental',
-      date: '2024-01-28',
-      time: '2:00 PM',
-      status: 'pending',
-      bookingId: 'APT-2024-002'
-    }
-  ]
+  useEffect(() => {
+    fetchAppointments()
+  }, [])
 
-  const medicineOrders = [
-    {
-      id: 1,
-      orderNumber: 'MED-2024-001',
-      items: 3,
-      pharmacy: 'MedPlus Pharmacy',
-      date: '2024-01-20',
-      total: 2340,
-      status: 'delivered',
-      deliveredOn: '2024-01-22'
-    },
-    {
-      id: 2,
-      orderNumber: 'MED-2024-002',
-      items: 5,
-      pharmacy: 'Apollo Pharmacy',
-      date: '2024-01-23',
-      total: 4560,
-      status: 'in-transit',
-      expectedDelivery: '2024-01-25'
+  const fetchAppointments = async () => {
+    try {
+      console.log('[Bookings] Fetching user data')
+      const userResponse = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const userData = await userResponse.json()
+      console.log('[Bookings] User ID:', userData._id)
+
+      // Fetch all appointments (both IN_CLINIC and ONLINE)
+      console.log('[Bookings] Fetching all appointments')
+      const response = await fetch(`/api/appointments/user/${userData._id}`, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch appointments')
+      }
+
+      const data = await response.json()
+      console.log('[Bookings] Appointments received:', data.length)
+
+      // Sort appointments by date (newest first)
+      const sortedAppointments = data.sort((a: Appointment, b: Appointment) => {
+        const dateA = new Date(`${a.appointmentDate} ${a.timeSlot}`)
+        const dateB = new Date(`${b.appointmentDate} ${b.timeSlot}`)
+        return dateB.getTime() - dateA.getTime()
+      })
+
+      // Split into upcoming and past
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const upcoming: Appointment[] = []
+      const past: Appointment[] = []
+
+      sortedAppointments.forEach((appointment: Appointment) => {
+        const appointmentDate = new Date(appointment.appointmentDate)
+        appointmentDate.setHours(0, 0, 0, 0)
+
+        if (appointmentDate >= today) {
+          upcoming.push(appointment)
+        } else {
+          past.push(appointment)
+        }
+      })
+
+      // Sort upcoming appointments in ascending order (earliest first)
+      upcoming.sort((a, b) => {
+        const dateA = new Date(`${a.appointmentDate} ${a.timeSlot}`)
+        const dateB = new Date(`${b.appointmentDate} ${b.timeSlot}`)
+        return dateA.getTime() - dateB.getTime()
+      })
+
+      setAppointments(sortedAppointments)
+      setUpcomingAppointments(upcoming)
+      setPastAppointments(past)
+    } catch (error) {
+      console.error('[Bookings] Error fetching appointments:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const day = date.getDate()
+    const month = date.toLocaleString('default', { month: 'short' })
+    const year = date.getFullYear()
+    return `${day} ${month} ${year}`
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING_CONFIRMATION':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'CONFIRMED':
+        return 'bg-green-100 text-green-800'
+      case 'COMPLETED':
+        return 'bg-gray-100 text-gray-800'
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PENDING_CONFIRMATION':
+        return 'Pending'
+      case 'CONFIRMED':
+        return 'Confirmed'
+      case 'COMPLETED':
+        return 'Completed'
+      case 'CANCELLED':
+        return 'Cancelled'
+      default:
+        return status
+    }
+  }
+
+  const getAppointmentTypeText = (type: string) => {
+    return type === 'ONLINE' ? 'Online Consultation' : 'In-Clinic Visit'
+  }
+
+  const handleCancelAppointment = async (appointmentId: string, doctorName: string) => {
+    if (!confirm(`Are you sure you want to cancel your appointment with ${doctorName}? Your wallet will be refunded.`)) {
+      return
+    }
+
+    try {
+      console.log('[Bookings] Cancelling appointment:', appointmentId)
+      const response = await fetch(`/api/appointments/${appointmentId}/user-cancel`, {
+        method: 'PATCH',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to cancel appointment')
+      }
+
+      console.log('[Bookings] Appointment cancelled successfully')
+      alert('Appointment cancelled successfully. Your wallet has been refunded.')
+
+      // Refresh appointments
+      await fetchAppointments()
+    } catch (error) {
+      console.error('[Bookings] Error cancelling appointment:', error)
+      alert('Failed to cancel appointment: ' + (error as Error).message)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bookings & Orders</h1>
-          <p className="text-gray-500 mt-1">Manage your appointments and medicine orders</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm">
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+            </button>
+            <h1 className="text-xl font-semibold text-gray-900">My Bookings</h1>
+          </div>
         </div>
-        <Link href="/member/bookings/new">
-          <button className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-            <PlusIcon className="h-5 w-5 mr-2" />
-            New Booking
-          </button>
-        </Link>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="bg-white px-4 border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
-            onClick={() => setActiveTab('upcoming')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'upcoming'
-                ? 'border-green-500 text-green-600'
+            onClick={() => setActiveTab('doctors')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'doctors'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Upcoming
+            <div className="flex items-center space-x-2">
+              <UserIcon className="h-5 w-5" />
+              <span>Doctors</span>
+            </div>
           </button>
           <button
-            onClick={() => setActiveTab('past')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'past'
-                ? 'border-green-500 text-green-600'
+            onClick={() => setActiveTab('lab')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'lab'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Past Bookings
+            <div className="flex items-center space-x-2">
+              <BeakerIcon className="h-5 w-5" />
+              <span>Lab</span>
+            </div>
           </button>
           <button
-            onClick={() => setActiveTab('medicines')}
-            className={`pb-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'medicines'
-                ? 'border-green-500 text-green-600'
+            onClick={() => setActiveTab('pharmacy')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'pharmacy'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Medicine Orders
+            <div className="flex items-center space-x-2">
+              <BuildingStorefrontIcon className="h-5 w-5" />
+              <span>Pharmacy</span>
+            </div>
           </button>
         </nav>
       </div>
 
-      {activeTab === 'upcoming' && (
-        <div className="space-y-4">
-          {upcomingBookings.map((booking) => (
-            <Card key={booking.id}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      {booking.type === 'appointment' ? (
-                        <>
-                          <h3 className="text-lg font-semibold text-gray-900">{booking.doctor}</h3>
-                          <p className="text-sm text-gray-500">{booking.specialty}</p>
-                        </>
-                      ) : (
-                        <>
-                          <h3 className="text-lg font-semibold text-gray-900">{booking.test}</h3>
-                          <p className="text-sm text-gray-500">{booking.lab}</p>
-                        </>
-                      )}
-                    </div>
-                    <StatusBadge status={booking.status} size="sm" />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-center text-gray-600">
-                      <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
-                      {booking.date}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <ClockIcon className="h-4 w-4 mr-2 text-gray-400" />
-                      {booking.time}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <MapPinIcon className="h-4 w-4 mr-2 text-gray-400" />
-                      {booking.hospital || booking.lab}
-                    </div>
-                  </div>
-
-                  {booking.instructions && (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800">⚠️ {booking.instructions}</p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex space-x-3">
-                    <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">
-                      View Details
-                    </button>
-                    <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
-                      Reschedule
-                    </button>
-                    <button className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm">
-                      Cancel
-                    </button>
-                  </div>
+      {/* Content */}
+      <div className="p-4 max-w-4xl mx-auto">
+        {activeTab === 'doctors' && (
+          <div className="space-y-4">
+            {appointments.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center">
+                <div className="mb-4">
+                  <CalendarIcon className="h-16 w-16 text-gray-300 mx-auto" />
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {activeTab === 'medicines' && (
-        <div className="space-y-4">
-          {medicineOrders.map((order) => (
-            <Card key={order.id}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Order #{order.orderNumber}</h3>
-                  <p className="text-sm text-gray-500">{order.pharmacy}</p>
-                  <div className="mt-3 flex items-center space-x-4 text-sm text-gray-600">
-                    <span>{order.items} items</span>
-                    <span>•</span>
-                    <span>₹{order.total.toLocaleString()}</span>
-                    <span>•</span>
-                    <span>Ordered on {order.date}</span>
-                  </div>
-                  {order.expectedDelivery && (
-                    <p className="mt-2 text-sm text-green-600">
-                      Expected delivery: {order.expectedDelivery}
-                    </p>
-                  )}
-                </div>
-                <StatusBadge status={order.status} size="sm" />
-              </div>
-              <div className="mt-4 flex space-x-3">
-                <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm">
-                  Track Order
-                </button>
-                <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
-                  View Details
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments yet</h3>
+                <p className="text-gray-600 mb-4">Book your first appointment to get started</p>
+                <button
+                  onClick={() => router.push('/member/appointments')}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Book Appointment
                 </button>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+            ) : (
+              <>
+                {/* Upcoming Appointments */}
+                {upcomingAppointments.length > 0 && (
+                  <>
+                    {upcomingAppointments.map((appointment) => (
+                      <div
+                        key={appointment._id}
+                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-blue-100 p-2 rounded-full">
+                              <UserIcon className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
+                              <div className="text-sm text-gray-600">{appointment.specialty}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end space-y-1">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                              {getStatusText(appointment.status)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {getAppointmentTypeText(appointment.appointmentType)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <UserIcon className="h-4 w-4" />
+                            <span>Patient: {appointment.patientName}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{formatDate(appointment.appointmentDate)}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <ClockIcon className="h-4 w-4" />
+                            <span>{appointment.timeSlot}</span>
+                          </div>
+
+                          {appointment.appointmentType === 'IN_CLINIC' && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <MapPinIcon className="h-4 w-4" />
+                              <span className="line-clamp-1">{appointment.clinicName}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm text-gray-600">
+                              ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                            </div>
+                            <div className="text-sm font-semibold text-blue-600">
+                              ₹{appointment.consultationFee}
+                            </div>
+                          </div>
+                          {(() => {
+                            // Parse appointment date and time
+                            const [year, month, day] = appointment.appointmentDate.split('-').map(Number);
+                            const appointmentDateObj = new Date(year, month - 1, day); // month is 0-indexed
+
+                            // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
+                            const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                            if (timeParts) {
+                              let hours = parseInt(timeParts[1]);
+                              const minutes = parseInt(timeParts[2]);
+                              const period = timeParts[3].toUpperCase();
+
+                              if (period === 'PM' && hours !== 12) {
+                                hours += 12;
+                              } else if (period === 'AM' && hours === 12) {
+                                hours = 0;
+                              }
+
+                              appointmentDateObj.setHours(hours, minutes, 0, 0);
+                            }
+
+                            const now = new Date();
+                            const isFuture = appointmentDateObj > now;
+                            const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture;
+
+                            return canCancel;
+                          })() && (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleCancelAppointment(appointment.appointmentId, appointment.doctorName)}
+                                className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                className="flex-1 py-2 px-3 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                disabled
+                              >
+                                Reschedule
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Separator */}
+                {upcomingAppointments.length > 0 && pastAppointments.length > 0 && (
+                  <div className="flex items-center my-6">
+                    <div className="flex-1 border-t border-gray-300"></div>
+                    <span className="px-4 text-sm font-medium text-gray-500">Past Appointments</span>
+                    <div className="flex-1 border-t border-gray-300"></div>
+                  </div>
+                )}
+
+                {/* Past Appointments */}
+                {pastAppointments.length > 0 && (
+                  <>
+                    {upcomingAppointments.length === 0 && (
+                      <div className="text-sm font-medium text-gray-500 mb-3">Past Appointments</div>
+                    )}
+                    {pastAppointments.map((appointment) => (
+                      <div
+                        key={appointment._id}
+                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow opacity-75"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-gray-100 p-2 rounded-full">
+                              <UserIcon className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
+                              <div className="text-sm text-gray-600">{appointment.specialty}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end space-y-1">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                              {getStatusText(appointment.status)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {getAppointmentTypeText(appointment.appointmentType)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <UserIcon className="h-4 w-4" />
+                            <span>Patient: {appointment.patientName}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{formatDate(appointment.appointmentDate)}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <ClockIcon className="h-4 w-4" />
+                            <span>{appointment.timeSlot}</span>
+                          </div>
+
+                          {appointment.appointmentType === 'IN_CLINIC' && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <MapPinIcon className="h-4 w-4" />
+                              <span className="line-clamp-1">{appointment.clinicName}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                          <div className="text-sm text-gray-600">
+                            ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                          </div>
+                          <div className="text-sm font-semibold text-gray-600">
+                            ₹{appointment.consultationFee}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'lab' && (
+          <div className="bg-white rounded-2xl p-8 text-center">
+            <div className="mb-4">
+              <BeakerIcon className="h-16 w-16 text-gray-300 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lab Tests</h3>
+            <p className="text-gray-600">Lab test bookings will appear here</p>
+          </div>
+        )}
+
+        {activeTab === 'pharmacy' && (
+          <div className="bg-white rounded-2xl p-8 text-center">
+            <div className="mb-4">
+              <BuildingStorefrontIcon className="h-16 w-16 text-gray-300 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Pharmacy Orders</h3>
+            <p className="text-gray-600">Pharmacy orders will appear here</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

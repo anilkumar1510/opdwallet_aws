@@ -17,6 +17,8 @@
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node", "express", "multer"],
     "paths": {
       "@/*": ["src/*"],
       "@modules/*": ["src/modules/*"],

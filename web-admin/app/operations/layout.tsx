@@ -12,31 +12,22 @@ export default function OperationsLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
 
+  // Auth check moved to middleware - only fetch user data
   useEffect(() => {
-    checkAuth()
+    fetchUserData()
   }, [])
 
-  const checkAuth = async () => {
+  const fetchUserData = async () => {
     try {
       const response = await apiFetch('/api/auth/me')
       if (response.ok) {
         const userData = await response.json()
-        if (!['OPS', 'ADMIN', 'SUPER_ADMIN'].includes(userData.role)) {
-          router.push('/')
-          return
-        }
         setUser(userData)
-      } else {
-        router.push('/')
-        return
       }
     } catch (error) {
-      router.push('/')
-      return
+      console.error('Failed to fetch user data:', error)
     }
-    setLoading(false)
   }
 
   const handleLogout = async () => {
@@ -55,6 +46,9 @@ export default function OperationsLayout({
     if (pathname.startsWith('/operations/doctors')) return 'Doctors'
     if (pathname.startsWith('/operations/clinics')) return 'Clinics'
     if (pathname.startsWith('/operations/appointments')) return 'Appointments'
+    if (pathname.startsWith('/operations/lab/prescriptions')) return 'Lab Prescriptions'
+    if (pathname.startsWith('/operations/lab/orders')) return 'Lab Orders'
+    if (pathname.startsWith('/operations/lab')) return 'Lab Diagnostics'
     return 'Operations'
   }
 
@@ -79,16 +73,19 @@ export default function OperationsLayout({
       path: '/operations/appointments',
       current: pathname.startsWith('/operations/appointments')
     },
+    {
+      name: 'Prescriptions',
+      path: '/operations/lab/prescriptions',
+      current: pathname.startsWith('/operations/lab/prescriptions')
+    },
+    {
+      name: 'Lab Orders',
+      path: '/operations/lab/orders',
+      current: pathname.startsWith('/operations/lab/orders')
+    },
   ]
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
-      </div>
-    )
-  }
-
+  // Remove loading state - auth handled by middleware
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="header">

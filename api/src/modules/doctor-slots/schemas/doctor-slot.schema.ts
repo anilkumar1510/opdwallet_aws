@@ -65,7 +65,13 @@ export class DoctorSlot {
 
 export const DoctorSlotSchema = SchemaFactory.createForClass(DoctorSlot);
 
-DoctorSlotSchema.index({ doctorId: 1, dayOfWeek: 1 });
+// Note: slotId already has unique constraint via @Prop decorator, no separate index needed
+// Performance optimization: Compound indexes for common query patterns
+// This index optimizes queries filtering by doctor, consultation type, and active status
+DoctorSlotSchema.index({ doctorId: 1, consultationType: 1, isActive: 1 });
+
+// This index optimizes queries for fetching doctor's schedule by day of week
+DoctorSlotSchema.index({ doctorId: 1, dayOfWeek: 1, isActive: 1 });
+
+// Index for clinic-based queries
 DoctorSlotSchema.index({ clinicId: 1 });
-DoctorSlotSchema.index({ slotId: 1 });
-DoctorSlotSchema.index({ isActive: 1 });

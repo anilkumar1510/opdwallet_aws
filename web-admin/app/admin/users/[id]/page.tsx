@@ -26,6 +26,8 @@ export default function UserDetailPage() {
   const [members, setMembers] = useState<any[]>([])
   const [planConfigs, setPlanConfigs] = useState<any[]>([])
   const [selectedPlanConfigId, setSelectedPlanConfigId] = useState('')
+  const [effectiveFrom, setEffectiveFrom] = useState('')
+  const [effectiveTo, setEffectiveTo] = useState('')
 
   useEffect(() => {
     if (params.id) {
@@ -151,6 +153,18 @@ export default function UserDetailPage() {
       return
     }
 
+    // Validate effective dates
+    if (!effectiveFrom || !effectiveTo) {
+      alert('Please provide both Effective From and Effective To dates')
+      return
+    }
+
+    // Validate effectiveTo is after effectiveFrom
+    if (new Date(effectiveTo) <= new Date(effectiveFrom)) {
+      alert('Effective To date must be after Effective From date')
+      return
+    }
+
     // Validate primaryMemberId requirement
     if (selectedRelationshipId !== 'REL001' && !selectedPrimaryMemberId) {
       alert('Primary Member ID is required for non-SELF relationships')
@@ -162,6 +176,8 @@ export default function UserDetailPage() {
         policyId: selectedPolicyId,
         userId: params.id,
         relationshipId: selectedRelationshipId,
+        effectiveFrom: new Date(effectiveFrom).toISOString(),
+        effectiveTo: new Date(effectiveTo).toISOString(),
       }
 
       if (selectedRelationshipId !== 'REL001') {
@@ -184,6 +200,8 @@ export default function UserDetailPage() {
         setSelectedRelationshipId('')
         setSelectedPrimaryMemberId('')
         setSelectedPlanConfigId('')
+        setEffectiveFrom('')
+        setEffectiveTo('')
         fetchAssignments()
       } else {
         const error = await response.json()
@@ -957,6 +975,31 @@ export default function UserDetailPage() {
                   <p className="text-xs text-gray-500 mt-1">Auto-selected active configuration</p>
                 </div>
               )}
+
+              <div>
+                <label className="label">Effective From *</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={effectiveFrom}
+                  onChange={(e) => setEffectiveFrom(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Policy coverage start date</p>
+              </div>
+
+              <div>
+                <label className="label">Effective To *</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={effectiveTo}
+                  onChange={(e) => setEffectiveTo(e.target.value)}
+                  min={effectiveFrom}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Policy coverage end date</p>
+              </div>
             </div>
             <div className="modal-footer">
               <button
@@ -966,6 +1009,8 @@ export default function UserDetailPage() {
                   setSelectedRelationshipId('')
                   setSelectedPrimaryMemberId('')
                   setSelectedPlanConfigId('')
+                  setEffectiveFrom('')
+                  setEffectiveTo('')
                 }}
                 className="btn-secondary"
               >
@@ -973,7 +1018,7 @@ export default function UserDetailPage() {
               </button>
               <button
                 onClick={handleAssignPolicy}
-                disabled={!selectedPolicyId}
+                disabled={!selectedPolicyId || !effectiveFrom || !effectiveTo}
                 className="btn-primary"
               >
                 Assign Policy

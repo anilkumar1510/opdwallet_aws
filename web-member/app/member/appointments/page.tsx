@@ -126,6 +126,34 @@ export default function AppointmentsPage() {
     }
   }
 
+  const handleCancelAppointment = async (appointmentId: string) => {
+    if (!confirm('Are you sure you want to cancel this appointment? Your wallet will be refunded.')) {
+      return
+    }
+
+    try {
+      console.log('[Appointments] Cancelling appointment:', appointmentId)
+      const response = await fetch(`/api/appointments/${appointmentId}/user-cancel`, {
+        method: 'PATCH',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to cancel appointment')
+      }
+
+      console.log('[Appointments] Appointment cancelled successfully')
+      alert('Appointment cancelled successfully. Your wallet has been refunded.')
+
+      // Refresh appointments
+      await fetchAppointments(user._id)
+    } catch (error) {
+      console.error('[Appointments] Error cancelling appointment:', error)
+      alert('Failed to cancel appointment: ' + (error as Error).message)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -153,7 +181,10 @@ export default function AppointmentsPage() {
       <div className="p-4 max-w-2xl mx-auto">
         <button
           onClick={handleBookAppointment}
-          className="w-full mb-6 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-medium transition-colors"
+          className="w-full mb-6 flex items-center justify-center space-x-2 text-white px-4 py-3 rounded-xl font-medium transition-all hover:shadow-lg"
+          style={{ backgroundColor: '#0a529f' }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
         >
           <PlusIcon className="h-5 w-5" />
           <span>Book New Appointment</span>
@@ -215,13 +246,60 @@ export default function AppointmentsPage() {
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Appointment ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm text-gray-600">
+                      Appointment ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                    </div>
+                    <div className="text-sm font-semibold text-blue-600">
+                      ₹{appointment.consultationFee}
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold text-blue-600">
-                    ₹{appointment.consultationFee}
-                  </div>
+                  {(() => {
+                    // Parse appointment date and time
+                    const [year, month, day] = appointment.appointmentDate.split('-').map(Number);
+                    const appointmentDateObj = new Date(year, month - 1, day); // month is 0-indexed
+
+                    // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
+                    const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    if (timeParts) {
+                      let hours = parseInt(timeParts[1]);
+                      const minutes = parseInt(timeParts[2]);
+                      const period = timeParts[3].toUpperCase();
+
+                      if (period === 'PM' && hours !== 12) {
+                        hours += 12;
+                      } else if (period === 'AM' && hours === 12) {
+                        hours = 0;
+                      }
+
+                      appointmentDateObj.setHours(hours, minutes, 0, 0);
+                    }
+
+                    const now = new Date();
+                    const isFuture = appointmentDateObj > now;
+                    const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture;
+
+                    console.log('[Appointments] Cancel button check:', {
+                      appointmentId: appointment.appointmentId,
+                      appointmentDate: appointment.appointmentDate,
+                      timeSlot: appointment.timeSlot,
+                      parsedDateTime: appointmentDateObj.toString(),
+                      now: now.toString(),
+                      isFuture,
+                      status: appointment.status,
+                      canCancel
+                    });
+
+                    return canCancel;
+                  })() && (
+                    <button
+                      onClick={() => handleCancelAppointment(appointment.appointmentId)}
+                      className="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Cancel Appointment
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

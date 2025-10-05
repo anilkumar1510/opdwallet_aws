@@ -12,27 +12,23 @@ export default function AdminLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
+  // Auth check moved to middleware - fetch user data only
   useEffect(() => {
-    checkAuth()
+    fetchUserData()
   }, [])
 
-  const checkAuth = async () => {
+  const fetchUserData = async () => {
     try {
       const response = await apiFetch('/api/auth/me')
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)
-      } else {
-        router.push('/')
-        return
       }
     } catch (error) {
-      router.push('/')
-      return
+      console.error('Failed to fetch user data:', error)
     }
-    setLoading(false)
   }
 
   const handleLogout = async () => {
@@ -52,6 +48,9 @@ export default function AdminLayout({
     if (pathname.startsWith('/admin/policies')) return 'Policies'
     if (pathname.startsWith('/admin/categories')) return 'Categories'
     if (pathname.startsWith('/admin/services')) return 'Service Types'
+    if (pathname.startsWith('/admin/lab')) return 'Lab Diagnostics'
+    if (pathname.startsWith('/admin/tpa')) return 'TPA Portal'
+    if (pathname.startsWith('/admin/finance')) return 'Finance Portal'
     return 'Admin'
   }
 
@@ -81,16 +80,24 @@ export default function AdminLayout({
       path: '/admin/services',
       current: pathname.startsWith('/admin/services')
     },
+    {
+      name: 'Lab',
+      path: '/admin/lab',
+      current: pathname.startsWith('/admin/lab')
+    },
+    {
+      name: 'TPA Portal',
+      path: '/admin/tpa',
+      current: pathname.startsWith('/admin/tpa')
+    },
+    {
+      name: 'Finance',
+      path: '/admin/finance',
+      current: pathname.startsWith('/admin/finance')
+    },
   ]
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
-      </div>
-    )
-  }
-
+  // Remove loading state since auth is handled by middleware
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}

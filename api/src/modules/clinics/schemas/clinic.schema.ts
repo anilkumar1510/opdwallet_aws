@@ -79,6 +79,7 @@ export class Clinic {
 
 export const ClinicSchema = SchemaFactory.createForClass(Clinic);
 
-ClinicSchema.index({ clinicId: 1 });
-ClinicSchema.index({ 'address.city': 1 });
-ClinicSchema.index({ isActive: 1 });
+// Note: clinicId already has unique constraint via @Prop decorator, no separate index needed
+// Performance optimization: Compound index for city-based active clinic searches
+// This index optimizes queries for finding active clinics in a specific city
+ClinicSchema.index({ 'address.city': 1, isActive: 1 });

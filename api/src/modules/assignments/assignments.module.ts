@@ -3,12 +3,16 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Assignment, AssignmentSchema } from './schemas/assignment.schema';
 import { AssignmentsController } from './assignments.controller';
 import { AssignmentsService } from './assignments.service';
+import { WalletModule } from '../wallet/wallet.module';
+import { PlanConfigModule } from '../plan-config/plan-config.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Assignment.name, schema: AssignmentSchema },
     ]),
+    WalletModule,
+    PlanConfigModule,
   ],
   controllers: [AssignmentsController],
   providers: [AssignmentsService],

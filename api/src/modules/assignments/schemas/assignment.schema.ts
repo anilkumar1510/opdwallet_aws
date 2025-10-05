@@ -31,14 +31,14 @@ export class Assignment {
   @Prop({
     type: Date,
     required: true,
-    default: Date.now,
   })
   effectiveFrom: Date;
 
   @Prop({
     type: Date,
+    required: true,
   })
-  effectiveTo?: Date;
+  effectiveTo: Date;
 
   @Prop({
     type: Number,

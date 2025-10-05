@@ -35,7 +35,7 @@ export class UsersService {
           ? [{ employeeId: createUserDto.employeeId }]
           : []),
       ],
-    });
+    }).lean();
 
     if (existingUser) {
       const field = existingUser.email === createUserDto.email.toLowerCase()
@@ -60,7 +60,7 @@ export class UsersService {
       const primaryMember = await this.userModel.findOne({
         memberId: createUserDto.primaryMemberId,
         relationship: RelationshipType.SELF,
-      });
+      }).lean();
       if (!primaryMember) {
         throw new BadRequestException(
           'Invalid Primary Member ID or member is not SELF',
@@ -123,10 +123,11 @@ export class UsersService {
     const [users, total] = await Promise.all([
       this.userModel
         .find(filter)
-        .select('-passwordHash')
+        .select('userId memberId uhid employeeId name email phone role relationship status primaryMemberId createdAt updatedAt')
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 }),
+        .sort({ createdAt: -1 })
+        .lean(),
       this.userModel.countDocuments(filter),
     ]);
 
@@ -140,7 +141,7 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    const user = await this.userModel.findById(id).select('-passwordHash');
+    const user = await this.userModel.findById(id).select('-passwordHash').lean();
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -177,7 +178,7 @@ export class UsersService {
         const existingUser = await this.userModel.findOne({
           $or: orConditions,
           _id: { $ne: id },
-        });
+        }).lean();
 
         if (existingUser) {
           throw new ConflictException('Duplicate value found');
@@ -270,13 +271,14 @@ export class UsersService {
         relationship: { $ne: RelationshipType.SELF }
       })
       .select('-passwordHash')
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: 1 })
+      .lean();
 
     return dependents;
   }
 
   async getUserWithDependents(id: string) {
-    const user = await this.userModel.findById(id).select('-passwordHash');
+    const user = await this.userModel.findById(id).select('-passwordHash').lean();
     if (!user) {
       throw new NotFoundException('User not found');
     }

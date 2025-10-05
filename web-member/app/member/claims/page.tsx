@@ -505,9 +505,9 @@ export default function ClaimsPage() {
                       </span>
                     </td>
                     <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <button className="text-brand-600 hover:text-brand-700 font-medium">
+                      <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
                         <EyeIcon className="h-4 w-4" />
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -546,9 +546,9 @@ export default function ClaimsPage() {
 
                 <div className="flex items-center justify-between pt-3 border-t border-surface-border">
                   <p className="text-xs text-ink-500">{claim.documents} document{claim.documents !== 1 ? 's' : ''}</p>
-                  <button className="text-brand-600 hover:text-brand-700 text-sm font-medium">
+                  <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 text-sm font-medium">
                     View Details
-                  </button>
+                  </Link>
                 </div>
               </div>
             </Card>

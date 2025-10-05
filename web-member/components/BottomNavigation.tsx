@@ -2,19 +2,21 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   HomeIcon,
   DocumentTextIcon,
   CalendarDaysIcon,
-  Squares2X2Icon,
+  WalletIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 import {
   HomeIcon as HomeIconSolid,
   DocumentTextIcon as DocumentTextIconSolid,
   CalendarDaysIcon as CalendarDaysIconSolid,
-  Squares2X2Icon as Squares2X2IconSolid,
+  WalletIcon as WalletIconSolid,
 } from '@heroicons/react/24/solid'
+import NotificationBell from '@/components/NotificationBell'
 
 interface NavItem {
   name: string
@@ -43,21 +45,34 @@ const bottomNavItems: NavItem[] = [
     activeIcon: CalendarDaysIconSolid,
   },
   {
-    name: 'Services',
-    href: '/member/services',
-    icon: Squares2X2Icon,
-    activeIcon: Squares2X2IconSolid,
+    name: 'Wallet',
+    href: '/member/wallet',
+    icon: WalletIcon,
+    activeIcon: WalletIconSolid,
   },
 ]
 
 export default function BottomNavigation() {
   const pathname = usePathname()
+  const router = useRouter()
 
   const isActive = (href: string) => {
     if (href === '/member') {
       return pathname === href
     }
     return pathname.startsWith(href)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   return (
@@ -105,9 +120,16 @@ export default function BottomNavigation() {
               })}
             </div>
 
-            {/* Right side - can add user menu, notifications, etc. */}
-            <div className="flex items-center space-x-4">
-              {/* Placeholder for additional items */}
+            {/* Right side - notifications, user menu, etc. */}
+            <div className="flex items-center space-x-2">
+              <NotificationBell />
+              <button
+                onClick={handleLogout}
+                className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Sign Out"
+              >
+                <ArrowRightOnRectangleIcon className="h-6 w-6" />
+              </button>
             </div>
           </div>
         </div>

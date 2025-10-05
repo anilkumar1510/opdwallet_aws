@@ -222,7 +222,7 @@ export class TpaController {
   async requestDocuments(
     @Param('claimId') claimId: string,
     @Body() requestDocumentsDto: RequestDocumentsDto,
-    @Request() req,
+    @Request() req: any,
   ) {
     const userName = req.user.name?.fullName || `${req.user.name?.firstName} ${req.user.name?.lastName}`;
 
@@ -249,5 +249,14 @@ export class TpaController {
       fromDate ? new Date(fromDate) : undefined,
       toDate ? new Date(toDate) : undefined,
     );
+  }
+
+  @Get('users')
+  @Roles(UserRole.TPA_ADMIN, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get all TPA users with workload (TPA_ADMIN only)' })
+  @ApiResponse({ status: 200, description: 'TPA users retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Only TPA admins can view users' })
+  async getTPAUsers(@Request() req: any) {
+    return this.tpaService.getTPAUsers(req.user.role);
   }
 }

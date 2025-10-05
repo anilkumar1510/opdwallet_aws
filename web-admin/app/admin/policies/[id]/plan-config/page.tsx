@@ -186,7 +186,7 @@ export default function PlanConfigList() {
                         ? `₹${config.wallet.totalAnnualAmount.toLocaleString()}`
                         : 'Not set'}
                     </TableCell>
-                    <TableCell>{config.enabledServices?.length || 0}</TableCell>
+                    <TableCell>{(config as any).enabledServices?.length || 0}</TableCell>
                     <TableCell>
                       {new Date(config.updatedAt || '').toLocaleDateString()}
                     </TableCell>

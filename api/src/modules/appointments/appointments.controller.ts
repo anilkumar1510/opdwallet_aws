@@ -58,4 +58,11 @@ export class AppointmentsController {
   async cancel(@Param('appointmentId') appointmentId: string) {
     return this.appointmentsService.cancelAppointment(appointmentId);
   }
+
+  @Patch(':appointmentId/user-cancel')
+  async userCancel(@Param('appointmentId') appointmentId: string, @Request() req: any) {
+    const userId = req.user.userId;
+    console.log('[AppointmentsController] User cancelling appointment:', { appointmentId, userId });
+    return this.appointmentsService.userCancelAppointment(appointmentId, userId);
+  }
 }

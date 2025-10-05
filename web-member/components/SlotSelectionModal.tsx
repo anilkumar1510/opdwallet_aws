@@ -6,6 +6,7 @@ import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/2
 interface TimeSlot {
   time: string
   available: boolean
+  slotId?: string
 }
 
 interface DaySlot {

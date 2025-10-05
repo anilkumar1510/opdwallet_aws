@@ -37,6 +37,9 @@ export class LabVendor extends Document {
   @Prop({ default: true })
   centerVisit: boolean;
 
+  @Prop({ default: 50 })
+  homeCollectionCharges: number;
+
   @Prop()
   description?: string;
 

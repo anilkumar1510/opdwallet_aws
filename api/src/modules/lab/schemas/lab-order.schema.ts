@@ -121,25 +121,68 @@ export class LabOrder extends Document {
   slotId?: Types.ObjectId;
 
   @Prop({ required: true })
-  subtotal: number;
-
-  @Prop({ default: 0 })
-  homeCollectionCharges: number;
-
-  @Prop({ default: 0 })
-  discount: number;
+  totalActualPrice: number;
 
   @Prop({ required: true })
-  totalAmount: number;
+  totalDiscountedPrice: number;
 
-  @Prop({ type: PaymentInfo, required: true })
-  paymentInfo: PaymentInfo;
+  @Prop({ required: true })
+  homeCollectionCharges: number;
+
+  @Prop({ required: true })
+  finalAmount: number;
+
+  @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDING })
+  paymentStatus: PaymentStatus;
+
+  @Prop()
+  paymentMode?: string;
+
+  @Prop()
+  paymentDate?: Date;
+
+  // Legacy fields for backward compatibility
+  @Prop()
+  subtotal?: number;
+
+  @Prop()
+  discount?: number;
+
+  @Prop()
+  totalAmount?: number;
+
+  @Prop({ type: PaymentInfo })
+  paymentInfo?: PaymentInfo;
 
   @Prop()
   reportUrl?: string;
 
+  @Prop({ type: [{ fileName: String, originalName: String, filePath: String, uploadedAt: Date, uploadedBy: String }] })
+  reports: Array<{
+    fileName: string;
+    originalName: string;
+    filePath: string;
+    uploadedAt: Date;
+    uploadedBy: string;
+  }>;
+
   @Prop()
   reportUploadedAt?: Date;
+
+  @Prop()
+  placedAt?: Date;
+
+  @Prop()
+  confirmedAt?: Date;
+
+  @Prop()
+  confirmedBy?: string;
+
+  @Prop()
+  collectedAt?: Date;
+
+  @Prop()
+  completedAt?: Date;
 
   @Prop()
   cancelledAt?: Date;

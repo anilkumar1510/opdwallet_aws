@@ -24,6 +24,7 @@ import { join } from 'path';
 import { MemberClaimsService } from './memberclaims.service';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { UpdateClaimDto } from './dto/update-claim.dto';
+import { ResubmitDocumentsDto } from './dto/resubmit-documents.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -52,57 +53,24 @@ export class MemberClaimsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Request() req: AuthRequest,
   ) {
-    console.log('=== CLAIM CREATE ENDPOINT CALLED ===');
-    console.log('Request User:', JSON.stringify(req.user, null, 2));
-    console.log('Request Body:', JSON.stringify(createClaimDto, null, 2));
-    console.log('Files Received:', files ? files.length : 0);
-
-    if (files && files.length > 0) {
-      console.log('File Details:');
-      files.forEach((file, index) => {
-        console.log(`File ${index + 1}:`, {
-          originalname: file.originalname,
-          filename: file.filename,
-          mimetype: file.mimetype,
-          size: file.size,
-          path: file.path,
-          destination: file.destination
-        });
-      });
-    }
-
     const userId = req.user.userId || req.user.id;
-    console.log('Extracted userId:', userId);
 
     if (!userId) {
-      console.error('ERROR: User ID is missing!');
       throw new BadRequestException('User ID is required');
     }
 
     try {
-      console.log('Calling memberClaimsService.create...');
       const claim = await this.memberClaimsService.create(
         createClaimDto,
         userId,
         files,
       );
 
-      console.log('Claim created successfully:', {
-        claimId: claim.claimId,
-        _id: (claim as any)._id,
-        documentsCount: claim.documents?.length || 0
-      });
-
       return {
         message: 'Claim created successfully',
         claim: claim.toObject(),
       };
     } catch (error: any) {
-      console.error('ERROR in create claim:', error);
-      console.error('Error stack:', error.stack);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-
       // Return more detailed error for debugging
       throw new BadRequestException({
         message: 'Failed to create claim',
@@ -117,37 +85,18 @@ export class MemberClaimsController {
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
   async submitClaim(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
-    console.log('=== SUBMIT CLAIM ENDPOINT CALLED ===');
-    console.log('ClaimId:', claimId);
-    console.log('Request User:', JSON.stringify(req.user, null, 2));
-
     const userId = req.user.userId || req.user.id;
-    console.log('Extracted userId:', userId);
 
     if (!userId) {
-      console.error('ERROR: User ID is missing for submit!');
       throw new BadRequestException('User ID is required');
     }
 
-    try {
-      console.log('Calling memberClaimsService.submitClaim...');
-      const claim = await this.memberClaimsService.submitClaim(claimId, userId);
+    const claim = await this.memberClaimsService.submitClaim(claimId, userId);
 
-      console.log('Claim submitted successfully:', {
-        claimId: claim.claimId,
-        status: claim.status,
-        submittedAt: claim.submittedAt
-      });
-
-      return {
-        message: 'Claim submitted successfully',
-        claim: claim.toObject(),
-      };
-    } catch (error) {
-      console.error('ERROR in submit claim:', error);
-      console.error('Error stack:', error.stack);
-      throw error;
-    }
+    return {
+      message: 'Claim submitted successfully',
+      claim: claim.toObject(),
+    };
   }
 
   @Get()
@@ -358,5 +307,50 @@ export class MemberClaimsController {
 
     const fileStream = createReadStream(filePath);
     fileStream.pipe(res);
+  }
+
+  @Get(':claimId/timeline')
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.FINANCE_USER)
+  async getClaimTimeline(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
+    const userId = req.user?.userId || req.user?.id;
+    return this.memberClaimsService.getClaimTimeline(claimId, userId || '', req.user.role);
+  }
+
+  @Post(':claimId/resubmit-documents')
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FilesInterceptor('documents', 10, multerConfig))
+  async resubmitDocuments(
+    @Param('claimId') claimId: string,
+    @Body() resubmitDto: ResubmitDocumentsDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Request() req: AuthRequest,
+  ) {
+    const userId = req.user?.userId || req.user?.id;
+
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No documents provided for resubmission');
+    }
+
+    const documentsData = files.map((file, index) => ({
+      fileName: file.filename,
+      filePath: `/uploads/claims/${file.filename}`,
+      documentType: resubmitDto.documents[index]?.documentType || 'Supporting Document',
+      notes: resubmitDto.documents[index]?.notes,
+    }));
+
+    return this.memberClaimsService.resubmitDocuments(
+      claimId,
+      userId || '',
+      documentsData,
+      resubmitDto.resubmissionNotes,
+    );
+  }
+
+  @Get(':claimId/tpa-notes')
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async getTPANotes(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
+    const userId = req.user?.userId || req.user?.id;
+    return this.memberClaimsService.getTPANotesForMember(claimId, userId || '');
   }
 }

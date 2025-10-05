@@ -17,7 +17,7 @@ export class AuditLog {
   @Prop({ required: true })
   userRole: string;
 
-  @Prop({ required: true, enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'AUTH_FAILURE', 'ASSIGNMENT_PLAN_VERSION_UPDATE', 'PLAN_VERSION_CREATE', 'PLAN_VERSION_PUBLISH', 'PLAN_VERSION_MAKE_CURRENT', 'BENEFIT_COMPONENTS_UPSERT', 'WALLET_RULES_UPSERT'] })
+  @Prop({ required: true, enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'AUTH_FAILURE', 'ASSIGNMENT_PLAN_VERSION_UPDATE', 'PLAN_VERSION_CREATE', 'PLAN_VERSION_PUBLISH', 'PLAN_VERSION_MAKE_CURRENT', 'BENEFIT_COMPONENTS_UPSERT', 'WALLET_RULES_UPSERT', 'CLAIM_ASSIGNED', 'CLAIM_REASSIGNED', 'CLAIM_APPROVED', 'CLAIM_PARTIALLY_APPROVED', 'CLAIM_REJECTED', 'DOCUMENTS_REQUESTED', 'CLAIM_STATUS_UPDATED', 'PAYMENT_COMPLETED', 'PAYMENT_FAILED', 'DOCUMENTS_RESUBMITTED'] })
   action: string;
 
   @Prop({ required: true })
@@ -57,3 +57,10 @@ export class AuditLog {
 }
 
 export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);
+
+// Performance indexes for common query patterns
+AuditLogSchema.index({ userId: 1, createdAt: -1 }); // User activity queries
+AuditLogSchema.index({ userRole: 1, action: 1, createdAt: -1 }); // Role-based audit queries
+AuditLogSchema.index({ resource: 1, resourceId: 1, createdAt: -1 }); // Resource-specific audit trail
+AuditLogSchema.index({ action: 1, createdAt: -1 }); // Action-based queries
+AuditLogSchema.index({ 'metadata.statusCode': 1, createdAt: -1 }); // Error monitoring

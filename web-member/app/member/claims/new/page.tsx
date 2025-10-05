@@ -110,7 +110,7 @@ export default function NewClaimPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [walletRules, setWalletRules] = useState<any>(null)
   const [formData, setFormData] = useState<FormData>({
-    claimType: '',
+    claimType: 'reimbursement',
     category: '',
     treatmentDate: '',
     providerName: '',
@@ -214,7 +214,7 @@ export default function NewClaimPage() {
 
     // Only handle horizontal swipes (ignore vertical scrolling)
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-      if (diffX > 0 && currentStep < 4) {
+      if (diffX > 0 && currentStep < 3) {
         // Swipe left - next step
         if (validateStep(currentStep)) {
           setCurrentStep(currentStep + 1)
@@ -234,11 +234,6 @@ export default function NewClaimPage() {
 
     switch (step) {
       case 1:
-        if (!formData.claimType) {
-          newErrors.claimType = 'Please select a claim type'
-        }
-        break
-      case 2:
         if (!formData.category) {
           newErrors.category = 'Please select a category'
         }
@@ -252,7 +247,7 @@ export default function NewClaimPage() {
           newErrors.billAmount = 'Valid bill amount is required'
         }
         break
-      case 3:
+      case 2:
         if (documentPreviews.length === 0) {
           newErrors.documents = 'Please upload at least one document'
         }
@@ -265,7 +260,7 @@ export default function NewClaimPage() {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(Math.min(4, currentStep + 1))
+      setCurrentStep(Math.min(3, currentStep + 1))
     }
   }
 
@@ -377,81 +372,8 @@ export default function NewClaimPage() {
     }
   }
 
-  const progressPercentage = (currentStep / 4) * 100
+  const progressPercentage = (currentStep / 3) * 100
 
-  const renderStep1 = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-ink-900 mb-2">Choose Claim Type</h2>
-        <p className="text-sm text-ink-500">Select how you'd like to process your claim</p>
-      </div>
-
-      <div className="space-y-4">
-        <button
-          onClick={() => setFormData(prev => ({ ...prev, claimType: 'reimbursement' }))}
-          className={cn(
-            "w-full p-6 border-2 rounded-2xl transition-all text-left",
-            formData.claimType === 'reimbursement'
-              ? "border-brand-600 bg-brand-50"
-              : "border-surface-border hover:border-brand-600"
-          )}
-        >
-          <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0">
-              <div className="h-12 w-12 rounded-xl bg-brand-600 flex items-center justify-center">
-                <CurrencyRupeeIcon className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-ink-900 mb-1">Reimbursement</h3>
-              <p className="text-sm text-ink-500 mb-2">
-                You've already paid for the treatment and want to get reimbursed
-              </p>
-              <div className="flex items-center text-xs text-brand-600">
-                <CheckCircleIcon className="h-4 w-4 mr-1" />
-                Submit bills & get money back
-              </div>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setFormData(prev => ({ ...prev, claimType: 'cashless-preauth' }))}
-          className={cn(
-            "w-full p-6 border-2 rounded-2xl transition-all text-left",
-            formData.claimType === 'cashless-preauth'
-              ? "border-brand-600 bg-brand-50"
-              : "border-surface-border hover:border-brand-600"
-          )}
-        >
-          <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0">
-              <div className="h-12 w-12 rounded-xl bg-green-600 flex items-center justify-center">
-                <ShieldCheckIcon className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-ink-900 mb-1">Cashless Pre-Authorization</h3>
-              <p className="text-sm text-ink-500 mb-2">
-                Get approval before treatment to avoid upfront payment
-              </p>
-              <div className="flex items-center text-xs text-green-600">
-                <CheckCircleIcon className="h-4 w-4 mr-1" />
-                No payment required at hospital
-              </div>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      {errors.claimType && (
-        <div className="flex items-center space-x-2 text-danger text-sm">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          <span>{errors.claimType}</span>
-        </div>
-      )}
-    </div>
-  )
 
   const renderStep2 = () => (
     <div className="space-y-6">
@@ -462,29 +384,24 @@ export default function NewClaimPage() {
 
       {/* Category Selection */}
       <div>
-        <label className="block text-sm font-medium text-ink-900 mb-3">
+        <label className="block text-sm font-medium text-ink-900 mb-2">
           Treatment Category *
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <select
+          value={formData.category}
+          onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+          className={cn(
+            "w-full h-touch px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent appearance-none bg-white",
+            errors.category ? "border-danger" : "border-surface-border"
+          )}
+        >
+          <option value="">Select a category</option>
           {CLAIM_CATEGORIES.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setFormData(prev => ({ ...prev, category: category.id }))}
-              className={cn(
-                "p-4 border-2 rounded-xl transition-all text-left",
-                formData.category === category.id
-                  ? "border-brand-600 bg-brand-50"
-                  : "border-surface-border hover:border-brand-600"
-              )}
-            >
-              <div className={`${category.color} p-2 rounded-lg inline-block mb-2`}>
-                <category.icon className="h-5 w-5 text-white" />
-              </div>
-              <p className="text-sm font-medium text-ink-900">{category.name}</p>
-              <p className="text-xs text-ink-500">{category.description}</p>
-            </button>
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
           ))}
-        </div>
+        </select>
         {errors.category && (
           <p className="text-danger text-sm mt-1 flex items-center">
             <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
@@ -893,10 +810,9 @@ export default function NewClaimPage() {
   )
 
   const steps = [
-    { number: 1, title: 'Claim Type', completed: currentStep > 1 },
-    { number: 2, title: 'Details', completed: currentStep > 2 },
-    { number: 3, title: 'Documents', completed: currentStep > 3 },
-    { number: 4, title: 'Review', completed: currentStep > 4 }
+    { number: 1, title: 'Details', completed: currentStep > 1 },
+    { number: 2, title: 'Documents', completed: currentStep > 2 },
+    { number: 3, title: 'Review', completed: currentStep > 3 }
   ]
 
   return (
@@ -969,10 +885,9 @@ export default function NewClaimPage() {
         className="flex-1"
       >
         <div className="p-4 md:p-6 max-w-2xl mx-auto">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
+          {currentStep === 1 && renderStep2()}
+          {currentStep === 2 && renderStep3()}
+          {currentStep === 3 && renderStep4()}
         </div>
       </div>
 
@@ -993,7 +908,7 @@ export default function NewClaimPage() {
             Previous
           </button>
 
-          {currentStep < 4 ? (
+          {currentStep < 3 ? (
             <button
               onClick={handleNext}
               className="flex items-center px-6 py-3 bg-brand-600 text-white rounded-xl hover:bg-brand-700 font-medium transition-all"
@@ -1025,18 +940,6 @@ export default function NewClaimPage() {
         </div>
       </div>
 
-      {/* Load Draft Button - Show only on first load */}
-      {currentStep === 1 && !formData.claimType && (
-        <div className="fixed bottom-24 right-4 z-30">
-          <button
-            onClick={loadDraft}
-            className="flex items-center px-4 py-2 bg-white border border-surface-border rounded-xl shadow-soft text-sm font-medium text-ink-600 hover:bg-surface-alt"
-          >
-            <ClockIcon className="h-4 w-4 mr-2" />
-            Load Draft
-          </button>
-        </div>
-      )}
     </div>
   )
 }

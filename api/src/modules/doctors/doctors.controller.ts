@@ -23,6 +23,15 @@ export class DoctorsController {
     return this.doctorsService.findOne(doctorId);
   }
 
+  @Get(':doctorId/slots')
+  async getSlots(
+    @Param('doctorId') doctorId: string,
+    @Query('clinicId') clinicId?: string,
+    @Query('date') date?: string,
+  ) {
+    return this.doctorsService.getSlots(doctorId, clinicId, date);
+  }
+
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)

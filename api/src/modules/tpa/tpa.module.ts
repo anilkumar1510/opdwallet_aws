@@ -4,6 +4,7 @@ import { TpaController } from './tpa.controller';
 import { TpaService } from './tpa.service';
 import { MemberClaim, MemberClaimSchema } from '@/modules/memberclaims/schemas/memberclaim.schema';
 import { User, UserSchema } from '@/modules/users/schemas/user.schema';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { User, UserSchema } from '@/modules/users/schemas/user.schema';
       { name: MemberClaim.name, schema: MemberClaimSchema },
       { name: User.name, schema: UserSchema },
     ]),
+    NotificationsModule,
   ],
   controllers: [TpaController],
   providers: [TpaService],

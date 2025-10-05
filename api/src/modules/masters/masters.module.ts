@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CacheModule } from '@nestjs/cache-manager';
 import { CategoryMaster, CategoryMasterSchema } from './schemas/category-master.schema';
 import { ServiceMaster, ServiceMasterSchema } from './schemas/service-master.schema';
 import { RelationshipMaster, RelationshipMasterSchema } from './schemas/relationship-master.schema';
@@ -22,6 +23,10 @@ import { CugsService } from './cugs.service';
       { name: RelationshipMaster.name, schema: RelationshipMasterSchema },
       { name: CugMaster.name, schema: CugMasterSchema },
     ]),
+    CacheModule.register({
+      ttl: 60, // seconds
+      max: 100, // maximum number of items in cache
+    }),
   ],
   controllers: [CategoriesController, ServicesController, ServicesMigrationController, RelationshipsController, CugsController],
   providers: [CategoriesService, ServicesService, RelationshipsService, CugsService],

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { useDebounce } from '@/lib/hooks/useDebounce'
+import { useSpecialties } from '@/lib/providers/specialties-provider'
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([])
-  const [specialties, setSpecialties] = useState<any[]>([])
+  const { specialties } = useSpecialties() // Use cached specialties
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     status: '',
@@ -13,26 +15,16 @@ export default function AppointmentsPage() {
     includeOld: false,
   })
 
+  // PERFORMANCE: Debounce filters to avoid API spam
+  const debouncedFilters = useDebounce(filters, 300)
+
   useEffect(() => {
-    fetchSpecialties()
     fetchAppointments()
   }, [])
 
   useEffect(() => {
     fetchAppointments()
-  }, [filters])
-
-  const fetchSpecialties = async () => {
-    try {
-      const response = await apiFetch('/api/specialties')
-      if (response.ok) {
-        const data = await response.json()
-        setSpecialties(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch specialties:', error)
-    }
-  }
+  }, [debouncedFilters]) // Use debounced filters instead of immediate filters
 
   const fetchAppointments = async () => {
     try {

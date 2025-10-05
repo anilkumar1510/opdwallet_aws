@@ -28,11 +28,7 @@ export class DoctorSlotsController {
     return this.slotsService.findAll(query);
   }
 
-  @Get('doctor/:doctorId')
-  @ApiOperation({ summary: 'Get slots by doctor ID' })
-  async findByDoctor(@Param('doctorId') doctorId: string) {
-    return this.slotsService.findByDoctor(doctorId);
-  }
+  // Removed: Slots are now fetched via /api/doctors/:doctorId/slots endpoint
 
   @Get('clinic/:clinicId')
   @ApiOperation({ summary: 'Get slots by clinic ID' })
@@ -40,14 +36,7 @@ export class DoctorSlotsController {
     return this.slotsService.findByClinic(clinicId);
   }
 
-  @Get('doctor/:doctorId/day/:dayOfWeek')
-  @ApiOperation({ summary: 'Get slots by doctor and day of week' })
-  async findByDoctorAndDay(
-    @Param('doctorId') doctorId: string,
-    @Param('dayOfWeek') dayOfWeek: string,
-  ) {
-    return this.slotsService.findByDoctorAndDay(doctorId, dayOfWeek);
-  }
+  // Removed: Doctor slots are now managed via /api/doctors/:doctorId/slots endpoint
 
   @Get(':slotId')
   @ApiOperation({ summary: 'Get a slot configuration by ID' })

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useDebounce } from '@/lib/hooks/useDebounce'
 
 export default function ClinicsPage() {
   const router = useRouter()
@@ -14,9 +15,12 @@ export default function ClinicsPage() {
     isActive: '',
   })
 
+  // PERFORMANCE: Debounce filters to prevent API spam on every keystroke
+  const debouncedFilters = useDebounce(filters, 300)
+
   useEffect(() => {
     fetchClinics()
-  }, [filters])
+  }, [debouncedFilters]) // Use debounced filters
 
   const fetchClinics = async () => {
     try {

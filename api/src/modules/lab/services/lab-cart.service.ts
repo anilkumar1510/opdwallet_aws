@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { LabCart, CartStatus } from '../schemas/lab-cart.schema';
+import { LabPrescription } from '../schemas/lab-prescription.schema';
 import { CreateCartDto } from '../dto/create-cart.dto';
 import { UpdateCartDto } from '../dto/update-cart.dto';
 
@@ -10,13 +11,25 @@ export class LabCartService {
   constructor(
     @InjectModel(LabCart.name)
     private cartModel: Model<LabCart>,
+    @InjectModel(LabPrescription.name)
+    private prescriptionModel: Model<LabPrescription>,
   ) {}
 
   async createCart(
     userId: Types.ObjectId,
     createCartDto: CreateCartDto,
+    createdBy: string,
   ): Promise<LabCart> {
     const cartId = `CART-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Fetch prescription to get patient details
+    const prescription = await this.prescriptionModel.findById(
+      new Types.ObjectId(createCartDto.prescriptionId),
+    );
+
+    if (!prescription) {
+      throw new NotFoundException('Prescription not found');
+    }
 
     const items = createCartDto.items.map(item => ({
       serviceId: new Types.ObjectId(item.serviceId),
@@ -29,8 +42,11 @@ export class LabCartService {
       cartId,
       userId,
       prescriptionId: new Types.ObjectId(createCartDto.prescriptionId),
+      patientId: prescription.patientId,
+      patientName: prescription.patientName,
       items,
       status: CartStatus.CREATED,
+      createdBy,
     });
 
     return cart.save();

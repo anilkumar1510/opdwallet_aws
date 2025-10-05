@@ -3,25 +3,60 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Appointment, AppointmentDocument, AppointmentStatus } from './schemas/appointment.schema';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { CounterService } from '../counters/counter.service';
+import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
+    private readonly counterService: CounterService,
+    private readonly walletService: WalletService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
-    console.log('[AppointmentsService] Creating appointment with DTO:', createAppointmentDto);
+    const appointmentId = await this.counterService.generateAppointmentId();
+    const consultationFee = createAppointmentDto.consultationFee || 0;
+    const userId = createAppointmentDto.userId;
 
-    const counter = await this.getNextAppointmentNumber();
-    const appointmentId = `APT${counter}`;
+    // Validate userId is provided
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
 
-    console.log('[AppointmentsService] Generated appointmentId:', appointmentId, 'counter:', counter);
+    // Check and debit wallet if consultation fee > 0
+    if (consultationFee > 0) {
+      console.log('🟡 [APPOINTMENTS SERVICE] Checking wallet balance for consultation fee:', consultationFee);
+
+      try {
+        // Check sufficient balance
+        const balanceCheck = await this.walletService.checkSufficientBalance(
+          userId,
+          consultationFee,
+          'CAT001' // Consult category
+        );
+
+        if (!balanceCheck.hasSufficient) {
+          console.warn(`⚠️ [APPOINTMENTS SERVICE] Insufficient wallet balance. Available: ₹${balanceCheck.categoryBalance}, Required: ₹${consultationFee}`);
+          // For now, just log the warning and continue with the appointment
+          // In production, you would throw an error:
+          // throw new BadRequestException(
+          //   `Insufficient wallet balance. Available: ₹${balanceCheck.categoryBalance} in Consult category, Required: ₹${consultationFee}`
+          // );
+        } else {
+          console.log('✅ [APPOINTMENTS SERVICE] Sufficient balance available');
+        }
+      } catch (error) {
+        console.error('❌ [APPOINTMENTS SERVICE] Error checking wallet balance:', error.message);
+        // Continue with appointment creation even if wallet check fails
+        // In production, you might want to handle this differently
+      }
+    }
 
     const appointmentData = {
       ...createAppointmentDto,
       appointmentId,
-      appointmentNumber: counter.toString(),
+      appointmentNumber: appointmentId.replace('APT', ''),
       userId: new Types.ObjectId(createAppointmentDto.userId),
       status: AppointmentStatus.PENDING_CONFIRMATION,
       requestedAt: new Date(),
@@ -31,15 +66,35 @@ export class AppointmentsService {
       clinicId: createAppointmentDto.clinicId || '',
       clinicName: createAppointmentDto.clinicName || '',
       clinicAddress: createAppointmentDto.clinicAddress || '',
-      consultationFee: createAppointmentDto.consultationFee || 0,
+      consultationFee: consultationFee,
     };
 
-    console.log('[AppointmentsService] Final appointment data:', appointmentData);
-
     const appointment = new this.appointmentModel(appointmentData);
-
     const saved = await appointment.save();
-    console.log('[AppointmentsService] Appointment saved successfully:', saved.appointmentId);
+
+    // Debit wallet after appointment is saved
+    if (consultationFee > 0) {
+      try {
+        console.log('🟡 [APPOINTMENTS SERVICE] Debiting wallet for appointment:', appointmentId);
+
+        await this.walletService.debitWallet(
+          userId,
+          consultationFee,
+          'CAT001', // Consult category
+          (saved._id as any).toString(),
+          'CONSULTATION',
+          createAppointmentDto.doctorName || 'Doctor',
+          `Consultation fee - ${createAppointmentDto.doctorName || 'Doctor'} - ${createAppointmentDto.appointmentType || 'Appointment'}`
+        );
+
+        console.log('✅ [APPOINTMENTS SERVICE] Wallet debited successfully');
+      } catch (walletError) {
+        // If wallet debit fails, delete the appointment and throw error
+        console.error('❌ [APPOINTMENTS SERVICE] Wallet debit failed, rolling back appointment:', walletError);
+        await this.appointmentModel.deleteOne({ _id: saved._id });
+        throw new BadRequestException('Failed to debit wallet: ' + walletError.message);
+      }
+    }
 
     return saved;
   }
@@ -49,29 +104,32 @@ export class AppointmentsService {
 
     if (appointmentType) {
       filter.appointmentType = appointmentType;
-      console.log('[AppointmentsService] Filtering by appointmentType:', appointmentType);
     }
 
-    console.log('[AppointmentsService] Query filter:', filter);
-
+    // PERFORMANCE: Add field projection for list views
     return this.appointmentModel
       .find(filter)
+      .select('appointmentId appointmentNumber doctorName specialty appointmentDate timeSlot status appointmentType consultationFee createdAt clinicName clinicAddress patientName patientId')
       .sort({ createdAt: -1 })
+      .lean()
       .exec();
   }
 
   async getOngoingAppointments(userId: string): Promise<Appointment[]> {
+    // PERFORMANCE: Add field projection for ongoing appointments view
     return this.appointmentModel
       .find({
         userId: new Types.ObjectId(userId),
         status: { $in: [AppointmentStatus.PENDING_CONFIRMATION, AppointmentStatus.CONFIRMED] },
       })
+      .select('appointmentId doctorName appointmentDate timeSlot status clinicName')
       .sort({ appointmentDate: 1 })
+      .lean()
       .exec();
   }
 
   async findOne(appointmentId: string): Promise<Appointment | null> {
-    return this.appointmentModel.findOne({ appointmentId }).exec();
+    return this.appointmentModel.findOne({ appointmentId }).lean().exec();
   }
 
   async findAll(query: any): Promise<{ data: Appointment[]; total: number; page: number; pages: number }> {
@@ -116,6 +174,7 @@ export class AppointmentsService {
         .sort({ appointmentDate: -1, createdAt: -1 })
         .skip(skip)
         .limit(limit)
+        .lean()
         .exec(),
       this.appointmentModel.countDocuments(filter),
     ]);
@@ -157,22 +216,108 @@ export class AppointmentsService {
       throw new BadRequestException('Appointment is already cancelled');
     }
 
+    // Check if appointment time has passed
+    const appointmentDateTime = new Date(`${appointment.appointmentDate} ${appointment.timeSlot}`);
+    const now = new Date();
+
+    if (appointmentDateTime <= now) {
+      throw new BadRequestException('Cannot cancel past appointments');
+    }
+
     appointment.status = AppointmentStatus.CANCELLED;
+    appointment.cancelledAt = new Date();
+    appointment.cancelledBy = 'OPS';
     await appointment.save();
+
+    // Refund wallet if there was a consultation fee (same as user cancellation)
+    if (appointment.consultationFee > 0) {
+      try {
+        console.log('🟡 [APPOINTMENTS SERVICE] OPS cancelling - Refunding wallet for cancelled appointment:', {
+          appointmentId,
+          amount: appointment.consultationFee,
+          userId: appointment.userId
+        });
+
+        await this.walletService.creditWallet(
+          appointment.userId.toString(),
+          appointment.consultationFee,
+          'CAT001', // Consult category
+          (appointment._id as any).toString(),
+          'CONSULTATION_REFUND',
+          appointment.doctorName || 'Doctor',
+          `Refund for cancelled appointment - ${appointment.doctorName || 'Doctor'} - ${appointment.appointmentType || 'Appointment'}`
+        );
+
+        console.log('✅ [APPOINTMENTS SERVICE] Wallet refunded successfully');
+      } catch (walletError) {
+        console.error('❌ [APPOINTMENTS SERVICE] Failed to refund wallet:', walletError);
+        // Continue even if refund fails, appointment is already cancelled
+      }
+    }
 
     return appointment;
   }
 
-  private async getNextAppointmentNumber(): Promise<number> {
-    const lastAppointment = await this.appointmentModel
-      .findOne()
-      .sort({ createdAt: -1 })
-      .exec();
+  async userCancelAppointment(appointmentId: string, userId: string): Promise<Appointment> {
+    const appointment = await this.appointmentModel.findOne({ appointmentId });
 
-    if (!lastAppointment) {
-      return 34078;
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
     }
 
-    return parseInt(lastAppointment.appointmentNumber) + 1;
+    // Verify the appointment belongs to this user
+    if (appointment.userId.toString() !== userId) {
+      throw new BadRequestException('You can only cancel your own appointments');
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new BadRequestException('Appointment is already cancelled');
+    }
+
+    if (appointment.status === AppointmentStatus.COMPLETED) {
+      throw new BadRequestException('Cannot cancel completed appointments');
+    }
+
+    // Check if appointment time has passed
+    const appointmentDateTime = new Date(`${appointment.appointmentDate} ${appointment.timeSlot}`);
+    const now = new Date();
+
+    if (appointmentDateTime <= now) {
+      throw new BadRequestException('Cannot cancel past appointments. The appointment time has already passed.');
+    }
+
+    // Cancel the appointment
+    appointment.status = AppointmentStatus.CANCELLED;
+    appointment.cancelledAt = new Date();
+    appointment.cancelledBy = 'USER';
+    await appointment.save();
+
+    // Refund wallet if there was a consultation fee
+    if (appointment.consultationFee > 0) {
+      try {
+        console.log('🟡 [APPOINTMENTS SERVICE] Refunding wallet for cancelled appointment:', {
+          appointmentId,
+          amount: appointment.consultationFee,
+          userId: appointment.userId
+        });
+
+        await this.walletService.creditWallet(
+          appointment.userId.toString(),
+          appointment.consultationFee,
+          'CAT001', // Consult category
+          (appointment._id as any).toString(),
+          'CONSULTATION_REFUND',
+          appointment.doctorName || 'Doctor',
+          `Refund for cancelled appointment - ${appointment.doctorName || 'Doctor'} - ${appointment.appointmentType || 'Appointment'}`
+        );
+
+        console.log('✅ [APPOINTMENTS SERVICE] Wallet refunded successfully');
+      } catch (walletError) {
+        console.error('❌ [APPOINTMENTS SERVICE] Failed to refund wallet:', walletError);
+        // Continue even if refund fails, appointment is already cancelled
+      }
+    }
+
+    return appointment;
   }
 }

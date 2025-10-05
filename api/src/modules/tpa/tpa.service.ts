@@ -718,4 +718,59 @@ export class TpaService {
       },
     };
   }
+
+  // Get all TPA users (TPA_ADMIN only)
+  async getTPAUsers(userRole: string) {
+    // Only TPA_ADMIN, ADMIN, and SUPER_ADMIN can view all TPA users
+    if (![UserRole.TPA_ADMIN, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(userRole as UserRole)) {
+      throw new ForbiddenException('Only TPA admins can view TPA users');
+    }
+
+    const tpaUsers = await this.userModel
+      .find({
+        role: { $in: [UserRole.TPA_USER, UserRole.TPA_ADMIN] },
+        isActive: true,
+      })
+      .select('name email role createdAt')
+      .sort({ 'name.fullName': 1 })
+      .lean();
+
+    // Get workload for each user
+    const usersWithWorkload = await Promise.all(
+      tpaUsers.map(async (user) => {
+        const assignedClaims = await this.memberClaimModel.countDocuments({
+          assignedTo: user._id,
+          status: { $nin: [ClaimStatus.APPROVED, ClaimStatus.REJECTED, ClaimStatus.PAYMENT_COMPLETED] },
+        });
+
+        const totalReviewed = await this.memberClaimModel.countDocuments({
+          assignedTo: user._id,
+          status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.REJECTED] },
+        });
+
+        const approvedClaims = await this.memberClaimModel.countDocuments({
+          assignedTo: user._id,
+          status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED] },
+        });
+
+        const approvalRate = totalReviewed > 0 ? (approvedClaims / totalReviewed) * 100 : 0;
+
+        return {
+          _id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          currentWorkload: assignedClaims,
+          totalReviewed,
+          approvalRate: Math.round(approvalRate * 10) / 10,
+          isActive: true,
+        };
+      })
+    );
+
+    return {
+      users: usersWithWorkload,
+      total: usersWithWorkload.length,
+    };
+  }
 }

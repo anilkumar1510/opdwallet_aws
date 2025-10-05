@@ -70,7 +70,8 @@ export class PoliciesService {
         .find(filter)
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 }),
+        .sort({ createdAt: -1 })
+        .lean(),
       this.policyModel.countDocuments(filter),
     ]);
 

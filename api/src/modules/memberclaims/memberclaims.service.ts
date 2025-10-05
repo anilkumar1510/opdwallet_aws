@@ -31,29 +31,14 @@ export class MemberClaimsService {
     userId: string,
     files?: Express.Multer.File[],
   ): Promise<MemberClaimDocument> {
-    console.log('=== MemberClaimsService.create CALLED ===');
-    console.log('UserId:', userId);
-    console.log('CreateClaimDto:', JSON.stringify(createClaimDto, null, 2));
-    console.log('Files count:', files?.length || 0);
-
     try {
       // Generate unique claim ID
-      console.log('Generating claim ID...');
       const claimId = await this.generateClaimId();
-      console.log('Generated claimId:', claimId);
 
       // Process uploaded files
-      console.log('Processing uploaded files...');
       const documents = files
-        ? files.map((file, index) => {
-            console.log(`Processing file ${index + 1}:`, {
-              filename: file.filename,
-              originalname: file.originalname,
-              path: file.path,
-              size: file.size
-            });
-
-            const doc = {
+        ? files.map((file) => {
+            return {
               fileName: file.filename,
               originalName: file.originalname,
               fileType: file.mimetype,
@@ -62,13 +47,8 @@ export class MemberClaimsService {
               uploadedAt: new Date(),
               documentType: this.determineDocumentType(file.originalname),
             };
-
-            console.log(`Document ${index + 1} processed:`, doc);
-            return doc;
           })
         : [];
-
-      console.log('Total documents processed:', documents.length);
 
       // Ensure all required fields are present
       const claimData: any = {
@@ -94,41 +74,17 @@ export class MemberClaimsService {
         isActive: true,
       };
 
-      console.log('Creating new claim with data:', {
-        claimId: claimData.claimId,
-        userId: claimData.userId.toString(),
-        documentsCount: claimData.documents.length,
-        status: claimData.status
-      });
-
       const newClaim = new this.memberClaimModel(claimData);
-
-      console.log('Saving claim to database...');
 
       let savedClaim;
       try {
         savedClaim = await newClaim.save();
-        console.log('Raw saved claim:', savedClaim);
       } catch (saveError: any) {
-        console.error('MongoDB Save Error:', saveError);
-        console.error('Validation Errors:', saveError.errors);
         throw new Error(`Database save failed: ${saveError.message}`);
       }
 
-      console.log('Claim saved successfully:', {
-        _id: savedClaim._id,
-        claimId: savedClaim.claimId,
-        documentsCount: savedClaim.documents?.length || 0
-      });
-
       return savedClaim;
     } catch (error) {
-      console.error('ERROR in MemberClaimsService.create:', error);
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
       throw error;
     }
   }
@@ -185,9 +141,11 @@ export class MemberClaimsService {
     const total = await this.memberClaimModel.countDocuments(query);
     const claims = await this.memberClaimModel
       .find(query)
+      .select('claimId userId memberName claimType category treatmentDate providerName billAmount billNumber status paymentStatus approvedAmount submittedAt createdAt isUrgent requiresPreAuth')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .lean()
       .exec();
 
     return {
@@ -300,7 +258,7 @@ export class MemberClaimsService {
     try {
       await unlink(document.filePath);
     } catch (error) {
-      console.error('Failed to delete file:', error);
+      // File deletion failed - continue with database update
     }
 
     // Remove from database
@@ -322,7 +280,7 @@ export class MemberClaimsService {
       try {
         await unlink(document.filePath);
       } catch (error) {
-        console.error('Failed to delete file:', error);
+        // File deletion failed - continue with deletion
       }
     }
 
@@ -340,52 +298,97 @@ export class MemberClaimsService {
     totalApprovedAmount: number;
     totalPaidAmount: number;
   }> {
-    const claims = await this.memberClaimModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .exec();
+    // PERFORMANCE: Use aggregation pipeline instead of loading all claims into memory
+    const result = await this.memberClaimModel.aggregate([
+      {
+        $match: { userId: new Types.ObjectId(userId) }
+      },
+      {
+        $facet: {
+          statusCounts: [
+            {
+              $group: {
+                _id: '$status',
+                count: { $sum: 1 }
+              }
+            }
+          ],
+          amounts: [
+            {
+              $group: {
+                _id: null,
+                totalClaimedAmount: {
+                  $sum: {
+                    $cond: [
+                      { $ne: ['$status', ClaimStatus.DRAFT] },
+                      { $ifNull: ['$billAmount', 0] },
+                      0
+                    ]
+                  }
+                },
+                totalApprovedAmount: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $in: ['$status', [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED]]
+                      },
+                      { $ifNull: ['$approvedAmount', 0] },
+                      0
+                    ]
+                  }
+                },
+                totalPaidAmount: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $in: ['$status', [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED]] },
+                          { $eq: ['$paymentStatus', PaymentStatus.PAID] }
+                        ]
+                      },
+                      { $ifNull: ['$approvedAmount', 0] },
+                      0
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          total: [
+            { $count: 'count' }
+          ]
+        }
+      }
+    ]);
 
-    const summary = {
-      total: claims.length,
-      draft: 0,
-      submitted: 0,
-      underReview: 0,
-      approved: 0,
-      rejected: 0,
+    // Parse aggregation results
+    const statusMap = new Map();
+    if (result[0]?.statusCounts) {
+      result[0].statusCounts.forEach((item: any) => {
+        statusMap.set(item._id, item.count);
+      });
+    }
+
+    const amounts = result[0]?.amounts?.[0] || {
       totalClaimedAmount: 0,
       totalApprovedAmount: 0,
-      totalPaidAmount: 0,
+      totalPaidAmount: 0
     };
 
-    claims.forEach((claim) => {
-      switch (claim.status) {
-        case ClaimStatus.DRAFT:
-          summary.draft++;
-          break;
-        case ClaimStatus.SUBMITTED:
-          summary.submitted++;
-          break;
-        case ClaimStatus.UNDER_REVIEW:
-          summary.underReview++;
-          break;
-        case ClaimStatus.APPROVED:
-        case ClaimStatus.PARTIALLY_APPROVED:
-          summary.approved++;
-          summary.totalApprovedAmount += claim.approvedAmount || 0;
-          if (claim.paymentStatus === PaymentStatus.PAID) {
-            summary.totalPaidAmount += claim.approvedAmount || 0;
-          }
-          break;
-        case ClaimStatus.REJECTED:
-          summary.rejected++;
-          break;
-      }
+    const total = result[0]?.total?.[0]?.count || 0;
 
-      if (claim.status !== ClaimStatus.DRAFT) {
-        summary.totalClaimedAmount += claim.billAmount || 0;
-      }
-    });
-
-    return summary;
+    return {
+      total,
+      draft: statusMap.get(ClaimStatus.DRAFT) || 0,
+      submitted: statusMap.get(ClaimStatus.SUBMITTED) || 0,
+      underReview: statusMap.get(ClaimStatus.UNDER_REVIEW) || 0,
+      approved: (statusMap.get(ClaimStatus.APPROVED) || 0) +
+                (statusMap.get(ClaimStatus.PARTIALLY_APPROVED) || 0),
+      rejected: statusMap.get(ClaimStatus.REJECTED) || 0,
+      totalClaimedAmount: amounts.totalClaimedAmount,
+      totalApprovedAmount: amounts.totalApprovedAmount,
+      totalPaidAmount: amounts.totalPaidAmount
+    };
   }
 
   private async generateClaimId(): Promise<string> {
@@ -399,24 +402,15 @@ export class MemberClaimsService {
       const todayStart = new Date(year, date.getMonth(), date.getDate(), 0, 0, 0, 0);
       const todayEnd = new Date(year, date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
-      console.log('Date range for count:', {
-        start: todayStart,
-        end: todayEnd
-      });
-
       const todayCount = await this.memberClaimModel.countDocuments({
         createdAt: { $gte: todayStart, $lte: todayEnd },
       });
 
-      console.log('Today count:', todayCount);
-
       const sequence = String(todayCount + 1).padStart(4, '0');
       const claimId = `CLM-${year}${month}${day}-${sequence}`;
 
-      console.log('Generated claim ID:', claimId);
       return claimId;
     } catch (error) {
-      console.error('ERROR in generateClaimId:', error);
       // Fallback to timestamp-based ID
       const timestamp = Date.now();
       const randomNum = Math.floor(Math.random() * 1000);
@@ -441,5 +435,166 @@ export class MemberClaimsService {
     }
 
     return 'OTHER';
+  }
+
+  // Timeline endpoint for members to see claim progress
+  async getClaimTimeline(claimId: string, userId: string, userRole: string) {
+    const claim = await this.memberClaimModel
+      .findOne({ claimId })
+      .select('claimId status statusHistory submittedAt approvedAt rejectedAt paymentDate userId')
+      .populate('userId', 'name memberId')
+      .lean();
+
+    if (!claim) {
+      throw new NotFoundException('Claim not found');
+    }
+
+    // For members, verify they own the claim
+    if (userRole === 'MEMBER' && claim.userId._id.toString() !== userId) {
+      throw new ForbiddenException('You can only view your own claims');
+    }
+
+    // Build timeline from status history
+    const timeline = (claim.statusHistory || []).map((entry) => ({
+      status: entry.status,
+      changedAt: entry.changedAt,
+      changedBy: entry.changedByName || 'System',
+      changedByRole: entry.changedByRole || 'SYSTEM',
+      reason: entry.reason,
+      notes: userRole === 'MEMBER' ? undefined : entry.notes, // Hide internal notes from members
+    }));
+
+    return {
+      claimId: claim.claimId,
+      currentStatus: claim.status,
+      timeline,
+      submittedAt: claim.submittedAt,
+      approvedAt: claim.approvedAt,
+      rejectedAt: claim.rejectedAt,
+      paymentDate: claim.paymentDate,
+    };
+  }
+
+  // Document resubmission for DOCUMENTS_REQUIRED status
+  async resubmitDocuments(
+    claimId: string,
+    userId: string,
+    documents: Array<{ fileName: string; filePath: string; documentType: string; notes?: string }>,
+    resubmissionNotes?: string,
+  ) {
+    const claim = await this.memberClaimModel.findOne({ claimId });
+
+    if (!claim) {
+      throw new NotFoundException('Claim not found');
+    }
+
+    // Verify member owns the claim
+    if (claim.userId.toString() !== userId) {
+      throw new ForbiddenException('You can only resubmit documents for your own claims');
+    }
+
+    // Check if claim is in DOCUMENTS_REQUIRED status
+    if (claim.status !== ClaimStatus.DOCUMENTS_REQUIRED) {
+      throw new BadRequestException(
+        'Documents can only be resubmitted when claim status is DOCUMENTS_REQUIRED',
+      );
+    }
+
+    // Add new documents to the claim
+    const docsToAdd = documents.map(doc => ({
+      fileName: doc.fileName,
+      originalName: doc.fileName, // Use fileName as originalName
+      fileType: 'application/octet-stream', // Default file type
+      fileSize: 0, // Size unknown for resubmitted docs
+      filePath: doc.filePath,
+      uploadedAt: new Date(),
+      documentType: doc.documentType,
+    }));
+    claim.documents.push(...docsToAdd);
+
+    // Update status to SUBMITTED (back to review queue)
+    claim.status = ClaimStatus.SUBMITTED;
+
+    // Add status history entry
+    claim.statusHistory.push({
+      status: ClaimStatus.SUBMITTED,
+      changedBy: new Types.ObjectId(userId),
+      changedByName: 'Member',
+      changedByRole: 'MEMBER',
+      changedAt: new Date(),
+      reason: 'Documents resubmitted by member',
+      notes: resubmissionNotes || 'Member resubmitted requested documents',
+    });
+
+    // Clear assignment (needs reassignment)
+    // @ts-ignore - These fields should be optional in schema
+    delete claim.assignedTo;
+    // @ts-ignore
+    delete claim.assignedBy;
+    // @ts-ignore
+    delete claim.assignedAt;
+
+    await claim.save();
+
+    return {
+      message: 'Documents resubmitted successfully. Claim has been moved back to review queue.',
+      claim: {
+        claimId: claim.claimId,
+        status: claim.status,
+        documentsCount: claim.documents.length,
+      },
+    };
+  }
+
+  // Get TPA notes filtered for member view (only non-internal notes)
+  async getTPANotesForMember(claimId: string, userId: string) {
+    const claim = await this.memberClaimModel
+      .findOne({ claimId })
+      .select('claimId userId reviewNotes approvalReason rejectionReason documentsRequested')
+      .lean();
+
+    if (!claim) {
+      throw new NotFoundException('Claim not found');
+    }
+
+    // Verify member owns the claim
+    if (claim.userId.toString() !== userId) {
+      throw new ForbiddenException('You can only view notes for your own claims');
+    }
+
+    // Filter out internal notes, only show member-facing information
+    const memberNotes = [];
+
+    if (claim.approvalReason) {
+      memberNotes.push({
+        type: 'approval',
+        message: claim.approvalReason,
+        timestamp: claim.approvedAt,
+      });
+    }
+
+    if (claim.rejectionReason) {
+      memberNotes.push({
+        type: 'rejection',
+        message: claim.rejectionReason,
+        timestamp: claim.rejectedAt,
+      });
+    }
+
+    if (claim.documentsRequired && claim.requiredDocumentsList && claim.requiredDocumentsList.length > 0) {
+      memberNotes.push({
+        type: 'documents_required',
+        message: 'Additional documents requested',
+        documents: claim.requiredDocumentsList.map((docType: string) => ({
+          documentType: docType,
+          reason: claim.documentsRequiredReason || 'Required for processing',
+        })),
+      });
+    }
+
+    return {
+      claimId: claim.claimId,
+      notes: memberNotes,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsBoolean, IsArray, IsOptional, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsString, IsBoolean, IsArray, IsOptional, ValidateNested, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class VendorContactInfoDto {
@@ -40,6 +40,11 @@ export class CreateVendorDto {
   @IsOptional()
   @IsBoolean()
   centerVisit?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  homeCollectionCharges?: number;
 
   @IsOptional()
   @IsString()

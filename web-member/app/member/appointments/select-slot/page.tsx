@@ -11,6 +11,7 @@ import {
 interface TimeSlot {
   time: string
   available: boolean
+  slotId?: string
 }
 
 interface DaySlot {
@@ -38,6 +39,7 @@ function SelectSlotContent() {
   const [daySlots, setDaySlots] = useState<DaySlot[]>([])
   const [selectedDate, setSelectedDate] = useState<string>('')
   const [selectedSlot, setSelectedSlot] = useState<string>('')
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('')
   const [currentWeekStart, setCurrentWeekStart] = useState(0)
 
   useEffect(() => {
@@ -104,9 +106,12 @@ function SelectSlotContent() {
     setSelectedSlot('')
   }
 
-  const handleSlotSelect = (time: string) => {
-    console.log('[SelectSlot] Time slot selected:', time)
+  const handleSlotSelect = (time: string, slotId?: string) => {
+    console.log('[SelectSlot] Time slot selected:', time, 'SlotId:', slotId)
     setSelectedSlot(time)
+    // Generate slotId if not provided
+    const generatedSlotId = slotId || `${doctorId}_${clinicId}_${selectedDate}_${time}`
+    setSelectedSlotId(generatedSlotId)
   }
 
   const handleContinue = () => {
@@ -115,6 +120,7 @@ function SelectSlotContent() {
     console.log('[SelectSlot] Continuing to confirmation', {
       selectedDate,
       selectedSlot,
+      selectedSlotId,
       doctorId,
       patientId
     })
@@ -130,7 +136,8 @@ function SelectSlotContent() {
       patientId: patientId || '',
       patientName: patientName || '',
       appointmentDate: selectedDate,
-      timeSlot: selectedSlot
+      timeSlot: selectedSlot,
+      slotId: selectedSlotId || `${doctorId}_${clinicId}_${selectedDate}_${selectedSlot}`
     })
 
     router.push(`/member/appointments/confirm?${params.toString()}`)
@@ -245,7 +252,7 @@ function SelectSlotContent() {
                 {selectedDaySlots.slots.map((slot) => (
                   <button
                     key={slot.time}
-                    onClick={() => slot.available && handleSlotSelect(slot.time)}
+                    onClick={() => slot.available && handleSlotSelect(slot.time, slot.slotId)}
                     disabled={!slot.available}
                     className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                       selectedSlot === slot.time

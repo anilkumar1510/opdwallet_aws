@@ -14,14 +14,20 @@ export class LabPrescriptionService {
   async uploadPrescription(
     userId: Types.ObjectId,
     uploadDto: UploadPrescriptionDto,
+    file: Express.Multer.File,
   ): Promise<LabPrescription> {
     const prescriptionId = `PRES-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     const prescription = new this.prescriptionModel({
       prescriptionId,
       userId,
-      fileName: uploadDto.fileName,
-      filePath: uploadDto.filePath,
+      patientId: uploadDto.patientId,
+      patientName: uploadDto.patientName,
+      fileName: file.filename,
+      originalName: file.originalname,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      filePath: file.path,
       status: PrescriptionStatus.UPLOADED,
       uploadedAt: new Date(),
       notes: uploadDto.notes,

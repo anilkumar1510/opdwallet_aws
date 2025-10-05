@@ -7,10 +7,26 @@ import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
 import rateLimit from 'express-rate-limit';
 import { secretsManager } from './config/secrets-manager';
+import { mkdirSync, existsSync } from 'fs';
+import { join } from 'path';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   logger.log('Starting OPD Wallet API Server v1.0.1');
+
+  // Ensure upload directories exist
+  const uploadDirs = [
+    './uploads/claims',
+    './uploads/lab-prescriptions',
+    './uploads/lab-reports',
+  ];
+
+  uploadDirs.forEach(dir => {
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+      logger.log(`Created upload directory: ${dir}`);
+    }
+  });
 
   // Load secrets from AWS Secrets Manager (if in production)
   if (process.env.NODE_ENV === 'production' || process.env.USE_SECRETS_MANAGER === 'true') {

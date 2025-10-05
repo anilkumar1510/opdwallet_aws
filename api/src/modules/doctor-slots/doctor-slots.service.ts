@@ -4,16 +4,17 @@ import { Model } from 'mongoose';
 import { DoctorSlot, DoctorSlotDocument } from './schemas/doctor-slot.schema';
 import { CreateSlotConfigDto } from './dto/create-slot-config.dto';
 import { UpdateSlotConfigDto } from './dto/update-slot-config.dto';
+import { CounterService } from '../counters/counter.service';
 
 @Injectable()
 export class DoctorSlotsService {
   constructor(
     @InjectModel(DoctorSlot.name) private slotModel: Model<DoctorSlotDocument>,
+    private readonly counterService: CounterService,
   ) {}
 
   async create(createSlotDto: CreateSlotConfigDto): Promise<DoctorSlot> {
-    const counter = await this.getNextSlotNumber();
-    const slotId = `SL${String(counter).padStart(5, '0')}`;
+    const slotId = await this.counterService.generateSlotId();
 
     const slotData = {
       ...createSlotDto,
@@ -192,19 +193,5 @@ export class DoctorSlotsService {
     }
 
     return timeSlots;
-  }
-
-  private async getNextSlotNumber(): Promise<number> {
-    const lastSlot = await this.slotModel
-      .findOne()
-      .sort({ createdAt: -1 })
-      .exec();
-
-    if (!lastSlot) {
-      return 1;
-    }
-
-    const lastNumber = parseInt(lastSlot.slotId.replace('SL', ''));
-    return lastNumber + 1;
   }
 }

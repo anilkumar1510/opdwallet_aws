@@ -3,37 +3,29 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useDebounce } from '@/lib/hooks/useDebounce'
+import { useSpecialties } from '@/lib/providers/specialties-provider'
 
 export default function DoctorsPage() {
   const router = useRouter()
   const [doctors, setDoctors] = useState<any[]>([])
-  const [specialties, setSpecialties] = useState<any[]>([])
+  const { specialties } = useSpecialties() // Use cached specialties
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     specialtyId: '',
     search: '',
   })
 
+  // PERFORMANCE: Debounce search to prevent API spam
+  const debouncedFilters = useDebounce(filters, 300)
+
   useEffect(() => {
-    fetchSpecialties()
     fetchDoctors()
   }, [])
 
   useEffect(() => {
     fetchDoctors()
-  }, [filters])
-
-  const fetchSpecialties = async () => {
-    try {
-      const response = await apiFetch('/api/specialties')
-      if (response.ok) {
-        const data = await response.json()
-        setSpecialties(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch specialties:', error)
-    }
-  }
+  }, [debouncedFilters]) // Use debounced filters
 
   const fetchDoctors = async () => {
     try {

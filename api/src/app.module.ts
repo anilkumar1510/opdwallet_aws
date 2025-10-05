@@ -20,6 +20,9 @@ import { ClinicsModule } from './modules/clinics/clinics.module';
 import { DoctorSlotsModule } from './modules/doctor-slots/doctor-slots.module';
 import { MemberClaimsModule } from './modules/memberclaims/memberclaims.module';
 import { TpaModule } from './modules/tpa/tpa.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { LabModule } from './modules/lab/lab.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -32,6 +35,24 @@ import configuration from './config/configuration';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('database.uri'),
+        // PERFORMANCE: Connection pool configuration for optimal database performance
+        connectionFactory: (connection) => {
+          connection.plugin(require('mongoose-lean-virtuals'));
+          return connection;
+        },
+        // Connection pool settings
+        maxPoolSize: 10,              // Maximum number of sockets in pool
+        minPoolSize: 2,               // Minimum number of sockets in pool
+        serverSelectionTimeoutMS: 5000, // How long to try to connect
+        socketTimeoutMS: 45000,       // How long a socket stays open
+        family: 4,                    // Use IPv4, skip IPv6
+        // Connection options
+        retryWrites: true,            // Retry failed writes
+        w: 'majority',                // Write concern
+        // Monitoring
+        heartbeatFrequencyMS: 10000, // How often to check server status
+        // Indexes
+        autoIndex: process.env.NODE_ENV !== 'production', // Auto-create indexes only in dev
       }),
       inject: [ConfigService],
     }),
@@ -57,6 +78,9 @@ import configuration from './config/configuration';
     DoctorSlotsModule,
     MemberClaimsModule,
     TpaModule,
+    FinanceModule,
+    LabModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

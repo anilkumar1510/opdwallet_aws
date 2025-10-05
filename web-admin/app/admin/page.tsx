@@ -58,6 +58,13 @@ export default function AdminDashboard() {
       color: 'bg-purple-50 hover:bg-purple-100 border-purple-200'
     },
     {
+      name: 'Lab Diagnostics',
+      description: 'Manage lab services, vendors, and pricing',
+      icon: '🧪',
+      path: '/lab',
+      color: 'bg-teal-50 hover:bg-teal-100 border-teal-200'
+    },
+    {
       name: 'Service Types',
       description: 'Define and manage service types and coverage',
       icon: '🏥',

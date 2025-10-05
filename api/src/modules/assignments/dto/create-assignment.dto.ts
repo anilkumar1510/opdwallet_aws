@@ -10,15 +10,15 @@ export class CreateAssignmentDto {
   @IsNotEmpty()
   policyId: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsDate()
   @Type(() => Date)
-  effectiveFrom?: Date;
+  effectiveFrom: Date;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsDate()
   @Type(() => Date)
-  effectiveTo?: Date;
+  effectiveTo: Date;
 
   @IsOptional()
   @IsNumber()

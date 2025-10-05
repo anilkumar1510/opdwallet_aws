@@ -15,6 +15,20 @@ import { planConfigApi, PlanConfig } from '@/lib/api/plan-config';
 import { categoriesApi, Category } from '@/lib/api/categories';
 import { toast } from 'sonner';
 
+// Extended type for local state with relationship configurations
+interface ExtendedPlanConfig extends Partial<PlanConfig> {
+  coveredRelationships?: string[];
+  memberConfigs?: {
+    [relationshipCode: string]: {
+      inheritFromPrimary?: boolean;
+      walletAmount?: number;
+      perClaimLimit?: number;
+      copayPercent?: number;
+      benefits?: any;
+      wallet?: any;
+    };
+  };
+}
 
 export default function PlanConfigEdit() {
   const params = useParams();
@@ -30,7 +44,7 @@ export default function PlanConfigEdit() {
   const [relationships, setRelationships] = useState<any[]>([]);
   const [relationshipsLoading, setRelationshipsLoading] = useState(true);
   const [selectedRelationship, setSelectedRelationship] = useState<string>('PRIMARY'); // Default to Primary Member
-  const [config, setConfig] = useState<Partial<PlanConfig>>({
+  const [config, setConfig] = useState<ExtendedPlanConfig>({
     benefits: {},
     wallet: {
       totalAnnualAmount: 0,
@@ -40,8 +54,8 @@ export default function PlanConfigEdit() {
       carryForward: { enabled: false, percent: 0, months: 0 },
       topUpAllowed: false,
     },
-    coveredRelationships: [], // Array of enabled relationship codes (only dependents, PRIMARY is implicit)
-    memberConfigs: {}, // Individual configurations per relationship
+    coveredRelationships: [],
+    memberConfigs: {}
   });
 
   useEffect(() => {
@@ -135,9 +149,7 @@ export default function PlanConfigEdit() {
         // Filter out metadata fields for update - only send allowed fields
         const updateData = {
           benefits: config.benefits,
-          wallet: config.wallet,
-          coveredRelationships: config.coveredRelationships,
-          memberConfigs: config.memberConfigs
+          wallet: config.wallet
         };
 
         console.log('🔵 [EDIT SAVE DEBUG] Filtered update data (removing metadata):', JSON.stringify(updateData, null, 2));
@@ -156,7 +168,7 @@ export default function PlanConfigEdit() {
       router.push(`/admin/policies/${policyId}/plan-config`);
       console.log('🔵 [EDIT SAVE DEBUG] Navigation initiated');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('🔴 [EDIT SAVE DEBUG] Error occurred:', error);
       console.error('🔴 [EDIT SAVE DEBUG] Error details:', {
         message: error?.message,
@@ -183,7 +195,7 @@ export default function PlanConfigEdit() {
   };
 
   const updateBenefit = (key: string, field: string, value: any) => {
-    setConfig(prev => {
+    setConfig((prev: ExtendedPlanConfig) => {
       if (selectedRelationship === 'PRIMARY') {
         // Update primary member benefits
         return {
@@ -191,11 +203,12 @@ export default function PlanConfigEdit() {
           benefits: {
             ...prev.benefits,
             [key]: {
-              ...prev.benefits?.[key as keyof typeof prev.benefits],
+              enabled: prev.benefits?.[key]?.enabled || false,
+              ...prev.benefits?.[key],
               [field]: value,
             },
           },
-        };
+        } as ExtendedPlanConfig;
       } else {
         // Update specific relationship member benefits
         const newMemberConfigs = { ...prev.memberConfigs };
@@ -219,13 +232,13 @@ export default function PlanConfigEdit() {
         return {
           ...prev,
           memberConfigs: newMemberConfigs,
-        };
+        } as ExtendedPlanConfig;
       }
     });
   };
 
   const updateWallet = (field: string, value: any) => {
-    setConfig(prev => {
+    setConfig((prev: ExtendedPlanConfig) => {
       if (selectedRelationship === 'PRIMARY') {
         // Update primary member wallet
         return {
@@ -255,13 +268,13 @@ export default function PlanConfigEdit() {
         return {
           ...prev,
           memberConfigs: newMemberConfigs,
-        };
+        } as ExtendedPlanConfig;
       }
     });
   };
 
   const updateCopay = (field: string, value: any) => {
-    setConfig(prev => {
+    setConfig((prev: ExtendedPlanConfig) => {
       if (selectedRelationship === 'PRIMARY') {
         // Update primary member copay
         return {
@@ -297,13 +310,13 @@ export default function PlanConfigEdit() {
         return {
           ...prev,
           memberConfigs: newMemberConfigs,
-        };
+        } as ExtendedPlanConfig;
       }
     });
   };
 
   const updateCarryForward = (field: string, value: any) => {
-    setConfig(prev => {
+    setConfig((prev: ExtendedPlanConfig) => {
       if (selectedRelationship === 'PRIMARY') {
         // Update primary member carry forward
         return {
@@ -339,14 +352,14 @@ export default function PlanConfigEdit() {
         return {
           ...prev,
           memberConfigs: newMemberConfigs,
-        };
+        } as ExtendedPlanConfig;
       }
     });
   };
 
 
   const toggleRelationship = (relationshipCode: string, enabled: boolean) => {
-    setConfig(prev => {
+    setConfig((prev: ExtendedPlanConfig) => {
       const currentRelationships = prev.coveredRelationships || [];
       const newCoveredRelationships = enabled
         ? [...currentRelationships, relationshipCode]
@@ -371,7 +384,7 @@ export default function PlanConfigEdit() {
   };
 
   const updateMemberConfig = (relationshipCode: string, field: string, value: any) => {
-    setConfig(prev => ({
+    setConfig((prev: ExtendedPlanConfig) => ({
       ...prev,
       memberConfigs: {
         ...prev.memberConfigs,
@@ -384,7 +397,7 @@ export default function PlanConfigEdit() {
   };
 
   const toggleInheritance = (relationshipCode: string, inherit: boolean) => {
-    setConfig(prev => {
+    setConfig((prev: ExtendedPlanConfig) => {
       const newMemberConfigs = { ...prev.memberConfigs };
 
       if (inherit) {
@@ -768,7 +781,7 @@ export default function PlanConfigEdit() {
                               />
                             </div>
 
-                            {category.isAvailableOnline && (
+                            {(category as any).isAvailableOnline && (
                               <div className="flex items-center space-x-6">
                                 <div className="flex items-center space-x-2">
                                   <Switch
@@ -790,7 +803,7 @@ export default function PlanConfigEdit() {
                                 </div>
                               </div>
                             )}
-                            {!category.isAvailableOnline && (
+                            {!(category as any).isAvailableOnline && (
                               <div className="flex items-center space-x-2">
                                 <Switch
                                   id={`${category.categoryId}-offline`}

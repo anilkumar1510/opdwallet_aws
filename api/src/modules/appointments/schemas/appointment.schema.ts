@@ -86,6 +86,12 @@ export class Appointment {
   @Prop()
   confirmedAt: Date;
 
+  @Prop()
+  cancelledAt: Date;
+
+  @Prop()
+  cancelledBy: string;
+
   @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDING })
   paymentStatus: string;
 
@@ -104,8 +110,16 @@ export class Appointment {
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
 
-AppointmentSchema.index({ userId: 1, status: 1 });
-AppointmentSchema.index({ appointmentId: 1 });
+// Note: appointmentId already has unique constraint via @Prop decorator, no separate index needed
+// Performance optimization: Compound indexes for common query patterns
+// This index optimizes user appointment queries filtered by type and status
+AppointmentSchema.index({ userId: 1, appointmentType: 1, status: 1 });
+
+// This index optimizes doctor's schedule queries by date and status
+AppointmentSchema.index({ doctorId: 1, appointmentDate: 1, status: 1 });
+
+// Index for appointment number lookup
 AppointmentSchema.index({ appointmentNumber: 1 });
-AppointmentSchema.index({ doctorId: 1, appointmentDate: 1 });
+
+// Index for slot-based queries
 AppointmentSchema.index({ slotId: 1, appointmentDate: 1 });

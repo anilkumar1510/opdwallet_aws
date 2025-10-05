@@ -53,5 +53,5 @@ export class Doctor {
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
 
+// PERFORMANCE: Removed duplicate index on doctorId (already unique at field level)
 DoctorSchema.index({ specialtyId: 1, isActive: 1 });
-DoctorSchema.index({ doctorId: 1 });
