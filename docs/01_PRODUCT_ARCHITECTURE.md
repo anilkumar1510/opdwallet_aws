@@ -1038,12 +1038,76 @@ Appointment Schema Includes:
 - Payment: consultationFee, paymentStatus, amountPaid, coveredByInsurance
 - Online-specific: contactNumber, callPreference
 - Status tracking: status, requestedAt, confirmedAt
+- Prescription tracking: prescriptionId, hasPrescription (links to doctor_prescriptions)
 
 Slot-Based Booking:
 - Appointments link to doctor_slots via slotId
 - Ensures booking within doctor's available schedule
 - Supports weekly recurring availability patterns
 - Enables real-time slot availability checking
+```
+
+#### Doctor Portal - Appointments (`/api/doctors/appointments`) - ✅ NEW
+```
+GET    /api/doctors/appointments/my  # Get all appointments for logged-in doctor
+GET    /api/doctors/appointments/:appointmentId  # Get specific appointment details
+
+Query Parameters:
+- status: Filter by appointment status (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED)
+- date: Filter by appointment date (YYYY-MM-DD format)
+
+Response includes:
+- Appointment details with patient information
+- Prescription status (hasPrescription flag)
+- Prescription upload link if not yet uploaded
+
+Access Control:
+- Requires DOCTOR role authentication
+- Doctors can only view their own appointments
+- Protected by JwtAuthGuard + RolesGuard
+```
+
+#### Doctor Portal - Prescriptions (`/api/doctors/prescriptions`) - ✅ NEW
+```
+POST   /api/doctors/prescriptions    # Upload prescription for appointment
+GET    /api/doctors/prescriptions    # List doctor's uploaded prescriptions
+GET    /api/doctors/prescriptions/:prescriptionId  # Get prescription details
+GET    /api/doctors/prescriptions/appointment/:appointmentId  # Get prescription by appointment
+
+File Upload Configuration:
+- Allowed types: PDF, JPEG, PNG
+- Max file size: 10MB
+- Storage: /uploads/doctors/{doctorId}/
+- File naming: prescription_{timestamp}.{ext}
+
+Upload Request (multipart/form-data):
+- file: Prescription file (required)
+- appointmentId: Appointment reference (required)
+- diagnosis: Medical diagnosis (optional)
+- notes: Additional notes (optional)
+
+Prescription Schema:
+- prescriptionId: Unique identifier (auto-generated)
+- appointmentId: Links to appointments._id (unique - one prescription per appointment)
+- doctorId, doctorName: Doctor details
+- userId, patientName: Patient details
+- fileName, filePath, fileSize: File metadata
+- uploadDate: Timestamp of upload
+- diagnosis, notes: Optional clinical information
+- isActive: Status flag
+
+Prescription Workflow:
+1. Doctor completes appointment
+2. Doctor uploads prescription via portal
+3. System creates prescription record
+4. System updates appointment.prescriptionId and appointment.hasPrescription
+5. Patient can view/download prescription from member portal
+6. Prescription accessible at /uploads/doctors/{path}
+
+Access Control:
+- Doctors can only upload prescriptions for their own appointments
+- Patients can view prescriptions for their appointments
+- Admin/Operations can view all prescriptions
 ```
 
 #### Member Portal API (`/api/member`)
@@ -1575,6 +1639,51 @@ interface Appointment {
    { user: { ...profile }, message: 'success' }
 ```
 
+### Doctor Authentication Flow
+
+```
+1. Doctor Login Request
+   ↓
+   POST /api/auth/doctor/login
+   Body: { email, password }
+   ↓
+2. Doctor Auth Service Validates
+   - Find doctor by email (unique)
+   - Verify doctor.isActive = true
+   - Compare password with bcrypt (10 rounds)
+   - Check password field exists
+   ↓
+3. Generate Doctor JWT Token
+   - Algorithm: RS256
+   - Expiry: 8 hours
+   - Payload: { doctorId, email, name, role: 'DOCTOR' }
+   ↓
+4. Set HTTP-Only Cookie
+   - Name: doctor_session
+   - Secure: true (production)
+   - SameSite: strict
+   - Max-Age: 8 hours
+   ↓
+5. Update lastLogin Timestamp
+   - doctor.lastLogin = new Date()
+   ↓
+6. Return Doctor Profile
+   { doctor: { doctorId, name, email, specialty, ... }, message: 'Login successful' }
+```
+
+**Doctor Authentication Endpoints:**
+- `POST /api/auth/doctor/login` - Doctor login
+- `POST /api/auth/doctor/logout` - Doctor logout
+- `GET /api/auth/doctor/profile` - Get doctor profile (requires DOCTOR role)
+- `PATCH /api/auth/doctor/profile` - Update doctor profile (requires DOCTOR role)
+
+**Doctor-Specific Features:**
+- Separate authentication system from regular users
+- Password managed in `doctors.password` field (bcrypt hashed)
+- Email must be unique across all doctors
+- Role automatically set to 'DOCTOR' on authentication
+- Access to doctor portal for appointment management and prescription uploads
+
 ### Authorization Levels
 
 | Role | Access Level | Permissions |
@@ -1582,8 +1691,10 @@ interface Appointment {
 | **SUPER_ADMIN** | Full System | All operations, user management, system config |
 | **ADMIN** | Administrative | Policy management, user management, assignments |
 | **TPA** | Third Party | View users, view policies, view assignments |
-| **OPS** | Operations | View users, view policies |
+| **FINANCE_USER** | Finance | Financial operations, claims processing |
+| **OPS** | Operations | View users, view policies, manage doctors/appointments |
 | **MEMBER** | Self-Service | Profile, wallet, bookings, claims, family |
+| **DOCTOR** | Doctor Portal | View appointments, upload prescriptions, manage profile |
 
 ### Route Protection
 

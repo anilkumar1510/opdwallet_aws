@@ -297,7 +297,7 @@ PATCH  /api/doctors/:doctorId/deactivate # Deactivate doctor
 
 **Contact Information:**
 - Phone number (optional)
-- Email address (optional)
+- Email address (REQUIRED, unique - used for doctor portal login)
 - Medical registration number (optional)
 
 **Professional Details:**
@@ -330,6 +330,35 @@ PATCH  /api/doctors/:doctorId/deactivate # Deactivate doctor
 - Insurance Accepted (array of providers)
 - Requires Confirmation (boolean, default: false)
 - Allow Direct Booking (boolean, default: true)
+
+### Doctor Portal Access Management
+
+**New in October 2025**: Doctors can now access a dedicated portal to manage their appointments and upload prescriptions.
+
+**Authentication Setup:**
+- Each doctor requires a unique email address (used as login username)
+- Password must be set by operations staff or system administrator
+- Password is hashed using bcrypt (10 salt rounds) before storage
+- Role is automatically set to 'DOCTOR' for authentication
+
+**Setting Doctor Password:**
+When creating or editing a doctor profile, operations staff can:
+1. Set initial password for doctor portal access
+2. Reset password if doctor forgets credentials
+3. Deactivate doctor account (sets isActive = false, prevents login)
+
+**Doctor Portal Features:**
+- Login using email/password at `/auth/doctor/login`
+- View assigned appointments (only their own)
+- Upload prescriptions for completed appointments
+- Update their own profile information (limited fields)
+- Track last login timestamp
+
+**Security Notes:**
+- Password field is never returned in API responses
+- Doctors can only access their own appointments and data
+- JWT tokens expire after 8 hours (shorter than regular user sessions)
+- Session cookie named 'opd_session' (same as regular users but with DOCTOR role)
 
 ---
 

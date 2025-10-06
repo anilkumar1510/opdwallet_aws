@@ -1310,7 +1310,9 @@ enum OwnerPayerType {
   specializations: string[], // REQUIRED - Array of specialization areas
   specialtyId: string,      // REQUIRED - References specialty_master.specialtyId
   phone?: string,           // OPTIONAL - Contact phone number
-  email?: string,           // OPTIONAL - Contact email address
+  email: string,            // REQUIRED, UNIQUE - Contact email address (used for authentication)
+  password?: string,        // OPTIONAL - Hashed password for doctor portal login
+  role: string,             // DEFAULT: 'DOCTOR' - User role for authentication
   registrationNumber?: string, // OPTIONAL - Medical registration number
   languages?: string[],     // OPTIONAL - Languages spoken by doctor
   specialty: string,        // REQUIRED - Specialty name (from specialty_master)
@@ -1342,6 +1344,7 @@ enum OwnerPayerType {
   }>,
   availableOnline: boolean, // DEFAULT: true - Available for online consultations
   availableOffline: boolean,// DEFAULT: true - Available for in-clinic consultations
+  lastLogin?: Date,         // OPTIONAL - Last login timestamp for doctor portal
   isActive: boolean,        // DEFAULT: true - Is doctor profile active
   createdAt: Date,          // AUTO - Creation timestamp
   updatedAt: Date           // AUTO - Last update timestamp
@@ -1359,12 +1362,24 @@ enum OwnerPayerType {
 #### Validation Rules
 
 1. **doctorId** - Must be unique, used for doctor identification
-2. **specialtyId** - Must reference a valid specialty from specialty_master
-3. **specialty** - Should match the name from specialty_master
-4. **consultationFee** - Must be >= 0 (both at doctor and clinic level)
-5. **clinics** - At least one clinic location required
-6. **rating** - Should be between 0 and 5
-7. **availableSlots** - Dates should be in YYYY-MM-DD format, times in 12-hour format
+2. **email** - Must be unique and valid email format (required for authentication)
+3. **password** - Hashed using bcrypt with salt rounds = 10 (required for portal access)
+4. **role** - Defaults to 'DOCTOR', used for role-based access control
+5. **specialtyId** - Must reference a valid specialty from specialty_master
+6. **specialty** - Should match the name from specialty_master
+7. **consultationFee** - Must be >= 0 (both at doctor and clinic level)
+8. **clinics** - At least one clinic location required
+9. **rating** - Should be between 0 and 5
+10. **availableSlots** - Dates should be in YYYY-MM-DD format, times in 12-hour format
+11. **lastLogin** - Automatically updated on successful login to doctor portal
+
+#### Authentication Notes
+
+- Doctors can now access a dedicated portal using their email and password
+- JWT tokens are issued upon successful login with 8-hour expiry
+- Tokens are stored in HTTP-only cookies named 'doctor_session'
+- Authentication endpoints: `/auth/doctor/login`, `/auth/doctor/logout`, `/auth/doctor/profile`
+- Role-based guards ensure only DOCTOR role can access doctor-specific endpoints
 
 #### Sample Data Examples
 
@@ -1561,7 +1576,95 @@ enum OwnerPayerType {
 
 ---
 
-### 16. doctor_slots
+### 16. doctor_prescriptions
+
+**Collection Name:** `doctor_prescriptions`
+**Purpose:** Store prescriptions uploaded by doctors after appointments
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  prescriptionId: string,       // REQUIRED, UNIQUE - Prescription identifier
+  appointmentId: ObjectId,      // REQUIRED, UNIQUE - References appointments._id
+  doctorId: string,             // REQUIRED - Doctor's identifier
+  doctorName: string,           // REQUIRED - Doctor's full name
+  userId: ObjectId,             // REQUIRED - References users._id (patient)
+  patientName: string,          // REQUIRED - Patient's full name
+  fileName: string,             // REQUIRED - Name of uploaded prescription file
+  filePath: string,             // REQUIRED - Storage path of prescription file
+  fileSize: number,             // REQUIRED - File size in bytes
+  uploadDate: Date,             // REQUIRED - Date and time of upload
+  diagnosis?: string,           // OPTIONAL - Medical diagnosis
+  notes?: string,               // OPTIONAL - Additional notes from doctor
+  isActive: boolean,            // DEFAULT: true - Is prescription active
+  createdAt: Date,              // AUTO - Creation timestamp
+  updatedAt: Date               // AUTO - Last update timestamp
+}
+```
+
+#### Indexes
+
+```typescript
+{ prescriptionId: 1 }, { unique: true }       // Unique prescription ID
+{ appointmentId: 1 }, { unique: true }        // One prescription per appointment
+{ doctorId: 1, uploadDate: -1 }               // Doctor's prescriptions sorted by date
+{ userId: 1, uploadDate: -1 }                 // Patient's prescriptions sorted by date
+```
+
+#### Validation Rules
+
+1. **prescriptionId** - Must be unique across all prescriptions
+2. **appointmentId** - Must reference a valid appointment, unique (one prescription per appointment)
+3. **doctorId** - Must reference a valid doctor
+4. **userId** - Must reference a valid user (patient)
+5. **fileName** - Required, original uploaded file name
+6. **filePath** - Required, stored in `/uploads/doctors/` directory
+7. **fileSize** - Must be > 0, file size validation
+
+#### Relationships
+
+- **appointmentId** references `appointments._id`
+- **doctorId** references `doctors.doctorId`
+- **userId** references `users._id`
+- Linked to `appointments.prescriptionId` and `appointments.hasPrescription` fields
+
+#### Access Control
+
+- Doctors can upload prescriptions only for their own appointments
+- Patients can view prescriptions for their appointments
+- Admin/Operations staff can view all prescriptions
+- Prescriptions are served via static file server at `/uploads/doctors/`
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("68ce7f937ca7c61fde313abc"),
+  "prescriptionId": "PRESC001",
+  "appointmentId": ObjectId("68ce7f937ca7c61fde313def"),
+  "doctorId": "DOC001",
+  "doctorName": "Dr. Vikas Mittal",
+  "userId": ObjectId("68ce7f937ca7c61fde313123"),
+  "patientName": "Rajesh Kumar",
+  "fileName": "prescription_20251006_143022.pdf",
+  "filePath": "/uploads/doctors/DOC001/prescription_20251006_143022.pdf",
+  "fileSize": 245678,
+  "uploadDate": ISODate("2025-10-06T14:30:22Z"),
+  "diagnosis": "Upper Respiratory Tract Infection",
+  "notes": "Complete the full course of antibiotics. Follow up in 7 days if symptoms persist.",
+  "isActive": true,
+  "createdAt": ISODate("2025-10-06T14:30:22Z"),
+  "updatedAt": ISODate("2025-10-06T14:30:22Z")
+}
+```
+
+---
+
+### 17. doctor_slots
 
 **Collection Name:** `doctor_slots`
 **Purpose:** Store weekly recurring time slots for doctor availability at specific clinics
@@ -1673,6 +1776,8 @@ enum ConsultationType {
   coveredByInsurance: boolean,  // DEFAULT: true
   contactNumber?: string,       // OPTIONAL - Contact for appointment (required for ONLINE appointments)
   callPreference?: string,      // OPTIONAL, ENUM: 'VOICE', 'VIDEO', 'BOTH' - Required for ONLINE appointments
+  prescriptionId?: ObjectId,    // OPTIONAL, REF: 'DoctorPrescription' - Links to uploaded prescription
+  hasPrescription: boolean,     // DEFAULT: false - Indicates if prescription has been uploaded
   createdAt: Date,              // AUTO - Timestamp
   updatedAt: Date               // AUTO - Timestamp
 }
