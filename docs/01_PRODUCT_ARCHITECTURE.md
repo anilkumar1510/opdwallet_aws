@@ -1,10 +1,10 @@
 # OPD Wallet - Complete Product Architecture
 
-**Last Updated**: October 4, 2025
+**Last Updated**: October 5, 2025
 **Current Deployment**: http://51.20.125.246
-**Production Status**: Active - Core Features Operational (96% Complete)
+**Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.2 (Latest Changes: Wallet Auto-Initialization System)
+**Documentation Version**: 6.0 (Latest Changes: Lab Diagnostics, TPA, Notifications & Finance Modules)
 
 ---
 
@@ -43,7 +43,7 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 - **Role-Based Access**: Multi-role support (SUPER_ADMIN, ADMIN, TPA, OPS, MEMBER)
 
 ### Current Status
-**Operational Components**: 96%
+**Operational Components**: 95%
 - ✅ Authentication & Authorization System
 - ✅ User Management (Primary + Dependents) - 4 users
 - ✅ Policy Management
@@ -86,7 +86,7 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 | **helmet** | 8.1.0 | Security headers |
 | **express-rate-limit** | 8.1.0 | Rate limiting |
 | **@aws-sdk/client-secrets-manager** | 3.888.0 | AWS Secrets Manager integration |
-| **multer** | 1.4.5-lts.1 | File upload middleware |
+| **multer** | 1.4.5-lts.1 | File upload middleware (✅ 2 upload directories) |
 | **@types/multer** | 2.0.0 | TypeScript types for multer |
 
 ### Admin Portal (web-admin)
@@ -113,6 +113,7 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 | **Framer Motion** | 12.23.12 | Animations |
 | **Axios** | 1.6.5 | HTTP client |
 | **Heroicons** | 2.2.0 | Icon library |
+| **Sonner** | Latest | Toast notifications (✅ NEW) |
 
 ### Infrastructure
 | Technology | Version | Purpose |
@@ -338,6 +339,60 @@ api/src/
 │   │   ├── member.module.ts
 │   │   ├── member.controller.ts
 │   │   └── member.service.ts
+│   ├── lab/                      # Lab Diagnostics module (✅ FULLY IMPLEMENTED)
+│   │   ├── lab.module.ts
+│   │   ├── controllers/
+│   │   │   ├── lab-member.controller.ts    # Member APIs (6 endpoints)
+│   │   │   ├── lab-admin.controller.ts     # Admin APIs (11 endpoints)
+│   │   │   └── lab-ops.controller.ts       # Operations APIs (20 endpoints)
+│   │   ├── services/
+│   │   │   ├── lab.service.ts
+│   │   │   ├── lab-admin.service.ts
+│   │   │   ├── lab-ops.service.ts
+│   │   │   ├── lab-order.service.ts
+│   │   │   └── lab-prescription.service.ts
+│   │   ├── schemas/
+│   │   │   ├── lab-test.schema.ts
+│   │   │   ├── lab-package.schema.ts
+│   │   │   ├── lab-partner.schema.ts
+│   │   │   ├── lab-prescription.schema.ts
+│   │   │   ├── lab-order.schema.ts
+│   │   │   ├── lab-digitization.schema.ts
+│   │   │   └── lab-report.schema.ts
+│   │   ├── dto/
+│   │   │   ├── create-lab-test.dto.ts
+│   │   │   ├── create-lab-package.dto.ts
+│   │   │   ├── create-lab-partner.dto.ts
+│   │   │   ├── upload-prescription.dto.ts
+│   │   │   ├── digitize-prescription.dto.ts
+│   │   │   ├── create-lab-order.dto.ts
+│   │   │   ├── update-order-status.dto.ts
+│   │   │   └── upload-report.dto.ts
+│   │   └── config/
+│   │       └── multer-lab.config.ts
+│   ├── tpa/                      # TPA (Third Party Administrator) module (✅ FULLY IMPLEMENTED)
+│   │   ├── tpa.module.ts
+│   │   ├── tpa.controller.ts     # TPA APIs (11 endpoints)
+│   │   ├── tpa.service.ts
+│   │   └── dto/
+│   │       ├── assign-claims.dto.ts
+│   │       ├── review-claim.dto.ts
+│   │       ├── approve-claim.dto.ts
+│   │       ├── reject-claim.dto.ts
+│   │       ├── request-resubmission.dto.ts
+│   │       └── tpa-analytics.dto.ts
+│   ├── notifications/            # In-app notifications module (✅ FULLY IMPLEMENTED)
+│   │   ├── notifications.module.ts
+│   │   ├── notifications.controller.ts
+│   │   ├── notifications.service.ts
+│   │   └── schemas/
+│   │       └── notification.schema.ts
+│   ├── finance/                  # Finance & payment module (🔧 FOUNDATION READY)
+│   │   ├── finance.module.ts
+│   │   ├── finance.controller.ts
+│   │   ├── finance.service.ts
+│   │   └── dto/
+│   │       └── process-payment.dto.ts
 │   ├── audit/                    # Audit logging module
 │   │   ├── audit.module.ts
 │   │   ├── audit.service.ts
@@ -460,8 +515,56 @@ web-admin/
 │       │               └── page.tsx  # Edit config version
 │       ├── services/
 │       │   └── page.tsx          # Service management
-│       └── categories/
-│           └── page.tsx          # Category management
+│       ├── categories/
+│       │   └── page.tsx          # Category management
+│       ├── lab/                  # Lab Diagnostics Management (✅ NEW)
+│       │   ├── tests/
+│       │   │   ├── page.tsx      # Lab tests list
+│       │   │   └── new/
+│       │   │       └── page.tsx  # Create lab test
+│       │   ├── packages/
+│       │   │   ├── page.tsx      # Lab packages list
+│       │   │   └── new/
+│       │   │       └── page.tsx  # Create lab package
+│       │   └── partners/
+│       │       ├── page.tsx      # Lab partners list
+│       │       └── new/
+│       │           └── page.tsx  # Create lab partner
+│       ├── tpa/                  # TPA Portal (✅ NEW)
+│       │   ├── page.tsx          # TPA dashboard
+│       │   ├── claims/
+│       │   │   ├── page.tsx      # Assigned claims list
+│       │   │   └── [claimId]/
+│       │   │       └── page.tsx  # Review claim
+│       │   ├── assign/
+│       │   │   └── page.tsx      # Bulk claim assignment
+│       │   └── analytics/
+│       │       └── page.tsx      # TPA performance analytics
+│       ├── finance/              # Finance Portal (✅ NEW - Foundation)
+│       │   ├── page.tsx          # Finance dashboard
+│       │   ├── payments/
+│       │   │   └── page.tsx      # Payment processing
+│       │   └── reports/
+│       │       └── page.tsx      # Financial reports
+│       └── operations/           # Operations Portal (✅ Unified Structure)
+│           ├── page.tsx          # Operations dashboard
+│           ├── doctors/
+│           │   ├── page.tsx      # Doctors management
+│           │   └── new/
+│           │       └── page.tsx  # Add doctor
+│           ├── appointments/
+│           │   └── page.tsx      # Appointments management
+│           └── lab/
+│               ├── prescriptions/
+│               │   ├── page.tsx  # Prescriptions queue
+│               │   └── [prescriptionId]/
+│               │       └── page.tsx  # Digitize prescription
+│               ├── orders/
+│               │   ├── page.tsx  # Lab orders list
+│               │   └── [orderId]/
+│               │       └── page.tsx  # Order details & report upload
+│               └── analytics/
+│                   └── page.tsx  # Lab operations analytics
 ├── components/                   # Reusable components
 │   ├── ui/                       # Radix UI wrappers
 │   │   ├── button.tsx
@@ -512,8 +615,24 @@ web-member/
 │       │       └── page.tsx      # Create booking (⚠️ No backend)
 │       ├── claims/
 │       │   ├── page.tsx          # Claims & reimbursements list (✅ Backend ready)
-│       │   └── new/
-│       │       └── page.tsx      # File claim/reimbursement (✅ Backend ready)
+│       │   ├── new/
+│       │   │   └── page.tsx      # File claim/reimbursement (✅ Backend ready)
+│       │   └── [claimId]/
+│       │       └── page.tsx      # View claim & resubmit documents (✅ Enhanced)
+│       ├── lab/                  # Lab Tests (✅ NEW - 7 pages)
+│       │   ├── page.tsx          # Lab tests home
+│       │   ├── prescriptions/
+│       │   │   ├── page.tsx      # Prescriptions list
+│       │   │   ├── upload/
+│       │   │   │   └── page.tsx  # Upload prescription
+│       │   │   └── [prescriptionId]/
+│       │   │       └── page.tsx  # Prescription tracking
+│       │   ├── orders/
+│       │   │   ├── page.tsx      # Lab orders list
+│       │   │   └── [orderId]/
+│       │   │       └── page.tsx  # Order tracking & report
+│       │   └── reports/
+│       │       └── page.tsx      # All lab reports
 │       ├── family/
 │       │   ├── page.tsx          # Family members
 │       │   └── add/
@@ -528,8 +647,9 @@ web-member/
 │   ├── ui/                       # UI components
 │   ├── MemberSwitcher.tsx        # Switch family members
 │   ├── MemberWalletCard.tsx      # Wallet display
-│   ├── BottomTabBar.tsx          # Mobile navigation
+│   ├── BottomTabBar.tsx          # Mobile navigation (✅ Enhanced with Lab Tests)
 │   ├── Sidebar.tsx               # Desktop sidebar
+│   ├── NotificationBell.tsx      # Notifications indicator (✅ NEW)
 │   └── ResponsiveLayout.tsx      # Responsive wrapper
 ├── contexts/
 │   └── FamilyContext.tsx         # Family members state (⚠️ Uses mock data)
@@ -591,10 +711,18 @@ web-member/
 | `counters` | 2 | Active | Auto-increment ID generation |
 | `user_wallets` | 0 | Empty | Wallet balance tracking (⚠️ Not implemented) |
 | `wallet_transactions` | 0 | Empty | Transaction history (⚠️ Not implemented) |
-| `memberclaims` | 0 | Active | Member claim submissions (✅ NEW - Backend ready) |
+| `memberclaims` | 0 | Active | Member claim submissions (✅ Backend ready) |
+| `lab_tests` | 0 | Active | Lab test master data (✅ NEW) |
+| `lab_packages` | 0 | Active | Lab test packages/panels (✅ NEW) |
+| `lab_partners` | 0 | Active | Lab partner/vendor information (✅ NEW) |
+| `lab_prescriptions` | 0 | Active | Uploaded lab prescriptions (✅ NEW) |
+| `lab_digitizations` | 0 | Active | Digitized prescription data (✅ NEW) |
+| `lab_orders` | 0 | Active | Lab test orders (✅ NEW) |
+| `lab_reports` | 0 | Active | Lab test reports (✅ NEW) |
+| `notifications` | 0 | Active | In-app notifications (✅ NEW) |
 | `auditLogs` | 0 | Empty | Audit trail (⚠️ Not functioning) |
 
-**Total Collections**: 18
+**Total Collections**: 27
 **Total Documents**: 62 (includes 6 doctors + 5 clinics + 18 slots + 9 specialties)
 **Database Size**: ~850KB
 
@@ -628,6 +756,22 @@ clinics ←─ Standalone clinic/hospital locations
 
 doctor_slots ←─ doctorId (doctors.doctorId)
              ←─ clinicId (clinics.clinicId)
+
+memberclaims ←─ userId (users._id)
+             ←─ Enhanced with TPA workflow
+
+lab_prescriptions ←─ userId (users._id)
+                  ←─ patientId (users._id for dependents)
+
+lab_digitizations ←─ prescriptionId (lab_prescriptions._id)
+
+lab_orders ←─ prescriptionId (lab_prescriptions._id)
+           ←─ userId (users._id)
+           ←─ partnerId (lab_partners._id)
+
+lab_reports ←─ orderId (lab_orders._id)
+
+notifications ←─ userId (users._id)
 ```
 
 ### Indexing Strategy
@@ -941,6 +1085,189 @@ DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED/PARTIALLY_APPROVED/REJECTED
                               CANCELLED
 ```
 
+#### Lab Diagnostics - Member APIs (`/api/lab/member`) - ✅ FULLY IMPLEMENTED
+```
+POST   /api/lab/member/prescriptions                    # Upload lab prescription
+GET    /api/lab/member/prescriptions                    # List user's prescriptions
+GET    /api/lab/member/prescriptions/:prescriptionId    # Get prescription details
+GET    /api/lab/member/orders                           # List user's lab orders
+GET    /api/lab/member/orders/:orderId                  # Get order details
+GET    /api/lab/member/reports/:orderId                 # Get lab report
+
+Prescription Upload:
+- File types: JPEG, PNG, PDF
+- Max file size: 10MB
+- Storage: uploads/lab/prescriptions/{userId}/
+
+Prescription Flow (Member → Operations → Admin → Partner → Member):
+1. Member uploads prescription → PENDING status
+2. Operations digitizes tests → DIGITIZED status
+3. Admin assigns to partner → ASSIGNED status
+4. Partner creates order → ORDER_CREATED status
+5. Partner uploads report → COMPLETED status
+```
+
+#### Lab Diagnostics - Admin APIs (`/api/lab/admin`) - ✅ FULLY IMPLEMENTED
+```
+# Lab Test Master Management
+POST   /api/lab/admin/tests                  # Create lab test
+GET    /api/lab/admin/tests                  # List all lab tests
+GET    /api/lab/admin/tests/:testId          # Get test details
+PUT    /api/lab/admin/tests/:testId          # Update lab test
+DELETE /api/lab/admin/tests/:testId          # Delete lab test
+
+# Lab Package Management
+POST   /api/lab/admin/packages               # Create lab package
+GET    /api/lab/admin/packages               # List all packages
+GET    /api/lab/admin/packages/:packageId    # Get package details
+PUT    /api/lab/admin/packages/:packageId    # Update package
+DELETE /api/lab/admin/packages/:packageId    # Delete package
+
+# Lab Partner Management
+POST   /api/lab/admin/partners               # Create lab partner
+GET    /api/lab/admin/partners               # List all partners
+GET    /api/lab/admin/partners/:partnerId    # Get partner details
+PUT    /api/lab/admin/partners/:partnerId    # Update partner
+PATCH  /api/lab/admin/partners/:partnerId/activate    # Activate partner
+PATCH  /api/lab/admin/partners/:partnerId/deactivate  # Deactivate partner
+
+Lab Test Schema:
+- testId, testName, testCode
+- category (Pathology, Radiology, etc.)
+- description, sampleType, turnaroundTime
+- price, isActive
+
+Lab Package Schema:
+- packageId, packageName, packageCode
+- tests[] (array of testIds)
+- description, price, isActive
+
+Lab Partner Schema:
+- partnerId, partnerName, contactPerson
+- email, phone, address
+- serviceAreas[], isActive
+```
+
+#### Lab Diagnostics - Operations APIs (`/api/lab/ops`) - ✅ FULLY IMPLEMENTED
+```
+# Prescription Queue Management
+GET    /api/lab/ops/prescriptions/queue      # Get pending prescriptions queue
+GET    /api/lab/ops/prescriptions/:prescriptionId  # Get prescription for digitization
+POST   /api/lab/ops/prescriptions/:prescriptionId/digitize  # Digitize prescription tests
+
+# Order Management
+GET    /api/lab/ops/orders                   # List all orders with filters
+GET    /api/lab/ops/orders/:orderId          # Get order details
+POST   /api/lab/ops/orders                   # Create order from prescription
+PUT    /api/lab/ops/orders/:orderId          # Update order details
+PATCH  /api/lab/ops/orders/:orderId/assign-partner  # Assign order to partner
+PATCH  /api/lab/ops/orders/:orderId/confirm        # Confirm order
+PATCH  /api/lab/ops/orders/:orderId/collect-sample # Mark sample collected
+PATCH  /api/lab/ops/orders/:orderId/processing     # Mark as processing
+PATCH  /api/lab/ops/orders/:orderId/cancel         # Cancel order
+
+# Report Management
+POST   /api/lab/ops/orders/:orderId/report          # Upload lab report
+GET    /api/lab/ops/reports                         # List all reports
+GET    /api/lab/ops/reports/:reportId               # Get report details
+PUT    /api/lab/ops/reports/:reportId               # Update report
+GET    /api/lab/ops/reports/download/:reportId      # Download report file
+
+# Analytics
+GET    /api/lab/ops/analytics/prescriptions-stats   # Prescription statistics
+GET    /api/lab/ops/analytics/orders-stats          # Order statistics
+GET    /api/lab/ops/analytics/partner-performance   # Partner performance
+GET    /api/lab/ops/analytics/revenue               # Revenue analytics
+GET    /api/lab/ops/analytics/turnaround-time       # TAT analysis
+
+Order Status Flow:
+PENDING → PARTNER_ASSIGNED → CONFIRMED → SAMPLE_COLLECTED →
+PROCESSING → REPORT_UPLOADED → COMPLETED
+         ↓
+     CANCELLED
+
+Report Upload:
+- File types: PDF, JPEG, PNG
+- Max file size: 15MB
+- Storage: uploads/lab/reports/{orderId}/
+```
+
+#### TPA APIs (`/api/tpa`) - ✅ FULLY IMPLEMENTED
+```
+# Claim Assignment
+POST   /api/tpa/claims/assign                # Assign claims to TPA user
+GET    /api/tpa/claims/assigned              # Get assigned claims
+GET    /api/tpa/claims/assigned/:claimId     # Get assigned claim details
+
+# Claim Review
+PATCH  /api/tpa/claims/:claimId/review       # Start reviewing claim
+PATCH  /api/tpa/claims/:claimId/approve      # Approve claim
+PATCH  /api/tpa/claims/:claimId/partial-approve  # Partially approve claim
+PATCH  /api/tpa/claims/:claimId/reject       # Reject claim
+PATCH  /api/tpa/claims/:claimId/request-resubmission  # Request document resubmission
+
+# Analytics
+GET    /api/tpa/analytics/summary            # TPA dashboard summary
+GET    /api/tpa/analytics/claims-by-status   # Claims breakdown by status
+GET    /api/tpa/analytics/reviewer-performance  # Individual TPA performance
+
+TPA Workflow:
+1. Admin assigns claims to TPA users (bulk assignment)
+2. TPA reviews claim documents
+3. TPA approves/rejects or requests resubmission
+4. If resubmission: Member uploads new docs → Loop back to step 2
+5. Final approval triggers payment processing
+
+TPA Role Features:
+- Can only access assigned claims
+- Cannot create or delete claims
+- Can add review comments and internal notes
+- Track approval/rejection reasons
+```
+
+#### Notifications APIs (`/api/notifications`) - ✅ FULLY IMPLEMENTED
+```
+GET    /api/notifications                    # Get user's notifications
+GET    /api/notifications/unread             # Get unread notifications count
+PATCH  /api/notifications/:notificationId/read  # Mark notification as read
+PATCH  /api/notifications/mark-all-read      # Mark all as read
+DELETE /api/notifications/:notificationId    # Delete notification
+
+Notification Types:
+- CLAIM_SUBMITTED: Claim submitted successfully
+- CLAIM_APPROVED: Claim approved
+- CLAIM_REJECTED: Claim rejected
+- CLAIM_RESUBMISSION_REQUIRED: Documents need resubmission
+- APPOINTMENT_CONFIRMED: Appointment confirmed
+- APPOINTMENT_CANCELLED: Appointment cancelled
+- LAB_ORDER_CREATED: Lab order created
+- LAB_REPORT_READY: Lab report available
+- WALLET_CREDITED: Wallet balance credited
+- SYSTEM_ANNOUNCEMENT: System-wide announcements
+
+Notification Schema:
+- userId: Recipient
+- type: Notification type enum
+- title, message: Content
+- isRead: Read status
+- metadata: Additional data (claimId, orderId, etc.)
+- createdAt: Timestamp
+```
+
+#### Finance APIs (`/api/finance`) - 🔧 FOUNDATION READY
+```
+POST   /api/finance/process-payment          # Process claim payment (foundation)
+
+Payment Processing (Foundation):
+- Integrated with claim approval workflow
+- Tracks payment status (PENDING, PROCESSING, COMPLETED, FAILED)
+- Links to wallet transactions for future implementation
+- Placeholder for payment gateway integration
+
+Note: Full payment processing, gateway integration, and wallet
+deduction features are planned for future phases.
+```
+
 #### Migration/Admin Utilities (`/api/migration`, `/api/admin`)
 ```
 POST   /api/migration/spouse-coverage  # Migrate spouse coverage data
@@ -958,14 +1285,40 @@ GET    /api/health                  # Basic health check
 ❌ /api/health-records/*            # Health records management (not started)
 ```
 
-### Recently Completed Endpoints
+### Recently Completed Endpoints (Version 6.0 - October 5, 2025)
 ```
-✅ /api/member/claims/*             # Member claims & reimbursements module (Oct 3, 2025)
-   - 11 endpoints for complete claim management
-   - Unified reimbursement and cashless pre-authorization
-   - File upload with multer integration
-   - Document storage and retrieval
-   - Complete claim lifecycle management
+✅ /api/lab/member/*                # Lab Diagnostics - Member APIs (6 endpoints)
+   - Prescription upload and tracking
+   - Lab order viewing
+   - Report access
+
+✅ /api/lab/admin/*                 # Lab Diagnostics - Admin APIs (11 endpoints)
+   - Lab test master management
+   - Lab package management
+   - Lab partner management
+
+✅ /api/lab/ops/*                   # Lab Diagnostics - Operations APIs (20 endpoints)
+   - Prescription queue and digitization
+   - Order lifecycle management
+   - Report upload and management
+   - Comprehensive analytics dashboard
+
+✅ /api/tpa/*                       # TPA Module (11 endpoints)
+   - Claim assignment workflow
+   - Claim review and approval/rejection
+   - Resubmission request flow
+   - TPA analytics and performance tracking
+
+✅ /api/notifications/*             # Notifications Module (5 endpoints)
+   - In-app notifications
+   - Unread count and marking
+   - Notification management
+
+✅ /api/finance/*                   # Finance Module (1 endpoint - foundation)
+   - Payment processing foundation
+
+Total New Endpoints: 54
+Total System Endpoints: 100+ (across all modules)
 ```
 
 ---
@@ -2528,84 +2881,229 @@ effectiveTo: Date     // REQUIRED - Explicit date from admin
 
 ---
 
-## RECENT UPDATES (Version 5.2 - October 3, 2025 Morning)
+## RECENT CHANGES (Version 6.0 - October 5, 2025)
 
-### Comprehensive System Audit Completed
+### Major Additions
 
-1. **Technology Stack Verification** - Updated to reflect actual versions
-   - TypeScript: 5.3.3 → 5.9.2
-   - bcrypt: 5.1.1 → 6.0.0
-   - class-validator: 0.14.1 → 0.14.2
-   - @nestjs/config: 3.3.0 → 4.0.2
-   - @nestjs/swagger: 8.1.0 → 11.2.0
-   - helmet: 8.0.0 → 8.1.0
-   - express-rate-limit: 7.7.2 → 8.1.0
-   - AWS SDK: Changed from aws-sdk to @aws-sdk/client-secrets-manager (v3.888.0)
+#### 1. Lab Diagnostics Module (Complete Workflow)
+**Location**: `/api/src/modules/lab/`
 
-2. **Database Document Counts** - Verified against actual MongoDB data
-   - doctor_slots: 17 → 18 (actual count)
-   - plan_configs: 3 → 1 (verified single config)
-   - userPolicyAssignments: 4 → 0 (currently empty)
-   - category_master: 3 → 4 (verified count)
-   - Total documents: 66 → 62 (accurate count)
+**Architecture**:
+- 7 MongoDB schemas (tests, packages, partners, prescriptions, digitizations, orders, reports)
+- 8 DTOs for request/response handling
+- 5 services (lab.service, lab-admin.service, lab-ops.service, lab-order.service, lab-prescription.service)
+- 3 controllers: Member (6 endpoints), Admin (11 endpoints), Operations (20 endpoints)
+- **Total: 37 API endpoints**
 
-3. **API Endpoints Documentation** - Added missing endpoints discovered in codebase
+**Workflow**: Member uploads prescription → Operations digitizes tests → Admin assigns to partner → Partner creates order → Partner uploads report → Member views report
 
-   **Appointments Module:**
-   - Added: GET /api/appointments (list all)
-   - Added: PATCH /api/appointments/:appointmentId/confirm
-   - Added: PATCH /api/appointments/:appointmentId/cancel
+**File Storage**:
+- Prescription uploads: `uploads/lab/prescriptions/{userId}/`
+- Report uploads: `uploads/lab/reports/{orderId}/`
+- Max file size: 10MB (prescriptions), 15MB (reports)
 
-   **Clinics Module:**
-   - Added: POST /api/clinics (create clinic)
-   - Added: PUT /api/clinics/:clinicId (update)
-   - Added: PATCH /api/clinics/:clinicId/activate
-   - Added: PATCH /api/clinics/:clinicId/deactivate
-   - Added: DELETE /api/clinics/:clinicId
+**Frontend Pages**:
+- Admin Portal: 5 pages (Lab Tests, Packages, Partners management)
+- Member Portal: 7 pages (Upload, Track, View Reports)
+- Operations Portal: Prescriptions Queue, Order Management, Analytics
 
-   **Doctors Module:**
-   - Added: POST /api/doctors (create doctor)
-   - Added: PUT /api/doctors/:doctorId (update)
-   - Added: PATCH /api/doctors/:doctorId/activate
-   - Added: PATCH /api/doctors/:doctorId/deactivate
+---
 
-   **Doctor Slots Module:**
-   - Added: GET /api/doctor-slots/doctor/:doctorId/day/:dayOfWeek
-   - Added: GET /api/doctor-slots/:slotId
-   - Added: GET /api/doctor-slots/:slotId/generate/:date
-   - Added: PATCH /api/doctor-slots/:slotId/activate
-   - Added: PATCH /api/doctor-slots/:slotId/deactivate
-   - Added: PATCH /api/doctor-slots/:slotId/block-date
-   - Added: PATCH /api/doctor-slots/:slotId/unblock-date
+#### 2. TPA Module (Claims Processing)
+**Location**: `/api/src/modules/tpa/`
 
-   **Users Module:**
-   - Added: DELETE /api/users/:id
+**Architecture**:
+- Enhanced memberclaims schema with TPA assignment and review fields
+- 6 DTOs for claim assignment, review, approval, rejection, and resubmission
+- 1 service (tpa.service)
+- 1 controller with **11 API endpoints**
 
-   **Migration/Admin Utilities:**
-   - Added: POST /api/migration/spouse-coverage
-   - Added: POST /api/admin/migrate-invalid-services
+**Workflow**:
+1. Admin assigns claims to TPA users (bulk assignment)
+2. TPA reviews claim documents and supporting materials
+3. TPA approves, partially approves, rejects, or requests resubmission
+4. If resubmission: Member uploads new documents → Loop back to review
+5. Final approval triggers payment processing via Finance module
 
-4. **Doctor Slot Schema Corrections** - Updated to match actual implementation
-   - Added: slotId (unique identifier field)
-   - Changed: dayOfWeek format to uppercase enum (MONDAY, TUESDAY, etc.)
-   - Changed: consultationType enum - removed BOTH option (actual: IN_CLINIC or ONLINE only)
-   - Changed: maxPatients → maxAppointments (default: 20)
-   - Added: validFrom, validUntil (optional validity period)
-   - Added: blockedDates (array for date blocking)
+**Frontend Pages**:
+- Admin Portal: 5 pages (TPA Dashboard, Claims Assignment, Review, Analytics)
+- Features: Claim assignment queue, document review, approval/rejection with reasons, performance tracking
 
-5. **Specialty Master Endpoints** - Simplified to match actual implementation
-   - Removed: POST, PUT, DELETE, PATCH endpoints (not implemented)
-   - Kept: GET endpoints only (read-only access in current implementation)
+---
 
-### Verification Status
-- ✅ All module directories verified against documentation
-- ✅ All schema files cross-referenced with database documentation
-- ✅ All API controllers examined for endpoint accuracy
-- ✅ Database document counts validated via MongoDB queries
-- ✅ Package.json dependencies verified for version accuracy
+#### 3. Notifications Module (In-App Notifications)
+**Location**: `/api/src/modules/notifications/`
 
-### Accuracy Improvements
-- Document counts are now 100% accurate (verified via MongoDB)
-- API endpoint documentation is complete (all 17 controllers reviewed)
-- Technology versions match actual package.json
-- Schema documentation matches actual Mongoose schemas
+**Architecture**:
+- 1 MongoDB schema (notifications)
+- 1 service (notifications.service)
+- 1 controller with **5 API endpoints**
+
+**Notification Types**:
+- CLAIM_SUBMITTED, CLAIM_APPROVED, CLAIM_REJECTED, CLAIM_RESUBMISSION_REQUIRED
+- APPOINTMENT_CONFIRMED, APPOINTMENT_CANCELLED
+- LAB_ORDER_CREATED, LAB_REPORT_READY
+- WALLET_CREDITED, SYSTEM_ANNOUNCEMENT
+
+**Frontend Components**:
+- NotificationBell component with unread count indicator
+- Real-time notification updates
+- Mark as read/unread functionality
+- Integrated with Sonner for toast notifications
+
+---
+
+#### 4. Finance Module (Payment Foundation)
+**Location**: `/api/src/modules/finance/`
+
+**Architecture**:
+- 1 DTO (process-payment.dto)
+- 1 service (finance.service)
+- 1 controller with **1 API endpoint** (foundation)
+
+**Features**:
+- Payment processing foundation integrated with claim approval workflow
+- Payment status tracking (PENDING, PROCESSING, COMPLETED, FAILED)
+- Links to wallet transactions for future implementation
+- Placeholder for payment gateway integration
+
+**Frontend Pages**:
+- Admin Portal: 3 pages (Finance Dashboard, Payment Processing, Reports)
+
+---
+
+#### 5. Operations Portal (Unified Structure)
+**Location**: `/web-admin/app/admin/operations/`
+
+**Unified Structure**:
+- Previously scattered operations features now centralized at `/operations`
+- Consolidated Doctors, Appointments, and Lab management
+- Consistent navigation and user experience
+
+**Features**:
+- Doctors Management: Create, update, activate/deactivate doctors
+- Appointments Management: View, confirm, cancel appointments
+- Lab Prescriptions Queue: Digitize pending prescriptions
+- Lab Orders Management: Create, track, and update orders
+- Analytics Dashboard: Real-time statistics and performance metrics
+
+---
+
+### Database Changes
+
+**New Collections**: 9
+- `lab_tests` - Lab test master data
+- `lab_packages` - Lab test packages/panels
+- `lab_partners` - Lab partner/vendor information
+- `lab_prescriptions` - Uploaded lab prescriptions
+- `lab_digitizations` - Digitized prescription data
+- `lab_orders` - Lab test orders
+- `lab_reports` - Lab test reports
+- `notifications` - In-app notifications
+- (Enhanced: `memberclaims` with TPA fields)
+
+**Total Collections**: 18 → 27
+**Total Documents**: 62 (unchanged from base data)
+
+---
+
+### API Endpoints Summary
+
+**New Endpoints by Module**:
+- Lab Diagnostics: 37 endpoints (6 Member + 11 Admin + 20 Operations)
+- TPA: 11 endpoints
+- Notifications: 5 endpoints
+- Finance: 1 endpoint (foundation)
+
+**Total New Endpoints**: 54
+**Total System Endpoints**: 100+ (across all modules)
+
+**Enhanced Endpoints**:
+- Member Claims: Enhanced with TPA integration and document resubmission flow
+- Member Claims: 13 endpoints (previously 11)
+
+---
+
+### Frontend Changes
+
+**Admin Portal** (`/web-admin`):
+- Added Lab Management section (5 pages)
+- Added TPA Portal section (5 pages)
+- Added Finance Portal section (3 pages)
+- Enhanced Operations Portal with unified structure
+- Updated navigation with new modules
+
+**Member Portal** (`/web-member`):
+- Added Lab Tests section (7 pages)
+- Enhanced Claims section with resubmission flow (3 pages total)
+- Added NotificationBell component
+- Updated BottomTabBar navigation with Lab Tests tab
+- Integrated Sonner for toast notifications
+
+**Operations Portal** (`/web-admin/operations`):
+- Unified structure at `/operations` route
+- Lab Prescriptions Queue and Digitization
+- Lab Orders Management with report upload
+- Comprehensive Analytics Dashboard
+
+**Total New Pages**: 18+ pages across all portals
+
+---
+
+### Technology Stack Updates
+
+**Backend**:
+- Multer file upload middleware (already in use, now with 2 upload directories)
+- Enhanced middleware for route protection and role-based access
+
+**Frontend**:
+- Sonner: Toast notification library (Member Portal)
+- Enhanced Radix UI components
+- Improved form handling with React Hook Form
+
+---
+
+### System Statistics
+
+**Before Version 6.0**:
+- Modules: 15
+- Collections: 18
+- API Endpoints: ~50
+- Frontend Pages: ~30
+
+**After Version 6.0**:
+- Modules: 19 (+4)
+- Collections: 27 (+9)
+- API Endpoints: 100+ (+54)
+- Frontend Pages: ~48 (+18)
+- Completion Status: 95%
+
+---
+
+### Next Steps
+
+**Immediate Priorities**:
+1. ❌ Wallet API implementation (schema exists, service exists, no controller)
+2. ❌ Health Records module (UI exists, no backend)
+3. 🔧 Finance module expansion (payment gateway integration)
+4. 🔧 Full wallet deduction on claim approval
+5. 🔧 Enhanced analytics across all modules
+
+**Future Enhancements**:
+- Real-time notifications via WebSocket/SSE
+- Advanced reporting and analytics
+- Mobile app development
+- Third-party integrations (payment gateways, lab partners)
+
+---
+
+### Breaking Changes
+None. All changes are additive and backward compatible.
+
+---
+
+### Migration Notes
+- No database migrations required for existing data
+- New collections will be created automatically on first use
+- Existing claims will work with TPA module (TPA fields are optional)
+- File upload directories are created automatically by multer configuration

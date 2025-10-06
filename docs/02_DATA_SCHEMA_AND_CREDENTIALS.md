@@ -1,9 +1,9 @@
 # OPD WALLET - DATA SCHEMA AND CREDENTIALS DOCUMENTATION
 
-**Document Version:** 2.2
-**Last Updated:** September 28, 2025 (Evening Update)
+**Document Version:** 3.0
+**Last Updated:** October 6, 2025 (Major Update - Complete Lab & TPA Schemas)
 **Database:** MongoDB (opd_wallet)
-**Total Collections:** 17
+**Total Collections:** 27
 
 ---
 
@@ -26,7 +26,18 @@
    - [auditLogs](#12-auditlogs)
    - [specialty_master](#13-specialty_master)
    - [doctors](#14-doctors)
-   - [appointments](#15-appointments)
+   - [clinics](#15-clinics)
+   - [doctor_slots](#16-doctor_slots)
+   - [appointments](#17-appointments)
+   - [memberclaims](#18-memberclaims)
+   - [notifications](#19-notifications)
+   - [lab_prescriptions](#20-lab_prescriptions)
+   - [lab_carts](#21-lab_carts)
+   - [lab_services](#22-lab_services)
+   - [lab_vendors](#23-lab_vendors)
+   - [lab_vendor_pricing](#24-lab_vendor_pricing)
+   - [lab_vendor_slots](#25-lab_vendor_slots)
+   - [lab_orders](#26-lab_orders)
 4. [Relationships & Foreign Keys](#relationships--foreign-keys)
 5. [Data Integrity Rules](#data-integrity-rules)
 6. [Indexes & Performance](#indexes--performance)
@@ -40,30 +51,47 @@
 
 **Database Name:** `opd_wallet`
 **Authentication:** MongoDB Admin Auth
-**Total Collections:** 17
-**Total Documents:** 66 (actual count)
+**Total Collections:** 27
+**Total Documents:** Variable (production usage-dependent)
 
 ### Current Data Distribution
 
 | Collection | Document Count | Status |
 |-----------|----------------|--------|
-| users | 4 | Active |
-| policies | 1 | Active |
-| plan_configs | 1 | Active |
-| userPolicyAssignments | 0 | Empty |
+| **Core System** | | |
+| users | 4+ | Active |
+| policies | 1+ | Active |
+| plan_configs | 1+ | Active |
+| userPolicyAssignments | Variable | Auto-managed |
+| **Master Data** | | |
 | category_master | 4 | Active |
-| service_master | 4 | Active |
+| service_master | 4+ | Active |
 | relationship_masters | 5 | Active |
-| cug_master | 8 | Active |
-| counters | 2 | Active |
-| user_wallets | Auto | Auto-populated on assignment ✅ |
-| wallet_transactions | 0 | Empty |
-| auditLogs | 0 | Empty |
+| cug_master | 8+ | Active |
 | specialty_master | 9 | Active |
-| doctors | 6 | Active |
-| clinics | 5 | Active |
-| doctor_slots | 17 | Active |
-| appointments | 0 | Empty |
+| **Wallet System** | | |
+| user_wallets | Auto | Auto-created on assignment |
+| wallet_transactions | Variable | Transaction history |
+| **Healthcare** | | |
+| doctors | 6+ | Active |
+| clinics | 5+ | Active |
+| doctor_slots | 17+ | Active |
+| appointments | Variable | Operational |
+| **Claims & TPA** | | |
+| memberclaims | Variable | Operational ✨ NEW |
+| **Notifications** | | |
+| notifications | Variable | Operational ✨ NEW |
+| **Lab Diagnostics** | | |
+| lab_prescriptions | Variable | Operational ✨ NEW |
+| lab_carts | Variable | Operational ✨ NEW |
+| lab_services | Admin-managed | Active ✨ NEW |
+| lab_vendors | Admin-managed | Active ✨ NEW |
+| lab_vendor_pricing | Admin-managed | Active ✨ NEW |
+| lab_vendor_slots | Admin-managed | Active ✨ NEW |
+| lab_orders | Variable | Operational ✨ NEW |
+| **System** | | |
+| counters | Variable | System-managed |
+| auditLogs | Variable | TTL 2 years |
 
 ---
 
@@ -88,7 +116,22 @@
 
 ### Healthcare Collections
 - **doctors** - Doctor profiles with clinics and availability
+- **clinics** - Clinic/hospital locations with operating hours
+- **doctor_slots** - Weekly recurring time slots for doctors
 - **appointments** - Appointment bookings
+
+### Claims & TPA Collections ✨ NEW
+- **memberclaims** - Complete claims/reimbursement management with TPA integration
+- **notifications** - System notifications for claims and status updates
+
+### Lab Diagnostics Collections ✨ NEW
+- **lab_prescriptions** - Uploaded lab test prescriptions
+- **lab_carts** - Digitized test carts from prescriptions
+- **lab_services** - Master catalog of lab services/tests
+- **lab_vendors** - Partner laboratory vendors
+- **lab_vendor_pricing** - Vendor-specific service pricing
+- **lab_vendor_slots** - Available time slots for sample collection
+- **lab_orders** - Final lab orders with reports
 
 ### System Collections
 - **counters** - Auto-increment counters for IDs
@@ -1780,6 +1823,1114 @@ enum CallPreference {
 
 ---
 
+### 18. memberclaims
+
+**Collection Name:** `memberclaims`
+**Purpose:** Complete claims/reimbursement management with TPA integration
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  claimId: string,                    // REQUIRED, UNIQUE - "CLM-YYYYMMDD-####"
+  userId: ObjectId,                   // REQUIRED, REF: 'User'
+  memberName: string,                 // REQUIRED
+  memberId: string,
+  patientName: string,
+  relationToMember: string,           // DEFAULT: 'SELF'
+  claimType: string,                  // ENUM: 'REIMBURSEMENT', 'CASHLESS_PREAUTH'
+  category: string,                   // ENUM: CONSULTATION, DIAGNOSTICS, PHARMACY, etc.
+  treatmentDate: Date,                // REQUIRED
+  providerName: string,               // REQUIRED
+  providerLocation: string,
+  billAmount: number,                 // REQUIRED
+  billNumber: string,
+  treatmentDescription: string,
+
+  // Document storage
+  documents: Array<{
+    fileName: string,
+    originalName: string,
+    fileType: string,
+    fileSize: number,
+    filePath: string,
+    uploadedAt: Date,
+    documentType: string              // ENUM: INVOICE, PRESCRIPTION, REPORT, DISCHARGE_SUMMARY, OTHER
+  }>,
+
+  // Claim processing
+  status: string,                     // ENUM: Complex workflow status (see enums)
+  approvedAmount: number,
+  copayAmount: number,
+  deductibleAmount: number,
+  reimbursableAmount: number,
+
+  // Payment details
+  paymentStatus: string,              // ENUM: PENDING, APPROVED, PROCESSING, COMPLETED, PAID, FAILED
+  paymentDate: Date,
+  paymentReferenceNumber: string,
+  paymentMode: string,
+
+  // Processing information
+  submittedAt: Date,
+  reviewedBy: string,
+  reviewedAt: Date,
+  reviewComments: string,
+  rejectionReason: string,
+  internalNotes: string,
+
+  // TPA Assignment Fields ✨ NEW
+  assignedTo: ObjectId,               // REF: 'User' (TPA_USER)
+  assignedToName: string,
+  assignedBy: ObjectId,               // REF: 'User' (TPA_ADMIN)
+  assignedByName: string,
+  assignedAt: Date,
+  reassignmentHistory: Array<{
+    previousAssignee: ObjectId,
+    previousAssigneeName: string,
+    newAssignee: ObjectId,
+    newAssigneeName: string,
+    reassignedBy: ObjectId,
+    reassignedByName: string,
+    reassignedAt: Date,
+    reason: string
+  }>,
+
+  // TPA Review Fields ✨ NEW
+  reviewedByUser: ObjectId,           // REF: 'User'
+  reviewedByName: string,
+  reviewNotes: string,
+  reviewHistory: Array<{
+    reviewedBy: ObjectId,
+    reviewedByName: string,
+    reviewedAt: Date,
+    action: string,
+    notes: string,
+    previousStatus: string,
+    newStatus: string
+  }>,
+
+  // Documents Required Flow ✨ NEW
+  documentsRequired: boolean,         // DEFAULT: false
+  documentsRequiredReason: string,
+  documentsRequiredAt: Date,
+  documentsRequiredBy: ObjectId,      // REF: 'User'
+  requiredDocumentsList: string[],
+
+  // Approval/Rejection Fields
+  approvalReason: string,
+  approvedBy: ObjectId,               // REF: 'User'
+  approvedByName: string,
+  approvedAt: Date,
+  rejectedBy: ObjectId,               // REF: 'User'
+  rejectedByName: string,
+  rejectedAt: Date,
+  rejectedAmount: number,
+
+  // Payment Tracking
+  paidAmount: number,
+  paidBy: ObjectId,                   // REF: 'User'
+  paidByName: string,
+  paymentNotes: string,
+  paymentProcessedAt: Date,
+
+  // Status history
+  statusHistory: Array<{
+    status: string,
+    changedBy: ObjectId,
+    changedByName: string,
+    changedByRole: string,
+    changedAt: Date,
+    reason: string,
+    notes: string
+  }>,
+
+  // Policy and wallet information
+  policyId: ObjectId,                 // REF: 'Policy'
+  policyNumber: string,
+  assignmentId: ObjectId,             // REF: 'UserPolicyAssignment'
+  walletTransactionId: ObjectId,      // REF: 'WalletTransaction'
+
+  // Additional metadata
+  corporateName: string,
+  isUrgent: boolean,                  // DEFAULT: false
+  requiresPreAuth: boolean,           // DEFAULT: false
+  preAuthNumber: string,
+  isActive: boolean,                  // DEFAULT: true
+  createdBy: string,
+  updatedBy: string,
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Enums
+
+**ClaimType:**
+```typescript
+enum ClaimType {
+  REIMBURSEMENT = 'REIMBURSEMENT',
+  CASHLESS_PREAUTH = 'CASHLESS_PREAUTH'
+}
+```
+
+**ClaimCategory:**
+```typescript
+enum ClaimCategory {
+  CONSULTATION = 'CONSULTATION',
+  DIAGNOSTICS = 'DIAGNOSTICS',
+  PHARMACY = 'PHARMACY',
+  DENTAL = 'DENTAL',
+  VISION = 'VISION',
+  WELLNESS = 'WELLNESS',
+  IPD = 'IPD',
+  OPD = 'OPD'
+}
+```
+
+**ClaimStatus:**
+```typescript
+enum ClaimStatus {
+  DRAFT = 'DRAFT',
+  SUBMITTED = 'SUBMITTED',
+  UNASSIGNED = 'UNASSIGNED',
+  ASSIGNED = 'ASSIGNED',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  DOCUMENTS_REQUIRED = 'DOCUMENTS_REQUIRED',
+  APPROVED = 'APPROVED',
+  PARTIALLY_APPROVED = 'PARTIALLY_APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+  PAYMENT_PENDING = 'PAYMENT_PENDING',
+  PAYMENT_PROCESSING = 'PAYMENT_PROCESSING',
+  PAYMENT_COMPLETED = 'PAYMENT_COMPLETED',
+  RESUBMISSION_REQUIRED = 'RESUBMISSION_REQUIRED'
+}
+```
+
+**PaymentStatus:**
+```typescript
+enum PaymentStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  PROCESSING = 'PROCESSING',
+  COMPLETED = 'COMPLETED',
+  PAID = 'PAID',
+  FAILED = 'FAILED'
+}
+```
+
+#### Indexes
+
+```typescript
+{ claimId: 1 }                                // Single field index
+{ userId: 1, status: 1 }                      // Compound index for user queries
+{ status: 1, createdAt: -1 }                  // Compound index for status queries
+{ policyId: 1 }                               // Single field index
+{ treatmentDate: -1 }                         // Single field index
+{ submittedAt: -1 }                           // Single field index
+// TPA indexes
+{ assignedTo: 1, status: 1 }                  // Compound index for TPA user queries
+{ assignedBy: 1 }                             // Single field index
+{ assignedAt: -1 }                            // Single field index
+{ status: 1, assignedTo: 1 }                  // Compound index for workload queries
+// Payment indexes
+{ paymentStatus: 1, status: 1 }               // Compound index for payment queries
+{ paidBy: 1 }                                 // Single field index
+{ paymentProcessedAt: -1 }                    // Single field index
+```
+
+#### Validation Rules
+
+1. **claimId** - Must be unique, format "CLM-YYYYMMDD-####"
+2. **claimType** - Must be one of the defined enum values
+3. **category** - Must be one of the defined enum values
+4. **status** - Must be one of the defined enum values (workflow enforced)
+5. **paymentStatus** - Must be one of the defined enum values
+6. **billAmount** - Must be > 0
+7. **documents.documentType** - Must be one of: INVOICE, PRESCRIPTION, REPORT, DISCHARGE_SUMMARY, OTHER
+8. **TPA Assignment** - assignedTo must reference a TPA_USER role
+9. **reassignmentHistory** - Automatically tracked when claim is reassigned
+10. **reviewHistory** - Automatically tracked on status changes
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012700"),
+  "claimId": "CLM-20251005-0001",
+  "userId": ObjectId("674d8e123abc456789012345"),
+  "memberName": "John Doe",
+  "memberId": "MEM001",
+  "patientName": "John Doe",
+  "relationToMember": "SELF",
+  "claimType": "REIMBURSEMENT",
+  "category": "CONSULTATION",
+  "treatmentDate": ISODate("2025-10-01T00:00:00Z"),
+  "providerName": "Apollo Hospital",
+  "providerLocation": "Delhi",
+  "billAmount": 5000,
+  "billNumber": "INV-2025-001",
+  "treatmentDescription": "General physician consultation",
+  "documents": [
+    {
+      "fileName": "invoice_1728123456.pdf",
+      "originalName": "invoice.pdf",
+      "fileType": "application/pdf",
+      "fileSize": 245678,
+      "filePath": "./uploads/claims/USR001/invoice_1728123456.pdf",
+      "uploadedAt": ISODate("2025-10-05T10:00:00Z"),
+      "documentType": "INVOICE"
+    }
+  ],
+  "status": "ASSIGNED",
+  "approvedAmount": 4500,
+  "copayAmount": 500,
+  "deductibleAmount": 0,
+  "reimbursableAmount": 4500,
+  "paymentStatus": "PENDING",
+  "submittedAt": ISODate("2025-10-05T10:00:00Z"),
+  "assignedTo": ObjectId("674d8e123abc456789012380"),
+  "assignedToName": "TPA User 1",
+  "assignedBy": ObjectId("674d8e123abc456789012381"),
+  "assignedByName": "TPA Admin",
+  "assignedAt": ISODate("2025-10-05T11:00:00Z"),
+  "reassignmentHistory": [],
+  "reviewHistory": [],
+  "documentsRequired": false,
+  "requiredDocumentsList": [],
+  "statusHistory": [
+    {
+      "status": "SUBMITTED",
+      "changedBy": ObjectId("674d8e123abc456789012345"),
+      "changedByName": "John Doe",
+      "changedByRole": "MEMBER",
+      "changedAt": ISODate("2025-10-05T10:00:00Z"),
+      "notes": "Claim submitted"
+    },
+    {
+      "status": "ASSIGNED",
+      "changedBy": ObjectId("674d8e123abc456789012381"),
+      "changedByName": "TPA Admin",
+      "changedByRole": "TPA_ADMIN",
+      "changedAt": ISODate("2025-10-05T11:00:00Z"),
+      "notes": "Assigned to TPA User 1"
+    }
+  ],
+  "policyId": ObjectId("674d8e123abc456789012346"),
+  "policyNumber": "POL-2025-001",
+  "isUrgent": false,
+  "requiresPreAuth": false,
+  "isActive": true,
+  "createdAt": ISODate("2025-10-05T10:00:00Z"),
+  "updatedAt": ISODate("2025-10-05T11:00:00Z")
+}
+```
+
+---
+
+### 19. notifications
+
+**Collection Name:** `notifications`
+**Purpose:** System notifications for claims, assignments, and status updates
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  userId: ObjectId,                   // REQUIRED, REF: 'User'
+  type: string,                       // REQUIRED, ENUM: Notification types
+  title: string,                      // REQUIRED
+  message: string,                    // REQUIRED
+  claimId: ObjectId,                  // OPTIONAL, REF: 'MemberClaim'
+  claimNumber: string,
+  priority: string,                   // ENUM: LOW, MEDIUM, HIGH, URGENT, DEFAULT: MEDIUM
+  isRead: boolean,                    // DEFAULT: false
+  readAt: Date,
+  metadata: {
+    oldStatus: string,
+    newStatus: string,
+    actionBy: string,
+    amount: number,
+    documentsRequested: string[],
+    [key: string]: any                // Additional dynamic fields
+  },
+  actionUrl: string,
+  isActive: boolean,                  // DEFAULT: true
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Enums
+
+**NotificationType:**
+```typescript
+enum NotificationType {
+  CLAIM_ASSIGNED = 'CLAIM_ASSIGNED',
+  CLAIM_STATUS_CHANGED = 'CLAIM_STATUS_CHANGED',
+  DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED',
+  CLAIM_APPROVED = 'CLAIM_APPROVED',
+  CLAIM_REJECTED = 'CLAIM_REJECTED',
+  PAYMENT_COMPLETED = 'PAYMENT_COMPLETED',
+  CLAIM_UNDER_REVIEW = 'CLAIM_UNDER_REVIEW'
+}
+```
+
+**NotificationPriority:**
+```typescript
+enum NotificationPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT'
+}
+```
+
+#### Indexes
+
+```typescript
+{ userId: 1, createdAt: -1 }                  // Compound index for user notifications
+{ userId: 1, isRead: 1 }                      // Compound index for unread queries
+{ userId: 1, type: 1 }                        // Compound index for type filtering
+```
+
+#### Validation Rules
+
+1. **userId** - Must reference a valid User document
+2. **type** - Must be one of the defined enum values
+3. **priority** - Must be one of the defined enum values
+4. **claimId** - If present, must reference a valid MemberClaim document
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012710"),
+  "userId": ObjectId("674d8e123abc456789012380"),
+  "type": "CLAIM_ASSIGNED",
+  "title": "New Claim Assigned",
+  "message": "Claim CLM-20251005-0001 has been assigned to you for review",
+  "claimId": ObjectId("674d8e123abc456789012700"),
+  "claimNumber": "CLM-20251005-0001",
+  "priority": "MEDIUM",
+  "isRead": false,
+  "metadata": {
+    "actionBy": "TPA Admin",
+    "amount": 5000
+  },
+  "actionUrl": "/tpa/claims/CLM-20251005-0001",
+  "isActive": true,
+  "createdAt": ISODate("2025-10-05T11:00:00Z"),
+  "updatedAt": ISODate("2025-10-05T11:00:00Z")
+}
+```
+
+---
+
+### 20. lab_prescriptions
+
+**Collection Name:** `lab_prescriptions`
+**Purpose:** Store uploaded lab test prescriptions from members
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  prescriptionId: string,             // REQUIRED, UNIQUE - "RX-YYYYMMDD-####"
+  userId: ObjectId,                   // REQUIRED, REF: 'User'
+  patientId: string,                  // REQUIRED
+  patientName: string,                // REQUIRED
+
+  // File information
+  fileName: string,                   // REQUIRED - Stored filename
+  originalName: string,               // REQUIRED - Original uploaded filename
+  fileType: string,                   // REQUIRED - MIME type (image/jpeg, application/pdf)
+  fileSize: number,                   // REQUIRED - File size in bytes
+  filePath: string,                   // REQUIRED - Storage path
+  uploadedAt: Date,                   // REQUIRED, DEFAULT: now()
+
+  // Status tracking
+  status: string,                     // REQUIRED, ENUM: UPLOADED, DIGITIZING, DIGITIZED, DELAYED
+  digitizedBy: string,                // OPS user who digitized
+  digitizedAt: Date,
+  digitizingStartedAt: Date,
+  delayReason: string,
+
+  // Cart reference
+  cartId: ObjectId,                   // REF: 'LabCart' - Created after digitization
+  notes: string,
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Enums
+
+**PrescriptionStatus:**
+```typescript
+enum PrescriptionStatus {
+  UPLOADED = 'UPLOADED',              // Initial upload by member
+  DIGITIZING = 'DIGITIZING',          // OPS is digitizing
+  DIGITIZED = 'DIGITIZED',            // Digitization complete, cart created
+  DELAYED = 'DELAYED'                 // Delayed due to issues
+}
+```
+
+#### Indexes
+
+```typescript
+{ prescriptionId: 1 }, { unique: true }       // Unique index
+{ userId: 1, status: 1 }                      // Compound index for user queries
+{ status: 1, uploadedAt: 1 }                  // Compound index for queue management
+```
+
+#### Validation Rules
+
+1. **prescriptionId** - Must be unique, format "RX-YYYYMMDD-####"
+2. **userId** - Must reference a valid User document
+3. **status** - Must be one of the defined enum values
+4. **fileType** - Allowed: image/jpeg, image/png, application/pdf
+5. **fileSize** - Maximum 10MB
+6. **cartId** - Created only when status is DIGITIZED
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012720"),
+  "prescriptionId": "RX-20251005-0001",
+  "userId": ObjectId("674d8e123abc456789012345"),
+  "patientId": "USR001",
+  "patientName": "John Doe",
+  "fileName": "prescription_1728123456.jpg",
+  "originalName": "lab_prescription.jpg",
+  "fileType": "image/jpeg",
+  "fileSize": 1245678,
+  "filePath": "./uploads/lab-prescriptions/prescription_1728123456.jpg",
+  "uploadedAt": ISODate("2025-10-05T09:00:00Z"),
+  "status": "DIGITIZED",
+  "digitizedBy": "OPS001",
+  "digitizedAt": ISODate("2025-10-05T10:00:00Z"),
+  "digitizingStartedAt": ISODate("2025-10-05T09:30:00Z"),
+  "cartId": ObjectId("674d8e123abc456789012730"),
+  "notes": "Routine blood work",
+  "createdAt": ISODate("2025-10-05T09:00:00Z"),
+  "updatedAt": ISODate("2025-10-05T10:00:00Z")
+}
+```
+
+---
+
+### 21. lab_carts
+
+**Collection Name:** `lab_carts`
+**Purpose:** Digitized lab test carts with services from prescriptions
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  cartId: string,                     // REQUIRED, UNIQUE - "CART-YYYYMMDD-####"
+  prescriptionId: ObjectId,           // REQUIRED, REF: 'LabPrescription'
+  userId: ObjectId,                   // REQUIRED, REF: 'User'
+  patientId: string,                  // REQUIRED
+  patientName: string,                // REQUIRED
+
+  // Cart items
+  items: Array<{
+    serviceId: ObjectId,              // REQUIRED, REF: 'LabService'
+    serviceName: string,              // REQUIRED
+    serviceCode: string,              // REQUIRED
+    category: string,                 // REQUIRED - PATHOLOGY, RADIOLOGY, etc.
+    description: string
+  }>,
+
+  // Status
+  status: string,                     // ENUM: CREATED, REVIEWED, ORDERED, CANCELLED
+  createdBy: string,                  // REQUIRED - OPS user who created cart
+
+  // Order reference
+  orderId: ObjectId,                  // REF: 'LabOrder' - Set when order is placed
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Enums
+
+**CartStatus:**
+```typescript
+enum CartStatus {
+  CREATED = 'CREATED',                // Cart created by OPS
+  REVIEWED = 'REVIEWED',              // Member has reviewed
+  ORDERED = 'ORDERED',                // Order placed
+  CANCELLED = 'CANCELLED'             // Cart cancelled
+}
+```
+
+#### Indexes
+
+```typescript
+{ cartId: 1 }, { unique: true }               // Unique index
+{ userId: 1, status: 1 }                      // Compound index for user queries
+{ prescriptionId: 1 }                         // Single field index
+```
+
+#### Validation Rules
+
+1. **cartId** - Must be unique, format "CART-YYYYMMDD-####"
+2. **prescriptionId** - Must reference a valid LabPrescription document
+3. **userId** - Must reference a valid User document
+4. **items** - Must contain at least 1 item
+5. **items.serviceId** - Must reference a valid LabService document
+6. **status** - Must be one of the defined enum values
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012730"),
+  "cartId": "CART-20251005-0001",
+  "prescriptionId": ObjectId("674d8e123abc456789012720"),
+  "userId": ObjectId("674d8e123abc456789012345"),
+  "patientId": "USR001",
+  "patientName": "John Doe",
+  "items": [
+    {
+      "serviceId": ObjectId("674d8e123abc456789012740"),
+      "serviceName": "Complete Blood Count (CBC)",
+      "serviceCode": "CBC001",
+      "category": "PATHOLOGY",
+      "description": "Complete blood count with differential"
+    },
+    {
+      "serviceId": ObjectId("674d8e123abc456789012741"),
+      "serviceName": "Lipid Profile",
+      "serviceCode": "LIP001",
+      "category": "PATHOLOGY",
+      "description": "Complete lipid panel"
+    }
+  ],
+  "status": "REVIEWED",
+  "createdBy": "OPS001",
+  "createdAt": ISODate("2025-10-05T10:00:00Z"),
+  "updatedAt": ISODate("2025-10-05T11:00:00Z")
+}
+```
+
+---
+
+### 22. lab_services
+
+**Collection Name:** `lab_services`
+**Purpose:** Master catalog of lab diagnostic services/tests
+**Document Count:** Admin-managed
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  serviceId: string,                  // REQUIRED, UNIQUE - "SVC-####"
+  code: string,                       // REQUIRED, UNIQUE, UPPERCASE - Service code
+  name: string,                       // REQUIRED - Service display name
+  category: string,                   // REQUIRED, ENUM: PATHOLOGY, RADIOLOGY, CARDIOLOGY, ENDOSCOPY, OTHER
+  description: string,
+  sampleType: string,                 // Blood, Urine, Tissue, etc.
+  preparationInstructions: string,    // Fasting requirements, etc.
+  isActive: boolean,                  // DEFAULT: true
+  displayOrder: number,               // DEFAULT: 0 - Sort order
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Enums
+
+**LabServiceCategory:**
+```typescript
+enum LabServiceCategory {
+  PATHOLOGY = 'PATHOLOGY',
+  RADIOLOGY = 'RADIOLOGY',
+  CARDIOLOGY = 'CARDIOLOGY',
+  ENDOSCOPY = 'ENDOSCOPY',
+  OTHER = 'OTHER'
+}
+```
+
+#### Indexes
+
+```typescript
+{ serviceId: 1 }, { unique: true }            // Unique index
+{ code: 1 }, { unique: true }                 // Unique index
+{ category: 1, isActive: 1 }                  // Compound index for category queries
+```
+
+#### Validation Rules
+
+1. **serviceId** - Must be unique, format "SVC-####"
+2. **code** - Must be unique, uppercase
+3. **category** - Must be one of the defined enum values
+4. **name** - Required, minimum 3 characters
+5. **isActive** - Controls visibility in booking flow
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012740"),
+  "serviceId": "SVC-0001",
+  "code": "CBC001",
+  "name": "Complete Blood Count (CBC)",
+  "category": "PATHOLOGY",
+  "description": "Complete blood count with differential count",
+  "sampleType": "Blood",
+  "preparationInstructions": "No special preparation required",
+  "isActive": true,
+  "displayOrder": 1,
+  "createdAt": ISODate("2025-10-01T00:00:00Z"),
+  "updatedAt": ISODate("2025-10-01T00:00:00Z")
+}
+```
+
+---
+
+### 23. lab_vendors
+
+**Collection Name:** `lab_vendors`
+**Purpose:** Partner laboratory vendors and diagnostic centers
+**Document Count:** Admin-managed
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  vendorId: string,                   // REQUIRED, UNIQUE - "VND-####"
+  name: string,                       // REQUIRED - Vendor name
+  code: string,                       // REQUIRED, UNIQUE, UPPERCASE - Vendor code
+
+  // Contact information
+  contactInfo: {
+    phone: string,                    // REQUIRED
+    email: string,                    // REQUIRED
+    address: string                   // REQUIRED
+  },
+
+  // Service areas
+  serviceablePincodes: string[],      // DEFAULT: [] - Array of pincodes served
+
+  // Collection types
+  homeCollection: boolean,            // DEFAULT: true - Offers home collection
+  centerVisit: boolean,               // DEFAULT: true - Offers center visit
+  homeCollectionCharges: number,      // DEFAULT: 50 - Charges for home collection
+
+  description: string,
+  isActive: boolean,                  // DEFAULT: true
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Indexes
+
+```typescript
+{ vendorId: 1 }, { unique: true }             // Unique index
+{ code: 1 }, { unique: true }                 // Unique index
+{ serviceablePincodes: 1 }                    // Array index for pincode queries
+{ isActive: 1 }                               // Single field index
+```
+
+#### Validation Rules
+
+1. **vendorId** - Must be unique, format "VND-####"
+2. **code** - Must be unique, uppercase
+3. **contactInfo.phone** - Required, valid phone format
+4. **contactInfo.email** - Required, valid email format
+5. **serviceablePincodes** - Array of 6-digit pincodes
+6. **homeCollectionCharges** - Must be >= 0
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012750"),
+  "vendorId": "VND-0001",
+  "name": "Path Labs Delhi",
+  "code": "PATHLAB",
+  "contactInfo": {
+    "phone": "+91-11-45678901",
+    "email": "delhi@pathlabs.com",
+    "address": "123 Medical Street, Dwarka, New Delhi - 110075"
+  },
+  "serviceablePincodes": ["110001", "110002", "110075", "110078"],
+  "homeCollection": true,
+  "centerVisit": true,
+  "homeCollectionCharges": 100,
+  "description": "Premium diagnostic lab with NABL accreditation",
+  "isActive": true,
+  "createdAt": ISODate("2025-10-01T00:00:00Z"),
+  "updatedAt": ISODate("2025-10-01T00:00:00Z")
+}
+```
+
+---
+
+### 24. lab_vendor_pricing
+
+**Collection Name:** `lab_vendor_pricing`
+**Purpose:** Vendor-specific pricing for lab services
+**Document Count:** Admin-managed
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  vendorId: ObjectId,                 // REQUIRED, REF: 'LabVendor'
+  serviceId: ObjectId,                // REQUIRED, REF: 'LabService'
+  actualPrice: number,                // REQUIRED - MRP/Original price
+  discountedPrice: number,            // REQUIRED - Selling price after discount
+  homeCollectionCharges: number,      // DEFAULT: 0 - Additional charges for home collection
+  isActive: boolean,                  // DEFAULT: true
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Indexes
+
+```typescript
+{ vendorId: 1, serviceId: 1 }, { unique: true }  // Composite unique index
+{ serviceId: 1, isActive: 1 }                     // Compound index for service queries
+```
+
+#### Validation Rules
+
+1. **vendorId** - Must reference a valid LabVendor document
+2. **serviceId** - Must reference a valid LabService document
+3. **actualPrice** - Must be > 0
+4. **discountedPrice** - Must be > 0 and <= actualPrice
+5. **homeCollectionCharges** - Must be >= 0
+6. **Uniqueness** - One pricing entry per vendor-service combination
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012760"),
+  "vendorId": ObjectId("674d8e123abc456789012750"),
+  "serviceId": ObjectId("674d8e123abc456789012740"),
+  "actualPrice": 500,
+  "discountedPrice": 350,
+  "homeCollectionCharges": 0,
+  "isActive": true,
+  "createdAt": ISODate("2025-10-01T00:00:00Z"),
+  "updatedAt": ISODate("2025-10-01T00:00:00Z")
+}
+```
+
+---
+
+### 25. lab_vendor_slots
+
+**Collection Name:** `lab_vendor_slots`
+**Purpose:** Available time slots for sample collection at vendor locations
+**Document Count:** Admin-managed
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  slotId: string,                     // REQUIRED - "SLOT-####"
+  vendorId: ObjectId,                 // REQUIRED, REF: 'LabVendor'
+  pincode: string,                    // REQUIRED - Service location pincode
+  date: string,                       // REQUIRED - YYYY-MM-DD format
+  timeSlot: string,                   // REQUIRED - "09:00 AM - 10:00 AM"
+  startTime: string,                  // REQUIRED - "09:00"
+  endTime: string,                    // REQUIRED - "10:00"
+  maxBookings: number,                // REQUIRED, DEFAULT: 5 - Maximum bookings per slot
+  currentBookings: number,            // DEFAULT: 0 - Current booking count
+  isActive: boolean,                  // DEFAULT: true
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Indexes
+
+```typescript
+{ vendorId: 1, date: 1, pincode: 1 }          // Compound index for availability queries
+{ date: 1, isActive: 1 }                      // Compound index for date queries
+```
+
+#### Validation Rules
+
+1. **slotId** - Required, unique identifier
+2. **vendorId** - Must reference a valid LabVendor document
+3. **pincode** - Must be 6-digit pincode
+4. **date** - Must be in YYYY-MM-DD format, future date
+5. **maxBookings** - Must be > 0
+6. **currentBookings** - Must be >= 0 and <= maxBookings
+7. **startTime/endTime** - Must be valid time format (HH:MM)
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012770"),
+  "slotId": "SLOT-0001",
+  "vendorId": ObjectId("674d8e123abc456789012750"),
+  "pincode": "110075",
+  "date": "2025-10-10",
+  "timeSlot": "09:00 AM - 10:00 AM",
+  "startTime": "09:00",
+  "endTime": "10:00",
+  "maxBookings": 5,
+  "currentBookings": 2,
+  "isActive": true,
+  "createdAt": ISODate("2025-10-05T00:00:00Z"),
+  "updatedAt": ISODate("2025-10-06T08:00:00Z")
+}
+```
+
+---
+
+### 26. lab_orders
+
+**Collection Name:** `lab_orders`
+**Purpose:** Final lab test orders with payment and report tracking
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  orderId: string,                    // REQUIRED, UNIQUE - "ORD-YYYYMMDD-####"
+  userId: ObjectId,                   // REQUIRED, REF: 'User'
+  cartId: ObjectId,                   // REQUIRED, REF: 'LabCart'
+  prescriptionId: ObjectId,           // REQUIRED, REF: 'LabPrescription'
+  vendorId: ObjectId,                 // REQUIRED, REF: 'LabVendor'
+  vendorName: string,                 // REQUIRED
+
+  // Order items
+  items: Array<{
+    serviceId: ObjectId,              // REQUIRED, REF: 'LabService'
+    serviceName: string,              // REQUIRED
+    serviceCode: string,              // REQUIRED
+    actualPrice: number,              // REQUIRED
+    discountedPrice: number           // REQUIRED
+  }>,
+
+  // Status
+  status: string,                     // ENUM: PLACED, CONFIRMED, SAMPLE_COLLECTED, PROCESSING, COMPLETED, CANCELLED
+
+  // Collection details
+  collectionType: string,             // ENUM: HOME_COLLECTION, CENTER_VISIT
+  collectionAddress: {
+    fullName: string,
+    phone: string,
+    addressLine1: string,
+    addressLine2: string,
+    pincode: string,
+    city: string,
+    state: string
+  },
+  collectionDate: string,             // YYYY-MM-DD
+  collectionTime: string,             // "09:00 AM - 10:00 AM"
+  slotId: ObjectId,                   // REF: 'LabVendorSlot'
+
+  // Pricing
+  totalActualPrice: number,           // REQUIRED - Sum of actual prices
+  totalDiscountedPrice: number,       // REQUIRED - Sum of discounted prices
+  homeCollectionCharges: number,      // REQUIRED - 0 for center visit
+  finalAmount: number,                // REQUIRED - Total payable amount
+
+  // Payment
+  paymentStatus: string,              // ENUM: PENDING, COMPLETED, FAILED, REFUNDED
+  paymentMode: string,
+  paymentDate: Date,
+
+  // Legacy fields (backward compatibility)
+  subtotal: number,
+  discount: number,
+  totalAmount: number,
+  paymentInfo: {
+    status: string,
+    transactionId: string,
+    paymentMethod: string,
+    paidAt: Date,
+    amount: number
+  },
+
+  // Reports
+  reportUrl: string,                  // DEPRECATED - Use reports array
+  reports: Array<{
+    fileName: string,
+    originalName: string,
+    filePath: string,
+    uploadedAt: Date,
+    uploadedBy: string
+  }>,
+  reportUploadedAt: Date,
+
+  // Timestamps
+  placedAt: Date,
+  confirmedAt: Date,
+  confirmedBy: string,
+  collectedAt: Date,
+  completedAt: Date,
+  cancelledAt: Date,
+  cancellationReason: string,
+  notes: string,
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Enums
+
+**OrderStatus:**
+```typescript
+enum OrderStatus {
+  PLACED = 'PLACED',                  // Order placed by member
+  CONFIRMED = 'CONFIRMED',            // Confirmed by OPS/vendor
+  SAMPLE_COLLECTED = 'SAMPLE_COLLECTED',  // Sample collected
+  PROCESSING = 'PROCESSING',          // Lab processing
+  COMPLETED = 'COMPLETED',            // Reports uploaded
+  CANCELLED = 'CANCELLED'             // Order cancelled
+}
+```
+
+**CollectionType:**
+```typescript
+enum CollectionType {
+  HOME_COLLECTION = 'HOME_COLLECTION',
+  CENTER_VISIT = 'CENTER_VISIT'
+}
+```
+
+**PaymentStatus:**
+```typescript
+enum PaymentStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED'
+}
+```
+
+#### Indexes
+
+```typescript
+{ orderId: 1 }, { unique: true }              // Unique index
+{ userId: 1, status: 1 }                      // Compound index for user queries
+{ vendorId: 1, status: 1 }                    // Compound index for vendor queries
+{ status: 1, createdAt: -1 }                  // Compound index for status queries
+{ prescriptionId: 1 }                         // Single field index
+{ cartId: 1 }                                 // Single field index
+```
+
+#### Validation Rules
+
+1. **orderId** - Must be unique, format "ORD-YYYYMMDD-####"
+2. **userId** - Must reference a valid User document
+3. **cartId** - Must reference a valid LabCart document
+4. **prescriptionId** - Must reference a valid LabPrescription document
+5. **vendorId** - Must reference a valid LabVendor document
+6. **items** - Must contain at least 1 item
+7. **status** - Must be one of the defined enum values
+8. **collectionType** - Must be one of the defined enum values
+9. **paymentStatus** - Must be one of the defined enum values
+10. **finalAmount** - Must be > 0
+11. **collectionAddress** - Required for HOME_COLLECTION type
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("674d8e123abc456789012780"),
+  "orderId": "ORD-20251005-0001",
+  "userId": ObjectId("674d8e123abc456789012345"),
+  "cartId": ObjectId("674d8e123abc456789012730"),
+  "prescriptionId": ObjectId("674d8e123abc456789012720"),
+  "vendorId": ObjectId("674d8e123abc456789012750"),
+  "vendorName": "Path Labs Delhi",
+  "items": [
+    {
+      "serviceId": ObjectId("674d8e123abc456789012740"),
+      "serviceName": "Complete Blood Count (CBC)",
+      "serviceCode": "CBC001",
+      "actualPrice": 500,
+      "discountedPrice": 350
+    },
+    {
+      "serviceId": ObjectId("674d8e123abc456789012741"),
+      "serviceName": "Lipid Profile",
+      "serviceCode": "LIP001",
+      "actualPrice": 800,
+      "discountedPrice": 600
+    }
+  ],
+  "status": "SAMPLE_COLLECTED",
+  "collectionType": "HOME_COLLECTION",
+  "collectionAddress": {
+    "fullName": "John Doe",
+    "phone": "+919876543210",
+    "addressLine1": "123 Main Street",
+    "addressLine2": "Apartment 4B",
+    "pincode": "110075",
+    "city": "Delhi",
+    "state": "Delhi"
+  },
+  "collectionDate": "2025-10-10",
+  "collectionTime": "09:00 AM - 10:00 AM",
+  "slotId": ObjectId("674d8e123abc456789012770"),
+  "totalActualPrice": 1300,
+  "totalDiscountedPrice": 950,
+  "homeCollectionCharges": 100,
+  "finalAmount": 1050,
+  "paymentStatus": "COMPLETED",
+  "paymentMode": "WALLET",
+  "paymentDate": ISODate("2025-10-06T10:00:00Z"),
+  "reports": [],
+  "placedAt": ISODate("2025-10-06T10:00:00Z"),
+  "confirmedAt": ISODate("2025-10-06T11:00:00Z"),
+  "confirmedBy": "OPS001",
+  "collectedAt": ISODate("2025-10-10T09:30:00Z"),
+  "notes": "Patient fasting as instructed",
+  "createdAt": ISODate("2025-10-06T10:00:00Z"),
+  "updatedAt": ISODate("2025-10-10T09:30:00Z")
+}
+```
+
+---
+
 ## RELATIONSHIPS & FOREIGN KEYS
 
 ### Key Relationships
@@ -1793,6 +2944,27 @@ user_wallets._id ← wallet_transactions.userWalletId
 users._id ← appointments.userId
 specialty_master.specialtyId ← doctors.specialtyId
 category_master.code ← service_master.category
+
+// Claims & TPA Relationships
+users._id ← memberclaims.userId
+users._id ← memberclaims.assignedTo (TPA_USER)
+users._id ← memberclaims.assignedBy (TPA_ADMIN)
+policies._id ← memberclaims.policyId
+userPolicyAssignments._id ← memberclaims.assignmentId
+memberclaims._id ← notifications.claimId
+
+// Lab Diagnostics Relationships
+users._id ← lab_prescriptions.userId
+lab_prescriptions._id ← lab_carts.prescriptionId
+lab_carts._id ← lab_orders.cartId
+lab_prescriptions._id ← lab_orders.prescriptionId
+lab_vendors._id ← lab_orders.vendorId
+lab_vendors._id ← lab_vendor_pricing.vendorId
+lab_vendors._id ← lab_vendor_slots.vendorId
+lab_services._id ← lab_vendor_pricing.serviceId
+lab_services._id ← lab_carts.items.serviceId
+lab_services._id ← lab_orders.items.serviceId
+lab_vendor_slots._id ← lab_orders.slotId
 ```
 
 ---
@@ -1887,9 +3059,94 @@ None currently identified
 
 ---
 
-**Document Version:** 2.2
-**Last Updated:** September 28, 2025 (Evening Update)
+**Document Version:** 3.0
+**Last Updated:** October 6, 2025 (Major Update - Complete Lab & TPA Schemas)
 **For Questions:** Contact development team
+
+---
+
+## RECENT CHANGES (Version 3.0)
+
+### 2025-10-06 Major Schema Documentation Update
+
+1. **Complete Schema Definitions Added** - 9 new/enhanced collections fully documented
+   - All schema definitions include TypeScript types, enums, indexes, validation rules, and sample data
+   - Total collections: 17 → 27 (includes 1 enhanced existing collection)
+
+2. **Claims & TPA Collections** - NEW (2 collections)
+   - **memberclaims** - Enhanced with complete TPA integration fields
+     - TPA assignment fields (assignedTo, assignedBy, assignedAt)
+     - Reassignment history tracking
+     - Review history with action tracking
+     - Documents required workflow
+     - Enhanced approval/rejection tracking
+     - Payment tracking fields
+     - Complete status history
+   - **notifications** - System notifications
+     - Support for claim-related notifications
+     - Priority levels (LOW, MEDIUM, HIGH, URGENT)
+     - Read/unread tracking
+     - Metadata for dynamic information
+
+3. **Lab Diagnostics Collections** - NEW (8 collections)
+   - **lab_prescriptions** - Prescription upload and digitization
+     - File management (images/PDFs)
+     - Status workflow (UPLOADED → DIGITIZING → DIGITIZED)
+     - Links to cart after digitization
+   - **lab_carts** - Digitized test carts
+     - Cart items with service references
+     - Status tracking (CREATED → REVIEWED → ORDERED)
+     - Links to orders
+   - **lab_services** - Master catalog
+     - Categories: PATHOLOGY, RADIOLOGY, CARDIOLOGY, ENDOSCOPY, OTHER
+     - Sample type and preparation instructions
+   - **lab_vendors** - Partner labs
+     - Contact information
+     - Serviceable pincodes
+     - Home collection and center visit options
+   - **lab_vendor_pricing** - Service pricing
+     - Actual price and discounted price
+     - Home collection charges
+   - **lab_vendor_slots** - Time slots
+     - Date and time slot management
+     - Booking capacity tracking
+   - **lab_orders** - Final orders
+     - Order items with pricing
+     - Collection details (home/center)
+     - Payment tracking
+     - Report upload management
+     - Complete workflow status
+
+4. **Relationships & Foreign Keys** - Updated
+   - Added Claims & TPA relationships
+   - Added Lab Diagnostics relationships
+   - Complete relationship mapping for all new collections
+
+5. **Collections Summary** - Reorganized
+   - Healthcare Collections section enhanced
+   - New Claims & TPA Collections section
+   - New Lab Diagnostics Collections section
+   - Clear visual indicators (✨ NEW) for new additions
+
+6. **Schema Documentation Standards**
+   - All collections follow consistent format:
+     - Schema Definition (TypeScript)
+     - Enums (when applicable)
+     - Indexes
+     - Validation Rules
+     - Sample Data Example
+   - Complete field descriptions with data types
+   - REF comments for foreign key relationships
+   - DEFAULT comments for default values
+
+### Implementation Status
+- ✅ All 9 collections fully documented with complete schemas
+- ✅ All enums defined and documented
+- ✅ All indexes specified
+- ✅ All validation rules documented
+- ✅ Sample data provided for each collection
+- ✅ Relationships and foreign keys updated
+- ✅ Collections summary reorganized
 
 ---
 
