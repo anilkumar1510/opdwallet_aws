@@ -40,9 +40,10 @@ export default function WalletPage() {
     fetchProfileData()
   }, [])
 
+  // Fetch wallet data (balance + transactions) whenever selectedUserId changes
   useEffect(() => {
     if (selectedUserId) {
-      fetchTransactions(selectedUserId)
+      fetchWalletDataForUser(selectedUserId)
     }
   }, [selectedUserId])
 
@@ -53,12 +54,6 @@ export default function WalletPage() {
       })
       if (response.ok) {
         const data = await response.json()
-
-        // Set wallet data
-        setWalletData({
-          totalBalance: data.wallet.totalBalance,
-          categories: data.wallet.categories
-        })
 
         // Build family members list
         const members = [
@@ -79,50 +74,53 @@ export default function WalletPage() {
         ]
 
         setFamilyMembers(members)
-        setSelectedUserId(data.user._id) // Default to logged-in user
+        // Setting selectedUserId will trigger useEffect to fetch wallet data
+        setSelectedUserId(data.user._id)
       }
     } catch (error) {
       console.error('Error fetching profile data:', error)
-    } finally {
       setLoading(false)
     }
+    // Don't set loading=false here - let fetchWalletDataForUser handle it
   }
 
-  const fetchTransactions = async (userId: string) => {
-    try {
-      const response = await fetch(`/api/wallet/transactions?userId=${userId}&limit=15`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setTransactions(data.transactions || [])
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
-    }
-  }
-
-  const handleUserChange = async (userId: string) => {
-    setSelectedUserId(userId)
+  // Single unified function to fetch all wallet data for a user
+  const fetchWalletDataForUser = async (userId: string) => {
     setLoading(true)
 
     try {
-      // Fetch wallet data for selected user
-      const response = await fetch(`/api/wallet/balance?userId=${userId}`, {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const data = await response.json()
+      // Fetch both wallet balance AND transactions in parallel
+      const [balanceResponse, transactionsResponse] = await Promise.all([
+        fetch(`/api/wallet/balance?userId=${userId}`, {
+          credentials: 'include'
+        }),
+        fetch(`/api/wallet/transactions?userId=${userId}&limit=15`, {
+          credentials: 'include'
+        })
+      ])
+
+      if (balanceResponse.ok) {
+        const data = await balanceResponse.json()
         setWalletData({
           totalBalance: data.totalBalance,
           categories: data.categories
         })
       }
+
+      if (transactionsResponse.ok) {
+        const data = await transactionsResponse.json()
+        setTransactions(data.transactions || [])
+      }
     } catch (error) {
-      console.error('Error fetching wallet for user:', error)
+      console.error('Error fetching wallet data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleUserChange = (userId: string) => {
+    // Simply update the selected user - useEffect will handle fetching
+    setSelectedUserId(userId)
   }
 
   const formatDate = (dateString: string) => {
@@ -182,7 +180,7 @@ export default function WalletPage() {
         )}
 
         {/* Compact Balance Card */}
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-4 mb-4 shadow-md">
+        <div className="rounded-xl p-4 mb-4 shadow-md" style={{ backgroundImage: 'linear-gradient(to bottom right, #0a529f, #084080)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm mb-1">Available Balance</p>

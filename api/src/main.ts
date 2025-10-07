@@ -19,6 +19,7 @@ async function bootstrap() {
     './uploads/claims',
     './uploads/lab-prescriptions',
     './uploads/lab-reports',
+    './uploads/doctors',
   ];
 
   uploadDirs.forEach(dir => {
@@ -87,6 +88,13 @@ async function bootstrap() {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  });
+
+  // Add CORS headers for static file uploads
+  app.use('/uploads', (req: any, res: any, next: any) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    next();
   });
 
   // Global Rate Limiting (Rule #5)

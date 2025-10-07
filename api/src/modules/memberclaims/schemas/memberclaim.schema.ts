@@ -274,6 +274,13 @@ export class MemberClaim {
   @Prop({ type: Number })
   rejectedAmount: number;
 
+  // Cancellation fields
+  @Prop()
+  cancellationReason: string;
+
+  @Prop()
+  cancelledAt: Date;
+
   // Payment tracking (enhanced)
   @Prop({ type: Number })
   paidAmount: number;

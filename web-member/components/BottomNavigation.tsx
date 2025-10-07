@@ -34,7 +34,7 @@ const bottomNavItems: NavItem[] = [
   },
   {
     name: 'Claims',
-    href: '/member/reimbursements',
+    href: '/member/claims',
     icon: DocumentTextIcon,
     activeIcon: DocumentTextIconSolid,
   },

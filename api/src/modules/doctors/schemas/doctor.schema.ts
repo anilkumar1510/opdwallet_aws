@@ -38,14 +38,23 @@ export class Doctor {
   @Prop()
   phone: string;
 
-  @Prop()
+  @Prop({ required: true, unique: true })
   email: string;
+
+  @Prop()
+  password: string;
+
+  @Prop({ default: 'DOCTOR' })
+  role: string;
 
   @Prop()
   registrationNumber: string;
 
   @Prop()
   languages: string[];
+
+  @Prop({ type: Date })
+  lastLogin?: Date;
 
   @Prop({ default: true })
   isActive: boolean;

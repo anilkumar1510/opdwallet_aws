@@ -57,6 +57,7 @@ export class UsersService {
           'Primary Member ID is required for dependents',
         );
       }
+      // Validate primary member exists and is SELF (REL001)
       const primaryMember = await this.userModel.findOne({
         memberId: createUserDto.primaryMemberId,
         relationship: RelationshipType.SELF,
@@ -64,6 +65,13 @@ export class UsersService {
       if (!primaryMember) {
         throw new BadRequestException(
           'Invalid Primary Member ID or member is not SELF',
+        );
+      }
+    } else {
+      // If relationship is SELF (REL001), ensure no primaryMemberId is set
+      if (createUserDto.primaryMemberId) {
+        throw new BadRequestException(
+          'Primary Member ID should not be set for SELF relationship',
         );
       }
     }
@@ -186,12 +194,22 @@ export class UsersService {
       }
     }
 
-    // Validate relationship logic
-    if (updateUserDto.relationship && updateUserDto.relationship !== RelationshipType.SELF) {
-      if (!updateUserDto.primaryMemberId && !user.primaryMemberId) {
-        throw new BadRequestException(
-          'Primary Member ID is required for dependents',
-        );
+    // Validate relationship logic on update
+    if (updateUserDto.relationship) {
+      if (updateUserDto.relationship !== RelationshipType.SELF) {
+        // Dependents must have primaryMemberId
+        if (!updateUserDto.primaryMemberId && !user.primaryMemberId) {
+          throw new BadRequestException(
+            'Primary Member ID is required for dependents',
+          );
+        }
+      } else {
+        // SELF (REL001) should NOT have primaryMemberId
+        if (updateUserDto.primaryMemberId || user.primaryMemberId) {
+          throw new BadRequestException(
+            'Primary Member ID should not be set for SELF relationship. Please remove it.',
+          );
+        }
       }
     }
 

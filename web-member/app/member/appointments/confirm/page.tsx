@@ -141,7 +141,7 @@ function ConfirmAppointmentContent() {
 
           <div className="bg-blue-50 rounded-xl p-4 mb-6">
             <div className="text-sm text-gray-600 mb-1">Appointment ID</div>
-            <div className="text-xl font-bold text-blue-600">{appointmentId}</div>
+            <div className="text-xl font-bold" style={{ color: '#0a529f' }}>{appointmentId}</div>
           </div>
 
           <div className="space-y-3 text-left mb-6">
@@ -173,7 +173,10 @@ function ConfirmAppointmentContent() {
           <div className="space-y-2">
             <button
               onClick={handleViewAppointments}
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+              className="w-full py-3 px-4 text-white rounded-xl font-medium transition-colors"
+              style={{ backgroundColor: '#0a529f' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
             >
               View Appointments
             </button>
@@ -213,7 +216,7 @@ function ConfirmAppointmentContent() {
           <h3 className="font-semibold text-gray-900 mb-4">Doctor Details</h3>
           <div className="flex items-start space-x-4 mb-4">
             <div className="bg-blue-100 p-3 rounded-full flex-shrink-0">
-              <UserIcon className="h-8 w-8 text-blue-600" />
+              <UserIcon className="h-8 w-8" style={{ color: '#0a529f' }} />
             </div>
             <div className="flex-1">
               <div className="font-semibold text-gray-900">{doctorName}</div>
@@ -281,7 +284,7 @@ function ConfirmAppointmentContent() {
                 <BanknotesIcon className="h-5 w-5 text-gray-600" />
                 <span className="font-semibold text-gray-900">Total Amount</span>
               </div>
-              <span className="text-xl font-bold text-blue-600">₹{consultationFee}</span>
+              <span className="text-xl font-bold" style={{ color: '#0a529f' }}>₹{consultationFee}</span>
             </div>
           </div>
 
@@ -298,8 +301,11 @@ function ConfirmAppointmentContent() {
           className={`w-full py-3 px-4 rounded-xl font-medium transition-colors ${
             loading
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'text-white'
           }`}
+          style={!loading ? { backgroundColor: '#0a529f' } : {}}
+          onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = '#084080' }}
+          onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = '#0a529f' }}
         >
           {loading ? 'Booking...' : 'Confirm & Book Appointment'}
         </button>
@@ -312,7 +318,7 @@ export default function ConfirmAppointmentPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <ConfirmAppointmentContent />

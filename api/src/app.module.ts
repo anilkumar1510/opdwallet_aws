@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PoliciesModule } from './modules/policies/policies.module';
@@ -23,6 +25,8 @@ import { TpaModule } from './modules/tpa/tpa.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { LabModule } from './modules/lab/lab.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PrescriptionsModule } from './modules/doctors/prescriptions.module';
+import { LocationModule } from './modules/location/location.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -30,6 +34,10 @@ import configuration from './config/configuration';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -81,6 +89,8 @@ import configuration from './config/configuration';
     FinanceModule,
     LabModule,
     NotificationsModule,
+    PrescriptionsModule,
+    LocationModule,
   ],
 })
 export class AppModule {}

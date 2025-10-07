@@ -19,6 +19,8 @@ import ApprovalModal from '@/components/tpa/ApprovalModal'
 import RejectionModal from '@/components/tpa/RejectionModal'
 import RequestDocumentsModal from '@/components/tpa/RequestDocumentsModal'
 import ReassignmentModal from '@/components/tpa/ReassignmentModal'
+import DocumentPreviewModal from '@/components/tpa/DocumentPreviewModal'
+import StatusUpdateModal from '@/components/tpa/StatusUpdateModal'
 
 interface Claim {
   _id: string
@@ -111,6 +113,9 @@ export default function ClaimDetailPage() {
   const [showRejectionModal, setShowRejectionModal] = useState(false)
   const [showDocumentsModal, setShowDocumentsModal] = useState(false)
   const [showReassignModal, setShowReassignModal] = useState(false)
+  const [showDocPreview, setShowDocPreview] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
 
   useEffect(() => {
@@ -358,34 +363,52 @@ export default function ClaimDetailPage() {
             </div>
             <div className="p-6">
               {claim.documents && claim.documents.length > 0 ? (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {claim.documents.map((doc, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        setSelectedDocument(doc)
+                        setShowDocPreview(true)
+                      }}
                     >
-                      <div className="flex items-center space-x-3">
-                        <DocumentArrowDownIcon className="h-5 w-5 text-gray-400" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{doc.type}</p>
-                          <p className="text-xs text-gray-500">
-                            Uploaded {formatDate(doc.uploadedAt)}
-                          </p>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-3 flex-1">
+                          <div className="p-2 bg-blue-50 rounded-lg">
+                            <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {doc.type || doc.documentType || 'Document'}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {doc.fileName || 'Unknown'}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatDate(doc.uploadedAt)}
+                            </p>
+                          </div>
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedDocument(doc)
+                            setShowDocPreview(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                        >
+                          Preview
+                        </button>
                       </div>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-700"
-                      >
-                        View
-                      </a>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No documents uploaded</p>
+                <div className="text-center py-8">
+                  <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">No documents uploaded</p>
+                </div>
               )}
             </div>
           </div>
@@ -444,13 +467,22 @@ export default function ClaimDetailPage() {
                 <span>Request Documents</span>
               </button>
               {canReassign() && (
-                <button
-                  onClick={() => setShowReassignModal(true)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <ArrowPathIcon className="h-4 w-4" />
-                  <span>Reassign</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setShowStatusModal(true)}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <ArrowPathIcon className="h-4 w-4" />
+                    <span>Change Status</span>
+                  </button>
+                  <button
+                    onClick={() => setShowReassignModal(true)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <ArrowPathIcon className="h-4 w-4" />
+                    <span>Reassign</span>
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -550,7 +582,7 @@ export default function ClaimDetailPage() {
                     )}
                     <p className="text-xs text-gray-600 mt-1">{review.reason}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      By {review.reviewedBy.name.fullName} on{' '}
+                      By {review.reviewedBy?.name?.fullName || review.reviewedByName || 'Unknown'} on{' '}
                       {formatDate(review.reviewedAt)}
                     </p>
                   </div>
@@ -593,6 +625,27 @@ export default function ClaimDetailPage() {
           claimId={claimId}
           currentAssignee={claim.assignedTo}
           onClose={() => setShowReassignModal(false)}
+          onSuccess={fetchClaim}
+        />
+      )}
+
+      {showDocPreview && selectedDocument && (
+        <DocumentPreviewModal
+          isOpen={showDocPreview}
+          onClose={() => {
+            setShowDocPreview(false)
+            setSelectedDocument(null)
+          }}
+          document={selectedDocument}
+          userId={claim.userId?._id || claim.userId}
+        />
+      )}
+
+      {showStatusModal && (
+        <StatusUpdateModal
+          claimId={claimId}
+          currentStatus={claim.status}
+          onClose={() => setShowStatusModal(false)}
           onSuccess={fetchClaim}
         />
       )}

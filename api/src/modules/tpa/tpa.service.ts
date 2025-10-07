@@ -773,4 +773,70 @@ export class TpaService {
       total: usersWithWorkload.length,
     };
   }
+
+  /**
+   * Get recent activity from status history
+   */
+  async getRecentActivity(limit: number = 10) {
+    // Get recent claims with status history
+    const recentClaims = await this.memberClaimModel
+      .find({
+        statusHistory: { $exists: true, $ne: [] },
+      })
+      .select('claimId statusHistory')
+      .sort({ updatedAt: -1 })
+      .limit(limit * 2) // Get more to filter from
+      .lean();
+
+    // Extract and flatten status history entries
+    const activityEntries: any[] = [];
+
+    for (const claim of recentClaims) {
+      if (claim.statusHistory && claim.statusHistory.length > 0) {
+        // Get the most recent status change for this claim
+        const recentHistory = claim.statusHistory[claim.statusHistory.length - 1];
+
+        activityEntries.push({
+          id: `${claim._id}-${recentHistory.changedAt}`,
+          claimId: claim.claimId,
+          action: this.getActionDescription(recentHistory.status, recentHistory.reason),
+          actor: recentHistory.changedByName,
+          actorRole: recentHistory.changedByRole,
+          timestamp: recentHistory.changedAt,
+          status: recentHistory.status,
+        });
+      }
+    }
+
+    // Sort by timestamp descending and limit
+    const sortedActivity = activityEntries
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit);
+
+    return {
+      activities: sortedActivity,
+      total: sortedActivity.length,
+    };
+  }
+
+  /**
+   * Helper method to get human-readable action description
+   */
+  private getActionDescription(status: string, reason?: string): string {
+    const statusDescriptions: Record<string, string> = {
+      SUBMITTED: 'Claim submitted',
+      UNASSIGNED: 'Claim unassigned',
+      ASSIGNED: 'Claim assigned',
+      UNDER_REVIEW: 'Claim under review',
+      DOCUMENTS_REQUIRED: 'Documents requested',
+      APPROVED: 'Claim approved',
+      PARTIALLY_APPROVED: 'Claim partially approved',
+      REJECTED: 'Claim rejected',
+      PAYMENT_PENDING: 'Payment pending',
+      PAYMENT_PROCESSING: 'Payment processing',
+      PAYMENT_COMPLETED: 'Payment completed',
+    };
+
+    return statusDescriptions[status] || `Status changed to ${status}`;
+  }
 }

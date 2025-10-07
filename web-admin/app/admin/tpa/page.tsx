@@ -65,31 +65,40 @@ export default function TPADashboard() {
   }
 
   const fetchRecentActivity = async () => {
-    // TODO: Implement recent activity endpoint
-    // For now, using mock data
-    setRecentActivity([
-      {
-        id: '1',
-        action: 'Claim assigned to Rahul Kumar',
-        claimId: 'CLM-001',
-        actor: 'TPA Admin',
-        timestamp: '2 mins ago',
-      },
-      {
-        id: '2',
-        action: 'Claim approved',
-        claimId: 'CLM-002',
-        actor: 'Priya Shah',
-        timestamp: '5 mins ago',
-      },
-      {
-        id: '3',
-        action: 'Documents requested',
-        claimId: 'CLM-003',
-        actor: 'Amit Patel',
-        timestamp: '10 mins ago',
-      },
-    ])
+    try {
+      const response = await fetch('/api/tpa/recent-activity?limit=5', {
+        credentials: 'include',
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // Transform the data to match the expected format
+        const formattedActivities = data.activities?.map((activity: any) => ({
+          id: activity.id,
+          action: activity.action,
+          claimId: activity.claimId,
+          actor: activity.actor,
+          timestamp: formatTimestamp(activity.timestamp),
+        })) || []
+        setRecentActivity(formattedActivities)
+      }
+    } catch (error) {
+      console.error('Error fetching recent activity:', error)
+    }
+  }
+
+  const formatTimestamp = (timestamp: string) => {
+    const now = new Date()
+    const activityTime = new Date(timestamp)
+    const diffMs = now.getTime() - activityTime.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    return activityTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
   }
 
   const statCards = [
@@ -349,6 +358,23 @@ export default function TPADashboard() {
                   <div>
                     <p className="text-sm font-medium text-gray-900">View Full Analytics</p>
                     <p className="text-xs text-gray-500">Detailed reports & insights</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/tpa/users"
+              className="block p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <UserGroupIcon className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Manage TPA Users</p>
+                    <p className="text-xs text-gray-500">View workload & performance</p>
                   </div>
                 </div>
               </div>

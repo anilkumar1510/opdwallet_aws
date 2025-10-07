@@ -5,10 +5,13 @@ import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 interface JwtPayload {
-  sub: string;
+  sub?: string;
   email: string;
   role: string;
   memberId?: string;
+  doctorId?: string;
+  id?: string;
+  name?: string;
   iat?: number;
   exp?: number;
 }
@@ -20,7 +23,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
           const cookieName = this.configService.get<string>('cookie.name') || 'opd_session';
-          return request?.cookies?.[cookieName];
+          console.log('[JwtStrategy] Extracting JWT from cookie:', cookieName);
+          console.log('[JwtStrategy] Available cookies:', request?.cookies ? Object.keys(request.cookies) : 'none');
+          const token = request?.cookies?.[cookieName];
+          console.log('[JwtStrategy] Token found:', token ? 'yes (length: ' + token.length + ')' : 'no');
+          return token;
         },
       ]),
       ignoreExpiration: false,
@@ -29,14 +36,31 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    if (!payload.sub || !payload.email || !payload.role) {
-      throw new UnauthorizedException();
+    console.log('[JwtStrategy] validate() called with payload:', JSON.stringify(payload, null, 2));
+    console.log('[JwtStrategy] Payload keys:', Object.keys(payload));
+
+    // Handle both member and doctor tokens
+    const userId = payload.sub || payload.id;
+
+    if (!userId && !payload.doctorId) {
+      console.error('[JwtStrategy] No userId or doctorId found in payload');
+      throw new UnauthorizedException('Invalid token: missing user identifier');
     }
-    return {
-      userId: payload.sub,
+
+    if (!payload.email || !payload.role) {
+      console.error('[JwtStrategy] Missing required fields:', { email: !!payload.email, role: !!payload.role });
+      throw new UnauthorizedException('Invalid token: missing required fields');
+    }
+
+    const result = {
+      userId: userId,
       email: payload.email,
       role: payload.role,
       memberId: payload.memberId,
+      doctorId: payload.doctorId,
     };
+
+    console.log('[JwtStrategy] Returning validated user:', JSON.stringify(result, null, 2));
+    return result;
   }
 }

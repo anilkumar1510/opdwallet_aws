@@ -96,7 +96,11 @@ export class TpaController {
   @ApiResponse({ status: 404, description: 'Claim not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - TPA user can only view assigned claims' })
   async getClaimById(@Param('claimId') claimId: string, @Request() req: any) {
-    return this.tpaService.getClaimById(claimId, req.user.userId, req.user.role);
+    const claim = await this.tpaService.getClaimById(claimId, req.user.userId, req.user.role);
+    return {
+      message: 'Claim retrieved successfully',
+      claim,
+    };
   }
 
   @Post('claims/:claimId/assign')
@@ -245,10 +249,14 @@ export class TpaController {
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
-    return this.tpaService.getAnalyticsSummary(
+    const summary = await this.tpaService.getAnalyticsSummary(
       fromDate ? new Date(fromDate) : undefined,
       toDate ? new Date(toDate) : undefined,
     );
+    return {
+      message: 'Analytics summary retrieved successfully',
+      summary,
+    };
   }
 
   @Get('users')
@@ -258,5 +266,19 @@ export class TpaController {
   @ApiResponse({ status: 403, description: 'Forbidden - Only TPA admins can view users' })
   async getTPAUsers(@Request() req: any) {
     return this.tpaService.getTPAUsers(req.user.role);
+  }
+
+  @Get('recent-activity')
+  @Roles(UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get recent activity from claim status changes' })
+  @ApiQuery({ name: 'limit', type: Number, required: false, description: 'Number of activities to return (default: 10)' })
+  @ApiResponse({ status: 200, description: 'Recent activity retrieved successfully' })
+  async getRecentActivity(@Query('limit') limit?: string) {
+    const activityLimit = limit ? parseInt(limit, 10) : 10;
+    const result = await this.tpaService.getRecentActivity(activityLimit);
+    return {
+      message: 'Recent activity retrieved successfully',
+      ...result,
+    };
   }
 }

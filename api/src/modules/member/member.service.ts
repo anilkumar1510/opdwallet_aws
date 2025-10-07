@@ -28,12 +28,17 @@ export class MemberService {
     let dependents: any[] = [];
     let familyMembers: any[] = [];
 
-    if ((user.relationship as string) === 'REL001') {
-      // If this is a primary member (REL001), fetch their dependents
+    // Support both 'REL001' and legacy 'SELF' values for backward compatibility
+    const isSelfRelationship = user.relationship === RelationshipType.SELF ||
+                                (user.relationship as string) === 'REL001' ||
+                                (user.relationship as string) === 'SELF';
+
+    if (isSelfRelationship) {
+      // If this is a primary member (REL001/SELF), fetch their dependents
       dependents = await this.userModel
         .find({
           primaryMemberId: user.memberId,
-          relationship: { $ne: 'REL001' }
+          relationship: { $nin: [RelationshipType.SELF, 'REL001', 'SELF'] } // Exclude all SELF variants
         })
         .select('-passwordHash')
         .sort({ createdAt: 1 });
@@ -159,12 +164,17 @@ export class MemberService {
 
     let familyMembers: any[] = [];
 
-    if ((user.relationship as string) === 'REL001') {
+    // Support both 'REL001' and legacy 'SELF' values for backward compatibility
+    const isSelfRelationship = user.relationship === RelationshipType.SELF ||
+                                (user.relationship as string) === 'REL001' ||
+                                (user.relationship as string) === 'SELF';
+
+    if (isSelfRelationship) {
       // Primary member (REL001): get self + dependents
       const dependents = await this.userModel
         .find({
           primaryMemberId: user.memberId,
-          relationship: { $ne: 'REL001' }
+          relationship: { $nin: [RelationshipType.SELF, 'REL001', 'SELF'] } // Exclude all SELF variants
         })
         .select('-passwordHash')
         .sort({ createdAt: 1 });

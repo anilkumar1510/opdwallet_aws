@@ -40,6 +40,10 @@ class DocumentDto {
 }
 
 export class CreateClaimDto {
+  @IsString()
+  @IsOptional()
+  userId?: string;
+
   @IsEnum(ClaimType)
   @IsNotEmpty()
   claimType: ClaimType;

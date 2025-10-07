@@ -124,7 +124,7 @@ function OnlineDoctorsContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -195,9 +195,17 @@ function OnlineDoctorsContent() {
             {filteredDoctors.map((doctor) => (
               <div key={doctor._id} className="bg-white rounded-2xl p-4 shadow-sm">
                 <div className="flex items-start space-x-4 mb-4">
-                  <div className="bg-blue-100 p-3 rounded-full flex-shrink-0">
-                    <UserIcon className="h-8 w-8 text-blue-600" />
-                  </div>
+                  {doctor.profilePhoto ? (
+                    <img
+                      src={`http://localhost:4000${doctor.profilePhoto}`}
+                      alt={doctor.name}
+                      className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="bg-blue-100 p-3 rounded-full flex-shrink-0">
+                      <UserIcon className="h-8 w-8" style={{ color: '#0a529f' }} />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
                       <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
@@ -226,11 +234,14 @@ function OnlineDoctorsContent() {
                   <div className="flex items-center justify-between">
                     <div className="text-sm">
                       <span className="text-gray-600">Consultation: </span>
-                      <span className="font-semibold text-blue-600">₹{doctor.consultationFee}</span>
+                      <span className="font-semibold" style={{ color: '#0a529f' }}>₹{doctor.consultationFee}</span>
                     </div>
                     <button
                       onClick={() => handleSelectDoctor(doctor)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      className="px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors"
+                      style={{ backgroundColor: '#0a529f' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
                     >
                       Select
                     </button>
@@ -249,7 +260,7 @@ export default function OnlineDoctorsPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <OnlineDoctorsContent />

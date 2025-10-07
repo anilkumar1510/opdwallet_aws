@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Doctor, DoctorDocument } from './schemas/doctor.schema';
@@ -9,15 +9,19 @@ import { QueryDoctorsDto } from './dto/query-doctors.dto';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { CounterService } from '../counters/counter.service';
+import { LocationService } from '../location/location.service';
 
 @Injectable()
 export class DoctorsService {
+  private readonly logger = new Logger(DoctorsService.name);
+
   constructor(
     @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
     @InjectModel(DoctorSlot.name) private doctorSlotModel: Model<DoctorSlotDocument>,
     @InjectModel(Clinic.name) private clinicModel: Model<ClinicDocument>,
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
     private counterService: CounterService,
+    private locationService: LocationService,
   ) {}
 
   async findAll(query: QueryDoctorsDto): Promise<any[]> {
@@ -35,6 +39,26 @@ export class DoctorsService {
     }
 
     const doctors = await this.doctorModel.find(filter).exec();
+
+    // Determine user location for distance calculation
+    let userLatitude: number | null = null;
+    let userLongitude: number | null = null;
+    const radius = query.radius || 10; // Default 10km radius
+
+    // Get user coordinates from pincode or lat/lng
+    if (query.pincode) {
+      this.logger.log(`[findAll] Geocoding pincode: ${query.pincode}`);
+      const geocoded = await this.locationService.forwardGeocode(query.pincode);
+      if (geocoded) {
+        userLatitude = geocoded.latitude;
+        userLongitude = geocoded.longitude;
+        this.logger.log(`[findAll] Pincode ${query.pincode} -> lat=${userLatitude}, lng=${userLongitude}`);
+      }
+    } else if (query.latitude && query.longitude) {
+      userLatitude = query.latitude;
+      userLongitude = query.longitude;
+      this.logger.log(`[findAll] Using provided coordinates: lat=${userLatitude}, lng=${userLongitude}`);
+    }
 
     // Populate clinics for each doctor from doctor_slots
     const doctorsWithClinics = await Promise.all(
@@ -65,31 +89,57 @@ export class DoctorsService {
           .select('clinicId name address location contactNumber facilities')
           .exec();
 
-        // Transform clinics to match frontend expectations
-        const transformedClinics = clinics.map(clinic => {
-          const clinicObj = clinic.toObject();
-          // Build address with fallbacks for missing fields
-          const addressParts = [];
-          if (clinicObj.address?.line1) addressParts.push(clinicObj.address.line1);
-          if (clinicObj.address?.city) addressParts.push(clinicObj.address.city);
-          if (clinicObj.address?.state) addressParts.push(clinicObj.address.state);
-          const addressStr = addressParts.join(', ');
-          const pincode = clinicObj.address?.pincode ? ` - ${clinicObj.address.pincode}` : '';
+        // Transform clinics to match frontend expectations and calculate distances
+        const transformedClinics = clinics
+          .map(clinic => {
+            const clinicObj = clinic.toObject();
+            // Build address with fallbacks for missing fields
+            const addressParts = [];
+            if (clinicObj.address?.line1) addressParts.push(clinicObj.address.line1);
+            if (clinicObj.address?.city) addressParts.push(clinicObj.address.city);
+            if (clinicObj.address?.state) addressParts.push(clinicObj.address.state);
+            const addressStr = addressParts.join(', ');
+            const pincode = clinicObj.address?.pincode ? ` - ${clinicObj.address.pincode}` : '';
 
-          return {
-            clinicId: clinicObj.clinicId,
-            name: clinicObj.name,
-            // Combine address fields into a single string with fallbacks
-            address: addressStr + pincode,
-            city: clinicObj.address?.city || '',
-            state: clinicObj.address?.state || '',
-            // Get consultation fee from the map
-            consultationFee: clinicFeeMap.get(clinicObj.clinicId) || 0,
-            // Include other useful fields
-            location: clinicObj.location,
-            facilities: clinicObj.facilities || []
-          };
-        });
+            // Calculate distance if user location is provided
+            let distance: number | null = null;
+            if (userLatitude && userLongitude && clinicObj.location?.latitude && clinicObj.location?.longitude) {
+              distance = this.locationService.calculateDistance(
+                userLatitude,
+                userLongitude,
+                clinicObj.location.latitude,
+                clinicObj.location.longitude,
+              );
+            }
+
+            return {
+              clinicId: clinicObj.clinicId,
+              name: clinicObj.name,
+              address: addressStr + pincode,
+              city: clinicObj.address?.city || '',
+              state: clinicObj.address?.state || '',
+              pincode: clinicObj.address?.pincode || '',
+              consultationFee: clinicFeeMap.get(clinicObj.clinicId) || 0,
+              location: clinicObj.location,
+              facilities: clinicObj.facilities || [],
+              distance, // Add distance in km
+              distanceText: distance ? `${distance} km` : null,
+            };
+          })
+          .filter(clinic => {
+            // Filter by radius if location is provided
+            if (userLatitude && userLongitude && clinic.distance !== null) {
+              return clinic.distance <= radius;
+            }
+            return true; // If no location filter, include all clinics
+          })
+          .sort((a, b) => {
+            // Sort by distance (closest first)
+            if (a.distance !== null && b.distance !== null) {
+              return a.distance - b.distance;
+            }
+            return 0;
+          });
 
         return {
           ...doctorObj,
@@ -98,7 +148,11 @@ export class DoctorsService {
       })
     );
 
-    return doctorsWithClinics;
+    // Filter out doctors with no clinics (if location filter applied)
+    const filteredDoctors = doctorsWithClinics.filter(doctor => doctor.clinics.length > 0);
+
+    this.logger.log(`[findAll] Returning ${filteredDoctors.length} doctors with location filter applied`);
+    return filteredDoctors;
   }
 
   async findOne(doctorId: string): Promise<any> {
@@ -191,6 +245,29 @@ export class DoctorsService {
 
     Object.assign(doctor, updateDoctorDto);
     return doctor.save();
+  }
+
+  async uploadPhoto(doctorId: string, file: Express.Multer.File): Promise<{ message: string; photoUrl: string }> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const doctor = await this.doctorModel.findOne({ doctorId });
+
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    // Store relative path to the uploaded file
+    const photoUrl = `/uploads/doctors/${file.filename}`;
+
+    doctor.profilePhoto = photoUrl;
+    await doctor.save();
+
+    return {
+      message: 'Doctor photo uploaded successfully',
+      photoUrl: photoUrl,
+    };
   }
 
   async activate(doctorId: string): Promise<Doctor> {

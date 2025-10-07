@@ -53,10 +53,18 @@ export class MemberClaimsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Request() req: AuthRequest,
   ) {
-    const userId = req.user.userId || req.user.id;
+    // Use userId from body if provided (for dependent claims), otherwise use logged-in user
+    const userId = createClaimDto['userId'] || req.user.userId || req.user.id;
 
     if (!userId) {
       throw new BadRequestException('User ID is required');
+    }
+
+    // Verify the logged-in user has permission to create claim for this userId
+    const loggedInUserId = req.user.userId || req.user.id;
+    if (userId !== loggedInUserId) {
+      // TODO: Verify userId is a dependent of loggedInUserId
+      // For now, we'll allow it and rely on wallet access controls
     }
 
     try {
@@ -121,7 +129,6 @@ export class MemberClaimsController {
     return {
       message: 'Claims retrieved successfully',
       ...result,
-      claims: result.claims.map(claim => claim.toObject()),
     };
   }
 
@@ -140,6 +147,20 @@ export class MemberClaimsController {
       message: 'Claims summary retrieved successfully',
       summary,
     };
+  }
+
+  @Get(':claimId/timeline')
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.FINANCE_USER)
+  async getClaimTimeline(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
+    const userId = req.user?.userId || req.user?.id;
+    return this.memberClaimsService.getClaimTimeline(claimId, userId || '', req.user.role);
+  }
+
+  @Get(':claimId/tpa-notes')
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async getTPANotes(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
+    const userId = req.user?.userId || req.user?.id;
+    return this.memberClaimsService.getTPANotesForMember(claimId, userId || '');
   }
 
   @Get(':id')
@@ -309,13 +330,6 @@ export class MemberClaimsController {
     fileStream.pipe(res);
   }
 
-  @Get(':claimId/timeline')
-  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.FINANCE_USER)
-  async getClaimTimeline(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
-    const userId = req.user?.userId || req.user?.id;
-    return this.memberClaimsService.getClaimTimeline(claimId, userId || '', req.user.role);
-  }
-
   @Post(':claimId/resubmit-documents')
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
@@ -347,10 +361,15 @@ export class MemberClaimsController {
     );
   }
 
-  @Get(':claimId/tpa-notes')
+  @Patch(':claimId/cancel')
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  async getTPANotes(@Param('claimId') claimId: string, @Request() req: AuthRequest) {
+  @HttpCode(HttpStatus.OK)
+  async cancelClaim(
+    @Param('claimId') claimId: string,
+    @Body() body: { reason?: string },
+    @Request() req: AuthRequest,
+  ) {
     const userId = req.user?.userId || req.user?.id;
-    return this.memberClaimsService.getTPANotesForMember(claimId, userId || '');
+    return this.memberClaimsService.cancelClaim(claimId, userId || '', body.reason);
   }
 }

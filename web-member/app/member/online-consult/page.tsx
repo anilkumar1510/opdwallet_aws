@@ -92,10 +92,38 @@ export default function OnlineConsultPage() {
     console.log('[OnlineConsult] Join appointment:', appointment.appointmentId)
   }
 
+  const handleCancelAppointment = async (appointmentId: string) => {
+    if (!confirm('Are you sure you want to cancel this online consultation? Your wallet will be refunded.')) {
+      return
+    }
+
+    try {
+      console.log('[OnlineConsult] Cancelling appointment:', appointmentId)
+      const response = await fetch(`/api/appointments/${appointmentId}/user-cancel`, {
+        method: 'PATCH',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to cancel appointment')
+      }
+
+      console.log('[OnlineConsult] Appointment cancelled successfully')
+      alert('Online consultation cancelled successfully. Your wallet has been refunded.')
+
+      // Refresh appointments
+      await fetchOngoingAppointments(userId)
+    } catch (error) {
+      console.error('[OnlineConsult] Error cancelling appointment:', error)
+      alert('Failed to cancel appointment: ' + (error as Error).message)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -120,7 +148,7 @@ export default function OnlineConsultPage() {
       </div>
 
       <div className="p-4 max-w-2xl mx-auto space-y-4">
-        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br rounded-2xl p-6 text-white" style={{ backgroundImage: 'linear-gradient(to bottom right, #0a529f, #084080)' }}>
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-white/20 p-3 rounded-full">
               <VideoCameraIcon className="h-8 w-8" />
@@ -194,14 +222,58 @@ export default function OnlineConsultPage() {
                     </div>
                   )}
 
-                  {appointment.status === 'CONFIRMED' && (
-                    <button
-                      onClick={() => handleJoinAppointment(appointment)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Join Call
-                    </button>
-                  )}
+                  <div className="space-y-2">
+                    {appointment.status === 'CONFIRMED' && (
+                      <button
+                        onClick={() => handleJoinAppointment(appointment)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Join Call
+                      </button>
+                    )}
+                    {(() => {
+                      // Check if appointment is in the future
+                      const isFuture = (() => {
+                        if (appointment.timeSlot === 'Immediate') {
+                          return true // Allow cancellation for immediate appointments
+                        }
+
+                        // Parse appointment date and time
+                        const [year, month, day] = appointment.appointmentDate.split('-').map(Number)
+                        const appointmentDateObj = new Date(year, month - 1, day)
+
+                        // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
+                        const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i)
+                        if (timeParts) {
+                          let hours = parseInt(timeParts[1])
+                          const minutes = parseInt(timeParts[2])
+                          const period = timeParts[3].toUpperCase()
+
+                          if (period === 'PM' && hours !== 12) {
+                            hours += 12
+                          } else if (period === 'AM' && hours === 12) {
+                            hours = 0
+                          }
+
+                          appointmentDateObj.setHours(hours, minutes, 0, 0)
+                        }
+
+                        const now = new Date()
+                        return appointmentDateObj > now
+                      })()
+
+                      const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture
+
+                      return canCancel
+                    })() && (
+                      <button
+                        onClick={() => handleCancelAppointment(appointment.appointmentId)}
+                        className="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Cancel Consultation
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -212,19 +284,19 @@ export default function OnlineConsultPage() {
           <h3 className="font-semibold text-gray-900 mb-2">How it works</h3>
           <ol className="space-y-2 text-sm text-gray-600">
             <li className="flex items-start">
-              <span className="font-semibold text-blue-600 mr-2">1.</span>
+              <span className="font-semibold mr-2" style={{ color: '#0a529f' }}>1.</span>
               <span>Select your medical specialty</span>
             </li>
             <li className="flex items-start">
-              <span className="font-semibold text-blue-600 mr-2">2.</span>
+              <span className="font-semibold mr-2" style={{ color: '#0a529f' }}>2.</span>
               <span>Choose an available doctor</span>
             </li>
             <li className="flex items-start">
-              <span className="font-semibold text-blue-600 mr-2">3.</span>
+              <span className="font-semibold mr-2" style={{ color: '#0a529f' }}>3.</span>
               <span>Consult now or schedule for later</span>
             </li>
             <li className="flex items-start">
-              <span className="font-semibold text-blue-600 mr-2">4.</span>
+              <span className="font-semibold mr-2" style={{ color: '#0a529f' }}>4.</span>
               <span>Connect via voice or video call</span>
             </li>
           </ol>

@@ -8,7 +8,8 @@ import {
   ClockIcon,
   PhoneIcon,
   VideoCameraIcon,
-  CalendarIcon
+  CalendarIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline'
 import SlotSelectionModal from '@/components/SlotSelectionModal'
 
@@ -40,7 +41,10 @@ function OnlineConfirmContent() {
   const [timeChoice, setTimeChoice] = useState<'NOW' | 'LATER'>('NOW')
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
+  const [selectedSlotId, setSelectedSlotId] = useState('')
   const [showSlotModal, setShowSlotModal] = useState(false)
+  const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [appointmentId, setAppointmentId] = useState('')
 
   useEffect(() => {
     console.log('[OnlineConfirm] Params:', { doctorId, doctorName, specialty, availableInMinutes })
@@ -139,6 +143,7 @@ function OnlineConfirmContent() {
         appointmentType: 'ONLINE',
         appointmentDate,
         timeSlot: appointmentTime,
+        slotId: timeChoice === 'LATER' && selectedSlotId ? selectedSlotId : `${doctorId}_ONLINE_${appointmentDate}_${appointmentTime.replace(/[:\s]/g, '_')}`,
         consultationFee: parseFloat(consultationFee),
         contactNumber,
         callPreference,
@@ -169,7 +174,8 @@ function OnlineConfirmContent() {
       const appointment = await response.json()
       console.log('[OnlineConfirm] Appointment created successfully:', appointment)
 
-      router.push(`/member/appointments`)
+      setAppointmentId(appointment.appointmentId)
+      setBookingSuccess(true)
     } catch (error) {
       console.error('[OnlineConfirm] Error creating appointment:', error)
       alert(`Failed to book appointment: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -183,17 +189,135 @@ function OnlineConfirmContent() {
     setShowSlotModal(true)
   }
 
-  const handleSlotSelected = (date: string, time: string) => {
-    console.log('[OnlineConfirm] Slot selected:', { date, time })
+  const handleSlotSelected = (date: string, time: string, slotId: string) => {
+    console.log('[OnlineConfirm] Slot selected:', { date, time, slotId })
     setSelectedDate(date)
     setSelectedTime(time)
+    setSelectedSlotId(slotId)
     setTimeChoice('LATER')
+  }
+
+  const handleViewAppointments = () => {
+    console.log('[OnlineConfirm] Navigating to online consultations list')
+    router.push('/member/online-consult')
+  }
+
+  const handleBackToDashboard = () => {
+    console.log('[OnlineConfirm] Navigating to dashboard')
+    router.push('/member')
+  }
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr || dateStr === new Date().toISOString().split('T')[0]) {
+      return 'Today'
+    }
+    const date = new Date(dateStr)
+    const day = date.getDate()
+    const month = date.toLocaleString('default', { month: 'long' })
+    const year = date.getFullYear()
+    return `${day} ${month} ${year}`
   }
 
   if (loadingRelationships) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      </div>
+    )
+  }
+
+  if (bookingSuccess) {
+    const appointmentDate = timeChoice === 'NOW'
+      ? new Date().toISOString().split('T')[0]
+      : selectedDate
+
+    const appointmentTime = timeChoice === 'NOW'
+      ? 'Immediate'
+      : selectedTime
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
+          <div className="mb-6">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircleIcon className="h-10 w-10 text-green-600" />
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+          <p className="text-gray-600 mb-6">
+            Your online consultation has been booked and is awaiting confirmation
+          </p>
+
+          <div className="bg-blue-50 rounded-xl p-4 mb-6">
+            <div className="text-sm text-gray-600 mb-1">Appointment ID</div>
+            <div className="text-xl font-bold" style={{ color: '#0a529f' }}>{appointmentId}</div>
+          </div>
+
+          <div className="space-y-3 text-left mb-6">
+            <div className="flex items-center space-x-3 text-sm">
+              <UserIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <div>
+                <div className="text-gray-600">Doctor</div>
+                <div className="font-medium text-gray-900">{doctorName}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-sm">
+              <CalendarIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <div>
+                <div className="text-gray-600">Date</div>
+                <div className="font-medium text-gray-900">{formatDate(appointmentDate)}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-sm">
+              <ClockIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <div>
+                <div className="text-gray-600">Time</div>
+                <div className="font-medium text-gray-900">{appointmentTime}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-sm">
+              <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <div>
+                <div className="text-gray-600">Contact Number</div>
+                <div className="font-medium text-gray-900">{contactNumber}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 text-sm">
+              {callPreference === 'VOICE' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
+              {callPreference === 'VIDEO' && <VideoCameraIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
+              {callPreference === 'BOTH' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
+              <div>
+                <div className="text-gray-600">Call Preference</div>
+                <div className="font-medium text-gray-900">
+                  {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <button
+              onClick={handleViewAppointments}
+              className="w-full py-3 px-4 text-white rounded-xl font-medium transition-colors"
+              style={{ backgroundColor: '#0a529f' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+            >
+              View Online Consultations
+            </button>
+            <button
+              onClick={handleBackToDashboard}
+              className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -222,7 +346,7 @@ function OnlineConfirmContent() {
           <h3 className="font-semibold text-gray-900 mb-3">Doctor Details</h3>
           <div className="flex items-start space-x-3">
             <div className="bg-blue-100 p-3 rounded-full">
-              <UserIcon className="h-6 w-6 text-blue-600" />
+              <UserIcon className="h-6 w-6" style={{ color: '#0a529f' }} />
             </div>
             <div className="flex-1">
               <h4 className="font-medium text-gray-900">{doctorName}</h4>
@@ -246,9 +370,10 @@ function OnlineConfirmContent() {
                 onClick={() => setSelectedPatient(rel)}
                 className={`w-full p-3 rounded-xl text-left transition-colors ${
                   selectedPatient?._id === rel._id
-                    ? 'bg-blue-50 border-2 border-blue-600'
+                    ? 'bg-blue-50 border-2'
                     : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
                 }`}
+                style={selectedPatient?._id === rel._id ? { borderColor: '#0a529f' } : {}}
               >
                 <div className="font-medium text-gray-900">{rel.name}</div>
                 <div className="text-sm text-gray-600">{rel.relation}</div>
@@ -281,9 +406,10 @@ function OnlineConfirmContent() {
               onClick={() => setCallPreference('VOICE')}
               className={`p-3 rounded-xl border-2 transition-colors ${
                 callPreference === 'VOICE'
-                  ? 'border-blue-600 bg-blue-50'
+                  ? 'bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
+              style={callPreference === 'VOICE' ? { borderColor: '#0a529f' } : {}}
             >
               <PhoneIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
               <div className="text-sm font-medium text-gray-900">Voice</div>
@@ -292,9 +418,10 @@ function OnlineConfirmContent() {
               onClick={() => setCallPreference('VIDEO')}
               className={`p-3 rounded-xl border-2 transition-colors ${
                 callPreference === 'VIDEO'
-                  ? 'border-blue-600 bg-blue-50'
+                  ? 'bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
+              style={callPreference === 'VIDEO' ? { borderColor: '#0a529f' } : {}}
             >
               <VideoCameraIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
               <div className="text-sm font-medium text-gray-900">Video</div>
@@ -303,9 +430,10 @@ function OnlineConfirmContent() {
               onClick={() => setCallPreference('BOTH')}
               className={`p-3 rounded-xl border-2 transition-colors ${
                 callPreference === 'BOTH'
-                  ? 'border-blue-600 bg-blue-50'
+                  ? 'bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
+              style={callPreference === 'BOTH' ? { borderColor: '#0a529f' } : {}}
             >
               <div className="text-sm font-medium text-gray-900 mb-1">Both</div>
               <div className="text-xs text-gray-600">Voice & Video</div>
@@ -320,9 +448,10 @@ function OnlineConfirmContent() {
               onClick={() => setTimeChoice('NOW')}
               className={`p-4 rounded-xl border-2 transition-colors ${
                 timeChoice === 'NOW'
-                  ? 'border-blue-600 bg-blue-50'
+                  ? 'bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
+              style={timeChoice === 'NOW' ? { borderColor: '#0a529f' } : {}}
             >
               <ClockIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
               <div className="text-sm font-medium text-gray-900">Consult Now</div>
@@ -332,9 +461,10 @@ function OnlineConfirmContent() {
               onClick={handleScheduleLater}
               className={`p-4 rounded-xl border-2 transition-colors ${
                 timeChoice === 'LATER'
-                  ? 'border-blue-600 bg-blue-50'
+                  ? 'bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
+              style={timeChoice === 'LATER' ? { borderColor: '#0a529f' } : {}}
             >
               <CalendarIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
               <div className="text-sm font-medium text-gray-900">Schedule Later</div>
@@ -348,7 +478,10 @@ function OnlineConfirmContent() {
               <div className="font-semibold text-gray-900">{selectedDate} at {selectedTime}</div>
               <button
                 onClick={handleScheduleLater}
-                className="text-sm text-blue-600 hover:text-blue-700 mt-1"
+                className="text-sm mt-1"
+                style={{ color: '#0a529f' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#084080'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#0a529f'}
               >
                 Change slot
               </button>
@@ -368,14 +501,17 @@ function OnlineConfirmContent() {
           <div className="border-t border-gray-200 my-3"></div>
           <div className="flex items-center justify-between">
             <span className="font-semibold text-gray-900">Total Amount</span>
-            <span className="text-xl font-bold text-blue-600">₹{consultationFee}</span>
+            <span className="text-xl font-bold" style={{ color: '#0a529f' }}>₹{consultationFee}</span>
           </div>
         </div>
 
         <button
           onClick={handleConfirmBooking}
           disabled={loading || !selectedPatient || !contactNumber}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors"
+          className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors"
+          style={!(loading || !selectedPatient || !contactNumber) ? { backgroundColor: '#0a529f' } : {}}
+          onMouseEnter={(e) => { if (!(loading || !selectedPatient || !contactNumber)) e.currentTarget.style.backgroundColor = '#084080' }}
+          onMouseLeave={(e) => { if (!(loading || !selectedPatient || !contactNumber)) e.currentTarget.style.backgroundColor = '#0a529f' }}
         >
           {loading ? 'Booking...' : 'Confirm Booking'}
         </button>
@@ -396,7 +532,7 @@ export default function OnlineConfirmPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <OnlineConfirmContent />

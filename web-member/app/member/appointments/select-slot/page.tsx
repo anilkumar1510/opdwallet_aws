@@ -164,7 +164,7 @@ function SelectSlotContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -228,9 +228,10 @@ function SelectSlotContent() {
                 onClick={() => handleDateSelect(day.dateStr)}
                 className={`flex-shrink-0 flex flex-col items-center px-4 py-3 rounded-xl transition-all ${
                   selectedDate === day.dateStr
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? 'text-white shadow-md'
                     : 'bg-gray-50 text-gray-900 hover:bg-gray-100'
                 }`}
+                style={selectedDate === day.dateStr ? { backgroundColor: '#0a529f' } : undefined}
               >
                 <span className="text-xs font-medium mb-1">{day.dayName}</span>
                 <span className="text-sm font-semibold">{formatDate(day.date)}</span>
@@ -256,11 +257,12 @@ function SelectSlotContent() {
                     disabled={!slot.available}
                     className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                       selectedSlot === slot.time
-                        ? 'bg-blue-600 text-white shadow-md'
+                        ? 'text-white shadow-md'
                         : slot.available
                         ? 'bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-200'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
+                    style={selectedSlot === slot.time ? { backgroundColor: '#0a529f' } : undefined}
                   >
                     {slot.time}
                   </button>
@@ -275,9 +277,12 @@ function SelectSlotContent() {
           disabled={!selectedDate || !selectedSlot}
           className={`w-full py-3 px-4 rounded-xl font-medium transition-colors ${
             selectedDate && selectedSlot
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              ? 'text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
+          style={selectedDate && selectedSlot ? { backgroundColor: '#0a529f' } : undefined}
+          onMouseEnter={(e) => selectedDate && selectedSlot && (e.currentTarget.style.backgroundColor = '#084080')}
+          onMouseLeave={(e) => selectedDate && selectedSlot && (e.currentTarget.style.backgroundColor = '#0a529f')}
         >
           Continue
         </button>
@@ -290,7 +295,7 @@ export default function SelectSlotPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <SelectSlotContent />

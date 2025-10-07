@@ -13,10 +13,15 @@ export async function apiFetch(path: string, options?: RequestInit) {
   const url = apiUrl(path);
   // PERFORMANCE: Removed 20+ console.log statements that were blocking execution
 
-  const requestHeaders = {
-    'Content-Type': 'application/json',
-    ...options?.headers,
-  };
+  // Don't set Content-Type for FormData - browser will set it with boundary
+  const isFormData = options?.body instanceof FormData;
+
+  const requestHeaders: HeadersInit = isFormData
+    ? { ...options?.headers }
+    : {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      };
 
   try {
     const response = await fetch(url, {

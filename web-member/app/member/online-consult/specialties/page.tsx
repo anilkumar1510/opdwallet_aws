@@ -69,7 +69,7 @@ export default function OnlineSpecialtiesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -124,7 +124,7 @@ export default function OnlineSpecialtiesPage() {
               >
                 <div className="flex items-center space-x-4">
                   <div className="bg-blue-100 w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center">
-                    <span className="text-xl font-semibold text-blue-600">{specialty.name.charAt(0)}</span>
+                    <span className="text-xl font-semibold" style={{ color: '#0a529f' }}>{specialty.name.charAt(0)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900">{specialty.name}</h3>

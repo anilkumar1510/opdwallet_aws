@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsArray, IsBoolean, IsOptional, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsString, IsNumber, IsArray, IsBoolean, IsOptional, ValidateNested, ArrayMinSize, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ClinicLocationDto {
@@ -45,6 +45,13 @@ class TimeSlotDto {
 export class CreateDoctorDto {
   @IsString()
   name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsOptional()
   @IsString()

@@ -14,17 +14,57 @@ import {
   ClaimType,
   ClaimCategory,
 } from './schemas/memberclaim.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { UpdateClaimDto } from './dto/update-claim.dto';
+import { WalletService } from '../wallet/wallet.service';
+import { UserRole } from '@/common/constants/roles.enum';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+
+// Category code mapping for wallet debit
+const CATEGORY_CODE_MAP: Record<string, string> = {
+  [ClaimCategory.CONSULTATION]: 'CAT001', // Consult
+  [ClaimCategory.DIAGNOSTICS]: 'CAT002', // Lab
+  [ClaimCategory.PHARMACY]: 'CAT003', // Pharmacy
+};
 
 @Injectable()
 export class MemberClaimsService {
   constructor(
     @InjectModel(MemberClaim.name)
     private memberClaimModel: Model<MemberClaimDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
+    private readonly walletService: WalletService,
   ) {}
+
+  /**
+   * Check if logged-in user can manage a claim for the claim's user
+   * Returns true if:
+   * 1. Same user (claimUserId === loggedInUserId)
+   * 2. Claim user is a dependent of logged-in user
+   */
+  private async canManageClaim(claimUserId: string, loggedInUserId: string): Promise<boolean> {
+    // If same user, always allowed
+    if (claimUserId === loggedInUserId) {
+      return true;
+    }
+
+    // Check if claimUser is a dependent of loggedInUser
+    const claimUser = await this.userModel.findById(claimUserId).lean();
+    if (claimUser && claimUser.primaryMemberId) {
+      // Find the primary member by memberId
+      const primaryMember = await this.userModel.findOne({
+        memberId: claimUser.primaryMemberId
+      }).lean();
+
+      // Check if the primary member's _id matches loggedInUserId
+      return primaryMember?._id.toString() === loggedInUserId;
+    }
+
+    return false;
+  }
 
   async create(
     createClaimDto: CreateClaimDto,
@@ -96,7 +136,9 @@ export class MemberClaimsService {
       throw new NotFoundException(`Claim with ID ${claimId} not found`);
     }
 
-    if (claim.userId.toString() !== userId) {
+    // Check if user can manage this claim (own claim or dependent's claim)
+    const canSubmit = await this.canManageClaim(claim.userId.toString(), userId);
+    if (!canSubmit) {
       throw new ForbiddenException('You are not authorized to submit this claim');
     }
 
@@ -107,6 +149,52 @@ export class MemberClaimsService {
     // Validate required documents
     if (!claim.documents || claim.documents.length === 0) {
       throw new BadRequestException('Please upload at least one document');
+    }
+
+    // Check and debit wallet for Consult category only
+    const categoryCode = CATEGORY_CODE_MAP[claim.category];
+    if (categoryCode && claim.billAmount > 0) {
+      console.log('🟡 [CLAIMS SERVICE] Checking wallet balance for claim:', {
+        claimId,
+        category: claim.category,
+        categoryCode,
+        amount: claim.billAmount
+      });
+
+      try {
+        // Check sufficient balance
+        const balanceCheck = await this.walletService.checkSufficientBalance(
+          userId,
+          claim.billAmount,
+          categoryCode
+        );
+
+        if (!balanceCheck.hasSufficient) {
+          console.warn(`⚠️ [CLAIMS SERVICE] Insufficient wallet balance. Available: ₹${balanceCheck.categoryBalance}, Required: ₹${claim.billAmount}`);
+          throw new BadRequestException(
+            `Insufficient wallet balance. Available: ₹${balanceCheck.categoryBalance} in ${claim.category} category, Required: ₹${claim.billAmount}`
+          );
+        }
+
+        console.log('✅ [CLAIMS SERVICE] Sufficient balance available, debiting wallet');
+
+        // Debit wallet
+        await this.walletService.debitWallet(
+          userId,
+          claim.billAmount,
+          categoryCode,
+          (claim._id as any).toString(),
+          'CLAIM',
+          claim.providerName || 'Provider',
+          `Claim ${claimId} - ${claim.category} - ${claim.providerName || 'Provider'}`
+        );
+
+        console.log('✅ [CLAIMS SERVICE] Wallet debited successfully');
+      } catch (walletError) {
+        console.error('❌ [CLAIMS SERVICE] Wallet operation failed:', walletError);
+        // Re-throw wallet errors to prevent claim submission
+        throw walletError;
+      }
     }
 
     claim.status = ClaimStatus.SUBMITTED;
@@ -206,7 +294,9 @@ export class MemberClaimsService {
   ): Promise<MemberClaimDocument> {
     const claim = await this.findByClaimId(claimId);
 
-    if (claim.userId.toString() !== userId) {
+    // Check if user can manage this claim (own claim or dependent's claim)
+    const canManage = await this.canManageClaim(claim.userId.toString(), userId);
+    if (!canManage) {
       throw new ForbiddenException('You are not authorized to update this claim');
     }
 
@@ -237,7 +327,9 @@ export class MemberClaimsService {
   ): Promise<MemberClaimDocument> {
     const claim = await this.findByClaimId(claimId);
 
-    if (claim.userId.toString() !== userId) {
+    // Check if user can manage this claim (own claim or dependent's claim)
+    const canManage = await this.canManageClaim(claim.userId.toString(), userId);
+    if (!canManage) {
       throw new ForbiddenException('You are not authorized to update this claim');
     }
 
@@ -488,9 +580,10 @@ export class MemberClaimsService {
       throw new NotFoundException('Claim not found');
     }
 
-    // Verify member owns the claim
-    if (claim.userId.toString() !== userId) {
-      throw new ForbiddenException('You can only resubmit documents for your own claims');
+    // Check if user can manage this claim (own claim or dependent's claim)
+    const canManage = await this.canManageClaim(claim.userId.toString(), userId);
+    if (!canManage) {
+      throw new ForbiddenException('You can only resubmit documents for your own claims or your dependents\' claims');
     }
 
     // Check if claim is in DOCUMENTS_REQUIRED status
@@ -557,9 +650,10 @@ export class MemberClaimsService {
       throw new NotFoundException('Claim not found');
     }
 
-    // Verify member owns the claim
-    if (claim.userId.toString() !== userId) {
-      throw new ForbiddenException('You can only view notes for your own claims');
+    // Check if user can manage this claim (own claim or dependent's claim)
+    const canManage = await this.canManageClaim(claim.userId.toString(), userId);
+    if (!canManage) {
+      throw new ForbiddenException('You can only view notes for your own claims or your dependents\' claims');
     }
 
     // Filter out internal notes, only show member-facing information
@@ -595,6 +689,66 @@ export class MemberClaimsService {
     return {
       claimId: claim.claimId,
       notes: memberNotes,
+    };
+  }
+
+  /**
+   * Cancel a claim (only if not approved/rejected)
+   */
+  async cancelClaim(claimId: string, userId: string, reason?: string) {
+    const claim = await this.memberClaimModel.findOne({ claimId });
+
+    if (!claim) {
+      throw new NotFoundException(`Claim with ID ${claimId} not found`);
+    }
+
+    // Check if user can manage this claim (own claim or dependent's claim)
+    const canCancel = await this.canManageClaim(claim.userId.toString(), userId);
+    if (!canCancel) {
+      throw new ForbiddenException('You can only cancel your own claims or your dependents\' claims');
+    }
+
+    // Check if claim can be cancelled (not already approved/rejected/cancelled)
+    const nonCancellableStatuses = [
+      ClaimStatus.APPROVED,
+      ClaimStatus.PARTIALLY_APPROVED,
+      ClaimStatus.REJECTED,
+      ClaimStatus.CANCELLED,
+      ClaimStatus.PAYMENT_COMPLETED,
+      ClaimStatus.PAYMENT_PROCESSING,
+    ];
+
+    if (nonCancellableStatuses.includes(claim.status)) {
+      throw new BadRequestException(
+        `Cannot cancel claim with status ${claim.status}. Only pending claims can be cancelled.`,
+      );
+    }
+
+    // Update claim status to CANCELLED
+    claim.status = ClaimStatus.CANCELLED;
+    claim.cancellationReason = reason || 'Cancelled by member';
+    claim.cancelledAt = new Date();
+
+    // Add to status history
+    if (!claim.statusHistory) {
+      claim.statusHistory = [];
+    }
+
+    claim.statusHistory.push({
+      status: ClaimStatus.CANCELLED,
+      changedBy: new Types.ObjectId(userId),
+      changedByName: 'Member',
+      changedByRole: UserRole.MEMBER,
+      changedAt: new Date(),
+      reason: reason || 'Cancelled by member',
+      notes: '',
+    });
+
+    await claim.save();
+
+    return {
+      message: 'Claim cancelled successfully',
+      claim: claim.toObject(),
     };
   }
 }

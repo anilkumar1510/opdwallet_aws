@@ -102,7 +102,7 @@ export default function CartDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -149,7 +149,7 @@ export default function CartDetailPage() {
                   <div>
                     <p className="font-medium text-gray-900">{item.serviceName}</p>
                     <p className="text-sm text-gray-600">{item.serviceCode}</p>
-                    <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    <span className="inline-block mt-1 px-2 py-1 rounded-full text-xs" style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}>
                       {item.category}
                     </span>
                   </div>
@@ -176,7 +176,10 @@ export default function CartDetailPage() {
             <button
               onClick={handleSearchVendors}
               disabled={searchingVendors}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+              className="px-6 py-3 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
+              style={!searchingVendors ? { backgroundColor: '#0a529f' } : undefined}
+              onMouseEnter={(e) => !searchingVendors && (e.currentTarget.style.backgroundColor = '#084080')}
+              onMouseLeave={(e) => !searchingVendors && (e.currentTarget.style.backgroundColor = '#0a529f')}
             >
               {searchingVendors ? 'Searching...' : 'Search'}
             </button>
@@ -212,7 +215,12 @@ export default function CartDetailPage() {
                       <span className="text-green-600">✓ Center Visit</span>
                     )}
                   </div>
-                  <button className="mt-3 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
+                  <button
+                    className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium transition-colors"
+                    style={{ backgroundColor: '#0a529f' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  >
                     View Pricing & Book
                   </button>
                 </div>

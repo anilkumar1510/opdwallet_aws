@@ -19,7 +19,7 @@ interface SlotSelectionModalProps {
   onClose: () => void
   doctorId: string
   doctorName: string
-  onSelectSlot: (date: string, time: string) => void
+  onSelectSlot: (date: string, time: string, slotId: string) => void
 }
 
 export default function SlotSelectionModal({
@@ -67,8 +67,11 @@ export default function SlotSelectionModal({
     }
 
     const selectedDate = availableSlots[selectedDateIndex].date
-    console.log('[SlotModal] Slot selected:', { date: selectedDate, time: selectedTime })
-    onSelectSlot(selectedDate, selectedTime)
+    const selectedSlot = availableSlots[selectedDateIndex].slots.find(slot => slot.time === selectedTime)
+    const slotId = selectedSlot?.slotId || `${doctorId}_ONLINE_${selectedDate}_${selectedTime.replace(/[:\s]/g, '_')}`
+
+    console.log('[SlotModal] Slot selected:', { date: selectedDate, time: selectedTime, slotId })
+    onSelectSlot(selectedDate, selectedTime, slotId)
     onClose()
   }
 

@@ -186,7 +186,7 @@ export default function BookingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -214,9 +214,10 @@ export default function BookingsPage() {
             onClick={() => setActiveTab('doctors')}
             className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'doctors'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-transparent text-gray-500 hover:text-gray-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            style={activeTab === 'doctors' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
           >
             <div className="flex items-center space-x-2">
               <UserIcon className="h-5 w-5" />
@@ -227,9 +228,10 @@ export default function BookingsPage() {
             onClick={() => setActiveTab('lab')}
             className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'lab'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-transparent text-gray-500 hover:text-gray-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            style={activeTab === 'lab' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
           >
             <div className="flex items-center space-x-2">
               <BeakerIcon className="h-5 w-5" />
@@ -240,9 +242,10 @@ export default function BookingsPage() {
             onClick={() => setActiveTab('pharmacy')}
             className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'pharmacy'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-transparent text-gray-500 hover:text-gray-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            style={activeTab === 'pharmacy' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
           >
             <div className="flex items-center space-x-2">
               <BuildingStorefrontIcon className="h-5 w-5" />
@@ -265,7 +268,10 @@ export default function BookingsPage() {
                 <p className="text-gray-600 mb-4">Book your first appointment to get started</p>
                 <button
                   onClick={() => router.push('/member/appointments')}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-6 py-2 text-white rounded-lg"
+                  style={{ backgroundColor: '#0a529f' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
                 >
                   Book Appointment
                 </button>
@@ -282,8 +288,8 @@ export default function BookingsPage() {
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center space-x-3">
-                            <div className="bg-blue-100 p-2 rounded-full">
-                              <UserIcon className="h-5 w-5 text-blue-600" />
+                            <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
+                              <UserIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
@@ -329,7 +335,7 @@ export default function BookingsPage() {
                             <div className="text-sm text-gray-600">
                               ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
                             </div>
-                            <div className="text-sm font-semibold text-blue-600">
+                            <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
                               ₹{appointment.consultationFee}
                             </div>
                           </div>

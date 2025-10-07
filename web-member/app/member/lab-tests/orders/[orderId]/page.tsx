@@ -157,7 +157,7 @@ export default function OrderDetailsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -378,7 +378,10 @@ export default function OrderDetailsPage() {
                   </div>
                   <button
                     onClick={() => handleDownloadReport(report)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors"
+                    style={{ backgroundColor: '#0a529f' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
                   >
                     Download
                   </button>
@@ -390,10 +393,10 @@ export default function OrderDetailsPage() {
 
         {/* Empty Reports State */}
         {order.status === 'COMPLETED' && (!order.reports || order.reports.length === 0) && (
-          <div className="bg-blue-50 rounded-2xl p-6 text-center border border-blue-100">
-            <DocumentArrowDownIcon className="h-12 w-12 mx-auto text-blue-600 mb-3" />
-            <p className="text-blue-900 font-medium">Reports will be available soon</p>
-            <p className="text-sm text-blue-700 mt-1">
+          <div className="rounded-2xl p-6 text-center border" style={{ backgroundColor: '#e6f0fa', borderColor: '#b3d4f0' }}>
+            <DocumentArrowDownIcon className="h-12 w-12 mx-auto mb-3" style={{ color: '#0a529f' }} />
+            <p className="font-medium" style={{ color: '#084080' }}>Reports will be available soon</p>
+            <p className="text-sm mt-1" style={{ color: '#0a529f' }}>
               Your lab reports are being processed and will be uploaded shortly
             </p>
           </div>

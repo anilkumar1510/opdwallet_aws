@@ -94,7 +94,7 @@ export default function LabOrdersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -138,7 +138,10 @@ export default function LabOrdersPage() {
             <p className="text-gray-600 mb-4">No orders yet</p>
             <button
               onClick={() => router.push('/member/lab-tests')}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="px-6 py-2 text-white rounded-lg font-medium transition-colors"
+              style={{ backgroundColor: '#0a529f' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
             >
               Book Lab Tests
             </button>
@@ -179,8 +182,8 @@ export default function LabOrdersPage() {
 
               {/* Collection Info */}
               {order.collectionDate && (
-                <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-900">
+                <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: '#e6f0fa' }}>
+                  <p className="text-sm" style={{ color: '#084080' }}>
                     <span className="font-medium">{order.collectionType.replace('_', ' ')}</span>
                     {order.collectionDate && ` • ${order.collectionDate}`}
                     {order.collectionTime && ` • ${order.collectionTime}`}

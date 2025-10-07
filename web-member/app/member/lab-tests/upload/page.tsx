@@ -171,7 +171,11 @@ export default function UploadPrescriptionPage() {
 
           {!file ? (
             <label className="block">
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 transition-colors cursor-pointer">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 transition-colors cursor-pointer"
+                style={{ borderColor: '#d4d4d4' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#0a529f'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d4'}
+              >
                 <div className="text-center">
                   <CloudArrowUpIcon className="h-16 w-16 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-700 font-medium mb-2">
@@ -207,7 +211,7 @@ export default function UploadPrescriptionPage() {
               </div>
 
               {/* File Info */}
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+              <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: '#e6f0fa' }}>
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{file.name}</p>
                   <p className="text-sm text-gray-600">
@@ -263,9 +267,9 @@ export default function UploadPrescriptionPage() {
         )}
 
         {/* Info Card */}
-        <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-          <h4 className="font-semibold text-blue-900 mb-2">What happens next?</h4>
-          <ul className="space-y-2 text-sm text-blue-800">
+        <div className="rounded-2xl p-4 border" style={{ backgroundColor: '#e6f0fa', borderColor: '#b3d4f0' }}>
+          <h4 className="font-semibold mb-2" style={{ color: '#084080' }}>What happens next?</h4>
+          <ul className="space-y-2 text-sm" style={{ color: '#0a529f' }}>
             <li className="flex items-start">
               <span className="mr-2">1.</span>
               <span>Your prescription will be reviewed by our team</span>
@@ -290,7 +294,10 @@ export default function UploadPrescriptionPage() {
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors shadow-lg"
+            className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors shadow-lg"
+            style={!uploading ? { backgroundColor: '#0a529f' } : undefined}
+            onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#084080')}
+            onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#0a529f')}
           >
             {uploading ? (
               <span className="flex items-center justify-center">

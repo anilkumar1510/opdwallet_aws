@@ -51,96 +51,99 @@ export default function ClaimsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showFilters, setShowFilters] = useState(false)
   const [dataView, setDataView] = useState<'compact' | 'comfortable' | 'spacious'>('comfortable')
+  const [claims, setClaims] = useState<Claim[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const itemsPerPage = 10
 
-  // Mock data - in real app, this would come from API
-  const mockClaims: Claim[] = [
-    {
-      id: '1',
-      claimNumber: 'CLM-2024-001',
-      date: '2024-01-15',
-      type: 'Consultation',
-      provider: 'Dr. Sharma - Cardiology',
-      amount: 2500,
-      status: 'approved',
-      description: 'Cardiac consultation and ECG',
-      category: 'consultation',
-      submittedDate: '2024-01-16',
-      processedDate: '2024-01-18',
-      documents: 3
-    },
-    {
-      id: '2',
-      claimNumber: 'CLM-2024-002',
-      date: '2024-01-12',
-      type: 'Pharmacy',
-      provider: 'Apollo Pharmacy',
-      amount: 850,
-      status: 'processing',
-      description: 'Prescribed medications',
-      category: 'pharmacy',
-      submittedDate: '2024-01-13',
-      documents: 2
-    },
-    {
-      id: '3',
-      claimNumber: 'CLM-2024-003',
-      date: '2024-01-10',
-      type: 'Diagnostic',
-      provider: 'PathLab Diagnostics',
-      amount: 3200,
-      status: 'under_review',
-      description: 'Comprehensive blood panel',
-      category: 'diagnostic',
-      submittedDate: '2024-01-11',
-      documents: 4
-    },
-    {
-      id: '4',
-      claimNumber: 'CLM-2024-004',
-      date: '2024-01-08',
-      type: 'Consultation',
-      provider: 'Dr. Patel - Dermatology',
-      amount: 1800,
-      status: 'rejected',
-      description: 'Skin consultation',
-      category: 'consultation',
-      submittedDate: '2024-01-09',
-      processedDate: '2024-01-12',
-      documents: 1
-    },
-    {
-      id: '5',
-      claimNumber: 'CLM-2024-005',
-      date: '2024-01-05',
-      type: 'Preventive',
-      provider: 'City Health Center',
-      amount: 5000,
-      status: 'approved',
-      description: 'Annual health checkup',
-      category: 'preventive',
-      submittedDate: '2024-01-06',
-      processedDate: '2024-01-08',
-      documents: 5
-    },
-    {
-      id: '6',
-      claimNumber: 'CLM-2024-006',
-      date: '2024-01-03',
-      type: 'Pharmacy',
-      provider: 'MedPlus',
-      amount: 1200,
-      status: 'submitted',
-      description: 'Over-the-counter medications',
-      category: 'pharmacy',
-      submittedDate: '2024-01-03',
-      documents: 2
+  // Fetch claims from API
+  useEffect(() => {
+    fetchClaims()
+  }, [])
+
+  const fetchClaims = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/member/claims?limit=100', {
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch claims')
+      }
+
+      const data = await response.json()
+
+      // Map backend claims to frontend format and filter out drafts
+      const mappedClaims: Claim[] = data.claims
+        .filter((claim: any) => claim.status !== 'DRAFT') // Exclude drafts
+        .map((claim: any) => ({
+          id: claim._id,
+          claimNumber: claim.claimId,
+          date: new Date(claim.treatmentDate).toISOString().split('T')[0],
+          type: formatCategory(claim.category),
+          provider: claim.providerName || 'N/A',
+          amount: claim.billAmount,
+          status: mapStatus(claim.status),
+          description: claim.treatmentDescription || claim.category,
+          category: claim.category.toLowerCase(),
+          submittedDate: claim.submittedAt ? new Date(claim.submittedAt).toISOString().split('T')[0] : new Date(claim.createdAt).toISOString().split('T')[0],
+          processedDate: claim.processedAt ? new Date(claim.processedAt).toISOString().split('T')[0] : undefined,
+          documents: claim.documents?.length || 0
+        }))
+
+      setClaims(mappedClaims)
+    } catch (err: any) {
+      console.error('Error fetching claims:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  // Map backend status to frontend status
+  const mapStatus = (backendStatus: string): ClaimStatus => {
+    const statusMap: Record<string, ClaimStatus> = {
+      'SUBMITTED': 'submitted',
+      'UNDER_REVIEW': 'under_review',
+      'APPROVED': 'approved',
+      'REJECTED': 'rejected',
+      'PAYMENT_PENDING': 'processing',
+      'PAYMENT_PROCESSING': 'processing',
+      'PAYMENT_COMPLETED': 'approved',
+      'ASSIGNED': 'under_review',
+      'UNASSIGNED': 'submitted'
+    }
+    return statusMap[backendStatus] || 'submitted'
+  }
+
+  // Format category for display
+  const formatCategory = (category: string): string => {
+    const categoryMap: Record<string, string> = {
+      'CONSULTATION': 'Consultation',
+      'DIAGNOSTICS': 'Diagnostic',
+      'PHARMACY': 'Pharmacy',
+      'DENTAL': 'Dental',
+      'VISION': 'Vision',
+      'WELLNESS': 'Wellness',
+      'IPD': 'IPD',
+      'OPD': 'OPD'
+    }
+    return categoryMap[category] || category
+  }
+
+  // Calculate statistics from real data
+  const stats = {
+    approved: claims.filter(c => c.status === 'approved').length,
+    processing: claims.filter(c => c.status === 'processing').length,
+    underReview: claims.filter(c => c.status === 'under_review').length,
+    totalAmount: claims.reduce((sum, c) => sum + c.amount, 0)
+  }
 
   // Filter and sort claims
-  const filteredAndSortedClaims = mockClaims
+  const filteredAndSortedClaims = claims
     .filter(claim => {
       const matchesSearch = claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            claim.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -251,55 +254,73 @@ export default function ClaimsPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <div className="p-4">
-            <div className="flex items-center">
-              <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-green-700">12</p>
-                <p className="text-xs text-green-600">Approved</p>
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <div className="p-4">
+                <div className="flex items-center">
+                  <div className="h-8 w-8 bg-surface-alt rounded mr-3" />
+                  <div>
+                    <div className="h-6 w-12 bg-surface-alt rounded mb-2" />
+                    <div className="h-3 w-16 bg-surface-alt rounded" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div className="p-4">
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold text-green-700">{stats.approved}</p>
+                  <p className="text-xs text-green-600">Approved</p>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <div className="p-4">
-            <div className="flex items-center">
-              <ClockIcon className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-blue-700">3</p>
-                <p className="text-xs text-blue-600">Processing</p>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div className="p-4">
+              <div className="flex items-center">
+                <ClockIcon className="h-8 w-8 text-blue-600 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
+                  <p className="text-xs text-blue-600">Processing</p>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-          <div className="p-4">
-            <div className="flex items-center">
-              <ExclamationCircleIcon className="h-8 w-8 text-amber-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-amber-700">2</p>
-                <p className="text-xs text-amber-600">Under Review</p>
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+            <div className="p-4">
+              <div className="flex items-center">
+                <ExclamationCircleIcon className="h-8 w-8 text-amber-600 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold text-amber-700">{stats.underReview}</p>
+                  <p className="text-xs text-amber-600">Under Review</p>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
-          <div className="p-4">
-            <div className="flex items-center">
-              <DocumentTextIcon className="h-8 w-8 text-brand-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-brand-700">₹45,000</p>
-                <p className="text-xs text-brand-600">Total Claims</p>
+          <Card className="bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
+            <div className="p-4">
+              <div className="flex items-center">
+                <DocumentTextIcon className="h-8 w-8 text-brand-600 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold text-brand-700">₹{stats.totalAmount.toLocaleString()}</p>
+                  <p className="text-xs text-brand-600">Total Claims</p>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      )}
 
       {/* Controls Bar */}
       <Card className="mb-6" noPadding>
@@ -436,8 +457,28 @@ export default function ClaimsPage() {
         )}
       </Card>
 
+      {/* Error State */}
+      {error && (
+        <Card className="mb-6 bg-red-50 border-red-200">
+          <div className="p-4">
+            <div className="flex items-center">
+              <XCircleIcon className="h-5 w-5 text-red-600 mr-2" />
+              <p className="text-red-700">Failed to load claims: {error}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Content */}
-      {viewMode === 'table' ? (
+      {loading ? (
+        // Loading State
+        <Card noPadding className="overflow-hidden">
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
+            <p className="text-ink-500">Loading claims...</p>
+          </div>
+        </Card>
+      ) : viewMode === 'table' ? (
         // Desktop Table View
         <Card noPadding className="overflow-hidden">
           <div className="overflow-x-auto">
@@ -601,13 +642,18 @@ export default function ClaimsPage() {
       )}
 
       {/* Empty State */}
-      {filteredAndSortedClaims.length === 0 && (
+      {!loading && filteredAndSortedClaims.length === 0 && (
         <Card className="text-center py-12">
           <DocumentTextIcon className="mx-auto h-12 w-12 text-ink-400 mb-4" />
           <h3 className="text-lg font-medium text-ink-900 mb-2">No claims found</h3>
-          <p className="text-ink-500 mb-6">Try adjusting your search or filters, or create your first claim.</p>
+          <p className="text-ink-500 mb-6">
+            {claims.length === 0
+              ? 'You have not submitted any claims yet. Create your first claim to get started.'
+              : 'Try adjusting your search or filters to find claims.'
+            }
+          </p>
           <Link href="/member/claims/new" className="btn-primary">
-            Create First Claim
+            {claims.length === 0 ? 'Create First Claim' : 'New Claim'}
           </Link>
         </Card>
       )}

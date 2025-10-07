@@ -7,4 +7,5 @@ export enum UserRole {
   FINANCE_USER = 'FINANCE_USER',
   OPS = 'OPS',
   MEMBER = 'MEMBER',
+  DOCTOR = 'DOCTOR',
 }

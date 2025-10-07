@@ -61,7 +61,7 @@ export default function RejectionModal({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          reason: finalReason,
+          rejectionReason: finalReason,
           notes,
         }),
       })

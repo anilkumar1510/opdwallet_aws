@@ -51,8 +51,8 @@ function SelectPatientContent() {
 
   const fetchUserData = async () => {
     try {
-      console.log('[SelectPatient] Fetching user data')
-      const response = await fetch('/api/auth/me', {
+      console.log('[SelectPatient] Fetching user data with dependents')
+      const response = await fetch('/api/member/profile', {
         credentials: 'include',
       })
 
@@ -61,31 +61,38 @@ function SelectPatientContent() {
       }
 
       const data = await response.json()
-      console.log('[SelectPatient] User data received:', { userId: data._id, name: data.name })
-      setUser(data)
+      console.log('[SelectPatient] Profile data received:', {
+        userId: data.user?._id,
+        name: data.user?.name,
+        dependentsCount: data.dependents?.length || 0
+      })
+
+      setUser(data.user)
 
       const patientsList: Patient[] = []
 
-      patientsList.push({
-        id: data._id,
-        name: `${data.name.firstName} ${data.name.lastName}`,
-        relationship: 'Self',
-        age: calculateAge(data.dob),
-        gender: data.gender || 'Not specified'
-      })
+      // Add primary user (self)
+      if (data.user) {
+        patientsList.push({
+          id: data.user._id,
+          name: `${data.user.name.firstName} ${data.user.name.lastName}`,
+          relationship: 'Self',
+          age: calculateAge(data.user.dob),
+          gender: data.user.gender || 'Not specified'
+        })
+      }
 
-      if (data.relationships && data.relationships.length > 0) {
-        console.log('[SelectPatient] Found relationships:', data.relationships.length)
-        data.relationships.forEach((rel: any) => {
-          if (rel.relatedUser) {
-            patientsList.push({
-              id: rel.relatedUser._id,
-              name: `${rel.relatedUser.name.firstName} ${rel.relatedUser.name.lastName}`,
-              relationship: rel.relationship,
-              age: calculateAge(rel.relatedUser.dob),
-              gender: rel.relatedUser.gender || 'Not specified'
-            })
-          }
+      // Add dependents
+      if (data.dependents && data.dependents.length > 0) {
+        console.log('[SelectPatient] Found dependents:', data.dependents.length)
+        data.dependents.forEach((dependent: any) => {
+          patientsList.push({
+            id: dependent._id,
+            name: `${dependent.name.firstName} ${dependent.name.lastName}`,
+            relationship: dependent.relationship || 'Family Member',
+            age: calculateAge(dependent.dob),
+            gender: dependent.gender || 'Not specified'
+          })
         })
       }
 
@@ -135,7 +142,7 @@ function SelectPatientContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -167,27 +174,24 @@ function SelectPatientContent() {
               onClick={() => handlePatientSelect(patient)}
               className={`w-full bg-white rounded-xl p-4 flex items-center justify-between transition-all ${
                 selectedPatient?.id === patient.id
-                  ? 'border-2 border-blue-600 shadow-md'
+                  ? 'border-2 shadow-md'
                   : 'border-2 border-transparent shadow-sm hover:shadow-md'
               }`}
+              style={selectedPatient?.id === patient.id ? { borderColor: '#0a529f' } : undefined}
             >
               <div className="flex items-center space-x-4">
-                <div className={`p-3 rounded-full ${
-                  selectedPatient?.id === patient.id
-                    ? 'bg-blue-600'
-                    : 'bg-blue-100'
-                }`}>
-                  <UserIcon className={`h-6 w-6 ${
-                    selectedPatient?.id === patient.id
-                      ? 'text-white'
-                      : 'text-blue-600'
-                  }`} />
+                <div className="p-3 rounded-full" style={{
+                  backgroundColor: selectedPatient?.id === patient.id ? '#0a529f' : '#e6f0fa'
+                }}>
+                  <UserIcon className="h-6 w-6" style={{
+                    color: selectedPatient?.id === patient.id ? 'white' : '#0a529f'
+                  }} />
                 </div>
                 <div className="text-left">
                   <div className="font-semibold text-gray-900 flex items-center space-x-2">
                     <span>{patient.name}</span>
                     {patient.relationship === 'Self' && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}>
                         You
                       </span>
                     )}
@@ -198,7 +202,7 @@ function SelectPatientContent() {
                 </div>
               </div>
               {selectedPatient?.id === patient.id && (
-                <CheckCircleIcon className="h-6 w-6 text-blue-600" />
+                <CheckCircleIcon className="h-6 w-6" style={{ color: '#0a529f' }} />
               )}
             </button>
           ))}
@@ -209,9 +213,12 @@ function SelectPatientContent() {
           disabled={!selectedPatient}
           className={`w-full py-3 px-4 rounded-xl font-medium transition-colors ${
             selectedPatient
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              ? 'text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
+          style={selectedPatient ? { backgroundColor: '#0a529f' } : undefined}
+          onMouseEnter={(e) => selectedPatient && (e.currentTarget.style.backgroundColor = '#084080')}
+          onMouseLeave={(e) => selectedPatient && (e.currentTarget.style.backgroundColor = '#0a529f')}
         >
           Continue
         </button>
@@ -224,7 +231,7 @@ export default function SelectPatientPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <SelectPatientContent />

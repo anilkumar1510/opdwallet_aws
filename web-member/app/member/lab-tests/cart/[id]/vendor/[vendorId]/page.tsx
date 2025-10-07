@@ -206,7 +206,7 @@ export default function VendorBookingPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -269,9 +269,10 @@ export default function VendorBookingPage() {
               <label
                 className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors ${
                   collectionType === 'HOME_COLLECTION'
-                    ? 'border-blue-600 bg-blue-50'
+                    ? 'bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
+                style={collectionType === 'HOME_COLLECTION' ? { borderColor: '#0a529f', backgroundColor: '#e6f0fa' } : undefined}
               >
                 <input
                   type="radio"
@@ -281,7 +282,7 @@ export default function VendorBookingPage() {
                   onChange={(e) => setCollectionType(e.target.value as any)}
                   className="mr-3"
                 />
-                <HomeIcon className="h-6 w-6 text-blue-600 mr-3" />
+                <HomeIcon className="h-6 w-6 mr-3" style={{ color: '#0a529f' }} />
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">Home Collection</p>
                   <p className="text-sm text-gray-600">Sample collected at your doorstep</p>
@@ -293,9 +294,10 @@ export default function VendorBookingPage() {
               <label
                 className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors ${
                   collectionType === 'CENTER_VISIT'
-                    ? 'border-blue-600 bg-blue-50'
+                    ? 'bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
+                style={collectionType === 'CENTER_VISIT' ? { borderColor: '#0a529f', backgroundColor: '#e6f0fa' } : undefined}
               >
                 <input
                   type="radio"
@@ -305,7 +307,7 @@ export default function VendorBookingPage() {
                   onChange={(e) => setCollectionType(e.target.value as any)}
                   className="mr-3"
                 />
-                <BuildingOfficeIcon className="h-6 w-6 text-blue-600 mr-3" />
+                <BuildingOfficeIcon className="h-6 w-6 mr-3" style={{ color: '#0a529f' }} />
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">Visit Center</p>
                   <p className="text-sm text-gray-600">Visit lab center for sample collection</p>
@@ -391,11 +393,12 @@ export default function VendorBookingPage() {
                   key={slot._id}
                   className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-colors ${
                     selectedSlot === slot._id
-                      ? 'border-blue-600 bg-blue-50'
+                      ? ''
                       : slot.currentBookings >= slot.maxBookings
                       ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
+                  style={selectedSlot === slot._id ? { borderColor: '#0a529f', backgroundColor: '#e6f0fa' } : undefined}
                 >
                   <div className="flex items-center">
                     <input
@@ -458,7 +461,10 @@ export default function VendorBookingPage() {
         <button
           onClick={handlePlaceOrder}
           disabled={submitting || !selectedSlot}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors shadow-lg"
+          className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors shadow-lg"
+          style={!submitting && selectedSlot ? { backgroundColor: '#0a529f' } : undefined}
+          onMouseEnter={(e) => !submitting && selectedSlot && (e.currentTarget.style.backgroundColor = '#084080')}
+          onMouseLeave={(e) => !submitting && selectedSlot && (e.currentTarget.style.backgroundColor = '#0a529f')}
         >
           {submitting ? (
             <span className="flex items-center justify-center">
