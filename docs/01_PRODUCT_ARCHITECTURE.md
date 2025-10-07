@@ -1122,10 +1122,14 @@ POST   /api/member/claims                      # Create new claim with file uplo
 POST   /api/member/claims/:claimId/submit      # Submit claim for processing
 GET    /api/member/claims                      # List user's claims (with pagination)
 GET    /api/member/claims/summary              # Get user's claims summary
+GET    /api/member/claims/:claimId/timeline    # Get claim timeline/history ✨ NEW
+GET    /api/member/claims/:claimId/tpa-notes   # Get TPA notes for member ✨ NEW
 GET    /api/member/claims/:id                  # Get claim by MongoDB ID
 GET    /api/member/claims/claim/:claimId       # Get claim by claimId
 PATCH  /api/member/claims/:id                  # Update claim details
+PATCH  /api/member/claims/:claimId/cancel      # Cancel claim ✨ NEW
 POST   /api/member/claims/:claimId/documents   # Add documents to claim
+POST   /api/member/claims/:claimId/resubmit-documents  # Resubmit documents ✨ NEW
 DELETE /api/member/claims/:claimId/documents/:documentId  # Remove document
 DELETE /api/member/claims/:id                  # Delete claim
 GET    /api/member/claims/files/:userId/:filename  # Download claim file
@@ -1141,12 +1145,31 @@ Claim Types:
 - REIMBURSEMENT: Post-treatment claim submission
 - CASHLESS_PREAUTH: Pre-authorization for cashless treatment
 
+Dependent Claim Management ✨ NEW:
+- Primary members can file claims for dependents
+- Request Body: { userId: "dependent_userId", ...otherFields }
+- userId: Claim owner (who receives reimbursement)
+- createdBy: Logged-in user who submitted claim (auto-tracked)
+- Wallet operations use claim owner's userId
+- File access allowed for both submitter and claim owner
+- canManageClaim() checks: self or dependent relationship
+
+Claim Cancellation ✨ NEW:
+- Endpoint: PATCH /api/member/claims/:claimId/cancel
+- Request Body: { reason?: string }
+- Cancellable statuses: DRAFT, SUBMITTED, UNASSIGNED, ASSIGNED, UNDER_REVIEW, DOCUMENTS_REQUIRED, RESUBMISSION_REQUIRED
+- Non-cancellable: APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, PAYMENT_*
+- Auto wallet refund if claim was debited
+- Status logged in statusHistory array
+
 Claim Status Flow:
-DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED/PARTIALLY_APPROVED/REJECTED
-                                  ↓
-                           RESUBMISSION_REQUIRED → SUBMITTED (loop)
-                                  ↓
-                              CANCELLED
+DRAFT → SUBMITTED → UNASSIGNED → ASSIGNED → UNDER_REVIEW → DOCUMENTS_REQUIRED (optional)
+                                                           ↓
+                                      APPROVED/PARTIALLY_APPROVED/REJECTED
+                                                           ↓
+                                      PAYMENT_PENDING → PAYMENT_PROCESSING → PAYMENT_COMPLETED
+                                      ↓ (any cancellable status)
+                                  CANCELLED ✨ (with wallet refund)
 ```
 
 #### Lab Diagnostics - Member APIs (`/api/lab/member`) - ✅ FULLY IMPLEMENTED

@@ -2059,13 +2059,17 @@ enum CallPreference {
   assignmentId: ObjectId,             // REF: 'UserPolicyAssignment'
   walletTransactionId: ObjectId,      // REF: 'WalletTransaction'
 
+  // Cancellation Fields ✨ NEW
+  cancellationReason: string,
+  cancelledAt: Date,
+
   // Additional metadata
   corporateName: string,
   isUrgent: boolean,                  // DEFAULT: false
   requiresPreAuth: boolean,           // DEFAULT: false
   preAuthNumber: string,
   isActive: boolean,                  // DEFAULT: true
-  createdBy: string,
+  createdBy: string,                  // REQUIRED - userId of submitter (for dependent claims)
   updatedBy: string,
 
   createdAt: Date,
@@ -2161,6 +2165,9 @@ enum PaymentStatus {
 8. **TPA Assignment** - assignedTo must reference a TPA_USER role
 9. **reassignmentHistory** - Automatically tracked when claim is reassigned
 10. **reviewHistory** - Automatically tracked on status changes
+11. **createdBy** - Required field tracking the submitter (different from userId for dependent claims)
+12. **userId** - The claim owner (may be different from createdBy for dependent claims)
+13. **Cancellation** - Can only cancel claims in DRAFT, SUBMITTED, UNASSIGNED, ASSIGNED, UNDER_REVIEW, DOCUMENTS_REQUIRED, or RESUBMISSION_REQUIRED status
 
 #### Sample Data Example
 

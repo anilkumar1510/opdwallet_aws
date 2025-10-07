@@ -114,29 +114,92 @@ Select Doctor → Choose Date → Select Time Slot → Join Video Call
 
 ## Claims & Reimbursements
 
-Members can file claims for out-of-pocket healthcare expenses and track reimbursement status.
+Members can file claims for out-of-pocket healthcare expenses and track reimbursement status. ✨ **Enhanced with dependent claim management and cancellation support**.
 
 ### Features
 
-- **File New Claim**: Submit reimbursement requests
+- **File New Claim**: Submit reimbursement requests for self or dependents
+- **Dependent Claims**: Primary members can file claims on behalf of dependents
 - **Upload Documents**: Attach bills, prescriptions, and receipts
-- **Track Status**: Monitor claim processing stages
-- **View History**: Access past claim records
+- **Track Status**: Monitor claim processing stages with detailed timeline
+- **View History**: Access past claim records with advanced filtering
+- **Cancel Claims**: Cancel submitted claims before processing
 - **Download Reports**: Get claim summary documents
+- **TPA Communication**: View notes and updates from TPA reviewers
 
 ### Claim Workflow
 
 ```
-Submit Claim → Upload Documents → OPS Review → Approval/Rejection → Reimbursement
+Submit Claim → Upload Documents → TPA Assignment → TPA Review → Approval/Rejection → Reimbursement
 ```
 
 ### Claim Statuses
 
-- **PENDING**: Submitted, awaiting review
-- **UNDER_REVIEW**: Being processed by OPS team
+- **DRAFT**: Claim created but not submitted
+- **SUBMITTED**: Submitted, awaiting TPA assignment
+- **UNASSIGNED**: Awaiting TPA assignment
+- **ASSIGNED**: Assigned to TPA reviewer
+- **UNDER_REVIEW**: Being processed by TPA team
+- **DOCUMENTS_REQUIRED**: Additional documents requested
 - **APPROVED**: Claim approved, payment processing
+- **PARTIALLY_APPROVED**: Partial amount approved
 - **REJECTED**: Claim denied with reason
-- **SETTLED**: Reimbursement completed
+- **CANCELLED**: Claim cancelled by member ✨ NEW
+- **PAYMENT_PENDING**: Approved, awaiting payment
+- **PAYMENT_PROCESSING**: Payment being processed
+- **PAYMENT_COMPLETED**: Reimbursement completed
+
+### Dependent Claim Management ✨ NEW
+
+Primary members (relationship: SELF) can:
+- File claims on behalf of their dependents
+- View claims submitted by them for dependents
+- Cancel dependent claims
+- Track all family member claims
+
+**Implementation Details**:
+- `userId`: The claim owner (person receiving reimbursement)
+- `createdBy`: The person who submitted the claim
+- Wallet debit/credit uses `userId` (claim owner)
+- File access allowed for both submitter and claim owner
+
+### Claim Cancellation ✨ NEW
+
+**Cancellable Status**: DRAFT, SUBMITTED, UNASSIGNED, ASSIGNED, UNDER_REVIEW, DOCUMENTS_REQUIRED, RESUBMISSION_REQUIRED
+
+**Non-Cancellable Status**: APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, PAYMENT_PENDING, PAYMENT_PROCESSING, PAYMENT_COMPLETED
+
+**Cancellation Flow**:
+1. Member clicks "Cancel Claim" button
+2. Optional cancellation reason provided
+3. System validates claim status
+4. Wallet refund triggered (if wallet was debited)
+5. Status changed to CANCELLED
+6. Cancellation logged in status history
+
+**API Endpoint**:
+```
+PATCH /api/member/claims/:claimId/cancel
+Body: { reason?: string }
+```
+
+### Enhanced UI Features ✨ NEW
+
+**Claims List Page** (`/member/claims/page.tsx`):
+- **Status Badges**: Color-coded status indicators including cancelled (gray)
+- **Status Filter**: Includes "Cancelled" option in status dropdown
+- **Auto-Refresh**: Page refreshes data when tab becomes visible
+- **Sorting**: Sort by date, amount, status, type
+- **View Modes**: Table or card view
+- **Pagination**: 10 items per page
+
+**Status Colors**:
+- Approved: Green
+- Rejected: Red
+- Cancelled: Gray ✨ NEW
+- Processing/Payment: Blue
+- Under Review: Amber
+- Draft: Gray
 
 ---
 
