@@ -82,15 +82,18 @@ export class TpaService {
 
     const query: any = {};
 
+    // Exclude DRAFT claims from TPA portal
+    query.status = { $ne: ClaimStatus.DRAFT };
+
     // Role-based filtering
     if (userRole === UserRole.TPA_USER) {
       // TPA users can only see claims assigned to them
       query.assignedTo = new Types.ObjectId(userId);
     }
 
-    // Status filter
+    // Status filter (if provided, combine with DRAFT exclusion)
     if (status) {
-      query.status = status;
+      query.status = { $ne: ClaimStatus.DRAFT, $eq: status };
     }
 
     // Assigned to filter (for TPA_ADMIN only)

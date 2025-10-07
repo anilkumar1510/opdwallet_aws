@@ -18,20 +18,30 @@ export class AppointmentsService {
     const appointmentId = await this.counterService.generateAppointmentId();
     const consultationFee = createAppointmentDto.consultationFee || 0;
     const userId = createAppointmentDto.userId;
+    const patientId = createAppointmentDto.patientId;
 
     // Validate userId is provided
     if (!userId) {
       throw new BadRequestException('User ID is required');
     }
 
+    // Validate patientId is provided
+    if (!patientId) {
+      throw new BadRequestException('Patient ID is required');
+    }
+
+    // Use patientId for wallet operations (the patient's wallet should be debited, not necessarily the booking user)
+    const walletUserId = patientId;
+
     // Check and debit wallet if consultation fee > 0
     if (consultationFee > 0) {
       console.log('🟡 [APPOINTMENTS SERVICE] Checking wallet balance for consultation fee:', consultationFee);
+      console.log('🟡 [APPOINTMENTS SERVICE] Patient ID for wallet debit:', walletUserId);
 
       try {
         // Check sufficient balance
         const balanceCheck = await this.walletService.checkSufficientBalance(
-          userId,
+          walletUserId,
           consultationFee,
           'CAT001' // Consult category
         );
@@ -76,9 +86,10 @@ export class AppointmentsService {
     if (consultationFee > 0) {
       try {
         console.log('🟡 [APPOINTMENTS SERVICE] Debiting wallet for appointment:', appointmentId);
+        console.log('🟡 [APPOINTMENTS SERVICE] Debiting from patient wallet:', walletUserId);
 
         await this.walletService.debitWallet(
-          userId,
+          walletUserId,
           consultationFee,
           'CAT001', // Consult category
           (saved._id as any).toString(),
@@ -230,16 +241,17 @@ export class AppointmentsService {
     await appointment.save();
 
     // Refund wallet if there was a consultation fee (same as user cancellation)
+    // Use patientId for refund since that's whose wallet was debited
     if (appointment.consultationFee > 0) {
       try {
         console.log('🟡 [APPOINTMENTS SERVICE] OPS cancelling - Refunding wallet for cancelled appointment:', {
           appointmentId,
           amount: appointment.consultationFee,
-          userId: appointment.userId
+          patientId: appointment.patientId
         });
 
         await this.walletService.creditWallet(
-          appointment.userId.toString(),
+          appointment.patientId,
           appointment.consultationFee,
           'CAT001', // Consult category
           (appointment._id as any).toString(),
@@ -293,16 +305,17 @@ export class AppointmentsService {
     await appointment.save();
 
     // Refund wallet if there was a consultation fee
+    // Use patientId for refund since that's whose wallet was debited
     if (appointment.consultationFee > 0) {
       try {
         console.log('🟡 [APPOINTMENTS SERVICE] Refunding wallet for cancelled appointment:', {
           appointmentId,
           amount: appointment.consultationFee,
-          userId: appointment.userId
+          patientId: appointment.patientId
         });
 
         await this.walletService.creditWallet(
-          appointment.userId.toString(),
+          appointment.patientId,
           appointment.consultationFee,
           'CAT001', // Consult category
           (appointment._id as any).toString(),

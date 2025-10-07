@@ -28,6 +28,18 @@ export interface AppointmentsResponse {
   date?: string;
 }
 
+export async function getAppointmentCounts(): Promise<{ message: string; counts: { [date: string]: number } }> {
+  const response = await fetch('/api/doctor/appointments/counts', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch appointment counts');
+  }
+
+  return response.json();
+}
+
 export async function getTodayAppointments(): Promise<AppointmentsResponse> {
   console.log('=== GET TODAY APPOINTMENTS DEBUG START ===');
   console.log('[getTodayAppointments] Called at:', new Date().toISOString());
@@ -168,4 +180,25 @@ export async function markAppointmentComplete(appointmentId: string): Promise<{ 
   }
 
   return response.json();
+}
+
+export async function confirmAppointment(appointmentId: string): Promise<{ message: string; appointment: Appointment }> {
+  console.log('[confirmAppointment] Confirming appointment:', appointmentId);
+
+  const response = await fetch(`/api/doctor/appointments/${appointmentId}/confirm`, {
+    method: 'PATCH',
+    credentials: 'include',
+  });
+
+  console.log('[confirmAppointment] Response status:', response.status);
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('[confirmAppointment] Error:', error);
+    throw new Error(error.message || 'Failed to confirm appointment');
+  }
+
+  const data = await response.json();
+  console.log('[confirmAppointment] Success:', data);
+  return data;
 }

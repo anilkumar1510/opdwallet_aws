@@ -34,6 +34,42 @@ export class DoctorAppointmentsController {
     private appointmentModel: Model<AppointmentDocument>,
   ) {}
 
+  @Get('counts')
+  async getAppointmentCounts(@Request() req: AuthRequest) {
+    const doctorId = req.user?.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    // Get date range: 2 days back, today, 3 days ahead
+    const today = new Date();
+    const dates: string[] = [];
+
+    for (let i = -2; i <= 3; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+
+    // Get confirmed appointment counts for each date
+    const counts: { [key: string]: number } = {};
+
+    for (const date of dates) {
+      const count = await this.appointmentModel.countDocuments({
+        doctorId,
+        appointmentDate: date,
+        status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING_CONFIRMATION] },
+      });
+      counts[date] = count;
+    }
+
+    return {
+      message: 'Appointment counts retrieved successfully',
+      counts,
+    };
+  }
+
   @Get('today')
   async getTodayAppointments(@Request() req: AuthRequest) {
     console.log('=== DOCTOR APPOINTMENTS TODAY DEBUG START ===');
@@ -82,11 +118,12 @@ export class DoctorAppointmentsController {
     const todayAllAppts = await this.appointmentModel.find({ appointmentDate: today }).exec();
     console.log('[DoctorAppointmentsController] Total appointments for date', today, ':', todayAllAppts.length);
 
+    // Modified to show ALL appointments regardless of status
     const appointments = await this.appointmentModel
       .find({
         doctorId,
         appointmentDate: today,
-        status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+        // Removed status filter to show ALL appointments (CONFIRMED, COMPLETED, PENDING, CANCELLED)
       })
       .sort({ timeSlot: 1 })
       .exec();
@@ -127,11 +164,12 @@ export class DoctorAppointmentsController {
       throw new BadRequestException('Doctor ID is required');
     }
 
+    // Modified to show ALL appointments regardless of status
     const appointments = await this.appointmentModel
       .find({
         doctorId,
         appointmentDate: date,
-        status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+        // Removed status filter to show ALL appointments
       })
       .sort({ timeSlot: 1 })
       .exec();
@@ -228,6 +266,49 @@ export class DoctorAppointmentsController {
 
     return {
       message: 'Appointment marked as completed',
+      appointment: appointment.toObject(),
+    };
+  }
+
+  @Patch(':appointmentId/confirm')
+  async confirmAppointment(
+    @Param('appointmentId') appointmentId: string,
+    @Request() req: AuthRequest,
+  ) {
+    console.log('[DoctorAppointmentsController] PATCH /doctor/appointments/:appointmentId/confirm');
+    console.log('[DoctorAppointmentsController] appointmentId:', appointmentId);
+    console.log('[DoctorAppointmentsController] doctorId:', req.user.doctorId);
+
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    const appointment = await this.appointmentModel.findOne({
+      appointmentId,
+      doctorId,
+    });
+
+    if (!appointment) {
+      console.error('[DoctorAppointmentsController] Appointment not found:', appointmentId);
+      throw new NotFoundException('Appointment not found');
+    }
+
+    if (appointment.status !== AppointmentStatus.PENDING_CONFIRMATION) {
+      console.error('[DoctorAppointmentsController] Cannot confirm appointment with status:', appointment.status);
+      throw new BadRequestException('Only pending appointments can be confirmed');
+    }
+
+    console.log('[DoctorAppointmentsController] Updating appointment status to CONFIRMED');
+    appointment.status = AppointmentStatus.CONFIRMED;
+    appointment.confirmedAt = new Date();
+    await appointment.save();
+
+    console.log('[DoctorAppointmentsController] Appointment confirmed successfully');
+
+    return {
+      message: 'Appointment confirmed successfully',
       appointment: appointment.toObject(),
     };
   }

@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Appointment } from '@/lib/api/appointments'
+import { Appointment, confirmAppointment } from '@/lib/api/appointments'
 import {
   ClockIcon,
   UserIcon,
@@ -12,9 +13,11 @@ import {
 
 interface AppointmentCardProps {
   appointment: Appointment
+  onUpdate?: () => void
 }
 
-export default function AppointmentCard({ appointment }: AppointmentCardProps) {
+export default function AppointmentCard({ appointment, onUpdate }: AppointmentCardProps) {
+  const [confirming, setConfirming] = useState(false)
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'CONFIRMED':
@@ -37,11 +40,29 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
     return <UserIcon className="h-5 w-5 text-gray-600" />
   }
 
+  const handleConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (confirming) return
+
+    try {
+      setConfirming(true)
+      await confirmAppointment(appointment.appointmentId)
+      if (onUpdate) onUpdate()
+    } catch (error: any) {
+      alert(error.message || 'Failed to confirm appointment')
+    } finally {
+      setConfirming(false)
+    }
+  }
+
   return (
-    <Link
-      href={`/doctorview/appointments/${appointment.appointmentId}`}
-      className="block card hover:shadow-md transition-shadow"
-    >
+    <div className="card hover:shadow-md transition-shadow relative">
+      <Link
+        href={`/doctorview/appointments/${appointment.appointmentId}`}
+        className="block"
+      >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
@@ -96,5 +117,18 @@ export default function AppointmentCard({ appointment }: AppointmentCardProps) {
         </div>
       )}
     </Link>
+
+    {appointment.status === 'PENDING_CONFIRMATION' && (
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <button
+          onClick={handleConfirm}
+          disabled={confirming}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+        >
+          {confirming ? 'Confirming...' : 'Confirm Appointment'}
+        </button>
+      </div>
+    )}
+    </div>
   )
 }

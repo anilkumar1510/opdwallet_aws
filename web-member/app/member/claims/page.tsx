@@ -21,7 +21,7 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
-type ClaimStatus = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'processing'
+type ClaimStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'processing'
 type ViewMode = 'table' | 'cards'
 type SortField = 'date' | 'amount' | 'status' | 'type'
 type SortOrder = 'asc' | 'desc'
@@ -76,9 +76,8 @@ export default function ClaimsPage() {
 
       const data = await response.json()
 
-      // Map backend claims to frontend format and filter out drafts
+      // Map backend claims to frontend format (including drafts)
       const mappedClaims: Claim[] = data.claims
-        .filter((claim: any) => claim.status !== 'DRAFT') // Exclude drafts
         .map((claim: any) => ({
           id: claim._id,
           claimNumber: claim.claimId,
@@ -106,6 +105,7 @@ export default function ClaimsPage() {
   // Map backend status to frontend status
   const mapStatus = (backendStatus: string): ClaimStatus => {
     const statusMap: Record<string, ClaimStatus> = {
+      'DRAFT': 'draft',
       'SUBMITTED': 'submitted',
       'UNDER_REVIEW': 'under_review',
       'APPROVED': 'approved',
@@ -207,6 +207,8 @@ export default function ClaimsPage() {
         return <ClockIcon className="h-4 w-4" />
       case 'under_review':
         return <ExclamationCircleIcon className="h-4 w-4" />
+      case 'draft':
+        return <DocumentTextIcon className="h-4 w-4" />
       default:
         return <DocumentTextIcon className="h-4 w-4" />
     }
@@ -222,6 +224,8 @@ export default function ClaimsPage() {
         return 'bg-blue-100 text-blue-700'
       case 'under_review':
         return 'bg-amber-100 text-amber-700'
+      case 'draft':
+        return 'bg-gray-100 text-gray-700'
       default:
         return 'bg-gray-100 text-gray-700'
     }
@@ -347,6 +351,7 @@ export default function ClaimsPage() {
                 className="px-3 py-2 bg-surface border border-surface-border rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
               >
                 <option value="all">All Status</option>
+                <option value="draft">Draft</option>
                 <option value="submitted">Submitted</option>
                 <option value="under_review">Under Review</option>
                 <option value="processing">Processing</option>

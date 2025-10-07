@@ -66,6 +66,32 @@ export class MemberClaimsService {
     return false;
   }
 
+  /**
+   * Get all user IDs that a user can view claims for (self + dependents)
+   */
+  private async getUserAndDependentIds(userId: string): Promise<Types.ObjectId[]> {
+    const userIds: Types.ObjectId[] = [new Types.ObjectId(userId)];
+
+    // Get the user's memberId
+    const user = await this.userModel.findById(userId).select('memberId').lean();
+    if (!user) {
+      return userIds;
+    }
+
+    // Find all dependents (users whose primaryMemberId matches this user's memberId)
+    const dependents = await this.userModel
+      .find({ primaryMemberId: user.memberId })
+      .select('_id')
+      .lean();
+
+    // Add dependent IDs to the list
+    dependents.forEach(dep => {
+      userIds.push(new Types.ObjectId(dep._id.toString()));
+    });
+
+    return userIds;
+  }
+
   async create(
     createClaimDto: CreateClaimDto,
     userId: string,
@@ -218,7 +244,9 @@ export class MemberClaimsService {
     const query: any = {};
 
     if (userId) {
-      query.userId = new Types.ObjectId(userId);
+      // Get user's own ID and all their dependent IDs
+      const userIds = await this.getUserAndDependentIds(userId);
+      query.userId = { $in: userIds };
     }
 
     if (status) {
@@ -229,7 +257,7 @@ export class MemberClaimsService {
     const total = await this.memberClaimModel.countDocuments(query);
     const claims = await this.memberClaimModel
       .find(query)
-      .select('claimId userId memberName claimType category treatmentDate providerName billAmount billNumber status paymentStatus approvedAmount submittedAt createdAt isUrgent requiresPreAuth')
+      .select('claimId userId memberName claimType category treatmentDate providerName billAmount billNumber status paymentStatus approvedAmount submittedAt createdAt isUrgent requiresPreAuth documents')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -248,7 +276,9 @@ export class MemberClaimsService {
     const query: any = { _id: new Types.ObjectId(id) };
 
     if (userId) {
-      query.userId = new Types.ObjectId(userId);
+      // Get user's own ID and all their dependent IDs
+      const userIds = await this.getUserAndDependentIds(userId);
+      query.userId = { $in: userIds };
     }
 
     const claim = await this.memberClaimModel.findOne(query).exec();
@@ -390,10 +420,13 @@ export class MemberClaimsService {
     totalApprovedAmount: number;
     totalPaidAmount: number;
   }> {
+    // Get user's own ID and all their dependent IDs
+    const userIds = await this.getUserAndDependentIds(userId);
+
     // PERFORMANCE: Use aggregation pipeline instead of loading all claims into memory
     const result = await this.memberClaimModel.aggregate([
       {
-        $match: { userId: new Types.ObjectId(userId) }
+        $match: { userId: { $in: userIds } }
       },
       {
         $facet: {
