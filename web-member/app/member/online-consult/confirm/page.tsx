@@ -13,13 +13,14 @@ import {
 } from '@heroicons/react/24/outline'
 import SlotSelectionModal from '@/components/SlotSelectionModal'
 
-interface Relationship {
+interface FamilyMember {
   _id: string
+  userId: string  // MongoDB ObjectId for wallet operations
   name: string
   relation: string
   gender: string
   dateOfBirth: string
-  relationshipId: string
+  isPrimary: boolean
 }
 
 function OnlineConfirmContent() {
@@ -34,8 +35,9 @@ function OnlineConfirmContent() {
 
   const [loading, setLoading] = useState(false)
   const [loadingRelationships, setLoadingRelationships] = useState(true)
-  const [relationships, setRelationships] = useState<Relationship[]>([])
-  const [selectedPatient, setSelectedPatient] = useState<Relationship | null>(null)
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+  const [selectedPatient, setSelectedPatient] = useState<FamilyMember | null>(null)
+  const [loggedInUserId, setLoggedInUserId] = useState<string>('')
   const [contactNumber, setContactNumber] = useState('')
   const [callPreference, setCallPreference] = useState<'VOICE' | 'VIDEO' | 'BOTH'>('BOTH')
   const [timeChoice, setTimeChoice] = useState<'NOW' | 'LATER'>('NOW')
@@ -53,7 +55,8 @@ function OnlineConfirmContent() {
 
   const fetchRelationships = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      console.log('[OnlineConfirm] Fetching family members from /api/member/profile')
+      const response = await fetch('/api/member/profile', {
         credentials: 'include',
       })
 
@@ -62,43 +65,44 @@ function OnlineConfirmContent() {
       }
 
       const data = await response.json()
-      console.log('[OnlineConfirm] User data:', data)
+      console.log('[OnlineConfirm] Profile data received:', {
+        userId: data.user?._id,
+        dependentsCount: data.dependents?.length || 0
+      })
 
-      const userName = typeof data.name === 'object'
-        ? `${data.name.firstName || ''} ${data.name.lastName || ''}`.trim()
-        : data.name || 'Unknown'
+      // Store logged-in user ID
+      setLoggedInUserId(data.user._id)
 
-      console.log('[OnlineConfirm] Processed user name:', userName)
-
-      const selfRelationship = {
-        _id: 'self',
-        name: userName,
+      // Build primary member (self)
+      const selfMember: FamilyMember = {
+        _id: data.user._id,
+        userId: data.user._id,
+        name: `${data.user.name.firstName} ${data.user.name.lastName}`,
         relation: 'Self',
-        gender: data.gender || 'Other',
-        dateOfBirth: data.dateOfBirth || data.dob || '',
-        relationshipId: 'SELF'
+        gender: data.user.gender || 'Other',
+        dateOfBirth: data.user.dob || '',
+        isPrimary: true
       }
 
-      const relationships = data.relationships || []
-      console.log('[OnlineConfirm] Raw relationships:', relationships)
-
-      const processedRelationships = relationships.map((rel: any) => ({
-        ...rel,
-        name: typeof rel.name === 'object'
-          ? `${rel.name.firstName || ''} ${rel.name.lastName || ''}`.trim()
-          : rel.name || 'Unknown'
+      // Build dependents list
+      const dependentMembers: FamilyMember[] = (data.dependents || []).map((dep: any) => ({
+        _id: dep._id,
+        userId: dep._id,
+        name: `${dep.name.firstName} ${dep.name.lastName}`,
+        relation: dep.relationship || 'Family Member',
+        gender: dep.gender || 'Other',
+        dateOfBirth: dep.dob || '',
+        isPrimary: false
       }))
 
-      console.log('[OnlineConfirm] Processed relationships:', processedRelationships)
+      const allMembers = [selfMember, ...dependentMembers]
+      console.log('[OnlineConfirm] Total family members:', allMembers.length)
 
-      const allRelationships = [selfRelationship, ...processedRelationships]
-      console.log('[OnlineConfirm] All relationships:', allRelationships)
-
-      setRelationships(allRelationships)
-      setSelectedPatient(selfRelationship)
-      setContactNumber(data.phone || data.mobileNumber || '')
+      setFamilyMembers(allMembers)
+      setSelectedPatient(selfMember)
+      setContactNumber(data.user.phone || data.user.mobileNumber || '')
     } catch (error) {
-      console.error('[OnlineConfirm] Error fetching relationships:', error)
+      console.error('[OnlineConfirm] Error fetching family members:', error)
     } finally {
       setLoadingRelationships(false)
     }
@@ -135,11 +139,12 @@ function OnlineConfirmContent() {
       console.log('[OnlineConfirm] Appointment time:', appointmentTime)
 
       const payload = {
+        userId: loggedInUserId,
+        patientId: selectedPatient.userId,
         doctorId,
         doctorName,
         specialty,
         patientName: selectedPatient.name,
-        patientId: selectedPatient.relationshipId,
         appointmentType: 'ONLINE',
         appointmentDate,
         timeSlot: appointmentTime,
@@ -151,6 +156,14 @@ function OnlineConfirmContent() {
         clinicName: '',
         clinicAddress: ''
       }
+
+      console.log('[OnlineConfirm] Payload details:', {
+        userId: loggedInUserId,
+        patientId: selectedPatient.userId,
+        patientName: selectedPatient.name,
+        isPrimaryPatient: selectedPatient.isPrimary,
+        consultationFee: parseFloat(consultationFee)
+      })
 
       console.log('[OnlineConfirm] Creating appointment with payload:', JSON.stringify(payload, null, 2))
 
@@ -364,19 +377,21 @@ function OnlineConfirmContent() {
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <h3 className="font-semibold text-gray-900 mb-3">Select Patient</h3>
           <div className="space-y-2">
-            {relationships.map((rel) => (
+            {familyMembers.map((member) => (
               <button
-                key={rel._id}
-                onClick={() => setSelectedPatient(rel)}
+                key={member._id}
+                onClick={() => setSelectedPatient(member)}
                 className={`w-full p-3 rounded-xl text-left transition-colors ${
-                  selectedPatient?._id === rel._id
+                  selectedPatient?._id === member._id
                     ? 'bg-blue-50 border-2'
                     : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
                 }`}
-                style={selectedPatient?._id === rel._id ? { borderColor: '#0a529f' } : {}}
+                style={selectedPatient?._id === member._id ? { borderColor: '#0a529f' } : {}}
               >
-                <div className="font-medium text-gray-900">{rel.name}</div>
-                <div className="text-sm text-gray-600">{rel.relation}</div>
+                <div className="font-medium text-gray-900">{member.name}</div>
+                <div className="text-sm text-gray-600">
+                  {member.relation}{member.isPrimary && ' (You)'}
+                </div>
               </button>
             ))}
           </div>

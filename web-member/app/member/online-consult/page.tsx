@@ -6,13 +6,18 @@ import {
   ChevronLeftIcon,
   VideoCameraIcon,
   ClockIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CalendarIcon,
+  UserIcon
 } from '@heroicons/react/24/outline'
+import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 
 interface Appointment {
   _id: string
   appointmentId: string
   appointmentNumber: string
+  patientName: string
+  patientId: string
   doctorName: string
   specialty: string
   appointmentType: string
@@ -22,12 +27,14 @@ interface Appointment {
   consultationFee: number
   contactNumber?: string
   callPreference?: string
+  hasPrescription?: boolean
+  prescriptionId?: string
 }
 
 export default function OnlineConsultPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [ongoingAppointments, setOngoingAppointments] = useState<Appointment[]>([])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
@@ -48,14 +55,14 @@ export default function OnlineConsultPage() {
       const data = await response.json()
       console.log('[OnlineConsult] User ID received:', data._id)
       setUserId(data._id)
-      await fetchOngoingAppointments(data._id)
+      await fetchAppointments(data._id)
     } catch (error) {
       console.error('[OnlineConsult] Error fetching user data:', error)
       setLoading(false)
     }
   }
 
-  const fetchOngoingAppointments = async (userId: string) => {
+  const fetchAppointments = async (userId: string) => {
     try {
       console.log('[OnlineConsult] Fetching ONLINE appointments for user:', userId)
       const response = await fetch(`/api/appointments/user/${userId}?type=ONLINE`, {
@@ -69,13 +76,7 @@ export default function OnlineConsultPage() {
 
       const data = await response.json()
       console.log('[OnlineConsult] ONLINE appointments received:', data.length)
-
-      const ongoingOnline = data.filter((apt: Appointment) =>
-        apt.status === 'CONFIRMED' || apt.status === 'PENDING_CONFIRMATION'
-      )
-
-      console.log('[OnlineConsult] Filtered ongoing appointments:', ongoingOnline.length)
-      setOngoingAppointments(ongoingOnline)
+      setAppointments(data)
     } catch (error) {
       console.error('[OnlineConsult] Error fetching appointments:', error)
     } finally {
@@ -90,6 +91,44 @@ export default function OnlineConsultPage() {
 
   const handleJoinAppointment = (appointment: Appointment) => {
     console.log('[OnlineConsult] Join appointment:', appointment.appointmentId)
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const day = date.getDate()
+    const month = date.toLocaleString('default', { month: 'short' })
+    const year = date.getFullYear()
+    return `${day} ${month} ${year}`
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDING_CONFIRMATION':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'CONFIRMED':
+        return 'bg-green-100 text-green-800'
+      case 'COMPLETED':
+        return 'bg-gray-100 text-gray-800'
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PENDING_CONFIRMATION':
+        return 'Confirming'
+      case 'CONFIRMED':
+        return 'Confirmed'
+      case 'COMPLETED':
+        return 'Completed'
+      case 'CANCELLED':
+        return 'Cancelled'
+      default:
+        return status
+    }
   }
 
   const handleCancelAppointment = async (appointmentId: string) => {
@@ -113,7 +152,7 @@ export default function OnlineConsultPage() {
       alert('Online consultation cancelled successfully. Your wallet has been refunded.')
 
       // Refresh appointments
-      await fetchOngoingAppointments(userId)
+      await fetchAppointments(userId)
     } catch (error) {
       console.error('[OnlineConsult] Error cancelling appointment:', error)
       alert('Failed to cancel appointment: ' + (error as Error).message)
@@ -182,101 +221,149 @@ export default function OnlineConsultPage() {
           </button>
         </div>
 
-        {ongoingAppointments.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Ongoing Appointments</h3>
-            <div className="space-y-3">
-              {ongoingAppointments.map((appointment) => (
-                <div key={appointment._id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-sm text-gray-600">#{appointment.appointmentNumber}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          appointment.status === 'CONFIRMED'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {appointment.status === 'CONFIRMED' ? 'Confirmed' : 'Pending'}
-                        </span>
-                      </div>
-                      <h4 className="font-semibold text-gray-900">{appointment.doctorName}</h4>
-                      <p className="text-sm text-gray-600">{appointment.specialty}</p>
+        {appointments.length === 0 ? (
+          <div className="bg-white rounded-2xl p-8 text-center">
+            <div className="mb-4">
+              <VideoCameraIcon className="h-16 w-16 text-gray-300 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No online consultations yet</h3>
+            <p className="text-gray-600 mb-4">Book your first online consultation to get started</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-2">
+              Your Appointments ({appointments.length})
+            </h2>
+
+            {appointments.map((appointment) => (
+              <div
+                key={appointment._id}
+                className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <VideoCameraIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
+                      <div className="text-sm text-gray-600">{appointment.specialty}</div>
                     </div>
                   </div>
+                  <div className="flex flex-col gap-2 items-end">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                      {getStatusText(appointment.status)}
+                    </span>
+                    <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
+                  </div>
+                </div>
 
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <UserIcon className="h-4 w-4" />
+                    <span>Patient: {appointment.patientName}</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>{formatDate(appointment.appointmentDate)}</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <ClockIcon className="h-4 w-4" />
-                    <span>{appointment.appointmentDate} at {appointment.timeSlot}</span>
+                    <span>{appointment.timeSlot}</span>
                   </div>
 
                   {appointment.contactNumber && (
-                    <div className="text-sm text-gray-600 mb-3">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <span className="font-medium">Contact:</span> {appointment.contactNumber}
                     </div>
                   )}
 
                   {appointment.callPreference && (
-                    <div className="text-sm text-gray-600 mb-3">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <span className="font-medium">Preferred Mode:</span> {appointment.callPreference}
                     </div>
                   )}
+                </div>
 
-                  <div className="space-y-2">
-                    {appointment.status === 'CONFIRMED' && (
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm text-gray-600">
+                      Appointment ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                    </div>
+                    <div className="text-sm font-semibold text-blue-600">
+                      ₹{appointment.consultationFee}
+                    </div>
+                  </div>
+
+                  {/* View Prescription Button */}
+                  {appointment.hasPrescription && appointment.prescriptionId && (
+                    <div className="mb-3">
+                      <ViewPrescriptionButton
+                        prescriptionId={appointment.prescriptionId}
+                        hasPrescription={appointment.hasPrescription}
+                      />
+                    </div>
+                  )}
+
+                  {/* Join Call Button - Only for confirmed online appointments */}
+                  {appointment.status === 'CONFIRMED' && (
+                    <div className="mb-3">
                       <button
                         onClick={() => handleJoinAppointment(appointment)}
                         className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
                       >
                         Join Call
                       </button>
-                    )}
-                    {(() => {
-                      // Check if appointment is in the future
-                      const isFuture = (() => {
-                        if (appointment.timeSlot === 'Immediate') {
-                          return true // Allow cancellation for immediate appointments
+                    </div>
+                  )}
+
+                  {(() => {
+                    // Check if appointment is in the future
+                    const isFuture = (() => {
+                      if (appointment.timeSlot === 'Immediate') {
+                        return true // Allow cancellation for immediate appointments
+                      }
+
+                      // Parse appointment date and time
+                      const [year, month, day] = appointment.appointmentDate.split('-').map(Number)
+                      const appointmentDateObj = new Date(year, month - 1, day)
+
+                      // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
+                      const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i)
+                      if (timeParts) {
+                        let hours = parseInt(timeParts[1])
+                        const minutes = parseInt(timeParts[2])
+                        const period = timeParts[3].toUpperCase()
+
+                        if (period === 'PM' && hours !== 12) {
+                          hours += 12
+                        } else if (period === 'AM' && hours === 12) {
+                          hours = 0
                         }
 
-                        // Parse appointment date and time
-                        const [year, month, day] = appointment.appointmentDate.split('-').map(Number)
-                        const appointmentDateObj = new Date(year, month - 1, day)
+                        appointmentDateObj.setHours(hours, minutes, 0, 0)
+                      }
 
-                        // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
-                        const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i)
-                        if (timeParts) {
-                          let hours = parseInt(timeParts[1])
-                          const minutes = parseInt(timeParts[2])
-                          const period = timeParts[3].toUpperCase()
+                      const now = new Date()
+                      return appointmentDateObj > now
+                    })()
 
-                          if (period === 'PM' && hours !== 12) {
-                            hours += 12
-                          } else if (period === 'AM' && hours === 12) {
-                            hours = 0
-                          }
+                    const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture
 
-                          appointmentDateObj.setHours(hours, minutes, 0, 0)
-                        }
-
-                        const now = new Date()
-                        return appointmentDateObj > now
-                      })()
-
-                      const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture
-
-                      return canCancel
-                    })() && (
-                      <button
-                        onClick={() => handleCancelAppointment(appointment.appointmentId)}
-                        className="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        Cancel Consultation
-                      </button>
-                    )}
-                  </div>
+                    return canCancel
+                  })() && (
+                    <button
+                      onClick={() => handleCancelAppointment(appointment.appointmentId)}
+                      className="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Cancel Consultation
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         )}
 

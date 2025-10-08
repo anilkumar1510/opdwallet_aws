@@ -38,9 +38,9 @@ const formatValidTillDate = (dateStr: string) => {
   if (!dateStr) return 'No Expiry'
   const date = new Date(dateStr)
   const day = date.getDate()
-  const month = date.toLocaleString('default', { month: 'long' })
+  const month = date.toLocaleString('en-US', { month: 'short' })
   const year = date.getFullYear()
-  return `${day}${day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} ${month} ${year}`
+  return `${day}-${month}-${year}`
 }
 
 // Helper function to get readable relationship label
@@ -202,7 +202,7 @@ const WalletCategoryCard = memo(({
 }) => {
   return (
     <div className="border border-gray-200 rounded-xl p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center space-x-3">
           {React.createElement(icon, { className: "h-5 w-5 text-gray-600" })}
           <span className="text-sm font-medium text-gray-900">{category.name}</span>
@@ -216,6 +216,7 @@ const WalletCategoryCard = memo(({
           </div>
         </div>
       </div>
+      <p className="text-xs text-gray-500 text-right">Remaining / Allocated</p>
       <button className="w-full mt-2 p-1">
         <ChevronDownIcon className="h-4 w-4 text-gray-400 mx-auto" />
       </button>
@@ -441,6 +442,13 @@ export default function DashboardPage() {
       categoryCode: 'ONLINE_CONSULT'
     },
     {
+      name: 'Health Records',
+      description: 'View prescriptions and medical records',
+      icon: DocumentTextIcon,
+      href: '/member/health-records',
+      categoryCode: 'HEALTH_RECORDS'
+    },
+    {
       name: 'Pharmacy',
       description: 'Order medicines online',
       icon: CubeIcon,
@@ -471,15 +479,16 @@ export default function DashboardPage() {
     })
   }, [user?._id])
 
+  // Get user policy before rendering
+  const userPolicy = getUserPolicy()
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
       </div>
     )
   }
-
-  const userPolicy = getUserPolicy()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -496,11 +505,19 @@ export default function DashboardPage() {
         <div className="space-y-6">
         {/* Horizontal Scrollable Member Cards */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Covered Members</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Covered Members</h2>
+            {user?.dependents?.length > 0 && (
+              <div className="flex items-center text-gray-400 text-xs md:hidden">
+                <ChevronRightIcon className="h-4 w-4 mr-1" />
+                <span>Swipe to see all</span>
+              </div>
+            )}
+          </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory -mx-4 px-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {/* Current User Card */}
-            <div className="min-w-[320px] snap-start">
+            <div className="w-[280px] sm:w-[320px] md:w-[340px] lg:w-[360px] flex-shrink-0 snap-start">
               <MemberCard
                 member={user}
                 isPrimary={true}
@@ -512,7 +529,7 @@ export default function DashboardPage() {
 
             {/* Dependent Member Cards */}
             {user?.dependents?.map((dependent: any, index: number) => (
-              <div key={dependent._id || dependent.id || index} className="min-w-[320px] snap-start">
+              <div key={dependent._id || dependent.id || index} className="w-[280px] sm:w-[320px] md:w-[340px] lg:w-[360px] flex-shrink-0 snap-start">
                 <MemberCard
                   member={dependent}
                   isPrimary={false}
@@ -522,16 +539,6 @@ export default function DashboardPage() {
                 />
               </div>
             ))}
-
-            {/* Scroll Indicator (only show if dependents exist) */}
-            {user?.dependents?.length > 0 && (
-              <div className="min-w-[80px] snap-start flex items-center justify-center">
-                <div className="text-gray-400 text-center">
-                  <ChevronRightIcon className="h-8 w-8 mx-auto" />
-                  <p className="text-xs mt-1">Scroll</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

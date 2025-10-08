@@ -107,8 +107,8 @@ export class Appointment {
   @Prop({ enum: CallPreference })
   callPreference: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'DoctorPrescription' })
-  prescriptionId?: Types.ObjectId;
+  @Prop()
+  prescriptionId?: string;
 
   @Prop({ default: false })
   hasPrescription: boolean;

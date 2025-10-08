@@ -21,7 +21,7 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
-type ClaimStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'processing'
+type ClaimStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'processing' | 'cancelled'
 type ViewMode = 'table' | 'cards'
 type SortField = 'date' | 'amount' | 'status' | 'type'
 type SortOrder = 'asc' | 'desc'
@@ -60,6 +60,19 @@ export default function ClaimsPage() {
   // Fetch claims from API
   useEffect(() => {
     fetchClaims()
+
+    // Refresh data when user navigates back to this page
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchClaims()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   const fetchClaims = async () => {
@@ -110,6 +123,7 @@ export default function ClaimsPage() {
       'UNDER_REVIEW': 'under_review',
       'APPROVED': 'approved',
       'REJECTED': 'rejected',
+      'CANCELLED': 'cancelled',
       'PAYMENT_PENDING': 'processing',
       'PAYMENT_PROCESSING': 'processing',
       'PAYMENT_COMPLETED': 'approved',
@@ -203,6 +217,8 @@ export default function ClaimsPage() {
         return <CheckCircleIcon className="h-4 w-4" />
       case 'rejected':
         return <XCircleIcon className="h-4 w-4" />
+      case 'cancelled':
+        return <XCircleIcon className="h-4 w-4" />
       case 'processing':
         return <ClockIcon className="h-4 w-4" />
       case 'under_review':
@@ -220,6 +236,8 @@ export default function ClaimsPage() {
         return 'bg-green-100 text-green-700'
       case 'rejected':
         return 'bg-red-100 text-red-700'
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-700'
       case 'processing':
         return 'bg-blue-100 text-blue-700'
       case 'under_review':
@@ -357,6 +375,7 @@ export default function ClaimsPage() {
                 <option value="processing">Processing</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
               </select>
 
               {/* Desktop Filters Toggle */}

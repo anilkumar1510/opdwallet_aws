@@ -95,6 +95,7 @@ export class MemberClaimsService {
   async create(
     createClaimDto: CreateClaimDto,
     userId: string,
+    submittedBy: string,
     files?: Express.Multer.File[],
   ): Promise<MemberClaimDocument> {
     try {
@@ -133,7 +134,7 @@ export class MemberClaimsService {
         documents,
         status: ClaimStatus.DRAFT,
         paymentStatus: PaymentStatus.PENDING,
-        createdBy: userId,
+        createdBy: submittedBy,
         isUrgent: createClaimDto.isUrgent || false,
         requiresPreAuth: createClaimDto.requiresPreAuth || false,
         preAuthNumber: createClaimDto.preAuthNumber,
@@ -188,9 +189,9 @@ export class MemberClaimsService {
       });
 
       try {
-        // Check sufficient balance
+        // Check sufficient balance - use claim owner's userId, not logged-in user
         const balanceCheck = await this.walletService.checkSufficientBalance(
-          userId,
+          claim.userId.toString(),
           claim.billAmount,
           categoryCode
         );
@@ -204,9 +205,9 @@ export class MemberClaimsService {
 
         console.log('✅ [CLAIMS SERVICE] Sufficient balance available, debiting wallet');
 
-        // Debit wallet
+        // Debit wallet - use claim owner's userId, not logged-in user
         await this.walletService.debitWallet(
-          userId,
+          claim.userId.toString(),
           claim.billAmount,
           categoryCode,
           (claim._id as any).toString(),
@@ -298,6 +299,12 @@ export class MemberClaimsService {
     }
 
     return claim;
+  }
+
+  async findClaimByFileName(filename: string): Promise<MemberClaimDocument | null> {
+    return this.memberClaimModel.findOne({
+      'documents.fileName': filename
+    }).lean().exec();
   }
 
   async update(
@@ -755,6 +762,36 @@ export class MemberClaimsService {
       throw new BadRequestException(
         `Cannot cancel claim with status ${claim.status}. Only pending claims can be cancelled.`,
       );
+    }
+
+    // Refund wallet if it was debited for this claim
+    const categoryCode = CATEGORY_CODE_MAP[claim.category];
+    if (categoryCode && claim.billAmount > 0) {
+      try {
+        console.log('🟡 [CLAIMS SERVICE] Refunding wallet for cancelled claim:', {
+          claimId,
+          category: claim.category,
+          categoryCode,
+          amount: claim.billAmount
+        });
+
+        // Credit the wallet back - use claim owner's userId, not logged-in user
+        await this.walletService.creditWallet(
+          claim.userId.toString(),
+          claim.billAmount,
+          categoryCode,
+          (claim._id as any).toString(),
+          'CLAIM_REFUND',
+          claim.providerName || 'Provider',
+          `Refund for cancelled claim ${claimId} - ${claim.category}`
+        );
+
+        console.log('✅ [CLAIMS SERVICE] Wallet refunded successfully');
+      } catch (walletError) {
+        console.error('❌ [CLAIMS SERVICE] Wallet refund failed:', walletError);
+        // Log the error but don't fail the cancellation
+        console.warn('⚠️ [CLAIMS SERVICE] Continuing with claim cancellation despite wallet refund failure');
+      }
     }
 
     // Update claim status to CANCELLED

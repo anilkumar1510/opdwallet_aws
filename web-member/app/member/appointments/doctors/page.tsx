@@ -535,8 +535,7 @@ function DoctorsContent() {
                     onChange={handlePincodeChange}
                     placeholder="Enter 6-digit pincode (e.g., 560001)"
                     maxLength={6}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    style={{ focusRingColor: '#0a529f' }}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     onClick={handleUseCurrentLocation}
@@ -572,8 +571,7 @@ function DoctorsContent() {
                     value={citySearch}
                     onChange={handleCitySearchChange}
                     placeholder="Search city or area (e.g., Bangalore, Koramangala)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    style={{ focusRingColor: '#0a529f' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     autoFocus
                   />
                   {searchingCity && (

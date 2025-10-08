@@ -36,7 +36,7 @@ const navigation = [
   },
   { name: 'Claims', href: '/member/claims', icon: DocumentTextIcon },
   { name: 'Bookings & Orders', href: '/member/bookings', icon: CalendarIcon },
-  { name: 'Records', href: '/member/records', icon: DocumentDuplicateIcon },
+  { name: 'Health Records', href: '/member/health-records', icon: DocumentDuplicateIcon },
   { name: 'Notifications', href: '/member/notifications', icon: BellIcon },
   { name: 'Family Hub', href: '/member/family', icon: UsersIcon },
   { name: 'Help', href: '/member/help', icon: QuestionMarkCircleIcon },

@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   UserIcon
 } from '@heroicons/react/24/outline'
+import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 
 interface Appointment {
   _id: string
@@ -28,6 +29,8 @@ interface Appointment {
   consultationFee: number
   status: string
   requestedAt: string
+  hasPrescription?: boolean
+  prescriptionId?: string
 }
 
 export default function AppointmentsPage() {
@@ -219,9 +222,12 @@ export default function AppointmentsPage() {
                       <div className="text-sm text-gray-600">{appointment.specialty}</div>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                    {getStatusText(appointment.status)}
-                  </span>
+                  <div className="flex flex-col gap-2 items-end">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                      {getStatusText(appointment.status)}
+                    </span>
+                    <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
+                  </div>
                 </div>
 
                 <div className="space-y-2 mb-3">
@@ -255,6 +261,17 @@ export default function AppointmentsPage() {
                       ₹{appointment.consultationFee}
                     </div>
                   </div>
+
+                  {/* View Prescription Button */}
+                  {appointment.hasPrescription && appointment.prescriptionId && (
+                    <div className="mb-3">
+                      <ViewPrescriptionButton
+                        prescriptionId={appointment.prescriptionId}
+                        hasPrescription={appointment.hasPrescription}
+                      />
+                    </div>
+                  )}
+
                   {(() => {
                     // Parse appointment date and time
                     const [year, month, day] = appointment.appointmentDate.split('-').map(Number);

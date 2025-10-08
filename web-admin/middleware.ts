@@ -4,6 +4,8 @@ import type { NextRequest } from 'next/server'
 // Protected routes that require authentication
 const protectedRoutes = [
   '/admin',
+  '/tpa',
+  '/finance',
   '/operations',
   '/reports',
   '/settings',

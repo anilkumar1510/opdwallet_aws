@@ -49,9 +49,9 @@ export default function ApprovalModal({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          approvalType,
           approvedAmount: approvalType === 'full' ? billAmount : approvedAmount,
-          reason,
+          approvalReason: reason,
+          isPartial: approvalType === 'partial',
           notes,
         }),
       })

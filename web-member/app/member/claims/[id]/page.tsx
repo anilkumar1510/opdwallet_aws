@@ -118,7 +118,7 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
 
     setCancelling(true)
     try {
-      const response = await fetch(`/api/member/claims/${params.id}/cancel`, {
+      const response = await fetch(`/api/member/claims/${claim.claimId}/cancel`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -40,6 +40,11 @@ export class PrescriptionsService {
       throw new NotFoundException('Appointment not found or does not belong to this doctor');
     }
 
+    // Use appointment's doctor name if provided name is 'Unknown Doctor' or empty
+    if (!doctorName || doctorName === 'Unknown Doctor') {
+      doctorName = appointment.doctorName || 'Unknown Doctor';
+    }
+
     // Check if prescription already exists for this appointment
     const existingPrescription = await this.prescriptionModel.findOne({
       appointmentId: new Types.ObjectId(uploadDto.appointmentId),
@@ -80,12 +85,12 @@ export class PrescriptionsService {
 
     const savedPrescription = await prescription.save();
 
-    // Update appointment to link prescription
+    // Update appointment to link prescription (use string prescriptionId, not ObjectId)
     await this.appointmentModel.updateOne(
       { _id: new Types.ObjectId(uploadDto.appointmentId) },
       {
         $set: {
-          prescriptionId: savedPrescription._id,
+          prescriptionId: savedPrescription.prescriptionId,
           hasPrescription: true,
         },
       },
@@ -179,6 +184,10 @@ export class PrescriptionsService {
     const [prescriptions, total] = await Promise.all([
       this.prescriptionModel
         .find({ userId: new Types.ObjectId(userId), isActive: true })
+        .populate({
+          path: 'appointmentId',
+          select: 'appointmentId appointmentNumber appointmentType appointmentDate timeSlot clinicName clinicAddress specialty consultationFee status',
+        })
         .sort({ uploadDate: -1 })
         .skip(skip)
         .limit(limit)

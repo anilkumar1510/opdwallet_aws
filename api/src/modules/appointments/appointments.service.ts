@@ -117,10 +117,10 @@ export class AppointmentsService {
       filter.appointmentType = appointmentType;
     }
 
-    // PERFORMANCE: Add field projection for list views
+    // PERFORMANCE: Add field projection for list views, include prescription fields
     return this.appointmentModel
       .find(filter)
-      .select('appointmentId appointmentNumber doctorName specialty appointmentDate timeSlot status appointmentType consultationFee createdAt clinicName clinicAddress patientName patientId')
+      .select('appointmentId appointmentNumber doctorName specialty appointmentDate timeSlot status appointmentType consultationFee createdAt clinicName clinicAddress patientName patientId hasPrescription prescriptionId')
       .sort({ createdAt: -1 })
       .lean()
       .exec();

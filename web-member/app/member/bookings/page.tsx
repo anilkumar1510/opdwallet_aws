@@ -11,6 +11,7 @@ import {
   BeakerIcon,
   BuildingStorefrontIcon
 } from '@heroicons/react/24/outline'
+import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 
 interface Appointment {
   _id: string
@@ -30,6 +31,8 @@ interface Appointment {
   status: string
   requestedAt: string
   createdAt: string
+  hasPrescription?: boolean
+  prescriptionId?: string
 }
 
 export default function BookingsPage() {
@@ -300,6 +303,7 @@ export default function BookingsPage() {
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
                               {getStatusText(appointment.status)}
                             </span>
+                            <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
                             <span className="text-xs text-gray-500">
                               {getAppointmentTypeText(appointment.appointmentType)}
                             </span>
@@ -339,6 +343,17 @@ export default function BookingsPage() {
                               ₹{appointment.consultationFee}
                             </div>
                           </div>
+
+                          {/* View Prescription Button */}
+                          {appointment.hasPrescription && appointment.prescriptionId && (
+                            <div className="mb-3">
+                              <ViewPrescriptionButton
+                                prescriptionId={appointment.prescriptionId}
+                                hasPrescription={appointment.hasPrescription}
+                              />
+                            </div>
+                          )}
+
                           {(() => {
                             // Parse appointment date and time
                             const [year, month, day] = appointment.appointmentDate.split('-').map(Number);
@@ -421,6 +436,7 @@ export default function BookingsPage() {
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
                               {getStatusText(appointment.status)}
                             </span>
+                            <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
                             <span className="text-xs text-gray-500">
                               {getAppointmentTypeText(appointment.appointmentType)}
                             </span>
@@ -451,13 +467,23 @@ export default function BookingsPage() {
                           )}
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                          <div className="text-sm text-gray-600">
-                            ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm text-gray-600">
+                              ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-600">
+                              ₹{appointment.consultationFee}
+                            </div>
                           </div>
-                          <div className="text-sm font-semibold text-gray-600">
-                            ₹{appointment.consultationFee}
-                          </div>
+
+                          {/* View Prescription Button */}
+                          {appointment.hasPrescription && appointment.prescriptionId && (
+                            <ViewPrescriptionButton
+                              prescriptionId={appointment.prescriptionId}
+                              hasPrescription={appointment.hasPrescription}
+                            />
+                          )}
                         </div>
                       </div>
                     ))}

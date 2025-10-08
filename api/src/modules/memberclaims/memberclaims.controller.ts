@@ -53,24 +53,27 @@ export class MemberClaimsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Request() req: AuthRequest,
   ) {
-    // Use userId from body if provided (for dependent claims), otherwise use logged-in user
-    const userId = createClaimDto['userId'] || req.user.userId || req.user.id;
+    // Get logged-in user (the person submitting the claim)
+    const submittedBy = req.user.userId || req.user.id;
 
-    if (!userId) {
+    // Get claim owner (from body if provided, otherwise use logged-in user)
+    const claimOwnerId = createClaimDto['userId'] || submittedBy;
+
+    if (!claimOwnerId || !submittedBy) {
       throw new BadRequestException('User ID is required');
     }
 
     // Verify the logged-in user has permission to create claim for this userId
-    const loggedInUserId = req.user.userId || req.user.id;
-    if (userId !== loggedInUserId) {
-      // TODO: Verify userId is a dependent of loggedInUserId
+    if (claimOwnerId !== submittedBy) {
+      // TODO: Verify claimOwnerId is a dependent of submittedBy
       // For now, we'll allow it and rely on wallet access controls
     }
 
     try {
       const claim = await this.memberClaimsService.create(
         createClaimDto,
-        userId,
+        claimOwnerId,
+        submittedBy,
         files,
       );
 
@@ -286,10 +289,24 @@ export class MemberClaimsController {
     @Res() res: Response,
     @Request() req: AuthRequest,
   ) {
-    // Security check: Members can only access their own files
+    // Security check: Members can access files if they are either:
+    // 1. The user who submitted the claim (createdBy)
+    // 2. The user for whom the claim was submitted (userId)
     if (req.user.role === UserRole.MEMBER) {
       const requestUserId = req.user.userId || req.user.id;
-      if (requestUserId !== userId) {
+
+      // Find the claim that contains this file using service method
+      const claim = await this.memberClaimsService.findClaimByFileName(filename);
+
+      if (!claim) {
+        throw new BadRequestException('Claim not found for this file');
+      }
+
+      // Allow access if logged-in user is either the submitter or the claim owner
+      const isSubmitter = requestUserId === claim.createdBy;
+      const isClaimOwner = requestUserId === claim.userId.toString();
+
+      if (!isSubmitter && !isClaimOwner) {
         throw new BadRequestException('Unauthorized access to file');
       }
     }
