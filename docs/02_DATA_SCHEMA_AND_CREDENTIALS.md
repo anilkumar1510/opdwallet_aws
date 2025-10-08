@@ -1,7 +1,7 @@
 # OPD WALLET - DATA SCHEMA AND CREDENTIALS DOCUMENTATION
 
-**Document Version:** 3.0
-**Last Updated:** October 6, 2025 (Major Update - Complete Lab & TPA Schemas)
+**Document Version:** 3.1
+**Last Updated:** October 8, 2025 (Enhanced Security & Code Refactoring)
 **Database:** MongoDB (opd_wallet)
 **Total Collections:** 27
 

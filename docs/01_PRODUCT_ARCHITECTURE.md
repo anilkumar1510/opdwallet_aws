@@ -1,10 +1,10 @@
 # OPD Wallet - Complete Product Architecture
 
-**Last Updated**: October 5, 2025
+**Last Updated**: October 8, 2025
 **Current Deployment**: http://51.20.125.246
 **Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.0 (Latest Changes: Lab Diagnostics, TPA, Notifications & Finance Modules)
+**Documentation Version**: 6.1 (Latest Changes: Enhanced File Security, Code Refactoring, TPA/Finance Portal UI)
 
 ---
 
@@ -1140,6 +1140,14 @@ File Upload Configuration:
 - Max files: 10 per upload
 - Storage: Local filesystem (uploads/claims/{userId}/)
 - Document types: INVOICE, PRESCRIPTION, REPORT, DISCHARGE_SUMMARY, OTHER
+
+Enhanced File Security ✨ UPDATED:
+- File access uses findClaimByFileName() to validate claim ownership
+- Extracts actual file path from claim document record
+- Handles both Docker container paths (/app/) and local paths
+- Role-based access: MEMBER (owner/submitter only), ADMIN, TPA, OPS (full access)
+- Path resolution: Converts Docker paths to local paths automatically
+- Validates file exists on disk before serving
 
 Claim Types:
 - REIMBURSEMENT: Post-treatment claim submission
