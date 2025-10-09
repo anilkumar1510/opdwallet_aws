@@ -4,7 +4,7 @@
 **Current Deployment**: http://51.20.125.246
 **Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.1 (Latest Changes: Enhanced File Security, Code Refactoring, TPA/Finance Portal UI)
+**Documentation Version**: 6.2 (Latest Changes: Multi-Field File Upload, Categorized Document Types)
 
 ---
 
@@ -1134,12 +1134,21 @@ DELETE /api/member/claims/:claimId/documents/:documentId  # Remove document
 DELETE /api/member/claims/:id                  # Delete claim
 GET    /api/member/claims/files/:userId/:filename  # Download claim file
 
-File Upload Configuration:
+File Upload Configuration ✨ ENHANCED:
 - Allowed types: JPEG, PNG, GIF, WebP, PDF
 - Max file size: 15MB per file
-- Max files: 10 per upload
 - Storage: Local filesystem (uploads/claims/{userId}/)
 - Document types: INVOICE, PRESCRIPTION, REPORT, DISCHARGE_SUMMARY, OTHER
+
+Multi-Field File Upload ✨ NEW:
+- Uses FileFieldsInterceptor for categorized uploads
+- Three separate upload fields:
+  1. prescriptionFiles: Max 5 files (auto-tagged as PRESCRIPTION)
+  2. billFiles: Max 5 files (auto-tagged as INVOICE)
+  3. documents: Max 10 files (auto-detection based on filename)
+- Total max files: 20 across all fields
+- Automatic document type assignment based on field
+- Smart document type detection for generic uploads
 
 Enhanced File Security ✨ UPDATED:
 - File access uses findClaimByFileName() to validate claim ownership

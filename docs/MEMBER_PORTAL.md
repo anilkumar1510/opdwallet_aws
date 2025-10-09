@@ -120,7 +120,11 @@ Members can file claims for out-of-pocket healthcare expenses and track reimburs
 
 - **File New Claim**: Submit reimbursement requests for self or dependents
 - **Dependent Claims**: Primary members can file claims on behalf of dependents
-- **Upload Documents**: Attach bills, prescriptions, and receipts
+- **Upload Documents**: ✨ Enhanced with categorized file uploads
+  - Prescription files (up to 5)
+  - Bill/Invoice files (up to 5)
+  - Supporting documents (up to 10)
+  - Automatic document type tagging
 - **Track Status**: Monitor claim processing stages with detailed timeline
 - **View History**: Access past claim records with advanced filtering
 - **Cancel Claims**: Cancel submitted claims before processing
@@ -192,6 +196,15 @@ Body: { reason?: string }
 - **Sorting**: Sort by date, amount, status, type
 - **View Modes**: Table or card view
 - **Pagination**: 10 items per page
+
+**File Upload System** ✨ ENHANCED:
+- **Categorized Upload Fields**:
+  - Prescription Files: Dedicated field for prescription documents (max 5)
+  - Bill/Invoice Files: Dedicated field for bills and invoices (max 5)
+  - Supporting Documents: Generic field for other documents (max 10)
+- **Automatic Tagging**: Files automatically tagged with correct document type
+- **Multi-Part Form**: Uses multipart/form-data with FileFieldsInterceptor
+- **Smart Detection**: Generic documents auto-categorized based on filename
 
 **Status Colors**:
 - Approved: Green
