@@ -216,7 +216,7 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async cancelAppointment(appointmentId: string, reason?: string): Promise<Appointment> {
+  async cancelAppointment(appointmentId: string, _reason?: string): Promise<Appointment> {
     const appointment = await this.appointmentModel.findOne({ appointmentId });
 
     if (!appointment) {

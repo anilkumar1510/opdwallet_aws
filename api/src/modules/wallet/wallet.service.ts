@@ -506,4 +506,107 @@ export class WalletService {
       throw error;
     }
   }
+
+  // Top-up wallet (for manual adjustments by operations/admin)
+  async topupWallet(
+    userId: string,
+    amount: number,
+    categoryCode: string,
+    processedBy: string,
+    notes?: string
+  ) {
+    try {
+      console.log('🟡 [WALLET SERVICE] Starting topupWallet:', {
+        userId,
+        amount,
+        categoryCode,
+        processedBy,
+        notes
+      });
+
+      const userObjectId = new Types.ObjectId(userId);
+      const processedByObjectId = new Types.ObjectId(processedBy);
+
+      // Find wallet
+      const wallet = await this.userWalletModel.findOne({
+        userId: userObjectId,
+        isActive: true
+      }).exec();
+
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found for user');
+      }
+
+      // Find category balance
+      const categoryBalance = wallet.categoryBalances.find(c => c.categoryCode === categoryCode);
+
+      if (!categoryBalance) {
+        throw new BadRequestException(`Category ${categoryCode} not found in wallet`);
+      }
+
+      // Store previous balances for transaction record
+      const previousTotalBalance = wallet.totalBalance.current;
+      const previousCategoryBalance = categoryBalance.current;
+
+      // Credit to total balance
+      wallet.totalBalance.current += amount;
+      wallet.totalBalance.allocated += amount; // Also increase allocated for top-ups
+      wallet.totalBalance.lastUpdated = new Date();
+
+      // Credit to category balance
+      categoryBalance.current += amount;
+      categoryBalance.allocated += amount; // Also increase allocated for top-ups
+      categoryBalance.lastTransaction = new Date();
+
+      // Save updated wallet
+      await wallet.save();
+      console.log('✅ [WALLET SERVICE] Wallet balances updated');
+
+      // Create transaction record
+      console.log('🟡 [WALLET SERVICE] Generating transaction ID...');
+      const transactionId = await this.counterService.generateTransactionId();
+      console.log('✅ [WALLET SERVICE] Transaction ID generated:', transactionId);
+
+      const transaction = new this.walletTransactionModel({
+        transactionId,
+        userId: userObjectId,
+        userWalletId: wallet._id,
+        type: 'ADJUSTMENT',
+        amount,
+        categoryCode,
+        previousBalance: {
+          total: previousTotalBalance,
+          category: previousCategoryBalance
+        },
+        newBalance: {
+          total: wallet.totalBalance.current,
+          category: categoryBalance.current
+        },
+        serviceType: 'WALLET_TOPUP',
+        serviceProvider: 'OPERATIONS',
+        notes: notes || 'Manual wallet top-up',
+        processedBy: processedByObjectId,
+        processedAt: new Date(),
+        isReversed: false,
+        status: 'COMPLETED'
+      });
+
+      console.log('🟡 [WALLET SERVICE] Saving transaction to database...');
+      await transaction.save();
+      console.log('✅ [WALLET SERVICE] Transaction saved successfully');
+
+      console.log('✅ [WALLET SERVICE] Wallet topped up successfully:', transactionId);
+
+      return {
+        success: true,
+        transactionId,
+        newBalance: wallet.totalBalance.current,
+        newCategoryBalance: categoryBalance.current
+      };
+
+    } catch (error) {
+      console.error('❌ [WALLET SERVICE] Error topping up wallet:', error);
+      throw error;
+    }
+  }
 }

@@ -38,8 +38,18 @@ export default function DocumentPreviewModal({
 
   if (!isOpen) return null
 
-  // Construct the proper file URL
-  const fileUrl = `/api/member/claims/files/${userId}/${document.fileName}`
+  // Extract userId from filePath if available, otherwise use provided userId
+  // filePath format: /app/uploads/claims/{userId}/{fileName} or uploads/claims/{userId}/{fileName}
+  let fileUserId = userId
+  if (document.filePath) {
+    const pathMatch = document.filePath.match(/claims\/([^/]+)\//)
+    if (pathMatch && pathMatch[1]) {
+      fileUserId = pathMatch[1]
+    }
+  }
+
+  // Construct the proper file URL using the extracted userId
+  const fileUrl = `/api/member/claims/files/${fileUserId}/${document.fileName}`
 
   // Determine if it's a PDF or image
   const isPDF = document.fileName?.toLowerCase().endsWith('.pdf') ||

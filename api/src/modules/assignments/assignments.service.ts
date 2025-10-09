@@ -156,7 +156,7 @@ export class AssignmentsService {
       .sort({ createdAt: -1 });
   }
 
-  async removeAssignment(assignmentId: string, updatedBy: string) {
+  async removeAssignment(assignmentId: string, _updatedBy: string) {
     const assignment = await this.assignmentModel.findOne({ assignmentId });
 
     if (!assignment) {
@@ -177,7 +177,7 @@ export class AssignmentsService {
     return { message: 'Assignment removed successfully' };
   }
 
-  async unassignPolicyFromUser(userId: string, policyId: string, updatedBy: string) {
+  async unassignPolicyFromUser(userId: string, policyId: string, _updatedBy: string) {
     console.log('🟡 [ASSIGNMENTS SERVICE] Unassigning policy from user:', { userId, policyId });
 
     // Validate ObjectIds

@@ -720,7 +720,7 @@ export default function PlanConfigEdit() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                   <div className="text-sm text-green-800">
                     <strong>Note:</strong> This relationship is inheriting benefits from the Primary Member.
-                    Turn off "Inherit from Primary" above to create custom benefit configurations.
+                    Turn off &quot;Inherit from Primary&quot; above to create custom benefit configurations.
                   </div>
                 </div>
               )}
@@ -869,7 +869,7 @@ export default function PlanConfigEdit() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                   <div className="text-sm text-green-800">
                     <strong>Note:</strong> This relationship is inheriting wallet settings from the Primary Member.
-                    Turn off "Inherit from Primary" above to create custom wallet configurations.
+                    Turn off &quot;Inherit from Primary&quot; above to create custom wallet configurations.
                   </div>
                 </div>
               )}

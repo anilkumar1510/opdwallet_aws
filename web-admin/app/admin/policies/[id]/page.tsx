@@ -4,6 +4,23 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 
+function policyToEditForm(policy: any) {
+  return {
+    name: policy.name || '',
+    description: policy.description || '',
+    status: policy.status || '',
+    effectiveFrom: policy.effectiveFrom ? new Date(policy.effectiveFrom).toISOString().split('T')[0] : '',
+    effectiveTo: policy.effectiveTo ? new Date(policy.effectiveTo).toISOString().split('T')[0] : '',
+    ownerPayer: policy.ownerPayer || '',
+  }
+}
+
+function getStatusBadgeClass(status: string) {
+  if (status === 'ACTIVE') return 'badge-success'
+  if (status === 'DRAFT') return 'badge-warning'
+  return 'badge-default'
+}
+
 export default function PolicyDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -22,31 +39,22 @@ export default function PolicyDetailPage() {
   })
 
   useEffect(() => {
-    if (params.id) {
-      fetchPolicy()
-    }
+    if (!params.id) return
+    fetchPolicy()
   }, [params.id])
 
   const fetchPolicy = async () => {
     try {
       const response = await apiFetch(`/api/policies/${params.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setPolicy(data)
-        setEditForm({
-          name: data.name || '',
-          description: data.description || '',
-          status: data.status || '',
-          effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom).toISOString().split('T')[0] : '',
-          effectiveTo: data.effectiveTo ? new Date(data.effectiveTo).toISOString().split('T')[0] : '',
-          ownerPayer: data.ownerPayer || '',
-        })
-      }
+      if (!response.ok) return
+
+      const data = await response.json()
+      setPolicy(data)
+      setEditForm(policyToEditForm(data))
     } catch (error) {
       console.error('Failed to fetch policy')
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -69,22 +77,16 @@ export default function PolicyDetailPage() {
         body: JSON.stringify(payload),
       })
 
-      if (response.ok) {
-        const updatedPolicy = await response.json()
-        setPolicy(updatedPolicy)
-        setEditForm({
-          name: updatedPolicy.name || '',
-          description: updatedPolicy.description || '',
-          status: updatedPolicy.status || '',
-          effectiveFrom: updatedPolicy.effectiveFrom ? new Date(updatedPolicy.effectiveFrom).toISOString().split('T')[0] : '',
-          effectiveTo: updatedPolicy.effectiveTo ? new Date(updatedPolicy.effectiveTo).toISOString().split('T')[0] : '',
-          ownerPayer: updatedPolicy.ownerPayer || '',
-        })
-        setIsEditing(false)
-      } else {
+      if (!response.ok) {
         const error = await response.json()
         alert(`Failed to update policy: ${error.message || 'Unknown error'}`)
+        return
       }
+
+      const updatedPolicy = await response.json()
+      setPolicy(updatedPolicy)
+      setEditForm(policyToEditForm(updatedPolicy))
+      setIsEditing(false)
     } catch (error) {
       console.error('Update error:', error)
       alert('Failed to update policy. Please check the console for details.')
@@ -180,7 +182,7 @@ export default function PolicyDetailPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
-                  <span className={policy.status === 'ACTIVE' ? 'badge-success' : policy.status === 'DRAFT' ? 'badge-warning' : 'badge-default'}>
+                  <span className={getStatusBadgeClass(policy.status)}>
                     {policy.status}
                   </span>
                 </div>

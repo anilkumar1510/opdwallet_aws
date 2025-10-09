@@ -282,25 +282,25 @@ export class MemberClaimsController {
   }
 
   @Get('files/:userId/:filename')
-  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS)
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS, UserRole.TPA_USER, UserRole.TPA_ADMIN)
   async getFile(
     @Param('userId') userId: string,
     @Param('filename') filename: string,
     @Res() res: Response,
     @Request() req: AuthRequest,
   ) {
+    // Find the claim that contains this file
+    const claim = await this.memberClaimsService.findClaimByFileName(filename);
+
+    if (!claim) {
+      throw new BadRequestException('Claim not found for this file');
+    }
+
     // Security check: Members can access files if they are either:
     // 1. The user who submitted the claim (createdBy)
     // 2. The user for whom the claim was submitted (userId)
     if (req.user.role === UserRole.MEMBER) {
       const requestUserId = req.user.userId || req.user.id;
-
-      // Find the claim that contains this file using service method
-      const claim = await this.memberClaimsService.findClaimByFileName(filename);
-
-      if (!claim) {
-        throw new BadRequestException('Claim not found for this file');
-      }
 
       // Allow access if logged-in user is either the submitter or the claim owner
       const isSubmitter = requestUserId === claim.createdBy;
@@ -311,10 +311,28 @@ export class MemberClaimsController {
       }
     }
 
-    const filePath = join(process.cwd(), 'uploads', 'claims', userId, filename);
+    // Find the document in the claim to get the actual file path
+    const document = claim.documents?.find((doc: any) => doc.fileName === filename);
+
+    if (!document || !document.filePath) {
+      throw new BadRequestException('Document not found in claim');
+    }
+
+    // Use the stored filePath, handle both absolute paths and relative paths
+    let filePath = document.filePath;
+
+    // If filePath starts with /app/ (Docker container path), convert to local path
+    if (filePath.startsWith('/app/')) {
+      filePath = filePath.replace('/app/', '');
+    }
+
+    // If it's a relative path, make it absolute from cwd
+    if (!filePath.startsWith('/')) {
+      filePath = join(process.cwd(), filePath);
+    }
 
     if (!existsSync(filePath)) {
-      throw new BadRequestException('File not found');
+      throw new BadRequestException('File not found on disk');
     }
 
     // Determine content type based on file extension

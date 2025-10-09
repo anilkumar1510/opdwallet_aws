@@ -23,77 +23,89 @@ export class UsersService {
     private configService: ConfigService,
   ) {}
 
-  async create(createUserDto: CreateUserDto, createdBy: string) {
-    // Validate unique fields
+  private async validateUniqueFields(createUserDto: CreateUserDto): Promise<void> {
     const existingUser = await this.userModel.findOne({
       $or: [
         { email: createUserDto.email.toLowerCase() },
         { phone: createUserDto.phone },
         { uhid: createUserDto.uhid },
         { memberId: createUserDto.memberId },
-        ...(createUserDto.employeeId
-          ? [{ employeeId: createUserDto.employeeId }]
-          : []),
+        ...(createUserDto.employeeId ? [{ employeeId: createUserDto.employeeId }] : []),
       ],
     }).lean();
 
-    if (existingUser) {
-      const field = existingUser.email === createUserDto.email.toLowerCase()
-        ? 'Email'
-        : existingUser.phone === createUserDto.phone
-        ? 'Phone'
-        : existingUser.uhid === createUserDto.uhid
-        ? 'UHID'
-        : existingUser.memberId === createUserDto.memberId
-        ? 'Member ID'
-        : 'Employee ID';
-      throw new ConflictException(`${field} already exists`);
+    if (!existingUser) {
+      return;
     }
 
-    // Validate relationship logic
-    if (createUserDto.relationship !== RelationshipType.SELF) {
-      if (!createUserDto.primaryMemberId) {
-        throw new BadRequestException(
-          'Primary Member ID is required for dependents',
-        );
-      }
-      // Validate primary member exists and is SELF (REL001)
-      const primaryMember = await this.userModel.findOne({
-        memberId: createUserDto.primaryMemberId,
-        relationship: RelationshipType.SELF,
-      }).lean();
-      if (!primaryMember) {
-        throw new BadRequestException(
-          'Invalid Primary Member ID or member is not SELF',
-        );
-      }
-    } else {
-      // If relationship is SELF (REL001), ensure no primaryMemberId is set
+    const field = this.getDuplicateField(existingUser, createUserDto);
+    throw new ConflictException(`${field} already exists`);
+  }
+
+  private getDuplicateField(existingUser: any, createUserDto: CreateUserDto): string {
+    if (existingUser.email === createUserDto.email.toLowerCase()) return 'Email';
+    if (existingUser.phone === createUserDto.phone) return 'Phone';
+    if (existingUser.uhid === createUserDto.uhid) return 'UHID';
+    if (existingUser.memberId === createUserDto.memberId) return 'Member ID';
+    return 'Employee ID';
+  }
+
+  private async validateRelationship(createUserDto: CreateUserDto): Promise<void> {
+    if (createUserDto.relationship === RelationshipType.SELF) {
       if (createUserDto.primaryMemberId) {
-        throw new BadRequestException(
-          'Primary Member ID should not be set for SELF relationship',
-        );
+        throw new BadRequestException('Primary Member ID should not be set for SELF relationship');
       }
+      return;
     }
 
-    // Generate userId
-    const userId = await this.counterService.generateUserId();
+    if (!createUserDto.primaryMemberId) {
+      throw new BadRequestException('Primary Member ID is required for dependents');
+    }
 
-    // Hash password or generate random one
+    const primaryMember = await this.userModel.findOne({
+      memberId: createUserDto.primaryMemberId,
+      relationship: RelationshipType.SELF,
+    }).lean();
+
+    if (!primaryMember) {
+      throw new BadRequestException('Invalid Primary Member ID or member is not SELF');
+    }
+  }
+
+  private async prepareUserData(createUserDto: CreateUserDto, createdBy: string) {
+    const userId = await this.counterService.generateUserId();
     const password = createUserDto.password || this.generateRandomPassword();
     const rounds = this.configService.get<number>('bcrypt.rounds') || 12;
     const passwordHash = await bcrypt.hash(password, rounds);
 
+    return {
+      userId,
+      password,
+      passwordHash,
+      email: createUserDto.email.toLowerCase(),
+      mustChangePassword: !createUserDto.password,
+      createdBy,
+    };
+  }
+
+  async create(createUserDto: CreateUserDto, createdBy: string) {
+    await this.validateUniqueFields(createUserDto);
+    await this.validateRelationship(createUserDto);
+
+    const { userId, password, passwordHash, email, mustChangePassword, createdBy: creator } =
+      await this.prepareUserData(createUserDto, createdBy);
+
     const user = new this.userModel({
       ...createUserDto,
       userId,
-      email: createUserDto.email.toLowerCase(),
+      email,
       passwordHash,
-      mustChangePassword: !createUserDto.password,
-      createdBy,
+      mustChangePassword,
+      createdBy: creator,
     });
 
     const savedUser = await user.save();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...result } = savedUser.toObject();
 
     return {
@@ -156,64 +168,72 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto, updatedBy: string) {
-    const user = await this.userModel.findById(id);
-    if (!user) {
-      throw new NotFoundException('User not found');
+  private buildUniqueFieldConditions(user: any, updateUserDto: UpdateUserDto): any[] {
+    const conditions: any[] = [];
+
+    if (updateUserDto.email && updateUserDto.email !== user.email) {
+      conditions.push({ email: updateUserDto.email.toLowerCase() });
+    }
+    if (updateUserDto.phone && updateUserDto.phone !== user.phone) {
+      conditions.push({ phone: updateUserDto.phone });
+    }
+    if (updateUserDto.uhid && updateUserDto.uhid !== user.uhid) {
+      conditions.push({ uhid: updateUserDto.uhid });
+    }
+    if (updateUserDto.memberId && updateUserDto.memberId !== user.memberId) {
+      conditions.push({ memberId: updateUserDto.memberId });
+    }
+    if (updateUserDto.employeeId && updateUserDto.employeeId !== user.employeeId) {
+      conditions.push({ employeeId: updateUserDto.employeeId });
     }
 
-    // Check for unique constraint violations
-    if (updateUserDto.email || updateUserDto.phone || updateUserDto.uhid ||
-        updateUserDto.memberId || updateUserDto.employeeId) {
-      const orConditions = [];
-      if (updateUserDto.email && updateUserDto.email !== user.email) {
-        orConditions.push({ email: updateUserDto.email.toLowerCase() });
-      }
-      if (updateUserDto.phone && updateUserDto.phone !== user.phone) {
-        orConditions.push({ phone: updateUserDto.phone });
-      }
-      if (updateUserDto.uhid && updateUserDto.uhid !== user.uhid) {
-        orConditions.push({ uhid: updateUserDto.uhid });
-      }
-      if (updateUserDto.memberId && updateUserDto.memberId !== user.memberId) {
-        orConditions.push({ memberId: updateUserDto.memberId });
-      }
-      if (updateUserDto.employeeId && updateUserDto.employeeId !== user.employeeId) {
-        orConditions.push({ employeeId: updateUserDto.employeeId });
-      }
+    return conditions;
+  }
 
-      if (orConditions.length > 0) {
-        const existingUser = await this.userModel.findOne({
-          $or: orConditions,
-          _id: { $ne: id },
-        }).lean();
+  private async validateUniqueFieldsForUpdate(id: string, user: any, updateUserDto: UpdateUserDto): Promise<void> {
+    const hasUniqueFields = updateUserDto.email || updateUserDto.phone ||
+                            updateUserDto.uhid || updateUserDto.memberId ||
+                            updateUserDto.employeeId;
 
-        if (existingUser) {
-          throw new ConflictException('Duplicate value found');
-        }
-      }
+    if (!hasUniqueFields) {
+      return;
     }
 
-    // Validate relationship logic on update
-    if (updateUserDto.relationship) {
-      if (updateUserDto.relationship !== RelationshipType.SELF) {
-        // Dependents must have primaryMemberId
-        if (!updateUserDto.primaryMemberId && !user.primaryMemberId) {
-          throw new BadRequestException(
-            'Primary Member ID is required for dependents',
-          );
-        }
-      } else {
-        // SELF (REL001) should NOT have primaryMemberId
-        if (updateUserDto.primaryMemberId || user.primaryMemberId) {
-          throw new BadRequestException(
-            'Primary Member ID should not be set for SELF relationship. Please remove it.',
-          );
-        }
-      }
+    const orConditions = this.buildUniqueFieldConditions(user, updateUserDto);
+
+    if (orConditions.length === 0) {
+      return;
     }
 
-    // If name is being updated, calculate fullName
+    const existingUser = await this.userModel.findOne({
+      $or: orConditions,
+      _id: { $ne: id },
+    }).lean();
+
+    if (existingUser) {
+      throw new ConflictException('Duplicate value found');
+    }
+  }
+
+  private validateRelationshipUpdate(user: any, updateUserDto: UpdateUserDto): void {
+    if (!updateUserDto.relationship) {
+      return;
+    }
+
+    if (updateUserDto.relationship === RelationshipType.SELF) {
+      if (updateUserDto.primaryMemberId || user.primaryMemberId) {
+        throw new BadRequestException(
+          'Primary Member ID should not be set for SELF relationship. Please remove it.'
+        );
+      }
+    } else {
+      if (!updateUserDto.primaryMemberId && !user.primaryMemberId) {
+        throw new BadRequestException('Primary Member ID is required for dependents');
+      }
+    }
+  }
+
+  private prepareUpdateData(updateUserDto: UpdateUserDto, updatedBy: string): any {
     const updateData: any = {
       ...updateUserDto,
       ...(updateUserDto.email && { email: updateUserDto.email.toLowerCase() }),
@@ -221,13 +241,26 @@ export class UsersService {
       updatedAt: new Date(),
     };
 
-    // Add fullName if name is being updated
-    if (updateUserDto.name && updateUserDto.name.firstName && updateUserDto.name.lastName) {
+    if (updateUserDto.name?.firstName && updateUserDto.name?.lastName) {
       updateData.name = {
         ...updateUserDto.name,
         fullName: `${updateUserDto.name.firstName} ${updateUserDto.name.lastName}`,
       };
     }
+
+    return updateData;
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto, updatedBy: string) {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.validateUniqueFieldsForUpdate(id, user, updateUserDto);
+    this.validateRelationshipUpdate(user, updateUserDto);
+
+    const updateData = this.prepareUpdateData(updateUserDto, updatedBy);
 
     const updatedUser = await this.userModel.findByIdAndUpdate(
       id,
@@ -313,7 +346,7 @@ export class UsersService {
     };
   }
 
-  async delete(id: string, deletedBy: string) {
+  async delete(id: string, _deletedBy: string) {
     const user = await this.userModel.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');

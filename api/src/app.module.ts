@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import * as mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -27,6 +28,7 @@ import { LabModule } from './modules/lab/lab.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PrescriptionsModule } from './modules/doctors/prescriptions.module';
 import { LocationModule } from './modules/location/location.module';
+import { OperationsModule } from './modules/operations/operations.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -45,7 +47,7 @@ import configuration from './config/configuration';
         uri: configService.get<string>('database.uri'),
         // PERFORMANCE: Connection pool configuration for optimal database performance
         connectionFactory: (connection) => {
-          connection.plugin(require('mongoose-lean-virtuals'));
+          connection.plugin(mongooseLeanVirtuals);
           return connection;
         },
         // Connection pool settings
@@ -91,6 +93,7 @@ import configuration from './config/configuration';
     NotificationsModule,
     PrescriptionsModule,
     LocationModule,
+    OperationsModule,
   ],
 })
 export class AppModule {}

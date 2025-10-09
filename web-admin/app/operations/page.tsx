@@ -102,7 +102,7 @@ export default function OperationsDashboard() {
         </div>
 
         <div className="card">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Today's Appointments</h3>
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Today&apos;s Appointments</h3>
           <p className="text-3xl font-bold text-blue-600">{stats.todayAppointments}</p>
         </div>
 

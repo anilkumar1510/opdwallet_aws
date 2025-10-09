@@ -22,7 +22,7 @@ export class FinanceService {
     const skip = (page - 1) * limit;
 
     const query = {
-      status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED] },
+      status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.PAYMENT_PENDING] },
       paymentStatus: { $in: [PaymentStatus.PENDING, PaymentStatus.APPROVED] },
     };
 
@@ -60,7 +60,7 @@ export class FinanceService {
     }
 
     // Check if claim is eligible for payment
-    if (![ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED].includes(claim.status)) {
+    if (![ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.PAYMENT_PENDING].includes(claim.status)) {
       throw new BadRequestException('Claim is not approved for payment');
     }
 
@@ -81,7 +81,7 @@ export class FinanceService {
     }
 
     // Validate claim status
-    if (![ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED].includes(claim.status)) {
+    if (![ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.PAYMENT_PENDING].includes(claim.status)) {
       throw new BadRequestException('Only approved claims can be paid');
     }
 
@@ -149,7 +149,7 @@ export class FinanceService {
       this.memberClaimModel
         .find(query)
         .populate('userId', 'name email memberId')
-        .populate('paymentCompletedBy', 'name email')
+        .populate('paidBy', 'name email')
         .sort({ paymentDate: -1 })
         .skip(skip)
         .limit(limit)
@@ -189,7 +189,7 @@ export class FinanceService {
     ] = await Promise.all([
       // Pending payments
       this.memberClaimModel.countDocuments({
-        status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED] },
+        status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.PAYMENT_PENDING] },
         paymentStatus: { $in: [PaymentStatus.PENDING, PaymentStatus.APPROVED] },
       }),
 
@@ -210,7 +210,7 @@ export class FinanceService {
       this.memberClaimModel.aggregate([
         {
           $match: {
-            status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.PAYMENT_COMPLETED] },
+            status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED, ClaimStatus.PAYMENT_PENDING, ClaimStatus.PAYMENT_COMPLETED] },
             ...(Object.keys(dateFilter).length > 0 && {
               $or: [
                 { approvedAt: dateFilter },

@@ -23,11 +23,11 @@ interface PaymentHistoryItem {
   category: string
   providerName: string
   billAmount: number
-  amountApproved: number
+  approvedAmount: number
   paymentMode: string
-  paymentReference: string
+  paymentReferenceNumber: string
   paymentDate: string
-  paymentCompletedByName: string
+  paidByName: string
   paymentNotes?: string
   submittedAt: string
 }
@@ -59,7 +59,7 @@ export default function PaymentHistoryPage() {
       })
       if (response.ok) {
         const data = await response.json()
-        setPayments(data.payments || [])
+        setPayments(data.claims || [])
       }
     } catch (error) {
       console.error('Error fetching payment history:', error)
@@ -80,7 +80,7 @@ export default function PaymentHistoryPage() {
         payment.claimId.toLowerCase().includes(query) ||
         payment.memberName.toLowerCase().includes(query) ||
         payment.userId?.memberId?.toLowerCase().includes(query) ||
-        payment.paymentReference.toLowerCase().includes(query)
+        payment.paymentReferenceNumber.toLowerCase().includes(query)
       )
     }
     return true
@@ -104,7 +104,7 @@ export default function PaymentHistoryPage() {
     })
   }
 
-  const totalPaid = filteredPayments.reduce((sum, p) => sum + p.amountApproved, 0)
+  const totalPaid = filteredPayments.reduce((sum, p) => sum + (p.approvedAmount || 0), 0)
 
   const paymentModes = ['BANK_TRANSFER', 'UPI', 'NEFT', 'RTGS', 'IMPS', 'CHEQUE', 'CASH']
 
@@ -321,7 +321,7 @@ export default function PaymentHistoryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-bold text-green-600">
-                        ₹{payment.amountApproved?.toLocaleString() || 0}
+                        ₹{payment.approvedAmount?.toLocaleString() || 0}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -336,7 +336,7 @@ export default function PaymentHistoryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {payment.paymentCompletedByName || 'N/A'}
+                        {payment.paidByName || 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -413,7 +413,7 @@ export default function PaymentHistoryPage() {
                   <div>
                     <p className="text-xs text-gray-500">Amount Paid</p>
                     <p className="text-sm font-bold text-green-600">
-                      ₹{selectedPayment.amountApproved?.toLocaleString()}
+                      ₹{selectedPayment.approvedAmount?.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export default function PaymentHistoryPage() {
                   <div>
                     <p className="text-xs text-gray-500">Payment Reference</p>
                     <p className="text-sm font-medium text-gray-900 font-mono">
-                      {selectedPayment.paymentReference}
+                      {selectedPayment.paymentReferenceNumber}
                     </p>
                   </div>
                   <div>
@@ -446,7 +446,7 @@ export default function PaymentHistoryPage() {
                   <div>
                     <p className="text-xs text-gray-500">Processed By</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPayment.paymentCompletedByName || 'N/A'}
+                      {selectedPayment.paidByName || 'N/A'}
                     </p>
                   </div>
                   {selectedPayment.paymentNotes && (

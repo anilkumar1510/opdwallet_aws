@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   XMarkIcon,
   BanknotesIcon,
@@ -20,7 +20,7 @@ interface Claim {
   category: string
   providerName: string
   billAmount: number
-  amountApproved: number
+  approvedAmount: number
   status: string
   approvedAt?: string
   submittedAt: string
@@ -52,14 +52,9 @@ export default function PaymentModal({ claim, onClose, onSuccess }: PaymentModal
   const [formData, setFormData] = useState({
     paymentMode: PaymentMode.BANK_TRANSFER,
     paymentReference: '',
-    amountPaid: claim.amountApproved,
+    amountPaid: claim.approvedAmount || 0,
     paymentDate: new Date().toISOString().split('T')[0],
     paymentNotes: '',
-  })
-
-  // Fetch detailed claim information with bank details
-  useState(() => {
-    fetchClaimDetails()
   })
 
   const fetchClaimDetails = async () => {
@@ -82,14 +77,19 @@ export default function PaymentModal({ claim, onClose, onSuccess }: PaymentModal
     }
   }
 
+  // Fetch detailed claim information with bank details on mount
+  useEffect(() => {
+    fetchClaimDetails()
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     // Validation
-    if (formData.amountPaid !== claim.amountApproved) {
-      setError(`Payment amount must match approved amount: ₹${claim.amountApproved.toLocaleString()}`)
+    if (formData.amountPaid !== claim.approvedAmount) {
+      setError(`Payment amount must match approved amount: ₹${claim.approvedAmount.toLocaleString()}`)
       setLoading(false)
       return
     }
@@ -221,7 +221,7 @@ export default function PaymentModal({ claim, onClose, onSuccess }: PaymentModal
                   <div>
                     <p className="text-xs text-gray-500">Approved Amount</p>
                     <p className="text-sm font-bold text-green-600">
-                      ₹{claim.amountApproved.toLocaleString()}
+                      ₹{claim.approvedAmount?.toLocaleString() || 0}
                     </p>
                   </div>
                 </div>
@@ -347,7 +347,7 @@ export default function PaymentModal({ claim, onClose, onSuccess }: PaymentModal
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Must match approved amount: ₹{claim.amountApproved.toLocaleString()}
+                      Must match approved amount: ₹{claim.approvedAmount?.toLocaleString() || 0}
                     </p>
                   </div>
 

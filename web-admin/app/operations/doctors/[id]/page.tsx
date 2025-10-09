@@ -448,7 +448,7 @@ export default function EditDoctorPage() {
                 Set/Reset Password
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Click "Set/Reset Password" to create or update login credentials</p>
+            <p className="text-xs text-gray-500 mt-1">Click &quot;Set/Reset Password&quot; to create or update login credentials</p>
           </div>
         </div>
       </div>

@@ -260,7 +260,7 @@ export default function HealthRecordsPage() {
                                 <>
                                   <MapPinIcon className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0" />
                                   <div>
-                                    <p className="text-sm font-medium text-gray-900">{appointment.clinicName || 'In-Clinic Visit'}</p>
+                                    <p className="text-sm font-medium text-gray-900">{appointment.clinicName || "In-Clinic Visit"}</p>
                                     {appointment.clinicAddress && (
                                       <p className="text-xs text-gray-500">{appointment.clinicAddress}</p>
                                     )}
@@ -290,7 +290,7 @@ export default function HealthRecordsPage() {
 
                           {prescription.notes && (
                             <div>
-                              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Doctor's Notes</p>
+                              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Doctor&apos;s Notes</p>
                               <p className="text-sm text-gray-700 leading-relaxed">{prescription.notes}</p>
                             </div>
                           )}

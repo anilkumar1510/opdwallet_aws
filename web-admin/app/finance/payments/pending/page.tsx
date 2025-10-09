@@ -22,7 +22,7 @@ interface Claim {
   category: string
   providerName: string
   billAmount: number
-  amountApproved: number
+  approvedAmount: number
   status: string
   approvedAt?: string
   submittedAt: string
@@ -124,7 +124,7 @@ export default function PendingPaymentsPage() {
           <div className="ml-3">
             <h3 className="text-sm font-medium text-orange-800">Action Required</h3>
             <p className="text-sm text-orange-700 mt-1">
-              These claims have been approved and are ready for payment processing. Click "Process Payment" to complete the transaction.
+              These claims have been approved and are ready for payment processing. Click &quot;Process Payment&quot; to complete the transaction.
             </p>
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function PendingPaymentsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="text-sm font-bold text-green-600">
-                          ₹{claim.amountApproved?.toLocaleString() || 0}
+                          ₹{claim.approvedAmount?.toLocaleString() || 0}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

@@ -1,0 +1,33 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "tsconfig.json",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint/eslint-plugin",
+    "sonarjs"
+  ],
+  "extends": [
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "root": true,
+  "env": {
+    "node": true,
+    "jest": true
+  },
+  "ignorePatterns": [".eslintrc.js", "dist", "node_modules", "test/**/*", "**/*.spec.ts", "**/*.e2e-spec.ts"],
+  "rules": {
+    "@typescript-eslint/interface-name-prefix": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "sonarjs/cognitive-complexity": ["error", 15],
+    "sonarjs/no-duplicate-string": "warn",
+    "sonarjs/no-identical-functions": "error",
+    "sonarjs/no-duplicated-branches": "error",
+    "sonarjs/no-collapsible-if": "warn",
+    "sonarjs/prefer-immediate-return": "warn",
+    "sonarjs/prefer-single-boolean-return": "warn"
+  }
+}

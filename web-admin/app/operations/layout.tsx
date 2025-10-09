@@ -43,6 +43,7 @@ export default function OperationsLayout({
 
   const getPageTitle = () => {
     if (pathname === '/operations') return 'Dashboard'
+    if (pathname.startsWith('/operations/members')) return 'Members'
     if (pathname.startsWith('/operations/doctors')) return 'Doctors'
     if (pathname.startsWith('/operations/clinics')) return 'Clinics'
     if (pathname.startsWith('/operations/appointments')) return 'Appointments'
@@ -57,6 +58,11 @@ export default function OperationsLayout({
       name: 'Dashboard',
       path: '/operations',
       current: pathname === '/operations'
+    },
+    {
+      name: 'Members',
+      path: '/operations/members',
+      current: pathname.startsWith('/operations/members')
     },
     {
       name: 'Doctors',

@@ -4,6 +4,94 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch, getActiveCugs, CugMaster } from '@/lib/api'
 
+// Helper functions
+function validatePolicyAssignment(
+  selectedPolicyId: string,
+  selectedRelationshipId: string,
+  effectiveFrom: string,
+  effectiveTo: string,
+  selectedPrimaryMemberId: string
+): string | null {
+  if (!selectedPolicyId || !selectedRelationshipId) {
+    return 'Please select policy and relationship'
+  }
+
+  if (!effectiveFrom || !effectiveTo) {
+    return 'Please provide both Effective From and Effective To dates'
+  }
+
+  if (new Date(effectiveTo) <= new Date(effectiveFrom)) {
+    return 'Effective To date must be after Effective From date'
+  }
+
+  if (selectedRelationshipId !== 'REL001' && !selectedPrimaryMemberId) {
+    return 'Primary Member ID is required for non-SELF relationships'
+  }
+
+  return null
+}
+
+function buildAssignmentPayload(
+  selectedPolicyId: string,
+  userId: string | string[],
+  selectedRelationshipId: string,
+  effectiveFrom: string,
+  effectiveTo: string,
+  selectedPrimaryMemberId: string,
+  selectedPlanConfigId: string
+) {
+  const payload: any = {
+    policyId: selectedPolicyId,
+    userId,
+    relationshipId: selectedRelationshipId,
+    effectiveFrom: new Date(effectiveFrom).toISOString(),
+    effectiveTo: new Date(effectiveTo).toISOString(),
+  }
+
+  if (selectedRelationshipId !== 'REL001') {
+    payload.primaryMemberId = selectedPrimaryMemberId
+  }
+
+  if (selectedPlanConfigId) {
+    payload.planConfigId = selectedPlanConfigId
+  }
+
+  return payload
+}
+
+function buildUserUpdateData(editedUser: any) {
+  const updateData: any = {
+    name: {
+      firstName: editedUser.name?.firstName || '',
+      lastName: editedUser.name?.lastName || ''
+    },
+    email: editedUser.email,
+    phone: editedUser.phone,
+    dob: editedUser.dob,
+    gender: editedUser.gender,
+    status: editedUser.status,
+    role: editedUser.role,
+    relationship: editedUser.relationship,
+    primaryMemberId: editedUser.primaryMemberId,
+    memberId: editedUser.memberId,
+    uhid: editedUser.uhid,
+    employeeId: editedUser.employeeId,
+    corporateName: editedUser.corporateName
+  }
+
+  if (editedUser.address) {
+    updateData.address = {
+      line1: editedUser.address.line1 || '',
+      line2: editedUser.address.line2 || '',
+      city: editedUser.address.city || '',
+      state: editedUser.address.state || '',
+      pincode: editedUser.address.pincode || ''
+    }
+  }
+
+  return updateData
+}
+
 export default function UserDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -30,22 +118,22 @@ export default function UserDetailPage() {
   const [effectiveTo, setEffectiveTo] = useState('')
 
   useEffect(() => {
-    if (params.id) {
-      fetchUserWithDependents()
-      fetchAssignments()
-      fetchPolicies()
-      fetchCugs()
-      fetchRelationships()
-      fetchAllMembers()
-    }
+    if (!params.id) return
+
+    fetchUserWithDependents()
+    fetchAssignments()
+    fetchPolicies()
+    fetchCugs()
+    fetchRelationships()
+    fetchAllMembers()
   }, [params.id])
 
   useEffect(() => {
-    if (user && cugs.length > 0 && user.corporateName) {
-      const matchingCug = cugs.find(cug => cug.name === user.corporateName)
-      if (matchingCug) {
-        setSelectedCugId(matchingCug._id)
-      }
+    if (!user || cugs.length === 0 || !user.corporateName) return
+
+    const matchingCug = cugs.find(cug => cug.name === user.corporateName)
+    if (matchingCug) {
+      setSelectedCugId(matchingCug._id)
     }
   }, [user, cugs])
 
@@ -68,18 +156,17 @@ export default function UserDetailPage() {
       }
     } catch (error) {
       console.error('Failed to fetch user details')
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   const fetchAssignments = async () => {
     try {
       const response = await apiFetch(`/api/users/${params.id}/assignments`)
-      if (response.ok) {
-        const data = await response.json()
-        setAssignments(data)
-      }
+      if (!response.ok) return
+
+      const data = await response.json()
+      setAssignments(data)
     } catch (error) {
       console.error('Failed to fetch assignments')
     }
@@ -88,10 +175,10 @@ export default function UserDetailPage() {
   const fetchPolicies = async () => {
     try {
       const response = await apiFetch('/api/policies?status=ACTIVE')
-      if (response.ok) {
-        const data = await response.json()
-        setPolicies(data.data || [])
-      }
+      if (!response.ok) return
+
+      const data = await response.json()
+      setPolicies(data.data || [])
     } catch (error) {
       console.error('Failed to fetch policies')
     }
@@ -109,10 +196,10 @@ export default function UserDetailPage() {
   const fetchRelationships = async () => {
     try {
       const response = await apiFetch('/api/relationships')
-      if (response.ok) {
-        const data = await response.json()
-        setRelationships(data)
-      }
+      if (!response.ok) return
+
+      const data = await response.json()
+      setRelationships(data)
     } catch (error) {
       console.error('Failed to fetch relationships')
     }
@@ -121,10 +208,10 @@ export default function UserDetailPage() {
   const fetchAllMembers = async () => {
     try {
       const response = await apiFetch('/api/users?limit=100')
-      if (response.ok) {
-        const data = await response.json()
-        setMembers(data.data || [])
-      }
+      if (!response.ok) return
+
+      const data = await response.json()
+      setMembers(data.data || [])
     } catch (error) {
       console.error('Failed to fetch members')
     }
@@ -133,14 +220,13 @@ export default function UserDetailPage() {
   const fetchPlanConfigsForPolicy = async (policyId: string) => {
     try {
       const response = await apiFetch(`/api/policies/${policyId}/plan-configs`)
-      if (response.ok) {
-        const data = await response.json()
-        setPlanConfigs(data)
-        // Auto-select active config
-        const activeConfig = data.find((c: any) => c.status === 'PUBLISHED' && c.isCurrent)
-        if (activeConfig) {
-          setSelectedPlanConfigId(activeConfig._id)
-        }
+      if (!response.ok) return
+
+      const data = await response.json()
+      setPlanConfigs(data)
+      const activeConfig = data.find((c: any) => c.status === 'PUBLISHED' && c.isCurrent)
+      if (activeConfig) {
+        setSelectedPlanConfigId(activeConfig._id)
       }
     } catch (error) {
       console.error('Failed to fetch plan configs')
@@ -148,45 +234,29 @@ export default function UserDetailPage() {
   }
 
   const handleAssignPolicy = async () => {
-    if (!selectedPolicyId || !selectedRelationshipId) {
-      alert('Please select policy and relationship')
-      return
-    }
+    const validationError = validatePolicyAssignment(
+      selectedPolicyId,
+      selectedRelationshipId,
+      effectiveFrom,
+      effectiveTo,
+      selectedPrimaryMemberId
+    )
 
-    // Validate effective dates
-    if (!effectiveFrom || !effectiveTo) {
-      alert('Please provide both Effective From and Effective To dates')
-      return
-    }
-
-    // Validate effectiveTo is after effectiveFrom
-    if (new Date(effectiveTo) <= new Date(effectiveFrom)) {
-      alert('Effective To date must be after Effective From date')
-      return
-    }
-
-    // Validate primaryMemberId requirement
-    if (selectedRelationshipId !== 'REL001' && !selectedPrimaryMemberId) {
-      alert('Primary Member ID is required for non-SELF relationships')
+    if (validationError) {
+      alert(validationError)
       return
     }
 
     try {
-      const payload: any = {
-        policyId: selectedPolicyId,
-        userId: params.id,
-        relationshipId: selectedRelationshipId,
-        effectiveFrom: new Date(effectiveFrom).toISOString(),
-        effectiveTo: new Date(effectiveTo).toISOString(),
-      }
-
-      if (selectedRelationshipId !== 'REL001') {
-        payload.primaryMemberId = selectedPrimaryMemberId
-      }
-
-      if (selectedPlanConfigId) {
-        payload.planConfigId = selectedPlanConfigId
-      }
+      const payload = buildAssignmentPayload(
+        selectedPolicyId,
+        params.id as string,
+        selectedRelationshipId,
+        effectiveFrom,
+        effectiveTo,
+        selectedPrimaryMemberId,
+        selectedPlanConfigId
+      )
 
       const response = await apiFetch('/api/assignments', {
         method: 'POST',
@@ -238,36 +308,7 @@ export default function UserDetailPage() {
 
   const handleSave = async () => {
     try {
-      // Clean and prepare update data
-      const updateData: any = {
-        name: {
-          firstName: editedUser.name?.firstName || '',
-          lastName: editedUser.name?.lastName || ''
-        },
-        email: editedUser.email,
-        phone: editedUser.phone,
-        dob: editedUser.dob,
-        gender: editedUser.gender,
-        status: editedUser.status,
-        role: editedUser.role,
-        relationship: editedUser.relationship,
-        primaryMemberId: editedUser.primaryMemberId,
-        memberId: editedUser.memberId,
-        uhid: editedUser.uhid,
-        employeeId: editedUser.employeeId,
-        corporateName: editedUser.corporateName
-      }
-
-      // Clean address object if it exists
-      if (editedUser.address) {
-        updateData.address = {
-          line1: editedUser.address.line1 || '',
-          line2: editedUser.address.line2 || '',
-          city: editedUser.address.city || '',
-          state: editedUser.address.state || '',
-          pincode: editedUser.address.pincode || ''
-        }
-      }
+      const updateData = buildUserUpdateData(editedUser)
 
       const response = await apiFetch(`/api/users/${params.id}`, {
         method: 'PUT',
@@ -275,7 +316,6 @@ export default function UserDetailPage() {
       })
 
       if (response.ok) {
-        // If password needs to be updated
         if (showPasswordField && newPassword) {
           await apiFetch(`/api/users/${params.id}/set-password`, {
             method: 'POST',

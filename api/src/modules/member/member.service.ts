@@ -18,6 +18,105 @@ export class MemberService {
     private planConfigService: PlanConfigService,
   ) {}
 
+  private isSelfRelationship(relationship: string): boolean {
+    return relationship === RelationshipType.SELF ||
+           relationship === 'REL001' ||
+           relationship === 'SELF';
+  }
+
+  private async fetchDependents(user: any): Promise<any[]> {
+    return this.userModel
+      .find({
+        primaryMemberId: user.memberId,
+        relationship: { $nin: [RelationshipType.SELF, 'REL001', 'SELF'] }
+      })
+      .select('-passwordHash')
+      .sort({ createdAt: 1 });
+  }
+
+  private async getFamilyMembersForUser(user: any): Promise<{ familyMembers: any[], dependents: any[] }> {
+    if (this.isSelfRelationship(user.relationship)) {
+      const dependents = await this.fetchDependents(user);
+      return { familyMembers: [user, ...dependents], dependents };
+    }
+    return { familyMembers: [user], dependents: [] };
+  }
+
+  private async fetchPolicyBenefits(assignments: any[], walletData: any) {
+    let policyBenefits = null;
+    let walletCategories: any[] = [];
+    let healthBenefits: any[] = [];
+
+    if (assignments.length === 0 || !assignments[0].assignment?.policyId) {
+      return { policyBenefits, walletCategories, healthBenefits };
+    }
+
+    try {
+      const policyId = assignments[0].assignment.policyId._id || assignments[0].assignment.policyId;
+      const planConfig = await this.planConfigService.getConfig(policyId.toString());
+
+      if (!planConfig || !planConfig.benefits) {
+        return { policyBenefits, walletCategories, healthBenefits };
+      }
+
+      policyBenefits = planConfig.benefits;
+      const categoryIds = Object.keys(planConfig.benefits);
+      const categories = await this.categoryMasterModel.find({
+        categoryId: { $in: categoryIds },
+        isActive: true
+      });
+
+      walletCategories = this.mapWalletCategories(categoryIds, planConfig.benefits, categories, walletData);
+      healthBenefits = this.mapHealthBenefits(categoryIds, planConfig.benefits, categories, walletData);
+    } catch (error) {
+      // Error fetching policy benefits - continue with empty benefits
+    }
+
+    return { policyBenefits, walletCategories, healthBenefits };
+  }
+
+  private mapWalletCategories(categoryIds: string[], benefits: any, categories: any[], walletData: any): any[] {
+    const walletCategories: any[] = [];
+
+    categoryIds.forEach(catId => {
+      const benefit = benefits[catId];
+      const categoryInfo = categories.find(cat => cat.categoryId === catId);
+
+      if (benefit?.enabled && categoryInfo) {
+        const categoryWallet = walletData.categories.find((c: any) => c.categoryCode === catId);
+        walletCategories.push({
+          name: categoryInfo.name,
+          available: categoryWallet?.available || 0,
+          total: benefit.annualLimit || categoryWallet?.total || 0,
+          categoryCode: catId
+        });
+      }
+    });
+
+    return walletCategories;
+  }
+
+  private mapHealthBenefits(categoryIds: string[], benefits: any, categories: any[], walletData: any): any[] {
+    const healthBenefits: any[] = [];
+
+    categoryIds.forEach(catId => {
+      const benefit = benefits[catId];
+      const categoryInfo = categories.find(cat => cat.categoryId === catId);
+
+      if (benefit?.enabled && categoryInfo) {
+        const categoryWallet = walletData.categories.find((c: any) => c.categoryCode === catId);
+        const amount = benefit.annualLimit || categoryWallet?.total || 0;
+        healthBenefits.push({
+          name: categoryInfo.name,
+          description: `${categoryInfo.name} upto Rs ${amount}`,
+          categoryCode: catId
+        });
+      }
+    });
+
+    return healthBenefits;
+  }
+
   async getProfile(userId: string) {
     // userId here is actually the MongoDB _id from JWT payload
     const user = await this.userModel.findById(userId).select('-passwordHash');
@@ -25,29 +124,7 @@ export class MemberService {
       throw new NotFoundException('User not found');
     }
 
-    let dependents: any[] = [];
-    let familyMembers: any[] = [];
-
-    // Support both 'REL001' and legacy 'SELF' values for backward compatibility
-    const isSelfRelationship = user.relationship === RelationshipType.SELF ||
-                                (user.relationship as string) === 'REL001' ||
-                                (user.relationship as string) === 'SELF';
-
-    if (isSelfRelationship) {
-      // If this is a primary member (REL001/SELF), fetch their dependents
-      dependents = await this.userModel
-        .find({
-          primaryMemberId: user.memberId,
-          relationship: { $nin: [RelationshipType.SELF, 'REL001', 'SELF'] } // Exclude all SELF variants
-        })
-        .select('-passwordHash')
-        .sort({ createdAt: 1 });
-
-      familyMembers = [user, ...dependents];
-    } else {
-      // If this is a dependent (non-REL001), they can only see themselves
-      familyMembers = [user];
-    };
+    const { familyMembers, dependents } = await this.getFamilyMembersForUser(user);
 
     // Fetch policy assignments for all family members - OPTIMIZED: Batch query
     const memberIds = familyMembers.map(m => m._id.toString());
@@ -79,69 +156,8 @@ export class MemberService {
     const userWallet = await this.walletService.getUserWallet(userId);
     const walletData = this.walletService.formatWalletForFrontend(userWallet);
 
-    // Fetch policy configuration for benefits
-    let policyBenefits = null;
-    let walletCategories: any[] = [];
-    let healthBenefits: any[] = [];
-
-    if (assignments.length > 0 && assignments[0].assignment?.policyId) {
-      try {
-        const policyId = assignments[0].assignment.policyId._id || assignments[0].assignment.policyId;
-        const planConfig = await this.planConfigService.getConfig(policyId.toString());
-
-        if (planConfig) {
-          policyBenefits = planConfig.benefits;
-
-          // Map policy benefits to wallet categories using dynamic category lookup
-          if (planConfig.benefits) {
-            // Get category codes from benefits (CAT001, CAT002, CAT003)
-            const categoryIds = Object.keys(planConfig.benefits);
-
-            // Fetch category names from category_master collection
-            const categories = await this.categoryMasterModel.find({
-              categoryId: { $in: categoryIds },
-              isActive: true
-            });
-
-            // Map benefits using real database category names
-            categoryIds.forEach(catId => {
-              const benefit = (planConfig.benefits as any)[catId];
-              const categoryInfo = categories.find(cat => cat.categoryId === catId);
-
-              if (benefit?.enabled && categoryInfo) {
-                const categoryWallet = walletData.categories.find(c => (c as any).categoryCode === catId);
-                walletCategories.push({
-                  name: categoryInfo.name, // Real name from database
-                  available: categoryWallet?.available || 0,
-                  total: benefit.annualLimit || categoryWallet?.total || 0,
-                  categoryCode: catId
-                });
-              }
-            });
-
-            // Map to health benefits using dynamic category lookup
-            if (planConfig.benefits && categories.length > 0) {
-              categoryIds.forEach(catId => {
-                const benefit = (planConfig.benefits as any)[catId];
-                const categoryInfo = categories.find(cat => cat.categoryId === catId);
-
-                if (benefit?.enabled && categoryInfo) {
-                  const categoryWallet = walletData.categories.find(c => (c as any).categoryCode === catId);
-                  const amount = benefit.annualLimit || categoryWallet?.total || 0;
-                  healthBenefits.push({
-                    name: categoryInfo.name,
-                    description: `${categoryInfo.name} upto Rs ${amount}`,
-                    categoryCode: catId
-                  });
-                }
-              });
-            }
-          }
-        }
-      } catch (error) {
-        // Error fetching policy benefits - continue with empty benefits
-      }
-    }
+    const { policyBenefits, walletCategories, healthBenefits } =
+      await this.fetchPolicyBenefits(assignments, walletData);
 
     return {
       user,

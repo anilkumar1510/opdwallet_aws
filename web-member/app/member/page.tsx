@@ -12,7 +12,6 @@ import {
   VideoCameraIcon,
   BeakerIcon,
   CubeIcon,
-  HeartIcon,
   EyeIcon,
   ClipboardDocumentCheckIcon,
   BanknotesIcon
@@ -58,14 +57,14 @@ const getRelationshipLabel = (relationshipCode: string) => {
 // Icon mapping for categories
 const getCategoryIcon = (categoryCode: string) => {
   switch (categoryCode) {
-    case 'CONSULTATION': return VideoCameraIcon
+    case 'CONSULTATION': return UserIcon
     case 'PHARMACY': return CubeIcon
     case 'DIAGNOSTICS': return BeakerIcon
     case 'DENTAL':
     case 'VISION':
     case 'DENTAL_VISION': return EyeIcon
     case 'WELLNESS': return ClipboardDocumentCheckIcon
-    default: return HeartIcon
+    default: return BanknotesIcon
   }
 }
 
@@ -201,8 +200,8 @@ const WalletCategoryCard = memo(({
   icon: any
 }) => {
   return (
-    <div className="border border-gray-200 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-1">
+    <div className="border border-gray-200 rounded-xl p-3">
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {React.createElement(icon, { className: "h-5 w-5 text-gray-600" })}
           <span className="text-sm font-medium text-gray-900">{category.name}</span>
@@ -214,12 +213,9 @@ const WalletCategoryCard = memo(({
               <span className="text-sm text-gray-500 font-normal"> / {category.total.toLocaleString()}</span>
             )}
           </div>
+          <p className="text-xs text-gray-500 mt-0.5">Remaining / Allocated</p>
         </div>
       </div>
-      <p className="text-xs text-gray-500 text-right">Remaining / Allocated</p>
-      <button className="w-full mt-2 p-1">
-        <ChevronDownIcon className="h-4 w-4 text-gray-400 mx-auto" />
-      </button>
     </div>
   )
 })
@@ -235,7 +231,7 @@ const DesktopWalletCategoryCard = memo(({
   icon: any
 }) => {
   return (
-    <div className="border border-gray-200 rounded-xl p-5">
+    <div className="border border-gray-200 rounded-xl p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="bg-blue-50 p-3 rounded-lg">
@@ -250,11 +246,9 @@ const DesktopWalletCategoryCard = memo(({
               <span className="text-sm text-gray-500 font-normal"> / {category.total.toLocaleString()}</span>
             )}
           </div>
+          <p className="text-xs text-gray-500 mt-1">Remaining / Allocated</p>
         </div>
       </div>
-      <button className="w-full mt-3 p-1">
-        <ChevronDownIcon className="h-5 w-5 text-gray-400 mx-auto" />
-      </button>
     </div>
   )
 })

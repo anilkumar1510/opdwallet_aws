@@ -8,7 +8,6 @@ import { ConfigService } from '@nestjs/config';
 import rateLimit from 'express-rate-limit';
 import { secretsManager } from './config/secrets-manager';
 import { mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -34,7 +33,7 @@ async function bootstrap() {
     try {
       await secretsManager.loadSecretsToEnv();
       logger.log('Secrets loaded from AWS Secrets Manager');
-    } catch (error) {
+    } catch (_error) {
       logger.warn('Failed to load secrets from AWS Secrets Manager, using environment variables');
     }
   }

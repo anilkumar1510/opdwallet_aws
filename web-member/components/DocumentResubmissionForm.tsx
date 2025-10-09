@@ -155,7 +155,7 @@ export default function DocumentResubmissionForm({
                     Documents Resubmitted Successfully!
                   </h3>
                   <p className="text-sm text-green-700 mt-1">
-                    Your claim has been moved back to the review queue. We'll notify you of any
+                    Your claim has been moved back to the review queue. We&apos;ll notify you of any
                     updates.
                   </p>
                 </div>

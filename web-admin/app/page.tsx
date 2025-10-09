@@ -206,7 +206,7 @@ export default function LoginPage() {
             <div className="space-y-4 pt-4">
               <div className="text-center">
                 <p className="text-sm text-gray-600">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <a href="#" className="font-semibold text-gray-900 hover:underline">
                     Contact Admin
                   </a>

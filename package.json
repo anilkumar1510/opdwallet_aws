@@ -1,4 +1,17 @@
 {
+  "name": "opdwallet",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "sonar:install": "npm install -g sonarqube-scanner",
+    "quality:api": "cd api && npm run quality",
+    "quality:member": "cd web-member && npm run quality",
+    "quality:admin": "cd web-admin && npm run quality",
+    "quality:all": "npm run quality:api && npm run quality:member && npm run quality:admin",
+    "sonar:start": "docker-compose -f docker-compose.sonarqube.yml up -d",
+    "sonar:stop": "docker-compose -f docker-compose.sonarqube.yml down",
+    "sonar:logs": "docker logs opdwallet-sonarqube"
+  },
   "dependencies": {
     "@types/node": "^24.5.2",
     "mongodb": "^6.19.0",
@@ -6,5 +19,8 @@
     "next": "^14.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "sonarqube-scanner": "^4.2.3"
   }
 }

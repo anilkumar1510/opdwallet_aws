@@ -7,7 +7,6 @@ import {
   IsDateString,
   ValidateNested,
   MinLength,
-  IsPhoneNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
