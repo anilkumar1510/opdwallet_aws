@@ -196,11 +196,14 @@ Body: { reason?: string }
 - **Sorting**: Sort by date, amount, status, type
 - **View Modes**: Table or card view
 - **Pagination**: 10 items per page
-- **Statistics Dashboard** ✨ REFINED:
-  - Compact card design with smaller icons (h-5 w-5)
-  - Consistent typography (text-lg font-semibold)
-  - Unified color scheme (gray-900 for numbers, gray-600 for labels)
-  - Four key metrics: Approved, Processing, Under Review, Total Amount
+- **Statistics Dashboard** ✨ REDESIGNED (v6.4):
+  - **Minimalist Card Design**: Removed gradient backgrounds for cleaner look
+  - **Ultra-Compact Icons**: h-4 w-4 (previously h-8 → h-5 → h-4)
+  - **Refined Typography**: text-sm font-semibold (previously text-2xl → text-lg → text-sm)
+  - **Reduced Padding**: p-2 (previously p-4 → p-3 → p-2)
+  - **Neutral Color Scheme**: Consistent gray-900 for numbers, gray-600 for labels
+  - **Four Key Metrics**: Approved, Processing, Under Review, Total Amount
+  - **Responsive Grid**: 2 columns on mobile, 4 columns on desktop
 
 **File Upload System** ✨ ENHANCED:
 - **Categorized Upload Fields**:

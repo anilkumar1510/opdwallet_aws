@@ -388,13 +388,24 @@ GET    /api/admin/lab/vendors/:vendorId/slots?pincode=&date=
 
 **Main Admin Layout**: `/web-admin/app/admin/layout.tsx`
 
-### Primary Navigation Items
+### Primary Navigation Items ✨ UPDATED (v6.4)
 1. **Dashboard**: Admin home and overview
 2. **Users**: User and dependent management
 3. **Policies**: Policy and plan administration
 4. **Lab**: Lab diagnostics hub
 5. **Services**: Service type management
 6. **Categories**: Category administration
+
+**ARCHITECTURAL CHANGE**: TPA and Finance portals have been moved to separate dedicated portals:
+- **TPA Portal**: `/tpa/*` (Previously `/admin/tpa/*`)
+- **Finance Portal**: `/finance/*` (Previously `/admin/finance/*`)
+- **Operations Portal**: `/operations/*` (Unchanged)
+
+This separation provides:
+- **Role-Based Access**: Dedicated authentication per portal
+- **Improved Performance**: Isolated routing and state management
+- **Better Security**: Separate middleware and authorization
+- **Enhanced UX**: Focused navigation per user role
 
 ### Lab Diagnostics Sub-Navigation
 - **Lab Dashboard**: Lab module overview

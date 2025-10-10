@@ -4,7 +4,7 @@
 **Current Deployment**: http://51.20.125.246
 **Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.3 (Latest Changes: UI/UX Refinements, Modal Accessibility Improvements)
+**Documentation Version**: 6.4 (Latest Changes: Portal Separation, Statistics Dashboard Redesign)
 
 ---
 
@@ -146,9 +146,10 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 │                    Port 80/443 (HTTP/HTTPS)                      │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  Route /api/*          → API Backend (Port 4000)        │   │
-│  │  Route /admin/*        → Admin Portal (Port 3001)       │   │
+│  │  Route /admin/*        → Admin Portal (Port 3001) ✨    │   │
 │  │  Route /operations/*   → Operations Portal (Port 3001)  │   │
-│  │  Route /tpa/*          → TPA Portal (Port 3001)         │   │
+│  │  Route /tpa/*          → TPA Portal (Port 3001) ✨      │   │
+│  │  Route /finance/*      → Finance Portal (Port 3001) ✨  │   │
 │  │  Route /*              → Member Portal (Port 3002)      │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────┘
@@ -163,14 +164,14 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 │  - Dashboard    │  │  - Dashboard    │  │  - Auth      │
 │  - Users        │  │  - Wallet       │  │  - Users     │
 │  - Policies     │  │  - Benefits     │  │  - Policies  │
-│  - Lab          │  │  - Bookings     │  │  - Config    │
-│  - Services     │  │  - Claims       │  │  - Masters   │
-│  - Categories   │  │  - Lab Tests    │  │  - Wallet    │
-│  /operations:   │  │  - Family       │  │  - Lab       │
-│  - Doctors      │  │                 │  │  - TPA       │
-│  - Appointments │  │                 │  │  - Claims    │
-│  - Lab Queue    │  │                 │  │              │
-│  - Lab Orders   │  │                 │  │              │
+│  - Lab Services │  │  - Bookings     │  │  - Config    │
+│  - Master Data  │  │  - Claims       │  │  - Masters   │
+│                 │  │  - Lab Tests    │  │  - Wallet    │
+│  SEPARATE:      │  │  - Family       │  │  - Lab       │
+│  /tpa ✨        │  │                 │  │  - TPA       │
+│  /finance ✨    │  │                 │  │  - Claims    │
+│  /operations    │  │                 │  │              │
+│                 │  │                 │  │              │
 └─────────────────┘  └─────────────────┘  └──────┬───────┘
                                                   │
                                           ┌───────▼───────┐

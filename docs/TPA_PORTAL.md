@@ -21,7 +21,16 @@
 
 The TPA (Third-Party Administrator) Portal is a specialized interface designed for insurance claim processing and management. TPAs act as intermediaries between healthcare providers, members, and insurance companies to efficiently process and adjudicate insurance claims.
 
-**Portal URL**: `/tpa` (planned, may share admin portal infrastructure)
+**Portal URL**: `/tpa` ✨ **LIVE** - Dedicated Standalone Portal (v6.4)
+
+**Architecture Update**: The TPA Portal is now a separate, dedicated portal with its own routing, authentication, and layout. Previously nested under `/admin/tpa`, it now operates independently at `/tpa` with enhanced navigation:
+
+- **Dashboard**: `/tpa` - Overview and metrics
+- **All Claims**: `/tpa/claims` - Complete claims listing
+- **Unassigned Claims**: `/tpa/claims/unassigned` - New dedicated view
+- **Assigned Claims**: `/tpa/claims/assigned` - New dedicated view
+- **Analytics**: `/tpa/analytics` - Reports and insights
+- **Member Management**: `/tpa/users` - User administration
 
 **Primary Functions**:
 - Review and process member insurance claims
