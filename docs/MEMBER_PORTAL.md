@@ -196,6 +196,11 @@ Body: { reason?: string }
 - **Sorting**: Sort by date, amount, status, type
 - **View Modes**: Table or card view
 - **Pagination**: 10 items per page
+- **Statistics Dashboard** ✨ REFINED:
+  - Compact card design with smaller icons (h-5 w-5)
+  - Consistent typography (text-lg font-semibold)
+  - Unified color scheme (gray-900 for numbers, gray-600 for labels)
+  - Four key metrics: Approved, Processing, Under Review, Total Amount
 
 **File Upload System** ✨ ENHANCED:
 - **Categorized Upload Fields**:
