@@ -24,14 +24,62 @@ The Member Portal is the primary interface for OPDWallet members to manage their
 
 ---
 
-## Dashboard
+## Dashboard ✨ REDESIGNED (v6.5)
 
-The member dashboard serves as the central hub for all member activities.
+**Route**: `/member`
+
+**File**: `/web-member/app/member/page.tsx`
+
+The member dashboard has been completely redesigned with a modern, mobile-first interface.
+
+### UI/UX Enhancements (v6.5)
+
+#### Header Redesign
+- **Profile Dropdown**: New component replacing static header
+  - User avatar with initials
+  - Name and Member ID display
+  - Quick links to profile and settings
+  - Sign out action
+- **Notification Bell**: Enhanced with unread count badge
+- **Personalized Greeting**: "Hi {firstName}" welcome message
+
+#### OPD Card Carousel ✨ NEW
+- **Horizontal Scroll**: Swipeable card carousel for all family members
+- **Primary Card First**: User's OPD card shown first
+- **Dependent Cards**: All dependent cards in sequence
+- **Card Information**:
+  - Full name with profile photo
+  - Policy number and validity
+  - Member ID and UHID
+  - Corporate name
+  - Relationship indicator
+- **Responsive Design**: Optimized card widths per viewport
+  - Mobile: 280px
+  - Tablet: 320px
+  - Desktop: 360px
+
+#### Wallet Categories Redesign
+- **Blue Theme**: Changed from gray to blue for visual appeal
+  - Card background: `bg-blue-50`
+  - Hover state: `bg-blue-100`
+  - Icons: `text-blue-600`
+  - Border: `border-blue-100`
+- **Hover Effects**: Smooth transition colors
+- **Category Icons**: Color-matched with blue theme
+
+#### New Components Created
+```
+/web-member/components/
+├── ProfileDropdown.tsx    (User profile menu)
+├── SectionHeader.tsx      (Reusable section headers)
+├── OPDCardCarousel.tsx    (Family member cards carousel)
+└── OPDECard.tsx          (Individual OPD card component)
+```
 
 ### Key Components
 
-- **Wallet Balance**: Display current wallet balance and transaction history
-- **Benefits Summary**: Overview of available healthcare benefits
+- **OPD Cards Section** ✨ NEW: Carousel of member cards with policy details
+- **Wallet Balance**: Category-wise balance with blue-themed cards
 - **Quick Actions**: Fast access to common tasks
   - Book Appointment
   - Upload Lab Prescription

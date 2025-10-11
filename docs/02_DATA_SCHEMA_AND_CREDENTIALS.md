@@ -1,7 +1,7 @@
 # OPD WALLET - DATA SCHEMA AND CREDENTIALS DOCUMENTATION
 
-**Document Version:** 3.1
-**Last Updated:** October 8, 2025 (Enhanced Security & Code Refactoring)
+**Document Version:** 3.2
+**Last Updated:** October 11, 2025 (Google Maps Integration, Assignment Enhancements, Blood Group Field)
 **Database:** MongoDB (opd_wallet)
 **Total Collections:** 27
 
@@ -157,8 +157,8 @@
   uhid: string,                     // REQUIRED, UNIQUE - Universal Health ID
   memberId: string,                 // REQUIRED, UNIQUE - Member identification number
   employeeId?: string,              // OPTIONAL, UNIQUE (sparse) - For employees
-  relationship: RelationshipType,   // REQUIRED, DEFAULT: 'SELF' - Relationship to primary member
-  primaryMemberId?: string,         // REQUIRED if relationship !== 'SELF' - References userId
+  relationship: string,             // REQUIRED - Relationship code (e.g., 'REL001', 'REL002') ✨ CHANGED (v3.2)
+  primaryMemberId?: string,         // REQUIRED if relationship !== 'SELF' and !== 'REL001' - References memberId
   name: {                          // REQUIRED - Name object
     firstName: string,              // REQUIRED
     lastName: string,               // REQUIRED
@@ -168,6 +168,7 @@
   phone: string,                    // REQUIRED, UNIQUE
   dob?: Date,                       // OPTIONAL - Date of birth
   gender?: string,                  // OPTIONAL, ENUM: ['MALE', 'FEMALE', 'OTHER']
+  bloodGroup?: string,              // OPTIONAL, ENUM: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] ✨ NEW (v3.2)
   corporateName?: string,           // OPTIONAL - Corporate affiliation
   address?: {                       // OPTIONAL - Address object
     line1: string,

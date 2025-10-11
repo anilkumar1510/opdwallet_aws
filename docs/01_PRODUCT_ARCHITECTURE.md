@@ -4,7 +4,7 @@
 **Current Deployment**: http://51.20.125.246
 **Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.4 (Latest Changes: Portal Separation, Statistics Dashboard Redesign)
+**Documentation Version**: 6.5 (Latest Changes: Google Maps Integration, Assignment Enhancements, UI/UX Redesign)
 
 ---
 
@@ -86,6 +86,7 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 | **helmet** | 8.1.0 | Security headers |
 | **express-rate-limit** | 8.1.0 | Rate limiting |
 | **@aws-sdk/client-secrets-manager** | 3.888.0 | AWS Secrets Manager integration |
+| **@googlemaps/google-maps-services-js** | 3.4.2 | ✨ Google Maps API client (NEW) |
 | **multer** | 1.4.5-lts.1 | File upload middleware (✅ 2 upload directories) |
 | **@types/multer** | 2.0.0 | TypeScript types for multer |
 
@@ -833,13 +834,39 @@ PUT    /api/policies/:id            # Update policy
 DELETE /api/policies/:id            # Delete policy (if not assigned)
 ```
 
-#### Policy Assignments (`/api/assignments`)
+#### Policy Assignments (`/api/assignments`) ✨ ENHANCED (v6.5)
 ```
-POST   /api/assignments             # Assign policy to user
+POST   /api/assignments             # Assign policy to user (with relationship & validation)
 GET    /api/assignments             # List all assignments
 GET    /api/assignments/policy/:policyId    # Get assignments for policy
+GET    /api/assignments/search-primary-members  # Search primary members (NEW)
 DELETE /api/assignments/:assignmentId       # Deactivate assignment
 DELETE /api/assignments/user/:userId/policy/:policyId  # Unassign
+```
+
+**New Features (v6.5)**:
+- **Relationship-Based Assignments**: Assign dependents with relationship validation
+- **Plan Config Validation**: Validates relationshipId against coveredRelationships in plan config
+- **Primary Member Search**: Real-time autocomplete search for primary members within policy
+- **User Document Sync**: Automatically syncs relationship data to user documents
+- **Enhanced Validation**: Prevents invalid assignments (e.g., dependent without primary member)
+
+**Request Body Example**:
+```json
+{
+  "userId": "673ae8da20a0e1d0e8f27c01",
+  "policyId": "6743ae1820a0e1d0e8f27d15",
+  "relationshipId": "REL002",
+  "primaryMemberId": "MEM001",
+  "effectiveFrom": "2025-01-01",
+  "effectiveTo": "2025-12-31"
+}
+```
+
+**Search Primary Members**:
+```
+GET /api/assignments/search-primary-members?policyId={id}&search={term}
+Response: Array of users with SELF/REL001 relationship in the policy
 ```
 
 #### Plan Configuration (`/api/policies/:policyId/config`)
@@ -2334,6 +2361,80 @@ export class PoliciesService {
 }
 ```
 
+#### 4. Google Maps API ✨ NEW (v6.5)
+```typescript
+// Location Service with Google Maps
+import { Client } from '@googlemaps/google-maps-services-js';
+
+@Injectable()
+export class LocationService {
+  private readonly googleMapsClient: Client;
+  private readonly apiKey: string;
+
+  constructor(private configService: ConfigService) {
+    this.googleMapsClient = new Client({});
+    this.apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
+  }
+
+  // Reverse Geocode: Convert coordinates to address
+  async reverseGeocode(lat: number, lng: number): Promise<GeocodingResult> {
+    const response = await this.googleMapsClient.reverseGeocode({
+      params: {
+        latlng: { lat, lng },
+        key: this.apiKey,
+      },
+    });
+    return this.parseGoogleGeocodeResult(response.data.results[0]);
+  }
+
+  // Forward Geocode: Convert address to coordinates
+  async forwardGeocode(query: string): Promise<GeocodingResult> {
+    const response = await this.googleMapsClient.geocode({
+      params: {
+        address: query,
+        key: this.apiKey,
+        region: 'in',
+        components: { country: 'IN' },
+      },
+    });
+    return this.parseGoogleGeocodeResult(response.data.results[0]);
+  }
+
+  // Search Cities by Name
+  async searchCities(query: string): Promise<CityResult[]> {
+    const response = await this.googleMapsClient.placeAutocomplete({
+      params: {
+        input: query,
+        key: this.apiKey,
+        types: '(cities)',
+        components: ['country:in'],
+      },
+    });
+    return this.parseCityResults(response.data.predictions);
+  }
+}
+```
+
+**Features**:
+- **Reverse Geocoding**: Convert lat/lng to pincode, city, state
+- **Forward Geocoding**: Convert city/address to coordinates
+- **City Autocomplete**: Google Places-style city search
+- **India-Biased**: Prioritizes Indian locations
+- **Caching Layer**: In-memory cache for repeated lookups
+- **Fallback Support**: Graceful degradation if API key missing
+
+**API Endpoints**:
+```
+GET /api/location/reverse?lat={latitude}&lng={longitude}
+GET /api/location/forward?query={address}
+GET /api/location/cities?query={city_name}
+```
+
+**Environment Setup**:
+```bash
+GOOGLE_MAPS_API_KEY=your_api_key_here
+```
+
 ### Planned Integrations (Not Implemented)
 
 #### 1. Payment Gateway
@@ -2349,7 +2450,7 @@ export class PoliciesService {
 #### 3. Document Storage
 - **Purpose**: Health records, prescription uploads
 - **Providers**: AWS S3, Cloudinary
-- **Status**: ❌ Not implemented
+- **Status**: ❌ Not implemented (using local file storage)
 
 #### 4. Healthcare Provider APIs
 - **Purpose**: Real-time service booking, availability

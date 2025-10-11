@@ -68,6 +68,7 @@ Create, configure, and version health insurance policies and plan configurations
 - **Version Control**: Manage policy versions and track changes over time
 - **Coverage Rules**: Define eligibility, limits, and exclusions
 - **Premium Settings**: Configure premium amounts and payment schedules
+- **Assignment Management** ✨ ENHANCED (v6.5): Assign users with relationship validation
 
 ### Policy Lifecycle
 1. Draft creation
@@ -75,6 +76,53 @@ Create, configure, and version health insurance policies and plan configurations
 3. Activation and publication
 4. Versioning for updates
 5. Archival or deactivation
+
+### Assignment Enhancements ✨ NEW (v6.5)
+
+**Route**: `/admin/policies/[id]/assignments`
+
+**File**: `/web-admin/app/admin/policies/[id]/assignments/page.tsx`
+
+The policy assignment interface has been significantly enhanced with:
+
+#### Relationship-Based Assignment
+- **Relationship Selection**: Choose from plan-covered relationships
+- **Plan Config Validation**: Only relationships defined in plan config are selectable
+- **Visual Indicators**: Covered relationships highlighted, uncovered ones disabled
+- **Validation Messages**: Clear feedback when relationship not covered
+
+#### Primary Member Search (Google Maps-Style Autocomplete)
+- **Real-Time Search**: Debounced autocomplete (300ms delay)
+- **Filtered Results**: Only primary members (SELF/REL001) within the policy
+- **Search Fields**: memberId, firstName, lastName, fullName, employeeId, uhid
+- **Smart Display**: Shows member name and ID in dropdown
+- **Minimum Characters**: 2 characters to trigger search
+
+#### Enhanced Validation
+- **Required Fields**: userId, relationshipId, effectiveFrom, effectiveTo
+- **Dependent Logic**: Primary member required for non-SELF relationships
+- **Plan Config Check**: Validates relationship against coveredRelationships
+- **Submit Button**: Disabled until all validations pass
+
+#### Implementation Details
+```typescript
+// Debounce hook for search optimization
+const debouncedSearchTerm = useDebounce(primaryMemberSearch, 300)
+
+// Search API endpoint
+GET /api/assignments/search-primary-members?policyId={id}&search={term}
+
+// Response structure
+[
+  {
+    "_id": "...",
+    "memberId": "MEM001",
+    "name": { "firstName": "John", "lastName": "Doe", "fullName": "John Doe" },
+    "uhid": "UH001",
+    "employeeId": "EMP001"
+  }
+]
+```
 
 ---
 
