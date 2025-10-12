@@ -4,7 +4,7 @@
 **Current Deployment**: http://51.20.125.246
 **Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.5 (Latest Changes: Google Maps Integration, Assignment Enhancements, UI/UX Redesign)
+**Documentation Version**: 6.6 (Latest Changes: Profile Management, Enhanced Dependent Fetching, Doctor Portal Improvements)
 
 ---
 
@@ -1138,10 +1138,26 @@ Access Control:
 - Admin/Operations can view all prescriptions
 ```
 
-#### Member Portal API (`/api/member`)
+#### Member Portal API (`/api/member`) ✨ ENHANCED (v6.6)
 ```
 GET    /api/member/profile          # Get member profile with family
 GET    /api/member/family           # Get family members
+PATCH  /api/member/profile          # Update member profile (email/mobile) ✨ NEW
+```
+
+**New Features (v6.6)**:
+- **Profile Update**: Members can update their email and mobile number
+- **Enhanced Dependent Fetching**: Now uses assignment-based logic for accurate relationship tracking
+- **Validation**:
+  - Email: Valid email format required
+  - Mobile: 10-digit Indian mobile number (starts with 6-9)
+
+**Request Body (PATCH /api/member/profile)**:
+```json
+{
+  "email": "newemail@example.com",  // optional
+  "mobile": "9876543210"             // optional
+}
 ```
 
 #### Member Claims (`/api/member/claims`) - ✅ FULLY IMPLEMENTED

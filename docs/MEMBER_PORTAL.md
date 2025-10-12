@@ -13,14 +13,15 @@ The Member Portal is the primary interface for OPDWallet members to manage their
 ## Table of Contents
 
 1. [Dashboard](#dashboard)
-2. [Family Management](#family-management)
-3. [Appointments](#appointments)
-4. [Claims & Reimbursements](#claims--reimbursements)
-5. [Lab Diagnostics](#lab-diagnostics)
-6. [Wallet](#wallet)
-7. [Navigation Structure](#navigation-structure)
-8. [API Endpoints](#api-endpoints)
-9. [Frontend Architecture](#frontend-architecture)
+2. [Profile Management](#profile-management) ✨ NEW
+3. [Family Management](#family-management)
+4. [Appointments](#appointments)
+5. [Claims & Reimbursements](#claims--reimbursements)
+6. [Lab Diagnostics](#lab-diagnostics)
+7. [Wallet](#wallet)
+8. [Navigation Structure](#navigation-structure)
+9. [API Endpoints](#api-endpoints)
+10. [Frontend Architecture](#frontend-architecture)
 
 ---
 
@@ -90,9 +91,88 @@ The member dashboard has been completely redesigned with a modern, mobile-first 
 
 ---
 
-## Family Management
+## Profile Management ✨ NEW (v6.6)
+
+**Route**: `/member/profile`
+
+**File**: `/web-member/app/member/profile/page.tsx`
+
+The new profile management page allows members to view and update their personal information.
+
+### Features
+
+- **View Profile**: Display user's complete profile information
+  - Full name (read-only)
+  - Member ID and UHID (read-only)
+  - Email address (editable)
+  - Mobile number (editable)
+  - Date of birth (read-only)
+  - Gender (read-only)
+  - Blood group (read-only)
+  - Corporate affiliation (read-only)
+
+- **Inline Editing** ✨: Edit fields directly without switching to edit mode
+  - Click-to-edit interface using `EditableField` component
+  - Real-time validation feedback
+  - Save/cancel actions per field
+
+- **Update Contact Information**:
+  - **Email**: Valid email format validation
+  - **Mobile**: 10-digit Indian mobile number validation (starts with 6-9)
+
+- **Dependent Management**:
+  - View all dependents in card format
+  - `DependentCard` component shows:
+    - Name and relationship
+    - Member ID
+    - Date of birth and age
+    - Contact information
+
+### API Endpoint
+
+```
+PATCH /api/member/profile
+Authorization: Bearer <token>
+
+Request Body:
+{
+  "email": "newemail@example.com",  // optional
+  "mobile": "9876543210"             // optional
+}
+
+Response:
+{
+  "message": "Profile updated successfully",
+  "user": { ...updated user object }
+}
+```
+
+### New Components
+
+- **`EditableField.tsx`**: Reusable inline editable field component
+  - Edit/view mode toggle
+  - Built-in validation
+  - Save/cancel actions
+
+- **`DependentCard.tsx`**: Card component for displaying dependent information
+  - Compact, mobile-friendly design
+  - Shows key dependent details
+  - Consistent with OPDECard styling
+
+### Validation Rules
+
+- **Email**: Must be a valid email format
+- **Mobile**: Must be exactly 10 digits, starting with 6-9 (Indian mobile format)
+- **Error Handling**: Clear error messages for validation failures
+- **Success Feedback**: Toast notifications on successful update
+
+---
+
+## Family Management ✨ ENHANCED (v6.6)
 
 Members can add and manage dependents under their account.
+
+**Backend Enhancement**: Dependent fetching now uses assignment-based logic for accurate relationship tracking.
 
 ### Features
 
