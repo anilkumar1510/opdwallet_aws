@@ -18,15 +18,6 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     console.log('[Upload Proxy] FormData received');
 
-    // Log form data contents (for debugging)
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`[Upload Proxy] FormData field "${key}": File(${value.name}, ${value.size} bytes, ${value.type})`);
-      } else {
-        console.log(`[Upload Proxy] FormData field "${key}": ${value}`);
-      }
-    }
-
     // Prepare headers - DO NOT set Content-Type for FormData (fetch will set it with boundary)
     const headers: Record<string, string> = {};
 
