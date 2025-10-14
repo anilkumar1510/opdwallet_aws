@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { useDebounce } from '@/hooks/useDebounce'
 
 interface Assignment {
   _id: string
@@ -31,8 +32,22 @@ export default function PolicyAssignmentsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  // Plan config state
+  const [planConfig, setPlanConfig] = useState<any>(null)
+  const [relationships, setRelationships] = useState<any[]>([])
+  const [coveredRelationships, setCoveredRelationships] = useState<string[]>([])
+
+  // Primary member search state
+  const [primaryMemberSearch, setPrimaryMemberSearch] = useState('')
+  const [primaryMemberResults, setPrimaryMemberResults] = useState<any[]>([])
+  const [searchingPrimary, setSearchingPrimary] = useState(false)
+  const [selectedPrimaryMember, setSelectedPrimaryMember] = useState<any>(null)
+
   const [newAssignment, setNewAssignment] = useState({
     userId: '',
+    relationshipId: '',
+    primaryMemberId: '',
     effectiveFrom: '',
     effectiveTo: '',
   })
@@ -42,6 +57,8 @@ export default function PolicyAssignmentsPage() {
     fetchPolicy()
     fetchAssignments()
     fetchUsers()
+    fetchPlanConfig()
+    fetchRelationships()
   }, [params.id])
 
   const fetchPolicy = async () => {
@@ -53,6 +70,35 @@ export default function PolicyAssignmentsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch policy:', error)
+    }
+  }
+
+  const fetchPlanConfig = async () => {
+    try {
+      const response = await apiFetch(`/api/policies/${params.id}/config`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🟢 [PLAN CONFIG] Fetched successfully:', data)
+        console.log('🟢 [PLAN CONFIG] coveredRelationships:', data.coveredRelationships)
+        setPlanConfig(data)
+        setCoveredRelationships(data.coveredRelationships || [])
+      } else {
+        console.error('❌ [PLAN CONFIG] Failed to fetch:', response.status, response.statusText)
+      }
+    } catch (error) {
+      console.error('❌ [PLAN CONFIG] Error:', error)
+    }
+  }
+
+  const fetchRelationships = async () => {
+    try {
+      const response = await apiFetch('/api/relationships')
+      if (response.ok) {
+        const data = await response.json()
+        setRelationships(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch relationships:', error)
     }
   }
 
@@ -75,16 +121,99 @@ export default function PolicyAssignmentsPage() {
       const response = await apiFetch('/api/users?limit=1000')
       if (response.ok) {
         const data = await response.json()
-        setUsers(data.users || data)
+        // Handle different response structures: data.data, data.users, or data as array
+        const usersList = data.data || data.users || (Array.isArray(data) ? data : [])
+        setUsers(usersList)
       }
     } catch (error) {
       console.error('Failed to fetch users:', error)
+      setUsers([]) // Set empty array on error
     }
+  }
+
+  // Helper functions
+  const isDependentRelationship = () => {
+    const relationship = newAssignment.relationshipId
+    return relationship && relationship !== 'REL001' && relationship !== 'SELF'
+  }
+
+  const isRelationshipCovered = () => {
+    if (!newAssignment.relationshipId) return false
+    return coveredRelationships.includes(newAssignment.relationshipId)
+  }
+
+  const canSubmit = () => {
+    return (
+      newAssignment.userId &&
+      newAssignment.relationshipId &&
+      isRelationshipCovered() &&
+      newAssignment.effectiveFrom &&
+      newAssignment.effectiveTo &&
+      (isDependentRelationship() ? newAssignment.primaryMemberId : true)
+    )
+  }
+
+  const handleRelationshipChange = (relationshipId: string) => {
+    setNewAssignment({
+      ...newAssignment,
+      relationshipId,
+      primaryMemberId: '',
+    })
+    setPrimaryMemberSearch('')
+    setPrimaryMemberResults([])
+    setSelectedPrimaryMember(null)
+  }
+
+  // Debounced search term (Google Maps-style autocomplete pattern)
+  const debouncedSearchTerm = useDebounce(primaryMemberSearch, 300)
+
+  // Effect to perform search when debounced term changes
+  useEffect(() => {
+    const searchPrimaryMembers = async () => {
+      if (debouncedSearchTerm.length < 2) {
+        setPrimaryMemberResults([])
+        setSearchingPrimary(false)
+        return
+      }
+
+      setSearchingPrimary(true)
+      try {
+        const response = await apiFetch(
+          `/api/assignments/search-primary-members?policyId=${params.id}&search=${encodeURIComponent(debouncedSearchTerm)}`
+        )
+        if (response.ok) {
+          const results = await response.json()
+          setPrimaryMemberResults(results)
+        } else {
+          setPrimaryMemberResults([])
+        }
+      } catch (error) {
+        console.error('Failed to search primary members:', error)
+        setPrimaryMemberResults([])
+      } finally {
+        setSearchingPrimary(false)
+      }
+    }
+
+    searchPrimaryMembers()
+  }, [debouncedSearchTerm, params.id])
+
+  const selectPrimaryMember = (member: any) => {
+    setSelectedPrimaryMember(member)
+    setNewAssignment({
+      ...newAssignment,
+      primaryMemberId: member.memberId,
+    })
+    const memberName = typeof member.name === 'string'
+      ? member.name
+      : member.name?.fullName || `${member.name?.firstName || ''} ${member.name?.lastName || ''}`.trim() || 'Unknown'
+    setPrimaryMemberSearch(`${memberName} (${member.memberId})`)
+    setPrimaryMemberResults([])
   }
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (creating) return
+    if (creating || !canSubmit()) return
 
     setCreating(true)
     try {
@@ -93,15 +222,16 @@ export default function PolicyAssignmentsPage() {
         body: JSON.stringify({
           userId: newAssignment.userId,
           policyId: params.id,
+          relationshipId: newAssignment.relationshipId,
+          primaryMemberId: newAssignment.primaryMemberId || undefined,
           effectiveFrom: newAssignment.effectiveFrom,
           effectiveTo: newAssignment.effectiveTo,
-          relationshipId: 'REL001', // Default to SELF
         }),
       })
 
       if (response.ok) {
         setShowCreateModal(false)
-        setNewAssignment({ userId: '', effectiveFrom: '', effectiveTo: '' })
+        resetForm()
         await fetchAssignments()
       } else {
         const error = await response.json()
@@ -113,6 +243,19 @@ export default function PolicyAssignmentsPage() {
     } finally {
       setCreating(false)
     }
+  }
+
+  const resetForm = () => {
+    setNewAssignment({
+      userId: '',
+      relationshipId: '',
+      primaryMemberId: '',
+      effectiveFrom: '',
+      effectiveTo: ''
+    })
+    setPrimaryMemberSearch('')
+    setPrimaryMemberResults([])
+    setSelectedPrimaryMember(null)
   }
 
   const handleRemoveAssignment = async (assignmentId: string) => {
@@ -201,7 +344,7 @@ export default function PolicyAssignmentsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {assignments.length === 0 ? (
+              {!Array.isArray(assignments) || assignments.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     No assignments found for this policy
@@ -215,7 +358,17 @@ export default function PolicyAssignmentsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {assignment.userId?.name || 'Unknown'}
+                        {(() => {
+                          const user = assignment.userId;
+                          if (!user) return 'Unknown';
+                          if (typeof user.name === 'string') return user.name;
+                          if (user.name && typeof user.name === 'object') {
+                            return (user.name as any).fullName ||
+                                   `${(user.name as any).firstName || ''} ${(user.name as any).lastName || ''}`.trim() ||
+                                   'Unknown';
+                          }
+                          return 'Unknown';
+                        })()}
                       </div>
                       <div className="text-sm text-gray-500">
                         {assignment.userId?.email || 'No email'}
@@ -268,10 +421,11 @@ export default function PolicyAssignmentsPage() {
             </h3>
             <form onSubmit={handleCreateAssignment} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="assign-user-select" className="block text-sm font-medium text-gray-700 mb-1">
                   User *
                 </label>
                 <select
+                  id="assign-user-select"
                   required
                   className="input w-full"
                   value={newAssignment.userId}
@@ -280,18 +434,121 @@ export default function PolicyAssignmentsPage() {
                   }
                 >
                   <option value="">Select a user...</option>
-                  {users.map((user) => (
-                    <option key={user._id} value={user._id}>
-                      {user.name} ({user.memberId || user.email})
-                    </option>
-                  ))}
+                  {Array.isArray(users) && users.map((user) => {
+                    const userName = typeof user.name === 'string'
+                      ? user.name
+                      : user.name?.fullName || `${user.name?.firstName || ''} ${user.name?.lastName || ''}`.trim() || 'Unknown'
+                    return (
+                      <option key={user._id} value={user._id}>
+                        {userName} ({user.memberId || user.email})
+                      </option>
+                    )
+                  })}
                 </select>
               </div>
+
+              {/* Relationship Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="assign-relationship" className="block text-sm font-medium text-gray-700 mb-1">
+                  Relationship *
+                </label>
+                <select
+                  id="assign-relationship"
+                  required
+                  className="input w-full"
+                  value={newAssignment.relationshipId}
+                  onChange={(e) => handleRelationshipChange(e.target.value)}
+                >
+                  <option value="">Select relationship...</option>
+                  {Array.isArray(relationships) && relationships.map((rel) => {
+                    const isCovered = coveredRelationships.includes(rel.relationshipCode)
+                    const displayText = isCovered
+                      ? rel.displayName
+                      : `${rel.displayName} - Not Covered`
+                    return (
+                      <option key={rel._id} value={rel.relationshipCode}>
+                        {displayText}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+
+              {/* Warning Message for Uncovered Relationships */}
+              {newAssignment.relationshipId && !isRelationshipCovered() && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <div className="text-sm text-red-700">
+                      <p className="font-medium">This relationship is not covered</p>
+                      <p className="mt-1">The selected relationship is not included in this policy&apos;s plan configuration. Please select a covered relationship.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Primary Member Search (for dependent relationships) */}
+              {isDependentRelationship() && isRelationshipCovered() && (
+                <div>
+                  <label htmlFor="primary-member-search" className="block text-sm font-medium text-gray-700 mb-1">
+                    Primary Member *
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="primary-member-search"
+                      type="text"
+                      placeholder="Search by Member ID, Name, Employee ID, or UHID..."
+                      className="input w-full"
+                      value={primaryMemberSearch}
+                      onChange={(e) => setPrimaryMemberSearch(e.target.value)}
+                      autoComplete="off"
+                    />
+                    {searchingPrimary && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+                      </div>
+                    )}
+                    {Array.isArray(primaryMemberResults) && primaryMemberResults.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        {primaryMemberResults.map((member) => (
+                          <button
+                            key={member._id}
+                            type="button"
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                            onClick={() => selectPrimaryMember(member)}
+                          >
+                            <div className="font-medium text-gray-900">
+                              {typeof member.name === 'string'
+                                ? member.name
+                                : member.name?.fullName || `${member.name?.firstName || ''} ${member.name?.lastName || ''}`.trim() || 'Unknown'}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {member.memberId} {member.employeeId && `• ${member.employeeId}`} {member.uhid && `• ${member.uhid}`}
+                            </div>
+                            <div className="text-xs text-gray-400">{member.email}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {selectedPrimaryMember && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                      Selected: {typeof selectedPrimaryMember.name === 'string'
+                        ? selectedPrimaryMember.name
+                        : selectedPrimaryMember.name?.fullName || `${selectedPrimaryMember.name?.firstName || ''} ${selectedPrimaryMember.name?.lastName || ''}`.trim() || 'Unknown'} ({selectedPrimaryMember.memberId})
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="assign-effective-from" className="block text-sm font-medium text-gray-700 mb-1">
                   Effective From *
                 </label>
                 <input
+                  id="assign-effective-from"
                   type="date"
                   required
                   className="input w-full"
@@ -302,10 +559,11 @@ export default function PolicyAssignmentsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="assign-effective-to" className="block text-sm font-medium text-gray-700 mb-1">
                   Effective To *
                 </label>
                 <input
+                  id="assign-effective-to"
                   type="date"
                   required
                   className="input w-full"
@@ -320,13 +578,17 @@ export default function PolicyAssignmentsPage() {
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false)
-                    setNewAssignment({ userId: '', effectiveFrom: '', effectiveTo: '' })
+                    resetForm()
                   }}
                   className="btn-ghost"
                 >
                   Cancel
                 </button>
-                <button type="submit" disabled={creating} className="btn-primary">
+                <button
+                  type="submit"
+                  disabled={creating || !canSubmit()}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {creating ? 'Creating...' : 'Create Assignment'}
                 </button>
               </div>

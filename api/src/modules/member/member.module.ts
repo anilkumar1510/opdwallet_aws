@@ -4,6 +4,7 @@ import { MemberController } from './member.controller';
 import { MemberService } from './member.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { CategoryMaster, CategoryMasterSchema } from '../masters/schemas/category-master.schema';
+import { Assignment, AssignmentSchema } from '../assignments/schemas/assignment.schema';
 import { AssignmentsModule } from '../assignments/assignments.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
@@ -13,6 +14,7 @@ import { PlanConfigModule } from '../plan-config/plan-config.module';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: CategoryMaster.name, schema: CategoryMasterSchema },
+      { name: Assignment.name, schema: AssignmentSchema },
     ]),
     AssignmentsModule,
     WalletModule,

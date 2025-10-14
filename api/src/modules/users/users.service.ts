@@ -51,7 +51,11 @@ export class UsersService {
   }
 
   private async validateRelationship(createUserDto: CreateUserDto): Promise<void> {
-    if (createUserDto.relationship === RelationshipType.SELF) {
+    const isSelf = createUserDto.relationship === 'REL001' ||
+                   createUserDto.relationship === RelationshipType.SELF ||
+                   createUserDto.relationship === 'SELF';
+
+    if (isSelf) {
       if (createUserDto.primaryMemberId) {
         throw new BadRequestException('Primary Member ID should not be set for SELF relationship');
       }
@@ -64,7 +68,7 @@ export class UsersService {
 
     const primaryMember = await this.userModel.findOne({
       memberId: createUserDto.primaryMemberId,
-      relationship: RelationshipType.SELF,
+      relationship: { $in: ['REL001', RelationshipType.SELF, 'SELF'] }
     }).lean();
 
     if (!primaryMember) {
@@ -220,7 +224,11 @@ export class UsersService {
       return;
     }
 
-    if (updateUserDto.relationship === RelationshipType.SELF) {
+    const isSelf = updateUserDto.relationship === 'REL001' ||
+                   updateUserDto.relationship === RelationshipType.SELF ||
+                   updateUserDto.relationship === 'SELF';
+
+    if (isSelf) {
       if (updateUserDto.primaryMemberId || user.primaryMemberId) {
         throw new BadRequestException(
           'Primary Member ID should not be set for SELF relationship. Please remove it.'
@@ -319,7 +327,7 @@ export class UsersService {
     const dependents = await this.userModel
       .find({
         primaryMemberId,
-        relationship: { $ne: RelationshipType.SELF }
+        relationship: { $nin: ['REL001', RelationshipType.SELF, 'SELF'] }
       })
       .select('-passwordHash')
       .sort({ createdAt: 1 })
@@ -335,7 +343,11 @@ export class UsersService {
     }
 
     let dependents: any[] = [];
-    if (user.relationship === RelationshipType.SELF) {
+    const isSelf = user.relationship === 'REL001' ||
+                   user.relationship === RelationshipType.SELF ||
+                   user.relationship === 'SELF';
+
+    if (isSelf) {
       // If this is a primary member, fetch their dependents
       dependents = await this.getDependents(user.memberId);
     }

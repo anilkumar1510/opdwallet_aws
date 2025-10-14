@@ -12,6 +12,7 @@ import {
   BuildingStorefrontIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
+import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
 
 interface Appointment {
   _id: string
@@ -178,6 +179,9 @@ export default function BookingsPage() {
       console.log('[Bookings] Appointment cancelled successfully')
       alert('Appointment cancelled successfully. Your wallet has been refunded.')
 
+      // Emit appointment cancelled event to update nudge
+      emitAppointmentEvent(AppointmentEvents.BOOKING_CANCELLED)
+
       // Refresh appointments
       await fetchAppointments()
     } catch (error) {
@@ -217,7 +221,7 @@ export default function BookingsPage() {
             onClick={() => setActiveTab('doctors')}
             className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'doctors'
-                ? 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
             style={activeTab === 'doctors' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
@@ -231,7 +235,7 @@ export default function BookingsPage() {
             onClick={() => setActiveTab('lab')}
             className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'lab'
-                ? 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
             style={activeTab === 'lab' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
@@ -245,7 +249,7 @@ export default function BookingsPage() {
             onClick={() => setActiveTab('pharmacy')}
             className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'pharmacy'
-                ? 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
             style={activeTab === 'pharmacy' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}

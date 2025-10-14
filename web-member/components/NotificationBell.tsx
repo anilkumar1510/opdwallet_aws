@@ -129,7 +129,7 @@ export default function NotificationBell() {
       {/* Bell Icon with Badge */}
       <button
         onClick={handleBellClick}
-        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full bg-white shadow-sm hover:shadow-md transition-all"
         aria-label="Notifications"
       >
         {unreadCount > 0 ? (
@@ -149,8 +149,16 @@ export default function NotificationBell() {
         <>
           {/* Backdrop */}
           <div
+            role="button"
+            tabIndex={0}
             className="fixed inset-0 z-40"
             onClick={() => setShowDropdown(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setShowDropdown(false)
+              }
+            }}
           />
 
           {/* Dropdown Panel */}
@@ -184,6 +192,8 @@ export default function NotificationBell() {
                   {notifications.map((notification) => (
                     <div
                       key={notification._id}
+                      role="button"
+                      tabIndex={0}
                       className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                         !notification.isRead ? 'bg-blue-50' : ''
                       }`}
@@ -193,6 +203,17 @@ export default function NotificationBell() {
                         }
                         if (notification.actionUrl) {
                           window.location.href = notification.actionUrl
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          if (!notification.isRead) {
+                            markAsRead(notification._id)
+                          }
+                          if (notification.actionUrl) {
+                            window.location.href = notification.actionUrl
+                          }
                         }
                       }}
                     >

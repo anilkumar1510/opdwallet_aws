@@ -176,7 +176,16 @@ export default function AppointmentDetailPage() {
 
         {/* Action Buttons */}
         {appointment.status === 'CONFIRMED' && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap gap-3">
+            {appointment.appointmentType === 'ONLINE' && (
+              <Link
+                href={`/doctorview/consultations/${appointmentId}`}
+                className="btn-primary inline-flex items-center"
+              >
+                <VideoCameraIcon className="h-5 w-5 mr-2" />
+                Start Video Consultation
+              </Link>
+            )}
             <button
               onClick={handleComplete}
               disabled={completing}

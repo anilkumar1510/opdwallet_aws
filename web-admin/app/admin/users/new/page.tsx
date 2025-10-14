@@ -7,7 +7,7 @@ import { relationshipsApi, type Relationship } from '@/lib/api/relationships'
 export default function NewUserPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [errors, setErrors] = useState<string[]>([])
   const [relationships, setRelationships] = useState<Relationship[]>([])
   const [relationshipsLoading, setRelationshipsLoading] = useState(true)
   const [formData, setFormData] = useState({
@@ -50,7 +50,7 @@ export default function NewUserPage() {
       setRelationships(data.filter(rel => rel.isActive))
     } catch (error) {
       console.error('Failed to fetch relationships:', error)
-      setError('Failed to load relationships')
+      setErrors(['Failed to load relationships'])
     } finally {
       setRelationshipsLoading(false)
     }
@@ -77,17 +77,17 @@ export default function NewUserPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setErrors([])
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      setErrors(['Passwords do not match'])
       return
     }
 
     // Validate required fields
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-      setError('Please fill in all required fields')
+      setErrors(['Please fill in all required fields'])
       return
     }
 
@@ -107,7 +107,7 @@ export default function NewUserPage() {
           firstName: formData.firstName,
           lastName: formData.lastName,
         },
-        dateOfBirth: formData.dateOfBirth || undefined,
+        dob: formData.dateOfBirth || undefined,
         gender: formData.gender,
         bloodGroup: formData.bloodGroup || undefined,
         address: formData.address.street ? formData.address : undefined,
@@ -125,10 +125,28 @@ export default function NewUserPage() {
         router.push('/admin/users')
       } else {
         const data = await response.json()
-        setError(data.message || 'Failed to create user')
+        let errorMessages: string[] = []
+
+        if (Array.isArray(data.message)) {
+          errorMessages = data.message
+        } else if (data.errors && Array.isArray(data.errors)) {
+          errorMessages = data.errors
+        } else if (typeof data.message === 'string') {
+          // Split by "property" keyword if it's concatenated validation errors
+          const matches = data.message.match(/property [^p]+/g)
+          if (matches) {
+            errorMessages = matches.map((msg: string) => msg.trim())
+          } else {
+            errorMessages = [data.message]
+          }
+        } else {
+          errorMessages = ['Failed to create user']
+        }
+
+        setErrors(errorMessages)
       }
     } catch (error) {
-      setError('Failed to create user. Please try again.')
+      setErrors(['Failed to create user. Please try again.'])
     } finally {
       setLoading(false)
     }
@@ -150,9 +168,15 @@ export default function NewUserPage() {
         </button>
       </div>
 
-      {error && (
+      {errors.length > 0 && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-sm text-red-600">{error}</p>
+          <ul className="list-disc list-inside space-y-1">
+            {errors.map((error, index) => (
+              <li key={index} className="text-sm text-red-600">
+                {error}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

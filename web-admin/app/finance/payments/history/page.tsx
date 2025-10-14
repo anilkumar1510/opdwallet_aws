@@ -23,11 +23,11 @@ interface PaymentHistoryItem {
   category: string
   providerName: string
   billAmount: number
-  approvedAmount: number
+  amountApproved: number
   paymentMode: string
-  paymentReferenceNumber: string
+  paymentReference: string
   paymentDate: string
-  paidByName: string
+  paymentCompletedByName: string
   paymentNotes?: string
   submittedAt: string
 }
@@ -51,15 +51,15 @@ export default function PaymentHistoryPage() {
     try {
       const params = new URLSearchParams()
       if (paymentModeFilter) params.append('paymentMode', paymentModeFilter)
-      if (dateFrom) params.append('dateFrom', dateFrom)
-      if (dateTo) params.append('dateTo', dateTo)
+      if (dateFrom) params.append('fromDate', dateFrom)
+      if (dateTo) params.append('toDate', dateTo)
 
       const response = await fetch(`/api/finance/payments/history?${params.toString()}`, {
         credentials: 'include',
       })
       if (response.ok) {
         const data = await response.json()
-        setPayments(data.claims || [])
+        setPayments(data.payments || [])
       }
     } catch (error) {
       console.error('Error fetching payment history:', error)
@@ -80,7 +80,7 @@ export default function PaymentHistoryPage() {
         payment.claimId.toLowerCase().includes(query) ||
         payment.memberName.toLowerCase().includes(query) ||
         payment.userId?.memberId?.toLowerCase().includes(query) ||
-        payment.paymentReferenceNumber.toLowerCase().includes(query)
+        payment.paymentReference.toLowerCase().includes(query)
       )
     }
     return true
@@ -104,7 +104,7 @@ export default function PaymentHistoryPage() {
     })
   }
 
-  const totalPaid = filteredPayments.reduce((sum, p) => sum + (p.approvedAmount || 0), 0)
+  const totalPaid = filteredPayments.reduce((sum, p) => sum + p.amountApproved, 0)
 
   const paymentModes = ['BANK_TRANSFER', 'UPI', 'NEFT', 'RTGS', 'IMPS', 'CHEQUE', 'CASH']
 
@@ -321,7 +321,7 @@ export default function PaymentHistoryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="text-sm font-bold text-green-600">
-                        ₹{payment.approvedAmount?.toLocaleString() || 0}
+                        ₹{payment.amountApproved?.toLocaleString() || 0}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -336,7 +336,7 @@ export default function PaymentHistoryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {payment.paidByName || 'N/A'}
+                        {payment.paymentCompletedByName || 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -413,7 +413,7 @@ export default function PaymentHistoryPage() {
                   <div>
                     <p className="text-xs text-gray-500">Amount Paid</p>
                     <p className="text-sm font-bold text-green-600">
-                      ₹{selectedPayment.approvedAmount?.toLocaleString()}
+                      ₹{selectedPayment.amountApproved?.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export default function PaymentHistoryPage() {
                   <div>
                     <p className="text-xs text-gray-500">Payment Reference</p>
                     <p className="text-sm font-medium text-gray-900 font-mono">
-                      {selectedPayment.paymentReferenceNumber}
+                      {selectedPayment.paymentReference}
                     </p>
                   </div>
                   <div>
@@ -446,7 +446,7 @@ export default function PaymentHistoryPage() {
                   <div>
                     <p className="text-xs text-gray-500">Processed By</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {selectedPayment.paidByName || 'N/A'}
+                      {selectedPayment.paymentCompletedByName || 'N/A'}
                     </p>
                   </div>
                   {selectedPayment.paymentNotes && (

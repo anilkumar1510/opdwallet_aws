@@ -35,31 +35,35 @@ export class DoctorAppointmentsController {
   ) {}
 
   @Get('counts')
-  async getAppointmentCounts(@Request() req: AuthRequest) {
+  async getAppointmentCounts(@Request() req: AuthRequest, @Query('days') days?: string) {
     const doctorId = req.user?.doctorId;
 
     if (!doctorId) {
       throw new BadRequestException('Doctor ID is required');
     }
 
-    // Get date range: 2 days back, today, 3 days ahead
+    // Support custom date range via query parameter, default: 7 days back, today, 13 days ahead (21 days total)
+    const daysToFetch = days ? parseInt(days, 10) : 21;
+    const daysBack = Math.floor(daysToFetch / 2);
+    const daysAhead = daysToFetch - daysBack - 1;
+
     const today = new Date();
     const dates: string[] = [];
 
-    for (let i = -2; i <= 3; i++) {
+    for (let i = -daysBack; i <= daysAhead; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
       dates.push(date.toISOString().split('T')[0]);
     }
 
-    // Get confirmed appointment counts for each date
+    // Get appointment counts for each date (all statuses except CANCELLED)
     const counts: { [key: string]: number } = {};
 
     for (const date of dates) {
       const count = await this.appointmentModel.countDocuments({
         doctorId,
         appointmentDate: date,
-        status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING_CONFIRMATION] },
+        status: { $ne: AppointmentStatus.CANCELLED },
       });
       counts[date] = count;
     }
@@ -74,8 +78,8 @@ export class DoctorAppointmentsController {
   async getTodayAppointments(@Request() req: AuthRequest) {
     console.log('=== DOCTOR APPOINTMENTS TODAY DEBUG START ===');
     console.log('[DoctorAppointmentsController] GET /doctor/appointments/today');
-    console.log('[DoctorAppointmentsController] Request headers:', req.headers);
-    console.log('[DoctorAppointmentsController] Request cookies:', req.cookies);
+    console.log('[DoctorAppointmentsController] Request headers:', (req as any).headers);
+    console.log('[DoctorAppointmentsController] Request cookies:', (req as any).cookies);
     console.log('[DoctorAppointmentsController] Request user:', req.user);
     console.log('[DoctorAppointmentsController] Request user type:', typeof req.user);
     console.log('[DoctorAppointmentsController] Request user keys:', req.user ? Object.keys(req.user) : 'null');

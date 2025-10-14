@@ -26,7 +26,11 @@ export class ClinicsService {
     return clinic.save();
   }
 
-  async findAll(query?: any): Promise<Clinic[]> {
+  async findAll(query?: any): Promise<any> {
+    const page = parseInt(query?.page || '1');
+    const limit = parseInt(query?.limit || '20');
+    const skip = (page - 1) * limit;
+
     const filter: any = {};
 
     if (query?.city) {
@@ -48,7 +52,18 @@ export class ClinicsService {
       filter.isActive = query.isActive === 'true';
     }
 
-    return this.clinicModel.find(filter).sort({ createdAt: -1 }).exec();
+    const [clinics, total] = await Promise.all([
+      this.clinicModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      this.clinicModel.countDocuments(filter),
+    ]);
+
+    return {
+      data: clinics,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(clinicId: string): Promise<Clinic> {

@@ -54,14 +54,21 @@ export default function DashboardPage() {
     }
   }
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (retryCount = 0) => {
     try {
       setLoading(true)
+      setError('')
       const response = await getAppointmentsByDate(selectedDate)
       setAppointments(response.appointments)
       // Refresh counts after fetching appointments
       await fetchAppointmentCounts()
     } catch (err: any) {
+      // Retry once if it's a network/timeout error
+      if (retryCount === 0 && (err.message.includes('timeout') || err.message.includes('fetch'))) {
+        console.log('[Dashboard] Retrying fetch after error:', err.message)
+        setTimeout(() => fetchAppointments(1), 1000)
+        return
+      }
       setError(err.message || 'Failed to fetch appointments')
     } finally {
       setLoading(false)
@@ -115,6 +122,7 @@ export default function DashboardPage() {
         selectedDate={selectedDate}
         onDateChange={handleDateChange}
         appointmentCounts={appointmentCounts}
+        onFetchMoreCounts={fetchAppointmentCounts}
       />
 
       {/* Stats Cards */}

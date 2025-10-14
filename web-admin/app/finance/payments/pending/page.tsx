@@ -22,7 +22,7 @@ interface Claim {
   category: string
   providerName: string
   billAmount: number
-  approvedAmount: number
+  amountApproved: number
   status: string
   approvedAt?: string
   submittedAt: string
@@ -213,7 +213,7 @@ export default function PendingPaymentsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="text-sm font-bold text-green-600">
-                          ₹{claim.approvedAmount?.toLocaleString() || 0}
+                          ₹{claim.amountApproved?.toLocaleString() || 0}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -255,7 +255,10 @@ export default function PendingPaymentsPage() {
       {/* Payment Modal */}
       {showPaymentModal && selectedClaim && (
         <PaymentModal
-          claim={selectedClaim}
+          claim={{
+            ...selectedClaim,
+            approvedAmount: selectedClaim.amountApproved
+          }}
           onClose={() => {
             setShowPaymentModal(false)
             setSelectedClaim(null)

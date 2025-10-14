@@ -340,7 +340,14 @@ export default function PolicyTable({
             key={policy._id}
             className="card hover:shadow-md transition-shadow"
             onClick={() => router.push(`/admin/policies/${policy._id}`)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                router.push(`/admin/policies/${policy._id}`)
+              }
+            }}
             role="article"
+            tabIndex={0}
             aria-label={`Policy ${policy.name}`}
           >
             <div className="p-4 space-y-3">

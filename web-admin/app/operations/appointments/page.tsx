@@ -14,17 +14,19 @@ export default function AppointmentsPage() {
     specialty: '',
     includeOld: false,
   })
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  })
 
   // PERFORMANCE: Debounce filters to avoid API spam
   const debouncedFilters = useDebounce(filters, 300)
 
   useEffect(() => {
     fetchAppointments()
-  }, [])
-
-  useEffect(() => {
-    fetchAppointments()
-  }, [debouncedFilters]) // Use debounced filters instead of immediate filters
+  }, [debouncedFilters, pagination.page]) // Use debounced filters and page
 
   const fetchAppointments = async () => {
     try {
@@ -33,14 +35,26 @@ export default function AppointmentsPage() {
       if (filters.status) params.append('status', filters.status)
       if (filters.specialty) params.append('specialty', filters.specialty)
       if (filters.includeOld) params.append('includeOld', 'true')
+      params.append('page', pagination.page.toString())
+      params.append('limit', pagination.limit.toString())
 
       const response = await apiFetch(`/api/appointments?${params.toString()}`)
       if (response.ok) {
-        const data = await response.json()
-        setAppointments(data.data || [])
+        const result = await response.json()
+        setAppointments(result.data || [])
+        setPagination({
+          page: result.page || 1,
+          limit: result.limit || 20,
+          total: result.total || 0,
+          pages: result.pages || 0,
+        })
+      } else {
+        console.error('Failed to fetch appointments: HTTP', response.status)
+        setAppointments([])
       }
     } catch (error) {
       console.error('Failed to fetch appointments:', error)
+      setAppointments([])
     } finally {
       setLoading(false)
     }
@@ -95,12 +109,21 @@ export default function AppointmentsPage() {
     return status.replace('_', ' ')
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPagination({ ...pagination, page: newPage })
+  }
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters)
+    setPagination({ ...pagination, page: 1 }) // Reset to page 1 when filters change
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4">
         <select
           value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, status: e.target.value })}
           className="input md:w-64"
         >
           <option value="">All Statuses</option>
@@ -112,7 +135,7 @@ export default function AppointmentsPage() {
 
         <select
           value={filters.specialty}
-          onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, specialty: e.target.value })}
           className="input md:w-64"
         >
           <option value="">All Specialties</option>
@@ -127,7 +150,7 @@ export default function AppointmentsPage() {
           <input
             type="checkbox"
             checked={filters.includeOld}
-            onChange={(e) => setFilters({ ...filters, includeOld: e.target.checked })}
+            onChange={(e) => handleFilterChange({ ...filters, includeOld: e.target.checked })}
             className="rounded border-gray-300"
           />
           <span className="text-sm text-gray-700">Show old appointments</span>
@@ -213,6 +236,65 @@ export default function AppointmentsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && appointments.length > 0 && (
+        <div className="card">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600">
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} appointments
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  let pageNumber;
+                  if (pagination.pages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page >= pagination.pages - 2) {
+                    pageNumber = pagination.pages - 4 + i;
+                  } else {
+                    pageNumber = pagination.page - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-3 py-2 border rounded-md text-sm font-medium ${
+                        pagination.page === pageNumber
+                          ? 'bg-green-600 text-white border-green-600'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

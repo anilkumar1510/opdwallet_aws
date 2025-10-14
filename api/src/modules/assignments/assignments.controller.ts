@@ -82,6 +82,20 @@ export class AssignmentsController {
     return this.assignmentsService.getPolicyAssignments(policyId);
   }
 
+  @Get('search-primary-members')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Search primary members assigned to a policy' })
+  @ApiResponse({ status: 200, description: 'Primary members found' })
+  @ApiResponse({ status: 400, description: 'Invalid policyId or search query' })
+  async searchPrimaryMembers(
+    @Query('policyId') policyId: string,
+    @Query('search') search: string,
+  ) {
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/search-primary-members');
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] policyId:', policyId, 'search:', search);
+    return this.assignmentsService.searchPrimaryMembers(policyId, search);
+  }
+
   @Delete(':assignmentId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Remove assignment (deactivate)' })

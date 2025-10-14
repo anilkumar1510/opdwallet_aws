@@ -196,7 +196,15 @@ export default function CartDetailPage() {
               {vendors.map((vendor) => (
                 <div
                   key={vendor._id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSelectVendor(vendor)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleSelectVendor(vendor)
+                    }
+                  }}
                   className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">

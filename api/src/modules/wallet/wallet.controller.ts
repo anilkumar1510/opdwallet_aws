@@ -66,7 +66,7 @@ export class WalletController {
     await this.verifyFamilyAccess(req.user.userId, targetUserId);
 
     const wallet = await this.walletService.getUserWallet(targetUserId);
-    const formattedWallet = this.walletService.formatWalletForFrontend(wallet);
+    const formattedWallet = this.walletService.formatWalletForFrontend(wallet as any);
 
     return formattedWallet;
   }

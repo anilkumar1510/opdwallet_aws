@@ -12,6 +12,7 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
 import SlotSelectionModal from '@/components/SlotSelectionModal'
+import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
 
 interface FamilyMember {
   _id: string
@@ -189,6 +190,9 @@ function OnlineConfirmContent() {
 
       setAppointmentId(appointment.appointmentId)
       setBookingSuccess(true)
+
+      // Emit appointment created event to update nudge
+      emitAppointmentEvent(AppointmentEvents.BOOKING_CREATED)
     } catch (error) {
       console.error('[OnlineConfirm] Error creating appointment:', error)
       alert(`Failed to book appointment: ${error instanceof Error ? error.message : 'Unknown error'}`)

@@ -82,18 +82,21 @@ export class FinanceController {
   @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
   @ApiQuery({ name: 'fromDate', type: Date, required: false })
   @ApiQuery({ name: 'toDate', type: Date, required: false })
+  @ApiQuery({ name: 'paymentMode', type: String, required: false })
   @ApiResponse({ status: 200, description: 'Payment history retrieved successfully' })
   async getPaymentHistory(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
+    @Query('paymentMode') paymentMode?: string,
   ) {
     return this.financeService.getPaymentHistory(
       page ? +page : 1,
       limit ? +limit : 10,
       fromDate ? new Date(fromDate) : undefined,
       toDate ? new Date(toDate) : undefined,
+      paymentMode,
     );
   }
 

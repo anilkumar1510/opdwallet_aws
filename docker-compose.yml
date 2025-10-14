@@ -27,6 +27,7 @@ services:
       JWT_SECRET: dev_jwt_secret_change_in_production
       COOKIE_NAME: opd_session
       PORT: 4000
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
     depends_on:
       - mongo
     volumes:
@@ -44,7 +45,7 @@ services:
       - "3001:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000/api
+      API_URL: http://opd-api-dev:4000
       NODE_ENV: development
     depends_on:
       - api
@@ -63,7 +64,7 @@ services:
       - "3002:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000/api
+      API_URL: http://opd-api-dev:4000
       NODE_ENV: development
     depends_on:
       - api
@@ -81,8 +82,8 @@ services:
     ports:
       - "3003:3003"
     environment:
-      NEXT_PUBLIC_API_URL: http://opd-api-dev:4000/api
-      API_URL: http://opd-api-dev:4000/api
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+      API_URL: http://opd-api-dev:4000
       NODE_ENV: development
     depends_on:
       - api

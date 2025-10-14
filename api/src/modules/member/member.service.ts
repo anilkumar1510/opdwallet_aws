@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CategoryMaster, CategoryMasterDocument } from '../masters/schemas/category-master.schema';
+import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
 import { RelationshipType } from '@/common/constants/status.enum';
 import { AssignmentsService } from '../assignments/assignments.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -13,6 +14,7 @@ export class MemberService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(CategoryMaster.name) private categoryMasterModel: Model<CategoryMasterDocument>,
+    @InjectModel(Assignment.name) private assignmentModel: Model<AssignmentDocument>,
     private assignmentsService: AssignmentsService,
     private walletService: WalletService,
     private planConfigService: PlanConfigService,
@@ -25,13 +27,32 @@ export class MemberService {
   }
 
   private async fetchDependents(user: any): Promise<any[]> {
-    return this.userModel
+    console.log('🔍 [MEMBER SERVICE] Fetching dependents for:', user.memberId);
+
+    // Step 1: Find dependent assignments where primaryMemberId matches
+    const dependentAssignments = await this.assignmentModel
       .find({
         primaryMemberId: user.memberId,
-        relationship: { $nin: [RelationshipType.SELF, 'REL001', 'SELF'] }
+        relationshipId: { $nin: ['REL001', 'SELF'] },
+        isActive: true
       })
+      .lean();
+
+    console.log('📋 [MEMBER SERVICE] Found', dependentAssignments.length, 'dependent assignments');
+
+    if (dependentAssignments.length === 0) {
+      return [];
+    }
+
+    // Step 2: Fetch actual user documents for these dependents
+    const dependentUserIds = dependentAssignments.map(a => a.userId);
+    const dependents = await this.userModel
+      .find({ _id: { $in: dependentUserIds } })
       .select('-passwordHash')
       .sort({ createdAt: 1 });
+
+    console.log('✅ [MEMBER SERVICE] Returning', dependents.length, 'dependents');
+    return dependents;
   }
 
   private async getFamilyMembersForUser(user: any): Promise<{ familyMembers: any[], dependents: any[] }> {
@@ -154,7 +175,7 @@ export class MemberService {
 
     // Fetch wallet data for user
     const userWallet = await this.walletService.getUserWallet(userId);
-    const walletData = this.walletService.formatWalletForFrontend(userWallet);
+    const walletData = this.walletService.formatWalletForFrontend(userWallet as any);
 
     const { policyBenefits, walletCategories, healthBenefits } =
       await this.fetchPolicyBenefits(assignments, walletData);
@@ -186,15 +207,8 @@ export class MemberService {
                                 (user.relationship as string) === 'SELF';
 
     if (isSelfRelationship) {
-      // Primary member (REL001): get self + dependents
-      const dependents = await this.userModel
-        .find({
-          primaryMemberId: user.memberId,
-          relationship: { $nin: [RelationshipType.SELF, 'REL001', 'SELF'] } // Exclude all SELF variants
-        })
-        .select('-passwordHash')
-        .sort({ createdAt: 1 });
-
+      // Primary member (REL001): get self + dependents from assignments
+      const dependents = await this.fetchDependents(user);
       familyMembers = [user, ...dependents];
     } else {
       // Dependent (non-REL001): can only see themselves
@@ -202,5 +216,30 @@ export class MemberService {
     }
 
     return familyMembers;
+  }
+
+  async updateProfile(userId: string, updateData: { email?: string; mobile?: string }) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (updateData.email !== undefined) {
+      user.email = updateData.email;
+    }
+    if (updateData.mobile !== undefined) {
+      user.phone = updateData.mobile;
+    }
+
+    await user.save();
+
+    return {
+      message: 'Profile updated successfully',
+      user: {
+        _id: user._id,
+        email: user.email,
+        mobile: user.phone,
+      },
+    };
   }
 }

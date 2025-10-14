@@ -58,7 +58,7 @@ export const multerConfig = {
   },
 };
 
-export const imageFileFilter = (req: Express.Request, file: Express.Multer.File, callback: Function) => {
+export const imageFileFilter = (req: any, file: any, callback: Function) => {
   if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp|pdf)$/i)) {
     return callback(
       new BadRequestException('Only image and PDF files are allowed!'),

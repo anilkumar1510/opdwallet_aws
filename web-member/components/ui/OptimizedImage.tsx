@@ -246,12 +246,20 @@ export const GalleryImage = React.memo(function GalleryImage({
 } & OptimizedImageProps) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       className={cn(
         'relative cursor-pointer overflow-hidden rounded-lg transition-all duration-200 hover:scale-105 active:scale-95',
         onClick && 'hover:opacity-90',
         className
       )}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
     >
       <OptimizedImage
         src={thumbnail || src}

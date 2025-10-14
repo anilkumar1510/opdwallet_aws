@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   ArrowLeftIcon,
   BanknotesIcon,
   ClockIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  ChevronDownIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline'
 import {
   VideoCameraIcon,
@@ -35,6 +37,8 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(true)
   const [familyMembers, setFamilyMembers] = useState<any[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>('')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchProfileData()
@@ -121,7 +125,22 @@ export default function WalletPage() {
   const handleUserChange = (userId: string) => {
     // Simply update the selected user - useEffect will handle fetching
     setSelectedUserId(userId)
+    setIsDropdownOpen(false)
   }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -163,19 +182,42 @@ export default function WalletPage() {
       <div className="max-w-4xl mx-auto px-4 py-4">
         {/* Family Member Selector */}
         {familyMembers.length > 1 && (
-          <div className="bg-white rounded-lg p-3 mb-4 shadow-sm">
-            <label className="text-xs font-medium text-gray-600 mb-2 block">View Wallet For:</label>
-            <select
-              value={selectedUserId}
-              onChange={(e) => handleUserChange(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {familyMembers.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.name} {member.isPrimary ? '(Self)' : `(${member.relationship})`}
-                </option>
-              ))}
-            </select>
+          <div className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+            <label className="text-sm font-semibold text-gray-900 mb-3 block">View Wallet For:</label>
+            <div className="relative" ref={dropdownRef}>
+              {/* Custom Dropdown Button */}
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full p-3 bg-white border-2 border-blue-500 rounded-xl text-sm font-medium text-gray-900 hover:bg-blue-50 transition-colors cursor-pointer flex items-center justify-between"
+              >
+                <span>
+                  {familyMembers.find(m => m.userId === selectedUserId)?.name} {familyMembers.find(m => m.userId === selectedUserId)?.isPrimary ? '(Self)' : `(${familyMembers.find(m => m.userId === selectedUserId)?.relationship})`}
+                </span>
+                <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                  {familyMembers.map((member) => (
+                    <button
+                      key={member.userId}
+                      onClick={() => handleUserChange(member.userId)}
+                      className={`w-full p-3 text-left text-sm font-medium hover:bg-blue-50 transition-colors flex items-center justify-between ${
+                        selectedUserId === member.userId ? 'bg-blue-100' : ''
+                      }`}
+                    >
+                      <span className="text-gray-900">
+                        {member.name} {member.isPrimary ? '(Self)' : `(${member.relationship})`}
+                      </span>
+                      {selectedUserId === member.userId && (
+                        <CheckIcon className="h-5 w-5 text-blue-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

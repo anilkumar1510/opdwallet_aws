@@ -5,12 +5,15 @@ import { Assignment, AssignmentDocument } from './schemas/assignment.schema';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { WalletService } from '../wallet/wallet.service';
 import { PlanConfigService } from '../plan-config/plan-config.service';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class AssignmentsService {
   constructor(
     @InjectModel(Assignment.name)
     private assignmentModel: Model<AssignmentDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
     private walletService: WalletService,
     private planConfigService: PlanConfigService,
   ) {}
@@ -51,8 +54,28 @@ export class AssignmentsService {
     // Generate unique assignment ID
     const assignmentId = `ASG-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
+    // Fetch and validate plan configuration
+    console.log('🟡 [ASSIGNMENTS SERVICE] Fetching plan config for validation');
+    const planConfig = await this.planConfigService.getConfig(policyId.toString());
+
+    if (!planConfig) {
+      throw new BadRequestException('No published plan configuration found for this policy');
+    }
+
+    // Validate relationship is covered in plan config
+    if (relationshipId) {
+      const coveredRelationships = planConfig.coveredRelationships || [];
+      if (!coveredRelationships.includes(relationshipId)) {
+        throw new BadRequestException(
+          `Relationship ${relationshipId} is not covered in the current plan configuration. ` +
+          `Covered relationships: ${coveredRelationships.join(', ')}`
+        );
+      }
+      console.log('✅ [ASSIGNMENTS SERVICE] Relationship validated:', relationshipId);
+    }
+
     // Validate relationshipId and primaryMemberId
-    if (relationshipId && relationshipId !== 'REL001' && !primaryMemberId) {
+    if (relationshipId && relationshipId !== 'REL001' && relationshipId !== 'SELF' && !primaryMemberId) {
       throw new BadRequestException('primaryMemberId is required when relationshipId is not REL001 (SELF)');
     }
 
@@ -79,6 +102,25 @@ export class AssignmentsService {
 
     const savedAssignment = await assignment.save();
     console.log('✅ [ASSIGNMENTS SERVICE] Assignment created successfully:', savedAssignment.assignmentId);
+
+    // Sync user document with assignment relationship data
+    if (relationshipId && primaryMemberId) {
+      try {
+        console.log('🔄 [ASSIGNMENTS SERVICE] Syncing user document with assignment data');
+        await this.userModel.updateOne(
+          { _id: new Types.ObjectId(userId) },
+          {
+            $set: {
+              relationship: relationshipId,
+              primaryMemberId: primaryMemberId
+            }
+          }
+        );
+        console.log('✅ [ASSIGNMENTS SERVICE] User document synced successfully');
+      } catch (syncError) {
+        console.warn('⚠️ [ASSIGNMENTS SERVICE] Failed to sync user document (assignment still created):', syncError);
+      }
+    }
 
     // Initialize wallet from policy configuration
     try {
@@ -115,7 +157,7 @@ export class AssignmentsService {
         userId: new Types.ObjectId(userId),
         isActive: true,
       })
-      .populate('userId', 'memberId firstName lastName email')
+      .populate('userId', 'memberId name email')
       .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
       .sort({ createdAt: -1 })
       .lean(); // PERFORMANCE: Added lean() for read-only query
@@ -135,7 +177,7 @@ export class AssignmentsService {
         userId: { $in: validUserIds },
         isActive: true,
       })
-      .populate('userId', 'memberId firstName lastName email')
+      .populate('userId', 'memberId name email')
       .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
       .sort({ createdAt: -1 })
       .lean(); // PERFORMANCE: Added lean() for read-only query
@@ -151,9 +193,71 @@ export class AssignmentsService {
         policyId: new Types.ObjectId(policyId),
         isActive: true,
       })
-      .populate('userId', 'memberId firstName lastName email')
+      .populate('userId', 'memberId name email')
       .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
       .sort({ createdAt: -1 });
+  }
+
+  async searchPrimaryMembers(policyId: string, search: string) {
+    console.log('🟡 [ASSIGNMENTS SERVICE] Searching primary members for policy:', policyId, 'search:', search);
+
+    if (!policyId) {
+      throw new BadRequestException('policyId is required');
+    }
+
+    if (!search || search.length < 2) {
+      return [];
+    }
+
+    if (!Types.ObjectId.isValid(policyId)) {
+      throw new BadRequestException('Invalid policyId format');
+    }
+
+    // Step 1: Get all active assignments for this policy
+    const assignments = await this.assignmentModel
+      .find({
+        policyId: new Types.ObjectId(policyId),
+        isActive: true,
+      })
+      .select('userId')
+      .lean();
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const assignedUserIds = assignments.map(a => a.userId);
+
+    // Step 2: Search for primary members within assigned users
+    const searchRegex = new RegExp(search, 'i');
+
+    const primaryMembers = await this.userModel
+      .find({
+        _id: { $in: assignedUserIds },
+        relationship: { $in: ['REL001', 'SELF'] },
+        $or: [
+          { memberId: searchRegex },
+          { 'name.firstName': searchRegex },
+          { 'name.lastName': searchRegex },
+          { 'name.fullName': searchRegex },
+          { employeeId: searchRegex },
+          { uhid: searchRegex },
+        ],
+      })
+      .select('_id memberId uhid employeeId name email')
+      .limit(10)
+      .lean();
+
+    console.log('✅ [ASSIGNMENTS SERVICE] Found', primaryMembers.length, 'primary members');
+
+    return primaryMembers.map(user => ({
+      _id: user._id,
+      memberId: user.memberId,
+      uhid: user.uhid,
+      employeeId: user.employeeId,
+      name: user.name.fullName || `${user.name.firstName} ${user.name.lastName}`,
+      email: user.email,
+    }));
   }
 
   async removeAssignment(assignmentId: string, _updatedBy: string) {
@@ -226,7 +330,7 @@ export class AssignmentsService {
     const [assignments, total] = await Promise.all([
       this.assignmentModel
         .find({ isActive: true })
-        .populate('userId', 'memberId firstName lastName email')
+        .populate('userId', 'memberId name email')
         .populate('policyId', 'policyNumber name description status effectiveFrom effectiveTo')
         .sort({ createdAt: -1 })
         .skip(skip)

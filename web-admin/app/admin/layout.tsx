@@ -49,8 +49,6 @@ export default function AdminLayout({
     if (pathname.startsWith('/admin/categories')) return 'Categories'
     if (pathname.startsWith('/admin/services')) return 'Service Types'
     if (pathname.startsWith('/admin/lab')) return 'Lab Diagnostics'
-    if (pathname.startsWith('/admin/tpa')) return 'TPA Portal'
-    if (pathname.startsWith('/admin/finance')) return 'Finance Portal'
     return 'Admin'
   }
 
@@ -84,16 +82,6 @@ export default function AdminLayout({
       name: 'Lab',
       path: '/admin/lab',
       current: pathname.startsWith('/admin/lab')
-    },
-    {
-      name: 'TPA Portal',
-      path: '/admin/tpa',
-      current: pathname.startsWith('/admin/tpa')
-    },
-    {
-      name: 'Finance',
-      path: '/admin/finance',
-      current: pathname.startsWith('/admin/finance')
     },
   ]
 

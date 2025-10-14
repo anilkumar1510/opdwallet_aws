@@ -4,10 +4,11 @@ const API_BASE_URL = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BAS
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/ops/members/${params.id}`, {
+    const { id } = await params;
+    const response = await fetch(`${API_BASE_URL}/ops/members/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -127,16 +127,33 @@ export class AppointmentsService {
   }
 
   async getOngoingAppointments(userId: string): Promise<Appointment[]> {
-    // PERFORMANCE: Add field projection for ongoing appointments view
-    return this.appointmentModel
-      .find({
+    // PERFORMANCE: Return only the next active appointment for nudge/widget display
+    // Logic: Show PENDING/CONFIRMED upcoming appointments OR recent COMPLETED with prescription
+    const today = new Date().toISOString().split('T')[0];
+
+    const appointment = await this.appointmentModel
+      .findOne({
         userId: new Types.ObjectId(userId),
-        status: { $in: [AppointmentStatus.PENDING_CONFIRMATION, AppointmentStatus.CONFIRMED] },
+        $or: [
+          // Upcoming appointments (not completed or cancelled)
+          {
+            status: { $in: [AppointmentStatus.PENDING_CONFIRMATION, AppointmentStatus.CONFIRMED] },
+            appointmentDate: { $gte: today },
+          },
+          // Recent completed appointments with prescription (show "View Prescription" CTA)
+          {
+            status: AppointmentStatus.COMPLETED,
+            hasPrescription: true,
+            appointmentDate: { $gte: today },
+          },
+        ],
       })
-      .select('appointmentId doctorName appointmentDate timeSlot status clinicName')
-      .sort({ appointmentDate: 1 })
+      .select('appointmentId appointmentNumber doctorName specialty appointmentDate timeSlot status appointmentType clinicName hasPrescription prescriptionId')
+      .sort({ appointmentDate: 1, timeSlot: 1 })
       .lean()
       .exec();
+
+    return appointment ? [appointment] : [];
   }
 
   async findOne(appointmentId: string): Promise<Appointment | null> {

@@ -14,7 +14,7 @@ export class LabPrescriptionService {
   async uploadPrescription(
     userId: Types.ObjectId,
     uploadDto: UploadPrescriptionDto,
-    file: Express.Multer.File,
+    file: any,
   ): Promise<LabPrescription> {
     const prescriptionId = `PRES-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 

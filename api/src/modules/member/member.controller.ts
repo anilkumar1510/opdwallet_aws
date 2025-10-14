@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Patch,
+  Body,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -16,6 +18,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('member')
 @Controller('member')
@@ -40,5 +43,15 @@ export class MemberController {
   @ApiResponse({ status: 404, description: 'User not found' })
   getFamilyMembers(@Request() req: AuthRequest) {
     return this.memberService.getFamilyMembers(req.user.userId);
+  }
+
+  @Patch('profile')
+  @Roles(UserRole.MEMBER)
+  @ApiOperation({ summary: 'Update member profile (email/mobile)' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  updateProfile(@Request() req: AuthRequest, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.memberService.updateProfile(req.user.userId, updateProfileDto);
   }
 }

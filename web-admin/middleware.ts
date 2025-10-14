@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
   )
 
   // Get auth token from cookies
-  const token = request.cookies.get('auth-token')?.value
+  const token = request.cookies.get('opd_session')?.value
 
   // Redirect to login if accessing protected route without auth
   if (isProtectedRoute && !token) {

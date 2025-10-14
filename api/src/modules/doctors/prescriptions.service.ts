@@ -28,7 +28,7 @@ export class PrescriptionsService {
     uploadDto: UploadPrescriptionDto,
     doctorId: string,
     doctorName: string,
-    file: Express.Multer.File,
+    file: any,
   ): Promise<DoctorPrescriptionDocument> {
     // Verify appointment exists and belongs to this doctor
     const appointment = await this.appointmentModel.findOne({

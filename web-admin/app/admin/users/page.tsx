@@ -322,7 +322,12 @@ export default function UsersPage() {
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="modal">
-          <div className="modal-backdrop" onClick={() => setShowPasswordModal(false)} />
+          <button
+            type="button"
+            className="modal-backdrop border-0 p-0 cursor-default"
+            onClick={() => setShowPasswordModal(false)}
+            aria-label="Close modal"
+          />
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="text-lg font-semibold">Set Password</h3>

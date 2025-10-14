@@ -294,49 +294,49 @@ export default function ClaimsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <div className="p-4">
+          <Card>
+            <div className="p-2">
               <div className="flex items-center">
-                <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
+                <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
                 <div>
-                  <p className="text-2xl font-bold text-green-700">{stats.approved}</p>
-                  <p className="text-xs text-green-600">Approved</p>
+                  <p className="text-sm font-semibold text-gray-900">{stats.approved}</p>
+                  <p className="text-xs text-gray-600">Approved</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <div className="p-4">
+          <Card>
+            <div className="p-2">
               <div className="flex items-center">
-                <ClockIcon className="h-8 w-8 text-blue-600 mr-3" />
+                <ClockIcon className="h-4 w-4 text-blue-600 mr-2" />
                 <div>
-                  <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
-                  <p className="text-xs text-blue-600">Processing</p>
+                  <p className="text-sm font-semibold text-gray-900">{stats.processing}</p>
+                  <p className="text-xs text-gray-600">Processing</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-            <div className="p-4">
+          <Card>
+            <div className="p-2">
               <div className="flex items-center">
-                <ExclamationCircleIcon className="h-8 w-8 text-amber-600 mr-3" />
+                <ExclamationCircleIcon className="h-4 w-4 text-amber-600 mr-2" />
                 <div>
-                  <p className="text-2xl font-bold text-amber-700">{stats.underReview}</p>
-                  <p className="text-xs text-amber-600">Under Review</p>
+                  <p className="text-sm font-semibold text-gray-900">{stats.underReview}</p>
+                  <p className="text-xs text-gray-600">Under Review</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
-            <div className="p-4">
+          <Card>
+            <div className="p-2">
               <div className="flex items-center">
-                <DocumentTextIcon className="h-8 w-8 text-brand-600 mr-3" />
+                <DocumentTextIcon className="h-4 w-4 text-indigo-600 mr-2" />
                 <div>
-                  <p className="text-2xl font-bold text-brand-700">₹{stats.totalAmount.toLocaleString()}</p>
-                  <p className="text-xs text-brand-600">Total Claims</p>
+                  <p className="text-sm font-semibold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
+                  <p className="text-xs text-gray-600">Total Claims</p>
                 </div>
               </div>
             </div>

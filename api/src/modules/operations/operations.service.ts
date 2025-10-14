@@ -65,7 +65,7 @@ export class OperationsService {
 
     // Get wallet information
     const wallet = await this.walletService.getUserWallet(userId);
-    const formattedWallet = this.walletService.formatWalletForFrontend(wallet);
+    const formattedWallet = this.walletService.formatWalletForFrontend(wallet as any);
 
     // Get policy assignments
     const assignments = await this.assignmentsService.getUserAssignments(userId);

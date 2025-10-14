@@ -45,7 +45,7 @@ export class DoctorPrescriptionsController {
   @UseInterceptors(FileInterceptor('file', prescriptionMulterConfig))
   async uploadPrescription(
     @Body() uploadDto: UploadPrescriptionDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Request() req: AuthRequest,
   ) {
     if (!file) {

@@ -24,7 +24,11 @@ export class DoctorsService {
     private locationService: LocationService,
   ) {}
 
-  async findAll(query: QueryDoctorsDto): Promise<any[]> {
+  async findAll(query: QueryDoctorsDto): Promise<any> {
+    const page = parseInt(query.page || '1');
+    const limit = parseInt(query.limit || '20');
+    const skip = (page - 1) * limit;
+
     const filter: any = { isActive: true };
 
     if (query.specialtyId) {
@@ -38,7 +42,10 @@ export class DoctorsService {
       ];
     }
 
-    const doctors = await this.doctorModel.find(filter).exec();
+    const [doctors, total] = await Promise.all([
+      this.doctorModel.find(filter).skip(skip).limit(limit).exec(),
+      this.doctorModel.countDocuments(filter),
+    ]);
 
     // Determine user location for distance calculation
     let userLatitude: number | null = null;
@@ -151,8 +158,15 @@ export class DoctorsService {
     // Filter out doctors with no clinics (if location filter applied)
     const filteredDoctors = doctorsWithClinics.filter(doctor => doctor.clinics.length > 0);
 
-    this.logger.log(`[findAll] Returning ${filteredDoctors.length} doctors with location filter applied`);
-    return filteredDoctors;
+    this.logger.log(`[findAll] Returning ${filteredDoctors.length} doctors (page ${page} of ${Math.ceil(total / limit)})`);
+
+    return {
+      data: filteredDoctors,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(doctorId: string): Promise<any> {
@@ -247,7 +261,7 @@ export class DoctorsService {
     return doctor.save();
   }
 
-  async uploadPhoto(doctorId: string, file: Express.Multer.File): Promise<{ message: string; photoUrl: string }> {
+  async uploadPhoto(doctorId: string, file: any): Promise<{ message: string; photoUrl: string }> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }

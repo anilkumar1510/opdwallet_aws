@@ -37,14 +37,12 @@ export class User {
 
   @Prop({
     required: true,
-    enum: RelationshipType,
-    default: RelationshipType.SELF,
   })
-  relationship!: RelationshipType;
+  relationship!: string;
 
   @Prop({
     required: function() {
-      return this.relationship !== RelationshipType.SELF;
+      return this.relationship !== 'REL001' && this.relationship !== 'SELF';
     },
   })
   primaryMemberId?: string;
@@ -80,6 +78,9 @@ export class User {
 
   @Prop({ enum: ['MALE', 'FEMALE', 'OTHER'] })
   gender?: string;
+
+  @Prop({ enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] })
+  bloodGroup?: string;
 
   @Prop()
   corporateName?: string;

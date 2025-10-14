@@ -91,6 +91,7 @@ export default function OnlineConsultPage() {
 
   const handleJoinAppointment = (appointment: Appointment) => {
     console.log('[OnlineConsult] Join appointment:', appointment.appointmentId)
+    router.push(`/member/consultations/${appointment._id}`)
   }
 
   const formatDate = (dateStr: string) => {

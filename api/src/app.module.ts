@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PrescriptionsModule } from './modules/doctors/prescriptions.module';
 import { LocationModule } from './modules/location/location.module';
 import { OperationsModule } from './modules/operations/operations.module';
+import { VideoConsultationModule } from './modules/video-consultation/video-consultation.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -94,6 +95,7 @@ import configuration from './config/configuration';
     PrescriptionsModule,
     LocationModule,
     OperationsModule,
+    VideoConsultationModule,
   ],
 })
 export class AppModule {}

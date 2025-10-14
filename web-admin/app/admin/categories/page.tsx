@@ -323,11 +323,16 @@ export default function CategoriesPage() {
       {/* Create/Edit Modal */}
       {(showCreateModal || showEditModal) && (
         <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => {
-            setShowCreateModal(false)
-            setShowEditModal(false)
-            resetForm()
-          }} />
+          <button
+            type="button"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 border-0 p-0 cursor-default"
+            onClick={() => {
+              setShowCreateModal(false)
+              setShowEditModal(false)
+              resetForm()
+            }}
+            aria-label="Close modal"
+          />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto pointer-events-auto">
               <div className="modal-header">

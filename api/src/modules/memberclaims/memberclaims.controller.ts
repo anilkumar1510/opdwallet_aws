@@ -17,7 +17,7 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
 import { join } from 'path';
@@ -47,10 +47,14 @@ export class MemberClaimsController {
 
   @Post()
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  @UseInterceptors(FilesInterceptor('documents', 10, multerConfig))
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'prescriptionFiles', maxCount: 5 },
+    { name: 'billFiles', maxCount: 5 },
+    { name: 'documents', maxCount: 10 },
+  ], multerConfig))
   async create(
     @Body() createClaimDto: CreateClaimDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: { prescriptionFiles?: any[], billFiles?: any[], documents?: any[] },
     @Request() req: AuthRequest,
   ) {
     // Get logged-in user (the person submitting the claim)
@@ -218,7 +222,7 @@ export class MemberClaimsController {
   @UseInterceptors(FilesInterceptor('documents', 10, multerConfig))
   async addDocuments(
     @Param('claimId') claimId: string,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: any[],
     @Request() req: AuthRequest,
   ) {
     if (!files || files.length === 0) {
@@ -372,7 +376,7 @@ export class MemberClaimsController {
   async resubmitDocuments(
     @Param('claimId') claimId: string,
     @Body() resubmitDto: ResubmitDocumentsDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() files: any[],
     @Request() req: AuthRequest,
   ) {
     const userId = req.user?.userId || req.user?.id;

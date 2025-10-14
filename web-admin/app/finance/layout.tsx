@@ -1,8 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import {
+  BanknotesIcon,
+  ClockIcon,
+  ChartBarIcon,
+  ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 
 export default function FinanceLayout({
   children,
@@ -12,129 +20,166 @@ export default function FinanceLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
-    try {
-      const response = await apiFetch('/api/auth/me')
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
+    // Fetch current user
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setUser(data.user)
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error)
       }
-    } catch (error) {
-      console.error('Failed to fetch user data:', error)
     }
-  }
-
-  const handleLogout = async () => {
-    try {
-      await apiFetch('/api/auth/logout', {
-        method: 'POST',
-      })
-      router.push('/')
-    } catch (error) {
-      console.error('Logout failed')
-    }
-  }
-
-  const getPageTitle = () => {
-    if (pathname === '/finance') return 'Finance Dashboard'
-    if (pathname.startsWith('/finance/payments')) return 'Payments Management'
-    return 'Finance Portal'
-  }
+    fetchUser()
+  }, [])
 
   const navigationItems = [
     {
       name: 'Dashboard',
       path: '/finance',
-      current: pathname === '/finance'
+      icon: BanknotesIcon,
+      current: pathname === '/finance',
     },
     {
-      name: 'Payments',
-      path: '/finance/payments',
-      current: pathname.startsWith('/finance/payments')
+      name: 'Pending Payments',
+      path: '/finance/payments/pending',
+      icon: ClockIcon,
+      current: pathname.startsWith('/finance/payments/pending'),
+    },
+    {
+      name: 'Payment History',
+      path: '/finance/payments/history',
+      icon: ChartBarIcon,
+      current: pathname.startsWith('/finance/payments/history'),
     },
   ]
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (response.ok) {
+        router.push('/auth/login')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header */}
-      <nav className="header">
-        <div className="page-container">
+      {/* Header */}
+      <nav className="bg-white border-b border-gray-200">
+        <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo and Brand */}
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center">
-                <h1 className="text-xl font-bold text-gray-900">Finance Portal</h1>
-              </div>
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold text-gray-900">Finance Portal</h1>
+            </div>
 
-              {/* Desktop Navigation */}
-              <div className="hidden md:flex space-x-1">
-                {navigationItems.map((item) => (
-                  <button
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
                     key={item.name}
-                    onClick={() => router.push(item.path)}
-                    className={item.current ? 'nav-item nav-item-active' : 'nav-item'}
+                    href={item.path}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+                      item.current
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                   >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
+                    <Icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
             </div>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:block">
-                <span className="text-sm text-gray-600">
-                  {user?.name?.fullName || user?.email}
-                </span>
-              </div>
+            <div className="hidden md:flex items-center space-x-4">
+              {user && (
+                <div className="flex items-center space-x-3">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.name?.fullName || user.email}
+                    </p>
+                    <p className="text-xs text-gray-500">{user.role}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Logout"
+                  >
+                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
               <button
-                onClick={handleLogout}
-                className="btn-ghost text-sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-lg text-gray-600 hover:bg-gray-50"
               >
-                Logout
+                {mobileMenuOpen ? (
+                  <XMarkIcon className="h-6 w-6" />
+                ) : (
+                  <Bars3Icon className="h-6 w-6" />
+                )}
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Mobile Navigation */}
-          <div className="md:hidden border-t border-gray-200 pt-4 pb-2">
-            <div className="flex space-x-1 overflow-x-auto">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => router.push(item.path)}
-                  className={`${item.current ? 'nav-item nav-item-active' : 'nav-item'} whitespace-nowrap flex-shrink-0`}
-                >
-                  {item.name}
-                </button>
-              ))}
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-base font-medium flex items-center space-x-2 ${
+                      item.current
+                        ? 'bg-orange-50 text-orange-600'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center space-x-2"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
-        </div>
+        )}
       </nav>
 
-      {/* Page Content */}
-      <main className="content-container">
-        <div className="page-container">
-          {/* Page Header */}
-          <div className="section-header">
-            <div>
-              <h2 className="section-title">{getPageTitle()}</h2>
-              <p className="section-subtitle">
-                Manage payments and financial operations
-              </p>
-            </div>
-          </div>
-
-          {/* Page Content */}
-          {children}
-        </div>
-      </main>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto">{children}</main>
     </div>
   )
 }

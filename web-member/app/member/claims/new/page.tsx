@@ -26,6 +26,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { useFamily } from '@/contexts/FamilyContext'
 
 interface FormData {
   claimType: 'reimbursement' | 'cashless-preauth' | ''
@@ -80,6 +81,7 @@ const CLAIM_CATEGORIES = [
 ]
 
 export default function NewClaimPage() {
+  const { activeMember } = useFamily()
   const [currentStep, setCurrentStep] = useState(1)
   const [walletData, setWalletData] = useState<any>(null)
   const [walletRules, setWalletRules] = useState<any>(null)
@@ -141,15 +143,15 @@ export default function NewClaimPage() {
           ]
 
           setFamilyMembers(members)
-          // Auto-select the primary member (logged-in user)
-          setSelectedUserId(data.user._id)
+          // Auto-select the active member from context (or fallback to logged-in user)
+          setSelectedUserId(activeMember?._id || data.user._id)
         }
       } catch (error) {
         console.error('Error fetching family members:', error)
       }
     }
     fetchFamilyMembers()
-  }, [])
+  }, [activeMember])
 
   // Fetch wallet data when user is selected
   useEffect(() => {
@@ -468,15 +470,15 @@ export default function NewClaimPage() {
         formDataToSend.append('relationToMember', selectedMember.relationship)
       }
 
-      // Add files based on category
+      // Add files based on category with explicit document types
       const isConsult = formData.category === 'consultation'
       if (isConsult) {
-        // For Consult: Add prescription and bill files
+        // For Consult: Add prescription and bill files with specific field names
         prescriptionFiles.forEach((doc) => {
-          formDataToSend.append('documents', doc.file)
+          formDataToSend.append('prescriptionFiles', doc.file)
         })
         billFiles.forEach((doc) => {
-          formDataToSend.append('documents', doc.file)
+          formDataToSend.append('billFiles', doc.file)
         })
       } else {
         // For Lab/Pharmacy: Add generic documents
@@ -1037,12 +1039,18 @@ export default function NewClaimPage() {
     )
   }
 
-  const renderStep4 = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-ink-900 mb-2">Review & Submit</h2>
-        <p className="text-sm text-ink-500">Please verify all details before submitting</p>
-      </div>
+  const renderStep4 = () => {
+    const isConsult = formData.category === 'consultation'
+    const totalDocuments = isConsult
+      ? prescriptionFiles.length + billFiles.length
+      : documentPreviews.length
+
+    return (
+      <div className="space-y-6">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-ink-900 mb-2">Review & Submit</h2>
+          <p className="text-sm text-ink-500">Please verify all details before submitting</p>
+        </div>
 
       {/* Wallet Rules Display */}
       {walletRules && (
@@ -1132,7 +1140,7 @@ export default function NewClaimPage() {
           <div className="flex justify-between items-start">
             <span className="text-sm text-ink-500">Documents</span>
             <span className="text-sm font-medium text-ink-900">
-              {documentPreviews.length} file{documentPreviews.length !== 1 ? 's' : ''} uploaded
+              {totalDocuments} file{totalDocuments !== 1 ? 's' : ''} uploaded
             </span>
           </div>
         </div>
@@ -1160,7 +1168,8 @@ export default function NewClaimPage() {
         </div>
       </div>
     </div>
-  )
+    )
+  }
 
   const steps = [
     { number: 1, title: 'Details', completed: currentStep > 1 },

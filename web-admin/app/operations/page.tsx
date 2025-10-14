@@ -35,7 +35,8 @@ export default function OperationsDashboard() {
       let ordersData = []
 
       if (doctorsRes.ok) {
-        doctorsData = await doctorsRes.json()
+        const docData = await doctorsRes.json()
+        doctorsData = docData.data || []
       }
 
       if (appointmentsRes.ok) {

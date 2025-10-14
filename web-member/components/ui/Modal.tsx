@@ -71,9 +71,17 @@ export function Modal({
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
+            role="button"
+            tabIndex={0}
             className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0 opacity-0 transition-opacity duration-300"
             style={{ animation: 'fade-in 0.3s ease-out forwards' }}
             onClick={handleOverlayClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleOverlayClick(e as unknown as React.MouseEvent)
+              }
+            }}
           >
             {/* Background overlay */}
             <div

@@ -236,7 +236,7 @@ export default function TPAAnalyticsPage() {
             ₹{(analytics?.totalApprovedAmount || 0).toLocaleString('en-IN')}
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            {analytics?.totalClaimedAmount > 0
+            {analytics?.totalClaimedAmount && analytics.totalClaimedAmount > 0
               ? Math.round((analytics.totalApprovedAmount / analytics.totalClaimedAmount) * 100)
               : 0}% of total claimed
           </p>
@@ -251,7 +251,7 @@ export default function TPAAnalyticsPage() {
             ₹{(analytics?.totalRejectedAmount || 0).toLocaleString('en-IN')}
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            {analytics?.totalClaimedAmount > 0
+            {analytics?.totalClaimedAmount && analytics.totalClaimedAmount > 0
               ? Math.round((analytics.totalRejectedAmount / analytics.totalClaimedAmount) * 100)
               : 0}% of total claimed
           </p>

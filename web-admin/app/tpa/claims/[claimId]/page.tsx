@@ -365,9 +365,10 @@ export default function ClaimDetailPage() {
               {claim.documents && claim.documents.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {claim.documents.map((doc, index) => (
-                    <div
+                    <button
                       key={index}
-                      className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+                      type="button"
+                      className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer w-full text-left"
                       onClick={() => {
                         setSelectedDocument(doc)
                         setShowDocPreview(true)
@@ -380,10 +381,10 @@ export default function ClaimDetailPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {doc.type || doc.documentType || 'Document'}
+                              {doc.type || (doc as any).documentType || 'Document'}
                             </p>
                             <p className="text-xs text-gray-500 mt-0.5">
-                              {doc.fileName || 'Unknown'}
+                              {(doc as any).fileName || 'Unknown'}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
                               {formatDate(doc.uploadedAt)}
@@ -401,7 +402,7 @@ export default function ClaimDetailPage() {
                           Preview
                         </button>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -582,7 +583,7 @@ export default function ClaimDetailPage() {
                     )}
                     <p className="text-xs text-gray-600 mt-1">{review.reason}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      By {review.reviewedBy?.name?.fullName || review.reviewedByName || 'Unknown'} on{' '}
+                      By {review.reviewedBy?.name?.fullName || (review as any).reviewedByName || 'Unknown'} on{' '}
                       {formatDate(review.reviewedAt)}
                     </p>
                   </div>
@@ -637,7 +638,7 @@ export default function ClaimDetailPage() {
             setSelectedDocument(null)
           }}
           document={selectedDocument}
-          userId={claim.userId?._id || claim.userId}
+          userId={typeof claim.userId === 'string' ? claim.userId : claim.userId?._id}
         />
       )}
 

@@ -96,16 +96,50 @@ export class MemberClaimsService {
     createClaimDto: CreateClaimDto,
     userId: string,
     submittedBy: string,
-    files?: Express.Multer.File[],
+    files?: { prescriptionFiles?: any[], billFiles?: any[], documents?: any[] },
   ): Promise<MemberClaimDocument> {
     try {
       // Generate unique claim ID
       const claimId = await this.generateClaimId();
 
-      // Process uploaded files
-      const documents = files
-        ? files.map((file) => {
-            return {
+      // Process uploaded files with explicit document types
+      const documents: any[] = [];
+
+      if (files) {
+        // Process prescription files
+        if (files.prescriptionFiles && files.prescriptionFiles.length > 0) {
+          files.prescriptionFiles.forEach((file) => {
+            documents.push({
+              fileName: file.filename,
+              originalName: file.originalname,
+              fileType: file.mimetype,
+              fileSize: file.size,
+              filePath: file.path,
+              uploadedAt: new Date(),
+              documentType: 'PRESCRIPTION',
+            });
+          });
+        }
+
+        // Process bill files
+        if (files.billFiles && files.billFiles.length > 0) {
+          files.billFiles.forEach((file) => {
+            documents.push({
+              fileName: file.filename,
+              originalName: file.originalname,
+              fileType: file.mimetype,
+              fileSize: file.size,
+              filePath: file.path,
+              uploadedAt: new Date(),
+              documentType: 'INVOICE',
+            });
+          });
+        }
+
+        // Process generic documents (for lab/pharmacy or other categories)
+        if (files.documents && files.documents.length > 0) {
+          files.documents.forEach((file) => {
+            documents.push({
               fileName: file.filename,
               originalName: file.originalname,
               fileType: file.mimetype,
@@ -113,9 +147,10 @@ export class MemberClaimsService {
               filePath: file.path,
               uploadedAt: new Date(),
               documentType: this.determineDocumentType(file.originalname),
-            };
-          })
-        : [];
+            });
+          });
+        }
+      }
 
       // Ensure all required fields are present
       const claimData: any = {
@@ -237,7 +272,7 @@ export class MemberClaimsService {
     page = 1,
     limit = 10,
   ): Promise<{
-    claims: MemberClaimDocument[];
+    claims: any[];
     total: number;
     page: number;
     totalPages: number;
@@ -301,7 +336,7 @@ export class MemberClaimsService {
     return claim;
   }
 
-  async findClaimByFileName(filename: string): Promise<MemberClaimDocument | null> {
+  async findClaimByFileName(filename: string): Promise<any> {
     return this.memberClaimModel.findOne({
       'documents.fileName': filename
     }).lean().exec();
@@ -327,7 +362,7 @@ export class MemberClaimsService {
   async addDocuments(
     claimId: string,
     userId: string,
-    files: Express.Multer.File[],
+    files: any[],
   ): Promise<MemberClaimDocument> {
     const claim = await this.findByClaimId(claimId);
 

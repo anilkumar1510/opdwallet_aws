@@ -57,6 +57,11 @@ export function SpecialtiesProvider({ children }: SpecialtiesProviderProps) {
             timestamp: now
           }))
         }
+      } else if (response.status === 401) {
+        // Don't throw error for unauthenticated requests
+        console.log('User not authenticated, skipping specialties fetch')
+        setLoading(false)
+        return
       } else {
         throw new Error('Failed to fetch specialties')
       }

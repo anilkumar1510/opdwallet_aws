@@ -16,27 +16,37 @@ interface DateRangePickerProps {
   selectedDate: string // YYYY-MM-DD
   onDateChange: (date: string) => void
   appointmentCounts: { [date: string]: number }
+  onFetchMoreCounts?: () => Promise<void>
 }
 
-export default function DateRangePicker({ selectedDate, onDateChange, appointmentCounts }: DateRangePickerProps) {
+export default function DateRangePicker({ selectedDate, onDateChange, appointmentCounts, onFetchMoreCounts }: DateRangePickerProps) {
   const [showCalendar, setShowCalendar] = useState(false)
+  const [dateOffset, setDateOffset] = useState(0) // Offset in weeks from current week
+  const [loadingMore, setLoadingMore] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const selectedRef = useRef<HTMLButtonElement>(null)
 
-  // Generate date range: 2 days back, today, 3 days ahead (total 6 days)
+  // Generate date range: 7 days back, today, 6 days ahead (total 14 days) + offset for navigation
   const generateDateRange = () => {
     const dates: DateInfo[] = []
     const today = new Date()
 
-    for (let i = -2; i <= 3; i++) {
+    // Calculate base offset in days (each arrow click moves by 7 days)
+    const baseOffset = dateOffset * 7
+
+    // Show 14 days total: 7 back from offset center, 6 ahead
+    for (let i = -7; i <= 6; i++) {
       const date = new Date(today)
-      date.setDate(date.getDate() + i)
+      date.setDate(date.getDate() + baseOffset + i)
 
       const dateStr = date.toISOString().split('T')[0]
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
       const dayNumber = date.getDate()
       const month = date.toLocaleDateString('en-US', { month: 'short' })
-      const isToday = i === 0
+
+      // Check if this is today (ignore offset for this check)
+      const checkToday = new Date()
+      const isToday = dateStr === checkToday.toISOString().split('T')[0]
 
       dates.push({
         date: dateStr,
@@ -53,23 +63,29 @@ export default function DateRangePicker({ selectedDate, onDateChange, appointmen
 
   const dates = generateDateRange()
 
-  // Scroll to selected date on mount
+  // Scroll to selected date when it changes or when dates regenerate
   useEffect(() => {
     if (selectedRef.current && scrollRef.current) {
       selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
-  }, [selectedDate])
+  }, [selectedDate, dateOffset])
 
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' })
+  // Fetch counts when offset changes (new week loaded)
+  useEffect(() => {
+    if (dateOffset !== 0 && onFetchMoreCounts) {
+      setLoadingMore(true)
+      onFetchMoreCounts().finally(() => setLoadingMore(false))
     }
+  }, [dateOffset])
+
+  const scrollLeft = async () => {
+    // Navigate to previous week
+    setDateOffset(prev => prev - 1)
   }
 
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' })
-    }
+  const scrollRight = async () => {
+    // Navigate to next week
+    setDateOffset(prev => prev + 1)
   }
 
   const handleManualDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,10 +127,15 @@ export default function DateRangePicker({ selectedDate, onDateChange, appointmen
         {/* Left scroll button */}
         <button
           onClick={scrollLeft}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 hover:bg-gray-50 border border-gray-200"
-          aria-label="Scroll left"
+          disabled={loadingMore}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 hover:bg-gray-50 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Previous week"
         >
-          <ChevronLeftIcon className="h-4 w-4 text-gray-600" />
+          {loadingMore ? (
+            <div className="h-4 w-4 rounded-full border-2 border-gray-300 border-t-brand-600 animate-spin" />
+          ) : (
+            <ChevronLeftIcon className="h-4 w-4 text-gray-600" />
+          )}
         </button>
 
         {/* Scrollable date container */}
@@ -185,10 +206,15 @@ export default function DateRangePicker({ selectedDate, onDateChange, appointmen
         {/* Right scroll button */}
         <button
           onClick={scrollRight}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 hover:bg-gray-50 border border-gray-200"
-          aria-label="Scroll right"
+          disabled={loadingMore}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-md rounded-full p-2 hover:bg-gray-50 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Next week"
         >
-          <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+          {loadingMore ? (
+            <div className="h-4 w-4 rounded-full border-2 border-gray-300 border-t-brand-600 animate-spin" />
+          ) : (
+            <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+          )}
         </button>
       </div>
 

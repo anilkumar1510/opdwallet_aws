@@ -143,7 +143,7 @@ export default function MemberDetailPage() {
             <div>
               <h3 className="text-sm font-medium text-blue-800">Dependent Member</h3>
               <p className="text-sm text-blue-700 mt-1">
-                This is a dependent member with an individual wallet. Top-ups will be credited to this member's wallet only.
+                This is a dependent member with an individual wallet. Top-ups will be credited to this member&apos;s wallet only.
                 {user.primaryMemberId && ` Primary Member ID: ${user.primaryMemberId}`}
               </p>
             </div>
@@ -233,8 +233,8 @@ export default function MemberDetailPage() {
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Category-wise Balance</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {wallet.categories.map((category: any, index: number) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3">
+                {wallet.categories.map((category: any) => (
+                  <div key={category._id || category.name} className="border border-gray-200 rounded-lg p-3">
                     <p className="text-xs text-gray-500">{category.name}</p>
                     <div className="flex items-baseline space-x-2 mt-1">
                       <p className="text-lg font-bold text-gray-900">₹{category.available?.toLocaleString() || 0}</p>

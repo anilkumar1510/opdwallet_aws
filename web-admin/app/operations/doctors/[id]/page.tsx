@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 
+// API base URL configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
+
 export default function EditDoctorPage() {
   const router = useRouter()
   const params = useParams()
@@ -311,12 +314,12 @@ export default function EditDoctorPage() {
           <div className="relative">
             {photoPreview ? (
               <img
-                src={`http://localhost:4000${photoPreview}`}
+                src={`${API_BASE_URL}${photoPreview}`}
                 alt="Doctor photo"
                 className="w-32 h-32 rounded-lg object-cover border-2 border-gray-200"
                 onError={(e) => {
                   console.error('[PhotoUpload] Failed to load image:', photoPreview)
-                  console.error('[PhotoUpload] Attempted URL:', `http://localhost:4000${photoPreview}`)
+                  console.error('[PhotoUpload] Attempted URL:', `${API_BASE_URL}${photoPreview}`)
                 }}
               />
             ) : (

@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { pageTransitions } from '@/lib/animations'
 import { LoadingSpinner, PageLoader } from '@/components/LoadingSpinner'
 import BottomNavigation from '@/components/BottomNavigation'
+import ActiveAppointmentNudge from '@/components/ActiveAppointmentNudge'
+import { FamilyProvider } from '@/contexts/FamilyContext'
 
 export default function MemberLayout({
   children,
@@ -42,28 +44,37 @@ export default function MemberLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top padding for desktop navigation */}
-      <div className="hidden lg:block h-16"></div>
+    <FamilyProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Top padding for desktop navigation */}
+        <div className="hidden lg:block h-16"></div>
 
-      {/* Main content */}
-      <main className="overflow-y-auto pb-16 lg:pb-0 lg:pt-0" role="main">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            variants={pageTransitions}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="h-full"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+        {/* Main content - increased mobile bottom padding for nudge + bottom nav */}
+        <main className="overflow-y-auto pb-32 lg:pb-0 lg:pt-0" role="main">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              variants={pageTransitions}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="h-full"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
 
-      {/* Navigation (Bottom for Mobile, Top for Desktop) */}
-      <BottomNavigation />
-    </div>
+        {/* Active Appointment Nudge - Mobile only (desktop is in page content) */}
+        {user?._id && (
+          <div className="lg:hidden">
+            <ActiveAppointmentNudge variant="mobile" userId={user._id} />
+          </div>
+        )}
+
+        {/* Navigation (Bottom for Mobile, Top for Desktop) */}
+        <BottomNavigation />
+      </div>
+    </FamilyProvider>
   )
 }

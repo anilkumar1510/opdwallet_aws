@@ -13,6 +13,7 @@ export default function TPALayout({
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
 
+  // Auth check moved to middleware - only fetch user data
   useEffect(() => {
     fetchUserData()
   }, [])
@@ -41,7 +42,9 @@ export default function TPALayout({
   }
 
   const getPageTitle = () => {
-    if (pathname === '/tpa') return 'TPA Dashboard'
+    if (pathname === '/tpa') return 'Dashboard'
+    if (pathname.startsWith('/tpa/claims/unassigned')) return 'Unassigned Claims'
+    if (pathname.startsWith('/tpa/claims/assigned')) return 'Assigned Claims'
     if (pathname.startsWith('/tpa/claims')) return 'Claims Management'
     if (pathname.startsWith('/tpa/analytics')) return 'Analytics & Reports'
     if (pathname.startsWith('/tpa/users')) return 'Member Management'
@@ -55,9 +58,19 @@ export default function TPALayout({
       current: pathname === '/tpa'
     },
     {
-      name: 'Claims',
+      name: 'All Claims',
       path: '/tpa/claims',
-      current: pathname.startsWith('/tpa/claims')
+      current: pathname === '/tpa/claims'
+    },
+    {
+      name: 'Unassigned',
+      path: '/tpa/claims/unassigned',
+      current: pathname.startsWith('/tpa/claims/unassigned')
+    },
+    {
+      name: 'Assigned',
+      path: '/tpa/claims/assigned',
+      current: pathname.startsWith('/tpa/claims/assigned')
     },
     {
       name: 'Analytics',
@@ -71,19 +84,17 @@ export default function TPALayout({
     },
   ]
 
+  // Remove loading state - auth handled by middleware
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header */}
       <nav className="header">
         <div className="page-container">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and Brand */}
             <div className="flex items-center space-x-8">
               <div className="flex items-center">
                 <h1 className="text-xl font-bold text-gray-900">TPA Portal</h1>
               </div>
 
-              {/* Desktop Navigation */}
               <div className="hidden md:flex space-x-1">
                 {navigationItems.map((item) => (
                   <button
@@ -97,7 +108,6 @@ export default function TPALayout({
               </div>
             </div>
 
-            {/* User Menu */}
             <div className="flex items-center space-x-4">
               <div className="hidden sm:block">
                 <span className="text-sm text-gray-600">
@@ -113,7 +123,6 @@ export default function TPALayout({
             </div>
           </div>
 
-          {/* Mobile Navigation */}
           <div className="md:hidden border-t border-gray-200 pt-4 pb-2">
             <div className="flex space-x-1 overflow-x-auto">
               {navigationItems.map((item) => (
@@ -130,20 +139,17 @@ export default function TPALayout({
         </div>
       </nav>
 
-      {/* Page Content */}
       <main className="content-container">
         <div className="page-container">
-          {/* Page Header */}
           <div className="section-header">
             <div>
               <h2 className="section-title">{getPageTitle()}</h2>
               <p className="section-subtitle">
-                Manage claims and member information
+                {pathname === '/tpa' ? 'TPA dashboard and overview' : `Manage ${getPageTitle().toLowerCase()}`}
               </p>
             </div>
           </div>
 
-          {/* Page Content */}
           {children}
         </div>
       </main>

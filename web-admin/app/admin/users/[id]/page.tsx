@@ -933,7 +933,12 @@ export default function UserDetailPage() {
       {/* Assign Policy Modal */}
       {showAssignModal && (
         <div className="modal">
-          <div className="modal-backdrop" onClick={() => setShowAssignModal(false)} />
+          <button
+            type="button"
+            className="modal-backdrop border-0 p-0 cursor-default"
+            onClick={() => setShowAssignModal(false)}
+            aria-label="Close modal"
+          />
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="text-lg font-semibold">Assign Policy</h3>

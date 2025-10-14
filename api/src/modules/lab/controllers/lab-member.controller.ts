@@ -41,7 +41,7 @@ export class LabMemberController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadPrescription(
     @Request() req: any,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body() uploadDto: UploadPrescriptionDto,
   ) {
     const userId = new Types.ObjectId(req.user.userId);

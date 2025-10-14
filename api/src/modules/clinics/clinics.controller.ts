@@ -7,6 +7,7 @@ import { UserRole } from '@/common/constants/roles.enum';
 import { ClinicsService } from './clinics.service';
 import { CreateClinicDto } from './dto/create-clinic.dto';
 import { UpdateClinicDto } from './dto/update-clinic.dto';
+import { QueryClinicsDto } from './dto/query-clinics.dto';
 
 @ApiTags('clinics')
 @Controller('clinics')
@@ -24,7 +25,7 @@ export class ClinicsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all clinics' })
-  async findAll(@Query() query: any) {
+  async findAll(@Query() query: QueryClinicsDto) {
     return this.clinicsService.findAll(query);
   }
 

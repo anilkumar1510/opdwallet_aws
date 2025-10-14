@@ -51,7 +51,7 @@ export class DoctorsController {
   @UseInterceptors(FileInterceptor('photo', doctorPhotoMulterConfig))
   async uploadPhoto(
     @Param('doctorId') doctorId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ) {
     return this.doctorsService.uploadPhoto(doctorId, file);
   }

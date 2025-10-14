@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import { ConfigService } from '@nestjs/config';
+import { Client } from '@googlemaps/google-maps-services-js';
 
 export interface GeocodingResult {
   pincode: string;
@@ -8,111 +9,251 @@ export interface GeocodingResult {
   country: string;
   latitude: number;
   longitude: number;
+  formattedAddress?: string;
 }
 
 @Injectable()
 export class LocationService {
   private readonly logger = new Logger(LocationService.name);
-  private readonly geocodingCache = new Map<string, GeocodingResult>();
+  private readonly geocodingCache = new Map<string, GeocodingResult | GeocodingResult[]>();
+  private readonly googleMapsClient: Client;
+  private readonly apiKey: string;
+
+  constructor(private configService: ConfigService) {
+    this.googleMapsClient = new Client({});
+    this.apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY') || '';
+
+    if (!this.apiKey || this.apiKey === 'your-google-maps-api-key-here') {
+      this.logger.warn('⚠️ Google Maps API key not configured. Please set GOOGLE_MAPS_API_KEY in environment variables.');
+    } else {
+      this.logger.log('✅ Google Maps API initialized successfully');
+    }
+  }
 
   /**
-   * Reverse geocode: Convert lat/lng to address with pincode
+   * Reverse geocode: Convert lat/lng to address with pincode using Google Maps API
    */
   async reverseGeocode(latitude: number, longitude: number): Promise<GeocodingResult | null> {
     const cacheKey = `${latitude},${longitude}`;
 
     if (this.geocodingCache.has(cacheKey)) {
       this.logger.log(`[ReverseGeocode] Cache hit for ${cacheKey}`);
-      return this.geocodingCache.get(cacheKey) || null;
+      const cached = this.geocodingCache.get(cacheKey);
+      return (cached && !Array.isArray(cached)) ? cached : null;
     }
 
     try {
-      this.logger.log(`[ReverseGeocode] Fetching for lat=${latitude}, lng=${longitude}`);
+      this.logger.log(`[ReverseGeocode] Fetching from Google Maps for lat=${latitude}, lng=${longitude}`);
 
-      const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      const response = await this.googleMapsClient.reverseGeocode({
         params: {
-          lat: latitude,
-          lon: longitude,
-          format: 'json',
-          addressdetails: 1,
-        },
-        headers: {
-          'User-Agent': 'OPDWallet/1.0',
+          latlng: { lat: latitude, lng: longitude },
+          key: this.apiKey,
         },
       });
 
-      const address = response.data.address;
+      if (!response.data.results || response.data.results.length === 0) {
+        this.logger.warn(`[ReverseGeocode] No results found for coordinates`);
+        return null;
+      }
 
-      const result: GeocodingResult = {
-        pincode: address.postcode || '',
-        city: address.city || address.town || address.village || address.county || '',
-        state: address.state || '',
-        country: address.country || 'India',
-        latitude,
-        longitude,
-      };
+      const result = this.parseGoogleGeocodeResult(response.data.results[0], latitude, longitude);
 
       this.logger.log(`[ReverseGeocode] Success: ${JSON.stringify(result)}`);
       this.geocodingCache.set(cacheKey, result);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`[ReverseGeocode] Failed: ${error.message}`);
       return null;
     }
   }
 
   /**
-   * Forward geocode: Convert address/city to coordinates and pincode
+   * Forward geocode: Convert address/city to coordinates and pincode using Google Maps API
+   * If pincode is missing from forward geocode, performs reverse geocode to get detailed info
    */
   async forwardGeocode(query: string): Promise<GeocodingResult | null> {
     const cacheKey = `query:${query.toLowerCase()}`;
 
     if (this.geocodingCache.has(cacheKey)) {
       this.logger.log(`[ForwardGeocode] Cache hit for ${query}`);
-      return this.geocodingCache.get(cacheKey) || null;
+      const cached = this.geocodingCache.get(cacheKey);
+      return (cached && !Array.isArray(cached)) ? cached : null;
     }
 
     try {
-      this.logger.log(`[ForwardGeocode] Fetching for query="${query}"`);
+      this.logger.log(`[ForwardGeocode] Fetching from Google Maps for query="${query}"`);
 
-      const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      // Add India bias for better results
+      const searchQuery = query.includes('India') ? query : `${query}, India`;
+
+      const response = await this.googleMapsClient.geocode({
         params: {
-          q: query + ', India',
-          format: 'json',
-          addressdetails: 1,
-          limit: 1,
-        },
-        headers: {
-          'User-Agent': 'OPDWallet/1.0',
+          address: searchQuery,
+          key: this.apiKey,
+          region: 'in', // India region bias
+          components: { country: 'IN' }, // Restrict to India
         },
       });
 
-      if (!response.data || response.data.length === 0) {
+      if (!response.data.results || response.data.results.length === 0) {
         this.logger.warn(`[ForwardGeocode] No results for query="${query}"`);
         return null;
       }
 
-      const result = response.data[0];
-      const address = result.address;
+      const firstResult = response.data.results[0];
+      const location = firstResult.geometry.location;
+      let result = this.parseGoogleGeocodeResult(firstResult, location.lat, location.lng);
 
-      const geocodingResult: GeocodingResult = {
-        pincode: address.postcode || '',
-        city: address.city || address.town || address.village || address.county || '',
-        state: address.state || '',
-        country: address.country || 'India',
-        latitude: parseFloat(result.lat),
-        longitude: parseFloat(result.lon),
-      };
+      // If pincode is missing, try reverse geocode to get more detailed information
+      if (!result.pincode && location.lat && location.lng) {
+        this.logger.log(`[ForwardGeocode] No pincode found, attempting reverse geocode for coordinates`);
 
-      this.logger.log(`[ForwardGeocode] Success: ${JSON.stringify(geocodingResult)}`);
-      this.geocodingCache.set(cacheKey, geocodingResult);
+        try {
+          const reverseResult = await this.reverseGeocode(location.lat, location.lng);
+          if (reverseResult && reverseResult.pincode) {
+            // Merge results, preferring city/state from forward geocode but taking pincode from reverse
+            result = {
+              ...result,
+              pincode: reverseResult.pincode,
+              // Update formatted address if reverse geocode has better detail
+              formattedAddress: reverseResult.formattedAddress || result.formattedAddress,
+            };
+            this.logger.log(`[ForwardGeocode] Enhanced with pincode from reverse geocode: ${result.pincode}`);
+          }
+        } catch (reverseError: any) {
+          this.logger.warn(`[ForwardGeocode] Reverse geocode fallback failed: ${reverseError.message}`);
+          // Continue with original result even if reverse geocode fails
+        }
+      }
 
-      return geocodingResult;
-    } catch (error) {
+      this.logger.log(`[ForwardGeocode] Success: ${JSON.stringify(result)}`);
+      this.geocodingCache.set(cacheKey, result);
+
+      return result;
+    } catch (error: any) {
       this.logger.error(`[ForwardGeocode] Failed: ${error.message}`);
       return null;
     }
+  }
+
+  /**
+   * Search for location suggestions using Google Maps API
+   * Returns multiple results for autocomplete functionality
+   * Similar to Google Maps Places Autocomplete
+   */
+  async searchLocations(query: string, limit: number = 5): Promise<GeocodingResult[]> {
+    const cacheKey = `search:${query.toLowerCase()}:${limit}`;
+
+    // Check cache first
+    const cached = this.geocodingCache.get(cacheKey);
+    if (cached) {
+      this.logger.log(`[SearchLocations] Cache hit for "${query}"`);
+      return Array.isArray(cached) ? cached : [];
+    }
+
+    try {
+      this.logger.log(`[SearchLocations] Searching Google Maps for query="${query}", limit=${limit}`);
+
+      // Add India bias for better results
+      const searchQuery = query.includes('India') ? query : `${query}, India`;
+
+      const response = await this.googleMapsClient.geocode({
+        params: {
+          address: searchQuery,
+          key: this.apiKey,
+          region: 'in', // India region bias
+          components: { country: 'IN' }, // Restrict to India
+        },
+      });
+
+      if (!response.data.results || response.data.results.length === 0) {
+        this.logger.warn(`[SearchLocations] No results for query="${query}"`);
+        return [];
+      }
+
+      // Parse up to 'limit' results and enhance with reverse geocode if needed
+      const results = await Promise.all(
+        response.data.results
+          .slice(0, limit)
+          .map(async (result) => {
+            const location = result.geometry.location;
+            let parsedResult = this.parseGoogleGeocodeResult(result, location.lat, location.lng);
+
+            // If pincode is missing, try reverse geocode
+            if (!parsedResult.pincode && location.lat && location.lng) {
+              try {
+                const reverseResult = await this.reverseGeocode(location.lat, location.lng);
+                if (reverseResult && reverseResult.pincode) {
+                  parsedResult = {
+                    ...parsedResult,
+                    pincode: reverseResult.pincode,
+                    formattedAddress: reverseResult.formattedAddress || parsedResult.formattedAddress,
+                  };
+                }
+              } catch (err) {
+                // Silently continue if reverse geocode fails
+              }
+            }
+
+            return parsedResult;
+          })
+      );
+
+      this.logger.log(`[SearchLocations] Found ${results.length} results for "${query}"`);
+
+      // Cache results
+      this.geocodingCache.set(cacheKey, results);
+
+      return results;
+    } catch (error: any) {
+      this.logger.error(`[SearchLocations] Failed for "${query}": ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Parse Google Maps geocoding result into our GeocodingResult format
+   */
+  private parseGoogleGeocodeResult(
+    result: any,
+    latitude: number,
+    longitude: number,
+  ): GeocodingResult {
+    let pincode = '';
+    let city = '';
+    let state = '';
+    let country = '';
+
+    // Extract address components
+    result.address_components.forEach((component: any) => {
+      if (component.types.includes('postal_code')) {
+        pincode = component.long_name;
+      }
+      if (component.types.includes('locality')) {
+        city = component.long_name;
+      }
+      if (component.types.includes('administrative_area_level_2') && !city) {
+        city = component.long_name; // District as fallback
+      }
+      if (component.types.includes('administrative_area_level_1')) {
+        state = component.long_name;
+      }
+      if (component.types.includes('country')) {
+        country = component.long_name;
+      }
+    });
+
+    return {
+      pincode,
+      city,
+      state,
+      country: country || 'India',
+      latitude,
+      longitude,
+      formattedAddress: result.formatted_address,
+    };
   }
 
   /**

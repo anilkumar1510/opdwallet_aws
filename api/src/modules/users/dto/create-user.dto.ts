@@ -68,10 +68,13 @@ export class CreateUserDto {
   @IsOptional()
   employeeId?: string;
 
-  @ApiProperty({ enum: RelationshipType })
-  @IsEnum(RelationshipType)
+  @ApiProperty({
+    description: 'Relationship code (e.g., REL001 for Self, REL002 for Spouse) or legacy enum value',
+    example: 'REL001'
+  })
+  @IsString()
   @IsNotEmpty()
-  relationship!: RelationshipType;
+  relationship!: string;
 
   @ApiPropertyOptional()
   @IsString()
@@ -102,6 +105,11 @@ export class CreateUserDto {
   @IsEnum(['MALE', 'FEMALE', 'OTHER'])
   @IsOptional()
   gender?: string;
+
+  @ApiPropertyOptional({ enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] })
+  @IsEnum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
+  @IsOptional()
+  bloodGroup?: string;
 
   @ApiPropertyOptional({ type: AddressDto })
   @ValidateNested()

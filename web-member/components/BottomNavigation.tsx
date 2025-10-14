@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -17,6 +17,7 @@ import {
   WalletIcon as WalletIconSolid,
 } from '@heroicons/react/24/solid'
 import NotificationBell from '@/components/NotificationBell'
+import ProfileDropdown from '@/components/ProfileDropdown'
 
 interface NavItem {
   name: string
@@ -55,6 +56,36 @@ const bottomNavItems: NavItem[] = [
 export default function BottomNavigation() {
   const pathname = usePathname()
   const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    fetchUserData()
+  }, [])
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/member/profile', {
+        credentials: 'include',
+      })
+      if (response.ok) {
+        const profileData = await response.json()
+        setUser({
+          ...profileData.user,
+          dependents: profileData.dependents || [],
+        })
+      } else {
+        const authResponse = await fetch('/api/auth/me', {
+          credentials: 'include',
+        })
+        if (authResponse.ok) {
+          const userData = await authResponse.json()
+          setUser(userData)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+    }
+  }
 
   const isActive = (href: string) => {
     if (href === '/member') {
@@ -78,13 +109,12 @@ export default function BottomNavigation() {
   return (
     <>
       {/* Top Navigation for Desktop */}
-      <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo/Brand */}
+            {/* Profile Dropdown */}
             <div className="flex items-center">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 mr-3"></div>
-              <span className="text-xl font-bold text-gray-900">OPD Wallet</span>
+              <ProfileDropdown user={user} />
             </div>
 
             {/* Navigation Items */}
@@ -120,16 +150,9 @@ export default function BottomNavigation() {
               })}
             </div>
 
-            {/* Right side - notifications, user menu, etc. */}
+            {/* Right side - notifications */}
             <div className="flex items-center space-x-2">
               <NotificationBell />
-              <button
-                onClick={handleLogout}
-                className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="Sign Out"
-              >
-                <ArrowRightOnRectangleIcon className="h-6 w-6" />
-              </button>
             </div>
           </div>
         </div>

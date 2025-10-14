@@ -14,13 +14,19 @@ export default function ClinicsPage() {
     search: '',
     isActive: '',
   })
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  })
 
   // PERFORMANCE: Debounce filters to prevent API spam on every keystroke
   const debouncedFilters = useDebounce(filters, 300)
 
   useEffect(() => {
     fetchClinics()
-  }, [debouncedFilters]) // Use debounced filters
+  }, [debouncedFilters, pagination.page]) // Use debounced filters and page
 
   const fetchClinics = async () => {
     try {
@@ -29,14 +35,26 @@ export default function ClinicsPage() {
       if (filters.city) params.append('city', filters.city)
       if (filters.search) params.append('search', filters.search)
       if (filters.isActive) params.append('isActive', filters.isActive)
+      params.append('page', pagination.page.toString())
+      params.append('limit', pagination.limit.toString())
 
       const response = await apiFetch(`/api/clinics?${params.toString()}`)
       if (response.ok) {
-        const data = await response.json()
-        setClinics(data)
+        const result = await response.json()
+        setClinics(result.data || [])
+        setPagination({
+          page: result.page || 1,
+          limit: result.limit || 20,
+          total: result.total || 0,
+          pages: result.pages || 0,
+        })
+      } else {
+        console.error('Failed to fetch clinics: HTTP', response.status)
+        setClinics([])
       }
     } catch (error) {
       console.error('Failed to fetch clinics:', error)
+      setClinics([])
     } finally {
       setLoading(false)
     }
@@ -55,6 +73,15 @@ export default function ClinicsPage() {
     }
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPagination({ ...pagination, page: newPage })
+  }
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters)
+    setPagination({ ...pagination, page: 1 }) // Reset to page 1 when filters change
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4">
@@ -62,7 +89,7 @@ export default function ClinicsPage() {
           type="text"
           placeholder="Search clinics..."
           value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
           className="input flex-1"
         />
 
@@ -70,13 +97,13 @@ export default function ClinicsPage() {
           type="text"
           placeholder="Filter by city..."
           value={filters.city}
-          onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, city: e.target.value })}
           className="input flex-1"
         />
 
         <select
           value={filters.isActive}
-          onChange={(e) => setFilters({ ...filters, isActive: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, isActive: e.target.value })}
           className="input"
         >
           <option value="">All Status</option>
@@ -154,6 +181,65 @@ export default function ClinicsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && clinics.length > 0 && (
+        <div className="card">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600">
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} clinics
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  let pageNumber;
+                  if (pagination.pages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page >= pagination.pages - 2) {
+                    pageNumber = pagination.pages - 4 + i;
+                  } else {
+                    pageNumber = pagination.page - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-3 py-2 border rounded-md text-sm font-medium ${
+                        pagination.page === pageNumber
+                          ? 'bg-green-600 text-white border-green-600'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       )}

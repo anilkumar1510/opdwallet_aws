@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsNumberString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryDoctorsDto {
@@ -36,4 +36,12 @@ export class QueryDoctorsDto {
   @Type(() => Number)
   @IsNumber()
   radius?: number; // in kilometers, default 10
+
+  @IsOptional()
+  @IsNumberString()
+  page?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  limit?: string;
 }

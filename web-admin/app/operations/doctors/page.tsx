@@ -15,17 +15,19 @@ export default function DoctorsPage() {
     specialtyId: '',
     search: '',
   })
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  })
 
   // PERFORMANCE: Debounce search to prevent API spam
   const debouncedFilters = useDebounce(filters, 300)
 
   useEffect(() => {
     fetchDoctors()
-  }, [])
-
-  useEffect(() => {
-    fetchDoctors()
-  }, [debouncedFilters]) // Use debounced filters
+  }, [debouncedFilters, pagination.page]) // Use debounced filters and page
 
   const fetchDoctors = async () => {
     try {
@@ -33,14 +35,26 @@ export default function DoctorsPage() {
       const params = new URLSearchParams()
       if (filters.specialtyId) params.append('specialtyId', filters.specialtyId)
       if (filters.search) params.append('search', filters.search)
+      params.append('page', pagination.page.toString())
+      params.append('limit', pagination.limit.toString())
 
       const response = await apiFetch(`/api/doctors?${params.toString()}`)
       if (response.ok) {
-        const data = await response.json()
-        setDoctors(data)
+        const result = await response.json()
+        setDoctors(result.data || [])
+        setPagination({
+          page: result.page || 1,
+          limit: result.limit || 20,
+          total: result.total || 0,
+          pages: result.pages || 0,
+        })
+      } else {
+        console.error('Failed to fetch doctors: HTTP', response.status)
+        setDoctors([])
       }
     } catch (error) {
       console.error('Failed to fetch doctors:', error)
+      setDoctors([])
     } finally {
       setLoading(false)
     }
@@ -59,6 +73,15 @@ export default function DoctorsPage() {
     }
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPagination({ ...pagination, page: newPage })
+  }
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters)
+    setPagination({ ...pagination, page: 1 }) // Reset to page 1 when filters change
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4">
@@ -66,13 +89,13 @@ export default function DoctorsPage() {
           type="text"
           placeholder="Search doctors..."
           value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, search: e.target.value })}
           className="input flex-1"
         />
 
         <select
           value={filters.specialtyId}
-          onChange={(e) => setFilters({ ...filters, specialtyId: e.target.value })}
+          onChange={(e) => handleFilterChange({ ...filters, specialtyId: e.target.value })}
           className="input sm:w-64"
         >
           <option value="">All Specialties</option>
@@ -147,6 +170,65 @@ export default function DoctorsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && doctors.length > 0 && (
+        <div className="card">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600">
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} doctors
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                  let pageNumber;
+                  if (pagination.pages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page <= 3) {
+                    pageNumber = i + 1;
+                  } else if (pagination.page >= pagination.pages - 2) {
+                    pageNumber = pagination.pages - 4 + i;
+                  } else {
+                    pageNumber = pagination.page - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-3 py-2 border rounded-md text-sm font-medium ${
+                        pagination.page === pageNumber
+                          ? 'bg-green-600 text-white border-green-600'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

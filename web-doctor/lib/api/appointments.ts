@@ -134,15 +134,29 @@ export async function getTodayAppointments(): Promise<AppointmentsResponse> {
 }
 
 export async function getAppointmentsByDate(date: string): Promise<AppointmentsResponse> {
-  const response = await fetch(`/api/doctor/appointments/date/${date}`, {
-    credentials: 'include',
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch appointments');
+  try {
+    const response = await fetch(`/api/doctor/appointments/date/${date}`, {
+      credentials: 'include',
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch appointments');
+    }
+
+    return response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - please check your connection');
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 export async function getUpcomingAppointments(limit = 10): Promise<AppointmentsResponse> {

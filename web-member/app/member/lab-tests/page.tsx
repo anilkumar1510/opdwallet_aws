@@ -110,7 +110,15 @@ export default function LabTestsPage() {
       <div className="p-4 space-y-4 max-w-4xl mx-auto">
         {/* Upload Prescription Card */}
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => router.push('/member/lab-tests/upload')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              router.push('/member/lab-tests/upload')
+            }
+          }}
           className="rounded-2xl p-6 text-white cursor-pointer hover:shadow-lg transition-shadow"
           style={{ backgroundImage: 'linear-gradient(to right, #0a529f, #084080)' }}
         >
@@ -139,7 +147,15 @@ export default function LabTestsPage() {
               {carts.map((cart) => (
                 <div
                   key={cart.cartId}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => router.push(`/member/lab-tests/cart/${cart.cartId}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      router.push(`/member/lab-tests/cart/${cart.cartId}`)
+                    }
+                  }}
                   className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center justify-between">

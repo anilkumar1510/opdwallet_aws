@@ -202,9 +202,10 @@ export default function DigitizePrescriptionPage() {
                 ) : (
                   <div className="divide-y divide-gray-200">
                     {filteredServices.slice(0, 10).map((service) => (
-                      <div
+                      <button
                         key={service._id}
-                        className="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
+                        type="button"
+                        className="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center w-full text-left border-0"
                         onClick={() => handleAddTest(service)}
                       >
                         <div>
@@ -214,7 +215,7 @@ export default function DigitizePrescriptionPage() {
                           </p>
                         </div>
                         <PlusIcon className="h-5 w-5 text-blue-600" />
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}

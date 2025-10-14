@@ -180,7 +180,7 @@ export class LabOpsController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadReport(
     @Param('orderId') orderId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
   ) {
     // In production, save file to disk/S3 and get URL
     const reportUrl = file.path; // or S3 URL
