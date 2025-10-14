@@ -1,0 +1,10 @@
+{
+  "extends": "./.eslintrc.json",
+  "rules": {
+    "sonarjs/cognitive-complexity": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "sonarjs/no-duplicate-string": "warn",
+    "@next/next/no-img-element": "warn",
+    "react/no-unescaped-entities": "warn"
+  }
+}
