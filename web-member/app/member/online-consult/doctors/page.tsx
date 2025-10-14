@@ -11,6 +11,9 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline'
 
+// API base URL configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
+
 interface ClinicLocation {
   clinicId: string
   name: string
@@ -87,10 +90,12 @@ function OnlineDoctorsContent() {
         throw new Error('Failed to fetch doctors')
       }
 
-      const data = await response.json()
-      console.log('[OnlineDoctors] Doctors received:', { count: data.length })
-      setDoctors(data)
-      setFilteredDoctors(data)
+      const responseData = await response.json()
+      // Handle both pagination wrapper and flat array responses
+      const data = responseData.data || responseData
+      console.log('[OnlineDoctors] Doctors received:', { count: Array.isArray(data) ? data.length : 0 })
+      setDoctors(Array.isArray(data) ? data : [])
+      setFilteredDoctors(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('[OnlineDoctors] Error fetching doctors:', error)
     } finally {
@@ -197,7 +202,7 @@ function OnlineDoctorsContent() {
                 <div className="flex items-start space-x-4 mb-4">
                   {doctor.profilePhoto ? (
                     <img
-                      src={`http://localhost:4000${doctor.profilePhoto}`}
+                      src={`${API_BASE_URL}${doctor.profilePhoto}`}
                       alt={doctor.name}
                       className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-gray-200"
                     />

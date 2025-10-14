@@ -11,6 +11,9 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline'
 
+// API base URL configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
+
 interface ClinicLocation {
   clinicId: string
   name: string
@@ -98,7 +101,7 @@ const DoctorCard = memo(({
       <div className="flex items-start space-x-4 mb-4">
         {doctor.profilePhoto ? (
           <img
-            src={`http://localhost:4000${doctor.profilePhoto}`}
+            src={`${API_BASE_URL}${doctor.profilePhoto}`}
             alt={doctor.name}
             className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-gray-200"
           />
@@ -217,14 +220,16 @@ function DoctorsContent() {
         throw new Error('Failed to fetch doctors')
       }
 
-      const data = await response.json()
-      console.log('[Doctors] Doctors received:', { count: data.length })
+      const responseData = await response.json()
+      // Handle both pagination wrapper and flat array responses
+      const data = responseData.data || responseData
+      console.log('[Doctors] Doctors received:', { count: Array.isArray(data) ? data.length : 0 })
 
       // Validate and ensure each doctor has clinics array
-      const validatedData = data.map((doctor: Doctor) => ({
+      const validatedData = Array.isArray(data) ? data.map((doctor: Doctor) => ({
         ...doctor,
         clinics: doctor.clinics || []
-      }))
+      })) : []
 
       setDoctors(validatedData)
 
@@ -234,7 +239,7 @@ function DoctorsContent() {
             doctor.clinics?.map((clinic) => clinic.city) || []
           ).filter(Boolean)
         )
-      ).sort()
+      ).sort((a, b) => String(a).localeCompare(String(b)))
       setCities(uniqueCities as string[])
       console.log('[Doctors] Available cities:', uniqueCities)
     } catch (error) {
@@ -319,55 +324,50 @@ function DoctorsContent() {
     // Debounced search will be handled in useEffect
   }, [])
 
-  const handleCitySelect = useCallback(async (city: any) => {
+  const handleCitySelect = useCallback(async (location: any) => {
     setSearchingCity(true)
     setLocationError('')
-    setCitySearch(city.display_name)
     setShowCitySuggestions(false)
 
     try {
-      console.log('[Doctors] Selected city:', city)
+      console.log('[Doctors] Selected location (Google Maps):', location)
 
-      // Use the coordinates from the selected city
-      const latitude = parseFloat(city.lat)
-      const longitude = parseFloat(city.lon)
+      // Google Maps autocomplete result already has everything we need!
+      if (location.pincode) {
+        setPincode(location.pincode)
 
-      // Call reverse geocoding to get pincode
-      const response = await fetch(
-        `/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`,
-        { credentials: 'include' }
-      )
+        // Format location name
+        const locationText = [location.city, location.state]
+          .filter(Boolean)
+          .join(', ')
 
-      if (!response.ok) {
-        throw new Error('Failed to get location details')
-      }
-
-      const data = await response.json()
-      console.log('[Doctors] City geocoded:', data)
-
-      if (data.pincode) {
-        setPincode(data.pincode)
-        const locationText = [data.city, data.state].filter(Boolean).join(', ')
         setLocationName(locationText)
+        setCitySearch(location.formattedAddress || locationText)
 
         // Save to localStorage
-        localStorage.setItem('userPincode', data.pincode)
+        localStorage.setItem('userPincode', location.pincode)
         localStorage.setItem('userLocation', locationText)
 
+        // Close city search input
         setShowCityInput(false)
         setCitySearch('')
+
+        console.log('[Doctors] Location set:', {
+          pincode: location.pincode,
+          location: locationText
+        })
       } else {
         setLocationError('Could not find pincode for this location')
       }
     } catch (error) {
       console.error('[Doctors] City selection error:', error)
-      setLocationError('Failed to get location details')
+      setLocationError('Failed to set location')
     } finally {
       setSearchingCity(false)
     }
   }, [])
 
-  // Debounced city search
+  // Debounced city search - Using Google Maps API via backend
   useEffect(() => {
     if (citySearch.trim().length < 2) return
 
@@ -376,28 +376,26 @@ function DoctorsContent() {
       try {
         console.log('[Doctors] Searching for city:', citySearch)
 
-        // Use Nominatim search API directly
+        // ✅ Google Maps API via backend autocomplete endpoint
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(citySearch + ', India')}&format=json&addressdetails=1&limit=5`,
-          {
-            headers: {
-              'User-Agent': 'OPDWallet/1.0'
-            }
-          }
+          `/api/location/autocomplete?query=${encodeURIComponent(citySearch)}&limit=5`,
+          { credentials: 'include' }
         )
 
         if (!response.ok) {
-          throw new Error('Failed to search cities')
+          throw new Error('Failed to search locations')
         }
 
         const data = await response.json()
-        console.log('[Doctors] City search results:', data)
+        console.log('[Doctors] City search results (Google Maps):', data)
 
-        setCitySuggestions(data)
-        setShowCitySuggestions(data.length > 0)
+        setCitySuggestions(Array.isArray(data) ? data : [])
+        setShowCitySuggestions(Array.isArray(data) && data.length > 0)
       } catch (error) {
         console.error('[Doctors] City search error:', error)
         setLocationError('Failed to search cities')
+        setCitySuggestions([])
+        setShowCitySuggestions(false)
       } finally {
         setSearchingCity(false)
       }
@@ -582,17 +580,18 @@ function DoctorsContent() {
 
                   {showCitySuggestions && citySuggestions.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {citySuggestions.map((city, index) => (
+                      {citySuggestions.map((location, index) => (
                         <button
                           key={index}
-                          onClick={() => handleCitySelect(city)}
+                          onClick={() => handleCitySelect(location)}
                           className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
                         >
                           <div className="font-medium text-sm text-gray-900">
-                            {city.address?.city || city.address?.town || city.address?.village || city.name}
+                            {location.city}
+                            {location.pincode && ` - ${location.pincode}`}
                           </div>
                           <div className="text-xs text-gray-500 line-clamp-1">
-                            {city.display_name}
+                            {location.formattedAddress}
                           </div>
                         </button>
                       ))}

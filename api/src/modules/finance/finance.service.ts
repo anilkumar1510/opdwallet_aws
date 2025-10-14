@@ -38,8 +38,14 @@ export class FinanceService {
       this.memberClaimModel.countDocuments(query),
     ]);
 
+    // Transform claims to add amountApproved field for frontend compatibility
+    const transformedClaims = claims.map(claim => ({
+      ...claim,
+      amountApproved: claim.approvedAmount || 0,
+    }));
+
     return {
-      claims,
+      claims: transformedClaims,
       total,
       page,
       limit,
@@ -131,6 +137,7 @@ export class FinanceService {
     limit: number = 10,
     fromDate?: Date,
     toDate?: Date,
+    paymentMode?: string,
   ) {
     const skip = (page - 1) * limit;
 
@@ -143,6 +150,10 @@ export class FinanceService {
       query.paymentDate = {};
       if (fromDate) query.paymentDate.$gte = fromDate;
       if (toDate) query.paymentDate.$lte = toDate;
+    }
+
+    if (paymentMode) {
+      query.paymentMode = paymentMode;
     }
 
     const [claims, total] = await Promise.all([
@@ -158,7 +169,7 @@ export class FinanceService {
     ]);
 
     return {
-      claims,
+      payments: claims,  // Changed from 'claims' to 'payments' for frontend compatibility
       total,
       page,
       limit,
@@ -223,13 +234,13 @@ export class FinanceService {
           $group: {
             _id: null,
             totalApprovedAmount: {
-              $sum: { $ifNull: ['$amountApproved', 0] },
+              $sum: { $ifNull: ['$approvedAmount', 0] },
             },
             totalPaidAmount: {
               $sum: {
                 $cond: [
                   { $eq: ['$paymentStatus', PaymentStatus.COMPLETED] },
-                  { $ifNull: ['$amountApproved', 0] },
+                  { $ifNull: ['$approvedAmount', 0] },
                   0,
                 ],
               },
@@ -240,7 +251,7 @@ export class FinanceService {
                   {
                     $in: ['$paymentStatus', [PaymentStatus.PENDING, PaymentStatus.APPROVED]]
                   },
-                  { $ifNull: ['$amountApproved', 0] },
+                  { $ifNull: ['$approvedAmount', 0] },
                   0,
                 ],
               },
@@ -269,7 +280,7 @@ export class FinanceService {
         $group: {
           _id: '$paymentMode',
           count: { $sum: 1 },
-          totalAmount: { $sum: { $ifNull: ['$amountApproved', 0] } },
+          totalAmount: { $sum: { $ifNull: ['$approvedAmount', 0] } },
         },
       },
       {

@@ -18,6 +18,11 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
+import ProfileDropdown from '@/components/ProfileDropdown'
+import SectionHeader from '@/components/SectionHeader'
+import OPDCardCarousel from '@/components/OPDCardCarousel'
+import ActiveAppointmentNudge from '@/components/ActiveAppointmentNudge'
+import { useFamily } from '@/contexts/FamilyContext'
 
 // Helper function to calculate age from DOB
 const calculateAge = (dob: string) => {
@@ -200,10 +205,10 @@ const WalletCategoryCard = memo(({
   icon: any
 }) => {
   return (
-    <div className="border border-gray-200 rounded-xl p-3">
+    <div className="border border-blue-100 rounded-xl p-3 bg-blue-50 hover:bg-blue-100 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          {React.createElement(icon, { className: "h-5 w-5 text-gray-600" })}
+          {React.createElement(icon, { className: "h-5 w-5 text-blue-600" })}
           <span className="text-sm font-medium text-gray-900">{category.name}</span>
         </div>
         <div className="text-right">
@@ -319,29 +324,27 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const { activeMember, viewingUserId } = useFamily()
 
   useEffect(() => {
-    fetchUserData()
-  }, [])
+    if (viewingUserId) {
+      fetchUserData(viewingUserId)
+    }
+  }, [viewingUserId])
 
-  const fetchUserData = async () => {
+  const fetchUserData = async (userId: string) => {
     try {
-      const response = await fetch('/api/member/profile', {
+      console.log('[Dashboard] Starting fetchUserData for userId:', userId)
+
+      // Fetch profile data
+      const profileResponse = await fetch('/api/member/profile', {
         credentials: 'include',
       })
-      if (response.ok) {
-        const profileData = await response.json()
-        const userWithAssignments = {
-          ...profileData.user,
-          dependents: profileData.dependents || [],
-          familyMembers: profileData.familyMembers || [],
-          assignments: profileData.assignments || [],
-          wallet: profileData.wallet || { totalBalance: { allocated: 0, current: 0, consumed: 0 }, categories: [] },
-          walletCategories: profileData.walletCategories || [],
-          healthBenefits: profileData.healthBenefits || []
-        }
-        setUser(userWithAssignments)
-      } else {
+
+      console.log('[Dashboard] Profile response status:', profileResponse.status)
+
+      if (!profileResponse.ok) {
+        console.error('[Dashboard] Profile fetch failed')
         const authResponse = await fetch('/api/auth/me', {
           credentials: 'include',
         })
@@ -349,9 +352,78 @@ export default function DashboardPage() {
           const userData = await authResponse.json()
           setUser(userData)
         }
+        setLoading(false)
+        return
       }
+
+      const profileData = await profileResponse.json()
+      console.log('[Dashboard] Profile data received:', {
+        hasUser: !!profileData.user,
+        hasDependents: !!profileData.dependents,
+        hasWallet: !!profileData.wallet,
+        hasWalletCategories: !!profileData.walletCategories
+      })
+
+      // Fetch wallet data for the viewing user
+      const walletUrl = `/api/wallet/balance?userId=${userId}`
+      console.log('[Dashboard] Fetching wallet from:', walletUrl)
+
+      const walletResponse = await fetch(walletUrl, {
+        credentials: 'include',
+      })
+
+      console.log('[Dashboard] Wallet response status:', walletResponse.status)
+
+      let walletData = { totalBalance: { allocated: 0, current: 0, consumed: 0 }, categories: [] }
+      let walletCategories = []
+
+      if (walletResponse.ok) {
+        const walletResult = await walletResponse.json()
+        console.log('[Dashboard] Wallet result structure:', {
+          keys: Object.keys(walletResult),
+          hasTotalBalance: !!walletResult.totalBalance,
+          hasCategories: !!walletResult.categories,
+          rawData: walletResult
+        })
+
+        // The wallet/balance endpoint returns { totalBalance, categories } directly
+        walletData = walletResult
+        // Map categories to walletCategories format
+        walletCategories = walletResult.categories || []
+
+        console.log('[Dashboard] Processed wallet data:', {
+          walletData,
+          walletCategories,
+          totalBalanceCurrent: walletData?.totalBalance?.current,
+          totalBalanceAllocated: walletData?.totalBalance?.allocated,
+          categoriesCount: walletCategories?.length
+        })
+      } else {
+        const errorText = await walletResponse.text()
+        console.error('[Dashboard] Wallet fetch failed:', errorText)
+      }
+
+      // Combine data - use active member as primary user
+      const userWithAssignments = {
+        ...profileData.user,
+        dependents: profileData.dependents || [],
+        familyMembers: profileData.familyMembers || [],
+        assignments: profileData.assignments || [],
+        wallet: walletData,
+        walletCategories: walletCategories,
+        healthBenefits: profileData.healthBenefits || []
+      }
+
+      console.log('[Dashboard] Final user object:', {
+        hasWallet: !!userWithAssignments.wallet,
+        walletTotalCurrent: userWithAssignments.wallet?.totalBalance?.current,
+        walletTotalAllocated: userWithAssignments.wallet?.totalBalance?.allocated,
+        walletCategoriesCount: userWithAssignments.walletCategories?.length
+      })
+
+      setUser(userWithAssignments)
     } catch (error) {
-      console.error('Error fetching user data:', error)
+      console.error('[Dashboard] Error fetching user data:', error)
     } finally {
       setLoading(false)
     }
@@ -484,64 +556,49 @@ export default function DashboardPage() {
     )
   }
 
+  // Prepare all members array for carousel
+  const allMembers = [user, ...(user?.dependents || [])]
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <div className="bg-white shadow-sm px-4 py-3 lg:hidden">
+      <div className="px-3 py-3 lg:hidden">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">OPD Wallet</h1>
+          <ProfileDropdown />
           <NotificationBell />
         </div>
       </div>
 
-      <div className="p-4 lg:p-8 max-w-md mx-auto lg:max-w-4xl lg:mt-4">
+      {/* Main Content */}
+      <div className="px-4 lg:px-8 max-w-md mx-auto lg:max-w-6xl">
         {/* Unified Layout for Mobile and Desktop */}
-        <div className="space-y-6">
-        {/* Horizontal Scrollable Member Cards */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">Covered Members</h2>
-            {user?.dependents?.length > 0 && (
-              <div className="flex items-center text-gray-400 text-xs md:hidden">
-                <ChevronRightIcon className="h-4 w-4 mr-1" />
-                <span>Swipe to see all</span>
-              </div>
-            )}
+        <div className="space-y-4">
+          {/* OPD Cards Section */}
+          <div>
+            <OPDCardCarousel
+              members={allMembers}
+              getPolicyNumber={(userId) => {
+                if (userId === (user?._id || user?.id)) {
+                  return userPolicy?.policyId?.policyNumber || 'N/A'
+                }
+                return getUserPolicyForMember(userId)?.policyId?.policyNumber || 'N/A'
+              }}
+              getValidTill={(userId) => {
+                if (userId === (user?._id || user?.id)) {
+                  return getPolicyExpiryDate()
+                }
+                return getPolicyExpiryForMember(userId)
+              }}
+              getCorporateName={(member) => member?.corporateName || user?.corporateName || 'N/A'}
+            />
           </div>
-
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory -mx-4 px-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {/* Current User Card */}
-            <div className="w-[280px] sm:w-[320px] md:w-[340px] lg:w-[360px] flex-shrink-0 snap-start">
-              <MemberCard
-                member={user}
-                isPrimary={true}
-                policyNumber={userPolicy?.policyId?.policyNumber || 'N/A'}
-                validTill={getPolicyExpiryDate()}
-                corporateName={user?.corporateName || ''}
-              />
-            </div>
-
-            {/* Dependent Member Cards */}
-            {user?.dependents?.map((dependent: any, index: number) => (
-              <div key={dependent._id || dependent.id || index} className="w-[280px] sm:w-[320px] md:w-[340px] lg:w-[360px] flex-shrink-0 snap-start">
-                <MemberCard
-                  member={dependent}
-                  isPrimary={false}
-                  policyNumber={getUserPolicyForMember(dependent._id)?.policyId?.policyNumber || 'N/A'}
-                  validTill={getPolicyExpiryForMember(dependent._id)}
-                  corporateName={dependent?.corporateName || ''}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Your Wallet Balance Section */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Wallet Balance</h2>
+          <SectionHeader title="Your Wallet Balance" showSeeAll={false} />
 
           {/* Total Available Balance - Highlighted */}
-          <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-4 mb-4 border border-orange-200">
+          <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Available Balance</p>
@@ -550,7 +607,7 @@ export default function DashboardPage() {
                   <span className="text-sm text-gray-500 font-normal"> / {totalWalletBalance.toLocaleString()}</span>
                 </div>
               </div>
-              <BanknotesIcon className="h-10 w-10 text-orange-500" />
+              <BanknotesIcon className="h-10 w-10 text-blue-600" />
             </div>
             <p className="text-xs text-gray-600 mt-2">Your total usage cannot exceed this amount</p>
           </div>
@@ -567,9 +624,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Upcoming Appointment Section - Desktop only (mobile has floating banner) */}
+        {user?._id && (
+          <div className="hidden lg:block">
+            <ActiveAppointmentNudge variant="section" userId={user._id} />
+          </div>
+        )}
+
         {/* Health Benefits Section */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Health Benefits</h2>
+          <SectionHeader title="Health Benefits" showSeeAll={false} />
 
           <div className="space-y-3">
             {healthBenefits.map((benefit: any, index: number) => (
@@ -584,20 +648,26 @@ export default function DashboardPage() {
 
         {/* File Claims Section */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <SectionHeader title="Claims" showSeeAll={false} />
           <Link
             href="/member/claims/new"
-            className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl text-white hover:from-orange-600 hover:to-orange-700 transition-colors"
+            className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <DocumentTextIcon className="h-6 w-6" />
+              <div className="bg-white p-2 rounded-lg">
+                <ClipboardDocumentCheckIcon className="h-6 w-6 text-gray-700" />
+              </div>
               <div>
-                <div className="font-semibold">File a Claim</div>
-                <div className="text-sm text-orange-100">Submit your medical bills</div>
+                <div className="font-semibold text-gray-900">File a Claim</div>
+                <div className="text-sm text-gray-600">Submit your medical bills</div>
               </div>
             </div>
-            <ChevronRightIcon className="h-6 w-6" />
+            <ChevronRightIcon className="h-5 w-5 text-gray-400" />
           </Link>
         </div>
+
+        {/* Extra padding for mobile to prevent overlap with appointment nudge */}
+        <div className="h-24 lg:hidden" aria-hidden="true"></div>
         </div>
       </div>
     </div>
