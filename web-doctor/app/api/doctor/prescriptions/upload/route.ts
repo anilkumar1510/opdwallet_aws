@@ -79,10 +79,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Disable body parser to allow streaming
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
