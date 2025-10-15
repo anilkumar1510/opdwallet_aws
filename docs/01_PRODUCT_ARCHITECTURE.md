@@ -4,7 +4,7 @@
 **Current Deployment**: http://51.20.125.246
 **Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.6 (Latest Changes: Profile Management, Enhanced Dependent Fetching, Doctor Portal Improvements)
+**Documentation Version**: 6.7 (Latest Changes: Video Consultations, Family Context, Active Appointment Nudge)
 
 ---
 
@@ -950,16 +950,26 @@ Doctor Schema Includes:
 - Insurance: Cashless availability, accepted insurance providers
 ```
 
-#### Clinics Management (`/api/clinics`) - ✅ FULLY IMPLEMENTED
+#### Clinics Management (`/api/clinics`) - ✅ FULLY IMPLEMENTED ✨ ENHANCED (v6.7)
 ```
-GET    /api/clinics                 # List all clinics
+GET    /api/clinics                 # List all clinics with enhanced query
 GET    /api/clinics/:clinicId       # Get clinic details by ID
 POST   /api/clinics                 # Create new clinic
 PUT    /api/clinics/:clinicId       # Update clinic details
 PATCH  /api/clinics/:clinicId/activate    # Activate clinic
 PATCH  /api/clinics/:clinicId/deactivate  # Deactivate clinic
 DELETE /api/clinics/:clinicId       # Delete clinic
+```
 
+**Query Parameters ✨ NEW (v6.7)**:
+- `city`: Filter by city name
+- `state`: Filter by state name
+- `search`: Search in clinic name, address, city
+- `isActive`: Filter by active status (true/false)
+- `page`: Pagination page number
+- `limit`: Items per page
+
+```
 Clinic Schema Includes:
 - Basic Info: clinicId, name, address, city, state, pincode
 - Contact: phone, email
@@ -1137,6 +1147,77 @@ Access Control:
 - Patients can view prescriptions for their appointments
 - Admin/Operations can view all prescriptions
 ```
+
+#### Video Consultations (`/api/video-consultations`) - ✅ NEW (v6.7)
+```
+POST   /api/video-consultations/start              # Start video consultation (Doctor only)
+POST   /api/video-consultations/join               # Join video consultation (Member only)
+POST   /api/video-consultations/:id/end            # End consultation (Doctor only)
+GET    /api/video-consultations/:id/status         # Get consultation status
+GET    /api/video-consultations/doctor/history     # Get doctor's consultation history
+GET    /api/video-consultations/patient/history    # Get patient's consultation history
+```
+
+**Features**:
+- **WebRTC Integration**: Real-time video/audio consultations
+- **Role-Based Access**: Doctors can start/end, members can join
+- **Status Tracking**: WAITING, IN_PROGRESS, COMPLETED, CANCELLED
+- **History Management**: Paginated consultation history for both doctors and patients
+- **Appointment Integration**: Linked to existing appointments via appointmentId
+
+**Start Consultation (POST /start)**:
+```json
+Request: { "appointmentId": "APT-20250112-ABC123" }
+Response: {
+  "consultationId": "VC-20250112-XYZ789",
+  "status": "IN_PROGRESS",
+  "startTime": "2025-01-12T10:00:00Z",
+  "appointmentDetails": {...}
+}
+```
+
+**Join Consultation (POST /join)**:
+```json
+Request: { "appointmentId": "APT-20250112-ABC123" }
+Response: {
+  "consultationId": "VC-20250112-XYZ789",
+  "status": "IN_PROGRESS",
+  "doctor": {...},
+  "patient": {...}
+}
+```
+
+**End Consultation (POST /:id/end)**:
+```json
+Request: {
+  "duration": 900,  // seconds
+  "notes": "Patient complains of headache...",
+  "prescription": "Medicine details...",
+  "followUpRequired": true,
+  "followUpDate": "2025-01-19"
+}
+Response: {
+  "consultationId": "VC-20250112-XYZ789",
+  "status": "COMPLETED",
+  "duration": 900,
+  "endTime": "2025-01-12T10:15:00Z"
+}
+```
+
+**Video Consultation Schema**:
+- consultationId: Unique identifier (VC-YYYYMMDD-XXXXX format)
+- appointmentId: Reference to appointment
+- doctorId, patientId: Participant references
+- status: WAITING, IN_PROGRESS, COMPLETED, CANCELLED
+- startTime, endTime: Timestamps
+- duration: Consultation duration in seconds
+- notes, prescription: Doctor's consultation notes
+- followUpRequired, followUpDate: Follow-up tracking
+
+**Access Control**:
+- Only assigned doctor can start/end consultation
+- Only appointment patient can join consultation
+- History endpoints filtered by user role
 
 #### Member Portal API (`/api/member`) ✨ ENHANCED (v6.6)
 ```

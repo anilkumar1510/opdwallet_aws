@@ -13,15 +13,18 @@ The Member Portal is the primary interface for OPDWallet members to manage their
 ## Table of Contents
 
 1. [Dashboard](#dashboard)
-2. [Profile Management](#profile-management) ✨ NEW
-3. [Family Management](#family-management)
-4. [Appointments](#appointments)
-5. [Claims & Reimbursements](#claims--reimbursements)
-6. [Lab Diagnostics](#lab-diagnostics)
-7. [Wallet](#wallet)
-8. [Navigation Structure](#navigation-structure)
-9. [API Endpoints](#api-endpoints)
-10. [Frontend Architecture](#frontend-architecture)
+2. [Profile Management](#profile-management)
+3. [Family Context & Profile Switching](#family-context--profile-switching) ✨ NEW (v6.7)
+4. [Video Consultations](#video-consultations) ✨ NEW (v6.7)
+5. [Active Appointment Nudge](#active-appointment-nudge) ✨ NEW (v6.7)
+6. [Family Management](#family-management)
+7. [Appointments](#appointments)
+8. [Claims & Reimbursements](#claims--reimbursements)
+9. [Lab Diagnostics](#lab-diagnostics)
+10. [Wallet](#wallet)
+11. [Navigation Structure](#navigation-structure)
+12. [API Endpoints](#api-endpoints)
+13. [Frontend Architecture](#frontend-architecture)
 
 ---
 
@@ -165,6 +168,142 @@ Response:
 - **Mobile**: Must be exactly 10 digits, starting with 6-9 (Indian mobile format)
 - **Error Handling**: Clear error messages for validation failures
 - **Success Feedback**: Toast notifications on successful update
+
+---
+
+## Family Context & Profile Switching ✨ NEW (v6.7)
+
+**Context**: `/web-member/contexts/FamilyContext.tsx`
+
+The Family Context system enables primary members to view and manage data for their dependents.
+
+### Features
+
+- **Multi-Member Support**: View data for self and all dependents
+- **Profile Switching**: Switch between family member views seamlessly
+- **SwitchProfileModal**: Modal interface for selecting active member
+- **Permission System**: `canSwitchProfiles` flag controls switching ability
+- **State Management**:
+  - `activeMember`: Currently viewing member
+  - `viewingUserId`: MongoDB ID of member being viewed
+  - `loggedInUser`: Always the authenticated user
+  - `familyMembers`: Array of all accessible members
+
+### Usage
+
+```typescript
+const { activeMember, viewingUserId, setActiveMember, canSwitchProfiles } = useFamily()
+
+// Switch to viewing a dependent
+setActiveMember(dependentMember)
+
+// Current viewing user ID for API calls
+const walletUrl = `/api/wallet/balance?userId=${viewingUserId}`
+```
+
+### Components
+
+- **`ProfileDropdown`**: Shows current member with switch option
+- **`SwitchProfileModal`**: Lists all family members for selection
+- **`FamilyContext`**: Provides state to all child components
+
+---
+
+## Video Consultations ✨ NEW (v6.7)
+
+**Routes**:
+- Member: `/member/consultations/[appointmentId]`
+- Doctor: `/doctorview/consultations/[appointmentId]`
+
+**Component**: `/web-member/components/VideoConsultation.tsx`
+
+Complete WebRTC-based video consultation system integrated with appointments.
+
+### Features
+
+- **Real-Time Video/Audio**: WebRTC peer-to-peer connection
+- **Consultation States**:
+  - WAITING: Waiting for doctor to start
+  - IN_PROGRESS: Active consultation
+  - COMPLETED: Consultation ended
+  - CANCELLED: Consultation cancelled
+
+- **Doctor Controls**:
+  - Start consultation
+  - End consultation with notes
+  - Add prescription
+  - Mark follow-up required
+
+- **Member Experience**:
+  - Join when doctor starts
+  - View consultation timer
+  - Access consultation history
+
+### API Integration
+
+```typescript
+// Member joins consultation
+POST /api/video-consultations/join
+Body: { appointmentId: "APT-20250112-ABC123" }
+
+// Doctor starts consultation
+POST /api/video-consultations/start
+Body: { appointmentId: "APT-20250112-ABC123" }
+
+// Doctor ends consultation
+POST /api/video-consultations/:id/end
+Body: {
+  duration: 900,
+  notes: "Clinical notes...",
+  prescription: "Rx details...",
+  followUpRequired: true
+}
+```
+
+### Consultation History
+
+Both members and doctors can view past consultations:
+- Member: `GET /api/video-consultations/patient/history`
+- Doctor: `GET /api/video-consultations/doctor/history`
+
+---
+
+## Active Appointment Nudge ✨ NEW (v6.7)
+
+**Component**: `/web-member/components/ActiveAppointmentNudge.tsx`
+
+**API**: `GET /api/appointments/user/:userId/ongoing`
+
+Real-time display of active or upcoming appointments with multiple display variants.
+
+### Features
+
+- **Three Variants**:
+  - `mobile`: Floating bottom banner (mobile only)
+  - `desktop`: Inline card (desktop only)
+  - `section`: Full-width section (responsive)
+
+- **Real-Time Updates**: Event-driven refresh when appointments change
+- **Quick Actions**: Navigate directly to appointment or start consultation
+- **Smart Display**: Shows prescription link if available
+
+### Event System
+
+```typescript
+import { onAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
+
+// Listen for appointment changes
+onAppointmentEvent(AppointmentEvents.APPOINTMENT_CREATED, fetchAppointments)
+onAppointmentEvent(AppointmentEvents.APPOINTMENT_CONFIRMED, fetchAppointments)
+```
+
+### Integration
+
+```tsx
+// In dashboard
+<ActiveAppointmentNudge variant="mobile" userId={user._id} />  // Mobile floating
+<ActiveAppointmentNudge variant="section" userId={user._id} /> // Desktop section
+```
 
 ---
 

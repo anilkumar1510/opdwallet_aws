@@ -1,9 +1,9 @@
 # OPD WALLET - DATA SCHEMA AND CREDENTIALS DOCUMENTATION
 
-**Document Version:** 3.2
-**Last Updated:** October 11, 2025 (Google Maps Integration, Assignment Enhancements, Blood Group Field)
+**Document Version:** 3.3
+**Last Updated:** October 15, 2025 (Video Consultations Integration)
 **Database:** MongoDB (opd_wallet)
-**Total Collections:** 27
+**Total Collections:** 28
 
 ---
 
@@ -29,15 +29,16 @@
    - [clinics](#15-clinics)
    - [doctor_slots](#16-doctor_slots)
    - [appointments](#17-appointments)
-   - [memberclaims](#18-memberclaims)
-   - [notifications](#19-notifications)
-   - [lab_prescriptions](#20-lab_prescriptions)
-   - [lab_carts](#21-lab_carts)
-   - [lab_services](#22-lab_services)
-   - [lab_vendors](#23-lab_vendors)
-   - [lab_vendor_pricing](#24-lab_vendor_pricing)
-   - [lab_vendor_slots](#25-lab_vendor_slots)
-   - [lab_orders](#26-lab_orders)
+   - [video_consultations](#18-video_consultations)
+   - [memberclaims](#19-memberclaims)
+   - [notifications](#20-notifications)
+   - [lab_prescriptions](#21-lab_prescriptions)
+   - [lab_carts](#22-lab_carts)
+   - [lab_services](#23-lab_services)
+   - [lab_vendors](#24-lab_vendors)
+   - [lab_vendor_pricing](#25-lab_vendor_pricing)
+   - [lab_vendor_slots](#26-lab_vendor_slots)
+   - [lab_orders](#27-lab_orders)
 4. [Relationships & Foreign Keys](#relationships--foreign-keys)
 5. [Data Integrity Rules](#data-integrity-rules)
 6. [Indexes & Performance](#indexes--performance)
@@ -51,7 +52,7 @@
 
 **Database Name:** `opd_wallet`
 **Authentication:** MongoDB Admin Auth
-**Total Collections:** 27
+**Total Collections:** 28
 **Total Documents:** Variable (production usage-dependent)
 
 ### Current Data Distribution
@@ -77,6 +78,7 @@
 | clinics | 5+ | Active |
 | doctor_slots | 17+ | Active |
 | appointments | Variable | Operational |
+| video_consultations | Variable | Operational ✨ NEW (v6.7) |
 | **Claims & TPA** | | |
 | memberclaims | Variable | Operational ✨ NEW |
 | **Notifications** | | |
@@ -119,6 +121,7 @@
 - **clinics** - Clinic/hospital locations with operating hours
 - **doctor_slots** - Weekly recurring time slots for doctors
 - **appointments** - Appointment bookings
+- **video_consultations** - Video consultation sessions for online appointments ✨ NEW (v6.7)
 
 ### Claims & TPA Collections ✨ NEW
 - **memberclaims** - Complete claims/reimbursement management with TPA integration
@@ -1929,7 +1932,194 @@ enum CallPreference {
 
 ---
 
-### 18. memberclaims
+### 18. video_consultations ✨ NEW (v6.7)
+
+**Collection Name:** `video_consultations`
+**Purpose:** Store video consultation sessions for online appointments with WebRTC integration
+**Document Count:** Variable (created when doctor starts online consultation)
+**Timestamps:** Yes (createdAt, updatedAt)
+
+**Schema:**
+
+```javascript
+{
+  _id: ObjectId,
+  consultationId: string,          // REQUIRED, UNIQUE - Format: VC-XXXXXXXXXX
+  appointmentId: ObjectId,          // REQUIRED, REF: 'Appointment' - Links to appointments._id
+
+  // Participants
+  doctorId: ObjectId,               // REQUIRED, REF: 'User' - Doctor's user ID
+  doctorName: string,               // REQUIRED - Doctor's full name
+  patientId: ObjectId,              // REQUIRED, REF: 'User' - Patient's user ID
+  patientName: string,              // REQUIRED - Patient's full name
+
+  // Room Details (Jitsi Meet Integration)
+  roomId: string,                   // REQUIRED, UNIQUE - Unique room identifier
+  roomName: string,                 // REQUIRED - Human-readable room name
+  roomPassword: string,             // OPTIONAL - Room password for security
+  jitsiDomain: string,              // DEFAULT: 'meet.jit.si' - Jitsi server domain
+  roomUrl: string,                  // REQUIRED - Full Jitsi room URL
+
+  // Scheduling & Timing
+  scheduledStartTime: Date,         // OPTIONAL - Scheduled consultation start time
+  actualStartTime: Date,            // OPTIONAL - When consultation actually started
+  endTime: Date,                    // OPTIONAL - When consultation ended
+  duration: number,                 // OPTIONAL - Duration in minutes
+
+  // Status Tracking
+  status: string,                   // REQUIRED, ENUM: SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
+                                    // DEFAULT: SCHEDULED
+  doctorJoinedAt: Date,             // OPTIONAL - Timestamp when doctor joined
+  patientJoinedAt: Date,            // OPTIONAL - Timestamp when patient joined
+
+  // Recording (Optional Feature)
+  recordingEnabled: boolean,        // DEFAULT: false - Whether recording is enabled
+  recordingUrl: string,             // OPTIONAL - URL to recorded consultation
+  recordingDuration: number,        // OPTIONAL - Recording duration in minutes
+  recordingSize: number,            // OPTIONAL - Recording file size in MB
+
+  // Quality Metrics
+  videoQuality: string,             // OPTIONAL - Video quality indicator
+  audioQuality: string,             // OPTIONAL - Audio quality indicator
+  networkIssues: [                  // DEFAULT: [] - Array of network issues during call
+    {
+      timestamp: Date,              // When the issue occurred
+      issue: string,                // Description of the issue
+      duration: number              // Duration of the issue in seconds
+    }
+  ],
+
+  // Post-Consultation
+  prescriptionId: ObjectId,         // OPTIONAL, REF: 'Prescription' - Linked prescription
+  notesId: string,                  // OPTIONAL - Consultation notes reference
+  feedback: {                       // OPTIONAL - Post-consultation feedback
+    doctorRating: number,           // 1-5 rating by patient for doctor
+    patientRating: number,          // 1-5 rating by doctor for patient
+    doctorComments: string,         // Doctor's comments about consultation
+    patientComments: string         // Patient's comments about consultation
+  },
+  endedBy: string,                  // OPTIONAL, ENUM: DOCTOR, PATIENT, SYSTEM - Who ended the call
+  cancellationReason: string,       // OPTIONAL - Reason if cancelled
+
+  // Timestamps
+  createdAt: Date,                  // AUTO - Document creation timestamp
+  updatedAt: Date                   // AUTO - Last update timestamp
+}
+```
+
+**Indexes:**
+
+```javascript
+{ appointmentId: 1 }                         // Find consultations by appointment
+{ roomId: 1 }                                // Find consultation by room
+{ doctorId: 1, scheduledStartTime: -1 }      // Doctor's consultations sorted by time
+{ patientId: 1, scheduledStartTime: -1 }     // Patient's consultations sorted by time
+{ status: 1, scheduledStartTime: -1 }        // Filter by status and time
+```
+
+**Validation Rules:**
+
+1. **consultationId** - Must be unique across all video consultations
+2. **appointmentId** - Must reference a valid appointment with appointmentType = 'ONLINE'
+3. **doctorId** and **patientId** - Must reference valid users
+4. **roomId** - Must be unique to prevent room conflicts
+5. **status** - Must be one of: SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
+6. **recordingSize** - Must be >= 0 (in MB)
+7. **feedback.doctorRating** and **feedback.patientRating** - Must be between 1-5
+8. **endedBy** - Must be one of: DOCTOR, PATIENT, SYSTEM
+
+**Status Workflow:**
+
+```
+SCHEDULED → IN_PROGRESS → COMPLETED
+    ↓            ↓
+CANCELLED    CANCELLED
+    ↓
+ NO_SHOW
+```
+
+- **SCHEDULED**: Consultation created, waiting for participants
+- **IN_PROGRESS**: Both doctor and patient have joined
+- **COMPLETED**: Consultation ended successfully
+- **CANCELLED**: Consultation cancelled before/during session
+- **NO_SHOW**: Patient didn't join within expected time
+
+**Sample Data:**
+
+```javascript
+{
+  "_id": ObjectId("507f1f77bcf86cd799439011"),
+  "consultationId": "VC-1728123456",
+  "appointmentId": ObjectId("507f1f77bcf86cd799439012"),
+  "doctorId": ObjectId("507f1f77bcf86cd799439013"),
+  "doctorName": "Dr. Sarah Johnson",
+  "patientId": ObjectId("507f1f77bcf86cd799439014"),
+  "patientName": "John Doe",
+  "roomId": "opd-wallet-vc-1728123456",
+  "roomName": "Dr. Sarah Johnson - John Doe Consultation",
+  "roomPassword": "secure123",
+  "jitsiDomain": "meet.jit.si",
+  "roomUrl": "https://meet.jit.si/opd-wallet-vc-1728123456",
+  "scheduledStartTime": ISODate("2025-10-15T10:00:00Z"),
+  "actualStartTime": ISODate("2025-10-15T10:02:00Z"),
+  "endTime": ISODate("2025-10-15T10:17:00Z"),
+  "duration": 15,
+  "status": "COMPLETED",
+  "doctorJoinedAt": ISODate("2025-10-15T10:00:30Z"),
+  "patientJoinedAt": ISODate("2025-10-15T10:02:00Z"),
+  "recordingEnabled": false,
+  "videoQuality": "HD",
+  "audioQuality": "Good",
+  "networkIssues": [],
+  "prescriptionId": ObjectId("507f1f77bcf86cd799439015"),
+  "feedback": {
+    "doctorRating": 5,
+    "patientRating": 4,
+    "patientComments": "Very helpful consultation, doctor explained everything clearly"
+  },
+  "endedBy": "DOCTOR",
+  "createdAt": ISODate("2025-10-15T09:55:00Z"),
+  "updatedAt": ISODate("2025-10-15T10:17:30Z")
+}
+```
+
+**Relationships:**
+
+- **appointmentId** references `appointments._id`
+- **doctorId** references `users._id` (where role = 'DOCTOR')
+- **patientId** references `users._id` (where role = 'MEMBER')
+- **prescriptionId** references `doctor_prescriptions._id` (if prescription uploaded)
+
+**Access Control:**
+
+- **Doctors**: Can start consultations, view own consultations, end consultations
+- **Patients/Members**: Can join consultations, view own consultations
+- **Admin/Operations**: Can view all consultations, access quality metrics
+- **System**: Can automatically update status, track network issues
+
+**API Integration:**
+
+```
+POST   /api/video-consultations/start           # Doctor starts consultation
+POST   /api/video-consultations/join            # Patient joins consultation
+POST   /api/video-consultations/:id/end         # Doctor ends consultation
+GET    /api/video-consultations/:id/status      # Get consultation status
+GET    /api/video-consultations/doctor/history  # Doctor's consultation history
+GET    /api/video-consultations/patient/history # Patient's consultation history
+```
+
+**Key Features:**
+
+- **WebRTC Integration**: Built-in Jitsi Meet support for video/audio
+- **Room Management**: Unique rooms with optional password protection
+- **Quality Tracking**: Monitor video/audio quality and network issues
+- **Feedback System**: Bi-directional rating and comments
+- **Recording Support**: Optional consultation recording
+- **Comprehensive Metrics**: Track join times, duration, and completion rates
+
+---
+
+### 19. memberclaims
 
 **Collection Name:** `memberclaims`
 **Purpose:** Complete claims/reimbursement management with TPA integration
@@ -2246,7 +2436,7 @@ enum PaymentStatus {
 
 ---
 
-### 19. notifications
+### 20. notifications
 
 **Collection Name:** `notifications`
 **Purpose:** System notifications for claims, assignments, and status updates
@@ -2348,7 +2538,7 @@ enum NotificationPriority {
 
 ---
 
-### 20. lab_prescriptions
+### 21. lab_prescriptions
 
 **Collection Name:** `lab_prescriptions`
 **Purpose:** Store uploaded lab test prescriptions from members
@@ -2446,7 +2636,7 @@ enum PrescriptionStatus {
 
 ---
 
-### 21. lab_carts
+### 22. lab_carts
 
 **Collection Name:** `lab_carts`
 **Purpose:** Digitized lab test carts with services from prescriptions
@@ -2549,7 +2739,7 @@ enum CartStatus {
 
 ---
 
-### 22. lab_services
+### 23. lab_services
 
 **Collection Name:** `lab_services`
 **Purpose:** Master catalog of lab diagnostic services/tests
@@ -2625,7 +2815,7 @@ enum LabServiceCategory {
 
 ---
 
-### 23. lab_vendors
+### 24. lab_vendors
 
 **Collection Name:** `lab_vendors`
 **Purpose:** Partner laboratory vendors and diagnostic centers
@@ -2708,7 +2898,7 @@ enum LabServiceCategory {
 
 ---
 
-### 24. lab_vendor_pricing
+### 25. lab_vendor_pricing
 
 **Collection Name:** `lab_vendor_pricing`
 **Purpose:** Vendor-specific pricing for lab services
@@ -2765,7 +2955,7 @@ enum LabServiceCategory {
 
 ---
 
-### 25. lab_vendor_slots
+### 26. lab_vendor_slots
 
 **Collection Name:** `lab_vendor_slots`
 **Purpose:** Available time slots for sample collection at vendor locations
@@ -2831,7 +3021,7 @@ enum LabServiceCategory {
 
 ---
 
-### 26. lab_orders
+### 27. lab_orders
 
 **Collection Name:** `lab_orders`
 **Purpose:** Final lab test orders with payment and report tracking
@@ -3058,6 +3248,12 @@ users._id ← appointments.userId
 specialty_master.specialtyId ← doctors.specialtyId
 category_master.code ← service_master.category
 
+// Video Consultations Relationships ✨ NEW (v6.7)
+appointments._id ← video_consultations.appointmentId
+users._id ← video_consultations.doctorId
+users._id ← video_consultations.patientId
+doctor_prescriptions._id ← video_consultations.prescriptionId
+
 // Claims & TPA Relationships
 users._id ← memberclaims.userId
 users._id ← memberclaims.assignedTo (TPA_USER)
@@ -3172,9 +3368,48 @@ None currently identified
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** October 6, 2025 (Major Update - Complete Lab & TPA Schemas)
+**Document Version:** 3.3
+**Last Updated:** October 15, 2025 (Video Consultations Integration - v6.7)
 **For Questions:** Contact development team
+
+---
+
+## RECENT CHANGES
+
+### Version 3.3 (2025-10-15) - Video Consultations Integration ✨ v6.7
+
+**New Collection Added:**
+- **video_consultations** - Complete video consultation system with WebRTC integration
+
+**Key Features:**
+- Jitsi Meet integration for video/audio consultations
+- Consultation lifecycle management (SCHEDULED → IN_PROGRESS → COMPLETED/CANCELLED/NO_SHOW)
+- Participant tracking (doctor and patient join times)
+- Quality metrics (video/audio quality, network issues)
+- Optional recording support
+- Post-consultation feedback system (bi-directional ratings)
+- Comprehensive metadata (room details, timing, duration)
+
+**Schema Highlights:**
+- Full schema with 20+ fields covering all consultation aspects
+- 5 indexes for optimal query performance
+- Status workflow with 5 states
+- Relationship to appointments, users, and prescriptions
+- WebRTC room management with password protection
+
+**API Endpoints:**
+- POST /api/video-consultations/start (Doctor only)
+- POST /api/video-consultations/join (Member only)
+- POST /api/video-consultations/:id/end (Doctor only)
+- GET /api/video-consultations/:id/status
+- GET /api/video-consultations/doctor/history
+- GET /api/video-consultations/patient/history
+
+**Updated Sections:**
+- Total collections: 27 → 28
+- Added video_consultations to Healthcare Collections
+- Added video consultation relationships
+- Updated table of contents and navigation
 
 ---
 
