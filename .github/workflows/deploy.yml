@@ -24,15 +24,15 @@ jobs:
             echo "🚀 Starting deployment..."
 
             # Ensure we're in the right directory
-            if [ -d ~/opdwallet ]; then
-              cd ~/opdwallet
+            if [ -d ~/opdwallet_aws ]; then
+              cd ~/opdwallet_aws
               echo "📥 Pulling latest code..."
               git pull origin main || git reset --hard origin/main
             else
               echo "📁 Cloning repository..."
               cd ~
-              git clone https://github.com/anilkumar1510/opdwallet.git
-              cd opdwallet
+              git clone https://github.com/anilkumar1510/opdwallet_aws.git
+              cd opdwallet_aws
             fi
 
             # Ensure deployment script is executable
@@ -70,9 +70,18 @@ jobs:
             # Clean up Docker to free memory
             docker system prune -af --volumes 2>/dev/null || true
 
+            # Ensure we're in the project directory
+            cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }
+
             # Simple build and run
             echo "🔨 Building and starting services..."
             docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+            # Check if docker-compose succeeded
+            if [ $? -ne 0 ]; then
+              echo "❌ ERROR: Docker-compose failed"
+              exit 1
+            fi
 
             # Wait for services
             sleep 30
