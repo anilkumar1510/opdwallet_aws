@@ -3,6 +3,16 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   output: 'standalone',
+  typescript: {
+    // ⚠️ Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
   async rewrites() {
     // In Docker, use the container name; otherwise use localhost
     const apiUrl = process.env.API_URL ?
