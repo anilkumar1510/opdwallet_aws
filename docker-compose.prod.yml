@@ -52,6 +52,8 @@ services:
       COOKIE_HTTPONLY: ${COOKIE_HTTPONLY}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE}
       COOKIE_MAX_AGE: ${COOKIE_MAX_AGE}
+    volumes:
+      - ./api/uploads:/app/uploads
     depends_on:
       - mongodb
     networks:
