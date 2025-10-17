@@ -15,6 +15,7 @@ services:
       - api
       - web-admin
       - web-member
+      - web-doctor
     restart: unless-stopped
     networks:
       - opd-network
@@ -90,6 +91,24 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
     container_name: opd-web-member-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000/api
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+    depends_on:
+      - api
+    networks:
+      - opd-network
+
+  # Doctor Portal (Next.js)
+  web-doctor:
+    build:
+      context: ./web-doctor
+      dockerfile: Dockerfile.production
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+    container_name: opd-web-doctor-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production

@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: '/doctor',
+  output: 'standalone',
   // Removed rewrites - using API route handlers instead to properly forward cookies
   typescript: {
     // ⚠️ Dangerously allow production builds to successfully complete even if
