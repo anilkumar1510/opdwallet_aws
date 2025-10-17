@@ -125,6 +125,15 @@ export class MemberClaim {
   copayAmount: number;
 
   @Prop({ type: Number })
+  walletDebitAmount: number;
+
+  @Prop()
+  paymentId: string;
+
+  @Prop()
+  transactionId: string;
+
+  @Prop({ type: Number })
   deductibleAmount: number;
 
   @Prop({ type: Number })

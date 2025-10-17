@@ -18,6 +18,12 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { UpdateClaimDto } from './dto/update-claim.dto';
 import { WalletService } from '../wallet/wallet.service';
+import { PlanConfigService } from '../plan-config/plan-config.service';
+import { PaymentService } from '../payments/payment.service';
+import { TransactionSummaryService } from '../transactions/transaction-summary.service';
+import { CopayCalculator } from '../plan-config/utils/copay-calculator';
+import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
+import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { UserRole } from '@/common/constants/roles.enum';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
@@ -37,6 +43,9 @@ export class MemberClaimsService {
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
     private readonly walletService: WalletService,
+    private readonly planConfigService: PlanConfigService,
+    private readonly paymentService: PaymentService,
+    private readonly transactionService: TransactionSummaryService,
   ) {}
 
   /**
@@ -191,7 +200,7 @@ export class MemberClaimsService {
     }
   }
 
-  async submitClaim(claimId: string, userId: string): Promise<MemberClaimDocument> {
+  async submitClaim(claimId: string, userId: string): Promise<any> {
     const claim = await this.findByClaimId(claimId);
 
     if (!claim) {
@@ -213,37 +222,170 @@ export class MemberClaimsService {
       throw new BadRequestException('Please upload at least one document');
     }
 
-    // Check and debit wallet for Consult category only
-    const categoryCode = CATEGORY_CODE_MAP[claim.category];
-    if (categoryCode && claim.billAmount > 0) {
-      console.log('🟡 [CLAIMS SERVICE] Checking wallet balance for claim:', {
-        claimId,
-        category: claim.category,
-        categoryCode,
-        amount: claim.billAmount
-      });
+    console.log('💰 [CLAIMS SERVICE] Starting claim submission with copay/payment logic');
+    console.log('💰 [CLAIMS SERVICE] Bill amount:', claim.billAmount);
+    console.log('💰 [CLAIMS SERVICE] Category:', claim.category);
 
+    const categoryCode = CATEGORY_CODE_MAP[claim.category];
+    if (!categoryCode) {
+      throw new BadRequestException(`Category ${claim.category} does not support wallet operations`);
+    }
+
+    const claimUserId = claim.userId.toString();
+
+    // Step 1: Get policy config and copay settings
+    let copayCalculation = null;
+    let policyId = null;
+
+    try {
+      // Fetch user's assignment to get policyId
+      const user = await this.userModel.findById(claimUserId).lean();
+      if (user && user.memberId) {
+        const assignment = await (this.walletService as any)['assignmentModel']
+          .findOne({ memberId: user.memberId })
+          .populate('policyId')
+          .lean()
+          .exec();
+
+        if (assignment && assignment.policyId) {
+          policyId = assignment.policyId._id || assignment.policyId;
+          console.log('💰 [CLAIMS SERVICE] Found policyId:', policyId);
+
+          // Fetch plan config
+          const planConfig = await this.planConfigService.getConfig(policyId.toString());
+
+          if (planConfig && planConfig.benefits && (planConfig.benefits as any)[categoryCode]) {
+            const categoryBenefit = (planConfig.benefits as any)[categoryCode];
+            const copayConfig = categoryBenefit.copay;
+
+            if (copayConfig && categoryBenefit.enabled) {
+              console.log('💰 [CLAIMS SERVICE] Copay config found:', copayConfig);
+              copayCalculation = CopayCalculator.calculate(claim.billAmount, copayConfig);
+              console.log('💰 [CLAIMS SERVICE] Copay calculation:', copayCalculation);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ [CLAIMS SERVICE] Could not fetch policy/copay config:', error.message);
+      // Continue without copay if config fetch fails
+    }
+
+    // Step 2: Determine payment breakdown
+    const copayAmount = copayCalculation ? copayCalculation.copayAmount : 0;
+    const walletDebitAmount = copayCalculation ? copayCalculation.walletDebitAmount : claim.billAmount;
+
+    console.log('💰 [CLAIMS SERVICE] Payment breakdown:');
+    console.log('  - Total bill: ₹' + claim.billAmount);
+    console.log('  - Wallet debit: ₹' + walletDebitAmount);
+    console.log('  - Copay (member pays): ₹' + copayAmount);
+
+    // Step 3: Check wallet balance
+    let hasSufficientBalance = false;
+    let availableBalance = 0;
+
+    if (walletDebitAmount > 0) {
       try {
-        // Check sufficient balance - use claim owner's userId, not logged-in user
         const balanceCheck = await this.walletService.checkSufficientBalance(
-          claim.userId.toString(),
-          claim.billAmount,
+          claimUserId,
+          walletDebitAmount,
           categoryCode
         );
+        hasSufficientBalance = balanceCheck.hasSufficient;
+        availableBalance = balanceCheck.categoryBalance || 0;
+        console.log('💰 [CLAIMS SERVICE] Balance check:', {
+          required: walletDebitAmount,
+          available: availableBalance,
+          sufficient: hasSufficientBalance,
+        });
+      } catch (error) {
+        console.error('❌ [CLAIMS SERVICE] Balance check failed:', error.message);
+        throw error;
+      }
+    } else {
+      hasSufficientBalance = true; // No wallet debit needed
+    }
 
-        if (!balanceCheck.hasSufficient) {
-          console.warn(`⚠️ [CLAIMS SERVICE] Insufficient wallet balance. Available: ₹${balanceCheck.categoryBalance}, Required: ₹${claim.billAmount}`);
-          throw new BadRequestException(
-            `Insufficient wallet balance. Available: ₹${balanceCheck.categoryBalance} in ${claim.category} category, Required: ₹${claim.billAmount}`
-          );
-        }
+    // Step 4: Handle payment scenarios
+    let paymentRequired = false;
+    let paymentId = null;
+    let transactionId = null;
 
-        console.log('✅ [CLAIMS SERVICE] Sufficient balance available, debiting wallet');
+    // Scenario A: Insufficient wallet balance - throw error (for claims, we don't allow submission without sufficient balance)
+    if (!hasSufficientBalance && walletDebitAmount > 0) {
+      throw new BadRequestException(
+        `Insufficient wallet balance. Available: ₹${availableBalance} in ${claim.category} category, Required: ₹${walletDebitAmount}`
+      );
+    }
 
-        // Debit wallet - use claim owner's userId, not logged-in user
+    // Scenario B: Sufficient balance + copay - debit wallet now, create copay payment
+    if (hasSufficientBalance && copayAmount > 0) {
+      console.log('💰 [CLAIMS SERVICE] Sufficient balance + copay - will debit wallet and create copay payment');
+      paymentRequired = true;
+
+      try {
+        // Debit wallet
         await this.walletService.debitWallet(
-          claim.userId.toString(),
-          claim.billAmount,
+          claimUserId,
+          walletDebitAmount,
+          categoryCode,
+          (claim._id as any).toString(),
+          'CLAIM',
+          claim.providerName || 'Provider',
+          `Claim ${claimId} (wallet portion) - ${claim.category} - ${claim.providerName || 'Provider'}`
+        );
+
+        console.log('✅ [CLAIMS SERVICE] Wallet debited: ₹' + walletDebitAmount);
+
+        // Create copay payment request
+        const copayPayment = await this.paymentService.createPaymentRequest({
+          userId: claimUserId,
+          amount: copayAmount,
+          paymentType: PaymentType.COPAY,
+          serviceType: PaymentServiceType.CLAIM,
+          serviceId: (claim._id as any).toString(),
+          serviceReferenceId: claimId,
+          description: `Copay for claim ${claimId} - ${claim.category}`,
+        });
+
+        paymentId = copayPayment.paymentId;
+        claim.paymentId = paymentId;
+        claim.copayAmount = copayAmount;
+        claim.walletDebitAmount = walletDebitAmount;
+
+        // Create transaction summary
+        const transaction = await this.transactionService.createTransaction({
+          userId: claimUserId,
+          serviceType: TransactionServiceType.CLAIM,
+          serviceId: (claim._id as any).toString(),
+          serviceReferenceId: claimId,
+          serviceName: `${claim.category} Claim - ${claim.providerName || 'Provider'}`,
+          serviceDate: claim.treatmentDate || new Date(),
+          totalAmount: claim.billAmount,
+          walletAmount: walletDebitAmount,
+          selfPaidAmount: copayAmount,
+          copayAmount: copayAmount,
+          paymentMethod: PaymentMethod.COPAY,
+          paymentId: paymentId,
+          status: TransactionStatus.PENDING_PAYMENT,
+        });
+
+        transactionId = transaction.transactionId;
+        claim.transactionId = transactionId;
+
+        console.log('✅ [CLAIMS SERVICE] Copay payment created:', paymentId);
+      } catch (error) {
+        console.error('❌ [CLAIMS SERVICE] Payment/transaction failed:', error);
+        throw new BadRequestException('Failed to process payment: ' + error.message);
+      }
+    }
+
+    // Scenario C: Sufficient balance, no copay - debit wallet, create completed transaction
+    else if (walletDebitAmount > 0) {
+      try {
+        await this.walletService.debitWallet(
+          claimUserId,
+          walletDebitAmount,
           categoryCode,
           (claim._id as any).toString(),
           'CLAIM',
@@ -251,19 +393,54 @@ export class MemberClaimsService {
           `Claim ${claimId} - ${claim.category} - ${claim.providerName || 'Provider'}`
         );
 
-        console.log('✅ [CLAIMS SERVICE] Wallet debited successfully');
-      } catch (walletError) {
-        console.error('❌ [CLAIMS SERVICE] Wallet operation failed:', walletError);
-        // Re-throw wallet errors to prevent claim submission
-        throw walletError;
+        console.log('✅ [CLAIMS SERVICE] Wallet debited: ₹' + walletDebitAmount);
+
+        claim.walletDebitAmount = walletDebitAmount;
+
+        // Create completed transaction
+        const transaction = await this.transactionService.createTransaction({
+          userId: claimUserId,
+          serviceType: TransactionServiceType.CLAIM,
+          serviceId: (claim._id as any).toString(),
+          serviceReferenceId: claimId,
+          serviceName: `${claim.category} Claim - ${claim.providerName || 'Provider'}`,
+          serviceDate: claim.treatmentDate || new Date(),
+          totalAmount: claim.billAmount,
+          walletAmount: walletDebitAmount,
+          selfPaidAmount: 0,
+          copayAmount: 0,
+          paymentMethod: PaymentMethod.WALLET_ONLY,
+          status: TransactionStatus.COMPLETED,
+        });
+
+        transactionId = transaction.transactionId;
+        claim.transactionId = transactionId;
+
+        console.log('✅ [CLAIMS SERVICE] Transaction completed');
+      } catch (error) {
+        console.error('❌ [CLAIMS SERVICE] Wallet/transaction failed:', error);
+        throw new BadRequestException('Failed to process wallet debit: ' + error.message);
       }
     }
 
+    // Update claim status
     claim.status = ClaimStatus.SUBMITTED;
     claim.submittedAt = new Date();
     claim.updatedBy = userId;
 
-    return claim.save();
+    const savedClaim = await claim.save();
+
+    console.log('✅ [CLAIMS SERVICE] Claim submitted successfully');
+
+    // Return claim with payment info
+    return {
+      claim: savedClaim,
+      paymentRequired,
+      paymentId,
+      transactionId,
+      copayAmount,
+      walletDebitAmount,
+    };
   }
 
   async findAll(

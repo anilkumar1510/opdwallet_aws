@@ -30,6 +30,8 @@ import { PrescriptionsModule } from './modules/doctors/prescriptions.module';
 import { LocationModule } from './modules/location/location.module';
 import { OperationsModule } from './modules/operations/operations.module';
 import { VideoConsultationModule } from './modules/video-consultation/video-consultation.module';
+import { PaymentModule } from './modules/payments/payment.module';
+import { TransactionSummaryModule } from './modules/transactions/transaction-summary.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -96,6 +98,8 @@ import configuration from './config/configuration';
     LocationModule,
     OperationsModule,
     VideoConsultationModule,
+    PaymentModule,
+    TransactionSummaryModule,
   ],
 })
 export class AppModule {}

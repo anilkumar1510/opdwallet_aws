@@ -9,6 +9,7 @@ export enum AppointmentType {
 }
 
 export enum AppointmentStatus {
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
   PENDING_CONFIRMATION = 'PENDING_CONFIRMATION',
   CONFIRMED = 'CONFIRMED',
   COMPLETED = 'COMPLETED',
@@ -112,6 +113,19 @@ export class Appointment {
 
   @Prop({ default: false })
   hasPrescription: boolean;
+
+  // Payment breakdown fields
+  @Prop({ default: 0 })
+  copayAmount: number;
+
+  @Prop({ default: 0 })
+  walletDebitAmount: number;
+
+  @Prop()
+  paymentId: string;
+
+  @Prop()
+  transactionId: string;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
