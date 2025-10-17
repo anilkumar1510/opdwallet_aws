@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, memo } from 'react'
 import { uploadPrescription } from '@/lib/api/prescriptions'
+import { MAX_FILE_SIZE_BYTES, ALLOWED_PRESCRIPTION_TYPES } from '@/lib/utils/constants'
 import {
   DocumentArrowUpIcon,
   CheckCircleIcon,
@@ -13,7 +14,7 @@ interface PrescriptionUploadProps {
   onSuccess?: () => void
 }
 
-export default function PrescriptionUpload({ appointmentId, onSuccess }: PrescriptionUploadProps) {
+function PrescriptionUpload({ appointmentId, onSuccess }: PrescriptionUploadProps) {
   const [file, setFile] = useState<File | null>(null)
   const [diagnosis, setDiagnosis] = useState('')
   const [notes, setNotes] = useState('')
@@ -27,14 +28,14 @@ export default function PrescriptionUpload({ appointmentId, onSuccess }: Prescri
     if (!selectedFile) return
 
     // Validate file type
-    if (selectedFile.type !== 'application/pdf') {
+    if (!ALLOWED_PRESCRIPTION_TYPES.includes(selectedFile.type)) {
       setError('Only PDF files are allowed')
       setFile(null)
       return
     }
 
-    // Validate file size (10MB)
-    if (selectedFile.size > 10 * 1024 * 1024) {
+    // Validate file size
+    if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
       setError('File size must be less than 10MB')
       setFile(null)
       return
@@ -209,3 +210,5 @@ export default function PrescriptionUpload({ appointmentId, onSuccess }: Prescri
     </div>
   )
 }
+
+export default memo(PrescriptionUpload)

@@ -67,93 +67,123 @@ export class DoctorsService {
       this.logger.log(`[findAll] Using provided coordinates: lat=${userLatitude}, lng=${userLongitude}`);
     }
 
-    // Populate clinics for each doctor from doctor_slots
-    const doctorsWithClinics = await Promise.all(
-      doctors.map(async (doctor) => {
-        const doctorObj = doctor.toObject();
+    // PERFORMANCE OPTIMIZATION: Fetch all slots and clinics in batch to avoid N+1 queries
+    // Before: N doctors = 1 + N slot queries + N clinic queries = 1 + 2N queries
+    // After: N doctors = 1 + 1 slot query + 1 clinic query = 3 queries total
 
-        // Find all slots for this doctor with consultation type IN_CLINIC
-        const slots = await this.doctorSlotModel
-          .find({
-            doctorId: doctor.doctorId,
-            isActive: true,
-            consultationType: 'IN_CLINIC'
-          })
-          .exec();
+    const doctorIds = doctors.map(d => d.doctorId);
 
-        // Get unique clinicIds and their consultation fees
-        const clinicFeeMap = new Map();
-        slots.forEach(slot => {
-          if (!clinicFeeMap.has(slot.clinicId)) {
-            clinicFeeMap.set(slot.clinicId, slot.consultationFee);
+    // Fetch all slots for all doctors in ONE query
+    const allSlots = await this.doctorSlotModel
+      .find({
+        doctorId: { $in: doctorIds },
+        isActive: true,
+        consultationType: 'IN_CLINIC'
+      })
+      .lean()
+      .exec();
+
+    // Build a map: doctorId -> slots[]
+    const doctorSlotsMap = new Map<string, any[]>();
+    const allClinicIds = new Set<string>();
+
+    allSlots.forEach(slot => {
+      if (!doctorSlotsMap.has(slot.doctorId)) {
+        doctorSlotsMap.set(slot.doctorId, []);
+      }
+      doctorSlotsMap.get(slot.doctorId)!.push(slot);
+      allClinicIds.add(slot.clinicId);
+    });
+
+    // Fetch all clinics in ONE query
+    const allClinics = await this.clinicModel
+      .find({ clinicId: { $in: Array.from(allClinicIds) }, isActive: true })
+      .select('clinicId name address location contactNumber facilities')
+      .lean()
+      .exec();
+
+    // Build a map: clinicId -> clinic
+    const clinicMap = new Map();
+    allClinics.forEach(clinic => {
+      clinicMap.set(clinic.clinicId, clinic);
+    });
+
+    // Transform doctors with their clinics using the maps (no more DB queries!)
+    const doctorsWithClinics = doctors.map(doctor => {
+      const doctorObj = doctor.toObject();
+      const slots = doctorSlotsMap.get(doctor.doctorId) || [];
+
+      // Build clinicId -> consultation fee map for this doctor
+      const clinicFeeMap = new Map();
+      slots.forEach(slot => {
+        if (!clinicFeeMap.has(slot.clinicId)) {
+          clinicFeeMap.set(slot.clinicId, slot.consultationFee);
+        }
+      });
+
+      // Get unique clinic IDs for this doctor
+      const doctorClinicIds = Array.from(clinicFeeMap.keys());
+
+      // Transform clinics to match frontend expectations and calculate distances
+      const transformedClinics = doctorClinicIds
+        .map(clinicId => {
+          const clinicObj = clinicMap.get(clinicId);
+          if (!clinicObj) return null;
+
+          // Build address with fallbacks for missing fields
+          const addressParts = [];
+          if (clinicObj.address?.line1) addressParts.push(clinicObj.address.line1);
+          if (clinicObj.address?.city) addressParts.push(clinicObj.address.city);
+          if (clinicObj.address?.state) addressParts.push(clinicObj.address.state);
+          const addressStr = addressParts.join(', ');
+          const pincode = clinicObj.address?.pincode ? ` - ${clinicObj.address.pincode}` : '';
+
+          // Calculate distance if user location is provided
+          let distance: number | null = null;
+          if (userLatitude && userLongitude && clinicObj.location?.latitude && clinicObj.location?.longitude) {
+            distance = this.locationService.calculateDistance(
+              userLatitude,
+              userLongitude,
+              clinicObj.location.latitude,
+              clinicObj.location.longitude,
+            );
           }
+
+          return {
+            clinicId: clinicObj.clinicId,
+            name: clinicObj.name,
+            address: addressStr + pincode,
+            city: clinicObj.address?.city || '',
+            state: clinicObj.address?.state || '',
+            pincode: clinicObj.address?.pincode || '',
+            consultationFee: clinicFeeMap.get(clinicObj.clinicId) || 0,
+            location: clinicObj.location,
+            facilities: clinicObj.facilities || [],
+            distance, // Add distance in km
+            distanceText: distance ? `${distance} km` : null,
+          };
+        })
+        .filter((clinic): clinic is NonNullable<typeof clinic> => clinic !== null)
+        .filter(clinic => {
+          // Filter by radius if location is provided
+          if (userLatitude && userLongitude && clinic.distance !== null) {
+            return clinic.distance <= radius;
+          }
+          return true; // If no location filter, include all clinics
+        })
+        .sort((a, b) => {
+          // Sort by distance (closest first)
+          if (a.distance !== null && b.distance !== null) {
+            return a.distance - b.distance;
+          }
+          return 0;
         });
 
-        // Get clinic details for each unique clinicId
-        const clinicIds = Array.from(clinicFeeMap.keys());
-        const clinics = await this.clinicModel
-          .find({ clinicId: { $in: clinicIds }, isActive: true })
-          .select('clinicId name address location contactNumber facilities')
-          .exec();
-
-        // Transform clinics to match frontend expectations and calculate distances
-        const transformedClinics = clinics
-          .map(clinic => {
-            const clinicObj = clinic.toObject();
-            // Build address with fallbacks for missing fields
-            const addressParts = [];
-            if (clinicObj.address?.line1) addressParts.push(clinicObj.address.line1);
-            if (clinicObj.address?.city) addressParts.push(clinicObj.address.city);
-            if (clinicObj.address?.state) addressParts.push(clinicObj.address.state);
-            const addressStr = addressParts.join(', ');
-            const pincode = clinicObj.address?.pincode ? ` - ${clinicObj.address.pincode}` : '';
-
-            // Calculate distance if user location is provided
-            let distance: number | null = null;
-            if (userLatitude && userLongitude && clinicObj.location?.latitude && clinicObj.location?.longitude) {
-              distance = this.locationService.calculateDistance(
-                userLatitude,
-                userLongitude,
-                clinicObj.location.latitude,
-                clinicObj.location.longitude,
-              );
-            }
-
-            return {
-              clinicId: clinicObj.clinicId,
-              name: clinicObj.name,
-              address: addressStr + pincode,
-              city: clinicObj.address?.city || '',
-              state: clinicObj.address?.state || '',
-              pincode: clinicObj.address?.pincode || '',
-              consultationFee: clinicFeeMap.get(clinicObj.clinicId) || 0,
-              location: clinicObj.location,
-              facilities: clinicObj.facilities || [],
-              distance, // Add distance in km
-              distanceText: distance ? `${distance} km` : null,
-            };
-          })
-          .filter(clinic => {
-            // Filter by radius if location is provided
-            if (userLatitude && userLongitude && clinic.distance !== null) {
-              return clinic.distance <= radius;
-            }
-            return true; // If no location filter, include all clinics
-          })
-          .sort((a, b) => {
-            // Sort by distance (closest first)
-            if (a.distance !== null && b.distance !== null) {
-              return a.distance - b.distance;
-            }
-            return 0;
-          });
-
-        return {
-          ...doctorObj,
-          clinics: transformedClinics,
-        };
-      })
-    );
+      return {
+        ...doctorObj,
+        clinics: transformedClinics,
+      };
+    });
 
     // Filter out doctors with no clinics (if location filter applied)
     const filteredDoctors = doctorsWithClinics.filter(doctor => doctor.clinics.length > 0);

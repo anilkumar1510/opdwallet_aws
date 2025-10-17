@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import Link from 'next/link'
 import { Appointment, confirmAppointment } from '@/lib/api/appointments'
+import { getStatusColor, getAppointmentTypeText } from '@/lib/utils/appointment-helpers'
 import {
   ClockIcon,
   UserIcon,
@@ -16,22 +17,8 @@ interface AppointmentCardProps {
   onUpdate?: () => void
 }
 
-export default function AppointmentCard({ appointment, onUpdate }: AppointmentCardProps) {
+function AppointmentCard({ appointment, onUpdate }: AppointmentCardProps) {
   const [confirming, setConfirming] = useState(false)
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return 'bg-blue-100 text-blue-800'
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800'
-      case 'PENDING_CONFIRMATION':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   const getTypeIcon = (type: string) => {
     if (type === 'ONLINE') {
@@ -73,7 +60,7 @@ export default function AppointmentCard({ appointment, onUpdate }: AppointmentCa
               {appointment.patientName}
             </h3>
             <p className="text-sm text-gray-500">
-              {appointment.appointmentType === 'ONLINE' ? 'Online Consultation' : 'In-Clinic Visit'}
+              {getAppointmentTypeText(appointment.appointmentType)}
             </p>
           </div>
         </div>
@@ -132,3 +119,5 @@ export default function AppointmentCard({ appointment, onUpdate }: AppointmentCa
     </div>
   )
 }
+
+export default memo(AppointmentCard)

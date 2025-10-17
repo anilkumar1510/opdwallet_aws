@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getAppointmentDetails, markAppointmentComplete } from '@/lib/api/appointments'
 import { Appointment } from '@/lib/api/appointments'
+import { getStatusColor, getAppointmentTypeText } from '@/lib/utils/appointment-helpers'
 import PrescriptionUpload from '@/components/PrescriptionUpload'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import {
   ArrowLeftIcon,
   UserIcon,
@@ -57,21 +59,6 @@ export default function AppointmentDetailPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return 'bg-blue-100 text-blue-800'
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800'
-      case 'PENDING_CONFIRMATION':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -93,6 +80,7 @@ export default function AppointmentDetailPage() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back Button */}
       <Link
@@ -145,7 +133,7 @@ export default function AppointmentDetailPage() {
             <div>
               <p className="text-sm text-gray-600">Type</p>
               <p className="font-medium text-gray-900">
-                {appointment.appointmentType === 'ONLINE' ? 'Online Consultation' : 'In-Clinic Visit'}
+                {getAppointmentTypeText(appointment.appointmentType)}
               </p>
             </div>
           </div>
@@ -219,5 +207,6 @@ export default function AppointmentDetailPage() {
         />
       )}
     </div>
+    </ErrorBoundary>
   )
 }

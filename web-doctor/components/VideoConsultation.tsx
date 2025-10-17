@@ -109,21 +109,17 @@ export default function VideoConsultation({
 
         // Listen for conference events
         apiRef.current.addEventListener('videoConferenceJoined', () => {
-          console.log('[VideoConsultation] Doctor joined the conference')
           setIsLoading(false)
         })
 
         apiRef.current.addEventListener('videoConferenceLeft', () => {
-          console.log('[VideoConsultation] Conference ended')
           onEnd()
         })
 
         apiRef.current.addEventListener('readyToClose', () => {
-          console.log('[VideoConsultation] Ready to close')
           onEnd()
         })
       } catch (err: any) {
-        console.error('[VideoConsultation] Failed to initialize Jitsi:', err)
         setError(err.message || 'Failed to initialize video consultation')
         setIsLoading(false)
       }

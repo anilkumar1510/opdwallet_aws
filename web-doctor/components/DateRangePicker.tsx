@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from '@heroicons/react/24/outline'
 
 interface DateInfo {
@@ -19,7 +19,7 @@ interface DateRangePickerProps {
   onFetchMoreCounts?: () => Promise<void>
 }
 
-export default function DateRangePicker({ selectedDate, onDateChange, appointmentCounts, onFetchMoreCounts }: DateRangePickerProps) {
+function DateRangePicker({ selectedDate, onDateChange, appointmentCounts, onFetchMoreCounts }: DateRangePickerProps) {
   const [showCalendar, setShowCalendar] = useState(false)
   const [dateOffset, setDateOffset] = useState(0) // Offset in weeks from current week
   const [loadingMore, setLoadingMore] = useState(false)
@@ -226,3 +226,5 @@ export default function DateRangePicker({ selectedDate, onDateChange, appointmen
     </div>
   )
 }
+
+export default memo(DateRangePicker)

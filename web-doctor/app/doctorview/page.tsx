@@ -6,6 +6,7 @@ import { Appointment } from '@/lib/api/appointments'
 import { getDoctorProfile } from '@/lib/api/auth'
 import AppointmentCard from '@/components/AppointmentCard'
 import DateRangePicker from '@/components/DateRangePicker'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -109,6 +110,7 @@ export default function DashboardPage() {
   })
 
   return (
+    <ErrorBoundary>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-6">
@@ -277,5 +279,6 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   )
 }

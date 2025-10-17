@@ -46,11 +46,9 @@ export default function VideoConsultationPage() {
       }
 
       // Start the consultation using the MongoDB _id
-      console.log('[VideoConsultation] Starting consultation with appointment._id:', appointment._id)
       const consultationData = await startVideoConsultation(appointment._id)
       setConsultation(consultationData)
     } catch (err: any) {
-      console.error('[VideoConsultationPage] Error:', err)
       setError(err.message || 'Failed to start consultation')
     } finally {
       setLoading(false)
@@ -67,7 +65,6 @@ export default function VideoConsultationPage() {
       // Redirect back to appointment detail page
       router.push(`/doctorview/appointments/${appointmentId}`)
     } catch (err: any) {
-      console.error('[VideoConsultationPage] Failed to end consultation:', err)
       // Even if the API call fails, redirect back
       router.push(`/doctorview/appointments/${appointmentId}`)
     } finally {
