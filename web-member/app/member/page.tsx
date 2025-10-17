@@ -14,7 +14,8 @@ import {
   CubeIcon,
   EyeIcon,
   ClipboardDocumentCheckIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  ReceiptPercentIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
@@ -660,6 +661,26 @@ export default function DashboardPage() {
               <div>
                 <div className="font-semibold text-gray-900">File a Claim</div>
                 <div className="text-sm text-gray-600">Submit your medical bills</div>
+              </div>
+            </div>
+            <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+          </Link>
+        </div>
+
+        {/* Order History Section */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <SectionHeader title="Order History" showSeeAll={false} />
+          <Link
+            href="/member/orders"
+            className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl hover:from-purple-100 hover:to-blue-100 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="bg-white p-2 rounded-lg">
+                <ReceiptPercentIcon className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">View Order History</div>
+                <div className="text-sm text-gray-600">Track payments and transactions</div>
               </div>
             </div>
             <ChevronRightIcon className="h-5 w-5 text-gray-400" />

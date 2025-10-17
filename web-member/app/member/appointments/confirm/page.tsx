@@ -100,11 +100,18 @@ function ConfirmAppointmentContent() {
       }
 
       const result = await response.json()
-      console.log('[ConfirmAppointment] Appointment created successfully:', {
-        appointmentId: result.appointmentId
-      })
+      console.log('[ConfirmAppointment] Appointment created successfully:', result)
 
-      setAppointmentId(result.appointmentId)
+      // Check if payment is required
+      if (result.paymentRequired && result.paymentId) {
+        console.log('[ConfirmAppointment] Payment required, redirecting to payment page')
+        const redirectUrl = encodeURIComponent('/member/appointments')
+        router.push(`/member/payments/${result.paymentId}?redirect=${redirectUrl}`)
+        return
+      }
+
+      // If no payment required, show success
+      setAppointmentId(result.appointment?.appointmentId || result.appointmentId)
       setBookingSuccess(true)
     } catch (error) {
       console.error('[ConfirmAppointment] Error creating appointment:', error)
