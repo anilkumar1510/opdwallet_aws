@@ -101,4 +101,57 @@ jobs:
             echo "📊 Deployment status:"
             docker ps
 
+            # Create admin user if not exists
+            echo "👤 Creating admin user if not exists..."
+            docker exec opd-api-prod node -e "
+            const bcrypt = require('bcrypt');
+            const { MongoClient, ObjectId } = require('mongodb');
+
+            async function createAdmin() {
+              const uri = 'mongodb://admin:admin123@mongodb:27017/opd_wallet?authSource=admin';
+              const client = new MongoClient(uri);
+              try {
+                await client.connect();
+                const db = client.db('opd_wallet');
+                const users = db.collection('users');
+
+                const existing = await users.findOne({ email: 'admin@opdwallet.com' });
+                if (existing) {
+                  console.log('✅ Admin user already exists');
+                  return;
+                }
+
+                const passwordHash = await bcrypt.hash('Admin@123', 12);
+                const timestamp = Date.now();
+
+                await users.insertOne({
+                  _id: new ObjectId(),
+                  userId: \`ADMIN-\${timestamp}\`,
+                  uhid: \`UHID-ADMIN-\${timestamp}\`,
+                  memberId: \`MEM-ADMIN-\${timestamp}\`,
+                  relationship: 'SELF',
+                  name: { firstName: 'Super', lastName: 'Administrator', fullName: 'Super Administrator' },
+                  email: 'admin@opdwallet.com',
+                  phone: '+919999999999',
+                  dob: new Date('1990-01-01'),
+                  gender: 'MALE',
+                  role: 'SUPER_ADMIN',
+                  status: 'ACTIVE',
+                  passwordHash: passwordHash,
+                  mustChangePassword: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                });
+
+                console.log('✅ Admin user created: admin@opdwallet.com / Admin@123');
+              } catch (error) {
+                console.error('❌ Admin user creation error:', error.message);
+              } finally {
+                await client.close();
+              }
+            }
+
+            createAdmin().catch(console.error);
+            " 2>&1 || echo "⚠️ Admin user creation skipped (may already exist)"
+
             echo "✅ Deployment completed successfully"
