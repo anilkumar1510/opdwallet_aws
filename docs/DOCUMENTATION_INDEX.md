@@ -18,8 +18,9 @@ This documentation is organized in a **portal-centric approach** for better clar
 
 3. **[Admin Portal](./ADMIN_PORTAL.md)** ✅ - Admin functionalities, lab management, master data
 4. **[Member Portal](./MEMBER_PORTAL.md)** ✅ - Member features, appointments, claims, lab tests
-5. **[Operations Portal](./OPERATIONS_PORTAL.md)** ✅ - OPS team workflows, prescription digitization, order management
-6. **[TPA Portal](./TPA_PORTAL.md)** ✅ - TPA claim assignment, review, approval workflows
+5. **[Doctor Portal](./DOCTOR_PORTAL.md)** ✅ - Doctor appointments, prescriptions, video consultations
+6. **[Operations Portal](./OPERATIONS_PORTAL.md)** ✅ - OPS team workflows, prescription digitization, order management
+7. **[TPA Portal](./TPA_PORTAL.md)** ✅ - TPA claim assignment, review, approval workflows
 
 ---
 
@@ -92,13 +93,13 @@ This documentation is organized in a **portal-centric approach** for better clar
 │                            │                                 │
 │                    ┌───────▼────────┐                       │
 │                    │    MongoDB     │                       │
-│                    │  26 Collections│                       │
+│                    │  30 Collections│                       │
 │                    └────────────────┘                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Total Collections**: 26  
-**Total API Endpoints**: 100+  
+**Total Collections**: 30
+**Total API Endpoints**: 100+
 **Total Frontend Pages**: 60+
 
 ---

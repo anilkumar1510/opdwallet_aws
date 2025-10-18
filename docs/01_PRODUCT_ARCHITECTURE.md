@@ -1,8 +1,8 @@
 # OPD Wallet - Complete Product Architecture
 
-**Last Updated**: January 16, 2025
+**Last Updated**: October 18, 2025
 **Current Deployment**: http://51.20.125.246
-**Production Status**: Active - Core Features Operational (98% Complete)
+**Production Status**: Active - Core Features Operational (95% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
 **Documentation Version**: 6.8 (Latest Changes: Payments Module, Transaction Summary, Orders & Payments UI, Doctor Portal Optimizations)
 
@@ -115,6 +115,17 @@ OPD Wallet is a corporate health benefit management platform designed to manage 
 | **Axios** | 1.6.5 | HTTP client |
 | **Heroicons** | 2.2.0 | Icon library |
 | **Sonner** | Latest | Toast notifications (✅ NEW) |
+
+### Doctor Portal (web-doctor)
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Next.js** | 14.2.3 | React framework (App Router) |
+| **React** | 18.3.1 | UI library |
+| **TypeScript** | 5.x | Type safety |
+| **TailwindCSS** | 3.4.1 | Styling |
+| **Heroicons** | 2.2.0 | Icon library |
+| **@jitsi/react-sdk** | 1.4.4 | Video consultation integration |
+| **uuid** | 13.0.0 | UUID generation |
 
 ### Infrastructure
 | Technology | Version | Purpose |
@@ -724,7 +735,7 @@ web-member/
 | `notifications` | 0 | Active | In-app notifications (✅ NEW) |
 | `auditLogs` | 0 | Empty | Audit trail (⚠️ Not functioning) |
 
-**Total Collections**: 27
+**Total Collections**: 30
 **Total Documents**: 62 (includes 6 doctors + 5 clinics + 18 slots + 9 specialties)
 **Database Size**: ~850KB
 
@@ -1085,32 +1096,38 @@ Slot-Based Booking:
 - Enables real-time slot availability checking
 ```
 
-#### Doctor Portal - Appointments (`/api/doctors/appointments`) - ✅ NEW
+#### Doctor Portal - Appointments (`/api/doctor/appointments`) - ✅ IMPLEMENTED
 ```
-GET    /api/doctors/appointments/my  # Get all appointments for logged-in doctor
-GET    /api/doctors/appointments/:appointmentId  # Get specific appointment details
+GET    /api/doctor/appointments/counts              # Get appointment counts by date
+GET    /api/doctor/appointments/today               # Get today's appointments
+GET    /api/doctor/appointments/date/:date          # Get appointments for specific date
+GET    /api/doctor/appointments/upcoming            # Get upcoming appointments (paginated)
+GET    /api/doctor/appointments/:appointmentId      # Get specific appointment details
+PATCH  /api/doctor/appointments/:appointmentId/complete   # Mark appointment as completed
+PATCH  /api/doctor/appointments/:appointmentId/confirm    # Confirm pending appointment
 
 Query Parameters:
+- limit: Results per page (upcoming endpoint)
 - status: Filter by appointment status (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED)
-- date: Filter by appointment date (YYYY-MM-DD format)
+- date: Specific date (YYYY-MM-DD format)
 
 Response includes:
 - Appointment details with patient information
 - Prescription status (hasPrescription flag)
-- Prescription upload link if not yet uploaded
+- Prescription ID if already uploaded
 
 Access Control:
 - Requires DOCTOR role authentication
-- Doctors can only view their own appointments
+- Doctors can only view/modify their own appointments
 - Protected by JwtAuthGuard + RolesGuard
 ```
 
-#### Doctor Portal - Prescriptions (`/api/doctors/prescriptions`) - ✅ NEW
+#### Doctor Portal - Prescriptions (`/api/doctor/prescriptions`) - ✅ IMPLEMENTED
 ```
-POST   /api/doctors/prescriptions    # Upload prescription for appointment
-GET    /api/doctors/prescriptions    # List doctor's uploaded prescriptions
-GET    /api/doctors/prescriptions/:prescriptionId  # Get prescription details
-GET    /api/doctors/prescriptions/appointment/:appointmentId  # Get prescription by appointment
+POST   /api/doctor/prescriptions/upload                # Upload prescription for appointment
+GET    /api/doctor/prescriptions                       # List doctor's uploaded prescriptions
+GET    /api/doctor/prescriptions/:prescriptionId       # Get prescription details
+DELETE /api/doctor/prescriptions/:prescriptionId       # Delete prescription
 
 File Upload Configuration:
 - Allowed types: PDF, JPEG, PNG
@@ -3474,7 +3491,7 @@ effectiveTo: Date     // REQUIRED - Explicit date from admin
 - `notifications` - In-app notifications
 - (Enhanced: `memberclaims` with TPA fields)
 
-**Total Collections**: 18 → 27
+**Total Collections**: 18 → 30
 **Total Documents**: 62 (unchanged from base data)
 
 ---
