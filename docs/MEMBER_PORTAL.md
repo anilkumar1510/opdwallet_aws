@@ -17,14 +17,16 @@ The Member Portal is the primary interface for OPDWallet members to manage their
 3. [Family Context & Profile Switching](#family-context--profile-switching) ✨ NEW (v6.7)
 4. [Video Consultations](#video-consultations) ✨ NEW (v6.7)
 5. [Active Appointment Nudge](#active-appointment-nudge) ✨ NEW (v6.7)
-6. [Family Management](#family-management)
-7. [Appointments](#appointments)
-8. [Claims & Reimbursements](#claims--reimbursements)
-9. [Lab Diagnostics](#lab-diagnostics)
-10. [Wallet](#wallet)
-11. [Navigation Structure](#navigation-structure)
-12. [API Endpoints](#api-endpoints)
-13. [Frontend Architecture](#frontend-architecture)
+6. [Orders & Transaction History](#orders--transaction-history) ✨ NEW (v6.8)
+7. [Payments](#payments) ✨ NEW (v6.8)
+8. [Family Management](#family-management)
+9. [Appointments](#appointments)
+10. [Claims & Reimbursements](#claims--reimbursements)
+11. [Lab Diagnostics](#lab-diagnostics)
+12. [Wallet](#wallet)
+13. [Navigation Structure](#navigation-structure)
+14. [API Endpoints](#api-endpoints)
+15. [Frontend Architecture](#frontend-architecture)
 
 ---
 
@@ -303,6 +305,332 @@ onAppointmentEvent(AppointmentEvents.APPOINTMENT_CONFIRMED, fetchAppointments)
 // In dashboard
 <ActiveAppointmentNudge variant="mobile" userId={user._id} />  // Mobile floating
 <ActiveAppointmentNudge variant="section" userId={user._id} /> // Desktop section
+```
+
+---
+
+## Orders & Transaction History ✨ NEW (v6.8)
+
+**Route**: `/member/orders`
+**File**: `/web-member/app/member/orders/page.tsx`
+
+The Orders page provides a comprehensive view of all user transactions, combining wallet and payment data in a single unified interface.
+
+### Features
+
+#### Transaction Summary Cards
+
+Three key metric cards displayed at the top:
+- **Total Spent**: Overall amount spent across all services
+- **From Wallet**: Amount paid using wallet balance
+- **Out of Pocket**: Amount paid via payment gateway (copay + out-of-pocket)
+
+**Summary API**:
+```typescript
+GET /api/transactions/summary
+
+Response:
+{
+  "totalTransactions": 45,
+  "totalSpent": 25000,
+  "totalFromWallet": 20000,
+  "totalSelfPaid": 5000,
+  "totalCopay": 5000
+}
+```
+
+#### Transaction Filters
+
+**Status Filter**:
+- ALL (default)
+- COMPLETED
+- PENDING_PAYMENT
+- FAILED
+- CANCELLED
+
+**Service Type Filter**:
+- ALL (default)
+- APPOINTMENT
+- CLAIM
+- LAB_ORDER
+- PHARMACY
+
+**Dynamic Filtering**:
+```typescript
+const fetchTransactions = async () => {
+  const params = new URLSearchParams();
+  if (filterStatus !== 'ALL') params.append('status', filterStatus);
+  if (filterService !== 'ALL') params.append('serviceType', filterService);
+
+  const response = await fetch(`/api/transactions?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+```
+
+#### Transaction List
+
+Each transaction card displays:
+- **Service Icon**: Visual indicator for service type (Appointment, Lab, Claim)
+- **Service Name**: e.g., "Dr. Sharma - General Consultation"
+- **Transaction ID**: Unique identifier (TXN-20250116-0001)
+- **Service Date**: When the service occurred
+- **Total Amount**: Full service cost
+- **Payment Breakdown**:
+  - Wallet amount (green badge)
+  - Self-paid amount (orange badge)
+- **Payment Method**: WALLET_ONLY, COPAY, OUT_OF_POCKET, etc.
+- **Status Badge**: Color-coded transaction status
+
+**Visual Design**:
+```tsx
+<div className="flex items-center gap-4">
+  <div className="p-3 rounded-lg bg-blue-50">
+    <Receipt className="h-6 w-6 text-blue-600" />
+  </div>
+  <div className="flex-1">
+    <h3 className="font-semibold text-gray-900">{transaction.serviceName}</h3>
+    <p className="text-sm text-gray-500">{transaction.transactionId}</p>
+  </div>
+  <div className="text-right">
+    <p className="text-lg font-bold text-gray-900">₹{transaction.totalAmount}</p>
+    <div className="flex gap-2 mt-1">
+      <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">
+        Wallet: ₹{transaction.walletAmount}
+      </span>
+      {transaction.selfPaidAmount > 0 && (
+        <span className="text-xs px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+          Paid: ₹{transaction.selfPaidAmount}
+        </span>
+      )}
+    </div>
+  </div>
+</div>
+```
+
+#### Transaction Details
+
+Clicking on a transaction navigates to:
+**Route**: `/member/orders/[transactionId]`
+**File**: `/web-member/app/member/orders/[transactionId]/page.tsx`
+
+**Detailed View Shows**:
+1. **Service Information**:
+   - Service name and date
+   - Service reference ID
+   - Category (Consultation, Diagnostics, etc.)
+
+2. **Payment Breakdown**:
+   - Total amount
+   - Wallet deduction
+   - Self-paid amount (if any)
+   - Copay amount (if applicable)
+
+3. **Transaction Metadata**:
+   - Transaction ID
+   - Payment method
+   - Status with timestamps
+   - Created date
+   - Completed date (if applicable)
+
+4. **Linked Records**:
+   - Link to appointment details
+   - Link to payment receipt (if payment exists)
+   - Link to service details (claim, lab order)
+
+**API Integration**:
+```typescript
+const fetchTransactionDetails = async (transactionId: string) => {
+  const response = await fetch(`/api/transactions/${transactionId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await response.json();
+  // Returns full transaction object with all details
+}
+```
+
+### Key Benefits
+
+1. **Unified View**: See all transactions regardless of payment method
+2. **Payment Transparency**: Clear breakdown of wallet vs. out-of-pocket
+3. **Copay Visibility**: Explicit copay amounts when applicable
+4. **Service Linking**: Direct access to related appointments/claims/orders
+5. **Financial Tracking**: Understand total healthcare spending
+
+---
+
+## Payments ✨ NEW (v6.8)
+
+**Route**: `/member/payments/[paymentId]`
+**File**: `/web-member/app/member/payments/[paymentId]/page.tsx`
+
+The Payments page shows detailed information about a specific payment made by the user.
+
+### Features
+
+#### Payment Details Display
+
+**Information Shown**:
+- **Payment ID**: Unique identifier (PAY-20250116-0001)
+- **Amount**: Total payment amount
+- **Payment Type**: COPAY, OUT_OF_POCKET, FULL_PAYMENT, etc.
+- **Status**: PENDING, COMPLETED, FAILED, CANCELLED
+- **Payment Method**: DUMMY_GATEWAY (currently), UPI, CARD (future)
+- **Service Information**:
+  - Service type (Appointment, Claim, Lab Order)
+  - Service reference ID
+  - Description
+- **Timestamps**:
+  - Created date
+  - Paid date (if completed)
+  - Cancelled date (if cancelled)
+
+#### Payment Actions
+
+**For PENDING Payments**:
+```tsx
+<button onClick={handleMarkAsPaid} className="btn-primary">
+  Mark as Paid
+</button>
+<button onClick={handleCancelPayment} className="btn-secondary">
+  Cancel Payment
+</button>
+```
+
+**Mark as Paid**:
+```typescript
+const handleMarkAsPaid = async () => {
+  const response = await fetch(`/api/payments/${paymentId}/mark-paid`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (response.ok) {
+    // Payment status updated to COMPLETED
+    // paidAt timestamp set
+    router.refresh();
+  }
+}
+```
+
+**Cancel Payment**:
+```typescript
+const handleCancelPayment = async () => {
+  const reason = prompt('Reason for cancellation?');
+
+  const response = await fetch(`/api/payments/${paymentId}/cancel`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ reason })
+  });
+
+  if (response.ok) {
+    // Payment status updated to CANCELLED
+    router.refresh();
+  }
+}
+```
+
+#### Payment History
+
+Members can view all their payments from:
+**Endpoint**: `GET /api/payments`
+
+**Query Parameters**:
+- status: Filter by payment status
+- serviceType: Filter by service type
+- limit: Number of records (default: 20)
+- skip: Pagination offset
+
+**Usage**:
+```typescript
+const fetchPayments = async () => {
+  const params = new URLSearchParams({
+    status: 'PENDING',
+    limit: '50'
+  });
+
+  const response = await fetch(`/api/payments?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const { payments, total } = await response.json();
+}
+```
+
+#### Payment Summary Statistics
+
+**Endpoint**: `GET /api/payments/summary/stats`
+
+**Returns**:
+```json
+{
+  "totalPayments": 25,
+  "totalAmount": 5000,
+  "pendingPayments": 2,
+  "completedPayments": 20,
+  "failedPayments": 1,
+  "cancelledPayments": 2,
+  "byServiceType": {
+    "APPOINTMENT": { "count": 15, "amount": 3000 },
+    "LAB_ORDER": { "count": 8, "amount": 1600 },
+    "CLAIM": { "count": 2, "amount": 400 }
+  }
+}
+```
+
+### Payment Flow
+
+**1. Service Booking** → Creates appointment/claim/order
+**2. Copay Calculation** → Determines if copay required based on plan config
+**3. Payment Creation** → If copay exists, payment record created with PENDING status
+**4. Transaction Summary** → Transaction record created linking wallet + payment
+**5. User Action** → User marks payment as paid (or cancels)
+**6. Status Update** → Payment and transaction status updated to COMPLETED
+
+### Integration with Services
+
+**Appointments**:
+- Copay calculated when appointment confirmed
+- Payment linked to appointment via `serviceId`
+- User must complete payment before appointment
+
+**Claims**:
+- Member-paid amount (out-of-pocket) tracked
+- Payment created for reimbursement-eligible amount
+- Payment status affects claim approval
+
+**Lab Orders**:
+- Home collection charges as separate payment
+- Test costs with copay calculation
+- Payment required before sample collection
+
+### Dummy Payment Gateway
+
+**Current Implementation**:
+- No real payment processing
+- "Mark as Paid" button simulates payment completion
+- Ready for integration with:
+  - Razorpay
+  - Stripe
+  - PayU
+  - Paytm
+
+**Integration Points**:
+```typescript
+// Future: Replace dummy gateway with real integration
+const initiatePayment = async (paymentId: string, amount: number) => {
+  // const razorpayOrder = await createRazorpayOrder({ amount });
+  // const paymentResult = await showRazorpayCheckout(razorpayOrder);
+  // await updatePaymentStatus(paymentId, paymentResult);
+
+  // For now:
+  return markAsPaid(paymentId);
+}
 ```
 
 ---

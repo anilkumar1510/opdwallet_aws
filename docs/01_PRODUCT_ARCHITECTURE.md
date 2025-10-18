@@ -1,10 +1,10 @@
 # OPD Wallet - Complete Product Architecture
 
-**Last Updated**: October 8, 2025
+**Last Updated**: January 16, 2025
 **Current Deployment**: http://51.20.125.246
-**Production Status**: Active - Core Features Operational (95% Complete)
+**Production Status**: Active - Core Features Operational (98% Complete)
 **Architecture Type**: Monolithic Backend with Microservices-Ready Structure
-**Documentation Version**: 6.7 (Latest Changes: Video Consultations, Family Context, Active Appointment Nudge)
+**Documentation Version**: 6.8 (Latest Changes: Payments Module, Transaction Summary, Orders & Payments UI, Doctor Portal Optimizations)
 
 ---
 
@@ -1218,6 +1218,128 @@ Response: {
 - Only assigned doctor can start/end consultation
 - Only appointment patient can join consultation
 - History endpoints filtered by user role
+
+#### Payments (`/api/payments`) - ✅ NEW (v6.8)
+```
+GET    /api/payments/:paymentId           # Get payment details by ID
+GET    /api/payments                      # Get user payment history (filtered)
+GET    /api/payments/summary/stats        # Get payment summary statistics
+POST   /api/payments/:paymentId/mark-paid # Mark payment as paid (dummy gateway)
+POST   /api/payments/:paymentId/cancel    # Cancel a payment
+```
+
+**Features**:
+- **Payment Tracking**: Track all user payments for services (appointments, claims, lab orders)
+- **Payment Types**: COPAY, OUT_OF_POCKET, FULL_PAYMENT, PARTIAL_PAYMENT, TOP_UP
+- **Payment Status**: PENDING, COMPLETED, FAILED, CANCELLED
+- **Service Types**: APPOINTMENT, CLAIM, LAB_ORDER, PHARMACY, WALLET_TOPUP
+- **Dummy Gateway**: Currently uses mock payment processing, ready for real gateway integration
+
+**Query Parameters (GET /api/payments)**:
+- status: Filter by payment status
+- serviceType: Filter by service type (APPOINTMENT, CLAIM, etc.)
+- limit: Number of records to return (default: 20)
+- skip: Number of records to skip for pagination
+
+**Request Body (POST mark-paid)**:
+- Automatically captures userId from auth token
+- Marks payment as COMPLETED
+- Sets paidAt timestamp
+
+**Response Example**:
+```json
+{
+  "paymentId": "PAY-20250116-0001",
+  "userId": "507f1f77bcf86cd799439011",
+  "amount": 200,
+  "paymentType": "COPAY",
+  "status": "COMPLETED",
+  "serviceType": "APPOINTMENT",
+  "serviceId": "507f1f77bcf86cd799439012",
+  "serviceReferenceId": "APT-20250116-0001",
+  "description": "Copay for Dr. Sharma consultation",
+  "paymentMethod": "DUMMY_GATEWAY",
+  "paidAt": "2025-01-16T10:30:00Z"
+}
+```
+
+**Access Control**:
+- All endpoints require MEMBER role
+- Users can only view/manage their own payments
+
+#### Transaction Summary (`/api/transactions`) - ✅ NEW (v6.8)
+```
+GET    /api/transactions                  # Get user transaction history (filtered)
+GET    /api/transactions/summary          # Get transaction summary statistics
+GET    /api/transactions/:transactionId   # Get transaction details by ID
+```
+
+**Features**:
+- **Unified Transaction View**: Combines wallet + payment data in single view
+- **Payment Breakdown**: Shows how much was paid via wallet vs. out-of-pocket
+- **Service Linking**: Links to appointments, claims, lab orders
+- **Status Tracking**: PENDING_PAYMENT, COMPLETED, FAILED, REFUNDED, CANCELLED
+- **Payment Methods**: WALLET_ONLY, COPAY, OUT_OF_POCKET, PARTIAL, FULL_PAYMENT
+
+**Query Parameters (GET /api/transactions)**:
+- serviceType: Filter by service (APPOINTMENT, CLAIM, LAB_ORDER, PHARMACY)
+- paymentMethod: Filter by payment method
+- status: Filter by transaction status
+- dateFrom: Start date filter (YYYY-MM-DD)
+- dateTo: End date filter (YYYY-MM-DD)
+- limit: Number of records (default: 20)
+- skip: Pagination offset
+
+**Transaction Summary Response**:
+```json
+{
+  "totalTransactions": 45,
+  "totalSpent": 25000,
+  "totalFromWallet": 20000,
+  "totalSelfPaid": 5000,
+  "totalCopay": 5000,
+  "byServiceType": {
+    "APPOINTMENT": { "count": 20, "amount": 15000 },
+    "LAB_ORDER": { "count": 15, "amount": 8000 },
+    "CLAIM": { "count": 10, "amount": 2000 }
+  },
+  "byPaymentMethod": {
+    "WALLET_ONLY": 30,
+    "COPAY": 10,
+    "OUT_OF_POCKET": 5
+  }
+}
+```
+
+**Transaction Detail Response**:
+```json
+{
+  "transactionId": "TXN-20250116-0001",
+  "userId": "507f1f77bcf86cd799439011",
+  "serviceType": "APPOINTMENT",
+  "serviceName": "Dr. Sharma - General Consultation",
+  "serviceDate": "2025-01-16T10:00:00Z",
+  "totalAmount": 1000,
+  "walletAmount": 800,
+  "selfPaidAmount": 200,
+  "copayAmount": 200,
+  "paymentMethod": "COPAY",
+  "categoryCode": "CAT001",
+  "categoryName": "Consultation",
+  "status": "COMPLETED",
+  "paymentId": "PAY-20250116-0001"
+}
+```
+
+**Key Features**:
+- **Payment Breakdown**: Clearly shows wallet deduction vs. out-of-pocket payment
+- **Copay Integration**: Automatically calculates copay based on plan configuration
+- **Category Tracking**: Links to wallet category for proper wallet balance management
+- **Service References**: Direct links to appointment/claim/order details
+
+**Access Control**:
+- All endpoints require MEMBER role
+- Users can only view their own transactions
 
 #### Member Portal API (`/api/member`) ✨ ENHANCED (v6.6)
 ```
