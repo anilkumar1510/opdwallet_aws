@@ -25,6 +25,9 @@ services:
     image: mongo:7.0
     container_name: opd-mongodb-prod
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
     volumes:
       - mongo-data:/data/db
     networks:
@@ -71,13 +74,13 @@ services:
       context: ./web-admin
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: opd-web-admin-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production
       API_URL: http://api:4000/api
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     depends_on:
       - api
     networks:
@@ -89,13 +92,13 @@ services:
       context: ./web-member
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: opd-web-member-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production
       API_URL: http://api:4000/api
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     depends_on:
       - api
     networks:
@@ -107,13 +110,13 @@ services:
       context: ./web-doctor
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: opd-web-doctor-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production
       API_URL: http://api:4000/api
-      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     depends_on:
       - api
     networks:
