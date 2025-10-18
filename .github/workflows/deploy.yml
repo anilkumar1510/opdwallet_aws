@@ -154,4 +154,15 @@ jobs:
             createAdmin().catch(console.error);
             " 2>&1 || echo "⚠️ Admin user creation skipped (may already exist)"
 
+            # Drop unused 'wallets' collection (one-time cleanup)
+            echo "🧹 Dropping unused 'wallets' collection..."
+            docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+              var result = db.wallets.drop();
+              if (result) {
+                print('✅ Dropped unused wallets collection');
+              } else {
+                print('ℹ️  wallets collection does not exist or already dropped');
+              }
+            " 2>&1 || echo "⚠️ Collection cleanup completed"
+
             echo "✅ Deployment completed successfully"
