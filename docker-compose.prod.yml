@@ -25,9 +25,6 @@ services:
     image: mongo:7.0
     container_name: opd-mongodb-prod
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
     volumes:
       - mongo-data:/data/db
     networks:
