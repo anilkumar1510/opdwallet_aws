@@ -19,9 +19,10 @@
 8. [Lab Diagnostics Module](#lab-diagnostics-module)
    - [Prescription Digitization Queue](#prescription-digitization-queue)
    - [Lab Orders Management](#lab-orders-management)
-9. [API Endpoints Reference](#api-endpoints-reference)
-10. [Workflows & Step-by-Step Guides](#workflows--step-by-step-guides)
-11. [Frontend Pages Reference](#frontend-pages-reference)
+9. [Members Management](#members-management)
+10. [API Endpoints Reference](#api-endpoints-reference)
+11. [Workflows & Step-by-Step Guides](#workflows--step-by-step-guides)
+12. [Frontend Pages Reference](#frontend-pages-reference)
 
 ---
 
@@ -127,8 +128,7 @@ The Operations Portal features a unified navigation sidebar with the following s
 │     └─> /operations/clinics/[id]                 │
 │                                                  │
 │  📅 Appointments                                 │
-│     ├─> /operations/appointments                 │
-│     └─> /operations/appointments/[id]            │
+│     └─> /operations/appointments                 │
 │                                                  │
 │  🧪 Lab Diagnostics                              │
 │     ├─> Prescription Queue                       │
@@ -136,8 +136,10 @@ The Operations Portal features a unified navigation sidebar with the following s
 │     │   └─> /operations/lab/prescriptions/[id]/digitize │
 │     │                                             │
 │     └─> Lab Orders                               │
-│         ├─> /operations/lab/orders               │
-│         └─> /operations/lab/orders/[id]          │
+│         └─> /operations/lab/orders               │
+│                                                  │
+│  👥 Members Management                           │
+│     └─> /operations/members                      │
 │                                                  │
 └─────────────────────────────────────────────────┘
 ```
@@ -708,7 +710,7 @@ The Prescription Digitization Queue allows operations staff to process prescript
 
 ```
 GET    /api/ops/lab/prescriptions/queue             # Get prescription queue
-       Query params: ?status=UPLOADED|DIGITIZED|DELAYED
+       Query params: ?status=UPLOADED|DIGITIZING|DIGITIZED|DELAYED
 
 GET    /api/ops/lab/prescriptions/:id               # Get prescription details
        Returns: Prescription data, files, patient info
@@ -730,7 +732,7 @@ POST   /api/ops/lab/prescriptions/:id/digitize      # Digitize prescription
 
 PATCH  /api/ops/lab/prescriptions/:id/status        # Update prescription status
        Body: {
-         status: 'UPLOADED' | 'DIGITIZED' | 'DELAYED' | 'ORDER_CREATED',
+         status: 'UPLOADED' | 'DIGITIZING' | 'DIGITIZED' | 'DELAYED',
          notes?: string
        }
 ```
@@ -740,11 +742,11 @@ PATCH  /api/ops/lab/prescriptions/:id/status        # Update prescription status
 ```
 UPLOADED → In digitization queue
     │
+    ├─> DIGITIZING → Currently being processed by OPS
+    │
     ├─> DIGITIZED → Cart created, ready for order
     │
-    ├─> DELAYED → Marked for follow-up (>24h delay)
-    │
-    └─> ORDER_CREATED → Lab order generated
+    └─> DELAYED → Marked for follow-up (>24h delay)
 ```
 
 #### Step-by-Step: Digitizing a Prescription
@@ -775,11 +777,12 @@ UPLOADED → In digitization queue
 3. Mention collection preferences
 
 **Step 5: Complete Digitization**
-1. Click "Save as Draft" to save progress, OR
-2. Click "Create Order" to generate lab order
-3. System creates order with status: PENDING_CONFIRMATION
-4. Prescription status updated to: ORDER_CREATED
-5. Member receives notification of order
+1. Mark prescription as DIGITIZING when starting work
+2. Click "Save as Draft" to save progress, OR
+3. Click "Create Order" to generate lab order
+4. System creates order with status: PLACED
+5. Prescription status updated to: DIGITIZED
+6. Member receives notification of order
 
 **Step 6: Handle Delays**
 1. If prescription cannot be processed within 24 hours
@@ -811,7 +814,7 @@ The Lab Orders Management module handles the complete lifecycle of lab diagnosti
 
 1. Order Created (from cart)
         │
-        └─> Status: PENDING_CONFIRMATION
+        └─> Status: PLACED
                     │
                     ▼
             2. OPS Confirms Order
@@ -845,7 +848,7 @@ The Lab Orders Management module handles the complete lifecycle of lab diagnosti
                ├─> Upload PDF/images
                ├─> Verify report details
                ├─> Add lab comments
-               └─> Status: REPORT_UPLOADED
+               └─> Status: PROCESSING
                            │
                            ▼
             5. Complete Order
@@ -874,7 +877,7 @@ The Lab Orders Management module handles the complete lifecycle of lab diagnosti
 │        [Report Upload (7)] [Completed] [All]                     │
 │                                                                   │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │ 🟡 PENDING CONFIRMATION                                     │  │
+│  │ 🟡 PLACED (Pending Confirmation)                            │  │
 │  │ ORD-20251005-0045                                           │  │
 │  │ Patient: John Doe (UHID: UH001)                            │  │
 │  │ Lab: Apollo Diagnostics                                     │  │
@@ -967,7 +970,7 @@ The Lab Orders Management module handles the complete lifecycle of lab diagnosti
 
 ```
 GET    /api/ops/lab/orders                        # Get all lab orders
-       Query params: ?status=PENDING_CONFIRMATION|CONFIRMED|SAMPLE_COLLECTED|...
+       Query params: ?status=PLACED|CONFIRMED|SAMPLE_COLLECTED|PROCESSING|COMPLETED|CANCELLED
 
 GET    /api/ops/lab/orders/:orderId               # Get order details
 
@@ -1008,7 +1011,7 @@ PATCH  /api/ops/lab/orders/:orderId/status        # Update order status
 #### Order Status Flow
 
 ```
-PENDING_CONFIRMATION
+PLACED
         │
         ├─> Confirm order
         │   Set collection date
@@ -1023,7 +1026,7 @@ SAMPLE_COLLECTED
         ├─> Upload lab report
         │   Attach PDF/images
         ▼
-REPORT_UPLOADED
+   PROCESSING
         │
         ├─> Complete order
         │   Notify member
@@ -1136,9 +1139,9 @@ DELETE /api/clinics/:clinicId            # Delete clinic (ADMIN only)
 #### Doctor Slots
 ```
 GET    /api/doctor-slots                         # List all slots
-GET    /api/doctor-slots/doctor/:doctorId        # Get doctor's slots
+GET    /api/doctors/:doctorId/slots              # Get doctor's slots (preferred)
+GET    /api/doctor-slots/doctor/:doctorId        # Get doctor's slots (legacy)
 GET    /api/doctor-slots/clinic/:clinicId        # Get clinic's slots
-GET    /api/doctor-slots/doctor/:doctorId/day/:dayOfWeek  # Get specific day slots
 GET    /api/doctor-slots/:slotId                 # Get slot by ID
 POST   /api/doctor-slots                         # Create slot (ADMIN only)
 PUT    /api/doctor-slots/:slotId                 # Update slot (ADMIN only)
@@ -1159,7 +1162,7 @@ PATCH  /api/appointments/:appointmentId/cancel   # Cancel appointment
 #### Lab Prescriptions (Operations)
 ```
 GET    /api/ops/lab/prescriptions/queue          # Get prescription queue
-       Query: ?status=UPLOADED|DIGITIZED|DELAYED
+       Query: ?status=UPLOADED|DIGITIZING|DIGITIZED|DELAYED
 
 GET    /api/ops/lab/prescriptions/:id            # Get prescription details
 
@@ -1173,7 +1176,7 @@ PATCH  /api/ops/lab/prescriptions/:id/status     # Update status
 #### Lab Orders (Operations)
 ```
 GET    /api/ops/lab/orders                       # Get all orders
-       Query: ?status=PENDING_CONFIRMATION|CONFIRMED|...
+       Query: ?status=PLACED|CONFIRMED|SAMPLE_COLLECTED|PROCESSING|COMPLETED|CANCELLED
 
 GET    /api/ops/lab/orders/:orderId              # Get order details
 
@@ -1191,6 +1194,124 @@ PATCH  /api/ops/lab/orders/:orderId/complete     # Complete order
 
 PATCH  /api/ops/lab/orders/:orderId/status       # Update status
        Body: { status, notes }
+```
+
+---
+
+## MEMBERS MANAGEMENT
+
+**Route**: `/operations/members`
+**API Base**: `/api/ops/members`
+
+### Overview
+
+The Members Management module allows operations staff to search, view, and manage all registered members and their dependents in the system. Members are individuals who have registered with OPD Wallet and can book appointments, order lab tests, and access various health services.
+
+### Features
+
+- **Member Search**: Search by name, member ID, email, phone, or UHID
+- **Member Details**: View complete member information and dependent relationships
+- **Primary & Dependents**: Differentiate between primary members and their dependents
+- **Status Tracking**: Monitor active/inactive member status
+- **Pagination**: Browse large member lists efficiently
+
+### Members List View
+
+**Route**: `/operations/members`
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Members Management                                               │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Search: [Search by name, member ID, email, phone, UHID...]     │
+│  [Search] [Reset]                                                │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │ Members                                                     │  │
+│  │ 1,234 total members                                         │  │
+│  ├────────────────────────────────────────────────────────────┤  │
+│  │ Member ID │ UHID    │ Name         │ Email        │ Phone    │ Relationship │ Status │ Actions │
+│  ├────────────────────────────────────────────────────────────┤  │
+│  │ MEM001    │ UH001   │ John Doe     │ john@...     │ +91-98... │ Primary      │ Active │ View → │
+│  │ MEM002    │ UH002   │ Jane Smith   │ jane@...     │ +91-97... │ Primary      │ Active │ View → │
+│  │ MEM003    │ UH003   │ Baby Doe     │ john@...     │ +91-98... │ Dependent    │ Active │ View → │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  [Previous] Page 1 of 62 (1,234 total members) [Next]           │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Member Detail View
+
+**Route**: `/operations/members/[memberId]`
+
+Shows comprehensive member information including:
+
+- **Basic Information**: Member ID, UHID, name, email, phone
+- **Account Details**: Registration date, status, relationship type
+- **Primary Member**: Link to primary member if this is a dependent
+- **Dependents**: List of all dependents (if this is a primary member)
+- **Health Records**: Associated appointments, lab orders, prescriptions
+- **Contact Information**: Address, emergency contacts
+
+### API Endpoints for Members
+
+```
+GET    /api/ops/members/search                   # Search members
+       Query params: ?search=query&page=1&limit=20
+
+GET    /api/ops/members/:memberId                # Get member details
+```
+
+### Member Relationships
+
+**Primary Member (REL001/SELF):**
+- First person to register in a family
+- Can add dependents (spouse, children, parents)
+- Manages account for all dependents
+- Badge: "Primary" (Blue)
+
+**Dependent:**
+- Added by primary member
+- Separate UHID and medical records
+- Same contact email/phone as primary
+- Badge: "Dependent" (Gray)
+
+### Search Capabilities
+
+The member search supports multiple criteria:
+- **Name**: First name, last name, or full name
+- **Member ID**: Unique member identifier (e.g., MEM001)
+- **UHID**: Universal Health ID
+- **Email**: Contact email address
+- **Phone**: Phone number
+
+### Use Cases
+
+**1. Find Member by Phone**
+```
+1. Go to /operations/members
+2. Enter phone number in search: +91-9876543210
+3. Click Search
+4. View matching members
+5. Click "View Details" to see full profile
+```
+
+**2. Check Member's Dependents**
+```
+1. Search for primary member
+2. Open member detail page
+3. View "Dependents" section
+4. See all family members and their UHIDs
+```
+
+**3. Verify Member Status**
+```
+1. Search for member by any identifier
+2. Check status badge (Active/Inactive)
+3. View registration date and activity
+4. Confirm member eligibility for services
 ```
 
 ---
@@ -1233,8 +1354,9 @@ Digitization Page:
 - Reviews total: ₹1,250
 - Adds notes
 - Clicks "Create Order"
-→ Status: ORDER_CREATED
+→ Prescription status: DIGITIZED
 → Lab order generated: ORD-20251005-0045
+→ Order status: PLACED
 
 DAY 0-1: OPS Order Confirmation (Target: <24 hours)
 ──────────────────────────────────────────────────────
@@ -1283,8 +1405,8 @@ Operations Portal → Lab → Orders → Report Upload
 - Add lab comments (if any)
 - Preview uploaded report
 - Submit
-→ Status: REPORT_UPLOADED
-→ Member receives notification: "Your lab report is ready"
+→ Status: PROCESSING
+→ Member receives notification: "Your lab report is being processed"
 
 DAY 5: Order Completion
 ────────────────────────
@@ -1379,21 +1501,22 @@ Time: 20-30 minutes
 │       └── page.tsx                    # Clinic details/edit
 │
 ├── appointments/
-│   ├── page.tsx                        # Appointments list
-│   └── [appointmentId]/
-│       └── page.tsx                    # Appointment details
+│   └── page.tsx                        # Appointments list
 │
-└── lab/
-    ├── prescriptions/
-    │   ├── page.tsx                    # Prescription queue
-    │   └── [id]/
-    │       └── digitize/
-    │           └── page.tsx            # Digitization interface
-    │
-    └── orders/
-        ├── page.tsx                    # Lab orders list
-        └── [orderId]/
-            └── page.tsx                # Order details & management
+├── lab/
+│   ├── prescriptions/
+│   │   ├── page.tsx                    # Prescription queue
+│   │   └── [id]/
+│   │       └── digitize/
+│   │           └── page.tsx            # Digitization interface
+│   │
+│   └── orders/
+│       └── page.tsx                    # Lab orders list
+│
+└── members/
+    ├── page.tsx                        # Members list
+    └── [id]/
+        └── page.tsx                    # Member details
 ```
 
 ### Key Components
@@ -1459,15 +1582,14 @@ A:
 
 ### Database Collections Used
 
-**Lab-Related Collections** (8 total):
+**Lab-Related Collections** (7 total):
 1. `lab_prescriptions` - Uploaded prescriptions
 2. `lab_carts` - Digitized test carts
 3. `lab_orders` - Active lab orders
-4. `lab_test_masters` - Available lab tests
-5. `lab_providers` - Lab service providers
-6. `lab_reports` - Uploaded reports metadata
-7. `lab_transactions` - Payment transactions
-8. `lab_audit_logs` - Lab workflow audit trail
+4. `lab_services` - Available lab tests/services
+5. `lab_vendors` - Lab service providers
+6. `lab_vendor_pricing` - Lab vendor pricing information
+7. `lab_vendor_slots` - Lab vendor availability slots
 
 **Other Referenced Collections**:
 - `users` - Patient information
@@ -1482,19 +1604,19 @@ A:
 ```typescript
 enum PrescriptionStatus {
   UPLOADED = 'UPLOADED',
+  DIGITIZING = 'DIGITIZING',
   DIGITIZED = 'DIGITIZED',
-  DELAYED = 'DELAYED',
-  ORDER_CREATED = 'ORDER_CREATED'
+  DELAYED = 'DELAYED'
 }
 ```
 
 **Order Status:**
 ```typescript
 enum OrderStatus {
-  PENDING_CONFIRMATION = 'PENDING_CONFIRMATION',
+  PLACED = 'PLACED',
   CONFIRMED = 'CONFIRMED',
   SAMPLE_COLLECTED = 'SAMPLE_COLLECTED',
-  REPORT_UPLOADED = 'REPORT_UPLOADED',
+  PROCESSING = 'PROCESSING',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'
 }

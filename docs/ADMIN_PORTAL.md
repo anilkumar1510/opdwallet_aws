@@ -9,9 +9,9 @@ The Admin Portal is a comprehensive management interface for OPD Wallet administ
 **Access Control**: Restricted to users with `ADMIN` or `SUPER_ADMIN` roles
 
 **Primary Capabilities**:
-- User and dependent management
+- User and dependent management (with tab-based interface for external/internal users)
 - Policy and plan configuration
-- Master data administration (categories, services, relationships, CUGs, specialties)
+- Master data administration (categories and services via admin UI)
 - Lab diagnostics ecosystem management
 - System monitoring and analytics
 
@@ -31,11 +31,12 @@ The main dashboard provides administrators with:
 - View system health indicators
 
 ### Statistics Overview
-- User registration metrics
-- Active policy counts
-- Lab service utilization
-- Appointment analytics
-- Revenue and transaction summaries
+The dashboard displays three key metrics:
+- **Total Users**: Total number of registered users in the system
+- **Total Policies**: Total number of insurance policies available
+- **Active Members**: Number of currently active users in the system
+
+Note: Advanced analytics such as lab service utilization, appointment analytics, and revenue summaries are planned for future releases.
 
 ---
 
@@ -43,18 +44,42 @@ The main dashboard provides administrators with:
 
 Comprehensive CRUD operations for managing system users, their dependents, and role assignments.
 
+### Tab-Based User Management Interface
+
+**Route**: `/admin/users`
+
+**File**: `/web-admin/app/admin/users/page.tsx`
+
+The user management interface features a tab-based system to organize users by type:
+
+#### External Users Tab
+- Displays users with role `MEMBER` (standard end-users)
+- Shows relationship information (Primary Member, Spouse, Child, etc.)
+- Displays member ID, UHID, and employee ID
+- Primary members have relationship code `SELF` or `REL001`
+- Dependent users show their primary member ID
+
+#### Internal Users Tab
+- Displays system administrators and staff
+- Includes users with roles: `SUPER_ADMIN`, `ADMIN`, `TPA`, `OPS`
+- Shows role information instead of relationship
+- Access to administrative portal features
+
 ### Key Features
 - **User Creation**: Add new users with profile information
 - **User Editing**: Update user details, contact information, and preferences
 - **Dependent Management**: Link and manage dependent profiles under primary users
-- **Role Assignment**: Assign and modify user roles (USER, ADMIN, SUPER_ADMIN)
+- **Role Assignment**: Assign and modify user roles
 - **User Deactivation**: Soft delete or deactivate user accounts
-- **Search and Filtering**: Find users by name, email, phone, or role
+- **Search and Filtering**: Find users by name, email, member ID, UHID, or phone
+- **Password Management**: Set or reset passwords for any user
 
 ### User Roles
-- **USER**: Standard end-user with access to mobile app features
-- **ADMIN**: Administrative access to portal features
-- **SUPER_ADMIN**: Full system access with elevated privileges
+- **MEMBER**: Standard end-user with access to mobile app features (External Users)
+- **ADMIN**: Administrative access to portal features (Internal Users)
+- **SUPER_ADMIN**: Full system access with elevated privileges (Internal Users)
+- **TPA**: Third-party administrator access (Internal Users)
+- **OPS**: Operations team access (Internal Users)
 
 ---
 
@@ -130,45 +155,72 @@ GET /api/assignments/search-primary-members?policyId={id}&search={term}
 
 Centralized management of core system reference data used across the platform.
 
-### Categories (4 Active)
+### Categories (Managed via Admin UI)
+
+**Route**: `/admin/categories`
+
+**File**: `/web-admin/app/admin/categories/page.tsx`
+
 Reference data for service categorization and classification.
 
 **Management Functions**:
 - Create, edit, and deactivate categories
 - Set display order and hierarchy
-- Define category metadata
+- Define category metadata (name, description, display order)
+- Toggle active/inactive status
 
-### Services (4 Active)
+**Category Attributes**:
+- Category ID (immutable, format: CAT001, CAT002, etc.)
+- Name
+- Description
+- Display Order (for UI sorting)
+- Active Status
+
+### Services (Managed via Admin UI)
+
+**Route**: `/admin/services`
+
+**File**: `/web-admin/app/admin/services/page.tsx`
+
 Service type definitions used in appointments and claims.
 
 **Management Functions**:
 - Add new service types
 - Configure service properties
 - Link services to categories
+- Toggle active/inactive status
 
-### Relationships (5 Active)
-Dependent relationship types (e.g., Spouse, Child, Parent, Sibling, Other).
+**Service Type Attributes**:
+- Service Code (immutable, e.g., CON001)
+- Service Name
+- Description
+- Category (linked to Categories master data)
+- Active Status
 
-**Management Functions**:
-- Define relationship types
-- Set eligibility rules per relationship
-- Configure age and dependency constraints
+### Relationships, CUGs, and Specialties (Backend API Only)
 
-### CUGs - Closed User Groups (8 Active)
+**IMPORTANT**: The following master data entities do NOT have dedicated admin UI pages. They are managed exclusively through the backend API service:
+
+#### Relationships (5 Active)
+Dependent relationship types (e.g., SELF, Spouse, Child, Parent, Sibling, Other).
+
+**Management**: Backend API only - `/api/relationships`
+
+**Note**: Relationship data is used throughout the admin portal (especially in policy assignments and user management) but can only be created/modified via direct API calls to the backend service.
+
+#### CUGs - Closed User Groups (8 Active)
 Corporate or group-based user segments.
 
-**Management Functions**:
-- Create CUG profiles
-- Assign users to CUGs
-- Configure group-specific benefits and pricing
+**Management**: Backend API only - `/api/cugs`
 
-### Specialties (9 Active)
+**Note**: CUG data may be referenced in user profiles and policies but cannot be managed through the admin UI.
+
+#### Specialties (9 Active)
 Medical specialties for doctor categorization.
 
-**Management Functions**:
-- Add medical specialties
-- Configure specialty descriptions
-- Link to service offerings
+**Management**: Backend API only - `/api/specialties`
+
+**Note**: Specialty data is used for doctor profiles in the appointment system but cannot be managed through the admin UI.
 
 ---
 
@@ -213,6 +265,8 @@ The Lab Diagnostics module enables end-to-end management of:
 
 #### API Endpoints
 
+**Architecture Note**: These endpoints are part of the backend NestJS API service, not Next.js API routes. The Next.js admin frontend calls these backend endpoints via the `apiFetch` utility.
+
 ```
 POST   /api/admin/lab/services
 GET    /api/admin/lab/services?category=&search=
@@ -220,6 +274,8 @@ GET    /api/admin/lab/services/:id
 PATCH  /api/admin/lab/services/:id
 DELETE /api/admin/lab/services/:id
 ```
+
+**API Architecture**: Next.js Frontend (`/web-admin`) → Backend NestJS API Service
 
 #### Configuration Guide
 
@@ -316,10 +372,14 @@ PATCH  /api/admin/lab/vendors/:id
 **Purpose**: Configure service-specific pricing for each vendor.
 
 #### Pricing Components
-- **MRP (Maximum Retail Price)**: Standard list price
-- **Discounted Price**: Actual price offered to users
-- **Discount Percentage**: Calculated from MRP and discounted price
-- **Home Collection Charge Override**: Vendor-specific home collection fees
+- **Actual Price**: Standard retail price (labeled as "MRP" in UI table headers for clarity)
+  - Database field: `actualPrice`
+  - UI displays as: "MRP" or "Actual Price (MRP)"
+- **Discounted Price**: Final price offered to users after discounts
+- **Discount Percentage**: Automatically calculated from actual price and discounted price
+- **Home Collection Charges**: Optional vendor-specific home collection fees
+
+**Field Mapping Note**: The pricing schema uses `actualPrice` in the database/code, which represents the maximum retail price. Some UI elements may display this as "MRP" for user clarity.
 
 #### Pricing Strategies
 - Competitive pricing analysis
@@ -339,13 +399,15 @@ PATCH  /api/admin/lab/vendors/:vendorId/pricing/:serviceId
 
 **Setting Vendor Pricing**:
 1. Navigate to vendor detail page
-2. Select "Pricing" tab
+2. Select "Pricing" tab or navigate to `/admin/lab/vendors/[vendorId]/pricing`
 3. For each service offered by the vendor:
-   - Set MRP (reference price)
-   - Set discounted price (user-facing price)
+   - Set Actual Price / MRP (standard retail price)
+   - Set Discounted Price (final price offered to users)
    - System auto-calculates discount percentage
 4. Override home collection charges if needed (optional)
 5. Save pricing configuration
+
+**Implementation Detail**: The form uses `actualPrice` field in the database, displayed as "Actual Price (MRP)" in the UI modal and "MRP" in the table header.
 
 **Bulk Pricing Operations**:
 - Import pricing via CSV upload
@@ -437,12 +499,14 @@ GET    /api/admin/lab/vendors/:vendorId/slots?pincode=&date=
 **Main Admin Layout**: `/web-admin/app/admin/layout.tsx`
 
 ### Primary Navigation Items ✨ UPDATED (v6.4)
-1. **Dashboard**: Admin home and overview
-2. **Users**: User and dependent management
-3. **Policies**: Policy and plan administration
-4. **Lab**: Lab diagnostics hub
-5. **Services**: Service type management
-6. **Categories**: Category administration
+
+**Actual Navigation Order** (as implemented in `/web-admin/app/admin/layout.tsx`):
+1. **Dashboard**: Admin home and overview (`/admin`)
+2. **Users**: User and dependent management with tab-based interface (`/admin/users`)
+3. **Policies**: Policy and plan administration (`/admin/policies`)
+4. **Categories**: Category administration (`/admin/categories`)
+5. **Services**: Service type management (`/admin/services`)
+6. **Lab**: Lab diagnostics hub (`/admin/lab`)
 
 **ARCHITECTURAL CHANGE**: TPA and Finance portals have been moved to separate dedicated portals:
 - **TPA Portal**: `/tpa/*` (Previously `/admin/tpa/*`)

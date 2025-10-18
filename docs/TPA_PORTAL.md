@@ -538,10 +538,12 @@ All review actions stored in `reviewHistory[]`:
 | **ASSIGNED** | Assigned to TPA user | TPA_ADMIN | UNDER_REVIEW |
 | **UNDER_REVIEW** | Active review in progress | TPA_USER | APPROVED, PARTIALLY_APPROVED, REJECTED, DOCUMENTS_REQUIRED |
 | **DOCUMENTS_REQUIRED** | Additional docs needed | TPA_USER | SUBMITTED (on resubmission) |
-| **APPROVED** | Full amount approved | TPA_USER | PAYMENT_PENDING |
-| **PARTIALLY_APPROVED** | Partial amount approved | TPA_USER | PAYMENT_PENDING |
+| **APPROVED** | Full amount approved | TPA_USER | PAYMENT_PENDING (automatic) |
+| **PARTIALLY_APPROVED** | Partial amount approved | TPA_USER | PAYMENT_PENDING (automatic) |
 | **REJECTED** | Claim denied | TPA_USER | Terminal (or SUBMITTED on appeal) |
-| **PAYMENT_PENDING** | Awaiting payment processing | System | PAYMENT_PROCESSING |
+| **CANCELLED** | Claim cancelled | Member/Admin | Terminal |
+| **RESUBMISSION_REQUIRED** | Requires resubmission | TPA_USER | SUBMITTED (on resubmission) |
+| **PAYMENT_PENDING** | Awaiting payment processing | System (auto on approval) | PAYMENT_PROCESSING |
 | **PAYMENT_PROCESSING** | Payment in progress | Finance Team | PAYMENT_COMPLETED |
 | **PAYMENT_COMPLETED** | Payment disbursed | Finance Team | Terminal |
 
@@ -566,7 +568,7 @@ All review actions stored in `reviewHistory[]`:
 
 ## API Endpoints
 
-### Complete API Reference (11 Endpoints)
+### Complete API Reference (12 Endpoints)
 
 #### 1. Get All Claims (Filtered by Role)
 
@@ -722,8 +724,8 @@ POST /api/tpa/claims/:claimId/assign
 **Request Body**:
 ```json
 {
-  "assignedTo": "USR-TPA-001",
-  "assignmentNotes": "Assigning to specialist for high-value claim review"
+  "assignedTo": "507f1f77bcf86cd799439011",
+  "notes": "Assigning to specialist for high-value claim review"
 }
 ```
 
@@ -756,9 +758,8 @@ POST /api/tpa/claims/:claimId/reassign
 **Request Body**:
 ```json
 {
-  "newAssignee": "USR-TPA-002",
-  "reassignmentReason": "Original assignee on medical leave",
-  "reassignmentNotes": "Urgent claim, reassigning to available user"
+  "assignedTo": "507f1f77bcf86cd799439012",
+  "reason": "Original assignee on medical leave"
 }
 ```
 
@@ -825,23 +826,10 @@ POST /api/tpa/claims/:claimId/approve
 **Request Body**:
 ```json
 {
-  "approvalType": "PARTIAL",
   "approvedAmount": 4500,
   "approvalReason": "Treatment covered, but room rent exceeds policy limit. Applied room rent sublimit of Rs. 2000/day.",
-  "lineItemBreakdown": [
-    {
-      "service": "Room Charges",
-      "claimedAmount": 3000,
-      "approvedAmount": 2000,
-      "reason": "Policy sublimit: Rs. 2000/day"
-    },
-    {
-      "service": "Doctor Consultation",
-      "claimedAmount": 2000,
-      "approvedAmount": 2000,
-      "reason": "Fully covered"
-    }
-  ]
+  "isPartial": true,
+  "notes": "Room charges: ₹2000/day approved (claimed ₹3000/day). Doctor consultation: ₹2000 fully approved."
 }
 ```
 
@@ -876,10 +864,8 @@ POST /api/tpa/claims/:claimId/reject
 **Request Body**:
 ```json
 {
-  "rejectionCode": "PRE_AUTH_NOT_OBTAINED",
-  "rejectionReason": "Pre-authorization not obtained for planned hospitalization as per policy clause 4.2. Policy requires 48-hour advance intimation for planned procedures.",
-  "policyClauseReference": "Section 4.2 - Pre-Authorization Requirements",
-  "appealInformation": "Member can appeal within 30 days with valid justification"
+  "rejectionReason": "Pre-authorization not obtained for planned hospitalization. Policy requires 48-hour advance intimation for planned procedures.",
+  "notes": "Reviewed policy clause 4.2 - Pre-Authorization Requirements. Member can appeal within 30 days."
 }
 ```
 
@@ -894,8 +880,7 @@ POST /api/tpa/claims/:claimId/reject
     "rejectedBy": "USR-TPA-002",
     "rejectedByName": "Bob Wilson",
     "rejectedAt": "2024-01-16T16:30:00Z",
-    "rejectionCode": "PRE_AUTH_NOT_OBTAINED",
-    "rejectionReason": "Pre-authorization not obtained for planned hospitalization as per policy clause 4.2. Policy requires 48-hour advance intimation for planned procedures."
+    "rejectionReason": "Pre-authorization not obtained for planned hospitalization. Policy requires 48-hour advance intimation for planned procedures."
   }
 }
 ```
@@ -913,28 +898,13 @@ POST /api/tpa/claims/:claimId/request-documents
 **Request Body**:
 ```json
 {
-  "requiredDocumentsList": [
-    {
-      "documentType": "DETAILED_BILL",
-      "description": "Itemized hospital bill with service-wise breakdown",
-      "reason": "Original bill does not show detailed charges",
-      "mandatory": true
-    },
-    {
-      "documentType": "DISCHARGE_SUMMARY",
-      "description": "Complete discharge summary with diagnosis and treatment details",
-      "reason": "Required to verify medical necessity",
-      "mandatory": true
-    },
-    {
-      "documentType": "PRESCRIPTION",
-      "description": "Original prescription from treating doctor",
-      "reason": "To verify prescribed medications",
-      "mandatory": false
-    }
+  "documentsRequiredReason": "Original bill does not show detailed charges and discharge summary is needed to verify medical necessity",
+  "requiredDocuments": [
+    "Itemized hospital bill with service-wise breakdown",
+    "Complete discharge summary with diagnosis and treatment details",
+    "Original prescription from treating doctor"
   ],
-  "submissionDeadline": "2024-01-30T23:59:59Z",
-  "requestNotes": "Please submit all documents in PDF format. Ensure bills are clear and legible."
+  "notes": "Please submit all documents in PDF format within 7 days. Ensure bills are clear and legible."
 }
 ```
 
@@ -947,8 +917,12 @@ POST /api/tpa/claims/:claimId/request-documents
     "claimId": "CLM-2024-001235",
     "status": "DOCUMENTS_REQUIRED",
     "documentsRequired": true,
-    "requiredDocumentsCount": 3,
-    "submissionDeadline": "2024-01-30T23:59:59Z",
+    "documentsRequiredReason": "Original bill does not show detailed charges and discharge summary is needed to verify medical necessity",
+    "requiredDocuments": [
+      "Itemized hospital bill with service-wise breakdown",
+      "Complete discharge summary with diagnosis and treatment details",
+      "Original prescription from treating doctor"
+    ],
     "requestedBy": "USR-TPA-002",
     "requestedByName": "Bob Wilson",
     "requestedAt": "2024-01-16T17:00:00Z"
@@ -1080,6 +1054,68 @@ GET /api/tpa/users
 
 ---
 
+#### 12. Get Recent Activity
+
+```
+GET /api/tpa/recent-activity
+```
+
+**Authorization**: TPA_ADMIN, TPA_USER
+
+**Query Parameters**:
+- `limit`: Number of activity entries to return (default: 10)
+
+**Description**: Retrieves recent claim status changes and activities across all claims, providing a real-time activity feed for the TPA dashboard.
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Recent activity retrieved successfully",
+  "data": {
+    "activities": [
+      {
+        "id": "507f1f77bcf86cd799439011-2024-01-16T15:30:00Z",
+        "claimId": "CLM-2024-001234",
+        "action": "Claim approved",
+        "actor": "Jane Smith",
+        "actorRole": "TPA_USER",
+        "timestamp": "2024-01-16T15:30:00Z",
+        "status": "APPROVED"
+      },
+      {
+        "id": "507f1f77bcf86cd799439012-2024-01-16T14:20:00Z",
+        "claimId": "CLM-2024-001235",
+        "action": "Documents requested",
+        "actor": "Bob Wilson",
+        "actorRole": "TPA_USER",
+        "timestamp": "2024-01-16T14:20:00Z",
+        "status": "DOCUMENTS_REQUIRED"
+      },
+      {
+        "id": "507f1f77bcf86cd799439013-2024-01-16T13:10:00Z",
+        "claimId": "CLM-2024-001236",
+        "action": "Claim assigned",
+        "actor": "Admin User",
+        "actorRole": "TPA_ADMIN",
+        "timestamp": "2024-01-16T13:10:00Z",
+        "status": "ASSIGNED"
+      }
+    ],
+    "total": 3
+  }
+}
+```
+
+**Use Cases**:
+- Dashboard activity feed
+- Real-time monitoring of claim processing
+- Audit trail visibility
+- Team activity overview
+- Quick status change tracking
+
+---
+
 ## Database Integration
 
 ### Collection: `memberclaims`
@@ -1142,13 +1178,9 @@ The TPA portal integrates with the `memberclaims` collection in MongoDB, extendi
         type: String,
         description: "Name of admin who reassigned"
       },
-      reassignmentReason: {
+      reason: {
         type: String,
         description: "Reason for reassignment"
-      },
-      reassignmentNotes: {
-        type: String,
-        description: "Additional notes about reassignment"
       },
       reassignedAt: {
         type: Date,
@@ -1245,42 +1277,22 @@ The TPA portal integrates with the `memberclaims` collection in MongoDB, extendi
     default: false,
     description: "Flag indicating if additional documents are required"
   },
-  requiredDocumentsList: [
-    {
-      documentType: {
-        type: String,
-        description: "Type of document required"
-      },
-      description: {
-        type: String,
-        description: "Detailed description of required document"
-      },
-      reason: {
-        type: String,
-        description: "Why this document is required"
-      },
-      mandatory: {
-        type: Boolean,
-        description: "Whether document is mandatory"
-      },
-      received: {
-        type: Boolean,
-        default: false,
-        description: "Whether document has been received"
-      },
-      receivedAt: {
-        type: Date,
-        description: "When document was received"
-      }
-    }
-  ],
-  documentRequestDate: {
+  documentsRequiredReason: {
+    type: String,
+    description: "Reason why additional documents are required"
+  },
+  documentsRequiredAt: {
     type: Date,
     description: "When documents were requested"
   },
-  documentSubmissionDeadline: {
-    type: Date,
-    description: "Deadline for document submission"
+  documentsRequiredBy: {
+    type: Types.ObjectId,
+    ref: 'User',
+    description: "User ID of TPA user who requested documents"
+  },
+  requiredDocumentsList: {
+    type: [String],
+    description: "Array of required document descriptions (simple strings)"
   }
 }
 ```
@@ -1294,7 +1306,8 @@ The TPA portal integrates with the `memberclaims` collection in MongoDB, extendi
     description: "Detailed reason for approval or partial approval"
   },
   approvedBy: {
-    type: String,
+    type: Types.ObjectId,
+    ref: 'User',
     description: "User ID of TPA user who approved"
   },
   approvedByName: {
@@ -1305,33 +1318,14 @@ The TPA portal integrates with the `memberclaims` collection in MongoDB, extendi
     type: Date,
     description: "Timestamp of approval"
   },
-  approvalType: {
-    type: String,
-    enum: ['FULL', 'PARTIAL'],
-    description: "Type of approval"
-  },
-  lineItemBreakdown: [
-    {
-      service: {
-        type: String,
-        description: "Service or treatment description"
-      },
-      claimedAmount: {
-        type: Number,
-        description: "Amount claimed for this service"
-      },
-      approvedAmount: {
-        type: Number,
-        description: "Amount approved for this service"
-      },
-      reason: {
-        type: String,
-        description: "Reason for approval or adjustment"
-      }
-    }
-  ]
+  approvedAmount: {
+    type: Number,
+    description: "Approved amount (can be full or partial)"
+  }
 }
 ```
+
+**Note**: Approval type (full vs partial) is determined by comparing `approvedAmount` with `billAmount`. When a claim is approved, the status automatically transitions to `PAYMENT_PENDING`.
 
 ##### Rejection Fields
 
@@ -1341,12 +1335,9 @@ The TPA portal integrates with the `memberclaims` collection in MongoDB, extendi
     type: String,
     description: "Detailed reason for claim rejection"
   },
-  rejectionCode: {
-    type: String,
-    description: "Standard rejection code"
-  },
   rejectedBy: {
-    type: String,
+    type: Types.ObjectId,
+    ref: 'User',
     description: "User ID of TPA user who rejected"
   },
   rejectedByName: {
@@ -1357,20 +1348,14 @@ The TPA portal integrates with the `memberclaims` collection in MongoDB, extendi
     type: Date,
     description: "Timestamp of rejection"
   },
-  policyClauseReference: {
-    type: String,
-    description: "Policy clause justifying rejection"
-  },
-  appealInformation: {
-    type: String,
-    description: "Information about appeal process"
-  },
-  appealDeadline: {
-    type: Date,
-    description: "Last date for filing appeal"
+  rejectedAmount: {
+    type: Number,
+    description: "Amount that was rejected"
   }
 }
 ```
+
+**Note**: Additional details such as policy clause references and appeal information can be included in the `rejectionReason` or in the optional `notes` field of the RejectClaimDto.
 
 ### Database Indexes
 
@@ -1401,25 +1386,20 @@ db.memberclaims.createIndex({ assignedTo: 1, reviewCompletedAt: 1 });
 
 ```typescript
 class AssignClaimDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsMongoId()
   assignedTo: string; // User ID of TPA user
 
-  @IsString()
   @IsOptional()
-  assignmentNotes?: string; // Optional notes about assignment
-
   @IsString()
-  @IsOptional()
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'; // Assignment priority
+  notes?: string; // Optional notes about assignment
 }
 ```
 
 **Validation Rules**:
+- `assignedTo` must be valid MongoDB ObjectId
 - `assignedTo` must be valid TPA_USER role user ID
 - `assignedTo` cannot be the same as current assignee
 - User must have active status
-- `assignmentNotes` max length: 500 characters
 
 ---
 
@@ -1427,29 +1407,19 @@ class AssignClaimDto {
 
 ```typescript
 class ReassignClaimDto {
-  @IsString()
-  @IsNotEmpty()
-  newAssignee: string; // User ID of new TPA user
+  @IsMongoId()
+  assignedTo: string; // User ID of new TPA user
 
   @IsString()
-  @IsNotEmpty()
-  reassignmentReason: string; // Mandatory reason for reassignment
-
-  @IsString()
-  @IsOptional()
-  reassignmentNotes?: string; // Optional additional notes
-
-  @IsBoolean()
-  @IsOptional()
-  notifyPreviousAssignee?: boolean; // Whether to notify previous assignee
+  reason: string; // Reason for reassignment
 }
 ```
 
 **Validation Rules**:
-- `newAssignee` must be different from current assignee
-- `newAssignee` must be valid TPA_USER
-- `reassignmentReason` is mandatory, min length: 10 characters
-- `reassignmentNotes` max length: 500 characters
+- `assignedTo` must be valid MongoDB ObjectId
+- `assignedTo` must be different from current assignee
+- `assignedTo` must be valid TPA_USER
+- `reason` is mandatory
 
 ---
 
@@ -1483,56 +1453,28 @@ class UpdateStatusDto {
 ### 4. ApproveClaimDto
 
 ```typescript
-class LineItemDto {
-  @IsString()
-  @IsNotEmpty()
-  service: string; // Service description
-
-  @IsNumber()
-  @Min(0)
-  claimedAmount: number; // Claimed amount for service
-
-  @IsNumber()
-  @Min(0)
-  approvedAmount: number; // Approved amount for service
-
-  @IsString()
-  @IsNotEmpty()
-  reason: string; // Reason for approval/adjustment
-}
-
 class ApproveClaimDto {
-  @IsString()
-  @IsNotEmpty()
-  @IsEnum(['FULL', 'PARTIAL'])
-  approvalType: string; // Type of approval
-
   @IsNumber()
   @Min(0)
-  approvedAmount: number; // Total approved amount
+  approvedAmount: number; // Approved amount for the claim
 
   @IsString()
-  @IsNotEmpty()
-  approvalReason: string; // Detailed approval reason
+  approvalReason: string; // Reason for approval or partial approval
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => LineItemDto)
+  @IsBoolean()
+  isPartial: boolean; // Whether this is a partial approval
+
   @IsOptional()
-  lineItemBreakdown?: LineItemDto[]; // Line-by-line breakdown
-
   @IsString()
-  @IsOptional()
-  paymentInstructions?: string; // Special payment instructions
+  notes?: string; // Optional internal notes
 }
 ```
 
 **Validation Rules**:
 - `approvedAmount` cannot exceed `claimedAmount`
-- For PARTIAL approval, `lineItemBreakdown` is recommended
-- Sum of line items must equal `approvedAmount`
-- `approvalReason` min length: 20 characters
-- Each line item's `approvedAmount` cannot exceed its `claimedAmount`
+- `approvedAmount` must be greater than or equal to 0
+- `approvalReason` is mandatory
+- When approved, claim automatically transitions to `PAYMENT_PENDING` status
 
 ---
 
@@ -1541,112 +1483,51 @@ class ApproveClaimDto {
 ```typescript
 class RejectClaimDto {
   @IsString()
-  @IsNotEmpty()
-  rejectionCode: string; // Standard rejection code
+  rejectionReason: string; // Reason for rejection
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  rejectionReason: string; // Detailed rejection explanation
-
-  @IsString()
-  @IsOptional()
-  policyClauseReference?: string; // Policy clause reference
-
-  @IsString()
-  @IsOptional()
-  appealInformation?: string; // Appeal process information
-
-  @IsDate()
-  @IsOptional()
-  appealDeadline?: Date; // Last date for appeal
-
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  alternativeOptions?: string[]; // Alternative options for member
+  notes?: string; // Optional internal notes
 }
 ```
 
 **Validation Rules**:
-- `rejectionCode` must be from predefined list
-- `rejectionReason` min length: 50 characters (must be detailed)
-- `appealDeadline` must be future date
+- `rejectionReason` is mandatory
 - Clear explanation required for member understanding
-
-**Common Rejection Codes**:
-- `PRE_AUTH_NOT_OBTAINED`: Pre-authorization not obtained
-- `POLICY_EXPIRED`: Policy was not active at service date
-- `SERVICE_NOT_COVERED`: Service not covered under policy
-- `PROVIDER_NOT_IN_NETWORK`: Out-of-network provider
-- `CLAIM_FILING_LIMIT_EXCEEDED`: Filed beyond time limit
-- `DUPLICATE_CLAIM`: Duplicate claim submission
-- `MEDICAL_NECESSITY_NOT_ESTABLISHED`: Medical necessity not proven
-- `FRAUDULENT_CLAIM`: Suspected fraud
 
 ---
 
 ### 6. RequestDocumentsDto
 
 ```typescript
-class RequiredDocumentDto {
-  @IsString()
-  @IsNotEmpty()
-  documentType: string; // Type of document
-
-  @IsString()
-  @IsNotEmpty()
-  description: string; // Detailed description
-
-  @IsString()
-  @IsNotEmpty()
-  reason: string; // Why document is needed
-
-  @IsBoolean()
-  mandatory: boolean; // Whether document is mandatory
-}
-
 class RequestDocumentsDto {
+  @IsString()
+  documentsRequiredReason: string; // Reason why additional documents are required
+
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => RequiredDocumentDto)
-  @ArrayMinSize(1)
-  requiredDocumentsList: RequiredDocumentDto[]; // List of required documents
+  @IsString({ each: true })
+  requiredDocuments: string[]; // List of required documents
 
-  @IsDate()
-  @IsNotEmpty()
-  submissionDeadline: Date; // Deadline for submission
-
+  @IsOptional()
   @IsString()
-  @IsOptional()
-  requestNotes?: string; // Additional instructions
-
-  @IsString()
-  @IsOptional()
-  submissionMethod?: string; // How to submit (upload, email, etc.)
-
-  @IsBoolean()
-  @IsOptional()
-  urgentRequest?: boolean; // Whether request is urgent
+  notes?: string; // Optional internal notes
 }
 ```
 
 **Validation Rules**:
-- At least one document must be required
-- `submissionDeadline` must be future date (typically 7-15 days)
-- Each document must have clear description and reason
-- `requestNotes` should include submission instructions
+- `documentsRequiredReason` is mandatory
+- `requiredDocuments` must be an array of strings
+- At least one document should be specified in the array
 
-**Common Document Types**:
-- `DETAILED_BILL`: Itemized hospital bill
-- `DISCHARGE_SUMMARY`: Discharge summary
-- `PRESCRIPTION`: Doctor's prescription
-- `LAB_REPORTS`: Laboratory test reports
-- `DIAGNOSTIC_REPORTS`: X-ray, CT scan, MRI reports
-- `DOCTOR_NOTES`: Consultation notes
-- `PRE_AUTH_LETTER`: Pre-authorization letter
-- `REFERRAL_LETTER`: Referral from primary doctor
-- `PHARMACY_BILLS`: Medicine purchase bills
-- `ORIGINAL_DOCUMENTS`: Original bills/receipts
+**Common Document Types** (examples for the string array):
+- `'Original Invoice'`
+- `'Prescription Copy'`
+- `'Lab Report'`
+- `'Discharge Summary'`
+- `'Doctor's Consultation Notes'`
+- `'X-ray/CT Scan Reports'`
+- `'Pharmacy Bills'`
+- `'Referral Letter'`
 
 ---
 

@@ -1,6 +1,6 @@
 # Doctor Portal Documentation
 
-**Version**: 6.7
+**Version**: 6.8
 **Last Updated**: 2025-10-15
 **Portal URL**: `/doctorview/*`
 
@@ -782,7 +782,10 @@ export default ErrorBoundary;
 **Features**:
 - Catches React component errors
 - Displays user-friendly error message
-- Provides reload button for recovery
+- Provides two recovery buttons:
+  - "Go to Dashboard" - Redirects to `/doctorview` home page
+  - "Reload Page" - Refreshes the current page
+- Shows error details in development mode
 - Logs errors to console for debugging
 
 ### Code Organization
@@ -794,6 +797,9 @@ Extracted helper functions to separate utility modules:
 **File**: `/lib/utils/appointment-helpers.ts`
 
 ```tsx
+/**
+ * Get the status color classes for appointment status badges
+ */
 export function getStatusColor(status: string): string {
   switch (status) {
     case 'CONFIRMED':
@@ -809,6 +815,29 @@ export function getStatusColor(status: string): string {
   }
 }
 
+/**
+ * Format date to readable string
+ */
+export function formatAppointmentDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Format file size to human-readable format
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/**
+ * Get appointment type display text
+ */
 export function getAppointmentTypeText(type: string): string {
   return type === 'ONLINE' ? 'Online Consultation' : 'In-Clinic Visit';
 }
@@ -827,26 +856,35 @@ Centralized configuration values:
 **File**: `/lib/utils/constants.ts`
 
 ```tsx
-// File upload constraints
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-export const ALLOWED_PRESCRIPTION_TYPES = ['application/pdf'];
-
-// API configuration
+// API Configuration
 export const API_TIMEOUT_MS = 10000; // 10 seconds
-export const RETRY_ATTEMPTS = 1;
 
 // Pagination
 export const DEFAULT_PAGE_SIZE = 20;
-export const MAX_PAGE_SIZE = 100;
+export const APPOINTMENTS_PAGE_SIZE = 50;
 
-// Date formats
-export const DISPLAY_DATE_FORMAT = 'MMM DD, YYYY';
-export const API_DATE_FORMAT = 'YYYY-MM-DD';
+// File Upload
+export const MAX_FILE_SIZE_MB = 10;
+export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // 10MB
+export const ALLOWED_PRESCRIPTION_TYPES = ['application/pdf'];
+
+// Date Formats
+export const DATE_FORMAT_DISPLAY = {
+  year: 'numeric' as const,
+  month: 'long' as const,
+  day: 'numeric' as const,
+};
+
+export const DATE_FORMAT_SHORT = {
+  year: 'numeric' as const,
+  month: 'short' as const,
+  day: 'numeric' as const,
+};
 ```
 
 **Usage in Components**:
 ```tsx
-import { MAX_FILE_SIZE_BYTES, ALLOWED_PRESCRIPTION_TYPES } from '@/lib/utils/constants';
+import { MAX_FILE_SIZE_BYTES, ALLOWED_PRESCRIPTION_TYPES, APPOINTMENTS_PAGE_SIZE } from '@/lib/utils/constants';
 
 // Validate file size
 if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
@@ -859,6 +897,9 @@ if (!ALLOWED_PRESCRIPTION_TYPES.includes(selectedFile.type)) {
   setError('Only PDF files are allowed');
   return;
 }
+
+// Use in pagination
+const limit = APPOINTMENTS_PAGE_SIZE; // 50 appointments per page
 ```
 
 **Benefits**:

@@ -295,8 +295,10 @@ Real-time display of active or upcoming appointments with multiple display varia
 import { onAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
 
 // Listen for appointment changes
-onAppointmentEvent(AppointmentEvents.APPOINTMENT_CREATED, fetchAppointments)
-onAppointmentEvent(AppointmentEvents.APPOINTMENT_CONFIRMED, fetchAppointments)
+onAppointmentEvent(AppointmentEvents.BOOKING_CREATED, fetchAppointments)
+onAppointmentEvent(AppointmentEvents.BOOKING_UPDATED, fetchAppointments)
+onAppointmentEvent(AppointmentEvents.BOOKING_CANCELLED, fetchAppointments)
+onAppointmentEvent(AppointmentEvents.PRESCRIPTION_AVAILABLE, fetchAppointments)
 ```
 
 ### Integration
@@ -1352,13 +1354,16 @@ The lab module consists of 7 dedicated pages:
 - Vendor contact info
 - Reschedule/Cancel options
 
-#### 7. Prescriptions (implied from workflow)
-**Path**: `/web-member/app/member/lab-tests/prescriptions/page.tsx` (likely)
-**Purpose**: Manage uploaded prescriptions
+#### 7. Prescriptions Management
+**Path**: Integrated inline in `/web-member/app/member/lab-tests/page.tsx`
+**Purpose**: View and manage uploaded prescriptions
 **Components**:
-- Prescription history
-- Status tracking
-- Download options
+- Prescription history (displayed inline on hub page)
+- Status tracking (UPLOADED, DIGITIZING, DIGITIZED)
+- Cart linking for digitized prescriptions
+- View recent prescriptions (last 5)
+
+**Note**: Prescriptions are managed inline within the Lab Tests Hub page, not as a separate route. The page shows recent prescriptions with their status and allows users to review associated carts once prescriptions are digitized.
 
 ### Component Structure
 

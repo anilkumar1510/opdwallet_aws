@@ -3,7 +3,7 @@
 **Document Version:** 3.3
 **Last Updated:** October 15, 2025 (Video Consultations Integration)
 **Database:** MongoDB (opd_wallet)
-**Total Collections:** 28
+**Total Collections:** 30
 
 ---
 
@@ -27,18 +27,21 @@
    - [specialty_master](#13-specialty_master)
    - [doctors](#14-doctors)
    - [clinics](#15-clinics)
-   - [doctor_slots](#16-doctor_slots)
-   - [appointments](#17-appointments)
-   - [video_consultations](#18-video_consultations)
-   - [memberclaims](#19-memberclaims)
-   - [notifications](#20-notifications)
-   - [lab_prescriptions](#21-lab_prescriptions)
-   - [lab_carts](#22-lab_carts)
-   - [lab_services](#23-lab_services)
-   - [lab_vendors](#24-lab_vendors)
-   - [lab_vendor_pricing](#25-lab_vendor_pricing)
-   - [lab_vendor_slots](#26-lab_vendor_slots)
-   - [lab_orders](#27-lab_orders)
+   - [doctor_prescriptions](#16-doctor_prescriptions)
+   - [doctor_slots](#17-doctor_slots)
+   - [appointments](#18-appointments)
+   - [video_consultations](#19-video_consultations)
+   - [memberclaims](#20-memberclaims)
+   - [notifications](#21-notifications)
+   - [lab_prescriptions](#22-lab_prescriptions)
+   - [lab_carts](#23-lab_carts)
+   - [lab_services](#24-lab_services)
+   - [lab_vendors](#25-lab_vendors)
+   - [lab_vendor_pricing](#26-lab_vendor_pricing)
+   - [lab_vendor_slots](#27-lab_vendor_slots)
+   - [lab_orders](#28-lab_orders)
+   - [payments](#29-payments)
+   - [transaction_summaries](#30-transaction_summaries)
 4. [Relationships & Foreign Keys](#relationships--foreign-keys)
 5. [Data Integrity Rules](#data-integrity-rules)
 6. [Indexes & Performance](#indexes--performance)
@@ -52,7 +55,7 @@
 
 **Database Name:** `opd_wallet`
 **Authentication:** MongoDB Admin Auth
-**Total Collections:** 28
+**Total Collections:** 30
 **Total Documents:** Variable (production usage-dependent)
 
 ### Current Data Distribution
@@ -135,6 +138,10 @@
 - **lab_vendor_pricing** - Vendor-specific service pricing
 - **lab_vendor_slots** - Available time slots for sample collection
 - **lab_orders** - Final lab orders with reports
+
+### Payment & Transaction Collections
+- **payments** - Payment transactions for all services (appointments, claims, lab orders, pharmacy, wallet top-ups)
+- **transaction_summaries** - Transaction summaries with payment breakdown (wallet vs self-paid)
 
 ### System Collections
 - **counters** - Auto-increment counters for IDs
@@ -1744,7 +1751,7 @@ enum ConsultationType {
 
 ---
 
-### 17. appointments
+### 18. appointments
 
 **Collection Name:** `appointments`
 **Purpose:** Store appointment bookings with status tracking and payment information
@@ -1932,7 +1939,7 @@ enum CallPreference {
 
 ---
 
-### 18. video_consultations ✨ NEW (v6.7)
+### 19. video_consultations ✨ NEW (v6.7)
 
 **Collection Name:** `video_consultations`
 **Purpose:** Store video consultation sessions for online appointments with WebRTC integration
@@ -2119,7 +2126,7 @@ GET    /api/video-consultations/patient/history # Patient's consultation history
 
 ---
 
-### 19. memberclaims
+### 20. memberclaims
 
 **Collection Name:** `memberclaims`
 **Purpose:** Complete claims/reimbursement management with TPA integration
@@ -2436,7 +2443,7 @@ enum PaymentStatus {
 
 ---
 
-### 20. notifications
+### 21. notifications
 
 **Collection Name:** `notifications`
 **Purpose:** System notifications for claims, assignments, and status updates
@@ -2538,7 +2545,7 @@ enum NotificationPriority {
 
 ---
 
-### 21. lab_prescriptions
+### 22. lab_prescriptions
 
 **Collection Name:** `lab_prescriptions`
 **Purpose:** Store uploaded lab test prescriptions from members
@@ -2636,7 +2643,7 @@ enum PrescriptionStatus {
 
 ---
 
-### 22. lab_carts
+### 23. lab_carts
 
 **Collection Name:** `lab_carts`
 **Purpose:** Digitized lab test carts with services from prescriptions
@@ -2739,7 +2746,7 @@ enum CartStatus {
 
 ---
 
-### 23. lab_services
+### 24. lab_services
 
 **Collection Name:** `lab_services`
 **Purpose:** Master catalog of lab diagnostic services/tests
@@ -2815,7 +2822,7 @@ enum LabServiceCategory {
 
 ---
 
-### 24. lab_vendors
+### 25. lab_vendors
 
 **Collection Name:** `lab_vendors`
 **Purpose:** Partner laboratory vendors and diagnostic centers
@@ -2898,7 +2905,7 @@ enum LabServiceCategory {
 
 ---
 
-### 25. lab_vendor_pricing
+### 26. lab_vendor_pricing
 
 **Collection Name:** `lab_vendor_pricing`
 **Purpose:** Vendor-specific pricing for lab services
@@ -2955,7 +2962,7 @@ enum LabServiceCategory {
 
 ---
 
-### 26. lab_vendor_slots
+### 27. lab_vendor_slots
 
 **Collection Name:** `lab_vendor_slots`
 **Purpose:** Available time slots for sample collection at vendor locations
@@ -3021,7 +3028,7 @@ enum LabServiceCategory {
 
 ---
 
-### 27. lab_orders
+### 28. lab_orders
 
 **Collection Name:** `lab_orders`
 **Purpose:** Final lab test orders with payment and report tracking
@@ -3234,6 +3241,275 @@ enum PaymentStatus {
 
 ---
 
+### 29. payments
+
+**Collection Name:** `payments`
+**Purpose:** Track all payment transactions for services (appointments, claims, lab orders, pharmacy, wallet top-ups)
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  paymentId: string,                // REQUIRED, UNIQUE - Payment identifier (e.g., "PAY-20250116-0001")
+  userId: ObjectId,                 // REQUIRED, REF: 'User', INDEX - References users._id
+  amount: number,                   // REQUIRED - Payment amount
+  paymentType: string,              // REQUIRED, ENUM: PaymentType - Type of payment
+  status: string,                   // ENUM: PaymentStatus, DEFAULT: 'PENDING', INDEX - Payment status
+
+  // Service linkage
+  serviceType: string,              // ENUM: ServiceType - What service this payment is for
+  serviceId: ObjectId,              // Service-specific ID (appointment._id, claim._id, etc.)
+  serviceReferenceId: string,       // Human-readable reference (APT-001, CLM-001, etc.)
+  description: string,              // Payment description
+
+  // Payment gateway fields
+  paymentMethod: string,            // DEFAULT: 'DUMMY_GATEWAY' - Payment method used
+  transactionId: string,            // External transaction ID from payment gateway
+  paidAt: Date,                     // Payment completion timestamp
+  markedAsPaidBy: ObjectId,         // REF: 'User' - User who marked payment as paid
+
+  // Metadata
+  notes: string,                    // Additional notes
+  failureReason: string,            // Reason if payment failed
+  isActive: boolean,                // DEFAULT: true - Is payment record active
+
+  createdAt: Date,                  // AUTO - Creation timestamp
+  updatedAt: Date                   // AUTO - Last update timestamp
+}
+```
+
+#### Enums
+
+**PaymentType:**
+```typescript
+enum PaymentType {
+  COPAY = 'COPAY',                      // Co-payment (patient pays portion)
+  OUT_OF_POCKET = 'OUT_OF_POCKET',      // Full out-of-pocket payment
+  FULL_PAYMENT = 'FULL_PAYMENT',        // Complete payment for service
+  PARTIAL_PAYMENT = 'PARTIAL_PAYMENT',  // Partial payment
+  TOP_UP = 'TOP_UP'                     // Wallet top-up payment
+}
+```
+
+**PaymentStatus:**
+```typescript
+enum PaymentStatus {
+  PENDING = 'PENDING',         // Payment initiated but not completed
+  COMPLETED = 'COMPLETED',     // Payment successfully completed
+  FAILED = 'FAILED',          // Payment failed
+  CANCELLED = 'CANCELLED'      // Payment cancelled
+}
+```
+
+**ServiceType:**
+```typescript
+enum ServiceType {
+  APPOINTMENT = 'APPOINTMENT',       // Doctor appointment payment
+  CLAIM = 'CLAIM',                  // Claim/reimbursement payment
+  LAB_ORDER = 'LAB_ORDER',          // Lab diagnostic test payment
+  PHARMACY = 'PHARMACY',            // Pharmacy/medicine payment
+  WALLET_TOPUP = 'WALLET_TOPUP'     // Wallet balance top-up
+}
+```
+
+#### Indexes
+
+```typescript
+{ paymentId: 1 }, { unique: true }              // Unique payment ID
+{ userId: 1, createdAt: -1 }                    // User's payment history
+{ serviceType: 1, serviceId: 1 }                // Service-based queries
+{ status: 1, createdAt: -1 }                    // Status-based queries
+```
+
+#### Validation Rules
+
+1. **paymentId** - Must be unique across all payments, format "PAY-YYYYMMDD-####"
+2. **userId** - Must reference a valid User document
+3. **amount** - Must be > 0
+4. **paymentType** - Must be one of the defined enum values
+5. **status** - Must be one of the defined enum values
+6. **serviceType** - Must be one of the defined enum values if provided
+7. **serviceId** - Required if serviceType is provided
+8. **paymentMethod** - Defaults to 'DUMMY_GATEWAY' for development
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("679d8e123abc456789012800"),
+  "paymentId": "PAY-20250116-0001",
+  "userId": ObjectId("68ce7f937ca7c61fde313123"),
+  "amount": 200,
+  "paymentType": "COPAY",
+  "status": "COMPLETED",
+  "serviceType": "APPOINTMENT",
+  "serviceId": ObjectId("68ce7f937ca7c61fde313def"),
+  "serviceReferenceId": "APT-20250116-0001",
+  "description": "Co-payment for Dr. Sharma consultation",
+  "paymentMethod": "DUMMY_GATEWAY",
+  "transactionId": "TXN-DUMMY-20250116-001",
+  "paidAt": ISODate("2025-01-16T10:30:00Z"),
+  "markedAsPaidBy": ObjectId("68ce7f937ca7c61fde313456"),
+  "notes": "Payment processed via dummy gateway",
+  "isActive": true,
+  "createdAt": ISODate("2025-01-16T10:30:00Z"),
+  "updatedAt": ISODate("2025-01-16T10:30:00Z")
+}
+```
+
+---
+
+### 30. transaction_summaries
+
+**Collection Name:** `transaction_summaries`
+**Purpose:** Comprehensive transaction summaries showing payment breakdown (wallet vs self-paid) for services
+**Document Count:** Variable
+**Timestamps:** Yes (createdAt, updatedAt)
+
+#### Schema Definition
+
+```typescript
+{
+  _id: ObjectId,
+  transactionId: string,            // REQUIRED, UNIQUE - Transaction identifier (e.g., "TXN-20250116-0001")
+  userId: ObjectId,                 // REQUIRED, REF: 'User', INDEX - References users._id
+
+  // Service details
+  serviceType: string,              // REQUIRED, ENUM: TransactionServiceType, INDEX - Type of service
+  serviceId: ObjectId,              // REQUIRED - Reference to service document
+  serviceReferenceId: string,       // REQUIRED - Human-readable reference (APT-001, CLM-001)
+  serviceName: string,              // REQUIRED - Service description
+  serviceDate: Date,                // REQUIRED - When service is/was scheduled
+
+  // Payment breakdown
+  totalAmount: number,              // REQUIRED - Total service cost
+  walletAmount: number,             // DEFAULT: 0 - Amount paid from wallet
+  selfPaidAmount: number,           // DEFAULT: 0 - Amount paid out-of-pocket
+  copayAmount: number,              // DEFAULT: 0 - Co-payment amount if applicable
+
+  // Payment method and references
+  paymentMethod: string,            // REQUIRED, ENUM: PaymentMethod - How payment was made
+  paymentId: ObjectId,              // REF: 'Payment' - Link to payment record if self-paid
+
+  // Category information
+  categoryCode: string,             // Category code for wallet debit
+  categoryName: string,             // Category name (Consultation, Diagnostics, etc.)
+
+  // Status tracking
+  status: string,                   // ENUM: TransactionStatus, DEFAULT: 'PENDING_PAYMENT', INDEX
+  completedAt: Date,                // Transaction completion timestamp
+  refundedAt: Date,                 // Refund timestamp if applicable
+  cancelledAt: Date,                // Cancellation timestamp if applicable
+
+  // Additional metadata
+  description: string,              // Transaction description
+  notes: string,                    // Additional notes
+
+  // Wallet transaction references
+  walletTransactionIds: [ObjectId], // REF: 'WalletTransaction' - Related wallet transactions
+
+  // Refund information
+  refundAmount: number,             // Refund amount if applicable
+  refundReason: string,             // Reason for refund
+
+  isActive: boolean,                // DEFAULT: true - Is transaction active
+  createdAt: Date,                  // AUTO - Creation timestamp
+  updatedAt: Date                   // AUTO - Last update timestamp
+}
+```
+
+#### Enums
+
+**TransactionServiceType:**
+```typescript
+enum TransactionServiceType {
+  APPOINTMENT = 'APPOINTMENT',     // Doctor appointment
+  CLAIM = 'CLAIM',                // Insurance claim
+  LAB_ORDER = 'LAB_ORDER',        // Lab diagnostic test
+  PHARMACY = 'PHARMACY'            // Pharmacy/medicine purchase
+}
+```
+
+**TransactionStatus:**
+```typescript
+enum TransactionStatus {
+  PENDING_PAYMENT = 'PENDING_PAYMENT',   // Payment pending
+  COMPLETED = 'COMPLETED',               // Transaction completed
+  FAILED = 'FAILED',                     // Transaction failed
+  REFUNDED = 'REFUNDED',                 // Transaction refunded
+  CANCELLED = 'CANCELLED'                // Transaction cancelled
+}
+```
+
+**PaymentMethod:**
+```typescript
+enum PaymentMethod {
+  WALLET_ONLY = 'WALLET_ONLY',           // Fully paid from wallet
+  COPAY = 'COPAY',                       // Co-payment (wallet + self-paid)
+  OUT_OF_POCKET = 'OUT_OF_POCKET',       // Fully out-of-pocket
+  PARTIAL = 'PARTIAL',                   // Partial payment (wallet + self-paid)
+  FULL_PAYMENT = 'FULL_PAYMENT'          // Full payment without wallet
+}
+```
+
+#### Indexes
+
+```typescript
+{ transactionId: 1 }, { unique: true }          // Unique transaction ID
+{ userId: 1, createdAt: -1 }                    // User's transaction history
+{ serviceType: 1, serviceId: 1 }                // Service-based queries
+{ status: 1 }                                   // Status-based queries
+{ paymentMethod: 1 }                            // Payment method queries
+{ serviceDate: -1 }                             // Date-based queries
+```
+
+#### Validation Rules
+
+1. **transactionId** - Must be unique across all transactions, format "TXN-YYYYMMDD-####"
+2. **userId** - Must reference a valid User document
+3. **serviceType** - Must be one of the defined enum values
+4. **serviceId** - Must reference a valid service document
+5. **totalAmount** - Must be > 0
+6. **walletAmount + selfPaidAmount** - Should equal totalAmount (with copayAmount tracked separately)
+7. **paymentMethod** - Must be one of the defined enum values
+8. **status** - Must be one of the defined enum values
+
+#### Sample Data Example
+
+```json
+{
+  "_id": ObjectId("679d8e123abc456789012900"),
+  "transactionId": "TXN-20250116-0001",
+  "userId": ObjectId("68ce7f937ca7c61fde313123"),
+  "serviceType": "APPOINTMENT",
+  "serviceId": ObjectId("68ce7f937ca7c61fde313def"),
+  "serviceReferenceId": "APT-20250116-0001",
+  "serviceName": "Dr. Sharma Consultation - General Medicine",
+  "serviceDate": ISODate("2025-01-20T10:00:00Z"),
+  "totalAmount": 1000,
+  "walletAmount": 800,
+  "selfPaidAmount": 200,
+  "copayAmount": 200,
+  "paymentMethod": "COPAY",
+  "paymentId": ObjectId("679d8e123abc456789012800"),
+  "categoryCode": "CAT001",
+  "categoryName": "Consultation",
+  "status": "COMPLETED",
+  "completedAt": ISODate("2025-01-16T10:30:00Z"),
+  "description": "Doctor consultation with co-payment",
+  "notes": "80% covered by wallet, 20% co-pay",
+  "walletTransactionIds": [ObjectId("679d8e123abc456789012850")],
+  "isActive": true,
+  "createdAt": ISODate("2025-01-16T10:30:00Z"),
+  "updatedAt": ISODate("2025-01-16T10:30:00Z")
+}
+```
+
+---
+
 ## RELATIONSHIPS & FOREIGN KEYS
 
 ### Key Relationships
@@ -3274,6 +3550,19 @@ lab_services._id ← lab_vendor_pricing.serviceId
 lab_services._id ← lab_carts.items.serviceId
 lab_services._id ← lab_orders.items.serviceId
 lab_vendor_slots._id ← lab_orders.slotId
+
+// Payment & Transaction Relationships
+users._id ← payments.userId
+users._id ← payments.markedAsPaidBy
+appointments._id ← payments.serviceId (when serviceType = APPOINTMENT)
+memberclaims._id ← payments.serviceId (when serviceType = CLAIM)
+lab_orders._id ← payments.serviceId (when serviceType = LAB_ORDER)
+users._id ← transaction_summaries.userId
+payments._id ← transaction_summaries.paymentId
+wallet_transactions._id ← transaction_summaries.walletTransactionIds
+appointments._id ← transaction_summaries.serviceId (when serviceType = APPOINTMENT)
+memberclaims._id ← transaction_summaries.serviceId (when serviceType = CLAIM)
+lab_orders._id ← transaction_summaries.serviceId (when serviceType = LAB_ORDER)
 ```
 
 ---
@@ -3406,8 +3695,9 @@ None currently identified
 - GET /api/video-consultations/patient/history
 
 **Updated Sections:**
-- Total collections: 27 → 28
+- Total collections: 27 → 30 (added video_consultations, payments, transaction_summaries)
 - Added video_consultations to Healthcare Collections
+- Added payments and transaction_summaries to Payment & Transaction Collections
 - Added video consultation relationships
 - Updated table of contents and navigation
 
