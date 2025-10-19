@@ -5,8 +5,13 @@ help:
 	@echo "OPD Wallet Docker Management"
 	@echo "============================"
 	@echo ""
-	@echo "Development:"
-	@echo "  make up          - Start all services with Docker"
+	@echo "Development (Quick Start):"
+	@echo "  make dev-prod-like      - 🌟 RECOMMENDED: Production-like dev (nginx + remote DB)"
+	@echo "  make dev-prod-like-logs - View logs for production-like dev"
+	@echo "  make dev-prod-like-down - Stop production-like dev environment"
+	@echo ""
+	@echo "Development (Legacy/Local DB):"
+	@echo "  make up          - Start all services with Docker (local MongoDB)"
 	@echo "  make down        - Stop all services"
 	@echo "  make restart     - Restart all services"
 	@echo "  make logs        - View logs for all services"
@@ -235,3 +240,94 @@ migrate-planv1:
 	@echo "🚀 Running Plan Versions v1 migration..."
 	@cd scripts && npx ts-node migrate_plan_versions_v1.ts
 	@echo "✅ Migration completed"
+
+# ============================================================================
+# PRODUCTION-LIKE DEVELOPMENT ENVIRONMENT
+# ============================================================================
+# This mirrors AWS production setup locally with:
+# - Nginx reverse proxy (like production)
+# - Remote shared dev database on AWS (consistent data across team)
+# - Same URL structure as production (no port numbers)
+# - Hot reload still enabled for development
+#
+# RECOMMENDED FOR ALL TEAM MEMBERS
+# ============================================================================
+
+# Start production-like development environment
+.PHONY: dev-prod-like
+dev-prod-like:
+	@echo "🚀 Starting production-like development environment..."
+	@echo ""
+	@echo "Features:"
+	@echo "  ✅ Nginx reverse proxy (like production)"
+	@echo "  ✅ Remote shared dev database on AWS"
+	@echo "  ✅ Same URL structure as production"
+	@echo "  ✅ Hot reload enabled for development"
+	@echo ""
+	docker-compose -f docker-compose.dev.yml --env-file .env.dev up -d
+	@echo ""
+	@echo "✅ Environment started successfully!"
+	@echo ""
+	@echo "📍 Access your application:"
+	@echo "   Member Portal:     http://localhost/"
+	@echo "   Admin Portal:      http://localhost/admin"
+	@echo "   Operations Portal: http://localhost/operations"
+	@echo "   TPA Portal:        http://localhost/tpa"
+	@echo "   Doctor Portal:     http://localhost/doctor"
+	@echo "   API:               http://localhost/api"
+	@echo "   Health Check:      http://localhost/health"
+	@echo ""
+	@echo "📊 View logs:         make dev-prod-like-logs"
+	@echo "🛑 Stop environment:  make dev-prod-like-down"
+	@echo ""
+
+# Stop production-like development environment
+.PHONY: dev-prod-like-down
+dev-prod-like-down:
+	@echo "🛑 Stopping production-like development environment..."
+	docker-compose -f docker-compose.dev.yml down
+	@echo "✅ Environment stopped"
+
+# View logs for production-like development
+.PHONY: dev-prod-like-logs
+dev-prod-like-logs:
+	docker-compose -f docker-compose.dev.yml logs -f
+
+# View API logs only
+.PHONY: dev-prod-like-logs-api
+dev-prod-like-logs-api:
+	docker-compose -f docker-compose.dev.yml logs -f api
+
+# View Admin portal logs only
+.PHONY: dev-prod-like-logs-admin
+dev-prod-like-logs-admin:
+	docker-compose -f docker-compose.dev.yml logs -f web-admin
+
+# View Member portal logs only
+.PHONY: dev-prod-like-logs-member
+dev-prod-like-logs-member:
+	docker-compose -f docker-compose.dev.yml logs -f web-member
+
+# View Doctor portal logs only
+.PHONY: dev-prod-like-logs-doctor
+dev-prod-like-logs-doctor:
+	docker-compose -f docker-compose.dev.yml logs -f web-doctor
+
+# View nginx logs only
+.PHONY: dev-prod-like-logs-nginx
+dev-prod-like-logs-nginx:
+	docker-compose -f docker-compose.dev.yml logs -f nginx
+
+# Restart production-like development environment
+.PHONY: dev-prod-like-restart
+dev-prod-like-restart: dev-prod-like-down dev-prod-like
+
+# Check status of production-like development services
+.PHONY: dev-prod-like-status
+dev-prod-like-status:
+	docker-compose -f docker-compose.dev.yml ps
+
+# Rebuild production-like development environment
+.PHONY: dev-prod-like-build
+dev-prod-like-build:
+	docker-compose -f docker-compose.dev.yml build --no-cache

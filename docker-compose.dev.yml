@@ -1,0 +1,155 @@
+# Development Environment - Production-Like Setup
+# This mirrors AWS production: nginx reverse proxy + local MongoDB
+# Each developer has their own local MongoDB for fast, offline development
+
+version: '3.8'
+
+services:
+  # Local MongoDB (Development)
+  mongo:
+    image: mongo:7.0
+    container_name: opd-mongo-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: opd_wallet_dev
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - opd-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  # Nginx Reverse Proxy (like production)
+  nginx:
+    image: nginx:alpine
+    container_name: opd-nginx-dev
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web-admin
+      - web-member
+      - web-doctor
+    networks:
+      - opd-network
+
+  # NestJS API - Development Mode with Hot Reload
+  api:
+    image: node:20-alpine
+    container_name: opd-api-dev
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      # Local MongoDB (development database)
+      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongo:27017/opd_wallet_dev?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-dev_team_shared_secret_2024}
+      COOKIE_NAME: opd_session
+      COOKIE_DOMAIN: localhost
+      COOKIE_SECURE: false
+      COOKIE_HTTPONLY: true
+      COOKIE_SAMESITE: lax
+      COOKIE_MAX_AGE: 604800000
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      JITSI_DOMAIN: ${JITSI_DOMAIN:-meet.jit.si}
+    expose:
+      - "4000"
+    depends_on:
+      - mongo
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run start:dev"
+
+  # Admin Portal - Development Mode with Hot Reload
+  web-admin:
+    image: node:20-alpine
+    container_name: opd-web-admin-dev
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      # Access via nginx (like production)
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://api:4000/api
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    volumes:
+      - ./web-admin:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  # Member Portal - Development Mode with Hot Reload
+  web-member:
+    image: node:20-alpine
+    container_name: opd-web-member-dev
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      # Access via nginx (like production)
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://api:4000/api
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    volumes:
+      - ./web-member:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  # Doctor Portal - Development Mode with Hot Reload
+  web-doctor:
+    image: node:20-alpine
+    container_name: opd-web-doctor-dev
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      # Access via nginx (like production)
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://api:4000/api
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    volumes:
+      - ./web-doctor:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+networks:
+  opd-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
+
+# NOTE: Using local MongoDB for fast, offline development
+# Each developer has their own database instance
