@@ -926,10 +926,27 @@ DELETE /api/cugs/:id                # Delete CUG
 POST   /api/cugs/seed               # Seed default CUGs
 ```
 
-#### Relationship Master (`/api/relationships`)
+#### Relationship Master (`/api/relationships`) - ✅ FULLY IMPLEMENTED ✨ ENHANCED (v6.8)
 ```
-GET    /api/relationships           # Get all active relationships
+GET    /api/relationships           # Get active relationships
+GET    /api/relationships/all       # Get all (including inactive)
+GET    /api/relationships/:id       # Get specific relationship
+POST   /api/relationships           # Create new relationship
+PUT    /api/relationships/:id       # Update relationship
+DELETE /api/relationships/:id       # Delete relationship (SUPER_ADMIN only)
+PATCH  /api/relationships/:id/toggle-active  # Toggle active status
 ```
+
+**Admin UI**: `/admin/masters` - Full CRUD interface with modal-based forms, search, and active status toggle
+
+**Relationship Schema**:
+- `relationshipCode`: Unique identifier (e.g., REL001)
+- `relationshipName`: Internal name (e.g., "SPOUSE")
+- `displayName`: User-facing label (e.g., "Spouse")
+- `description`: Optional detailed description
+- `isActive`: Whether relationship is available for selection
+- `sortOrder`: Display sequence in UI dropdowns
+- Audit fields: createdBy, updatedBy, createdAt, updatedAt
 
 #### Specialty Master (`/api/specialties`)
 ```

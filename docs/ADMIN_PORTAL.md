@@ -197,16 +197,55 @@ Service type definitions used in appointments and claims.
 - Category (linked to Categories master data)
 - Active Status
 
-### Relationships, CUGs, and Specialties (Backend API Only)
+### Relationships Master Data (✨ NEW Admin UI)
 
-**IMPORTANT**: The following master data entities do NOT have dedicated admin UI pages. They are managed exclusively through the backend API service:
+**Route**: `/admin/masters`
 
-#### Relationships (5 Active)
-Dependent relationship types (e.g., SELF, Spouse, Child, Parent, Sibling, Other).
+**File**: `/web-admin/app/(admin)/masters/page.tsx` (424 lines)
 
-**Management**: Backend API only - `/api/relationships`
+**Purpose**: Comprehensive management interface for relationship master data used in dependent/family member management.
 
-**Note**: Relationship data is used throughout the admin portal (especially in policy assignments and user management) but can only be created/modified via direct API calls to the backend service.
+#### Features
+- ✅ **Full CRUD Operations**: Create, Read, Update, Delete relationship types
+- ✅ **Active Status Toggle**: Enable/disable relationships without deletion
+- ✅ **Sort Order Management**: Control display order in dropdowns
+- ✅ **Search & Filter**: Find relationships quickly
+- ✅ **Audit Trail**: Track created/updated by and timestamps
+
+#### Relationship Fields
+- **Relationship Code**: Unique identifier (e.g., REL001)
+- **Relationship Name**: Internal name (e.g., "SPOUSE")
+- **Display Name**: User-facing label (e.g., "Spouse")
+- **Description**: Optional detailed description
+- **Active Status**: Whether relationship is available for selection
+- **Sort Order**: Display sequence in UI dropdowns
+
+#### API Endpoints
+```
+GET    /api/relationships           # Get active relationships
+GET    /api/relationships/all       # Get all (including inactive)
+GET    /api/relationships/:id       # Get specific relationship
+POST   /api/relationships           # Create new relationship
+PUT    /api/relationships/:id       # Update relationship
+DELETE /api/relationships/:id       # Delete relationship (SUPER_ADMIN only)
+PATCH  /api/relationships/:id/toggle-active  # Toggle active status
+```
+
+#### Standard Relationships
+- SELF (Primary member)
+- SPOUSE
+- CHILD (Son/Daughter)
+- PARENT (Father/Mother)
+- SIBLING (Brother/Sister)
+- OTHER
+
+**Note**: Relationship data is used extensively in policy assignments, user management, and family member features throughout the system.
+
+---
+
+### CUGs and Specialties (Backend API Only)
+
+**IMPORTANT**: The following master data entities still do NOT have dedicated admin UI pages. They are managed exclusively through the backend API service:
 
 #### CUGs - Closed User Groups (8 Active)
 Corporate or group-based user segments.
