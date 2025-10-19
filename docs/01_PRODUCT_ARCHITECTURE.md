@@ -1751,6 +1751,7 @@ The appointment booking system supports two types of appointments: **IN_CLINIC**
 
 6. CONFIRMATION (/member/appointments/confirm)
    └─> User reviews all details and confirms booking
+       ✨ NEW (v6.9): Displays wallet balance and payment toggle
        API: POST /api/appointments
        Request Body: {
          doctorId, doctorName, specialty,
@@ -1758,10 +1759,12 @@ The appointment booking system supports two types of appointments: **IN_CLINIC**
          patientName, patientId,
          appointmentType: 'IN_CLINIC',
          appointmentDate, timeSlot,
-         consultationFee
+         consultationFee,
+         useWallet: true/false  // ✨ NEW: Toggle wallet payment (default: true)
        }
        └─> Creates appointment with PENDING_CONFIRMATION status
-       └─> Returns appointmentId and appointmentNumber
+       └─> Calculates copay and wallet debit based on useWallet flag
+       └─> Returns appointmentId, appointmentNumber, payment details
 
 7. SUCCESS
    └─> Displays appointment confirmation with:
@@ -1827,9 +1830,11 @@ The appointment booking system supports two types of appointments: **IN_CLINIC**
         appointmentDate, timeSlot,
         contactNumber, callPreference,
         consultationFee,
+        useWallet: true/false,  // ✨ NEW (v6.9): Toggle wallet payment
         clinicId: '', clinicName: '', clinicAddress: ''
       }
       └─> Creates ONLINE appointment with PENDING_CONFIRMATION
+      └─> Calculates copay and wallet debit based on useWallet flag
       └─> Doctor will call on provided contactNumber
 
 4. SUCCESS

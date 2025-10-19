@@ -707,6 +707,60 @@ Select Doctor → Choose Date → Select Time Slot → Join Video Call
 - **History**: View past consultation records
 - **Prescriptions**: Download digital prescriptions
 
+### Wallet Payment Integration ✨ NEW (v6.9)
+
+**Page**: `/member/appointments/confirm`
+**File**: `/web-member/app/member/appointments/confirm/page.tsx`
+
+Members can now choose to use their wallet balance for appointment consultation fees during booking confirmation.
+
+**Features**:
+- **Wallet Balance Display**: Shows available balance for Consultation category (CAT001)
+- **Payment Toggle**: Checkbox to enable/disable wallet usage
+- **Payment Breakdown**: Real-time calculation showing:
+  - Consultation Fee
+  - Amount paid from wallet (if enabled)
+  - Remaining amount to pay
+- **Smart Coverage**: Automatically calculates optimal wallet usage
+- **Visual Indicators**:
+  - Green confirmation when fully covered by wallet
+  - Clear payment instructions when partial payment needed
+  - Disabled toggle when wallet balance is zero
+
+**How It Works**:
+
+1. **Automatic Wallet Check**: On page load, fetches wallet balance for Consultation category
+2. **User Choice**: Member toggles "Use wallet balance" checkbox (enabled by default if balance > 0)
+3. **Dynamic Calculation**:
+   - If wallet balance ≥ consultation fee: Fully covered, no additional payment
+   - If wallet balance < consultation fee: Partial coverage, shows remaining amount
+   - If wallet toggle disabled: Full payment required
+4. **API Integration**: `useWallet` parameter sent to `POST /api/appointments` endpoint
+5. **Payment Flow**:
+   - If fully covered: Direct booking confirmation
+   - If partial/no wallet: Redirect to payment page for remaining amount
+
+**Technical Details**:
+- `useWallet` field added to `CreateAppointmentDto` (defaults to `true`)
+- Works seamlessly with existing copay calculation system
+- Wallet debit processed automatically during appointment creation
+- Compatible with both IN_CLINIC and ONLINE appointment types
+
+**UI Example**:
+```
+┌─────────────────────────────────────┐
+│ Wallet Balance (Consultation)       │
+│ ₹500.00                             │
+└─────────────────────────────────────┘
+
+☑ Use wallet balance for this payment (₹300.00 will be used)
+
+Consultation Fee:    ₹300.00
+Paid from Wallet:   -₹300.00
+───────────────────────────
+Amount to Pay:       ₹0.00   ✓ Fully covered by wallet!
+```
+
 ---
 
 ## Claims & Reimbursements
