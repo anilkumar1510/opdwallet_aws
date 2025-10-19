@@ -49,6 +49,7 @@ export default function AdminLayout({
     if (pathname.startsWith('/admin/categories')) return 'Categories'
     if (pathname.startsWith('/admin/services')) return 'Service Types'
     if (pathname.startsWith('/admin/lab')) return 'Lab Diagnostics'
+    if (pathname.startsWith('/admin/masters')) return 'Masters'
     return 'Admin'
   }
 
@@ -82,6 +83,11 @@ export default function AdminLayout({
       name: 'Lab',
       path: '/admin/lab',
       current: pathname.startsWith('/admin/lab')
+    },
+    {
+      name: 'Masters',
+      path: '/admin/masters',
+      current: pathname.startsWith('/admin/masters')
     },
   ]
 

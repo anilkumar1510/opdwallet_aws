@@ -86,7 +86,7 @@ export default function ActiveAppointmentNudge({ variant, userId }: ActiveAppoin
 
     // If completed with prescription, open prescription directly
     if (appointment.status === 'COMPLETED' && appointment.hasPrescription && appointment.prescriptionId) {
-      window.open(`/api/prescriptions/${appointment.prescriptionId}/pdf`, '_blank')
+      window.open(`/api/member/prescriptions/${appointment.prescriptionId}/download`, '_blank')
     } else {
       // Navigate to bookings page
       router.push('/member/bookings')

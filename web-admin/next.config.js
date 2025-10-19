@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/admin',
+  // basePath: '/admin', // Removed for development to fix API rewrites
   reactStrictMode: true,
   output: 'standalone',
   typescript: {
@@ -15,11 +15,15 @@ const nextConfig = {
   },
   async rewrites() {
     // In Docker, use the container name; otherwise use localhost
-    const apiUrl = process.env.API_URL ?
-      `${process.env.API_URL}/api/:path*` :
-      'http://localhost:4001/api/:path*';
+    // API_URL already includes /api, so we use it directly with the path
+    const apiBaseUrl = process.env.API_URL ?
+      process.env.API_URL.replace(/\/api$/, '') :  // Remove trailing /api if present
+      'http://localhost:4000';
+    const apiUrl = `${apiBaseUrl}/api/:path*`;
     console.log('API URL for rewrites:', apiUrl);
 
+    // With basePath: '/admin', all routes are automatically prefixed
+    // So /api/:path* will match requests to /admin/api/:path* from the frontend
     return [
       {
         source: '/api/:path*',

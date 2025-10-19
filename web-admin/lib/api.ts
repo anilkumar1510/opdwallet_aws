@@ -2,9 +2,9 @@
 export function apiUrl(path: string): string {
   // Ensure path starts with /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  // No longer need /admin prefix since we removed basePath
+  // Since we have basePath: '/admin', API calls are rewritten by next.config.js
+  // We just use the clean path and Next.js rewrites will handle proxying to backend
   const fullUrl = cleanPath;
-  // PERFORMANCE: Removed console.log for production
   return fullUrl;
 }
 

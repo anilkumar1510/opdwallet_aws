@@ -63,14 +63,23 @@ export default function LoginPage() {
         }
       } else {
         console.log('❌ [LOGIN DEBUG] Response not OK')
+
+        // Clone response before reading body to allow multiple reads
+        const responseClone = response.clone()
         let errorData
         try {
           errorData = await response.json()
           console.log('📄 [LOGIN DEBUG] Error response data:', JSON.stringify(errorData, null, 2))
         } catch (parseError) {
           console.log('📄 [LOGIN DEBUG] Could not parse error response as JSON:', parseError)
-          errorData = await response.text()
-          console.log('📄 [LOGIN DEBUG] Error response text:', errorData)
+          // Use cloned response for text reading
+          try {
+            errorData = await responseClone.text()
+            console.log('📄 [LOGIN DEBUG] Error response text (first 500 chars):', errorData.substring(0, 500))
+          } catch (textError) {
+            console.log('📄 [LOGIN DEBUG] Could not read response text:', textError)
+            errorData = 'Unable to read error response'
+          }
         }
 
         setError(`Invalid credentials (${response.status}: ${response.statusText})`)
