@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // basePath: '/admin', // Removed for development to fix API rewrites
+  basePath: '/admin',
   reactStrictMode: true,
   output: 'standalone',
   typescript: {
