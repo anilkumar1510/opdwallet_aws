@@ -45,11 +45,16 @@ export default function DoctorSchedulesPage() {
     try {
       const response = await apiFetch('/api/clinics?isActive=true')
       if (response.ok) {
-        const data = await response.json()
-        setClinics(data)
+        const result = await response.json()
+        // API returns { data: [...], page, limit, total, pages }
+        setClinics(Array.isArray(result.data) ? result.data : [])
+      } else {
+        console.error('Failed to fetch clinics:', response.status)
+        setClinics([])
       }
     } catch (error) {
       console.error('Failed to fetch clinics:', error)
+      setClinics([])
     }
   }
 
