@@ -1,26 +1,60 @@
 # OPD Wallet - Documentation Index
 
-**Last Updated**: October 5, 2025  
-**Version**: 1.0
+**Last Updated**: October 20, 2025
+**Version**: 2.0 (Restructured)
+
+> **Note:** Documentation has been restructured for better organization. See [README.md](./README.md) for the complete master index.
 
 ---
 
 ## 📚 Documentation Structure
 
-This documentation is organized in a **portal-centric approach** for better clarity and maintainability.
+This documentation is now organized into **focused documents** by domain for better clarity and maintainability.
 
-### High-Level Documentation
+### 🏗️ Architecture Documentation (NEW: Split into 4 files)
 
-1. **[Product Architecture](./01_PRODUCT_ARCHITECTURE.md)** - System overview, tech stack, deployment
-2. **[Database Schema](./02_DATA_SCHEMA_AND_CREDENTIALS.md)** - Database collections, relationships, credentials
+Located in `/docs/architecture/`:
 
-### Portal-Specific Documentation
+1. **[Architecture Overview](./architecture/ARCHITECTURE_OVERVIEW.md)** (622 lines) - System overview, tech stack, high-level design
+2. **[Backend Architecture](./architecture/BACKEND_ARCHITECTURE.md)** (1,080 lines) - NestJS modules, design patterns
+3. **[API Endpoints](./architecture/API_ENDPOINTS.md)** (685 lines) - Complete API reference (194+ endpoints)
+4. **[Deployment Infrastructure](./architecture/DEPLOYMENT_INFRASTRUCTURE.md)** (963 lines) - Docker, NGINX, deployment
 
-3. **[Admin Portal](./ADMIN_PORTAL.md)** ✅ - Admin functionalities, lab management, master data
-4. **[Member Portal](./MEMBER_PORTAL.md)** ✅ - Member features, appointments, claims, lab tests
-5. **[Doctor Portal](./DOCTOR_PORTAL.md)** ✅ - Doctor appointments, prescriptions, video consultations
-6. **[Operations Portal](./OPERATIONS_PORTAL.md)** ✅ - OPS team workflows, prescription digitization, order management
-7. **[TPA Portal](./TPA_PORTAL.md)** ✅ - TPA claim assignment, review, approval workflows
+**Original:** [01_PRODUCT_ARCHITECTURE.md](./01_PRODUCT_ARCHITECTURE.md) (3,619 lines - kept as backup)
+
+### 🗄️ Database Documentation (NEW: Split into 7 files)
+
+Located in `/docs/database/`:
+
+1. **[Database Overview](./database/DATABASE_OVERVIEW.md)** (297 lines) - Connections, relationships, indexes
+2. **[Core Schemas](./database/CORE_SCHEMAS.md)** (685 lines) - users, policies, plan_configs, assignments
+3. **[Master Data Schemas](./database/MASTER_DATA_SCHEMAS.md)** (550 lines) - categories, services, relationships, CUGs
+4. **[Healthcare Schemas](./database/HEALTHCARE_SCHEMAS.md)** (844 lines) - doctors, clinics, appointments, video consultations
+5. **[Wallet & Claims Schemas](./database/WALLET_CLAIMS_SCHEMAS.md)** (827 lines) - wallets, transactions, claims, payments
+6. **[Lab Diagnostics Schemas](./database/LAB_DIAGNOSTICS_SCHEMAS.md)** (730 lines) - lab prescriptions, carts, orders
+7. **[Notifications Schema](./database/NOTIFICATIONS_SCHEMAS.md)** (128 lines) - notifications
+
+**Original:** [02_DATA_SCHEMA_AND_CREDENTIALS.md](./02_DATA_SCHEMA_AND_CREDENTIALS.md) (3,856 lines - kept as backup)
+
+### 👥 Portal Documentation
+
+Located in `/docs/portals/`:
+
+#### Single-File Portals
+
+3. **[Admin Portal](./portals/ADMIN_PORTAL.md)** (827 lines) - Admin functionalities, lab management, master data
+4. **[Member Portal](./portals/MEMBER_PORTAL.md)** (1,695 lines) - Member features, appointments, claims, wallet toggle
+5. **[Doctor Portal](./portals/DOCTOR_PORTAL.md)** (1,067 lines) - Doctor appointments, prescriptions, video consultations
+6. **[Operations Portal](./portals/OPERATIONS_PORTAL.md)** (1,651 lines) - OPS workflows, prescription digitization
+
+#### TPA Portal (NEW: Split into 4 files)
+
+7. **[TPA Portal Overview](./portals/TPA_PORTAL_OVERVIEW.md)** (1,207 lines) - Overview, roles, API reference
+8. **[TPA Workflows](./portals/TPA_WORKFLOWS.md)** (986 lines) - Claim assignment & review workflows
+9. **[TPA Decision Trees](./portals/TPA_DECISION_TREES.md)** (631 lines) - Approval logic, document checks
+10. **[TPA Best Practices](./portals/TPA_BEST_PRACTICES.md)** (857 lines) - Operational guidelines, QA, efficiency
+
+**Original:** [TPA_PORTAL.md](./TPA_PORTAL.md) (2,859 lines - kept as backup)
 
 ---
 
@@ -104,34 +138,50 @@ This documentation is organized in a **portal-centric approach** for better clar
 
 ---
 
-## 🔄 Recent Updates (October 5, 2025)
+## 🔄 Recent Updates (October 20, 2025)
 
-### Major Additions
-- ✅ **Lab Diagnostics Module** - Complete end-to-end workflow (8 new collections, 37 endpoints)
+### Documentation Restructuring (v2.0)
+- ✅ **Split 01_PRODUCT_ARCHITECTURE.md** into 4 focused documents (architecture, backend, API, deployment)
+- ✅ **Split 02_DATA_SCHEMA_AND_CREDENTIALS.md** into 7 domain-specific schema documents
+- ✅ **Split TPA_PORTAL.md** into 4 documents (overview, workflows, decision trees, best practices)
+- ✅ **Created README.md** - Comprehensive master index with navigation guide
+- ✅ **Updated DOCUMENTATION_INDEX.md** - Updated structure references
+- ✅ **Organized portal documents** in `/portals/` directory
+- ✅ **Created directory structure** - `/architecture/`, `/database/`, `/portals/`
+
+### Feature Updates (v6.9)
+- ✅ **Wallet Payment Toggle** - Members can choose to use wallet for appointments
+- ✅ **Route Restructure** - Admin routes moved to `(admin)` Next.js route group
+- ✅ **Relationships Master UI** - Full CRUD interface for relationship management
+- ✅ **Enhanced Logging** - Comprehensive debugging in auth and middleware
+
+### Previous Major Additions (v6.7-v6.8)
+- ✅ **Lab Diagnostics Module** - Complete end-to-end workflow (7 collections, 37 endpoints)
 - ✅ **TPA Module** - Claims processing workflow (11 endpoints)
-- ✅ **Operations Portal** - Unified portal at `/operations`
-- ✅ **Member Claims Enhancements** - TPA integration
-
-### Documentation Updates
-- ✅ Created portal-specific documentation structure
-- ✅ Created ADMIN_PORTAL.md (19 KB, 550+ lines)
-- ✅ Created MEMBER_PORTAL.md (21 KB, 957 lines)
-- ✅ Created OPERATIONS_PORTAL.md (64 KB, 1,500 lines)
-- ✅ Created TPA_PORTAL.md (97 KB, 2,969 lines)
-- ⏳ Updating high-level architecture document
-- ⏳ Updating database schema with 8 new lab collections
+- ✅ **Video Consultations** - WebRTC integration (v6.7)
+- ✅ **Payment & Transaction History** - Enhanced member portal (v6.8)
 
 ---
 
 ## 📝 Contributing to Documentation
 
 When updating documentation:
-1. Update the relevant portal-specific document
-2. Update high-level docs if architecture changes
-3. Update this index if new sections are added
-4. Keep cross-references up to date
+1. **Find the right document** - Use README.md to locate the appropriate file
+2. **Update focused documents** - Update the split files (in `/architecture/`, `/database/`, `/portals/`), NOT the originals
+3. **Update cross-references** - If adding new sections, update links in related documents
+4. **Update indexes** - Update README.md if adding new documents
+5. **Keep originals untouched** - Original large files are kept as backup only
+
+### File Organization
+- **Architecture docs:** `/docs/architecture/` (4 files)
+- **Database docs:** `/docs/database/` (7 files)
+- **Portal docs:** `/docs/portals/` (8 files)
+- **Master index:** `/docs/README.md`
 
 ---
 
-**For Questions**: Contact development team  
-**Last Audit**: October 5, 2025
+**For Questions**: Contact development team
+**Last Audit**: October 20, 2025
+**Documentation Version**: 2.0 (Restructured)
+
+**See [README.md](./README.md) for complete master index and navigation guide.**
