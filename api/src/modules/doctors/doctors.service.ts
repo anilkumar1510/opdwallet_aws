@@ -125,7 +125,7 @@ export class DoctorsService {
       const doctorClinicIds = Array.from(clinicFeeMap.keys());
 
       // Transform clinics to match frontend expectations and calculate distances
-      const transformedClinics = doctorClinicIds
+      let transformedClinics = doctorClinicIds
         .map(clinicId => {
           const clinicObj = clinicMap.get(clinicId);
           if (!clinicObj) return null;
@@ -179,13 +179,31 @@ export class DoctorsService {
           return 0;
         });
 
+      // FALLBACK: If no slots/clinics found, use doctor's own clinics array
+      // This ensures newly created doctors (before schedules are set) are still visible
+      if (transformedClinics.length === 0 && doctorObj.clinics && doctorObj.clinics.length > 0) {
+        transformedClinics = doctorObj.clinics.map((clinic: any) => ({
+          clinicId: clinic.clinicId,
+          name: clinic.name,
+          address: clinic.address || '',
+          city: clinic.city || '',
+          state: clinic.state || '',
+          pincode: clinic.pincode || '',
+          consultationFee: clinic.consultationFee || doctorObj.consultationFee || 0,
+          location: clinic.location || null,
+          facilities: clinic.facilities || [],
+          distance: null,
+          distanceText: null,
+        }));
+      }
+
       return {
         ...doctorObj,
         clinics: transformedClinics,
       };
     });
 
-    // Filter out doctors with no clinics (if location filter applied)
+    // Filter out doctors with no clinics at all (neither slots nor clinics array)
     const filteredDoctors = doctorsWithClinics.filter(doctor => doctor.clinics.length > 0);
 
     this.logger.log(`[findAll] Returning ${filteredDoctors.length} doctors (page ${page} of ${Math.ceil(total / limit)})`);

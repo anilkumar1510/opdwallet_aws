@@ -58,6 +58,18 @@ export class Doctor {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ type: [Object] })
+  clinics?: any[];
+
+  @Prop()
+  consultationFee?: number;
+
+  @Prop({ default: false })
+  availableOnline?: boolean;
+
+  @Prop({ default: false })
+  availableOffline?: boolean;
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
