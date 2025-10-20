@@ -84,6 +84,20 @@ export default function DoctorsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header with Create Button */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => router.push('/operations/doctors/new')}
+          className="btn-primary inline-flex items-center gap-2"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Create New Doctor
+        </button>
+      </div>
+
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <input
           type="text"
