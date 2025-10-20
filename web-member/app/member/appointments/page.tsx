@@ -11,27 +11,7 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
-
-interface Appointment {
-  _id: string
-  appointmentId: string
-  appointmentNumber: string
-  patientName: string
-  patientId: string
-  doctorId: string
-  doctorName: string
-  specialty: string
-  clinicName: string
-  clinicAddress: string
-  appointmentType: string
-  appointmentDate: string
-  timeSlot: string
-  consultationFee: number
-  status: string
-  requestedAt: string
-  hasPrescription?: boolean
-  prescriptionId?: string
-}
+import { appointmentsApi, usersApi, type Appointment } from '@/lib/api'
 
 export default function AppointmentsPage() {
   const router = useRouter()
@@ -42,16 +22,8 @@ export default function AppointmentsPage() {
   const fetchUserData = useCallback(async () => {
     try {
       console.log('[Appointments] Fetching user data')
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data')
-      }
-
-      const data = await response.json()
-      console.log('[Appointments] User data received:', { userId: data._id, name: data.name })
+      const data = await usersApi.getCurrentUser()
+      console.log('[Appointments] User data received:', { userId: data._id, name: data.fullName })
       setUser(data)
 
       await fetchAppointments(data._id)
@@ -68,15 +40,7 @@ export default function AppointmentsPage() {
   const fetchAppointments = async (userId: string) => {
     try {
       console.log('[Appointments] Fetching IN_CLINIC appointments for user:', userId)
-      const response = await fetch(`/api/appointments/user/${userId}?type=IN_CLINIC`, {
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch appointments')
-      }
-
-      const data = await response.json()
+      const data = await appointmentsApi.getUserAppointments(userId, 'IN_CLINIC')
       console.log('[Appointments] IN_CLINIC appointments received:', { count: data.length })
       setAppointments(data)
     } catch (error) {
@@ -136,16 +100,7 @@ export default function AppointmentsPage() {
 
     try {
       console.log('[Appointments] Cancelling appointment:', appointmentId)
-      const response = await fetch(`/api/appointments/${appointmentId}/user-cancel`, {
-        method: 'PATCH',
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to cancel appointment')
-      }
-
+      await appointmentsApi.cancel(appointmentId)
       console.log('[Appointments] Appointment cancelled successfully')
       alert('Appointment cancelled successfully. Your wallet has been refunded.')
 
