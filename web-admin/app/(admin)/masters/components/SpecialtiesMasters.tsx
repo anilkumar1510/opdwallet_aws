@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { specialtiesApi, type Specialty } from '@/lib/api'
+import { specialtiesApi, type Specialty } from '@/lib/api/index'
 import { toast } from 'sonner'
 import {
   PlusIcon,
@@ -48,6 +48,7 @@ export default function SpecialtiesMasters() {
       const data = await specialtiesApi.getAllForAdmin()
       setSpecialties(data)
     } catch (err: any) {
+      console.error('Error fetching specialties:', err)
       setError(err.message || 'Failed to fetch specialties')
     } finally {
       setLoading(false)
