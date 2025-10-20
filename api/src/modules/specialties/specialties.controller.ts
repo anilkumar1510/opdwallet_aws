@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards } fro
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../../common/constants/roles.enum';
 import { SpecialtiesService } from './specialties.service';
 import { CreateSpecialtyDto } from './dto/create-specialty.dto';
 import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
@@ -18,7 +19,7 @@ export class SpecialtiesController {
 
   @Get('all')
   @UseGuards(RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async findAllForAdmin() {
     return this.specialtiesService.findAllForAdmin();
   }
@@ -30,14 +31,14 @@ export class SpecialtiesController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async create(@Body() createSpecialtyDto: CreateSpecialtyDto) {
     return this.specialtiesService.create(createSpecialtyDto);
   }
 
   @Put(':id')
   @UseGuards(RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async update(
     @Param('id') id: string,
     @Body() updateSpecialtyDto: UpdateSpecialtyDto
@@ -47,14 +48,14 @@ export class SpecialtiesController {
 
   @Patch(':id/toggle-active')
   @UseGuards(RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async toggleActive(@Param('id') id: string) {
     return this.specialtiesService.toggleActive(id);
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('SUPER_ADMIN', 'ADMIN')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async remove(@Param('id') id: string) {
     await this.specialtiesService.remove(id);
     return { message: 'Specialty deleted successfully' };
