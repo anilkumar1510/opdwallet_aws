@@ -73,15 +73,43 @@ jobs:
             # Ensure we're in the project directory
             cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }
 
-            # Simple build and run
-            echo "🔨 Building and starting services..."
-            docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
-
-            # Check if docker-compose succeeded
-            if [ $? -ne 0 ]; then
-              echo "❌ ERROR: Docker-compose failed"
+            # Setup environment variables - Docker Compose needs .env file
+            echo "📝 Setting up environment variables..."
+            if [ -f .env.production ]; then
+              cp .env.production .env
+              echo "✅ Environment variables configured from .env.production"
+            else
+              echo "❌ ERROR: .env.production file not found"
               exit 1
             fi
+
+            # Pre-pull critical images to avoid Docker Hub 503 errors during compose
+            echo "📦 Pre-pulling critical Docker images..."
+            docker pull nginx:alpine 2>/dev/null || echo "⚠️ Warning: Failed to pre-pull nginx:alpine, will retry during compose"
+            docker pull mongo:7.0 2>/dev/null || echo "⚠️ Warning: Failed to pre-pull mongo:7.0, will retry during compose"
+            docker pull node:20-alpine 2>/dev/null || echo "⚠️ Warning: Failed to pre-pull node:20-alpine, will retry during compose"
+
+            # Build and run with retry mechanism for Docker Hub intermittent issues
+            echo "🔨 Building and starting services..."
+            MAX_RETRIES=3
+            RETRY_COUNT=0
+
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans; then
+                echo "✅ Docker-compose succeeded"
+                break
+              else
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  WAIT_TIME=$((RETRY_COUNT * 10))
+                  echo "⚠️ Docker-compose failed (attempt $RETRY_COUNT/$MAX_RETRIES), retrying in ${WAIT_TIME}s..."
+                  sleep $WAIT_TIME
+                else
+                  echo "❌ ERROR: Docker-compose failed after $MAX_RETRIES attempts"
+                  exit 1
+                fi
+              fi
+            done
 
             # Wait for services
             sleep 30
