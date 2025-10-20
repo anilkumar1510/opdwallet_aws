@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getAppointmentDetails, markAppointmentComplete } from '@/lib/api/appointments'
 import { Appointment } from '@/lib/api/appointments'
@@ -29,11 +29,7 @@ export default function AppointmentDetailPage() {
   const [error, setError] = useState('')
   const [completing, setCompleting] = useState(false)
 
-  useEffect(() => {
-    fetchAppointment()
-  }, [appointmentId])
-
-  const fetchAppointment = async () => {
+  const fetchAppointment = useCallback(async () => {
     try {
       setLoading(true)
       const response = await getAppointmentDetails(appointmentId)
@@ -43,7 +39,11 @@ export default function AppointmentDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [appointmentId])
+
+  useEffect(() => {
+    fetchAppointment()
+  }, [fetchAppointment])
 
   const handleComplete = async () => {
     if (!appointment || !confirm('Mark this appointment as completed?')) return

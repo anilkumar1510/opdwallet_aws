@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/Card'
 import {
   DocumentTextIcon,
@@ -57,25 +57,41 @@ export default function ClaimsPage() {
 
   const itemsPerPage = 10
 
+  // Map backend status to frontend status
+  const mapStatus = (backendStatus: string): ClaimStatus => {
+    const statusMap: Record<string, ClaimStatus> = {
+      'DRAFT': 'draft',
+      'SUBMITTED': 'submitted',
+      'UNDER_REVIEW': 'under_review',
+      'APPROVED': 'approved',
+      'REJECTED': 'rejected',
+      'CANCELLED': 'cancelled',
+      'PAYMENT_PENDING': 'processing',
+      'PAYMENT_PROCESSING': 'processing',
+      'PAYMENT_COMPLETED': 'approved',
+      'ASSIGNED': 'under_review',
+      'UNASSIGNED': 'submitted'
+    }
+    return statusMap[backendStatus] || 'submitted'
+  }
+
+  // Format category for display
+  const formatCategory = (category: string): string => {
+    const categoryMap: Record<string, string> = {
+      'CONSULTATION': 'Consultation',
+      'DIAGNOSTICS': 'Diagnostic',
+      'PHARMACY': 'Pharmacy',
+      'DENTAL': 'Dental',
+      'VISION': 'Vision',
+      'WELLNESS': 'Wellness',
+      'IPD': 'IPD',
+      'OPD': 'OPD'
+    }
+    return categoryMap[category] || category
+  }
+
   // Fetch claims from API
-  useEffect(() => {
-    fetchClaims()
-
-    // Refresh data when user navigates back to this page
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchClaims()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [])
-
-  const fetchClaims = async () => {
+  const fetchClaims = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -113,40 +129,24 @@ export default function ClaimsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  // Map backend status to frontend status
-  const mapStatus = (backendStatus: string): ClaimStatus => {
-    const statusMap: Record<string, ClaimStatus> = {
-      'DRAFT': 'draft',
-      'SUBMITTED': 'submitted',
-      'UNDER_REVIEW': 'under_review',
-      'APPROVED': 'approved',
-      'REJECTED': 'rejected',
-      'CANCELLED': 'cancelled',
-      'PAYMENT_PENDING': 'processing',
-      'PAYMENT_PROCESSING': 'processing',
-      'PAYMENT_COMPLETED': 'approved',
-      'ASSIGNED': 'under_review',
-      'UNASSIGNED': 'submitted'
-    }
-    return statusMap[backendStatus] || 'submitted'
-  }
+  useEffect(() => {
+    fetchClaims()
 
-  // Format category for display
-  const formatCategory = (category: string): string => {
-    const categoryMap: Record<string, string> = {
-      'CONSULTATION': 'Consultation',
-      'DIAGNOSTICS': 'Diagnostic',
-      'PHARMACY': 'Pharmacy',
-      'DENTAL': 'Dental',
-      'VISION': 'Vision',
-      'WELLNESS': 'Wellness',
-      'IPD': 'IPD',
-      'OPD': 'OPD'
+    // Refresh data when user navigates back to this page
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchClaims()
+      }
     }
-    return categoryMap[category] || category
-  }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchClaims])
 
   // Calculate statistics from real data
   const stats = {
@@ -156,43 +156,50 @@ export default function ClaimsPage() {
     totalAmount: claims.reduce((sum, c) => sum + c.amount, 0)
   }
 
+  // Filter helper functions
+  const matchesClaimSearch = (claim: Claim): boolean => {
+    const query = searchQuery.toLowerCase()
+    return claim.claimNumber.toLowerCase().includes(query) ||
+           claim.provider.toLowerCase().includes(query) ||
+           claim.description.toLowerCase().includes(query)
+  }
+
+  const matchesClaimStatus = (claim: Claim): boolean => {
+    return statusFilter === 'all' || claim.status === statusFilter
+  }
+
+  const getClaimSortValue = (claim: Claim, field: SortField): any => {
+    switch (field) {
+      case 'date':
+        return new Date(claim.date)
+      case 'amount':
+        return claim.amount
+      case 'status':
+        return claim.status
+      case 'type':
+        return claim.type
+      default:
+        return null
+    }
+  }
+
+  const compareClaimValues = (aValue: any, bValue: any): number => {
+    if (aValue === null || bValue === null) return 0
+
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1
+    } else {
+      return aValue < bValue ? 1 : -1
+    }
+  }
+
   // Filter and sort claims
   const filteredAndSortedClaims = claims
-    .filter(claim => {
-      const matchesSearch = claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           claim.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           claim.description.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesStatus = statusFilter === 'all' || claim.status === statusFilter
-      return matchesSearch && matchesStatus
-    })
+    .filter(claim => matchesClaimSearch(claim) && matchesClaimStatus(claim))
     .sort((a, b) => {
-      let aValue: any, bValue: any
-      switch (sortField) {
-        case 'date':
-          aValue = new Date(a.date)
-          bValue = new Date(b.date)
-          break
-        case 'amount':
-          aValue = a.amount
-          bValue = b.amount
-          break
-        case 'status':
-          aValue = a.status
-          bValue = b.status
-          break
-        case 'type':
-          aValue = a.type
-          bValue = b.type
-          break
-        default:
-          return 0
-      }
-
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1
-      } else {
-        return aValue < bValue ? 1 : -1
-      }
+      const aValue = getClaimSortValue(a, sortField)
+      const bValue = getClaimSortValue(b, sortField)
+      return compareClaimValues(aValue, bValue)
     })
 
   // Pagination
@@ -517,65 +524,73 @@ export default function ClaimsPage() {
                     { key: 'amount', label: 'Amount', sortable: true },
                     { key: 'status', label: 'Status', sortable: true },
                     { key: 'actions', label: 'Actions', sortable: false }
-                  ].map((column) => (
-                    <th
-                      key={column.key}
-                      className={`px-6 ${
-                        dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'
-                      } text-left text-xs font-semibold text-ink-600 uppercase tracking-wider ${
-                        column.sortable ? 'cursor-pointer hover:bg-surface' : ''
-                      }`}
-                      onClick={() => column.sortable && column.key !== 'claimNumber' && column.key !== 'provider' && column.key !== 'actions' && handleSort(column.key as SortField)}
-                    >
-                      <div className="flex items-center">
-                        {column.label}
-                        {column.sortable && column.key !== 'claimNumber' && column.key !== 'provider' && column.key !== 'actions' && (
-                          <ChevronUpDownIcon className="h-4 w-4 ml-1" />
-                        )}
-                      </div>
-                    </th>
-                  ))}
+                  ].map((column) => {
+                    const headerPadding = dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'
+                    const isSortableField = column.sortable &&
+                                           column.key !== 'claimNumber' &&
+                                           column.key !== 'provider' &&
+                                           column.key !== 'actions'
+                    const cursorClass = column.sortable ? 'cursor-pointer hover:bg-surface' : ''
+
+                    return (
+                      <th
+                        key={column.key}
+                        className={`px-6 ${headerPadding} text-left text-xs font-semibold text-ink-600 uppercase tracking-wider ${cursorClass}`}
+                        onClick={() => isSortableField && handleSort(column.key as SortField)}
+                      >
+                        <div className="flex items-center">
+                          {column.label}
+                          {isSortableField && (
+                            <ChevronUpDownIcon className="h-4 w-4 ml-1" />
+                          )}
+                        </div>
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-border">
-                {paginatedClaims.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-surface-alt transition-colors">
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <div>
-                        <p className="font-medium text-ink-900">{new Date(claim.date).toLocaleDateString()}</p>
-                        <p className="text-xs text-ink-500">Submitted: {new Date(claim.submittedDate).toLocaleDateString()}</p>
-                      </div>
-                    </td>
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <p className="font-medium text-ink-900">{claim.claimNumber}</p>
-                    </td>
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                        {claim.type}
-                      </span>
-                    </td>
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <div>
-                        <p className="font-medium text-ink-900">{claim.provider}</p>
-                        <p className="text-xs text-ink-500 truncate max-w-xs">{claim.description}</p>
-                      </div>
-                    </td>
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <p className="font-semibold text-ink-900">₹{claim.amount.toLocaleString()}</p>
-                    </td>
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
-                        {getStatusIcon(claim.status)}
-                        <span className="ml-1 capitalize">{claim.status.replace('_', ' ')}</span>
-                      </span>
-                    </td>
-                    <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                      <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
-                        <EyeIcon className="h-4 w-4" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {paginatedClaims.map((claim) => {
+                  const cellPadding = dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'
+                  return (
+                    <tr key={claim.id} className="hover:bg-surface-alt transition-colors">
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <div>
+                          <p className="font-medium text-ink-900">{new Date(claim.date).toLocaleDateString()}</p>
+                          <p className="text-xs text-ink-500">Submitted: {new Date(claim.submittedDate).toLocaleDateString()}</p>
+                        </div>
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <p className="font-medium text-ink-900">{claim.claimNumber}</p>
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          {claim.type}
+                        </span>
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <div>
+                          <p className="font-medium text-ink-900">{claim.provider}</p>
+                          <p className="text-xs text-ink-500 truncate max-w-xs">{claim.description}</p>
+                        </div>
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <p className="font-semibold text-ink-900">₹{claim.amount.toLocaleString()}</p>
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
+                          {getStatusIcon(claim.status)}
+                          <span className="ml-1 capitalize">{claim.status.replace('_', ' ')}</span>
+                        </span>
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
+                          <EyeIcon className="h-4 w-4" />
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

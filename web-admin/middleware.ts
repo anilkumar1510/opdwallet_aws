@@ -1,9 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Protected routes that require authentication
+// Base path from next.config.js (for reference only in middleware)
+const BASE_PATH = '/admin'
+
+// IMPORTANT: Middleware sees routes WITHOUT the basePath prefix
+// When user requests /admin, middleware sees /
+// When user requests /admin/users, middleware sees /users
+
+// Protected routes that require authentication (WITHOUT base path prefix)
 const protectedRoutes = [
-  '/admin',
+  '/',  // Dashboard (maps to /admin)
+  '/users',
+  '/policies',
+  '/categories',
+  '/services',
+  '/lab',
+  '/masters',
   '/tpa',
   '/finance',
   '/operations',
@@ -11,9 +24,8 @@ const protectedRoutes = [
   '/settings',
 ]
 
-// Public routes that don't require authentication
+// Public routes that don't require authentication (WITHOUT base path prefix)
 const publicRoutes = [
-  '/',
   '/login',
   '/forgot-password',
   '/reset-password',
@@ -22,29 +34,34 @@ const publicRoutes = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Check if the path is a protected route
-  const isProtectedRoute = protectedRoutes.some(route =>
-    pathname.startsWith(route)
-  )
+  // Check if the path is a public route (exact match or starts with /api/auth)
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/api/auth')
 
-  // Check if the path is a public route
-  const isPublicRoute = publicRoutes.some(route =>
-    pathname === route || pathname.startsWith('/api/auth')
-  )
+  // Check if the path is a protected route
+  const isProtectedRoute = protectedRoutes.some(route => {
+    if (route === '/') {
+      // Exact match for root only
+      return pathname === '/'
+    }
+    return pathname.startsWith(route)
+  })
 
   // Get auth token from cookies
   const token = request.cookies.get('opd_session')?.value
 
   // Redirect to login if accessing protected route without auth
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('from', pathname)
-    return NextResponse.redirect(loginUrl)
+  if (isProtectedRoute && !isPublicRoute && !token) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('from', pathname)
+    return NextResponse.redirect(url)
   }
 
   // Redirect to dashboard if accessing login page while authenticated
   if (pathname === '/login' && token) {
-    return NextResponse.redirect(new URL('/admin', request.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
   // For authenticated requests, add user info to headers (for server components)
@@ -72,6 +89,7 @@ export const config = {
      * - public folder
      * - api routes (handled separately)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/).*)',
+    '/',  // Match root path /admin
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/).*)',  // Match all sub-paths
   ],
 }

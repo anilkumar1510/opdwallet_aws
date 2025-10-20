@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
 interface TimeSlot {
@@ -34,14 +34,7 @@ export default function SlotSelectionModal({
   const [selectedDateIndex, setSelectedDateIndex] = useState(0)
   const [selectedTime, setSelectedTime] = useState('')
 
-  useEffect(() => {
-    if (isOpen && doctorId) {
-      console.log('[SlotModal] Fetching slots for doctor:', doctorId)
-      fetchAvailableSlots()
-    }
-  }, [isOpen, doctorId])
-
-  const fetchAvailableSlots = async () => {
+  const fetchAvailableSlots = useCallback(async () => {
     try {
       const response = await fetch(`/api/doctors/${doctorId}/slots`, {
         credentials: 'include',
@@ -59,7 +52,14 @@ export default function SlotSelectionModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [doctorId])
+
+  useEffect(() => {
+    if (isOpen && doctorId) {
+      console.log('[SlotModal] Fetching slots for doctor:', doctorId)
+      fetchAvailableSlots()
+    }
+  }, [isOpen, doctorId, fetchAvailableSlots])
 
   const handleConfirm = () => {
     if (!selectedTime || availableSlots.length === 0) {

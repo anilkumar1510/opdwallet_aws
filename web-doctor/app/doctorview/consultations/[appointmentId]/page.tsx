@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { startVideoConsultation, endVideoConsultation } from '@/lib/api/video-consultations'
 import { getAppointmentDetails } from '@/lib/api/appointments'
@@ -28,11 +28,7 @@ export default function VideoConsultationPage() {
   const [error, setError] = useState('')
   const [ending, setEnding] = useState(false)
 
-  useEffect(() => {
-    initializeConsultation()
-  }, [appointmentId])
-
-  const initializeConsultation = async () => {
+  const initializeConsultation = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
@@ -53,7 +49,11 @@ export default function VideoConsultationPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [appointmentId])
+
+  useEffect(() => {
+    initializeConsultation()
+  }, [initializeConsultation])
 
   const handleEndConsultation = async () => {
     if (!consultation) return

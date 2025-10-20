@@ -432,8 +432,8 @@ export default function DashboardPage() {
 
   // Memoized computed values
   const walletCategories = useMemo(() => user?.walletCategories || [], [user?.walletCategories])
-  const totalAvailableBalance = useMemo(() => user?.wallet?.totalBalance?.current || 0, [user?.wallet?.totalBalance?.current])
-  const totalWalletBalance = useMemo(() => user?.wallet?.totalBalance?.allocated || 0, [user?.wallet?.totalBalance?.allocated])
+  const totalAvailableBalance = useMemo(() => user?.wallet?.totalBalance?.current || 0, [user?.wallet?.totalBalance])
+  const totalWalletBalance = useMemo(() => user?.wallet?.totalBalance?.allocated || 0, [user?.wallet?.totalBalance])
 
   // Helper function to get policy information for current user
   const getUserPolicy = useCallback(() => {

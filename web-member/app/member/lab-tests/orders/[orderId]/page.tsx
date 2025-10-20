@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -74,11 +74,7 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchOrder()
-  }, [])
-
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/member/lab/orders/${orderId}`, {
@@ -95,7 +91,11 @@ export default function OrderDetailsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [orderId])
+
+  useEffect(() => {
+    fetchOrder()
+  }, [fetchOrder])
 
   const getStatusIndex = (status: string) => {
     return statusOrder.indexOf(status)

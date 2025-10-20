@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -33,10 +33,6 @@ function SelectPatientContent() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
   const calculateAge = (dob: string) => {
     if (!dob) return 0
     const today = new Date()
@@ -49,7 +45,7 @@ function SelectPatientContent() {
     return age
   }
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       console.log('[SelectPatient] Fetching user data with dependents')
       const response = await fetch('/api/member/profile', {
@@ -103,7 +99,11 @@ function SelectPatientContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
 
   const handlePatientSelect = (patient: Patient) => {
     console.log('[SelectPatient] Patient selected:', {

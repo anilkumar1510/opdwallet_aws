@@ -24,18 +24,29 @@ export class AppointmentsService {
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<any> {
+    console.log('🚀 [APPOINTMENTS SERVICE] ========== APPOINTMENT CREATION START ==========');
+    console.log('📥 [INPUT] Complete appointment DTO:', JSON.stringify(createAppointmentDto, null, 2));
+
     const appointmentId = await this.counterService.generateAppointmentId();
+    console.log('🆔 [GENERATED] Appointment ID:', appointmentId);
+
     const consultationFee = createAppointmentDto.consultationFee || 0;
     const userId = createAppointmentDto.userId;
     const patientId = createAppointmentDto.patientId;
 
+    console.log('👤 [USER INFO] userId:', userId);
+    console.log('👤 [USER INFO] patientId:', patientId);
+    console.log('💰 [FEE] Consultation fee:', consultationFee);
+
     // Validate userId is provided
     if (!userId) {
+      console.error('❌ [VALIDATION ERROR] User ID is missing');
       throw new BadRequestException('User ID is required');
     }
 
     // Validate patientId is provided
     if (!patientId) {
+      console.error('❌ [VALIDATION ERROR] Patient ID is missing');
       throw new BadRequestException('Patient ID is required');
     }
 
@@ -46,10 +57,12 @@ export class AppointmentsService {
     const walletUserId = patientId;
 
     // Step 1: Get policy config and copay settings
+    console.log('📋 [STEP 1] Fetching policy config and copay settings...');
     let copayCalculation = null;
     let policyId = null;
 
     try {
+      console.log('🔍 [POLICY] Searching for assignment with memberId:', patientId);
       // Fetch user's assignment to get policyId
       const assignment = await (this.walletService as any)['assignmentModel']
         .findOne({ memberId: patientId })
@@ -57,88 +70,120 @@ export class AppointmentsService {
         .lean()
         .exec();
 
+      console.log('📄 [POLICY] Assignment found:', assignment ? 'YES' : 'NO');
+      if (assignment) {
+        console.log('📄 [POLICY] Assignment details:', JSON.stringify(assignment, null, 2));
+      }
+
       if (assignment && assignment.policyId) {
         policyId = assignment.policyId._id || assignment.policyId;
-        console.log('💰 [APPOINTMENTS SERVICE] Found policyId:', policyId);
+        console.log('✅ [POLICY] Found policyId:', policyId);
 
         // Fetch plan config
+        console.log('🔍 [POLICY] Fetching plan config for policyId:', policyId.toString());
         const planConfig = await this.planConfigService.getConfig(policyId.toString());
+        console.log('📄 [POLICY] Plan config retrieved:', planConfig ? 'YES' : 'NO');
 
         if (planConfig && planConfig.benefits && (planConfig.benefits as any)['CAT001']) {
           const consultBenefit = (planConfig.benefits as any)['CAT001'];
           const copayConfig = consultBenefit.copay;
 
+          console.log('📄 [COPAY] Consult benefit found:', JSON.stringify(consultBenefit, null, 2));
+          console.log('📄 [COPAY] Copay config:', JSON.stringify(copayConfig, null, 2));
+
           if (copayConfig && consultBenefit.enabled) {
-            console.log('💰 [APPOINTMENTS SERVICE] Copay config found:', copayConfig);
+            console.log('💰 [COPAY] Calculating copay for fee:', consultationFee);
             copayCalculation = CopayCalculator.calculate(consultationFee, copayConfig);
-            console.log('💰 [APPOINTMENTS SERVICE] Copay calculation:', copayCalculation);
+            console.log('✅ [COPAY] Copay calculation result:', JSON.stringify(copayCalculation, null, 2));
+          } else {
+            console.log('⚠️ [COPAY] Copay not applicable - config missing or benefit disabled');
           }
+        } else {
+          console.log('⚠️ [POLICY] No consultation benefit (CAT001) found in plan config');
         }
+      } else {
+        console.log('⚠️ [POLICY] No assignment or policyId found for member');
       }
     } catch (error) {
-      console.warn('⚠️ [APPOINTMENTS SERVICE] Could not fetch policy/copay config:', error.message);
+      console.error('❌ [POLICY ERROR] Failed to fetch policy/copay config:', error);
+      console.error('❌ [POLICY ERROR] Error stack:', error.stack);
       // Continue without copay if config fetch fails
     }
 
     // Step 2: Determine payment breakdown
+    console.log('📋 [STEP 2] Determining payment breakdown...');
     const copayAmount = copayCalculation ? copayCalculation.copayAmount : 0;
     const walletDebitAmount = copayCalculation ? copayCalculation.walletDebitAmount : consultationFee;
 
-    console.log('💰 [APPOINTMENTS SERVICE] Payment breakdown:');
-    console.log('  - Total fee: ₹' + consultationFee);
-    console.log('  - Wallet debit: ₹' + walletDebitAmount);
-    console.log('  - Copay (member pays): ₹' + copayAmount);
+    console.log('💰 [PAYMENT BREAKDOWN] ================');
+    console.log('💰 [PAYMENT] Total consultation fee: ₹' + consultationFee);
+    console.log('💰 [PAYMENT] Wallet debit amount: ₹' + walletDebitAmount);
+    console.log('💰 [PAYMENT] Copay amount (member pays): ₹' + copayAmount);
+    console.log('💰 [PAYMENT BREAKDOWN] ================');
 
     // Step 3: Check wallet balance
+    console.log('📋 [STEP 3] Checking wallet balance...');
     let hasSufficientBalance = false;
     let availableBalance = 0;
 
     if (walletDebitAmount > 0) {
       try {
+        console.log('🔍 [WALLET] Checking balance for userId:', walletUserId);
+        console.log('🔍 [WALLET] Required amount:', walletDebitAmount);
+        console.log('🔍 [WALLET] Category: CAT001');
+
         const balanceCheck = await this.walletService.checkSufficientBalance(
           walletUserId,
           walletDebitAmount,
           'CAT001'
         );
+
         hasSufficientBalance = balanceCheck.hasSufficient;
         availableBalance = balanceCheck.categoryBalance || 0;
-        console.log('💰 [APPOINTMENTS SERVICE] Balance check:', {
+
+        console.log('✅ [WALLET] Balance check result:', {
           required: walletDebitAmount,
           available: availableBalance,
           sufficient: hasSufficientBalance,
         });
       } catch (error) {
-        console.error('❌ [APPOINTMENTS SERVICE] Balance check failed:', error.message);
+        console.error('❌ [WALLET ERROR] Balance check failed:', error);
+        console.error('❌ [WALLET ERROR] Error stack:', error.stack);
       }
     } else {
       hasSufficientBalance = true; // No wallet debit needed
+      console.log('✅ [WALLET] No wallet debit needed, marking as sufficient');
     }
 
     // Step 4: Determine appointment status and create appointment document
+    console.log('📋 [STEP 4] Determining appointment status and scenario...');
     let appointmentStatus = AppointmentStatus.PENDING_CONFIRMATION;
     let paymentRequired = false;
     let paymentId = null;
+    let paymentMongoId = null; // MongoDB _id of the payment document
     let transactionId = null;
 
     // Scenario A: Insufficient wallet balance - need to collect full/partial payment upfront
     if (!hasSufficientBalance && walletDebitAmount > 0) {
-      console.log('💰 [APPOINTMENTS SERVICE] Insufficient balance - payment required before appointment');
+      console.log('🔴 [SCENARIO A] Insufficient balance - payment required before appointment');
+      console.log('🔴 [SCENARIO A] Shortfall: ₹' + (walletDebitAmount - availableBalance));
       appointmentStatus = AppointmentStatus.PENDING_PAYMENT;
       paymentRequired = true;
     }
 
     // Scenario B: Sufficient wallet balance but has copay - debit wallet now, collect copay after
     else if (hasSufficientBalance && copayAmount > 0) {
-      console.log('💰 [APPOINTMENTS SERVICE] Sufficient balance + copay - will debit wallet and create copay payment');
+      console.log('🟡 [SCENARIO B] Sufficient balance + copay - will debit wallet and create copay payment');
       paymentRequired = true; // For copay collection
     }
 
     // Scenario C: Sufficient balance, no copay - proceed normally
     else {
-      console.log('💰 [APPOINTMENTS SERVICE] Sufficient balance, no copay - normal flow');
+      console.log('🟢 [SCENARIO C] Sufficient balance, no copay - normal flow');
     }
 
     // Create appointment document FIRST (so we have the _id for payment)
+    console.log('📝 [APPOINTMENT] Creating appointment document...');
     const appointmentData = {
       ...createAppointmentDto,
       appointmentId,
@@ -158,36 +203,106 @@ export class AppointmentsService {
       paymentId: null, // Will be set after payment creation
     };
 
+    console.log('📝 [APPOINTMENT] Appointment data prepared:', JSON.stringify(appointmentData, null, 2));
+
     const appointment = new this.appointmentModel(appointmentData);
     const saved = await appointment.save();
 
+    console.log('✅ [APPOINTMENT] Appointment document created successfully');
+    console.log('🆔 [APPOINTMENT] MongoDB _id:', saved._id);
+    console.log('🆔 [APPOINTMENT] MongoDB _id type:', typeof saved._id);
+    console.log('🆔 [APPOINTMENT] MongoDB _id toString:', (saved._id as Types.ObjectId).toString());
+    console.log('🆔 [APPOINTMENT] appointmentId:', appointmentId);
+
     // Now create payment if needed (using saved._id)
     if (!hasSufficientBalance && walletDebitAmount > 0) {
+      console.log('💳 [PAYMENT] Creating payment request for insufficient balance scenario...');
       const shortfall = walletDebitAmount - availableBalance;
       const paymentAmount = shortfall + copayAmount;
 
-      // Create payment request using the saved appointment's MongoDB _id
-      const payment = await this.paymentService.createPaymentRequest({
-        userId: walletUserId,
-        amount: paymentAmount,
-        paymentType: copayAmount > 0 ? PaymentType.COPAY : PaymentType.OUT_OF_POCKET,
-        serviceType: PaymentServiceType.APPOINTMENT,
-        serviceId: (saved._id as Types.ObjectId).toString(),
-        serviceReferenceId: appointmentId,
-        description: `Payment for appointment with ${createAppointmentDto.doctorName || 'Doctor'}`,
-      });
+      console.log('💳 [PAYMENT] Payment calculation:');
+      console.log('  - Shortfall: ₹' + shortfall);
+      console.log('  - Copay amount: ₹' + copayAmount);
+      console.log('  - Total payment amount: ₹' + paymentAmount);
 
-      paymentId = payment.paymentId;
-      saved.paymentId = paymentId;
-      await saved.save();
-      console.log('💰 [APPOINTMENTS SERVICE] Payment request created:', paymentId);
+      console.log('🔍 [PAYMENT] Preparing payment request data:');
+      console.log('  - userId (walletUserId):', walletUserId);
+      console.log('  - amount:', paymentAmount);
+      console.log('  - paymentType:', copayAmount > 0 ? 'COPAY' : 'OUT_OF_POCKET');
+      console.log('  - serviceType:', PaymentServiceType.APPOINTMENT);
+      console.log('  - serviceId (MongoDB _id):', (saved._id as Types.ObjectId).toString());
+      console.log('  - serviceId type:', typeof (saved._id as Types.ObjectId).toString());
+      console.log('  - serviceReferenceId (appointmentId):', appointmentId);
+
+      try {
+        // Create payment request using the saved appointment's MongoDB _id
+        const payment = await this.paymentService.createPaymentRequest({
+          userId: walletUserId,
+          amount: paymentAmount,
+          paymentType: copayAmount > 0 ? PaymentType.COPAY : PaymentType.OUT_OF_POCKET,
+          serviceType: PaymentServiceType.APPOINTMENT,
+          serviceId: (saved._id as Types.ObjectId).toString(),
+          serviceReferenceId: appointmentId,
+          description: `Payment for appointment with ${createAppointmentDto.doctorName || 'Doctor'}`,
+        });
+
+        paymentId = payment.paymentId;
+        paymentMongoId = (payment._id as Types.ObjectId).toString();
+        saved.paymentId = paymentId;
+        await saved.save();
+
+        console.log('✅ [PAYMENT] Payment request created successfully');
+        console.log('💳 [PAYMENT] Payment ID (string):', paymentId);
+        console.log('💳 [PAYMENT] Payment MongoDB _id:', paymentMongoId);
+        console.log('💳 [PAYMENT] Payment object:', JSON.stringify(payment, null, 2));
+      } catch (error) {
+        console.error('❌ [PAYMENT ERROR] Failed to create payment request:', error);
+        console.error('❌ [PAYMENT ERROR] Error message:', error.message);
+        console.error('❌ [PAYMENT ERROR] Error stack:', error.stack);
+        throw error; // Re-throw to be caught by outer try-catch
+      }
     }
 
     // Step 5: Handle wallet debit and payment/transaction creation based on scenario
+    console.log('📋 [STEP 5] Handling wallet debit and transaction creation...');
     try {
-      // Scenario A: Insufficient balance - no wallet debit yet, transaction in PENDING status
+      // Scenario A: Insufficient balance - USE available wallet, then ask for shortfall
       if (!hasSufficientBalance && walletDebitAmount > 0) {
-        const transaction = await this.transactionService.createTransaction({
+        console.log('🔴 [SCENARIO A] Insufficient balance - using available wallet + requesting shortfall');
+
+        const useWallet = createAppointmentDto.useWallet !== false; // Default true
+        const walletAmountToUse = useWallet ? availableBalance : 0;
+        const shortfall = walletDebitAmount - walletAmountToUse;
+
+        console.log('💰 [SCENARIO A] Payment calculation:');
+        console.log('  - Total required:', walletDebitAmount);
+        console.log('  - Available in wallet:', availableBalance);
+        console.log('  - Will use from wallet:', walletAmountToUse);
+        console.log('  - Shortfall (user pays):', shortfall);
+        console.log('  - Use wallet flag:', useWallet);
+
+        // Step 1: Debit available wallet balance if user opted in
+        if (useWallet && walletAmountToUse > 0) {
+          console.log('💳 [SCENARIO A] Debiting ₹' + walletAmountToUse + ' from wallet...');
+
+          await this.walletService.debitWallet(
+            walletUserId,
+            walletAmountToUse,
+            'CAT001',
+            (saved._id as Types.ObjectId).toString(),
+            'CONSULTATION',
+            createAppointmentDto.doctorName || 'Doctor',
+            `Consultation fee (partial payment from wallet) - ${createAppointmentDto.doctorName || 'Doctor'}`
+          );
+
+          console.log('✅ [SCENARIO A] Wallet debited: ₹' + walletAmountToUse);
+        }
+
+        // Step 2: Create transaction with accurate breakdown
+        console.log('📄 [SCENARIO A] Creating transaction summary...');
+        console.log('🔍 [TRANSACTION] Using payment MongoDB _id:', paymentMongoId);
+
+        const transactionData = {
           userId: walletUserId,
           serviceType: TransactionServiceType.APPOINTMENT,
           serviceId: (saved._id as Types.ObjectId).toString(),
@@ -195,24 +310,50 @@ export class AppointmentsService {
           serviceName: `Consultation - ${createAppointmentDto.doctorName || 'Doctor'}`,
           serviceDate: new Date(createAppointmentDto.appointmentDate),
           totalAmount: consultationFee,
-          walletAmount: 0, // Not debited yet
-          selfPaidAmount: consultationFee,
+          walletAmount: walletAmountToUse, // ✅ What was actually used
+          selfPaidAmount: shortfall + copayAmount, // ✅ What user needs to pay
           copayAmount: copayAmount,
-          paymentMethod: copayAmount > 0 ? PaymentMethod.COPAY : PaymentMethod.OUT_OF_POCKET,
-          paymentId: paymentId || undefined,
-          status: TransactionStatus.PENDING_PAYMENT,
-        });
+          paymentMethod: (shortfall + copayAmount) > 0
+            ? (copayAmount > 0 ? PaymentMethod.COPAY : PaymentMethod.PARTIAL)
+            : PaymentMethod.WALLET_ONLY,
+          paymentId: paymentMongoId || undefined,
+          status: (shortfall + copayAmount) > 0
+            ? TransactionStatus.PENDING_PAYMENT
+            : TransactionStatus.COMPLETED,
+        };
+
+        console.log('📄 [TRANSACTION] Transaction data:', JSON.stringify(transactionData, null, 2));
+
+        const transaction = await this.transactionService.createTransaction(transactionData);
 
         transactionId = transaction.transactionId;
         saved.transactionId = transactionId;
+
+        // Update appointment status if fully covered by wallet
+        if ((shortfall + copayAmount) === 0) {
+          saved.status = AppointmentStatus.CONFIRMED;
+          saved.confirmedAt = new Date();
+          console.log('✅ [SCENARIO A] Fully covered by wallet - appointment confirmed');
+        }
+
         await saved.save();
 
-        console.log('✅ [APPOINTMENTS SERVICE] Appointment created with PENDING_PAYMENT status');
+        console.log('✅ [TRANSACTION] Transaction created:', transactionId);
+        console.log('✅ [SCENARIO A] Completed - wallet used: ₹' + walletAmountToUse + ', user pays: ₹' + (shortfall + copayAmount));
       }
 
       // Scenario B: Sufficient balance + copay - debit wallet now, create copay payment
       else if (hasSufficientBalance && copayAmount > 0) {
+        console.log('🟡 [SCENARIO B] Processing wallet debit + copay payment...');
+
         // Debit wallet
+        console.log('💰 [WALLET DEBIT] Debiting wallet:', {
+          userId: walletUserId,
+          amount: walletDebitAmount,
+          category: 'CAT001',
+          referenceId: (saved._id as Types.ObjectId).toString(),
+        });
+
         await this.walletService.debitWallet(
           walletUserId,
           walletDebitAmount,
@@ -223,9 +364,10 @@ export class AppointmentsService {
           `Consultation fee (wallet portion) - ${createAppointmentDto.doctorName || 'Doctor'}`
         );
 
-        console.log('✅ [APPOINTMENTS SERVICE] Wallet debited: ₹' + walletDebitAmount);
+        console.log('✅ [WALLET DEBIT] Wallet debited successfully: ₹' + walletDebitAmount);
 
         // Create copay payment request
+        console.log('💳 [COPAY PAYMENT] Creating copay payment request...');
         const copayPayment = await this.paymentService.createPaymentRequest({
           userId: walletUserId,
           amount: copayAmount,
@@ -237,10 +379,16 @@ export class AppointmentsService {
         });
 
         paymentId = copayPayment.paymentId;
+        paymentMongoId = (copayPayment._id as Types.ObjectId).toString();
         saved.paymentId = paymentId;
         await saved.save();
 
+        console.log('✅ [COPAY PAYMENT] Copay payment created:', paymentId);
+        console.log('💳 [COPAY PAYMENT] Payment MongoDB _id:', paymentMongoId);
+
         // Create transaction summary
+        console.log('📄 [TRANSACTION] Creating transaction summary...');
+        console.log('🔍 [TRANSACTION] Using payment MongoDB _id:', paymentMongoId);
         const transaction = await this.transactionService.createTransaction({
           userId: walletUserId,
           serviceType: TransactionServiceType.APPOINTMENT,
@@ -253,7 +401,7 @@ export class AppointmentsService {
           selfPaidAmount: copayAmount,
           copayAmount: copayAmount,
           paymentMethod: PaymentMethod.COPAY,
-          paymentId: paymentId,
+          paymentId: paymentMongoId, // Use MongoDB _id, not string paymentId
           status: TransactionStatus.PENDING_PAYMENT,
         });
 
@@ -261,53 +409,125 @@ export class AppointmentsService {
         saved.transactionId = transactionId;
         await saved.save();
 
-        console.log('✅ [APPOINTMENTS SERVICE] Copay payment created:', paymentId);
+        console.log('✅ [TRANSACTION] Transaction created:', transactionId);
+        console.log('✅ [SCENARIO B] Copay scenario completed successfully');
       }
 
-      // Scenario C: Sufficient balance, no copay - debit wallet, create completed transaction
+      // Scenario C: Sufficient balance, no copay - debit wallet OR ask for payment
       else if (walletDebitAmount > 0) {
-        await this.walletService.debitWallet(
-          walletUserId,
-          walletDebitAmount,
-          'CAT001',
-          (saved._id as Types.ObjectId).toString(),
-          'CONSULTATION',
-          createAppointmentDto.doctorName || 'Doctor',
-          `Consultation fee - ${createAppointmentDto.doctorName || 'Doctor'}`
-        );
+        const useWallet = createAppointmentDto.useWallet !== false; // Default true
 
-        console.log('✅ [APPOINTMENTS SERVICE] Wallet debited: ₹' + walletDebitAmount);
+        if (useWallet) {
+          console.log('🟢 [SCENARIO C] Processing wallet-only payment...');
 
-        // Create completed transaction
-        const transaction = await this.transactionService.createTransaction({
-          userId: walletUserId,
-          serviceType: TransactionServiceType.APPOINTMENT,
-          serviceId: (saved._id as Types.ObjectId).toString(),
-          serviceReferenceId: appointmentId,
-          serviceName: `Consultation - ${createAppointmentDto.doctorName || 'Doctor'}`,
-          serviceDate: new Date(createAppointmentDto.appointmentDate),
-          totalAmount: consultationFee,
-          walletAmount: walletDebitAmount,
-          selfPaidAmount: 0,
-          copayAmount: 0,
-          paymentMethod: PaymentMethod.WALLET_ONLY,
-          status: TransactionStatus.COMPLETED,
-        });
+          console.log('💰 [WALLET DEBIT] Debiting wallet:', {
+            userId: walletUserId,
+            amount: walletDebitAmount,
+            category: 'CAT001',
+            referenceId: (saved._id as Types.ObjectId).toString(),
+          });
 
-        transactionId = transaction.transactionId;
-        saved.transactionId = transactionId;
-        await saved.save();
+          await this.walletService.debitWallet(
+            walletUserId,
+            walletDebitAmount,
+            'CAT001',
+            (saved._id as Types.ObjectId).toString(),
+            'CONSULTATION',
+            createAppointmentDto.doctorName || 'Doctor',
+            `Consultation fee - ${createAppointmentDto.doctorName || 'Doctor'}`
+          );
 
-        console.log('✅ [APPOINTMENTS SERVICE] Transaction completed');
+          console.log('✅ [WALLET DEBIT] Wallet debited successfully: ₹' + walletDebitAmount);
+
+          // Create completed transaction
+          console.log('📄 [TRANSACTION] Creating completed transaction...');
+          const transaction = await this.transactionService.createTransaction({
+            userId: walletUserId,
+            serviceType: TransactionServiceType.APPOINTMENT,
+            serviceId: (saved._id as Types.ObjectId).toString(),
+            serviceReferenceId: appointmentId,
+            serviceName: `Consultation - ${createAppointmentDto.doctorName || 'Doctor'}`,
+            serviceDate: new Date(createAppointmentDto.appointmentDate),
+            totalAmount: consultationFee,
+            walletAmount: walletDebitAmount,
+            selfPaidAmount: 0,
+            copayAmount: 0,
+            paymentMethod: PaymentMethod.WALLET_ONLY,
+            status: TransactionStatus.COMPLETED,
+          });
+
+          transactionId = transaction.transactionId;
+          saved.transactionId = transactionId;
+          saved.status = AppointmentStatus.CONFIRMED;
+          saved.confirmedAt = new Date();
+          await saved.save();
+
+          console.log('✅ [TRANSACTION] Transaction created:', transactionId);
+          console.log('✅ [SCENARIO C] Wallet-only scenario completed successfully');
+        } else {
+          // Scenario D: User opted out of wallet - ask for full payment
+          console.log('🔵 [SCENARIO D] User opted out of wallet - requesting full payment');
+
+          // Create payment request for full amount
+          const payment = await this.paymentService.createPaymentRequest({
+            userId: walletUserId,
+            amount: consultationFee,
+            paymentType: PaymentType.OUT_OF_POCKET,
+            serviceType: PaymentServiceType.APPOINTMENT,
+            serviceId: (saved._id as Types.ObjectId).toString(),
+            serviceReferenceId: appointmentId,
+            description: `Payment for appointment with ${createAppointmentDto.doctorName || 'Doctor'} (wallet not used - user choice)`,
+          });
+
+          paymentId = payment.paymentId;
+          paymentMongoId = (payment._id as Types.ObjectId).toString();
+          saved.paymentId = paymentId;
+          saved.status = AppointmentStatus.PENDING_PAYMENT;
+          await saved.save();
+
+          console.log('✅ [SCENARIO D] Payment request created:', paymentId);
+
+          // Create transaction
+          const transaction = await this.transactionService.createTransaction({
+            userId: walletUserId,
+            serviceType: TransactionServiceType.APPOINTMENT,
+            serviceId: (saved._id as Types.ObjectId).toString(),
+            serviceReferenceId: appointmentId,
+            serviceName: `Consultation - ${createAppointmentDto.doctorName || 'Doctor'}`,
+            serviceDate: new Date(createAppointmentDto.appointmentDate),
+            totalAmount: consultationFee,
+            walletAmount: 0, // User chose not to use wallet
+            selfPaidAmount: consultationFee,
+            copayAmount: 0,
+            paymentMethod: PaymentMethod.OUT_OF_POCKET,
+            paymentId: paymentMongoId,
+            status: TransactionStatus.PENDING_PAYMENT,
+          });
+
+          transactionId = transaction.transactionId;
+          saved.transactionId = transactionId;
+          await saved.save();
+
+          console.log('✅ [SCENARIO D] Full payment request created - wallet not used');
+        }
       }
     } catch (error) {
-      console.error('❌ [APPOINTMENTS SERVICE] Payment/transaction failed, rolling back:', error);
+      console.error('❌ [APPOINTMENTS SERVICE] ========== ERROR OCCURRED ==========');
+      console.error('❌ [ERROR] Type:', error.constructor.name);
+      console.error('❌ [ERROR] Message:', error.message);
+      console.error('❌ [ERROR] Stack:', error.stack);
+      console.error('❌ [ERROR] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      console.error('❌ [ROLLBACK] Deleting appointment document...');
+
       await this.appointmentModel.deleteOne({ _id: saved._id });
+
+      console.error('❌ [ROLLBACK] Appointment deleted, throwing error to client');
       throw new BadRequestException('Failed to process payment: ' + error.message);
     }
 
     // Return appointment with payment info
-    return {
+    console.log('✅ [APPOINTMENTS SERVICE] ========== APPOINTMENT CREATION COMPLETE ==========');
+    const response = {
       appointment: saved,
       paymentRequired,
       paymentId,
@@ -315,6 +535,8 @@ export class AppointmentsService {
       copayAmount,
       walletDebitAmount,
     };
+    console.log('📤 [RESPONSE] Returning to client:', JSON.stringify(response, null, 2));
+    return response;
   }
 
   async getUserAppointments(userId: string, appointmentType?: string): Promise<Appointment[]> {

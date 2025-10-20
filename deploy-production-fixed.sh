@@ -6,7 +6,7 @@
 
 set -e
 
-AWS_IP="51.21.190.63"
+AWS_IP="34.202.161.177"
 KEY_PATH="~/Downloads/opdwallet-arm-key.pem"
 
 echo "🚀 Production Deployment (Fixed)"
@@ -96,7 +96,7 @@ services:
     ports:
       - "3001:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://51.21.190.63:4000/api
+      NEXT_PUBLIC_API_URL: http://34.202.161.177:4000/api
       API_URL: http://api:4000
       NODE_ENV: production
     depends_on:
@@ -115,7 +115,7 @@ services:
     ports:
       - "3002:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://51.21.190.63:4000/api
+      NEXT_PUBLIC_API_URL: http://34.202.161.177:4000/api
       API_URL: http://api:4000
       NODE_ENV: production
     depends_on:

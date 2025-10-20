@@ -118,13 +118,25 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
       },
     });
 
-    // Forward Set-Cookie headers explicitly
-    const setCookieHeaders = response.headers.get('set-cookie');
-    if (setCookieHeaders) {
-      console.log('[API Proxy] Set-Cookie header found:', setCookieHeaders);
-      nextResponse.headers.set('Set-Cookie', setCookieHeaders);
+    // Forward Set-Cookie headers explicitly - use getSetCookie() for multiple cookies
+    const setCookieHeaders = response.headers.getSetCookie?.() || [];
+    console.log('[API Proxy] Set-Cookie headers array:', setCookieHeaders);
+    console.log('[API Proxy] Set-Cookie count:', setCookieHeaders.length);
+
+    if (setCookieHeaders.length > 0) {
+      console.log('[API Proxy] Forwarding Set-Cookie headers...');
+      setCookieHeaders.forEach((cookie, index) => {
+        console.log(`[API Proxy] Set-Cookie [${index}]:`, cookie);
+        nextResponse.headers.append('Set-Cookie', cookie);
+      });
     } else {
-      console.log('[API Proxy] No Set-Cookie header in response');
+      console.log('[API Proxy] No Set-Cookie headers in response');
+      // Try fallback method
+      const singleCookie = response.headers.get('set-cookie');
+      if (singleCookie) {
+        console.log('[API Proxy] Found single Set-Cookie via get():', singleCookie);
+        nextResponse.headers.set('Set-Cookie', singleCookie);
+      }
     }
 
     console.log('[API Proxy] Final response headers:', Object.fromEntries(nextResponse.headers.entries()));

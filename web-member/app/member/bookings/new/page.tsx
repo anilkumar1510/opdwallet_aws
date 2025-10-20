@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Card } from '../../../../components/ui/Card'
 import {
   ArrowLeftIcon,
@@ -119,7 +119,7 @@ export default function NewBookingPage() {
     { id: 'child2', name: 'Michael Smith', relation: 'Son' }
   ]
 
-  const mockProviders: Provider[] = [
+  const mockProvidersData: Provider[] = useMemo(() => [
     {
       id: '1',
       name: 'Dr. Sarah Wilson',
@@ -174,7 +174,7 @@ export default function NewBookingPage() {
       isVerified: true,
       isFavorite: false
     }
-  ]
+  ], [])
 
   const generateTimeSlots = (date: Date): TimeSlot[] => {
     const slots: TimeSlot[] = []
@@ -215,9 +215,9 @@ export default function NewBookingPage() {
   }
 
   useEffect(() => {
-    setProviders(mockProviders)
-    setFilteredProviders(mockProviders)
-  }, [])
+    setProviders(mockProvidersData)
+    setFilteredProviders(mockProvidersData)
+  }, [mockProvidersData])
 
   useEffect(() => {
     let filtered = providers

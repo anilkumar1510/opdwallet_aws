@@ -4,7 +4,7 @@
 # Quick Deploy - Works Around Build Issues
 # ================================================
 
-AWS_IP="51.21.190.63"
+AWS_IP="34.202.161.177"
 KEY_PATH="~/Downloads/opdwallet-arm-key.pem"
 
 echo "🚀 Quick Deploy to AWS"
@@ -24,7 +24,7 @@ cp /home/ubuntu/.env.production .env
 export COMPOSE_FILE=docker-compose.yml
 
 # Update NEXT_PUBLIC_API_URL in compose file
-sed -i "s|http://localhost:4000|http://51.21.190.63:4000|g" docker-compose.yml
+sed -i "s|http://localhost:4000|http://34.202.161.177:4000|g" docker-compose.yml
 
 # Stop existing
 docker-compose down

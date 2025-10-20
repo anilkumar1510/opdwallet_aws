@@ -100,7 +100,7 @@ async function bootstrap() {
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: isProduction ? 100 : 1000, // limit each IP to 1000 requests per windowMs in dev, 100 in prod
+      max: isProduction ? 1000 : 1000, // limit each IP to 1000 requests per windowMs (production and dev)
       message: 'Too many requests from this IP, please try again later.',
       standardHeaders: true,
       legacyHeaders: false,

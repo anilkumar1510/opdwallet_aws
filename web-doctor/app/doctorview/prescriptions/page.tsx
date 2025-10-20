@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getDoctorPrescriptions, deletePrescription, Prescription } from '@/lib/api/prescriptions'
 import {
   DocumentTextIcon,
@@ -18,11 +18,7 @@ export default function PrescriptionsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchPrescriptions()
-  }, [currentPage])
-
-  const fetchPrescriptions = async () => {
+  const fetchPrescriptions = useCallback(async () => {
     try {
       setLoading(true)
       const response = await getDoctorPrescriptions(currentPage, 20)
@@ -33,7 +29,11 @@ export default function PrescriptionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage])
+
+  useEffect(() => {
+    fetchPrescriptions()
+  }, [fetchPrescriptions])
 
   const handleDelete = async (prescriptionId: string) => {
     if (!confirm('Are you sure you want to delete this prescription?')) return

@@ -5,7 +5,7 @@
 # =============================================
 
 # Configuration - UPDATE THESE VALUES
-AWS_IP="51.21.190.63"  # Your t4g.medium instance IP
+AWS_IP="34.202.161.177"  # Your t4g.medium instance IP
 KEY_PATH="~/Downloads/opdwallet-arm-key.pem"  # Path to your SSH key
 
 # Colors for output

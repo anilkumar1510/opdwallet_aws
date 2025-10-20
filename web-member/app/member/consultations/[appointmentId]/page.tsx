@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { joinVideoConsultation } from '@/lib/api/video-consultations'
 import VideoConsultation from '@/components/VideoConsultation'
@@ -26,11 +26,7 @@ export default function VideoConsultationPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    initializeConsultation()
-  }, [appointmentId])
-
-  const initializeConsultation = async () => {
+  const initializeConsultation = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
@@ -45,7 +41,11 @@ export default function VideoConsultationPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [appointmentId])
+
+  useEffect(() => {
+    initializeConsultation()
+  }, [appointmentId, initializeConsultation])
 
   const handleEndConsultation = () => {
     // Redirect back to online consultation page

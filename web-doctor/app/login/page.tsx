@@ -13,30 +13,100 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+
+    console.log('🚀 [LOGIN PAGE] ========== DOCTOR LOGIN FLOW START ==========')
+    console.log('⏰ [LOGIN PAGE] Timestamp:', new Date().toISOString())
+    console.log('📍 [LOGIN PAGE] Current page URL:', window.location.href)
+    console.log('🌐 [LOGIN PAGE] Browser info:', {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      cookieEnabled: navigator.cookieEnabled,
+      onLine: navigator.onLine
+    })
+
+    console.log('📋 [FORM STATE] Before submission:')
+    console.log('   📧 Email:', email)
+    console.log('   📧 Email length:', email.length)
+    console.log('   📧 Email valid format:', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    console.log('   🔐 Password:', password.replace(/./g, '*'))
+    console.log('   🔐 Password length:', password.length)
+    console.log('   🔐 Has password:', !!password)
+    console.log('   ⚙️ Loading state before:', loading)
+    console.log('   ⚠️ Error state before:', error)
+
+    console.log('🧹 [STATE UPDATE] Clearing error state...')
     setError('')
+    console.log('⏳ [STATE UPDATE] Setting loading to true...')
     setLoading(true)
 
-    console.log('=== DOCTOR LOGIN DEBUG START ===')
-    console.log('[LoginPage] Form submitted at:', new Date().toISOString())
-    console.log('[LoginPage] Email:', email)
-    console.log('[LoginPage] Password length:', password.length)
-    console.log('[LoginPage] API URL:', process.env.NEXT_PUBLIC_API_URL || 'NOT SET')
+    console.log('🔍 [ENVIRONMENT] Checking environment variables:')
+    console.log('   NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL || 'NOT SET')
+    console.log('   NODE_ENV:', process.env.NODE_ENV)
+
+    console.log('🍪 [COOKIES] Current document.cookie:', document.cookie || 'NO COOKIES')
+
+    const loginPayload = { email, password }
+    console.log('📦 [PAYLOAD] Login payload prepared:', {
+      email: loginPayload.email,
+      passwordLength: loginPayload.password.length,
+      hasPassword: !!loginPayload.password
+    })
 
     try {
-      console.log('[LoginPage] Calling loginDoctor...')
-      const result = await loginDoctor({ email, password })
-      console.log('[LoginPage] Login successful:', result)
-      console.log('[LoginPage] Redirecting to /doctorview')
+      console.log('📞 [API CALL] Calling loginDoctor function...')
+      const apiCallStartTime = Date.now()
+
+      const result = await loginDoctor(loginPayload)
+
+      const apiCallDuration = Date.now() - apiCallStartTime
+      console.log(`✅ [API CALL] Login API call completed in ${apiCallDuration}ms`)
+      console.log('🎉 [SUCCESS] Login successful!')
+      console.log('📦 [RESPONSE] Full result:', JSON.stringify(result, null, 2))
+      console.log('👤 [DOCTOR INFO] Logged in as:', {
+        doctorId: result.doctor?.doctorId,
+        name: result.doctor?.name,
+        email: result.doctor?.email,
+        specialty: result.doctor?.specialty,
+        role: result.doctor?.role
+      })
+
+      console.log('🍪 [COOKIES] After login, document.cookie:', document.cookie || 'NO COOKIES')
+      console.log('🍪 [COOKIES] Session cookie check:', document.cookie.includes('opd_session') ? 'FOUND' : 'NOT FOUND')
+
+      console.log('🔄 [NAVIGATION] Preparing to redirect to /doctorview...')
+      console.log('🔄 [NAVIGATION] Router ready:', !!router)
+
       router.push('/doctorview')
+      console.log('✅ [NAVIGATION] Redirect initiated successfully')
+
     } catch (err: any) {
-      console.error('[LoginPage] Login failed with error:', err)
-      console.error('[LoginPage] Error message:', err.message)
-      console.error('[LoginPage] Error stack:', err.stack)
-      console.error('[LoginPage] Full error object:', JSON.stringify(err, Object.getOwnPropertyNames(err)))
-      setError(err.message || 'Login failed. Please check your credentials.')
+      const apiCallDuration = Date.now() - Date.now()
+      console.error(`❌ [ERROR] Login failed after ${apiCallDuration}ms`)
+      console.error('❌ [ERROR] Error occurred during login')
+      console.error('❌ [ERROR] Error type:', typeof err)
+      console.error('❌ [ERROR] Error name:', err.name)
+      console.error('❌ [ERROR] Error message:', err.message)
+      console.error('❌ [ERROR] Error stack:', err.stack)
+      console.error('❌ [ERROR] Error toString:', err.toString())
+      console.error('❌ [ERROR] Full error object:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2))
+      console.error('❌ [ERROR] Error constructor:', err.constructor?.name)
+
+      if (err.cause) {
+        console.error('❌ [ERROR] Error cause:', err.cause)
+      }
+
+      const errorMessage = err.message || 'Login failed. Please check your credentials.'
+      console.error('❌ [ERROR] Setting error message to:', errorMessage)
+      setError(errorMessage)
+
     } finally {
+      console.log('🏁 [CLEANUP] Finally block executing...')
+      console.log('⏳ [STATE UPDATE] Setting loading to false...')
       setLoading(false)
-      console.log('=== DOCTOR LOGIN DEBUG END ===')
+      console.log('📊 [FINAL STATE] Loading:', false)
+      console.log('📊 [FINAL STATE] Error:', error || 'NONE')
+      console.log('🎬 [LOGIN PAGE] ========== DOCTOR LOGIN FLOW END ==========')
+      console.log('')
     }
   }
 

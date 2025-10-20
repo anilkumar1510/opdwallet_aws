@@ -153,6 +153,37 @@ export default function NewClaimPage() {
     fetchFamilyMembers()
   }, [activeMember])
 
+  // Helper function to get available balance for selected category
+  const getAvailableBalance = (): number => {
+    if (!walletData || !formData.category) return 0
+
+    const categoryMap: Record<string, string> = {
+      'consultation': 'CONSULTATION',
+      'diagnostics': 'DIAGNOSTICS',
+      'pharmacy': 'PHARMACY'
+    }
+
+    const mappedCategory = categoryMap[formData.category]
+    const categoryBalance = walletData.balancesByCategory?.find(
+      (b: any) => b.category === mappedCategory
+    )
+
+    return categoryBalance?.balance || 0
+  }
+
+  // Helper function to handle user selection change
+  const handleUserChange = (userId: string) => {
+    setSelectedUserId(userId)
+    const member = familyMembers.find(m => m.userId === userId)
+    if (member) {
+      setFormData(prev => ({
+        ...prev,
+        patientName: member.name,
+        relationToMember: member.relationship
+      }))
+    }
+  }
+
   // Fetch wallet data when user is selected
   useEffect(() => {
     if (!selectedUserId) return
@@ -174,64 +205,8 @@ export default function NewClaimPage() {
     fetchWalletData()
   }, [selectedUserId])
 
-  // Auto-save draft functionality
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (Object.values(formData).some(value =>
-        Array.isArray(value) ? value.length > 0 : value !== ''
-      )) {
-        saveDraft()
-      }
-    }, 2000)
-
-    return () => clearTimeout(timer)
-  }, [formData])
-
-  // Get available balance for selected category
-  const getAvailableBalance = () => {
-    if (!selectedUserId || !formData.category || !walletData?.categories) return 0
-
-    const category = CLAIM_CATEGORIES.find(cat => cat.id === formData.category)
-    if (!category?.categoryCode) return 0
-
-    const walletCategory = walletData.categories.find((c: any) => c.categoryCode === category.categoryCode)
-    return walletCategory?.available || walletCategory?.current || 0
-  }
-
-  // Handle user selection change
-  const handleUserChange = (userId: string) => {
-    setSelectedUserId(userId)
-    // Reset category and amount when user changes
-    setFormData(prev => ({
-      ...prev,
-      category: '',
-      billAmount: ''
-    }))
-    setErrors({})
-  }
-
-  // Validate amount against wallet balance
-  useEffect(() => {
-    if (formData.billAmount && formData.category) {
-      const amount = parseFloat(formData.billAmount) || 0
-      const availableBalance = getAvailableBalance()
-
-      if (amount > availableBalance) {
-        setErrors(prev => ({
-          ...prev,
-          billAmount: `Amount exceeds available balance ₹${availableBalance.toLocaleString()}`
-        }))
-      } else {
-        setErrors(prev => {
-          const newErrors = {...prev}
-          delete newErrors.billAmount
-          return newErrors
-        })
-      }
-    }
-  }, [formData.category, formData.billAmount, walletData])
-
-  const saveDraft = async () => {
+  // Auto-save draft
+  const saveDraft = useCallback(async () => {
     try {
       localStorage.setItem('claimDraft', JSON.stringify(formData))
       setIsDraftSaved(true)
@@ -239,7 +214,7 @@ export default function NewClaimPage() {
     } catch (error) {
       console.error('Failed to save draft:', error)
     }
-  }
+  }, [formData])
 
   const loadDraft = () => {
     try {
@@ -283,52 +258,94 @@ export default function NewClaimPage() {
     touchStartY.current = 0
   }
 
+  // Helper function to validate user selection
+  const validateUserSelection = (errors: Record<string, string>) => {
+    if (!selectedUserId) {
+      errors.category = 'Please select a family member'
+    }
+  }
+
+  // Helper function to validate category selection
+  const validateCategory = (errors: Record<string, string>) => {
+    if (!formData.category) {
+      errors.category = 'Please select a category'
+    }
+  }
+
+  // Helper function to validate treatment date
+  const validateTreatmentDate = (errors: Record<string, string>) => {
+    if (!formData.treatmentDate) {
+      errors.treatmentDate = 'Treatment date is required'
+    }
+  }
+
+  // Helper function to validate provider name
+  const validateProviderName = (errors: Record<string, string>) => {
+    if (!formData.providerName.trim()) {
+      errors.providerName = 'Provider name is required'
+    }
+  }
+
+  // Helper function to validate bill amount
+  const validateBillAmount = (errors: Record<string, string>) => {
+    if (!formData.billAmount || parseFloat(formData.billAmount) <= 0) {
+      errors.billAmount = 'Valid bill amount is required'
+      return
+    }
+
+    // Check wallet balance for all categories
+    if (formData.category) {
+      const amount = parseFloat(formData.billAmount)
+      const availableBalance = getAvailableBalance()
+      if (amount > availableBalance) {
+        errors.billAmount = `Amount exceeds available balance ₹${availableBalance.toLocaleString()}`
+      }
+    }
+  }
+
+  // Helper function to validate step 1 fields
+  const validateStep1 = (errors: Record<string, string>) => {
+    validateUserSelection(errors)
+    validateCategory(errors)
+    validateTreatmentDate(errors)
+    validateProviderName(errors)
+    validateBillAmount(errors)
+  }
+
+  // Helper function to validate consultation documents
+  const validateConsultDocuments = (errors: Record<string, string>) => {
+    if (prescriptionFiles.length === 0) {
+      errors.documents = 'Please upload at least one prescription document'
+    }
+    if (billFiles.length === 0) {
+      errors.documents = 'Please upload at least one bill document'
+    }
+  }
+
+  // Helper function to validate generic documents
+  const validateGenericDocuments = (errors: Record<string, string>) => {
+    if (documentPreviews.length === 0) {
+      errors.documents = 'Please upload at least one document'
+    }
+  }
+
+  // Helper function to validate step 2 documents
+  const validateStep2 = (errors: Record<string, string>) => {
+    const isConsult = formData.category === 'consultation'
+    if (isConsult) {
+      validateConsultDocuments(errors)
+    } else {
+      validateGenericDocuments(errors)
+    }
+  }
+
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {}
-    const isConsult = formData.category === 'consultation'
 
-    switch (step) {
-      case 1:
-        if (!selectedUserId) {
-          newErrors.category = 'Please select a family member'
-        }
-        if (!formData.category) {
-          newErrors.category = 'Please select a category'
-        }
-        if (!formData.treatmentDate) {
-          newErrors.treatmentDate = 'Treatment date is required'
-        }
-        if (!formData.providerName.trim()) {
-          newErrors.providerName = 'Provider name is required'
-        }
-        if (!formData.billAmount || parseFloat(formData.billAmount) <= 0) {
-          newErrors.billAmount = 'Valid bill amount is required'
-        }
-        // Check wallet balance for all categories
-        if (formData.billAmount && formData.category) {
-          const amount = parseFloat(formData.billAmount)
-          const availableBalance = getAvailableBalance()
-          if (amount > availableBalance) {
-            newErrors.billAmount = `Amount exceeds available balance ₹${availableBalance.toLocaleString()}`
-          }
-        }
-        break
-      case 2:
-        if (isConsult) {
-          // For Consult: validate both prescription and bill files
-          if (prescriptionFiles.length === 0) {
-            newErrors.documents = 'Please upload at least one prescription document'
-          }
-          if (billFiles.length === 0) {
-            newErrors.documents = 'Please upload at least one bill document'
-          }
-        } else {
-          // For Lab/Pharmacy: validate generic documents
-          if (documentPreviews.length === 0) {
-            newErrors.documents = 'Please upload at least one document'
-          }
-        }
-        break
+    if (step === 1) {
+      validateStep1(newErrors)
+    } else if (step === 2) {
+      validateStep2(newErrors)
     }
 
     setErrors(newErrors)

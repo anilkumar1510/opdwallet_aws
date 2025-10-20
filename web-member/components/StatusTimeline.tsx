@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -27,11 +27,7 @@ export default function StatusTimeline({ claimId }: StatusTimelineProps) {
   const [currentStatus, setCurrentStatus] = useState('')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTimeline()
-  }, [claimId])
-
-  const fetchTimeline = async () => {
+  const fetchTimeline = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/member/claims/${claimId}/timeline`, {
@@ -47,7 +43,11 @@ export default function StatusTimeline({ claimId }: StatusTimelineProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [claimId])
+
+  useEffect(() => {
+    fetchTimeline()
+  }, [claimId, fetchTimeline])
 
   const getStatusIcon = (status: string) => {
     switch (status) {

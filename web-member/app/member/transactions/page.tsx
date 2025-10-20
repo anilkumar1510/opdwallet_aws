@@ -189,68 +189,87 @@ export default function TransactionsPage() {
     }
   ]
 
+  // Filter helper functions
+  const matchesSearchQuery = (transaction: Transaction): boolean => {
+    const query = searchQuery.toLowerCase()
+    return transaction.description.toLowerCase().includes(query) ||
+           transaction.transactionId.toLowerCase().includes(query) ||
+           (transaction.provider?.toLowerCase().includes(query) || false)
+  }
+
+  const matchesFilters = (transaction: Transaction): boolean => {
+    const matchesType = typeFilter === 'all' || transaction.type === typeFilter
+    const matchesCategory = categoryFilter === 'all' || transaction.category === categoryFilter
+    return matchesType && matchesCategory
+  }
+
+  const getDaysBackFromRange = (): number => {
+    switch (dateRange) {
+      case 'last_7_days': return 7
+      case 'last_30_days': return 30
+      case 'last_90_days': return 90
+      case 'this_year': return 365
+      default: return 0
+    }
+  }
+
+  const matchesDateRange = (transaction: Transaction): boolean => {
+    if (dateRange === 'all') return true
+
+    const transactionDate = new Date(transaction.date)
+
+    if (dateRange === 'custom' && startDate && endDate) {
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      return transactionDate >= start && transactionDate <= end
+    }
+
+    const daysBack = getDaysBackFromRange()
+    if (daysBack > 0) {
+      const today = new Date()
+      const cutoffDate = new Date(today.getTime() - daysBack * 24 * 60 * 60 * 1000)
+      return transactionDate >= cutoffDate
+    }
+
+    return true
+  }
+
+  const getSortValue = (transaction: Transaction, field: SortField): any => {
+    switch (field) {
+      case 'date':
+        return new Date(transaction.date)
+      case 'amount':
+        return Math.abs(transaction.amount)
+      case 'type':
+        return transaction.type
+      case 'category':
+        return transaction.category
+      default:
+        return null
+    }
+  }
+
+  const compareSortValues = (aValue: any, bValue: any): number => {
+    if (aValue === null || bValue === null) return 0
+
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1
+    } else {
+      return aValue < bValue ? 1 : -1
+    }
+  }
+
   // Filter and sort transactions
   const filteredAndSortedTransactions = mockTransactions
-    .filter(transaction => {
-      const matchesSearch = transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           transaction.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (transaction.provider && transaction.provider.toLowerCase().includes(searchQuery.toLowerCase()))
-      const matchesType = typeFilter === 'all' || transaction.type === typeFilter
-      const matchesCategory = categoryFilter === 'all' || transaction.category === categoryFilter
-
-      // Date filtering
-      const transactionDate = new Date(transaction.date)
-      const today = new Date()
-      let dateMatch = true
-
-      if (dateRange !== 'all' && dateRange !== 'custom') {
-        const daysBack = dateRange === 'last_7_days' ? 7 :
-                         dateRange === 'last_30_days' ? 30 :
-                         dateRange === 'last_90_days' ? 90 :
-                         dateRange === 'this_year' ? 365 : 0
-
-        if (daysBack > 0) {
-          const cutoffDate = new Date(today.getTime() - daysBack * 24 * 60 * 60 * 1000)
-          dateMatch = transactionDate >= cutoffDate
-        }
-      }
-
-      if (dateRange === 'custom' && startDate && endDate) {
-        const start = new Date(startDate)
-        const end = new Date(endDate)
-        dateMatch = transactionDate >= start && transactionDate <= end
-      }
-
-      return matchesSearch && matchesType && matchesCategory && dateMatch
-    })
+    .filter(transaction =>
+      matchesSearchQuery(transaction) &&
+      matchesFilters(transaction) &&
+      matchesDateRange(transaction)
+    )
     .sort((a, b) => {
-      let aValue: any, bValue: any
-      switch (sortField) {
-        case 'date':
-          aValue = new Date(a.date)
-          bValue = new Date(b.date)
-          break
-        case 'amount':
-          aValue = Math.abs(a.amount)
-          bValue = Math.abs(b.amount)
-          break
-        case 'type':
-          aValue = a.type
-          bValue = b.type
-          break
-        case 'category':
-          aValue = a.category
-          bValue = b.category
-          break
-        default:
-          return 0
-      }
-
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1
-      } else {
-        return aValue < bValue ? 1 : -1
-      }
+      const aValue = getSortValue(a, sortField)
+      const bValue = getSortValue(b, sortField)
+      return compareSortValues(aValue, bValue)
     })
 
   // Pagination
@@ -266,6 +285,30 @@ export default function TransactionsPage() {
     } else {
       setSortField(field)
       setSortOrder('desc')
+    }
+  }
+
+  // Helper for table column rendering
+  const isColumnSortable = (columnKey: string): boolean => {
+    return !['transaction', 'balance', 'actions'].includes(columnKey)
+  }
+
+  const handleColumnClick = (column: { key: string; sortable: boolean }) => {
+    if (column.sortable && isColumnSortable(column.key)) {
+      handleSort(column.key as SortField)
+    }
+  }
+
+  const shouldShowSortIcon = (column: { key: string; sortable: boolean }): boolean => {
+    return column.sortable && isColumnSortable(column.key)
+  }
+
+  // Helper for table cell padding based on data view
+  const getCellPaddingClass = (): string => {
+    switch (dataView) {
+      case 'compact': return 'py-2'
+      case 'spacious': return 'py-5'
+      default: return 'py-3'
     }
   }
 
@@ -567,93 +610,97 @@ export default function TransactionsPage() {
                   { key: 'amount', label: 'Amount', sortable: true },
                   { key: 'balance', label: 'Balance', sortable: false },
                   { key: 'actions', label: 'Actions', sortable: false }
-                ].map((column) => (
-                  <th
-                    key={column.key}
-                    className={`px-6 ${
-                      dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'
-                    } text-left text-xs font-semibold text-ink-600 uppercase tracking-wider ${
-                      column.sortable ? 'cursor-pointer hover:bg-surface' : ''
-                    }`}
-                    onClick={() => column.sortable && column.key !== 'transaction' && column.key !== 'balance' && column.key !== 'actions' && handleSort(column.key as SortField)}
-                  >
-                    <div className="flex items-center">
-                      {column.label}
-                      {column.sortable && column.key !== 'transaction' && column.key !== 'balance' && column.key !== 'actions' && (
-                        <ChevronUpDownIcon className="h-4 w-4 ml-1" />
-                      )}
-                    </div>
-                  </th>
-                ))}
+                ].map((column) => {
+                  const cellPadding = getCellPaddingClass()
+                  return (
+                    <th
+                      key={column.key}
+                      className={`px-6 ${cellPadding} text-left text-xs font-semibold text-ink-600 uppercase tracking-wider ${
+                        column.sortable ? 'cursor-pointer hover:bg-surface' : ''
+                      }`}
+                      onClick={() => handleColumnClick(column)}
+                    >
+                      <div className="flex items-center">
+                        {column.label}
+                        {shouldShowSortIcon(column) && (
+                          <ChevronUpDownIcon className="h-4 w-4 ml-1" />
+                        )}
+                      </div>
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border">
-              {paginatedTransactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-surface-alt transition-colors">
-                  <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                    <div>
-                      <p className="font-medium text-ink-900">
-                        {new Date(transaction.date).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-ink-500">
-                        {new Date(transaction.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </td>
-                  <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                    <div>
-                      <p className="font-medium text-ink-900">{transaction.description}</p>
-                      <p className="text-xs text-ink-500">{transaction.transactionId}</p>
-                      {transaction.provider && (
-                        <p className="text-xs text-ink-500">{transaction.provider}</p>
-                      )}
-                    </div>
-                  </td>
-                  <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
-                      {getCategoryIcon(transaction.category)}
-                      <span className="ml-1 capitalize">{transaction.category.replace('_', ' ')}</span>
-                    </span>
-                  </td>
-                  <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                    <div className="flex items-center">
-                      {transaction.amount > 0 ? (
-                        <ArrowUpIcon className="h-4 w-4 text-green-600 mr-1" />
-                      ) : (
-                        <ArrowDownIcon className="h-4 w-4 text-red-600 mr-1" />
-                      )}
-                      <span className={`font-semibold ${transaction.amount > 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {transaction.amount > 0 ? '+' : ''}₹{transaction.amount.toLocaleString()}
+              {paginatedTransactions.map((transaction) => {
+                const cellPadding = getCellPaddingClass()
+                return (
+                  <tr key={transaction.id} className="hover:bg-surface-alt transition-colors">
+                    <td className={`px-6 ${cellPadding} text-sm`}>
+                      <div>
+                        <p className="font-medium text-ink-900">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-ink-500">
+                          {new Date(transaction.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </td>
+                    <td className={`px-6 ${cellPadding} text-sm`}>
+                      <div>
+                        <p className="font-medium text-ink-900">{transaction.description}</p>
+                        <p className="text-xs text-ink-500">{transaction.transactionId}</p>
+                        {transaction.provider && (
+                          <p className="text-xs text-ink-500">{transaction.provider}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className={`px-6 ${cellPadding} text-sm`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
+                        {getCategoryIcon(transaction.category)}
+                        <span className="ml-1 capitalize">{transaction.category.replace('_', ' ')}</span>
                       </span>
-                    </div>
-                  </td>
-                  <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                    <p className="font-medium text-ink-900">₹{transaction.balance.toLocaleString()}</p>
-                  </td>
-                  <td className={`px-6 ${dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'} text-sm`}>
-                    <div className="flex items-center gap-2">
-                      {transaction.receiptUrl && (
-                        <button
-                          onClick={() => window.open(transaction.receiptUrl, '_blank')}
-                          className="text-brand-600 hover:text-brand-700 font-medium"
-                          title="View Receipt"
-                        >
-                          <DocumentArrowDownIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                      {transaction.claimId && (
-                        <Link
-                          href={`/member/claims/${transaction.claimId}`}
-                          className="text-blue-600 hover:text-blue-700 font-medium"
-                          title="View Claim"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className={`px-6 ${cellPadding} text-sm`}>
+                      <div className="flex items-center">
+                        {transaction.amount > 0 ? (
+                          <ArrowUpIcon className="h-4 w-4 text-green-600 mr-1" />
+                        ) : (
+                          <ArrowDownIcon className="h-4 w-4 text-red-600 mr-1" />
+                        )}
+                        <span className={`font-semibold ${transaction.amount > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                          {transaction.amount > 0 ? '+' : ''}₹{transaction.amount.toLocaleString()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className={`px-6 ${cellPadding} text-sm`}>
+                      <p className="font-medium text-ink-900">₹{transaction.balance.toLocaleString()}</p>
+                    </td>
+                    <td className={`px-6 ${cellPadding} text-sm`}>
+                      <div className="flex items-center gap-2">
+                        {transaction.receiptUrl && (
+                          <button
+                            onClick={() => window.open(transaction.receiptUrl, '_blank')}
+                            className="text-brand-600 hover:text-brand-700 font-medium"
+                            title="View Receipt"
+                          >
+                            <DocumentArrowDownIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {transaction.claimId && (
+                          <Link
+                            href={`/member/claims/${transaction.claimId}`}
+                            className="text-blue-600 hover:text-blue-700 font-medium"
+                            title="View Claim"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Receipt, Loader2, Filter, ChevronRight, Wallet, CreditCard, DollarSign } from 'lucide-react';
 
@@ -33,12 +33,7 @@ export default function OrdersPage() {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterService, setFilterService] = useState<string>('ALL');
 
-  useEffect(() => {
-    fetchTransactions();
-    fetchSummary();
-  }, [filterStatus, filterService]);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
@@ -60,7 +55,12 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus, filterService]);
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSummary();
+  }, [filterStatus, filterService, fetchTransactions]);
 
   const fetchSummary = async () => {
     try {
@@ -230,7 +230,7 @@ export default function OrdersPage() {
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders found</h3>
-              <p className="text-gray-600">You haven't made any transactions yet.</p>
+              <p className="text-gray-600">You haven&apos;t made any transactions yet.</p>
             </div>
           ) : (
             transactions.map((transaction) => (

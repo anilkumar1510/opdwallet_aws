@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsEnum, IsOptional, IsBoolean } from 'class-validator';
 import { AppointmentType, CallPreference } from '../schemas/appointment.schema';
 
 export class CreateAppointmentDto {
@@ -65,4 +65,8 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsEnum(CallPreference)
   callPreference?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  useWallet?: boolean = true;
 }

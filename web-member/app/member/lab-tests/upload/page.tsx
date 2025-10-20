@@ -276,11 +276,11 @@ export default function UploadPrescriptionPage() {
             </li>
             <li className="flex items-start">
               <span className="mr-2">2.</span>
-              <span>We'll create a cart with all the tests from your prescription</span>
+              <span>We&apos;ll create a cart with all the tests from your prescription</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">3.</span>
-              <span>You'll be notified once your cart is ready for review</span>
+              <span>You&apos;ll be notified once your cart is ready for review</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">4.</span>

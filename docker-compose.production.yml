@@ -1,7 +1,24 @@
-# Production Docker Compose - For AWS Only
-# This file is completely separate from local docker-compose.yml
+# Production Docker Compose - For AWS Deployment
+# Now uses nginx reverse proxy - identical setup to local
 
 services:
+  # Nginx reverse proxy - single entry point
+  nginx:
+    image: nginx:alpine
+    container_name: opd-nginx-prod
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.production.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web-admin
+      - web-member
+      - web-doctor
+    networks:
+      - opd-network-prod
+
   mongo:
     image: mongo:7.0
     container_name: opd-mongo-prod
@@ -13,7 +30,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: admin123
       MONGO_INITDB_DATABASE: opd_wallet
     volumes:
-      - mongo-data-prod:/data/db
+      - mongo-data:/data/db
     networks:
       - opd-network-prod
 
@@ -23,13 +40,14 @@ services:
       dockerfile: Dockerfile.production
     container_name: opd-api-prod
     restart: always
-    ports:
-      - "4000:4000"
+    # No external port - accessed only through nginx
+    expose:
+      - "4000"
     env_file:
       - .env.production
     environment:
       NODE_ENV: production
-      MONGODB_URI: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
+      MONGODB_URI: mongodb://admin:admin123@opd-mongo-prod:27017/opd_wallet?authSource=admin
       PORT: 4000
     depends_on:
       - mongo
@@ -41,14 +59,17 @@ services:
       context: ./web-admin
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: http://51.21.190.63:4000/api
+        # Browser calls go through nginx (relative path works with any domain)
+        NEXT_PUBLIC_API_URL: /api
     container_name: opd-web-admin-prod
     restart: always
-    ports:
-      - "3001:3000"
+    # No external port - accessed only through nginx at /admin
+    expose:
+      - "3000"
     environment:
       NODE_ENV: production
-      API_URL: http://api:4000
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-prod:4000/api
     depends_on:
       - api
     networks:
@@ -59,14 +80,17 @@ services:
       context: ./web-member
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: http://51.21.190.63:4000/api
+        # Browser calls go through nginx (relative path works with any domain)
+        NEXT_PUBLIC_API_URL: /api
     container_name: opd-web-member-prod
     restart: always
-    ports:
-      - "3002:3000"
+    # No external port - accessed only through nginx at /
+    expose:
+      - "3000"
     environment:
       NODE_ENV: production
-      API_URL: http://api:4000
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-prod:4000/api
     depends_on:
       - api
     networks:
@@ -77,21 +101,25 @@ services:
       context: ./web-doctor
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: http://51.21.190.63:4000/api
+        # Browser calls go through nginx (relative path works with any domain)
+        NEXT_PUBLIC_API_URL: /api
     container_name: opd-web-doctor-prod
     restart: always
-    ports:
-      - "3003:3000"
+    # No external port - accessed only through nginx at /doctor
+    expose:
+      - "3003"
     environment:
       NODE_ENV: production
-      API_URL: http://api:4000
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-prod:4000/api
+      PORT: 3003
     depends_on:
       - api
     networks:
       - opd-network-prod
 
 volumes:
-  mongo-data-prod:
+  mongo-data:
 
 networks:
   opd-network-prod:

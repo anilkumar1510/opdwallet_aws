@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, CreditCard, Loader2, AlertCircle } from 'lucide-react';
 
 interface PaymentDetails {
@@ -28,11 +28,7 @@ export default function PaymentPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    fetchPaymentDetails();
-  }, [paymentId]);
-
-  const fetchPaymentDetails = async () => {
+  const fetchPaymentDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/payments/${paymentId}`, {
@@ -52,7 +48,11 @@ export default function PaymentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [paymentId]);
+
+  useEffect(() => {
+    fetchPaymentDetails();
+  }, [paymentId, fetchPaymentDetails]);
 
   const handleMarkAsPaid = async () => {
     setProcessing(true);

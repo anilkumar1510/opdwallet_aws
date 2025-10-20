@@ -46,11 +46,19 @@ export class DoctorAuthController {
 
       // Set JWT in HTTP-only cookie (using opd_session for consistency with JWT strategy)
       console.log('[DoctorAuthController] Setting cookie opd_session...');
+      console.log('[DoctorAuthController] NODE_ENV:', process.env.NODE_ENV);
+      console.log('[DoctorAuthController] USE_HTTPS:', process.env.USE_HTTPS);
+
+      // Only use secure flag if explicitly using HTTPS (not just production)
+      const useSecure = process.env.USE_HTTPS === 'true';
+      console.log('[DoctorAuthController] Cookie secure flag:', useSecure);
+
       res.cookie('opd_session', result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: useSecure,
+        sameSite: 'lax', // Changed from 'strict' to 'lax' for consistency with global config
         maxAge: 8 * 60 * 60 * 1000, // 8 hours
+        path: '/', // CRITICAL: Ensure cookie is sent with all requests
       });
       console.log('[DoctorAuthController] Cookie set successfully');
 

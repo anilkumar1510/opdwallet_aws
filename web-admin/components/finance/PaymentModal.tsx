@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   XMarkIcon,
   BanknotesIcon,
@@ -57,7 +57,7 @@ export default function PaymentModal({ claim, onClose, onSuccess }: PaymentModal
     paymentNotes: '',
   })
 
-  const fetchClaimDetails = async () => {
+  const fetchClaimDetails = useCallback(async () => {
     setLoadingDetails(true)
     try {
       const response = await fetch(`/api/finance/claims/${claim.claimId}`, {
@@ -75,12 +75,12 @@ export default function PaymentModal({ claim, onClose, onSuccess }: PaymentModal
     } finally {
       setLoadingDetails(false)
     }
-  }
+  }, [claim.claimId])
 
   // Fetch detailed claim information with bank details on mount
   useEffect(() => {
     fetchClaimDetails()
-  }, [])
+  }, [fetchClaimDetails])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

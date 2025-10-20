@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -23,11 +23,7 @@ export default function TPANotesPanel({ claimId }: TPANotesPanelProps) {
   const [notes, setNotes] = useState<TPANote[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTPANotes()
-  }, [claimId])
-
-  const fetchTPANotes = async () => {
+  const fetchTPANotes = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/member/claims/${claimId}/tpa-notes`, {
@@ -42,7 +38,11 @@ export default function TPANotesPanel({ claimId }: TPANotesPanelProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [claimId])
+
+  useEffect(() => {
+    fetchTPANotes()
+  }, [claimId, fetchTPANotes])
 
   const getNoteIcon = (type: string) => {
     switch (type) {

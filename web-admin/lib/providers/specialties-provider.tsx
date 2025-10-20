@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { apiFetch } from '@/lib/api'
 
 interface Specialty {
@@ -32,7 +32,7 @@ export function SpecialtiesProvider({ children }: SpecialtiesProviderProps) {
   const [error, setError] = useState<Error | null>(null)
   const [lastFetchTime, setLastFetchTime] = useState<number>(0)
 
-  const fetchSpecialties = async (force = false) => {
+  const fetchSpecialties = useCallback(async (force = false) => {
     // Check if we should use cached data
     const now = Date.now()
     if (!force && specialties.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
@@ -71,7 +71,7 @@ export function SpecialtiesProvider({ children }: SpecialtiesProviderProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [specialties.length, lastFetchTime])
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -98,7 +98,7 @@ export function SpecialtiesProvider({ children }: SpecialtiesProviderProps) {
 
     // Fetch fresh data
     fetchSpecialties()
-  }, [])
+  }, [fetchSpecialties])
 
   const refresh = async () => {
     await fetchSpecialties(true)

@@ -76,7 +76,7 @@ function DateRangePicker({ selectedDate, onDateChange, appointmentCounts, onFetc
       setLoadingMore(true)
       onFetchMoreCounts().finally(() => setLoadingMore(false))
     }
-  }, [dateOffset])
+  }, [dateOffset, onFetchMoreCounts])
 
   const scrollLeft = async () => {
     // Navigate to previous week

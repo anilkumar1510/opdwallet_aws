@@ -5,7 +5,7 @@
 # For fast updates without full redeployment
 # =============================================
 
-AWS_IP="51.21.190.63"
+AWS_IP="34.202.161.177"
 KEY_PATH="~/Downloads/opdwallet-arm-key.pem"
 
 RED='\033[0;31m'

@@ -123,7 +123,7 @@ export default function SwitchProfileModal({ isOpen, onClose }: SwitchProfileMod
           {/* Footer */}
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
             <p className="text-xs text-gray-600 text-center">
-              The page will reload to show the selected member's data
+              The page will reload to show the selected member&apos;s data
             </p>
           </div>
         </div>

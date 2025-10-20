@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -37,12 +37,7 @@ export default function OnlineConsultPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [userId, setUserId] = useState<string>('')
 
-  useEffect(() => {
-    console.log('[OnlineConsult] Fetching user data')
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
@@ -60,7 +55,12 @@ export default function OnlineConsultPage() {
       console.error('[OnlineConsult] Error fetching user data:', error)
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    console.log('[OnlineConsult] Fetching user data')
+    fetchUserData()
+  }, [fetchUserData])
 
   const fetchAppointments = async (userId: string) => {
     try {

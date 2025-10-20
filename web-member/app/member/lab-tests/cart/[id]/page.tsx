@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ChevronLeftIcon, MapPinIcon, CurrencyRupeeIcon } from '@heroicons/react/24/outline'
 
@@ -42,11 +42,7 @@ export default function CartDetailPage() {
   const [loading, setLoading] = useState(true)
   const [searchingVendors, setSearchingVendors] = useState(false)
 
-  useEffect(() => {
-    fetchCart()
-  }, [])
-
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/member/lab/carts/${cartId}`, {
@@ -63,7 +59,11 @@ export default function CartDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [cartId])
+
+  useEffect(() => {
+    fetchCart()
+  }, [fetchCart])
 
   const handleSearchVendors = async () => {
     if (!pincode || pincode.length !== 6) {

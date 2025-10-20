@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Receipt, Wallet, CreditCard, CheckCircle, Clock, XCircle, Loader2 } from 'lucide-react';
 
 interface TransactionDetails {
@@ -28,11 +28,7 @@ export default function OrderDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchTransactionDetails();
-  }, [transactionId]);
-
-  const fetchTransactionDetails = async () => {
+  const fetchTransactionDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/transactions/${transactionId}`, {
@@ -52,7 +48,11 @@ export default function OrderDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [transactionId]);
+
+  useEffect(() => {
+    fetchTransactionDetails();
+  }, [transactionId, fetchTransactionDetails]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

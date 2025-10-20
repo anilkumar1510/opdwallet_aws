@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -42,10 +42,6 @@ function SelectSlotContent() {
   const [selectedSlotId, setSelectedSlotId] = useState<string>('')
   const [currentWeekStart, setCurrentWeekStart] = useState(0)
 
-  useEffect(() => {
-    fetchSlots()
-  }, [doctorId, clinicId])
-
   const formatDate = (date: Date) => {
     const day = date.getDate()
     const month = date.toLocaleString('default', { month: 'short' })
@@ -67,7 +63,7 @@ function SelectSlotContent() {
     return date.toLocaleString('default', { weekday: 'short' })
   }
 
-  const fetchSlots = async () => {
+  const fetchSlots = useCallback(async () => {
     try {
       console.log('[SelectSlot] Fetching slots for doctor:', { doctorId, clinicId })
       const response = await fetch(`/api/doctors/${doctorId}/slots?clinicId=${clinicId}`, {
@@ -98,7 +94,11 @@ function SelectSlotContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [doctorId, clinicId])
+
+  useEffect(() => {
+    fetchSlots()
+  }, [doctorId, clinicId, fetchSlots])
 
   const handleDateSelect = (dateStr: string) => {
     console.log('[SelectSlot] Date selected:', dateStr)

@@ -29,15 +29,39 @@ export interface AppointmentsResponse {
 }
 
 export async function getAppointmentCounts(): Promise<{ message: string; counts: { [date: string]: number } }> {
-  const response = await fetch('/api/doctor/appointments/counts', {
+  console.group('🔍 [API] getAppointmentCounts')
+  console.log('🌐 Window location:', window.location.href)
+
+  const url = '/api/doctor/appointments/counts'
+  console.log('🎯 Target URL:', url)
+  console.log('🎯 Full URL will be:', window.location.origin + url)
+
+  console.log('📡 Making fetch request...')
+  const fetchStart = Date.now()
+  const response = await fetch(url, {
     credentials: 'include',
   });
+  const fetchDuration = Date.now() - fetchStart
+
+  console.log(`📨 Response received in ${fetchDuration}ms`)
+  console.log('📨 Response status:', response.status)
+  console.log('📨 Response statusText:', response.statusText)
+  console.log('📨 Response ok:', response.ok)
+  console.log('📨 Response headers:', Object.fromEntries(response.headers.entries()))
 
   if (!response.ok) {
+    const errorText = await response.text()
+    console.error('❌ Response not OK')
+    console.error('❌ Response status:', response.status)
+    console.error('❌ Response body:', errorText)
+    console.groupEnd()
     throw new Error('Failed to fetch appointment counts');
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log('✅ Success! Data:', data)
+  console.groupEnd()
+  return data;
 }
 
 export async function getTodayAppointments(): Promise<AppointmentsResponse> {
@@ -53,24 +77,55 @@ export async function getTodayAppointments(): Promise<AppointmentsResponse> {
 }
 
 export async function getAppointmentsByDate(date: string): Promise<AppointmentsResponse> {
+  console.group('🔍 [API] getAppointmentsByDate')
+  console.log('📆 Date parameter:', date)
+  console.log('🌐 Window location:', window.location.href)
+
+  const url = `/api/doctor/appointments/date/${date}`
+  console.log('🎯 Target URL:', url)
+  console.log('🎯 Full URL will be:', window.location.origin + url)
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   try {
-    const response = await fetch(`/api/doctor/appointments/date/${date}`, {
+    console.log('📡 Making fetch request...')
+    const fetchStart = Date.now()
+    const response = await fetch(url, {
       credentials: 'include',
       signal: controller.signal,
     });
+    const fetchDuration = Date.now() - fetchStart
 
     clearTimeout(timeoutId);
 
+    console.log(`📨 Response received in ${fetchDuration}ms`)
+    console.log('📨 Response status:', response.status)
+    console.log('📨 Response statusText:', response.statusText)
+    console.log('📨 Response ok:', response.ok)
+    console.log('📨 Response headers:', Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Response not OK')
+      console.error('❌ Response status:', response.status)
+      console.error('❌ Response body:', errorText)
+      console.groupEnd()
       throw new Error('Failed to fetch appointments');
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('✅ Success! Data:', data)
+    console.groupEnd()
+    return data;
   } catch (error: any) {
     clearTimeout(timeoutId);
+    console.error('💥 Fetch error caught')
+    console.error('💥 Error name:', error.name)
+    console.error('💥 Error message:', error.message)
+    console.error('💥 Error stack:', error.stack)
+    console.groupEnd()
+
     if (error.name === 'AbortError') {
       throw new Error('Request timeout - please check your connection');
     }

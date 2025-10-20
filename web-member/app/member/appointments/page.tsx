@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -39,11 +39,7 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [user, setUser] = useState<any>(null)
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       console.log('[Appointments] Fetching user data')
       const response = await fetch('/api/auth/me', {
@@ -63,7 +59,11 @@ export default function AppointmentsPage() {
       console.error('[Appointments] Error fetching user data:', error)
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
 
   const fetchAppointments = async (userId: string) => {
     try {

@@ -138,6 +138,40 @@ export const OptimizedImage = React.memo(function OptimizedImage({
   return imageContent
 })
 
+// Avatar helper functions
+const avatarSizes = {
+  xs: { className: 'w-6 h-6 text-xs', pixels: 24 },
+  sm: { className: 'w-8 h-8 text-sm', pixels: 32 },
+  md: { className: 'w-10 h-10 text-base', pixels: 40 },
+  lg: { className: 'w-12 h-12 text-lg', pixels: 48 },
+  xl: { className: 'w-16 h-16 text-xl', pixels: 64 }
+}
+
+const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+const createAvatarFallback = (
+  name: string,
+  size: keyof typeof avatarSizes,
+  fallbackClassName?: string
+) => (
+  <div
+    className={cn(
+      'flex items-center justify-center rounded-full bg-brand-100 text-brand-700 font-semibold',
+      avatarSizes[size].className,
+      fallbackClassName
+    )}
+  >
+    {getInitials(name)}
+  </div>
+)
+
 // Avatar component using OptimizedImage
 export const Avatar = React.memo(function Avatar({
   src,
@@ -153,34 +187,8 @@ export const Avatar = React.memo(function Avatar({
   className?: string
   fallbackClassName?: string
 } & Omit<OptimizedImageProps, 'src' | 'alt' | 'width' | 'height'>) {
-  const sizes = {
-    xs: 'w-6 h-6 text-xs',
-    sm: 'w-8 h-8 text-sm',
-    md: 'w-10 h-10 text-base',
-    lg: 'w-12 h-12 text-lg',
-    xl: 'w-16 h-16 text-xl'
-  }
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  const fallback = (
-    <div
-      className={cn(
-        'flex items-center justify-center rounded-full bg-brand-100 text-brand-700 font-semibold',
-        sizes[size],
-        fallbackClassName
-      )}
-    >
-      {getInitials(name)}
-    </div>
-  )
+  const sizeConfig = avatarSizes[size]
+  const fallback = createAvatarFallback(name, size, fallbackClassName)
 
   if (!src) {
     return fallback
@@ -190,9 +198,9 @@ export const Avatar = React.memo(function Avatar({
     <OptimizedImage
       src={src}
       alt={name}
-      width={size === 'xs' ? 24 : size === 'sm' ? 32 : size === 'md' ? 40 : size === 'lg' ? 48 : 64}
-      height={size === 'xs' ? 24 : size === 'sm' ? 32 : size === 'md' ? 40 : size === 'lg' ? 48 : 64}
-      className={cn('rounded-full', sizes[size], className)}
+      width={sizeConfig.pixels}
+      height={sizeConfig.pixels}
+      className={cn('rounded-full', sizeConfig.className, className)}
       fallback={fallback}
       {...props}
     />

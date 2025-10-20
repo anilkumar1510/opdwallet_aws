@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { pageTransitions } from '@/lib/animations'
@@ -18,11 +18,7 @@ export default function MemberLayout({
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/me', {
         credentials: 'include',
@@ -37,7 +33,11 @@ export default function MemberLayout({
       console.error('Auth check error:', error)
       router.push('/')
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   if (!user) {
     return <PageLoader />

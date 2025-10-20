@@ -2,10 +2,18 @@
 export function apiUrl(path: string): string {
   // Ensure path starts with /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  // Since we have basePath: '/admin', API calls are rewritten by next.config.js
-  // We just use the clean path and Next.js rewrites will handle proxying to backend
-  const fullUrl = cleanPath;
-  return fullUrl;
+
+  // With basePath: '/admin', we need to prepend it to API calls for rewrites to work
+  // In browser, window.location will include /admin, so we extract and prepend it
+  if (typeof window !== 'undefined') {
+    const basePath = '/admin'; // Match next.config.js basePath
+    // If the current URL includes the basePath, prepend it to API calls
+    if (window.location.pathname.startsWith(basePath)) {
+      return `${basePath}${cleanPath}`;
+    }
+  }
+
+  return cleanPath;
 }
 
 // Wrapper for fetch with correct base path

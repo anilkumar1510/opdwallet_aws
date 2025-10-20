@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getTodayAppointments, getAppointmentsByDate, getAppointmentCounts } from '@/lib/api/appointments'
 import { Appointment } from '@/lib/api/appointments'
 import { getDoctorProfile } from '@/lib/api/auth'
@@ -27,54 +27,106 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [appointmentCounts, setAppointmentCounts] = useState<{ [date: string]: number }>({})
 
-  useEffect(() => {
-    fetchDoctorProfile()
-    fetchAppointmentCounts()
+  const fetchDoctorProfile = useCallback(async () => {
+    console.group('👤 [DOCTOR PROFILE] Fetch Started')
+    console.log('⏰ Timestamp:', new Date().toISOString())
+    console.log('🌐 Current URL:', window.location.href)
+    console.log('🍪 Document cookies:', document.cookie || 'NONE')
+
+    try {
+      console.log('📡 [DOCTOR PROFILE] Calling getDoctorProfile API...')
+      const doctor = await getDoctorProfile()
+      console.log('✅ [DOCTOR PROFILE] Success! Doctor data:', JSON.stringify(doctor, null, 2))
+      setDoctorName(doctor.name)
+      console.groupEnd()
+    } catch (err: any) {
+      console.error('❌ [DOCTOR PROFILE] Failed to fetch profile')
+      console.error('❌ Error type:', err?.constructor?.name)
+      console.error('❌ Error message:', err?.message)
+      console.error('❌ Error stack:', err?.stack)
+      console.error('❌ Full error object:', err)
+      console.groupEnd()
+    }
   }, [])
 
-  useEffect(() => {
-    fetchAppointments()
-  }, [selectedDate])
+  const fetchAppointmentCounts = useCallback(async () => {
+    console.group('📊 [APPOINTMENT COUNTS] Fetch Started')
+    console.log('⏰ Timestamp:', new Date().toISOString())
+    console.log('🌐 Current URL:', window.location.href)
 
-  const fetchDoctorProfile = async () => {
     try {
-      const doctor = await getDoctorProfile()
-      setDoctorName(doctor.name)
-    } catch (err) {
-      // Silently fail - keep default "Doctor"
-      console.error('Failed to fetch doctor profile:', err)
-    }
-  }
-
-  const fetchAppointmentCounts = async () => {
-    try {
+      console.log('📡 [APPOINTMENT COUNTS] Calling getAppointmentCounts API...')
+      const fetchStartTime = Date.now()
       const response = await getAppointmentCounts()
+      const fetchDuration = Date.now() - fetchStartTime
+      console.log(`✅ [APPOINTMENT COUNTS] Success! Took ${fetchDuration}ms`)
+      console.log('📦 [APPOINTMENT COUNTS] Response:', JSON.stringify(response, null, 2))
+      console.log('📦 [APPOINTMENT COUNTS] Counts:', response.counts)
       setAppointmentCounts(response.counts)
+      console.groupEnd()
     } catch (err: any) {
-      console.error('Failed to fetch appointment counts:', err)
+      console.error('❌ [APPOINTMENT COUNTS] Failed to fetch')
+      console.error('❌ Error type:', err?.constructor?.name)
+      console.error('❌ Error message:', err?.message)
+      console.error('❌ Error stack:', err?.stack)
+      console.error('❌ Full error object:', err)
+      console.groupEnd()
     }
-  }
+  }, [])
 
-  const fetchAppointments = async (retryCount = 0) => {
+  const fetchAppointments = useCallback(async (retryCount = 0) => {
+    console.group('📅 [APPOINTMENTS] Fetch Started')
+    console.log('⏰ Timestamp:', new Date().toISOString())
+    console.log('📆 Selected Date:', selectedDate)
+    console.log('🔄 Retry Count:', retryCount)
+    console.log('🌐 Current URL:', window.location.href)
+    console.log('🍪 Document cookies:', document.cookie || 'NONE')
+
     try {
       setLoading(true)
       setError('')
+      console.log('📡 [APPOINTMENTS] Calling getAppointmentsByDate API...')
+      const fetchStartTime = Date.now()
       const response = await getAppointmentsByDate(selectedDate)
+      const fetchDuration = Date.now() - fetchStartTime
+      console.log(`✅ [APPOINTMENTS] Success! Took ${fetchDuration}ms`)
+      console.log('📦 [APPOINTMENTS] Response:', JSON.stringify(response, null, 2))
+      console.log('📦 [APPOINTMENTS] Appointments count:', response.appointments?.length || 0)
       setAppointments(response.appointments)
+
       // Refresh counts after fetching appointments
+      console.log('🔄 [APPOINTMENTS] Refreshing appointment counts...')
       await fetchAppointmentCounts()
+      console.groupEnd()
     } catch (err: any) {
+      console.error('❌ [APPOINTMENTS] Failed to fetch')
+      console.error('❌ Error type:', err?.constructor?.name)
+      console.error('❌ Error message:', err?.message)
+      console.error('❌ Error stack:', err?.stack)
+      console.error('❌ Full error object:', err)
+
       // Retry once if it's a network/timeout error
       if (retryCount === 0 && (err.message.includes('timeout') || err.message.includes('fetch'))) {
-        console.log('[Dashboard] Retrying fetch after error:', err.message)
+        console.log('🔄 [APPOINTMENTS] Retrying fetch after error:', err.message)
+        console.groupEnd()
         setTimeout(() => fetchAppointments(1), 1000)
         return
       }
       setError(err.message || 'Failed to fetch appointments')
+      console.groupEnd()
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDate, fetchAppointmentCounts])
+
+  useEffect(() => {
+    fetchDoctorProfile()
+    fetchAppointmentCounts()
+  }, [fetchDoctorProfile, fetchAppointmentCounts])
+
+  useEffect(() => {
+    fetchAppointments()
+  }, [fetchAppointments])
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date)

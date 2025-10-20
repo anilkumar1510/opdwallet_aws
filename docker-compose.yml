@@ -1,4 +1,21 @@
 services:
+  # Nginx reverse proxy - single entry point for all services
+  nginx:
+    image: nginx:alpine
+    container_name: opd-nginx-dev
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web-admin
+      - web-member
+      - web-doctor
+    networks:
+      - opd-network
+
   mongo:
     image: mongo:7.0
     container_name: opd-mongo-dev
@@ -22,7 +39,7 @@ services:
     ports:
       - "4000:4000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       MONGODB_URI: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
       JWT_SECRET: dev_jwt_secret_change_in_production
       COOKIE_NAME: opd_session
@@ -34,7 +51,7 @@ services:
       - ./api:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run start:dev"
+    command: sh -c "npm install && npm run build && npm run start:prod"
 
   web-admin:
     image: node:20-alpine
@@ -42,18 +59,19 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "3001:3000"
+      - "3001:3000"  # Keep for direct access/debugging
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
-      NODE_ENV: development
+      # Browser calls go through nginx
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-dev:4000/api
     depends_on:
       - api
     volumes:
       - ./web-admin:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
 
   web-member:
     image: node:20-alpine
@@ -61,18 +79,19 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "3002:3000"
+      - "3002:3000"  # Keep for direct access/debugging
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
-      NODE_ENV: development
+      # Browser calls go through nginx
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-dev:4000/api
     depends_on:
       - api
     volumes:
       - ./web-member:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
 
   web-doctor:
     image: node:20-alpine
@@ -80,18 +99,19 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "3003:3003"
+      - "3003:3003"  # Keep for direct access/debugging
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
-      NODE_ENV: development
+      # Browser calls go through nginx
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-dev:4000/api
     depends_on:
       - api
     volumes:
       - ./web-doctor:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
 
 volumes:
   mongo-data:

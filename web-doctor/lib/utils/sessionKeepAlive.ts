@@ -15,7 +15,7 @@ export function startSessionKeepAlive(intervalMs: number = 5 * 60 * 1000) {
 
   keepAliveInterval = setInterval(async () => {
     try {
-      await fetch('/api/auth/doctor/profile', {
+      await fetch('/doctor/api/auth/doctor/profile', {
         method: 'GET',
         credentials: 'include',
       });

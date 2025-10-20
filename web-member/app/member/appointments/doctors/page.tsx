@@ -173,35 +173,8 @@ function DoctorsContent() {
     if (savedLocation) setLocationName(savedLocation)
   }, [])
 
-  useEffect(() => {
-    if (specialtyId) {
-      fetchDoctors()
-    }
-  }, [specialtyId, pincode])
-
-  // Memoized filtered doctors calculation
-  const filteredDoctors = useMemo(() => {
-    console.log('[Doctors] Filtering doctors:', { searchQuery, selectedCity })
-    let filtered = doctors
-
-    if (searchQuery.trim() !== '') {
-      filtered = filtered.filter((doctor) =>
-        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doctor.qualifications.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    if (selectedCity !== '') {
-      filtered = filtered.filter((doctor) =>
-        doctor.clinics?.some((clinic) => clinic.city === selectedCity) || false
-      )
-    }
-
-    console.log('[Doctors] Filtered results:', { count: filtered.length })
-    return filtered
-  }, [searchQuery, selectedCity, doctors])
-
-  const fetchDoctors = async () => {
+  // Define fetchDoctors BEFORE the useEffect that uses it
+  const fetchDoctors = useCallback(async () => {
     try {
       console.log('[Doctors] Fetching doctors for specialty:', specialtyId)
 
@@ -247,7 +220,35 @@ function DoctorsContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [specialtyId, pincode])
+
+  useEffect(() => {
+    if (specialtyId) {
+      fetchDoctors()
+    }
+  }, [specialtyId, fetchDoctors])
+
+  // Memoized filtered doctors calculation
+  const filteredDoctors = useMemo(() => {
+    console.log('[Doctors] Filtering doctors:', { searchQuery, selectedCity })
+    let filtered = doctors
+
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter((doctor) =>
+        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doctor.qualifications.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    if (selectedCity !== '') {
+      filtered = filtered.filter((doctor) =>
+        doctor.clinics?.some((clinic) => clinic.city === selectedCity) || false
+      )
+    }
+
+    console.log('[Doctors] Filtered results:', { count: filtered.length })
+    return filtered
+  }, [searchQuery, selectedCity, doctors])
 
   // Memoized event handlers
   const handleBookAppointment = useCallback((doctor: Doctor, clinic: ClinicLocation) => {

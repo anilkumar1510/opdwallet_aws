@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-AWS_IP="51.21.190.63"
+AWS_IP="34.202.161.177"
 KEY_PATH="~/Downloads/opdwallet-arm-key.pem"
 
 echo "🚀 Starting database migration to AWS..."

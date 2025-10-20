@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeftIcon,
@@ -73,11 +73,7 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
   const [cancelReason, setCancelReason] = useState('')
   const [cancelling, setCancelling] = useState(false)
 
-  useEffect(() => {
-    fetchClaimDetails()
-  }, [params.id])
-
-  const fetchClaimDetails = async () => {
+  const fetchClaimDetails = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -98,7 +94,11 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    fetchClaimDetails()
+  }, [params.id, fetchClaimDetails])
 
   const canCancelClaim = () => {
     if (!claim) return false

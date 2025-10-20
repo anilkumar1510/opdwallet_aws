@@ -8,7 +8,7 @@
 set -e
 
 # Configuration
-AWS_IP="${AWS_IP:-51.21.190.63}"
+AWS_IP="${AWS_IP:-34.202.161.177}"
 KEY_PATH="${SSH_KEY:-~/Downloads/opdwallet-arm-key.pem}"
 REMOTE_DIR="/home/ubuntu/opdwallet"
 

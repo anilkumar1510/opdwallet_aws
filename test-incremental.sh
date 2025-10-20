@@ -17,10 +17,10 @@ echo "Deploying only changed file..."
 rsync -avz \
   --files-from=<(echo "api/src/main.ts") \
   -e "ssh -i ~/Downloads/opdwallet-arm-key.pem" \
-  . ubuntu@51.21.190.63:/home/ubuntu/opdwallet/
+  . ubuntu@34.202.161.177:/home/ubuntu/opdwallet/
 
 # 4. Update tracking
-ssh -i ~/Downloads/opdwallet-arm-key.pem ubuntu@51.21.190.63 \
+ssh -i ~/Downloads/opdwallet-arm-key.pem ubuntu@34.202.161.177 \
   "echo '{\"sha\":\"$LOCAL_SHA\",\"timestamp\":\"$(date -u)\",\"mode\":\"incremental\"}' > /home/ubuntu/opdwallet/.deployment-tracking.json"
 
 echo "✅ Incremental deployment complete!"

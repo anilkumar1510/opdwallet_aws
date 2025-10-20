@@ -52,6 +52,7 @@ export class AuthController {
       secure: cookieConfig.secure,
       sameSite: cookieConfig.sameSite,
       maxAge: cookieConfig.maxAge,
+      path: '/', // Ensure cookie is accessible across all paths
     });
 
     return result.user;
@@ -62,7 +63,13 @@ export class AuthController {
   @ApiOperation({ summary: 'User logout' })
   logout(@Response({ passthrough: true }) res: ExpressResponse) {
     const cookieConfig = this.configService.get('cookie');
-    res.clearCookie(cookieConfig.name);
+    // Clear cookie with same options used when setting it (required for proper cookie deletion)
+    res.clearCookie(cookieConfig.name, {
+      httpOnly: cookieConfig.httpOnly,
+      secure: cookieConfig.secure,
+      sameSite: cookieConfig.sameSite,
+      path: '/', // Explicitly set path to match cookie creation
+    });
     return { message: 'Logged out successfully' };
   }
 

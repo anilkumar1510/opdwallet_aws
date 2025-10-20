@@ -126,7 +126,7 @@ export default function LabTestsPage() {
             <div>
               <h2 className="text-lg font-semibold mb-2">Upload Prescription</h2>
               <p className="text-sm" style={{ color: '#d4e5f5' }}>
-                Upload your prescription and we'll create a quote for you
+                Upload your prescription and we&apos;ll create a quote for you
               </p>
             </div>
             <DocumentPlusIcon className="h-12 w-12" />

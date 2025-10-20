@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -13,6 +13,124 @@ import {
 } from '@heroicons/react/24/outline'
 import SlotSelectionModal from '@/components/SlotSelectionModal'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
+
+// Success screen component
+function BookingSuccessScreen({
+  appointmentId,
+  doctorName,
+  appointmentDate,
+  appointmentTime,
+  contactNumber,
+  callPreference,
+  onViewAppointments,
+  onBackToDashboard
+}: {
+  appointmentId: string
+  doctorName: string
+  appointmentDate: string
+  appointmentTime: string
+  contactNumber: string
+  callPreference: 'VOICE' | 'VIDEO' | 'BOTH'
+  onViewAppointments: () => void
+  onBackToDashboard: () => void
+}) {
+  const formatDate = (dateStr: string) => {
+    if (!dateStr || dateStr === new Date().toISOString().split('T')[0]) {
+      return 'Today'
+    }
+    const date = new Date(dateStr)
+    const day = date.getDate()
+    const month = date.toLocaleString('default', { month: 'long' })
+    const year = date.getFullYear()
+    return `${day} ${month} ${year}`
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
+        <div className="mb-6">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircleIcon className="h-10 w-10 text-green-600" />
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+        <p className="text-gray-600 mb-6">
+          Your online consultation has been booked and is awaiting confirmation
+        </p>
+
+        <div className="bg-blue-50 rounded-xl p-4 mb-6">
+          <div className="text-sm text-gray-600 mb-1">Appointment ID</div>
+          <div className="text-xl font-bold" style={{ color: '#0a529f' }}>{appointmentId}</div>
+        </div>
+
+        <div className="space-y-3 text-left mb-6">
+          <div className="flex items-center space-x-3 text-sm">
+            <UserIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            <div>
+              <div className="text-gray-600">Doctor</div>
+              <div className="font-medium text-gray-900">{doctorName}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 text-sm">
+            <CalendarIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            <div>
+              <div className="text-gray-600">Date</div>
+              <div className="font-medium text-gray-900">{formatDate(appointmentDate)}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 text-sm">
+            <ClockIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            <div>
+              <div className="text-gray-600">Time</div>
+              <div className="font-medium text-gray-900">{appointmentTime}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 text-sm">
+            <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            <div>
+              <div className="text-gray-600">Contact Number</div>
+              <div className="font-medium text-gray-900">{contactNumber}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 text-sm">
+            {callPreference === 'VOICE' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
+            {callPreference === 'VIDEO' && <VideoCameraIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
+            {callPreference === 'BOTH' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
+            <div>
+              <div className="text-gray-600">Call Preference</div>
+              <div className="font-medium text-gray-900">
+                {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <button
+            onClick={onViewAppointments}
+            className="w-full py-3 px-4 text-white rounded-xl font-medium transition-colors"
+            style={{ backgroundColor: '#0a529f' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+          >
+            View Online Consultations
+          </button>
+          <button
+            onClick={onBackToDashboard}
+            className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface FamilyMember {
   _id: string
@@ -49,12 +167,39 @@ function OnlineConfirmContent() {
   const [bookingSuccess, setBookingSuccess] = useState(false)
   const [appointmentId, setAppointmentId] = useState('')
 
-  useEffect(() => {
-    console.log('[OnlineConfirm] Params:', { doctorId, doctorName, specialty, availableInMinutes })
-    fetchRelationships()
-  }, [])
+  // Helper function to build self member
+  const buildSelfMember = (userData: any): FamilyMember => ({
+    _id: userData._id,
+    userId: userData._id,
+    name: `${userData.name.firstName} ${userData.name.lastName}`,
+    relation: 'Self',
+    gender: userData.gender || 'Other',
+    dateOfBirth: userData.dob || '',
+    isPrimary: true
+  })
 
-  const fetchRelationships = async () => {
+  // Helper function to build dependent members list
+  const buildDependentMembers = (dependents: any[]): FamilyMember[] => {
+    return (dependents || []).map((dep: any) => ({
+      _id: dep._id,
+      userId: dep._id,
+      name: `${dep.name.firstName} ${dep.name.lastName}`,
+      relation: dep.relationship || 'Family Member',
+      gender: dep.gender || 'Other',
+      dateOfBirth: dep.dob || '',
+      isPrimary: false
+    }))
+  }
+
+  // Helper function to set initial form data from user
+  const setInitialFormData = (userData: any, selfMember: FamilyMember) => {
+    setLoggedInUserId(userData._id)
+    setFamilyMembers(prev => [...prev])
+    setSelectedPatient(selfMember)
+    setContactNumber(userData.phone || userData.mobileNumber || '')
+  }
+
+  const fetchRelationships = useCallback(async () => {
     try {
       console.log('[OnlineConfirm] Fetching family members from /api/member/profile')
       const response = await fetch('/api/member/profile', {
@@ -71,42 +216,111 @@ function OnlineConfirmContent() {
         dependentsCount: data.dependents?.length || 0
       })
 
-      // Store logged-in user ID
-      setLoggedInUserId(data.user._id)
-
-      // Build primary member (self)
-      const selfMember: FamilyMember = {
-        _id: data.user._id,
-        userId: data.user._id,
-        name: `${data.user.name.firstName} ${data.user.name.lastName}`,
-        relation: 'Self',
-        gender: data.user.gender || 'Other',
-        dateOfBirth: data.user.dob || '',
-        isPrimary: true
-      }
-
-      // Build dependents list
-      const dependentMembers: FamilyMember[] = (data.dependents || []).map((dep: any) => ({
-        _id: dep._id,
-        userId: dep._id,
-        name: `${dep.name.firstName} ${dep.name.lastName}`,
-        relation: dep.relationship || 'Family Member',
-        gender: dep.gender || 'Other',
-        dateOfBirth: dep.dob || '',
-        isPrimary: false
-      }))
-
+      // Process family data inline
+      const selfMember = buildSelfMember(data.user)
+      const dependentMembers = buildDependentMembers(data.dependents)
       const allMembers = [selfMember, ...dependentMembers]
+
       console.log('[OnlineConfirm] Total family members:', allMembers.length)
 
       setFamilyMembers(allMembers)
-      setSelectedPatient(selfMember)
-      setContactNumber(data.user.phone || data.user.mobileNumber || '')
+      setInitialFormData(data.user, selfMember)
     } catch (error) {
       console.error('[OnlineConfirm] Error fetching family members:', error)
     } finally {
       setLoadingRelationships(false)
     }
+  }, [])
+
+  useEffect(() => {
+    console.log('[OnlineConfirm] Params:', { doctorId, doctorName, specialty, availableInMinutes })
+    fetchRelationships()
+  }, [doctorId, doctorName, specialty, availableInMinutes, fetchRelationships])
+
+  // Helper function to validate booking form
+  const validateBookingForm = (): boolean => {
+    if (!selectedPatient || !contactNumber) {
+      alert('Please select patient and enter contact number')
+      return false
+    }
+
+    if (timeChoice === 'LATER' && (!selectedDate || !selectedTime)) {
+      alert('Please select a time slot')
+      return false
+    }
+
+    return true
+  }
+
+  // Helper function to get appointment date and time
+  const getAppointmentDateTime = () => {
+    const appointmentDate = timeChoice === 'NOW'
+      ? new Date().toISOString().split('T')[0]
+      : selectedDate
+
+    const appointmentTime = timeChoice === 'NOW'
+      ? 'Immediate'
+      : selectedTime
+
+    return { appointmentDate, appointmentTime }
+  }
+
+  // Helper function to generate slot ID
+  const generateSlotId = (appointmentDate: string, appointmentTime: string): string => {
+    if (timeChoice === 'LATER' && selectedSlotId) {
+      return selectedSlotId
+    }
+    return `${doctorId}_ONLINE_${appointmentDate}_${appointmentTime.replace(/[:\s]/g, '_')}`
+  }
+
+  // Helper function to build appointment payload
+  const buildAppointmentPayload = (appointmentDate: string, appointmentTime: string) => {
+    if (!selectedPatient) {
+      throw new Error('No patient selected')
+    }
+
+    return {
+      userId: loggedInUserId,
+      patientId: selectedPatient.userId,
+      doctorId,
+      doctorName,
+      specialty,
+      patientName: selectedPatient.name,
+      appointmentType: 'ONLINE',
+      appointmentDate,
+      timeSlot: appointmentTime,
+      slotId: generateSlotId(appointmentDate, appointmentTime),
+      consultationFee: parseFloat(consultationFee),
+      contactNumber,
+      callPreference,
+      clinicId: '',
+      clinicName: '',
+      clinicAddress: ''
+    }
+  }
+
+  // Helper function to create appointment via API
+  const createAppointmentAPI = async (payload: any) => {
+    console.log('[OnlineConfirm] Creating appointment with payload:', JSON.stringify(payload, null, 2))
+
+    const response = await fetch('/api/appointments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    })
+
+    console.log('[OnlineConfirm] API response status:', response.status, response.statusText)
+
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('[OnlineConfirm] API error response:', errorData)
+      throw new Error(`Failed to create appointment: ${response.status} ${errorData}`)
+    }
+
+    return await response.json()
   }
 
   const handleConfirmBooking = async () => {
@@ -115,77 +329,27 @@ function OnlineConfirmContent() {
     console.log('[OnlineConfirm] Contact number:', contactNumber)
     console.log('[OnlineConfirm] Time choice:', timeChoice)
 
-    if (!selectedPatient || !contactNumber) {
-      alert('Please select patient and enter contact number')
-      return
-    }
-
-    if (timeChoice === 'LATER' && (!selectedDate || !selectedTime)) {
-      alert('Please select a time slot')
+    if (!validateBookingForm()) {
       return
     }
 
     setLoading(true)
 
     try {
-      const appointmentDate = timeChoice === 'NOW'
-        ? new Date().toISOString().split('T')[0]
-        : selectedDate
-
-      const appointmentTime = timeChoice === 'NOW'
-        ? 'Immediate'
-        : selectedTime
-
+      const { appointmentDate, appointmentTime } = getAppointmentDateTime()
       console.log('[OnlineConfirm] Appointment date:', appointmentDate)
       console.log('[OnlineConfirm] Appointment time:', appointmentTime)
 
-      const payload = {
-        userId: loggedInUserId,
-        patientId: selectedPatient.userId,
-        doctorId,
-        doctorName,
-        specialty,
-        patientName: selectedPatient.name,
-        appointmentType: 'ONLINE',
-        appointmentDate,
-        timeSlot: appointmentTime,
-        slotId: timeChoice === 'LATER' && selectedSlotId ? selectedSlotId : `${doctorId}_ONLINE_${appointmentDate}_${appointmentTime.replace(/[:\s]/g, '_')}`,
-        consultationFee: parseFloat(consultationFee),
-        contactNumber,
-        callPreference,
-        clinicId: '',
-        clinicName: '',
-        clinicAddress: ''
-      }
-
+      const payload = buildAppointmentPayload(appointmentDate, appointmentTime)
       console.log('[OnlineConfirm] Payload details:', {
         userId: loggedInUserId,
-        patientId: selectedPatient.userId,
-        patientName: selectedPatient.name,
-        isPrimaryPatient: selectedPatient.isPrimary,
+        patientId: selectedPatient?.userId,
+        patientName: selectedPatient?.name,
+        isPrimaryPatient: selectedPatient?.isPrimary,
         consultationFee: parseFloat(consultationFee)
       })
 
-      console.log('[OnlineConfirm] Creating appointment with payload:', JSON.stringify(payload, null, 2))
-
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
-
-      console.log('[OnlineConfirm] API response status:', response.status, response.statusText)
-
-      if (!response.ok) {
-        const errorData = await response.text()
-        console.error('[OnlineConfirm] API error response:', errorData)
-        throw new Error(`Failed to create appointment: ${response.status} ${errorData}`)
-      }
-
-      const appointment = await response.json()
+      const appointment = await createAppointmentAPI(payload)
       console.log('[OnlineConfirm] Appointment created successfully:', appointment)
 
       setAppointmentId(appointment.appointmentId)
@@ -224,26 +388,8 @@ function OnlineConfirmContent() {
     router.push('/member')
   }
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr || dateStr === new Date().toISOString().split('T')[0]) {
-      return 'Today'
-    }
-    const date = new Date(dateStr)
-    const day = date.getDate()
-    const month = date.toLocaleString('default', { month: 'long' })
-    const year = date.getFullYear()
-    return `${day} ${month} ${year}`
-  }
-
-  if (loadingRelationships) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
-      </div>
-    )
-  }
-
-  if (bookingSuccess) {
+  // Helper function to get success screen appointment details
+  const getSuccessScreenDetails = () => {
     const appointmentDate = timeChoice === 'NOW'
       ? new Date().toISOString().split('T')[0]
       : selectedDate
@@ -252,90 +398,33 @@ function OnlineConfirmContent() {
       ? 'Immediate'
       : selectedTime
 
+    return { appointmentDate, appointmentTime }
+  }
+
+  // Early return for loading state
+  if (loadingRelationships) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-          <div className="mb-6">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircleIcon className="h-10 w-10 text-green-600" />
-            </div>
-          </div>
-
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-          <p className="text-gray-600 mb-6">
-            Your online consultation has been booked and is awaiting confirmation
-          </p>
-
-          <div className="bg-blue-50 rounded-xl p-4 mb-6">
-            <div className="text-sm text-gray-600 mb-1">Appointment ID</div>
-            <div className="text-xl font-bold" style={{ color: '#0a529f' }}>{appointmentId}</div>
-          </div>
-
-          <div className="space-y-3 text-left mb-6">
-            <div className="flex items-center space-x-3 text-sm">
-              <UserIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Doctor</div>
-                <div className="font-medium text-gray-900">{doctorName}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-sm">
-              <CalendarIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Date</div>
-                <div className="font-medium text-gray-900">{formatDate(appointmentDate)}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-sm">
-              <ClockIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Time</div>
-                <div className="font-medium text-gray-900">{appointmentTime}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-sm">
-              <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Contact Number</div>
-                <div className="font-medium text-gray-900">{contactNumber}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3 text-sm">
-              {callPreference === 'VOICE' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
-              {callPreference === 'VIDEO' && <VideoCameraIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
-              {callPreference === 'BOTH' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
-              <div>
-                <div className="text-gray-600">Call Preference</div>
-                <div className="font-medium text-gray-900">
-                  {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={handleViewAppointments}
-              className="w-full py-3 px-4 text-white rounded-xl font-medium transition-colors"
-              style={{ backgroundColor: '#0a529f' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-            >
-              View Online Consultations
-            </button>
-            <button
-              onClick={handleBackToDashboard}
-              className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors"
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
       </div>
+    )
+  }
+
+  // Early return for success state
+  if (bookingSuccess) {
+    const { appointmentDate, appointmentTime } = getSuccessScreenDetails()
+
+    return (
+      <BookingSuccessScreen
+        appointmentId={appointmentId}
+        doctorName={doctorName}
+        appointmentDate={appointmentDate}
+        appointmentTime={appointmentTime}
+        contactNumber={contactNumber}
+        callPreference={callPreference}
+        onViewAppointments={handleViewAppointments}
+        onBackToDashboard={handleBackToDashboard}
+      />
     )
   }
 

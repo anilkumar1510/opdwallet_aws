@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ChevronLeftIcon, MapPinIcon, HomeIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
 
@@ -78,9 +78,9 @@ export default function VendorBookingPage() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
 
@@ -135,7 +135,7 @@ export default function VendorBookingPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [cartId, vendorId])
 
   const calculateTotal = () => {
     const subtotal = pricing.reduce((sum, item) => sum + item.discountedPrice, 0)

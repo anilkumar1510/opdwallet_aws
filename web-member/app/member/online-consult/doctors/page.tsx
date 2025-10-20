@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronLeftIcon,
@@ -52,34 +52,7 @@ function OnlineDoctorsContent() {
   const [showAvailableNow, setShowAvailableNow] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
-  useEffect(() => {
-    if (specialtyId) {
-      fetchDoctors()
-    }
-  }, [specialtyId])
-
-  useEffect(() => {
-    console.log('[OnlineDoctors] Filtering doctors:', { searchQuery, showAvailableNow })
-    let filtered = doctors
-
-    if (searchQuery.trim() !== '') {
-      filtered = filtered.filter((doctor) =>
-        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doctor.qualifications.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    if (showAvailableNow) {
-      filtered = filtered.filter((doctor) =>
-        doctor.availableInMinutes !== null && doctor.availableInMinutes <= 5
-      )
-    }
-
-    console.log('[OnlineDoctors] Filtered results:', { count: filtered.length })
-    setFilteredDoctors(filtered)
-  }, [searchQuery, showAvailableNow, doctors])
-
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     try {
       console.log('[OnlineDoctors] Fetching online doctors for specialty:', specialtyId)
       const response = await fetch(`/api/doctors?specialtyId=${specialtyId}&type=ONLINE`, {
@@ -101,7 +74,34 @@ function OnlineDoctorsContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [specialtyId])
+
+  useEffect(() => {
+    if (specialtyId) {
+      fetchDoctors()
+    }
+  }, [specialtyId, fetchDoctors])
+
+  useEffect(() => {
+    console.log('[OnlineDoctors] Filtering doctors:', { searchQuery, showAvailableNow })
+    let filtered = doctors
+
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter((doctor) =>
+        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doctor.qualifications.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    if (showAvailableNow) {
+      filtered = filtered.filter((doctor) =>
+        doctor.availableInMinutes !== null && doctor.availableInMinutes <= 5
+      )
+    }
+
+    console.log('[OnlineDoctors] Filtered results:', { count: filtered.length })
+    setFilteredDoctors(filtered)
+  }, [searchQuery, showAvailableNow, doctors])
 
   const handleSelectDoctor = (doctor: Doctor) => {
     console.log('[OnlineDoctors] Doctor selected:', {
