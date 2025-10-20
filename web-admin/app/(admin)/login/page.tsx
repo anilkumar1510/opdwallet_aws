@@ -125,7 +125,7 @@ export default function LoginPage() {
               Sign in to access your admin dashboard
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              v1.0.1 - CI/CD Verified ✓
+              v1.0.2 - All Configurations Verified ✓
             </p>
           </div>
 
