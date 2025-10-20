@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 export default function EditClinicPage() {
   const router = useRouter()
@@ -42,14 +43,16 @@ export default function EditClinicPage() {
       })
 
       if (response.ok) {
+        toast.success('Clinic updated successfully')
         router.push('/operations/clinics')
       } else {
         const error = await response.json()
-        alert(`Failed to update clinic: ${error.message || 'Unknown error'}`)
+        console.error('Failed to update clinic:', error)
+        toast.error(`Failed to update clinic: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Failed to update clinic:', error)
-      alert('Failed to update clinic')
+      toast.error('Failed to update clinic. Please try again.')
     } finally {
       setSaving(false)
     }

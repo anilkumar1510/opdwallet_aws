@@ -10,6 +10,7 @@ import {
   ArrowTrendingUpIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface AnalyticsSummary {
   pendingPayments: number
@@ -36,9 +37,7 @@ export default function FinanceDashboard() {
   const fetchAnalytics = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/finance/analytics/summary', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/finance/analytics/summary')
       if (response.ok) {
         const data = await response.json()
         setAnalytics(data.summary)

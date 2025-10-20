@@ -5,7 +5,7 @@ services:
     container_name: opd-nginx-dev
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -51,7 +51,7 @@ services:
       - ./api:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run build && npm run start:prod"
+    command: sh -c "npm install --include=dev && npm run build && npm run start:prod"
 
   web-admin:
     image: node:20-alpine
@@ -62,7 +62,7 @@ services:
       - "3001:3000"  # Keep for direct access/debugging
     environment:
       # Browser calls go through nginx
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      NEXT_PUBLIC_API_URL: http://localhost/api
       # Server-side calls go direct to API
       API_URL: http://opd-api-dev:4000/api
     depends_on:
@@ -82,7 +82,7 @@ services:
       - "3002:3000"  # Keep for direct access/debugging
     environment:
       # Browser calls go through nginx
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      NEXT_PUBLIC_API_URL: http://localhost/api
       # Server-side calls go direct to API
       API_URL: http://opd-api-dev:4000/api
     depends_on:
@@ -102,7 +102,7 @@ services:
       - "3003:3003"  # Keep for direct access/debugging
     environment:
       # Browser calls go through nginx
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      NEXT_PUBLIC_API_URL: http://localhost/api
       # Server-side calls go direct to API
       API_URL: http://opd-api-dev:4000/api
     depends_on:

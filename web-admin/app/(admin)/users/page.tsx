@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { relationshipsApi, type Relationship } from '@/lib/api/relationships'
 
@@ -15,6 +16,8 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [newPassword, setNewPassword] = useState('')
   const [relationships, setRelationships] = useState<Relationship[]>([])
+  const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null)
+  const [settingPassword, setSettingPassword] = useState(false)
 
   useEffect(() => {
     fetchUsers()
@@ -54,16 +57,23 @@ export default function UsersPage() {
 
   const handleResetPassword = async (userId: string) => {
     if (confirm('Reset password for this user? A temporary password will be generated.')) {
+      setResettingPasswordId(userId)
       try {
         const response = await apiFetch(`/api/users/${userId}/reset-password`, {
           method: 'POST',
         })
         if (response.ok) {
           const data = await response.json()
-          alert(`Password reset. Temporary password: ${data.tempPassword}`)
+          toast.success(`Password reset. Temporary password: ${data.tempPassword}`)
+        } else {
+          const error = await response.json()
+          toast.error(error.message || 'Failed to reset password')
         }
       } catch (error) {
-        alert('Failed to reset password')
+        console.error('Password reset error:', error)
+        toast.error('Network error. Please try again.')
+      } finally {
+        setResettingPasswordId(null)
       }
     }
   }
@@ -71,19 +81,26 @@ export default function UsersPage() {
   const handleSetPassword = async () => {
     if (!selectedUser || !newPassword) return
 
+    setSettingPassword(true)
     try {
       const response = await apiFetch(`/api/users/${selectedUser._id}/set-password`, {
         method: 'POST',
         body: JSON.stringify({ password: newPassword }),
       })
       if (response.ok) {
-        alert('Password set successfully')
+        toast.success('Password set successfully')
         setShowPasswordModal(false)
         setSelectedUser(null)
         setNewPassword('')
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Failed to set password')
       }
     } catch (error) {
-      alert('Failed to set password')
+      console.error('Set password error:', error)
+      toast.error('Network error. Please try again.')
+    } finally {
+      setSettingPassword(false)
     }
   }
 
@@ -369,10 +386,10 @@ export default function UsersPage() {
               </button>
               <button
                 onClick={handleSetPassword}
-                disabled={!newPassword || newPassword.length < 8}
+                disabled={!newPassword || newPassword.length < 8 || settingPassword}
                 className="btn-primary"
               >
-                Set Password
+                {settingPassword ? 'Setting...' : 'Set Password'}
               </button>
             </div>
           </div>

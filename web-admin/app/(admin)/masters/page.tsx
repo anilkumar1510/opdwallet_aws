@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 import {
   PlusIcon,
   PencilIcon,
@@ -144,12 +145,15 @@ export default function MastersPage() {
 
       if (response.ok) {
         await fetchRelationships()
+        toast.success('Relationship deleted successfully')
       } else {
         const errorData = await response.json()
-        alert(errorData.message || 'Failed to delete relationship')
+        console.error('Failed to delete relationship:', errorData)
+        toast.error(errorData.message || 'Failed to delete relationship')
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete relationship')
+      console.error('Error deleting relationship:', err)
+      toast.error(err.message || 'Failed to delete relationship. Please try again.')
     }
   }
 
@@ -161,12 +165,15 @@ export default function MastersPage() {
 
       if (response.ok) {
         await fetchRelationships()
+        toast.success('Status updated successfully')
       } else {
         const errorData = await response.json()
-        alert(errorData.message || 'Failed to toggle status')
+        console.error('Failed to toggle status:', errorData)
+        toast.error(errorData.message || 'Failed to toggle status')
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to toggle status')
+      console.error('Error toggling status:', err)
+      toast.error(err.message || 'Failed to toggle status. Please try again.')
     }
   }
 

@@ -2,7 +2,7 @@ export default () => ({
   port: parseInt(process.env.API_PORT || process.env.PORT || '4000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   database: {
-    uri: process.env.MONGODB_URI || 'mongodb://admin:admin123@localhost:27017',
+    uri: process.env.MONGODB_URI || 'mongodb://admin:admin123@localhost:27017/opd_wallet?authSource=admin',
     options: {
       useNewUrlParser: true,
       useUnifiedTopology: true,

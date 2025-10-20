@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { apiFetch, getActiveCugs, CugMaster } from '@/lib/api'
 import { UserInfoCard } from './components/UserInfoCard'
 import { UserEditForm } from './components/UserEditForm'
@@ -125,6 +126,10 @@ export default function UserDetailPage() {
   const [selectedPlanConfigId, setSelectedPlanConfigId] = useState('')
   const [effectiveFrom, setEffectiveFrom] = useState('')
   const [effectiveTo, setEffectiveTo] = useState('')
+  const [assigning, setAssigning] = useState(false)
+  const [unassigningId, setUnassigningId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchUserWithDependents = useCallback(async () => {
     try {
@@ -262,10 +267,11 @@ export default function UserDetailPage() {
     )
 
     if (validationError) {
-      alert(validationError)
+      toast.error(validationError)
       return
     }
 
+    setAssigning(true)
     try {
       const payload = buildAssignmentPayload(
         selectedPolicyId,
@@ -284,15 +290,18 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        alert(`Failed to assign policy: ${error.message}`)
+        toast.error(error.message || 'Failed to assign policy')
         return
       }
 
-      alert('Policy assigned successfully')
+      toast.success('Policy assigned successfully')
       resetAssignmentForm()
       fetchAssignments()
     } catch (error) {
-      alert('Failed to assign policy')
+      console.error('Policy assignment error:', error)
+      toast.error('Network error. Please try again.')
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -303,20 +312,24 @@ export default function UserDetailPage() {
       return
     }
 
+    setUnassigningId(assignment._id)
     try {
       const response = await apiFetch(`/api/assignments/user/${params.id}/policy/${assignment.policyId._id}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        alert('Policy unassigned successfully')
+        toast.success('Policy unassigned successfully')
         fetchAssignments()
       } else {
         const error = await response.json()
-        alert(`Failed to unassign policy: ${error.message || 'Unknown error'}`)
+        toast.error(error.message || 'Failed to unassign policy')
       }
     } catch (error) {
-      alert('Failed to unassign policy')
+      console.error('Policy unassignment error:', error)
+      toast.error('Network error. Please try again.')
+    } finally {
+      setUnassigningId(null)
     }
   }
 
@@ -338,6 +351,7 @@ export default function UserDetailPage() {
   }
 
   const handleSave = async () => {
+    setSaving(true)
     try {
       const updateData = buildUserUpdateData(editedUser)
 
@@ -348,16 +362,19 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        alert(`Failed to update user: ${error.message}`)
+        toast.error(error.message || 'Failed to update user')
         return
       }
 
       await updatePassword()
-      alert('User updated successfully')
+      toast.success('User updated successfully')
       resetEditingState()
       fetchUserWithDependents()
     } catch (error) {
-      alert('Failed to update user')
+      console.error('User update error:', error)
+      toast.error('Network error. Please try again.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -423,6 +440,7 @@ export default function UserDetailPage() {
       return
     }
 
+    setDeleting(true)
     try {
       const response = await apiFetch(`/api/users/${params.id}`, {
         method: 'DELETE',
@@ -430,14 +448,17 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        alert(`Failed to delete user: ${error.message || 'Unknown error'}`)
+        toast.error(error.message || 'Failed to delete user')
         return
       }
 
-      alert('User deleted successfully')
-      router.push('/admin/users')
+      toast.success('User deleted successfully')
+      router.push('/users')
     } catch (error) {
-      alert('Failed to delete user')
+      console.error('User deletion error:', error)
+      toast.error('Network error. Please try again.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -499,7 +520,7 @@ export default function UserDetailPage() {
     <div className="space-y-6">
       {/* Back Button */}
       <button
-        onClick={() => router.push('/admin/users')}
+        onClick={() => router.push('/users')}
         className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
       >
         <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -521,11 +542,11 @@ export default function UserDetailPage() {
 
         {isEditing && (
           <div className="flex items-center justify-end space-x-2 mb-6">
-            <button onClick={handleCancel} className="btn-secondary">
+            <button onClick={handleCancel} disabled={saving} className="btn-secondary">
               Cancel
             </button>
-            <button onClick={handleSave} className="btn-primary">
-              Save Changes
+            <button onClick={handleSave} disabled={saving} className="btn-primary">
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         )}
@@ -554,7 +575,7 @@ export default function UserDetailPage() {
       {user.relationship === 'SELF' && (
         <DependentsTable
           dependents={dependents}
-          onViewDependent={(dependentId) => router.push(`/admin/users/${dependentId}`)}
+          onViewDependent={(dependentId) => router.push(`/users/${dependentId}`)}
         />
       )}
 

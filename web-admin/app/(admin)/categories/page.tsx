@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 interface Category {
   _id: string
@@ -26,6 +27,7 @@ export default function CategoriesPage() {
     isActive: true,
     displayOrder: 0,
   })
+  const [submitting, setSubmitting] = useState(false)
 
   const fetchCategories = useCallback(async () => {
     console.log('📡📡📡 [CategoriesPage.fetchCategories] START 📡📡📡')
@@ -95,11 +97,12 @@ export default function CategoriesPage() {
 
   const handleCreate = async () => {
     if (!formData.categoryId || !formData.name) {
-      alert('Category ID and Name are required')
+      toast.error('Category ID and Name are required')
       return
     }
 
     try {
+      setSubmitting(true)
       const response = await apiFetch('/api/categories', {
         method: 'POST',
         body: JSON.stringify(formData),
@@ -109,12 +112,17 @@ export default function CategoriesPage() {
         await fetchCategories()
         setShowCreateModal(false)
         resetForm()
+        toast.success('Category created successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to create category: ${error.message}`)
+        console.error('Failed to create category:', error)
+        toast.error(`Failed to create category: ${error.message}`)
       }
     } catch (error) {
-      alert('Failed to create category')
+      console.error('Error creating category:', error)
+      toast.error('Failed to create category. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -122,6 +130,7 @@ export default function CategoriesPage() {
     if (!currentCategory) return
 
     try {
+      setSubmitting(true)
       // Remove categoryId from update as it cannot be changed
       const { categoryId, ...updateData } = formData
 
@@ -135,12 +144,17 @@ export default function CategoriesPage() {
         setShowEditModal(false)
         setCurrentCategory(null)
         resetForm()
+        toast.success('Category updated successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to update category: ${error.message}`)
+        console.error('Failed to update category:', error)
+        toast.error(`Failed to update category: ${error.message}`)
       }
     } catch (error) {
-      alert('Failed to update category')
+      console.error('Error updating category:', error)
+      toast.error('Failed to update category. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -152,9 +166,15 @@ export default function CategoriesPage() {
 
       if (response.ok) {
         await fetchCategories()
+        toast.success('Category status updated successfully')
+      } else {
+        const error = await response.json()
+        console.error('Failed to toggle category status:', error)
+        toast.error('Failed to toggle category status')
       }
     } catch (error) {
-      alert('Failed to toggle category status')
+      console.error('Error toggling category status:', error)
+      toast.error('Failed to toggle category status. Please try again.')
     }
   }
 
@@ -170,13 +190,15 @@ export default function CategoriesPage() {
 
       if (response.ok) {
         await fetchCategories()
-        alert('Category deleted successfully')
+        toast.success('Category deleted successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to delete category: ${error.message}`)
+        console.error('Failed to delete category:', error)
+        toast.error(`Failed to delete category: ${error.message}`)
       }
     } catch (error) {
-      alert('Failed to delete category')
+      console.error('Error deleting category:', error)
+      toast.error('Failed to delete category. Please try again.')
     }
   }
 
@@ -430,8 +452,9 @@ export default function CategoriesPage() {
                 <button
                   onClick={showCreateModal ? handleCreate : handleUpdate}
                   className="btn-primary"
+                  disabled={submitting}
                 >
-                  {showCreateModal ? 'Create' : 'Update'}
+                  {submitting ? 'Processing...' : showCreateModal ? 'Create' : 'Update'}
                 </button>
               </div>
             </div>

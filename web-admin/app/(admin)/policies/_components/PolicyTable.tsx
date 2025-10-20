@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Policy, PolicyStatus, PolicyQueryParams } from '../_lib/types'
 import { apiFetch } from '@/lib/api'
 
@@ -55,18 +56,18 @@ export default function PolicyTable({
 
       if (response.ok) {
         const result = await response.json()
-        alert(`Policy "${result.policyName}" deleted successfully`)
+        toast.success(`Policy "${result.policyName}" deleted successfully`)
         setOpenMenuId(null)
         if (onRefresh) {
           onRefresh()
         }
       } else {
         const error = await response.json()
-        alert(`Failed to delete policy: ${error.message || 'Unknown error'}`)
+        toast.error(error.message || 'Failed to delete policy')
       }
     } catch (error) {
       console.error('Error deleting policy:', error)
-      alert(`Failed to delete policy: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error('Network error. Please try again.')
     } finally {
       setDeletingPolicyId(null)
     }
@@ -258,7 +259,7 @@ export default function PolicyTable({
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/admin/users?policyId=${policy._id}`)
+                          router.push(`/users?policyId=${policy._id}`)
                         }}
                         className="btn-ghost p-1 text-xs"
                         title="Assign Users"
@@ -339,11 +340,11 @@ export default function PolicyTable({
           <div
             key={policy._id}
             className="card hover:shadow-md transition-shadow"
-            onClick={() => router.push(`/admin/policies/${policy._id}`)}
+            onClick={() => router.push(`/policies/${policy._id}`)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                router.push(`/admin/policies/${policy._id}`)
+                router.push(`/policies/${policy._id}`)
               }
             }}
             role="article"
@@ -379,7 +380,7 @@ export default function PolicyTable({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    router.push(`/admin/policies/${policy._id}#versions`)
+                    router.push(`/policies/${policy._id}#versions`)
                   }}
                   className="btn-primary flex-1 text-sm"
                 >
@@ -388,7 +389,7 @@ export default function PolicyTable({
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    router.push(`/admin/users?policyId=${policy._id}`)
+                    router.push(`/users?policyId=${policy._id}`)
                   }}
                   className="btn-ghost flex-1 text-sm"
                 >

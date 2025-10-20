@@ -13,6 +13,7 @@ import {
   ShieldCheckIcon,
   PlusIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface TPAUser {
   _id: string
@@ -41,9 +42,7 @@ export default function TPAUsersPage() {
   const fetchUsers = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/tpa/users', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/tpa/users')
 
       if (response.ok) {
         const data = await response.json()

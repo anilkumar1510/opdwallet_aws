@@ -18,7 +18,12 @@ import {
   HeartIcon,
   BuildingOfficeIcon,
   ChevronRightIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  UserCircleIcon,
+  ShoppingBagIcon,
+  ClipboardDocumentListIcon,
+  BeakerIcon,
+  VideoCameraIcon
 } from '@heroicons/react/24/outline'
 
 interface Service {
@@ -44,14 +49,20 @@ const services: Service[] = [
     description: 'Check balance and transaction history',
     href: '/member/wallet',
     icon: WalletIcon,
-    category: 'Core',
-    badge: '₹12,500'
+    category: 'Core'
   },
   {
     name: 'Benefits',
     description: 'Explore all your healthcare benefits',
     href: '/member/benefits',
     icon: SparklesIcon,
+    category: 'Core'
+  },
+  {
+    name: 'Profile',
+    description: 'View and edit your profile information',
+    href: '/member/profile',
+    icon: UserCircleIcon,
     category: 'Core'
   },
 
@@ -81,24 +92,38 @@ const services: Service[] = [
 
   // Healthcare Services
   {
-    name: 'Book Appointment',
-    description: 'Schedule doctor appointments',
-    href: '/member/bookings',
+    name: 'In-Clinic Appointments',
+    description: 'Schedule doctor appointments at clinics',
+    href: '/member/appointments',
     icon: CalendarIcon,
     category: 'Healthcare'
   },
   {
+    name: 'Online Consultations',
+    description: 'Video consultation with doctors',
+    href: '/member/online-consult',
+    icon: VideoCameraIcon,
+    category: 'Healthcare'
+  },
+  {
+    name: 'Lab Tests',
+    description: 'Book lab tests and view results',
+    href: '/member/lab-tests',
+    icon: BeakerIcon,
+    category: 'Healthcare'
+  },
+  {
     name: 'Health Records',
-    description: 'Access your medical records',
-    href: '/member/records',
+    description: 'Access your medical records and prescriptions',
+    href: '/member/health-records',
     icon: DocumentTextIcon,
     category: 'Healthcare'
   },
   {
-    name: 'Wellness Programs',
-    description: 'Join wellness and preventive care programs',
-    href: '/member/wellness',
-    icon: HeartIcon,
+    name: 'Bookings',
+    description: 'View all your bookings and appointments',
+    href: '/member/bookings',
+    icon: ClipboardDocumentListIcon,
     category: 'Healthcare'
   },
 
@@ -128,10 +153,10 @@ const services: Service[] = [
     category: 'Finance'
   },
   {
-    name: 'Reports',
-    description: 'Download financial reports and statements',
-    href: '/member/reports',
-    icon: DocumentTextIcon,
+    name: 'Orders',
+    description: 'Track all your orders and payments',
+    href: '/member/orders',
+    icon: ShoppingBagIcon,
     category: 'Finance'
   },
 

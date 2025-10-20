@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
@@ -138,7 +139,7 @@ export default function PaymentHistoryPage() {
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
             onClick={() => {
               // TODO: Implement export functionality
-              alert('Export functionality to be implemented')
+              toast.info('Export functionality coming soon')
             }}
           >
             <DocumentArrowDownIcon className="h-5 w-5" />

@@ -7,6 +7,7 @@ import {
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
   ArrowsRightLeftIcon,
+  RectangleStackIcon,
 } from '@heroicons/react/24/outline'
 import { useFamily } from '@/contexts/FamilyContext'
 import SwitchProfileModal from './SwitchProfileModal'
@@ -97,6 +98,13 @@ export default function ProfileDropdown({ user }: ProfileDropdownProps) {
     router.push('/member/profile')
   }
 
+  const handleViewServices = () => {
+    setShowDropdown(false)
+    router.push('/member/services')
+  }
+
+  // Navigate to services page to view all available services
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Avatar Button */}
@@ -148,6 +156,15 @@ export default function ProfileDropdown({ user }: ProfileDropdownProps) {
             >
               <UserCircleIcon className="h-5 w-5 mr-3 text-gray-400" />
               Profile
+            </button>
+
+            {/* Services */}
+            <button
+              onClick={handleViewServices}
+              className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <RectangleStackIcon className="h-5 w-5 mr-3 text-gray-400" />
+              All Services
             </button>
 
             {/* Divider */}

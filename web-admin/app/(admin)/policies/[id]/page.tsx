@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 function policyToEditForm(policy: any) {
   return {
@@ -79,7 +80,8 @@ export default function PolicyDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        alert(`Failed to update policy: ${error.message || 'Unknown error'}`)
+        console.error('Failed to update policy:', error)
+        toast.error(`Failed to update policy: ${error.message || 'Unknown error'}`)
         return
       }
 
@@ -87,9 +89,10 @@ export default function PolicyDetailPage() {
       setPolicy(updatedPolicy)
       setEditForm(policyToEditForm(updatedPolicy))
       setIsEditing(false)
+      toast.success('Policy updated successfully')
     } catch (error) {
       console.error('Update error:', error)
-      alert('Failed to update policy. Please check the console for details.')
+      toast.error('Failed to update policy. Please check your connection and try again.')
     } finally {
       setIsSaving(false)
     }

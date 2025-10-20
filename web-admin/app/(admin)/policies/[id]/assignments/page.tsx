@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import { useDebounce } from '@/hooks/useDebounce'
 
@@ -32,6 +33,7 @@ export default function PolicyAssignmentsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   // Plan config state
   const [planConfig, setPlanConfig] = useState<any>(null)
@@ -230,16 +232,17 @@ export default function PolicyAssignmentsPage() {
       })
 
       if (response.ok) {
+        toast.success('Assignment created successfully')
         setShowCreateModal(false)
         resetForm()
         await fetchAssignments()
       } else {
         const error = await response.json()
-        alert(`Failed to create assignment: ${error.message || 'Unknown error'}`)
+        toast.error(error.message || 'Failed to create assignment')
       }
     } catch (error) {
       console.error('Create assignment error:', error)
-      alert('Failed to create assignment')
+      toast.error('Network error. Please try again.')
     } finally {
       setCreating(false)
     }
@@ -261,20 +264,24 @@ export default function PolicyAssignmentsPage() {
   const handleRemoveAssignment = async (assignmentId: string) => {
     if (!confirm('Are you sure you want to remove this assignment?')) return
 
+    setRemovingId(assignmentId)
     try {
       const response = await apiFetch(`/api/assignments/${assignmentId}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
+        toast.success('Assignment removed successfully')
         await fetchAssignments()
       } else {
         const error = await response.json()
-        alert(`Failed to remove assignment: ${error.message || 'Unknown error'}`)
+        toast.error(error.message || 'Failed to remove assignment')
       }
     } catch (error) {
       console.error('Remove assignment error:', error)
-      alert('Failed to remove assignment')
+      toast.error('Network error. Please try again.')
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -398,9 +405,10 @@ export default function PolicyAssignmentsPage() {
                       {assignment.isActive && (
                         <button
                           onClick={() => handleRemoveAssignment(assignment.assignmentId)}
-                          className="text-red-600 hover:text-red-900"
+                          disabled={removingId === assignment.assignmentId}
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Remove
+                          {removingId === assignment.assignmentId ? 'Removing...' : 'Remove'}
                         </button>
                       )}
                     </td>

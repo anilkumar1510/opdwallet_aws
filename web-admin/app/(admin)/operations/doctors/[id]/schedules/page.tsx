@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 const DAYS_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 const CONSULTATION_TYPES = ['IN_CLINIC', 'ONLINE']
@@ -26,6 +27,7 @@ export default function DoctorSchedulesPage() {
     consultationType: 'IN_CLINIC',
     maxAppointments: 20,
   })
+  const [submitting, setSubmitting] = useState(false)
 
   const fetchDoctor = useCallback(async () => {
     try {
@@ -76,6 +78,7 @@ export default function DoctorSchedulesPage() {
     e.preventDefault()
 
     try {
+      setSubmitting(true)
       const response = await apiFetch('/api/doctor-slots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,13 +101,17 @@ export default function DoctorSchedulesPage() {
           consultationType: 'IN_CLINIC',
           maxAppointments: 20,
         })
+        toast.success('Schedule created successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to create slot: ${error.message || 'Unknown error'}`)
+        console.error('Failed to create slot:', error)
+        toast.error(`Failed to create slot: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Failed to create slot:', error)
-      alert('Failed to create slot')
+      toast.error('Failed to create slot. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -254,8 +261,8 @@ export default function DoctorSchedulesPage() {
           </div>
 
           <div className="flex gap-4">
-            <button type="submit" className="btn btn-primary">
-              Create Schedule
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Creating...' : 'Create Schedule'}
             </button>
           </div>
         </form>

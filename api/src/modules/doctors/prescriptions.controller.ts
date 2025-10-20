@@ -118,6 +118,34 @@ export class DoctorPrescriptionsController {
     };
   }
 
+  @Get(':prescriptionId/download')
+  async downloadPrescription(
+    @Param('prescriptionId') prescriptionId: string,
+    @Request() req: AuthRequest,
+    @Res() res: Response,
+  ) {
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    const prescription = await this.prescriptionsService.getPrescriptionById(
+      prescriptionId,
+      doctorId,
+    );
+
+    if (!existsSync(prescription.filePath)) {
+      throw new BadRequestException('File not found');
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${prescription.fileName}"`);
+
+    const fileStream = createReadStream(prescription.filePath);
+    fileStream.pipe(res);
+  }
+
   @Delete(':prescriptionId')
   async deletePrescription(
     @Param('prescriptionId') prescriptionId: string,

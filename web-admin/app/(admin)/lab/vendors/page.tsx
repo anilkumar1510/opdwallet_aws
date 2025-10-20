@@ -9,6 +9,7 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 interface LabVendor {
   _id: string
@@ -55,9 +56,7 @@ export default function LabVendorsPage() {
   const fetchVendors = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/lab/vendors', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/admin/lab/vendors')
 
       if (!response.ok) throw new Error('Failed to fetch vendors')
 
@@ -101,10 +100,8 @@ export default function LabVendorsPage() {
 
       const method = editingVendor ? 'PATCH' : 'POST'
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(payload),
       })
 
@@ -240,14 +237,14 @@ export default function LabVendorsPage() {
                       <PencilIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => router.push(`/admin/lab/vendors/${vendor.vendorId}/pricing`)}
+                      onClick={() => router.push(`/lab/vendors/${vendor.vendorId}/pricing`)}
                       className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                       title="Manage pricing"
                     >
                       <CurrencyRupeeIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => router.push(`/admin/lab/vendors/${vendor.vendorId}/slots`)}
+                      onClick={() => router.push(`/lab/vendors/${vendor.vendorId}/slots`)}
                       className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                       title="Manage slots"
                     >

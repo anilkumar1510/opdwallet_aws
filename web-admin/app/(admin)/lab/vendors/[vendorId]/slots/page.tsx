@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ChevronLeftIcon, PlusIcon, CalendarIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 interface Slot {
   _id: string
@@ -66,9 +67,7 @@ export default function VendorSlotsPage() {
   const fetchVendor = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/lab/vendors', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/admin/lab/vendors')
       if (response.ok) {
         const data = await response.json()
         const foundVendor = data.data.find((v: Vendor) => v.vendorId === vendorId)
@@ -92,9 +91,8 @@ export default function VendorSlotsPage() {
     if (!filterPincode || !filterDate) return
 
     try {
-      const response = await fetch(
-        `/api/admin/lab/vendors/${vendorId}/slots?pincode=${filterPincode}&date=${filterDate}`,
-        { credentials: 'include' }
+      const response = await apiFetch(
+        `/api/admin/lab/vendors/${vendorId}/slots?pincode=${filterPincode}&date=${filterDate}`
       )
       if (response.ok) {
         const data = await response.json()
@@ -158,10 +156,8 @@ export default function VendorSlotsPage() {
   }
 
   const createSingleSlot = async (date: string, timeSlot: TimeSlotDefinition) => {
-    const response = await fetch(`/api/admin/lab/vendors/${vendorId}/slots`, {
+    const response = await apiFetch(`/api/admin/lab/vendors/${vendorId}/slots`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({
         pincode: formData.pincode,
         date,

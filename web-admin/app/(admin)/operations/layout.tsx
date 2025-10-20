@@ -35,14 +35,12 @@ export default function OperationsLayout({
       await apiFetch('/api/auth/logout', {
         method: 'POST',
       })
-      // Redirect to login page after logout
-      router.push('/login')
-      // Force reload to clear any cached data
-      window.location.href = '/login'
+      // Redirect to login page after logout (respects basePath)
+      window.location.href = '/admin/login'
     } catch (error) {
       console.error('Logout failed:', error)
       // Even if logout API fails, redirect to login
-      window.location.href = '/login'
+      window.location.href = '/admin/login'
     }
   }
 

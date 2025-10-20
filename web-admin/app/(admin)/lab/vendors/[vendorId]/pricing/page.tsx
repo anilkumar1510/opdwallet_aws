@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ChevronLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 interface LabService {
   _id: string
@@ -55,9 +56,7 @@ export default function VendorPricingPage() {
       setLoading(true)
 
       // Fetch vendor
-      const vendorRes = await fetch('/api/admin/lab/vendors', {
-        credentials: 'include',
-      })
+      const vendorRes = await apiFetch('/api/admin/lab/vendors')
       if (vendorRes.ok) {
         const vendorData = await vendorRes.json()
         const foundVendor = vendorData.data.find((v: Vendor) => v.vendorId === vendorId)
@@ -65,18 +64,14 @@ export default function VendorPricingPage() {
       }
 
       // Fetch pricing
-      const pricingRes = await fetch(`/api/admin/lab/vendors/${vendorId}/pricing`, {
-        credentials: 'include',
-      })
+      const pricingRes = await apiFetch(`/api/admin/lab/vendors/${vendorId}/pricing`)
       if (pricingRes.ok) {
         const pricingData = await pricingRes.json()
         setPricingList(pricingData.data || [])
       }
 
       // Fetch all services
-      const servicesRes = await fetch('/api/admin/lab/services', {
-        credentials: 'include',
-      })
+      const servicesRes = await apiFetch('/api/admin/lab/services')
       if (servicesRes.ok) {
         const servicesData = await servicesRes.json()
         setServices(servicesData.data || [])
@@ -134,10 +129,8 @@ export default function VendorPricingPage() {
 
       const method = editingPricing ? 'PATCH' : 'POST'
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(formData),
       })
 

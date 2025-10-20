@@ -8,6 +8,7 @@ import {
   ClipboardDocumentListIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface LabStats {
   services: number
@@ -35,14 +36,10 @@ export default function LabDashboardPage() {
       setLoading(true)
 
       // Fetch services
-      const servicesRes = await fetch('/api/admin/lab/services', {
-        credentials: 'include',
-      })
+      const servicesRes = await apiFetch('/api/admin/lab/services')
 
       // Fetch vendors
-      const vendorsRes = await fetch('/api/admin/lab/vendors', {
-        credentials: 'include',
-      })
+      const vendorsRes = await apiFetch('/api/admin/lab/vendors')
 
       if (servicesRes.ok && vendorsRes.ok) {
         const servicesData = await servicesRes.json()

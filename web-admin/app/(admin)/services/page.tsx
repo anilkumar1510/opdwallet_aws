@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 interface ServiceType {
   _id: string
@@ -32,6 +33,7 @@ export default function ServicesPage() {
     category: '',
     isActive: true,
   })
+  const [submitting, setSubmitting] = useState(false)
 
   const fetchServiceTypes = useCallback(async () => {
     try {
@@ -77,6 +79,7 @@ export default function ServicesPage() {
 
   const handleCreate = async () => {
     try {
+      setSubmitting(true)
       // Include default values for required fields that are being removed from UI
       const payload = {
         ...formData,
@@ -95,12 +98,17 @@ export default function ServicesPage() {
         await fetchServiceTypes()
         setShowCreateModal(false)
         resetForm()
+        toast.success('Service type created successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to create service type: ${error.message}`)
+        console.error('Failed to create service type:', error)
+        toast.error(`Failed to create service type: ${error.message}`)
       }
     } catch (error) {
-      alert('Failed to create service type')
+      console.error('Error creating service type:', error)
+      toast.error('Failed to create service type. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -108,6 +116,7 @@ export default function ServicesPage() {
     if (!currentService) return
 
     try {
+      setSubmitting(true)
       // Remove code field from update payload since codes are immutable
       const { code, ...updateData } = formData
 
@@ -121,12 +130,17 @@ export default function ServicesPage() {
         setShowEditModal(false)
         setCurrentService(null)
         resetForm()
+        toast.success('Service type updated successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to update service type: ${error.message}`)
+        console.error('Failed to update service type:', error)
+        toast.error(`Failed to update service type: ${error.message}`)
       }
     } catch (error) {
-      alert('Failed to update service type')
+      console.error('Error updating service type:', error)
+      toast.error('Failed to update service type. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -138,9 +152,15 @@ export default function ServicesPage() {
 
       if (response.ok) {
         await fetchServiceTypes()
+        toast.success('Service status updated successfully')
+      } else {
+        const error = await response.json()
+        console.error('Failed to toggle service status:', error)
+        toast.error('Failed to toggle service status')
       }
     } catch (error) {
-      alert('Failed to toggle service status')
+      console.error('Error toggling service status:', error)
+      toast.error('Failed to toggle service status. Please try again.')
     }
   }
 
@@ -156,13 +176,15 @@ export default function ServicesPage() {
 
       if (response.ok) {
         await fetchServiceTypes()
-        alert('Service type deleted successfully')
+        toast.success('Service type deleted successfully')
       } else {
         const error = await response.json()
-        alert(`Failed to delete service type: ${error.message || 'Unknown error'}`)
+        console.error('Failed to delete service type:', error)
+        toast.error(`Failed to delete service type: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
-      alert('Failed to delete service type')
+      console.error('Error deleting service type:', error)
+      toast.error('Failed to delete service type. Please try again.')
     }
   }
 
@@ -434,8 +456,9 @@ export default function ServicesPage() {
                 <button
                   onClick={showCreateModal ? handleCreate : handleUpdate}
                   className="btn-primary"
+                  disabled={submitting}
                 >
-                  {showCreateModal ? 'Create' : 'Update'}
+                  {submitting ? 'Processing...' : showCreateModal ? 'Create' : 'Update'}
                 </button>
               </div>
             </div>

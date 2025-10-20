@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import {
   ArrowLeftIcon,
@@ -8,6 +9,7 @@ import {
   ArrowPathIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface Claim {
   _id: string
@@ -49,9 +51,7 @@ export default function UnassignedClaimsPage() {
   const fetchUnassignedClaims = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/tpa/claims/unassigned', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/tpa/claims/unassigned')
       if (response.ok) {
         const data = await response.json()
         setClaims(data.claims || [])
@@ -65,9 +65,7 @@ export default function UnassignedClaimsPage() {
 
   const fetchTPAUsers = async () => {
     try {
-      const response = await fetch('/api/tpa/users', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/tpa/users')
       if (response.ok) {
         const data = await response.json()
         setTpaUsers(data.users || [])
@@ -100,6 +98,7 @@ export default function UnassignedClaimsPage() {
       })
 
       if (response.ok) {
+        toast.success('Claim assigned successfully')
         // Remove assigned claim from list
         setClaims(claims.filter((c) => c.claimId !== selectedClaim))
         setShowAssignModal(false)
@@ -108,11 +107,11 @@ export default function UnassignedClaimsPage() {
         setAssignmentNotes('')
       } else {
         const error = await response.json()
-        alert(`Failed to assign claim: ${error.message}`)
+        toast.error(error.message || 'Failed to assign claim')
       }
     } catch (error) {
       console.error('Error assigning claim:', error)
-      alert('Failed to assign claim')
+      toast.error('Network error. Please try again.')
     } finally {
       setAssigningClaim(false)
     }

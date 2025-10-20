@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function NewPolicyPage() {
   const router = useRouter()
@@ -39,13 +40,16 @@ export default function NewPolicyPage() {
 
       if (response.ok) {
         const newPolicy = await response.json()
+        toast.success('Policy created successfully')
         router.push(`/policies/${newPolicy._id}`)
       } else {
         const error = await response.json()
-        alert(`Failed to create policy: ${error.message || 'Unknown error'}`)
+        console.error('Failed to create policy:', error)
+        toast.error(`Failed to create policy: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
-      alert('Failed to create policy')
+      console.error('Error creating policy:', error)
+      toast.error('Failed to create policy. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }

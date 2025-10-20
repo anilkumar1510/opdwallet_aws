@@ -9,6 +9,7 @@ import {
   BanknotesIcon,
 } from '@heroicons/react/24/outline'
 import PaymentModal from '@/components/finance/PaymentModal'
+import { apiFetch } from '@/lib/api'
 
 interface Claim {
   _id: string
@@ -42,9 +43,7 @@ export default function PendingPaymentsPage() {
   const fetchPendingPayments = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/finance/claims/pending', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/finance/claims/pending')
       if (response.ok) {
         const data = await response.json()
         setClaims(data.claims || [])

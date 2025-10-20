@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 // API base URL configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
@@ -114,6 +115,7 @@ export default function EditDoctorPage() {
         console.log('[PhotoUpload] Upload successful:', data)
         setPhotoPreview(data.photoUrl)
         setDoctor({ ...doctor, profilePhoto: data.photoUrl })
+        toast.success('Photo uploaded successfully')
       } else {
         const errorData = await response.text()
         console.error('[PhotoUpload] Upload failed:', {
@@ -121,11 +123,15 @@ export default function EditDoctorPage() {
           statusText: response.statusText,
           error: errorData
         })
-        setError(`Failed to upload photo: ${response.status} ${response.statusText}`)
+        const errorMessage = `Failed to upload photo: ${response.status} ${response.statusText}`
+        setError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error) {
       console.error('[PhotoUpload] Exception during upload:', error)
-      setError('Failed to upload photo: ' + (error as Error).message)
+      const errorMessage = 'Failed to upload photo: ' + (error as Error).message
+      setError(errorMessage)
+      toast.error('Failed to upload photo. Please check your connection and try again.')
     } finally {
       setUploadingPhoto(false)
       console.log('[PhotoUpload] Upload process completed')
@@ -158,13 +164,20 @@ export default function EditDoctorPage() {
       })
 
       if (response.ok) {
+        toast.success('Doctor updated successfully')
         router.push('/operations/doctors')
       } else {
-        setError('Failed to update doctor')
+        const errorData = await response.json()
+        console.error('Failed to update doctor:', errorData)
+        const errorMessage = errorData.message || 'Failed to update doctor'
+        setError(errorMessage)
+        toast.error(errorMessage)
       }
     } catch (error) {
       console.error('Failed to update doctor:', error)
-      setError('Failed to update doctor')
+      const errorMessage = (error as Error).message || 'Failed to update doctor'
+      setError(errorMessage)
+      toast.error('Failed to update doctor. Please check your connection and try again.')
     } finally {
       setSaving(false)
     }
@@ -424,7 +437,7 @@ export default function EditDoctorPage() {
                   if (!newPassword) return
 
                   if (newPassword.length < 6) {
-                    alert('Password must be at least 6 characters long')
+                    toast.error('Password must be at least 6 characters long')
                     return
                   }
 
@@ -436,13 +449,15 @@ export default function EditDoctorPage() {
                     })
 
                     if (response.ok) {
-                      alert('Password set successfully! The doctor can now login with their email and this password.')
+                      toast.success('Password set successfully! The doctor can now login with their email and this password.')
                     } else {
                       const error = await response.text()
-                      alert('Failed to set password: ' + error)
+                      console.error('Failed to set password:', error)
+                      toast.error('Failed to set password: ' + error)
                     }
                   } catch (error) {
-                    alert('Failed to set password: ' + (error as Error).message)
+                    console.error('Error setting password:', error)
+                    toast.error('Failed to set password: ' + (error as Error).message)
                   }
                 }}
                 className="btn-primary whitespace-nowrap"

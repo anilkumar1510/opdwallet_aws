@@ -12,6 +12,7 @@ import {
   ChartBarIcon,
   ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface AnalyticsSummary {
   totalClaims: number
@@ -45,9 +46,7 @@ export default function TPADashboard() {
 
   const fetchAnalytics = useCallback(async () => {
     try {
-      const response = await fetch('/api/tpa/analytics/summary', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/tpa/analytics/summary')
       if (response.ok) {
         const data = await response.json()
         setAnalytics(data.summary)
@@ -61,9 +60,7 @@ export default function TPADashboard() {
 
   const fetchRecentActivity = useCallback(async () => {
     try {
-      const response = await fetch('/api/tpa/recent-activity?limit=5', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/tpa/recent-activity?limit=5')
       if (response.ok) {
         const data = await response.json()
         // Transform the data to match the expected format

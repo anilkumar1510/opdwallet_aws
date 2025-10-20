@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { toast } from 'sonner'
 
 export default function NewClinicPage() {
   const router = useRouter()
@@ -47,14 +48,16 @@ export default function NewClinicPage() {
       })
 
       if (response.ok) {
+        toast.success('Clinic created successfully')
         router.push('/operations/clinics')
       } else {
         const error = await response.json()
-        alert(`Failed to create clinic: ${error.message || 'Unknown error'}`)
+        console.error('Failed to create clinic:', error)
+        toast.error(`Failed to create clinic: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Failed to create clinic:', error)
-      alert('Failed to create clinic')
+      toast.error('Failed to create clinic. Please try again.')
     } finally {
       setLoading(false)
     }

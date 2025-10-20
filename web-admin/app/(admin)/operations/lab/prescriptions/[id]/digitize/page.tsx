@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 interface LabService {
   _id: string
@@ -60,9 +61,7 @@ export default function DigitizePrescriptionPage() {
 
   const fetchServices = async () => {
     try {
-      const response = await fetch('/api/admin/lab/services', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/admin/lab/services')
 
       if (!response.ok) throw new Error('Failed to fetch services')
 
