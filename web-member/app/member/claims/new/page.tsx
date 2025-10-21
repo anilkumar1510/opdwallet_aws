@@ -164,11 +164,11 @@ export default function NewClaimPage() {
     }
 
     const mappedCategory = categoryMap[formData.category]
-    const categoryBalance = walletData.balancesByCategory?.find(
-      (b: any) => b.category === mappedCategory
+    const categoryBalance = walletData.categories?.find(
+      (b: any) => b.categoryCode === mappedCategory
     )
 
-    return categoryBalance?.balance || 0
+    return categoryBalance?.available || 0
   }
 
   // Helper function to handle user selection change
