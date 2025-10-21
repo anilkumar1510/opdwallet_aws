@@ -137,15 +137,14 @@ export default function VideoConsultation({
           },
         }
 
-        console.log('[MEMBER VideoConsultation] Step 3: Creating Jitsi instance with config:', {
-          roomName: options.roomName,
-          width: options.width,
-          height: options.height,
-          userInfo: options.userInfo,
-          configOverwrite: options.configOverwrite,
-          interfaceConfigOverwrite: options.interfaceConfigOverwrite,
-          parentNodePresent: !!options.parentNode,
-        })
+        console.log('[MEMBER VideoConsultation] Step 3: Creating Jitsi instance')
+        console.log('[MEMBER VideoConsultation] - roomName:', options.roomName)
+        console.log('[MEMBER VideoConsultation] - jitsiDomain:', jitsiDomain)
+        console.log('[MEMBER VideoConsultation] - userInfo:', options.userInfo)
+        console.log('[MEMBER VideoConsultation] - configOverwrite:', options.configOverwrite)
+        console.log('[MEMBER VideoConsultation] - prejoinPageEnabled:', options.configOverwrite.prejoinPageEnabled)
+        console.log('[MEMBER VideoConsultation] - startWithAudioMuted:', options.configOverwrite.startWithAudioMuted)
+        console.log('[MEMBER VideoConsultation] - startWithVideoMuted:', options.configOverwrite.startWithVideoMuted)
         apiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, options)
         console.log('[MEMBER VideoConsultation] ✅ Jitsi instance created')
 
