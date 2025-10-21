@@ -69,7 +69,7 @@ export default function VideoConsultation({
             startWithAudioMuted: false,
             startWithVideoMuted: false,
             enableWelcomePage: false,
-            prejoinPageEnabled: false,
+            prejoinPageEnabled: true,
             disableDeepLinking: true,
           },
           interfaceConfigOverwrite: {

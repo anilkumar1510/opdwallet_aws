@@ -43,17 +43,34 @@ export default function DoctorSchedulesPage() {
 
   const fetchClinics = async () => {
     try {
+      console.log('=== CLINICS DEBUG: Starting fetchClinics ===')
       const response = await apiFetch('/api/clinics?isActive=true')
+      console.log('=== CLINICS DEBUG: Response status:', response.status)
+      console.log('=== CLINICS DEBUG: Response ok:', response.ok)
+
       if (response.ok) {
         const result = await response.json()
+        console.log('=== CLINICS DEBUG: Raw API result:', result)
+        console.log('=== CLINICS DEBUG: Type of result:', typeof result)
+        console.log('=== CLINICS DEBUG: Is result an array?', Array.isArray(result))
+        console.log('=== CLINICS DEBUG: result.data exists?', result?.data !== undefined)
+        console.log('=== CLINICS DEBUG: result.data value:', result?.data)
+        console.log('=== CLINICS DEBUG: Is result.data an array?', Array.isArray(result?.data))
+
         // API returns { data: [...], page, limit, total, pages }
-        setClinics(Array.isArray(result.data) ? result.data : [])
+        const clinicsArray = Array.isArray(result.data) ? result.data : []
+        console.log('=== CLINICS DEBUG: Setting clinics to:', clinicsArray)
+        console.log('=== CLINICS DEBUG: Clinics array length:', clinicsArray.length)
+        setClinics(clinicsArray)
       } else {
-        console.error('Failed to fetch clinics:', response.status)
+        console.error('=== CLINICS DEBUG: Response not OK, status:', response.status)
+        const errorText = await response.text()
+        console.error('=== CLINICS DEBUG: Error response:', errorText)
         setClinics([])
       }
     } catch (error) {
-      console.error('Failed to fetch clinics:', error)
+      console.error('=== CLINICS DEBUG: Exception caught:', error)
+      console.error('=== CLINICS DEBUG: Error stack:', error instanceof Error ? error.stack : 'No stack')
       setClinics([])
     }
   }
@@ -74,6 +91,8 @@ export default function DoctorSchedulesPage() {
   }, [doctorId])
 
   useEffect(() => {
+    console.log('=== CLINICS DEBUG: useEffect running ===')
+    console.log('=== CLINICS DEBUG: doctorId:', doctorId)
     fetchDoctor()
     fetchClinics()
     fetchSlots()
@@ -143,7 +162,13 @@ export default function DoctorSchedulesPage() {
           <p className="text-gray-600">{doctorId}</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            console.log('=== CLINICS DEBUG: Add Schedule button clicked ===')
+            console.log('=== CLINICS DEBUG: Current showForm:', showForm)
+            console.log('=== CLINICS DEBUG: Current clinics state:', clinics)
+            console.log('=== CLINICS DEBUG: Is clinics array?', Array.isArray(clinics))
+            setShowForm(!showForm)
+          }}
           className="btn btn-primary"
         >
           {showForm ? 'Cancel' : 'Add Schedule'}
@@ -164,11 +189,27 @@ export default function DoctorSchedulesPage() {
                 className="input w-full"
               >
                 <option value="">Select Clinic</option>
-                {clinics.map((clinic) => (
-                  <option key={clinic.clinicId} value={clinic.clinicId}>
-                    {clinic.name} - {clinic.address?.city}
-                  </option>
-                ))}
+                {(() => {
+                  console.log('=== CLINICS DEBUG: About to render clinics dropdown ===')
+                  console.log('=== CLINICS DEBUG: clinics value:', clinics)
+                  console.log('=== CLINICS DEBUG: Type of clinics:', typeof clinics)
+                  console.log('=== CLINICS DEBUG: Is clinics an array?', Array.isArray(clinics))
+                  console.log('=== CLINICS DEBUG: clinics.length:', clinics?.length)
+
+                  if (!Array.isArray(clinics)) {
+                    console.error('=== CLINICS DEBUG: ERROR! clinics is NOT an array!')
+                    return null
+                  }
+
+                  return clinics.map((clinic) => {
+                    console.log('=== CLINICS DEBUG: Mapping clinic:', clinic)
+                    return (
+                      <option key={clinic.clinicId} value={clinic.clinicId}>
+                        {clinic.name} - {clinic.address?.city}
+                      </option>
+                    )
+                  })
+                })()}
               </select>
             </div>
 

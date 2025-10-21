@@ -155,7 +155,9 @@ export default function OperationsLayout({
             <div>
               <h2 className="section-title">{getPageTitle()}</h2>
               <p className="section-subtitle">
-                Manage {getPageTitle().toLowerCase()}
+                {pathname.startsWith('/operations/doctors')
+                  ? 'Manage your doctor network and schedules ✓ Latest'
+                  : `Manage ${getPageTitle().toLowerCase()}`}
               </p>
             </div>
           </div>

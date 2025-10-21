@@ -43,14 +43,14 @@ export class VideoConsultationService {
       throw new BadRequestException('This appointment is not scheduled for online consultation');
     }
 
-    // Check if consultation already exists
+    // Check if an active consultation already exists
     const existingConsultation = await this.videoConsultationModel.findOne({
       appointmentId: new Types.ObjectId(appointmentId),
       status: { $in: ['SCHEDULED', 'IN_PROGRESS'] },
     });
 
     if (existingConsultation) {
-      // Return existing consultation
+      // Return existing active consultation
       return {
         consultationId: existingConsultation.consultationId,
         roomName: existingConsultation.roomName,
@@ -61,6 +61,8 @@ export class VideoConsultationService {
         status: existingConsultation.status,
       };
     }
+
+    // If previous consultation was completed, allow creating a new one for reinitiation
 
     // Generate unique room details
     const roomId = uuidv4();
@@ -159,11 +161,8 @@ export class VideoConsultationService {
       endedBy: endData.endedBy || 'DOCTOR',
     });
 
-    // Update appointment status
-    await this.appointmentModel.findByIdAndUpdate(consultation.appointmentId, {
-      status: 'COMPLETED',
-      consultationCompletedAt: endTime,
-    });
+    // Don't auto-complete appointment - doctor can restart consultation
+    // Appointment will be marked complete manually by doctor when they're done
 
     return {
       consultationId,

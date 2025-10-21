@@ -163,7 +163,7 @@ export default function AppointmentDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        {appointment.status === 'CONFIRMED' && (
+        {(appointment.status === 'CONFIRMED' || appointment.status === 'COMPLETED') && (
           <div className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap gap-3">
             {appointment.appointmentType === 'ONLINE' && (
               <Link
@@ -171,16 +171,18 @@ export default function AppointmentDetailPage() {
                 className="btn-primary inline-flex items-center"
               >
                 <VideoCameraIcon className="h-5 w-5 mr-2" />
-                Start Video Consultation
+                {appointment.status === 'COMPLETED' ? 'Restart Video Consultation' : 'Start Video Consultation'}
               </Link>
             )}
-            <button
-              onClick={handleComplete}
-              disabled={completing}
-              className="btn-primary"
-            >
-              {completing ? 'Completing...' : 'Mark as Completed'}
-            </button>
+            {appointment.status === 'CONFIRMED' && (
+              <button
+                onClick={handleComplete}
+                disabled={completing}
+                className="btn-primary"
+              >
+                {completing ? 'Completing...' : 'Mark as Completed'}
+              </button>
+            )}
           </div>
         )}
       </div>
