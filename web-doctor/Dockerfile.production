@@ -1,11 +1,15 @@
 # Production Dockerfile for Doctor Portal
 FROM node:20-alpine AS deps
+# Add libc6-compat for ARM64 compatibility
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 # Builder stage
 FROM node:20-alpine AS builder
+# Add libc6-compat for ARM64 compatibility
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy dependencies
@@ -27,6 +31,8 @@ RUN npm run build
 
 # Production stage
 FROM node:20-alpine AS runner
+# Add libc6-compat for ARM64 compatibility
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 ENV NODE_ENV production
