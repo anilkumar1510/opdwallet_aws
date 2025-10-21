@@ -143,8 +143,10 @@ export default function NewClaimPage() {
           ]
 
           setFamilyMembers(members)
+
           // Auto-select the active member from context (or fallback to logged-in user)
-          setSelectedUserId(activeMember?._id || data.user._id)
+          const selectedId = activeMember?._id || data.user._id
+          setSelectedUserId(selectedId)
         }
       } catch (error) {
         console.error('Error fetching family members:', error)
@@ -155,12 +157,14 @@ export default function NewClaimPage() {
 
   // Helper function to get available balance for selected category
   const getAvailableBalance = (): number => {
-    if (!walletData || !formData.category) return 0
+    if (!walletData || !formData.category) {
+      return 0
+    }
 
     const categoryMap: Record<string, string> = {
-      'consultation': 'CONSULTATION',
-      'diagnostics': 'DIAGNOSTICS',
-      'pharmacy': 'PHARMACY'
+      'consultation': 'CAT001',
+      'diagnostics': 'CAT002',
+      'pharmacy': 'CAT003'
     }
 
     const mappedCategory = categoryMap[formData.category]
@@ -193,13 +197,13 @@ export default function NewClaimPage() {
         const response = await fetch(`/api/wallet/balance?userId=${selectedUserId}`, {
           credentials: 'include',
         })
+
         if (response.ok) {
           const data = await response.json()
           setWalletData(data)
-          console.log('Wallet data fetched:', data)
         }
       } catch (error) {
-        console.error('Error fetching wallet data:', error)
+        console.error('Failed to fetch wallet data:', error)
       }
     }
     fetchWalletData()
