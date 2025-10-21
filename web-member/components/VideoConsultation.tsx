@@ -137,7 +137,15 @@ export default function VideoConsultation({
           },
         }
 
-        console.log('[MEMBER VideoConsultation] Step 3: Creating Jitsi instance with config:', JSON.stringify(options, null, 2))
+        console.log('[MEMBER VideoConsultation] Step 3: Creating Jitsi instance with config:', {
+          roomName: options.roomName,
+          width: options.width,
+          height: options.height,
+          userInfo: options.userInfo,
+          configOverwrite: options.configOverwrite,
+          interfaceConfigOverwrite: options.interfaceConfigOverwrite,
+          parentNodePresent: !!options.parentNode,
+        })
         apiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, options)
         console.log('[MEMBER VideoConsultation] ✅ Jitsi instance created')
 
