@@ -157,7 +157,7 @@ export default function SlotSelectionModal({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-20 sm:pb-4">
               {availableSlots.length > 0 && availableSlots[selectedDateIndex] && (
                 <div className="grid grid-cols-3 gap-2">
                   {availableSlots[selectedDateIndex].slots.map((slot) => (
