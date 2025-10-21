@@ -148,6 +148,10 @@ export default function VideoConsultation({
         apiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, options)
         console.log('[MEMBER VideoConsultation] ✅ Jitsi instance created')
 
+        // Hide loading spinner immediately so prejoin page is visible
+        console.log('[MEMBER VideoConsultation] 🎬 Hiding loading spinner to show prejoin page')
+        setIsLoading(false)
+
         // Listen for ALL possible events for debugging
         const events = [
           'videoConferenceJoined',
@@ -173,7 +177,6 @@ export default function VideoConsultation({
         // Specific handlers
         apiRef.current.addEventListener('videoConferenceJoined', (data: any) => {
           console.log('[MEMBER VideoConsultation] ✅✅✅ PATIENT JOINED CONFERENCE ✅✅✅', data)
-          setIsLoading(false)
         })
 
         apiRef.current.addEventListener('participantJoined', (participant: any) => {
