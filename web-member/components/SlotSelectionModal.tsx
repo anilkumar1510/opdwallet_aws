@@ -186,7 +186,7 @@ export default function SlotSelectionModal({
               )}
             </div>
 
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 pb-24 sm:pb-4 border-t border-gray-200 bg-white">
               <button
                 onClick={handleConfirm}
                 disabled={!selectedTime}
