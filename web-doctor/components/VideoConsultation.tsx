@@ -56,11 +56,22 @@ export default function VideoConsultation({
         ])
         console.log('[DOCTOR VideoConsultation] Camera permission:', permissions[0].state)
         console.log('[DOCTOR VideoConsultation] Microphone permission:', permissions[1].state)
+
+        // If permissions are denied, show error immediately
+        if (permissions[0].state === 'denied' || permissions[1].state === 'denied') {
+          console.error('[DOCTOR VideoConsultation] ❌ Permissions are DENIED! User must allow them in browser settings.')
+          setError(
+            'Camera or microphone access is blocked. Please click the lock/camera icon in your browser address bar and allow camera and microphone access, then refresh this page.'
+          )
+          setIsLoading(false)
+          return false
+        }
+        return true
       } catch (err) {
         console.log('[DOCTOR VideoConsultation] Permission API not available:', err)
+        return true // Continue if permission API not available
       }
     }
-    checkPermissions()
 
     // Load Jitsi Meet External API script
     const loadJitsiScript = () => {
@@ -89,6 +100,10 @@ export default function VideoConsultation({
 
     const initializeJitsi = async () => {
       try {
+        // Check permissions first
+        const permissionsOk = await checkPermissions()
+        if (!permissionsOk) return
+
         console.log('[DOCTOR VideoConsultation] Step 1: Loading Jitsi script...')
         await loadJitsiScript()
 
