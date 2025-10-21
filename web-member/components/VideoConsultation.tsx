@@ -32,11 +32,43 @@ export default function VideoConsultation({
   const [error, setError] = useState('')
   const [waitingForDoctor, setWaitingForDoctor] = useState(true)
 
+  // Log component mount
   useEffect(() => {
+    console.log('=== [MEMBER VideoConsultation] Component Mounted ===')
+    console.log('[MEMBER VideoConsultation] Props:', {
+      roomName,
+      jitsiDomain,
+      patientName,
+      doctorName,
+      consultationId,
+    })
+  }, [])
+
+  useEffect(() => {
+    console.log('[MEMBER VideoConsultation] Starting initialization...')
+
+    // Check browser permissions first
+    const checkPermissions = async () => {
+      console.log('[MEMBER VideoConsultation] Checking browser permissions...')
+      try {
+        const permissions = await Promise.all([
+          navigator.permissions.query({ name: 'camera' as PermissionName }),
+          navigator.permissions.query({ name: 'microphone' as PermissionName }),
+        ])
+        console.log('[MEMBER VideoConsultation] Camera permission:', permissions[0].state)
+        console.log('[MEMBER VideoConsultation] Microphone permission:', permissions[1].state)
+      } catch (err) {
+        console.log('[MEMBER VideoConsultation] Permission API not available:', err)
+      }
+    }
+    checkPermissions()
+
     // Load Jitsi Meet External API script
     const loadJitsiScript = () => {
+      console.log('[MEMBER VideoConsultation] Loading Jitsi script from:', `https://${jitsiDomain}/external_api.js`)
       return new Promise((resolve, reject) => {
         if (window.JitsiMeetExternalAPI) {
+          console.log('[MEMBER VideoConsultation] Jitsi API already loaded')
           resolve(window.JitsiMeetExternalAPI)
           return
         }
@@ -44,19 +76,28 @@ export default function VideoConsultation({
         const script = document.createElement('script')
         script.src = `https://${jitsiDomain}/external_api.js`
         script.async = true
-        script.onload = () => resolve(window.JitsiMeetExternalAPI)
-        script.onerror = () => reject(new Error('Failed to load Jitsi Meet API'))
+        script.onload = () => {
+          console.log('[MEMBER VideoConsultation] ✅ Jitsi script loaded successfully')
+          resolve(window.JitsiMeetExternalAPI)
+        }
+        script.onerror = (err) => {
+          console.error('[MEMBER VideoConsultation] ❌ Failed to load Jitsi script:', err)
+          reject(new Error('Failed to load Jitsi Meet API'))
+        }
         document.body.appendChild(script)
       })
     }
 
     const initializeJitsi = async () => {
       try {
+        console.log('[MEMBER VideoConsultation] Step 1: Loading Jitsi script...')
         await loadJitsiScript()
 
+        console.log('[MEMBER VideoConsultation] Step 2: Checking container ref...')
         if (!jitsiContainerRef.current) {
           throw new Error('Jitsi container not found')
         }
+        console.log('[MEMBER VideoConsultation] ✅ Container ref exists')
 
         const options = {
           roomName: roomName,
@@ -96,39 +137,74 @@ export default function VideoConsultation({
           },
         }
 
+        console.log('[MEMBER VideoConsultation] Step 3: Creating Jitsi instance with config:', JSON.stringify(options, null, 2))
         apiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, options)
+        console.log('[MEMBER VideoConsultation] ✅ Jitsi instance created')
 
-        // Listen for conference events
-        apiRef.current.addEventListener('videoConferenceJoined', () => {
-          console.log('[VideoConsultation] Patient joined the conference')
+        // Listen for ALL possible events for debugging
+        const events = [
+          'videoConferenceJoined',
+          'videoConferenceLeft',
+          'participantJoined',
+          'participantLeft',
+          'readyToClose',
+          'audioMuteStatusChanged',
+          'videoMuteStatusChanged',
+          'deviceListChanged',
+          'errorOccurred',
+          'cameraError',
+          'micError',
+          'screenSharingStatusChanged',
+        ]
+
+        events.forEach(eventName => {
+          apiRef.current.addEventListener(eventName, (data: any) => {
+            console.log(`[MEMBER VideoConsultation] 🎯 Event: ${eventName}`, data || '')
+          })
+        })
+
+        // Specific handlers
+        apiRef.current.addEventListener('videoConferenceJoined', (data: any) => {
+          console.log('[MEMBER VideoConsultation] ✅✅✅ PATIENT JOINED CONFERENCE ✅✅✅', data)
           setIsLoading(false)
         })
 
         apiRef.current.addEventListener('participantJoined', (participant: any) => {
-          console.log('[VideoConsultation] Participant joined:', participant)
+          console.log('[MEMBER VideoConsultation] 👤 Participant joined:', participant)
           setWaitingForDoctor(false)
         })
 
-        apiRef.current.addEventListener('videoConferenceLeft', () => {
-          console.log('[VideoConsultation] Conference ended')
+        apiRef.current.addEventListener('videoConferenceLeft', (data: any) => {
+          console.log('[MEMBER VideoConsultation] 🚪 Conference left', data)
           onEnd()
         })
 
         apiRef.current.addEventListener('readyToClose', () => {
-          console.log('[VideoConsultation] Ready to close')
+          console.log('[MEMBER VideoConsultation] 🚪 Ready to close')
           onEnd()
         })
+
+        apiRef.current.addEventListener('errorOccurred', (error: any) => {
+          console.error('[MEMBER VideoConsultation] ❌ ERROR OCCURRED:', error)
+        })
+
+        console.log('[MEMBER VideoConsultation] ✅ All event listeners attached')
       } catch (err: any) {
-        console.error('[VideoConsultation] Failed to initialize Jitsi:', err)
+        console.error('[MEMBER VideoConsultation] ❌❌❌ INITIALIZATION FAILED ❌❌❌')
+        console.error('[MEMBER VideoConsultation] Error:', err)
+        console.error('[MEMBER VideoConsultation] Error message:', err.message)
+        console.error('[MEMBER VideoConsultation] Error stack:', err.stack)
         setError(err.message || 'Failed to initialize video consultation')
         setIsLoading(false)
       }
     }
 
+    console.log('[MEMBER VideoConsultation] Starting Jitsi initialization...')
     initializeJitsi()
 
     // Cleanup
     return () => {
+      console.log('[MEMBER VideoConsultation] 🧹 Cleanup: Disposing Jitsi instance')
       if (apiRef.current) {
         apiRef.current.dispose()
         apiRef.current = null

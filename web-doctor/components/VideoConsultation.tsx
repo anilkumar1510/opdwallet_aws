@@ -31,11 +31,43 @@ export default function VideoConsultation({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Log component mount
   useEffect(() => {
+    console.log('=== [DOCTOR VideoConsultation] Component Mounted ===')
+    console.log('[DOCTOR VideoConsultation] Props:', {
+      roomName,
+      jitsiDomain,
+      doctorName,
+      patientName,
+      consultationId,
+    })
+  }, [])
+
+  useEffect(() => {
+    console.log('[DOCTOR VideoConsultation] Starting initialization...')
+
+    // Check browser permissions first
+    const checkPermissions = async () => {
+      console.log('[DOCTOR VideoConsultation] Checking browser permissions...')
+      try {
+        const permissions = await Promise.all([
+          navigator.permissions.query({ name: 'camera' as PermissionName }),
+          navigator.permissions.query({ name: 'microphone' as PermissionName }),
+        ])
+        console.log('[DOCTOR VideoConsultation] Camera permission:', permissions[0].state)
+        console.log('[DOCTOR VideoConsultation] Microphone permission:', permissions[1].state)
+      } catch (err) {
+        console.log('[DOCTOR VideoConsultation] Permission API not available:', err)
+      }
+    }
+    checkPermissions()
+
     // Load Jitsi Meet External API script
     const loadJitsiScript = () => {
+      console.log('[DOCTOR VideoConsultation] Loading Jitsi script from:', `https://${jitsiDomain}/external_api.js`)
       return new Promise((resolve, reject) => {
         if (window.JitsiMeetExternalAPI) {
+          console.log('[DOCTOR VideoConsultation] Jitsi API already loaded')
           resolve(window.JitsiMeetExternalAPI)
           return
         }
@@ -43,19 +75,28 @@ export default function VideoConsultation({
         const script = document.createElement('script')
         script.src = `https://${jitsiDomain}/external_api.js`
         script.async = true
-        script.onload = () => resolve(window.JitsiMeetExternalAPI)
-        script.onerror = () => reject(new Error('Failed to load Jitsi Meet API'))
+        script.onload = () => {
+          console.log('[DOCTOR VideoConsultation] ✅ Jitsi script loaded successfully')
+          resolve(window.JitsiMeetExternalAPI)
+        }
+        script.onerror = (err) => {
+          console.error('[DOCTOR VideoConsultation] ❌ Failed to load Jitsi script:', err)
+          reject(new Error('Failed to load Jitsi Meet API'))
+        }
         document.body.appendChild(script)
       })
     }
 
     const initializeJitsi = async () => {
       try {
+        console.log('[DOCTOR VideoConsultation] Step 1: Loading Jitsi script...')
         await loadJitsiScript()
 
+        console.log('[DOCTOR VideoConsultation] Step 2: Checking container ref...')
         if (!jitsiContainerRef.current) {
           throw new Error('Jitsi container not found')
         }
+        console.log('[DOCTOR VideoConsultation] ✅ Container ref exists')
 
         const options = {
           roomName: roomName,
@@ -105,30 +146,73 @@ export default function VideoConsultation({
           },
         }
 
+        console.log('[DOCTOR VideoConsultation] Step 3: Creating Jitsi instance with config:', JSON.stringify(options, null, 2))
         apiRef.current = new window.JitsiMeetExternalAPI(jitsiDomain, options)
+        console.log('[DOCTOR VideoConsultation] ✅ Jitsi instance created')
 
-        // Listen for conference events
-        apiRef.current.addEventListener('videoConferenceJoined', () => {
+        // Listen for ALL possible events for debugging
+        const events = [
+          'videoConferenceJoined',
+          'videoConferenceLeft',
+          'participantJoined',
+          'participantLeft',
+          'readyToClose',
+          'audioMuteStatusChanged',
+          'videoMuteStatusChanged',
+          'deviceListChanged',
+          'errorOccurred',
+          'cameraError',
+          'micError',
+          'screenSharingStatusChanged',
+        ]
+
+        events.forEach(eventName => {
+          apiRef.current.addEventListener(eventName, (data: any) => {
+            console.log(`[DOCTOR VideoConsultation] 🎯 Event: ${eventName}`, data || '')
+          })
+        })
+
+        // Specific handlers
+        apiRef.current.addEventListener('videoConferenceJoined', (data: any) => {
+          console.log('[DOCTOR VideoConsultation] ✅✅✅ DOCTOR JOINED CONFERENCE ✅✅✅', data)
           setIsLoading(false)
         })
 
-        apiRef.current.addEventListener('videoConferenceLeft', () => {
+        apiRef.current.addEventListener('participantJoined', (participant: any) => {
+          console.log('[DOCTOR VideoConsultation] 👤 Participant joined:', participant)
+        })
+
+        apiRef.current.addEventListener('videoConferenceLeft', (data: any) => {
+          console.log('[DOCTOR VideoConsultation] 🚪 Conference left', data)
           onEnd()
         })
 
         apiRef.current.addEventListener('readyToClose', () => {
+          console.log('[DOCTOR VideoConsultation] 🚪 Ready to close')
           onEnd()
         })
+
+        apiRef.current.addEventListener('errorOccurred', (error: any) => {
+          console.error('[DOCTOR VideoConsultation] ❌ ERROR OCCURRED:', error)
+        })
+
+        console.log('[DOCTOR VideoConsultation] ✅ All event listeners attached')
       } catch (err: any) {
+        console.error('[DOCTOR VideoConsultation] ❌❌❌ INITIALIZATION FAILED ❌❌❌')
+        console.error('[DOCTOR VideoConsultation] Error:', err)
+        console.error('[DOCTOR VideoConsultation] Error message:', err.message)
+        console.error('[DOCTOR VideoConsultation] Error stack:', err.stack)
         setError(err.message || 'Failed to initialize video consultation')
         setIsLoading(false)
       }
     }
 
+    console.log('[DOCTOR VideoConsultation] Starting Jitsi initialization...')
     initializeJitsi()
 
     // Cleanup
     return () => {
+      console.log('[DOCTOR VideoConsultation] 🧹 Cleanup: Disposing Jitsi instance')
       if (apiRef.current) {
         apiRef.current.dispose()
         apiRef.current = null
