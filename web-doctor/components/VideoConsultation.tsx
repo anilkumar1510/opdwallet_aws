@@ -125,7 +125,7 @@ export default function VideoConsultation({
             startWithAudioMuted: false,
             startWithVideoMuted: false,
             enableWelcomePage: false,
-            prejoinPageEnabled: true,
+            prejoinPageEnabled: false, // Disabled to bypass prejoin and join directly
             disableDeepLinking: true,
             // Disable lobby/moderation to allow immediate meeting start
             enableLobby: false,
