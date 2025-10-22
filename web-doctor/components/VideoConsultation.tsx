@@ -127,6 +127,11 @@ export default function VideoConsultation({
             enableWelcomePage: false,
             prejoinPageEnabled: true,
             disableDeepLinking: true,
+            // Disable lobby/moderation to allow immediate meeting start
+            enableLobby: false,
+            requireDisplayName: false,
+            enableInsecureRoomNameWarning: false,
+            enableUserRolesBasedOnToken: false,
           },
           interfaceConfigOverwrite: {
             TOOLBAR_BUTTONS: [
