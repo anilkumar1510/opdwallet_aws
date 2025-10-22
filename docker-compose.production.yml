@@ -122,6 +122,8 @@ services:
 
 volumes:
   mongo-data:
+    external: true
+    name: opdwallet_aws_mongo-data-prod
 
 networks:
   opd-network-prod:
