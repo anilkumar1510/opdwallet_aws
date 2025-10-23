@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { PhoneXMarkIcon } from '@heroicons/react/24/outline'
 import DailyIframe from '@daily-co/daily-js'
 import { DailyProvider, useDaily, useDailyEvent, useParticipantIds } from '@daily-co/daily-react'
@@ -477,6 +477,7 @@ function VideoCallContent({
 
 export default function DailyVideoCall(props: DailyVideoCallProps) {
   const [callObject, setCallObject] = useState<DailyIframe | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     console.log('\n========================================')
@@ -484,6 +485,13 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
     console.log('[DEBUG] Timestamp:', new Date().toISOString())
     console.log('[DEBUG] DailyIframe available:', typeof DailyIframe)
     console.log('[DEBUG] DailyIframe.createFrame available:', typeof DailyIframe.createFrame)
+    console.log('[DEBUG] Container ref:', containerRef.current ? 'Available' : 'Not available')
+
+    // Wait for container to be ready
+    if (!containerRef.current) {
+      console.error('[DEBUG] ❌ Container ref not available yet')
+      return
+    }
 
     try {
       const frameConfig = {
@@ -498,7 +506,9 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
       }
       console.log('[DEBUG] Frame config:', JSON.stringify(frameConfig, null, 2))
 
-      const daily = DailyIframe.createFrame(frameConfig)
+      // FIX: Pass container element to createFrame()
+      const daily = DailyIframe.createFrame(containerRef.current, frameConfig)
+      console.log('[DEBUG] ✅ createFrame() called with container element')
 
       console.log('[DEBUG] ✅ Daily call object created successfully')
       console.log('[DEBUG] Call object type:', typeof daily)
@@ -539,17 +549,26 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
     }
   }, [])
 
-  if (!callObject) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
-    )
-  }
-
   return (
-    <DailyProvider callObject={callObject}>
-      <VideoCallContent {...props} />
-    </DailyProvider>
+    <>
+      {/* Container for Daily.co iframe - REQUIRED for proper postMessage communication */}
+      <div
+        ref={containerRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ zIndex: 1 }}
+      />
+
+      {!callObject ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900" style={{ zIndex: 2 }}>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      ) : (
+        <div className="absolute inset-0" style={{ zIndex: 2 }}>
+          <DailyProvider callObject={callObject}>
+            <VideoCallContent {...props} />
+          </DailyProvider>
+        </div>
+      )}
+    </>
   )
 }
