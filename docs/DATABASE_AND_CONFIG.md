@@ -22,7 +22,7 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **Database**: MongoDB 7.0
 - **Reverse Proxy**: Nginx
 - **Deployment**: Docker & Docker Compose
-- **Video Calls**: Jitsi Meet integration
+- **Video Calls**: Daily.co (migrated from Jitsi Meet)
 - **Authentication**: JWT tokens with httpOnly cookies
 
 ---
@@ -168,6 +168,7 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - `PORT=4000`
 - `JWT_SECRET=[generated secret key]`
 - `GOOGLE_MAPS_API_KEY=[API key for location services]`
+- `DAILY_API_KEY=[Daily.co API key for video consultations]`
 
 **Web Portals**:
 - `NODE_ENV=production`
