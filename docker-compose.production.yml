@@ -109,12 +109,11 @@ services:
     restart: always
     # No external port - accessed only through nginx at /doctor
     expose:
-      - "3003"
+      - "3000"
     environment:
       NODE_ENV: production
       # Server-side calls go direct to API
       API_URL: http://opd-api-prod:4000/api
-      PORT: 3003
     depends_on:
       - api
     networks:

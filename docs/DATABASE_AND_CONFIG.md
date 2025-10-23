@@ -143,8 +143,9 @@ All services communicate through an internal Docker network. Only Nginx is expos
    - Base path: / (root)
 
 6. **opd-web-doctor-prod** - Doctor portal (Next.js)
-   - Port: 3003 (internal only)
+   - Port: 3000 (internal only)
    - Base path: /doctor
+   - Note: All web portals use port 3000 internally for consistency
 
 ### Network Configuration
 

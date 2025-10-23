@@ -27,7 +27,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: admin123
       MONGO_INITDB_DATABASE: opd_wallet
     volumes:
-      - mongo-data:/data/db
+      - mongo-data-prod:/data/db
     networks:
       - opd-network
 
@@ -100,7 +100,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "3003:3003"  # Keep for direct access/debugging
+      - "3003:3000"  # External 3003 maps to internal 3000
     environment:
       # Browser calls go through nginx
       NEXT_PUBLIC_API_URL: http://localhost/api
@@ -115,7 +115,7 @@ services:
     command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
 
 volumes:
-  mongo-data:
+  mongo-data-prod:
 
 networks:
   opd-network:
