@@ -26,7 +26,7 @@ services:
     container_name: opd-mongodb-prod
     restart: unless-stopped
     volumes:
-      - mongo-data:/data/db
+      - mongo-data-prod:/data/db
     networks:
       - opd-network
     healthcheck:
@@ -126,5 +126,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongo-data:
+  mongo-data-prod:
     driver: local
