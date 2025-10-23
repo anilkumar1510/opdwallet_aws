@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { PhoneXMarkIcon } from '@heroicons/react/24/outline'
 import DailyIframe from '@daily-co/daily-js'
 import { DailyProvider, useDaily, useDailyEvent, useParticipantIds } from '@daily-co/daily-react'
@@ -477,48 +477,50 @@ function VideoCallContent({
 
 export default function DailyVideoCall(props: DailyVideoCallProps) {
   const [callObject, setCallObject] = useState<DailyIframe | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     console.log('\n========================================')
-    console.log('[DEBUG] 🏗️ CREATING DAILY CALL OBJECT')
+    console.log('[DEBUG] 🏗️ CREATING DAILY CALL OBJECT WITH FRAME')
     console.log('[DEBUG] Timestamp:', new Date().toISOString())
     console.log('[DEBUG] DailyIframe available:', typeof DailyIframe)
-    console.log('[DEBUG] DailyIframe.createCallObject available:', typeof DailyIframe.createCallObject)
+    console.log('[DEBUG] DailyIframe.createFrame available:', typeof DailyIframe.createFrame)
+    console.log('[DEBUG] Container ref available:', !!containerRef.current)
 
-    try {
-      // FIX: Use createCallObject() instead of createFrame() to avoid iframe timing issues
-      // This creates a call object without iframe, using WebRTC directly
-      console.log('[DEBUG] 🚀 Using createCallObject() method (no iframe)')
-      const daily = DailyIframe.createCallObject()
-      console.log('[DEBUG] ✅ createCallObject() called successfully')
+    // Wait a tick for container to be available
+    const timeoutId = setTimeout(() => {
+      if (!containerRef.current) {
+        console.error('[DEBUG] ❌ Container ref not available')
+        return
+      }
 
-      console.log('[DEBUG] ✅ Daily call object created successfully')
-      console.log('[DEBUG] Call object type:', typeof daily)
-      console.log('[DEBUG] Call object methods:', Object.keys(daily))
-      console.log('[DEBUG] Initial meeting state:', daily.meetingState())
+      try {
+        console.log('[DEBUG] 🚀 Using createFrame() method with container')
+        const daily = DailyIframe.createFrame(containerRef.current, {
+          showLeaveButton: true,
+          showFullscreenButton: true,
+        })
+        console.log('[DEBUG] ✅ createFrame() called successfully')
 
-      // Log all available daily methods for debugging
-      console.log('[DEBUG] Available Daily methods:', {
-        join: typeof daily.join,
-        leave: typeof daily.leave,
-        meetingState: typeof daily.meetingState,
-        participants: typeof daily.participants,
-        getNetworkTopology: typeof daily.getNetworkTopology,
-        getNetworkStats: typeof daily.getNetworkStats,
-      })
+        console.log('[DEBUG] ✅ Daily call object created successfully')
+        console.log('[DEBUG] Call object type:', typeof daily)
+        console.log('[DEBUG] Call object methods:', Object.keys(daily))
+        console.log('[DEBUG] Initial meeting state:', daily.meetingState())
 
-      console.log('========================================\n')
-      setCallObject(daily)
-    } catch (error) {
-      console.error('\n========================================')
-      console.error('[DEBUG] ❌ ERROR CREATING DAILY CALL OBJECT')
-      console.error('[DEBUG] Error type:', error?.constructor?.name)
-      console.error('[DEBUG] Error message:', (error as Error)?.message)
-      console.error('[DEBUG] Error stack:', (error as Error)?.stack)
-      console.error('========================================\n')
-    }
+        console.log('========================================\n')
+        setCallObject(daily)
+      } catch (error) {
+        console.error('\n========================================')
+        console.error('[DEBUG] ❌ ERROR CREATING DAILY CALL OBJECT')
+        console.error('[DEBUG] Error type:', error?.constructor?.name)
+        console.error('[DEBUG] Error message:', (error as Error)?.message)
+        console.error('[DEBUG] Error stack:', (error as Error)?.stack)
+        console.error('========================================\n')
+      }
+    }, 100)
 
     return () => {
+      clearTimeout(timeoutId)
       console.log('\n[DEBUG] 🗑️ DESTROYING DAILY CALL OBJECT')
       if (callObject) {
         try {
@@ -531,17 +533,22 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
     }
   }, [])
 
-  if (!callObject) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
-    )
-  }
-
   return (
-    <DailyProvider callObject={callObject}>
-      <VideoCallContent {...props} />
-    </DailyProvider>
+    <div className="relative w-full h-full bg-gray-900">
+      {/* Daily.co iframe container */}
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+
+      {!callObject && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      )}
+
+      {callObject && (
+        <DailyProvider callObject={callObject}>
+          <VideoCallContent {...props} />
+        </DailyProvider>
+      )}
+    </div>
   )
 }
