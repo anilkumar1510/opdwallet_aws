@@ -20,18 +20,18 @@
 ## API Endpoints
 
 ### Doctor Authentication
-- **POST /api/doctors/login** - Login using doctor ID and password
-- **POST /api/auth/logout** - Logout doctor and clear session
-- **GET /api/auth/me** - Get currently logged-in doctor's profile
+- **POST /api/doctor/auth/login** - Login using doctor ID and password
+- **POST /api/doctor/auth/logout** - Logout doctor and clear session
+- **GET /api/doctor/auth/profile** - Get currently logged-in doctor's profile
 
 ### Doctor Appointments
-- **GET /api/doctors/appointments/counts** - Get appointment counts for a date range
-- **GET /api/doctors/appointments/today** - Get today's appointments for the logged-in doctor
-- **GET /api/doctors/appointments/by-date** - Get appointments for a specific date
-- **GET /api/doctors/appointments/upcoming** - Get all upcoming appointments
-- **GET /api/appointments/:id** - Get detailed appointment information
-- **PUT /api/appointments/:id/complete** - Mark appointment as completed after consultation
-- **PUT /api/appointments/:id/confirm** - Confirm pending appointment
+- **GET /api/doctor/appointments/counts** - Get appointment counts for a date range
+- **GET /api/doctor/appointments/today** - Get today's appointments for the logged-in doctor
+- **GET /api/doctor/appointments/date/:date** - Get appointments for a specific date
+- **GET /api/doctor/appointments/upcoming** - Get all upcoming appointments
+- **GET /api/doctor/appointments/:appointmentId** - Get detailed appointment information
+- **PATCH /api/appointments/:appointmentId/complete** - Mark appointment as completed after consultation
+- **PATCH /api/appointments/:appointmentId/confirm** - Confirm pending appointment
 
 ### Video Consultations
 - **POST /api/video-consultations/:appointmentId/start** - Start video consultation session
@@ -42,6 +42,6 @@
 ### Prescriptions
 - **POST /api/prescriptions/upload** - Upload prescription PDF for an appointment
 - **GET /api/prescriptions** - Get all prescriptions uploaded by the doctor
-- **GET /api/prescriptions/:id** - Get prescription details
-- **GET /api/prescriptions/:id/download** - Download prescription file
-- **DELETE /api/prescriptions/:id** - Delete prescription
+- **GET /api/prescriptions/:prescriptionId** - Get prescription details
+- **GET /api/prescriptions/:prescriptionId/download** - Download prescription file
+- **DELETE /api/prescriptions/:prescriptionId** - Delete prescription

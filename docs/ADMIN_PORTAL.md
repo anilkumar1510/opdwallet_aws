@@ -75,7 +75,7 @@
 - **PUT /api/users/:id** - Update user information like name, email, phone, or role
 - **DELETE /api/users/:id** - Delete user account from system
 - **POST /api/users/:id/reset-password** - Reset or set password for a user
-- **GET /api/users/:id/family** - Get family members and dependents of a user
+- **GET /api/users/:id/dependents** - Get family members and dependents of a user
 
 ### Policy Management
 - **GET /api/policies** - Get all insurance policies in the system
@@ -97,16 +97,17 @@
 - **PUT /api/assignments/:id** - Update assignment details like effective dates
 
 ### Operations - Member Management
-- **GET /api/operations/members/search** - Search members by name, email, phone, or member ID
-- **GET /api/operations/members/:id** - Get member details with wallet balance and policy information
-- **POST /api/operations/members/:id/wallet/topup** - Add money to member's wallet for specific category
+- **GET /api/ops/members/search** - Search members by name, email, phone, or member ID
+- **GET /api/ops/members/:id** - Get member details with wallet balance and policy information
+- **POST /api/ops/members/:id/wallet/topup** - Add money to member's wallet for specific category
 
 ### Doctor Management
 - **GET /api/doctors** - Get all doctors with filters for specialty and clinic location
 - **POST /api/doctors** - Create new doctor profile with personal and professional details
 - **PUT /api/doctors/:id** - Update doctor information
 - **POST /api/doctors/:id/photo** - Upload doctor's profile photo
-- **PUT /api/doctors/:id/status** - Activate or deactivate doctor account
+- **PATCH /api/doctors/:doctorId/activate** - Activate doctor account
+- **PATCH /api/doctors/:doctorId/deactivate** - Deactivate doctor account
 - **POST /api/doctors/:id/set-password** - Set login password for doctor
 - **GET /api/doctors/:id/slots** - Get doctor's available time slots
 
@@ -119,55 +120,54 @@
 
 ### Doctor Slots & Scheduling
 - **POST /api/doctor-slots** - Create slot configuration for doctor's schedule
-- **GET /api/doctor-slots/by-clinic/:clinicId** - Get all slots for a clinic
-- **GET /api/doctor-slots/by-doctor/:doctorId** - Get all slots for a doctor
+- **GET /api/doctor-slots/clinic/:clinicId** - Get all slots for a clinic
 - **PUT /api/doctor-slots/:id** - Update slot configuration like timing or days
-- **POST /api/doctor-slots/:id/block-date** - Block specific date when doctor is unavailable
-- **POST /api/doctor-slots/:id/unblock-date** - Unblock previously blocked date
-- **GET /api/doctor-slots/:id/generate** - Generate bookable time slots for a date range
+- **PATCH /api/doctor-slots/:id/block-date** - Block specific date when doctor is unavailable
+- **PATCH /api/doctor-slots/:id/unblock-date** - Unblock previously blocked date
+- **GET /api/doctor-slots/:slotId/generate/:date** - Generate bookable time slots for a specific date
 
 ### Appointments
 - **GET /api/appointments** - Get all appointments with filters for date, doctor, status
 - **GET /api/appointments/:id** - Get details of specific appointment
-- **PUT /api/appointments/:id/confirm** - Confirm pending appointment
-- **PUT /api/appointments/:id/cancel** - Cancel appointment
+- **PATCH /api/appointments/:id/confirm** - Confirm pending appointment
+- **PATCH /api/appointments/:id/cancel** - Cancel appointment
 
 ### Lab Management
-- **GET /api/lab/services** - Get all lab tests in the catalog
-- **POST /api/lab/services** - Add new lab test to catalog
-- **PUT /api/lab/services/:id** - Update lab test details or base pricing
-- **GET /api/lab/vendors** - Get all lab vendors/providers
-- **POST /api/lab/vendors** - Add new lab vendor to system
-- **PUT /api/lab/vendors/:id** - Update vendor details like name, address, contact
-- **POST /api/lab/vendors/:vendorId/pricing** - Set vendor's pricing for specific lab tests
-- **GET /api/lab/vendors/:vendorId/pricing** - Get vendor's test pricing
-- **POST /api/lab/vendors/:vendorId/slots** - Add availability time slots for vendor
-- **GET /api/lab/vendors/:vendorId/slots** - Get vendor's available time slots
-- **GET /api/lab/orders** - Get all lab orders with filters
-- **GET /api/lab/prescriptions** - Get all uploaded lab prescriptions
-- **GET /api/lab/prescriptions/:id** - Get prescription details
-- **POST /api/lab/prescriptions/:id/digitize** - Convert prescription to cart by adding test items
+- **GET /api/admin/lab/services** - Get all lab tests in the catalog
+- **POST /api/admin/lab/services** - Add new lab test to catalog
+- **PUT /api/admin/lab/services/:id** - Update lab test details or base pricing
+- **GET /api/admin/lab/vendors** - Get all lab vendors/providers
+- **POST /api/admin/lab/vendors** - Add new lab vendor to system
+- **PUT /api/admin/lab/vendors/:id** - Update vendor details like name, address, contact
+- **POST /api/admin/lab/vendors/:vendorId/pricing** - Set vendor's pricing for specific lab tests
+- **GET /api/admin/lab/vendors/:vendorId/pricing** - Get vendor's test pricing
+- **POST /api/admin/lab/vendors/:vendorId/slots** - Add availability time slots for vendor
+- **GET /api/admin/lab/vendors/:vendorId/slots** - Get vendor's available time slots
+- **GET /api/admin/lab/orders** - Get all lab orders with filters
+- **GET /api/admin/lab/prescriptions** - Get all uploaded lab prescriptions
+- **GET /api/admin/lab/prescriptions/:id** - Get prescription details
+- **POST /api/admin/lab/prescriptions/:id/digitize** - Convert prescription to cart by adding test items
 
 ### TPA Management
 - **GET /api/tpa/claims** - Get all claims (admins see all, TPA users see assigned claims only)
 - **GET /api/tpa/claims/unassigned** - Get claims that haven't been assigned to any TPA user
 - **GET /api/tpa/claims/:id** - Get full details of a claim including documents
 - **POST /api/tpa/claims/:id/assign** - Assign claim to a TPA user for processing
-- **PUT /api/tpa/claims/:id/reassign** - Reassign claim to different TPA user
-- **PUT /api/tpa/claims/:id/status** - Update claim processing status
+- **POST /api/tpa/claims/:id/reassign** - Reassign claim to different TPA user
+- **PATCH /api/tpa/claims/:id/status** - Update claim processing status
 - **POST /api/tpa/claims/:id/approve** - Approve claim with approved amount
 - **POST /api/tpa/claims/:id/reject** - Reject claim with reason
 - **POST /api/tpa/claims/:id/request-documents** - Ask member to submit additional documents
-- **GET /api/tpa/analytics** - Get TPA analytics like total claims, pending, approved amounts
+- **GET /api/tpa/analytics/summary** - Get TPA analytics like total claims, pending, approved amounts
 - **GET /api/tpa/users** - Get all TPA users with their workload statistics
-- **GET /api/tpa/activity** - Get recent claim activity and actions
+- **GET /api/tpa/recent-activity** - Get recent claim activity and actions
 
 ### Finance
-- **GET /api/finance/payments/pending** - Get approved claims waiting for payment
-- **GET /api/finance/payments/:id** - Get claim details for payment processing
-- **POST /api/finance/payments/:id/complete** - Complete payment and record transaction details
-- **GET /api/finance/payments/history** - Get payment history with date and status filters
-- **GET /api/finance/analytics** - Get finance analytics like total paid, pending amount
+- **GET /api/finance/claims/pending** - Get approved claims waiting for payment
+- **GET /api/finance/claims/:claimId** - Get claim details for payment processing
+- **POST /api/finance/claims/:claimId/complete-payment** - Complete payment and record transaction details
+- **GET /api/finance/payment-history** - Get payment history with date and status filters
+- **GET /api/finance/analytics/summary** - Get finance analytics like total paid, pending amount
 
 ### Categories & Services
 - **GET /api/categories** - Get all service categories
