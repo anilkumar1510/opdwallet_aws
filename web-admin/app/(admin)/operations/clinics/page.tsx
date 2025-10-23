@@ -150,7 +150,7 @@ export default function ClinicsPage() {
                       <td className="font-medium">{clinic.name}</td>
                       <td>{clinic.address?.city || '-'}</td>
                       <td>{clinic.address?.state || '-'}</td>
-                      <td>{clinic.phone || '-'}</td>
+                      <td>{clinic.contactNumber || '-'}</td>
                       <td>
                         <span
                           className={`badge ${

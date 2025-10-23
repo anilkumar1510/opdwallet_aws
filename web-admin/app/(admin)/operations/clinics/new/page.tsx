@@ -10,10 +10,10 @@ export default function NewClinicPage() {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
+    contactNumber: '',
     email: '',
     address: {
-      street: '',
+      line1: '',
       city: '',
       state: '',
       pincode: '',
@@ -89,8 +89,8 @@ export default function NewClinicPage() {
               <input
                 type="tel"
                 required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                value={formData.contactNumber}
+                onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                 className="input w-full"
               />
             </div>
@@ -115,8 +115,8 @@ export default function NewClinicPage() {
               <input
                 type="text"
                 required
-                value={formData.address.street}
-                onChange={(e) => setFormData({ ...formData, address: { ...formData.address, street: e.target.value } })}
+                value={formData.address.line1}
+                onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line1: e.target.value } })}
                 className="input w-full"
               />
             </div>

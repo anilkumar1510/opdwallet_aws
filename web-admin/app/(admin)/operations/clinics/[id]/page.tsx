@@ -92,8 +92,8 @@ export default function EditClinicPage() {
               <input
                 type="tel"
                 required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                value={formData.contactNumber}
+                onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                 className="input w-full"
               />
             </div>
@@ -118,10 +118,10 @@ export default function EditClinicPage() {
               <input
                 type="text"
                 required
-                value={formData.address?.street || ''}
+                value={formData.address?.line1 || ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  address: { ...formData.address, street: e.target.value }
+                  address: { ...formData.address, line1: e.target.value }
                 })}
                 className="input w-full"
               />
