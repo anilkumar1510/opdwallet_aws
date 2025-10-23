@@ -100,7 +100,7 @@ function VideoCallContent({
     console.log('[DEBUG] 🚀 STARTING JOIN PROCESS')
     console.log('[DEBUG] Timestamp:', new Date().toISOString())
     console.log('[DEBUG] Room URL:', roomUrl)
-    console.log('[DEBUG] Doctor Name:', doctorName)
+    console.log('[DEBUG] Patient Name:', patientName)
     console.log('[DEBUG] Daily instance type:', typeof daily)
     console.log('[DEBUG] Daily instance state:', daily.meetingState())
 
@@ -191,7 +191,7 @@ function VideoCallContent({
     console.log('\n[DEBUG] 📞 CALLING daily.join()...')
     console.log('[DEBUG] Join config:', JSON.stringify({
       url: roomUrl,
-      userName: doctorName,
+      userName: patientName,
     }, null, 2))
 
     const joinStartTime = Date.now()
@@ -206,7 +206,7 @@ function VideoCallContent({
     daily
       .join({
         url: roomUrl,
-        userName: doctorName,
+        userName: patientName,
       })
       .then(() => {
         const joinDuration = Date.now() - joinStartTime
@@ -296,7 +296,7 @@ function VideoCallContent({
         })
       }
     }
-  }, [daily, roomUrl, doctorName])
+  }, [daily, roomUrl, patientName])
 
   // Handle room events - COMPREHENSIVE DEBUGGING
   useDailyEvent(
@@ -459,7 +459,7 @@ function VideoCallContent({
 
       {participantIds.length === 1 && !isLoading && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg shadow-lg z-20">
-          Waiting for patient to join...
+          Waiting for doctor to join...
         </div>
       )}
 
