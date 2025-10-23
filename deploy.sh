@@ -29,6 +29,9 @@ docker-compose -f docker-compose.prod.yml build web-admin
 echo "Building Member Portal..."
 docker-compose -f docker-compose.prod.yml build web-member
 
+echo "Building Doctor Portal..."
+docker-compose -f docker-compose.prod.yml build web-doctor
+
 # Start all services
 echo "🚢 Starting all services..."
 docker-compose -f docker-compose.prod.yml up -d

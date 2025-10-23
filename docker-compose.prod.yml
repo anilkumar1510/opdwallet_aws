@@ -53,6 +53,8 @@ services:
       COOKIE_HTTPONLY: ${COOKIE_HTTPONLY}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE}
       COOKIE_MAX_AGE: ${COOKIE_MAX_AGE}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      DAILY_API_KEY: ${DAILY_API_KEY}
     volumes:
       - ./api/uploads:/app/uploads
     depends_on:

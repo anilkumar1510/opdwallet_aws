@@ -34,7 +34,8 @@ export class VideoConsultation {
   @Prop()
   roomPassword: string;
 
-  @Prop({ default: 'meet.jit.si' })
+  // Legacy field for backward compatibility with old Jitsi records
+  @Prop()
   jitsiDomain: string;
 
   @Prop({ required: true })

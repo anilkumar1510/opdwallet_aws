@@ -45,6 +45,7 @@ services:
       COOKIE_NAME: opd_session
       PORT: 4000
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      DAILY_API_KEY: ${DAILY_API_KEY}
     depends_on:
       - mongo
     volumes:

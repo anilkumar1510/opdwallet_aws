@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { joinVideoConsultation } from '@/lib/api/video-consultations'
-import VideoConsultation from '@/components/VideoConsultation'
+import DailyVideoCall from '@/components/DailyVideoCall'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
@@ -11,7 +11,6 @@ interface ConsultationData {
   consultationId: string
   roomName: string
   roomUrl: string
-  jitsiDomain: string
   doctorName: string
   patientName: string
   status: string
@@ -102,9 +101,8 @@ export default function VideoConsultationPage() {
 
       {/* Video Container */}
       <div className="absolute top-16 bottom-0 left-0 right-0">
-        <VideoConsultation
-          roomName={consultation.roomName}
-          jitsiDomain={consultation.jitsiDomain}
+        <DailyVideoCall
+          roomUrl={consultation.roomUrl}
           patientName={consultation.patientName}
           doctorName={consultation.doctorName}
           consultationId={consultation.consultationId}

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { VideoConsultation, VideoConsultationDocument } from './schemas/video-consultation.schema';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 @Injectable()
 export class VideoConsultationService {
@@ -14,6 +15,47 @@ export class VideoConsultationService {
     @InjectModel('Doctor')
     private doctorModel: Model<any>,
   ) {}
+
+  /**
+   * Creates a Daily.co room via REST API
+   * @param roomName - Unique room name
+   * @returns Room URL and room name
+   */
+  private async createDailyRoom(roomName: string): Promise<{ url: string; name: string }> {
+    const apiKey = process.env.DAILY_API_KEY || '1317f4d3f42ab7b4ffb63e3ac66baa67306852a491393aaff8d5a665ffc02f09';
+
+    try {
+      const response = await axios.post(
+        'https://api.daily.co/v1/rooms',
+        {
+          name: roomName,
+          privacy: 'public',
+          properties: {
+            enable_screenshare: true,
+            enable_chat: true,
+            start_video_off: false,
+            start_audio_off: false,
+            enable_recording: 'cloud',
+            max_participants: 2,
+          },
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+        }
+      );
+
+      return {
+        url: response.data.url,
+        name: response.data.name,
+      };
+    } catch (error) {
+      console.error('Failed to create Daily.co room:', error.response?.data || error.message);
+      throw new BadRequestException('Failed to create video consultation room');
+    }
+  }
 
   async startConsultation(appointmentId: string, doctorId: string) {
     // Get appointment details
@@ -55,7 +97,6 @@ export class VideoConsultationService {
         consultationId: existingConsultation.consultationId,
         roomName: existingConsultation.roomName,
         roomUrl: existingConsultation.roomUrl,
-        jitsiDomain: existingConsultation.jitsiDomain,
         doctorName: existingConsultation.doctorName,
         patientName: existingConsultation.patientName,
         status: existingConsultation.status,
@@ -64,11 +105,13 @@ export class VideoConsultationService {
 
     // If previous consultation was completed, allow creating a new one for reinitiation
 
-    // Generate unique room details
+    // Generate unique room details and create Daily.co room
     const roomId = uuidv4();
     const roomName = `opd-consult-${appointmentId}-${roomId.slice(0, 8)}`;
-    const jitsiDomain = process.env.JITSI_DOMAIN || 'meet.jit.si';
-    const roomUrl = `https://${jitsiDomain}/${roomName}`;
+
+    // Create Daily.co room
+    const dailyRoom = await this.createDailyRoom(roomName);
+    const roomUrl = dailyRoom.url;
 
     // Create consultation record
     const consultation = await this.videoConsultationModel.create({
@@ -80,7 +123,6 @@ export class VideoConsultationService {
       patientName: appointment.patientName,
       roomId,
       roomName,
-      jitsiDomain,
       roomUrl,
       scheduledStartTime: appointment.appointmentDate,
       actualStartTime: new Date(),
@@ -98,7 +140,6 @@ export class VideoConsultationService {
       consultationId: consultation.consultationId,
       roomName: consultation.roomName,
       roomUrl: consultation.roomUrl,
-      jitsiDomain: consultation.jitsiDomain,
       doctorName: consultation.doctorName,
       patientName: consultation.patientName,
       status: consultation.status,
@@ -128,7 +169,6 @@ export class VideoConsultationService {
       consultationId: consultation.consultationId,
       roomName: consultation.roomName,
       roomUrl: consultation.roomUrl,
-      jitsiDomain: consultation.jitsiDomain,
       doctorName: consultation.doctorName,
       patientName: consultation.patientName,
       status: consultation.status,
