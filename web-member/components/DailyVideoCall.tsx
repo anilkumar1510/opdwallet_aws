@@ -156,7 +156,7 @@ function VideoCallContent({
       clearInterval(stateCheckInterval) // FIX: Stop the infinite logging
 
       console.error('\n========================================')
-      console.error('[DEBUG] ❌ JOIN TIMEOUT AFTER 15 SECONDS')
+      console.error('[DEBUG] ❌ JOIN TIMEOUT AFTER 60 SECONDS')
       console.error('[DEBUG] Timestamp:', new Date().toISOString())
       console.error('[DEBUG] Meeting state:', daily.meetingState())
 
@@ -186,7 +186,7 @@ function VideoCallContent({
       }
 
       setIsLoading(false)
-    }, 15000)
+    }, 60000)
 
     console.log('\n[DEBUG] 📞 CALLING daily.join()...')
     console.log('[DEBUG] Join config:', JSON.stringify({
