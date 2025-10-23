@@ -7,168 +7,326 @@ import { DailyProvider, useDaily, useDailyEvent, useParticipantIds } from '@dail
 
 interface DailyVideoCallProps {
   roomUrl: string
-  patientName: string
   doctorName: string
+  patientName: string
   consultationId: string
   onEnd: () => void
 }
 
 function VideoCallContent({
   roomUrl,
-  patientName,
   doctorName,
+  patientName,
   consultationId,
   onEnd,
 }: DailyVideoCallProps) {
   const daily = useDaily()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [waitingForDoctor, setWaitingForDoctor] = useState(true)
   const participantIds = useParticipantIds()
 
   // Log component mount
   useEffect(() => {
-    console.log('=== [MEMBER DailyVideoCall] Component Mounted ===')
-    console.log('[MEMBER DailyVideoCall] Props:', {
+    console.log('\n========================================')
+    console.log('=== [DEBUG] 🎭 MEMBER DAILYVIDEOCALL COMPONENT MOUNTED ===')
+    console.log('[DEBUG] Timestamp:', new Date().toISOString())
+    console.log('[DEBUG] Props:', JSON.stringify({
       roomUrl,
-      patientName,
       doctorName,
+      patientName,
       consultationId,
-    })
-    console.log('[MEMBER DailyVideoCall] Window location:', window.location.href)
-    console.log('[MEMBER DailyVideoCall] Protocol:', window.location.protocol)
-    console.log('[MEMBER DailyVideoCall] Daily SDK version:', DailyIframe.version())
+    }, null, 2))
+
+    // Browser environment
+    console.log('\n[DEBUG] 🌐 BROWSER ENVIRONMENT:')
+    console.log('[DEBUG] - User Agent:', navigator.userAgent)
+    console.log('[DEBUG] - Platform:', navigator.platform)
+    console.log('[DEBUG] - Language:', navigator.language)
+    console.log('[DEBUG] - Online:', navigator.onLine)
+    console.log('[DEBUG] - Cookie Enabled:', navigator.cookieEnabled)
+
+    // Network info (if available)
+    if ('connection' in navigator) {
+      const conn = (navigator as any).connection
+      console.log('[DEBUG] - Connection Type:', conn?.effectiveType)
+      console.log('[DEBUG] - Downlink:', conn?.downlink)
+      console.log('[DEBUG] - RTT:', conn?.rtt)
+    }
+
+    // Location info
+    console.log('\n[DEBUG] 📍 WINDOW LOCATION:')
+    console.log('[DEBUG] - Full URL:', window.location.href)
+    console.log('[DEBUG] - Protocol:', window.location.protocol)
+    console.log('[DEBUG] - Hostname:', window.location.hostname)
+    console.log('[DEBUG] - Port:', window.location.port)
+    console.log('[DEBUG] - Pathname:', window.location.pathname)
+
+    // WebSocket support
+    console.log('\n[DEBUG] 🔌 WEBSOCKET SUPPORT:')
+    console.log('[DEBUG] - WebSocket available:', typeof WebSocket !== 'undefined')
+    if (typeof WebSocket !== 'undefined') {
+      console.log('[DEBUG] - WebSocket constructor:', WebSocket.toString())
+    }
+
+    // Daily.co SDK info
+    console.log('\n[DEBUG] 📦 DAILY.CO SDK:')
+    console.log('[DEBUG] - Version:', DailyIframe.version())
+    console.log('[DEBUG] - DailyIframe available:', typeof DailyIframe)
+    console.log('[DEBUG] - DailyIframe.createFrame:', typeof DailyIframe.createFrame)
+
+    // Room URL analysis
+    console.log('\n[DEBUG] 🏠 ROOM URL ANALYSIS:')
+    try {
+      const url = new URL(roomUrl)
+      console.log('[DEBUG] - Protocol:', url.protocol)
+      console.log('[DEBUG] - Hostname:', url.hostname)
+      console.log('[DEBUG] - Pathname:', url.pathname)
+      console.log('[DEBUG] - Full URL:', roomUrl)
+    } catch (e) {
+      console.error('[DEBUG] - ERROR parsing room URL:', e)
+    }
+
+    console.log('========================================\n')
   }, [])
 
   // Join the room when component mounts
   useEffect(() => {
     if (!daily) {
-      console.log('[MEMBER DailyVideoCall] ⏳ Waiting for Daily instance...')
+      console.log('[DEBUG] ⏳ Waiting for Daily instance...')
       return
     }
 
-    console.log('[MEMBER DailyVideoCall] 🚀 Starting join process...')
-    console.log('[MEMBER DailyVideoCall] Room URL:', roomUrl)
-    console.log('[MEMBER DailyVideoCall] Patient Name:', patientName)
-    console.log('[MEMBER DailyVideoCall] Daily instance state:', daily.meetingState())
+    console.log('\n========================================')
+    console.log('[DEBUG] 🚀 STARTING JOIN PROCESS')
+    console.log('[DEBUG] Timestamp:', new Date().toISOString())
+    console.log('[DEBUG] Room URL:', roomUrl)
+    console.log('[DEBUG] Doctor Name:', doctorName)
+    console.log('[DEBUG] Daily instance type:', typeof daily)
+    console.log('[DEBUG] Daily instance state:', daily.meetingState())
+
+    // Get network information from Daily
+    console.log('\n[DEBUG] 📊 DAILY.CO NETWORK INFO:')
+    try {
+      const networkTopology = daily.getNetworkTopology()
+      console.log('[DEBUG] - Network Topology:', JSON.stringify(networkTopology, null, 2))
+    } catch (e) {
+      console.log('[DEBUG] - Network Topology: Not available yet')
+    }
 
     // Check camera/microphone permissions before joining
-    console.log('[MEMBER DailyVideoCall] 📹 Checking media devices...')
+    console.log('\n[DEBUG] 📹 CHECKING MEDIA DEVICES...')
     navigator.mediaDevices.enumerateDevices()
       .then(devices => {
-        console.log('[MEMBER DailyVideoCall] 📹 Available devices:', devices.map(d => ({
+        console.log('[DEBUG] Total devices found:', devices.length)
+        console.log('[DEBUG] Device details:', JSON.stringify(devices.map(d => ({
           kind: d.kind,
           label: d.label,
-          deviceId: d.deviceId
-        })))
-        const hasCamera = devices.some(d => d.kind === 'videoinput')
-        const hasMicrophone = devices.some(d => d.kind === 'audioinput')
-        console.log('[MEMBER DailyVideoCall] 📹 Has camera:', hasCamera)
-        console.log('[MEMBER DailyVideoCall] 🎤 Has microphone:', hasMicrophone)
+          deviceId: d.deviceId,
+          groupId: d.groupId
+        })), null, 2))
+
+        const videoDevices = devices.filter(d => d.kind === 'videoinput')
+        const audioDevices = devices.filter(d => d.kind === 'audioinput')
+
+        console.log('[DEBUG] Video devices:', videoDevices.length)
+        console.log('[DEBUG] Audio devices:', audioDevices.length)
+        console.log('[DEBUG] Has camera:', videoDevices.length > 0)
+        console.log('[DEBUG] Has microphone:', audioDevices.length > 0)
+
+        // Check media permissions
+        if (navigator.permissions) {
+          navigator.permissions.query({ name: 'camera' as PermissionName }).then(result => {
+            console.log('[DEBUG] Camera permission:', result.state)
+          }).catch(e => console.log('[DEBUG] Camera permission check not available'))
+
+          navigator.permissions.query({ name: 'microphone' as PermissionName }).then(result => {
+            console.log('[DEBUG] Microphone permission:', result.state)
+          }).catch(e => console.log('[DEBUG] Microphone permission check not available'))
+        }
       })
       .catch(err => {
-        console.error('[MEMBER DailyVideoCall] ❌ Error checking devices:', err)
+        console.error('[DEBUG] ❌ Error checking devices:')
+        console.error('[DEBUG] Error type:', err.constructor.name)
+        console.error('[DEBUG] Error message:', err.message)
+        console.error('[DEBUG] Error stack:', err.stack)
       })
 
     // Set a timeout to prevent infinite loading
     const joinTimeout = setTimeout(() => {
-      console.error('[MEMBER DailyVideoCall] ❌ Join timeout after 15 seconds')
-      console.error('[MEMBER DailyVideoCall] Meeting state at timeout:', daily.meetingState())
+      console.error('\n========================================')
+      console.error('[DEBUG] ❌ JOIN TIMEOUT AFTER 15 SECONDS')
+      console.error('[DEBUG] Timestamp:', new Date().toISOString())
+      console.error('[DEBUG] Meeting state:', daily.meetingState())
+
+      try {
+        const participants = daily.participants()
+        console.error('[DEBUG] Participants at timeout:', JSON.stringify(participants, null, 2))
+      } catch (e) {
+        console.error('[DEBUG] Could not get participants:', e)
+      }
+
+      try {
+        const networkStats = daily.getNetworkStats()
+        console.error('[DEBUG] Network stats:', JSON.stringify(networkStats, null, 2))
+      } catch (e) {
+        console.error('[DEBUG] Could not get network stats:', e)
+      }
+
+      console.error('========================================\n')
       setError('Connection timeout. Please check your camera and microphone permissions and try again.')
       setIsLoading(false)
     }, 15000)
 
-    console.log('[MEMBER DailyVideoCall] 📞 Calling daily.join()...')
+    console.log('\n[DEBUG] 📞 CALLING daily.join()...')
+    console.log('[DEBUG] Join config:', JSON.stringify({
+      url: roomUrl,
+      userName: doctorName,
+    }, null, 2))
+
     const joinStartTime = Date.now()
+    let stateCheckInterval: NodeJS.Timeout
+
+    // Monitor state changes during join
+    stateCheckInterval = setInterval(() => {
+      const elapsed = Date.now() - joinStartTime
+      console.log(`[DEBUG] ⏱️ Join in progress (${elapsed}ms) - State:`, daily.meetingState())
+    }, 1000)
 
     daily
       .join({
         url: roomUrl,
-        userName: patientName,
+        userName: doctorName,
       })
       .then(() => {
         const joinDuration = Date.now() - joinStartTime
         clearTimeout(joinTimeout)
-        console.log('[MEMBER DailyVideoCall] ✅ Successfully joined room in', joinDuration, 'ms')
-        console.log('[MEMBER DailyVideoCall] Meeting state after join:', daily.meetingState())
-        console.log('[MEMBER DailyVideoCall] Participants:', daily.participants())
-        console.log('[MEMBER DailyVideoCall] Local participant:', daily.participants().local)
+        clearInterval(stateCheckInterval)
+
+        console.log('\n========================================')
+        console.log('[DEBUG] ✅ SUCCESSFULLY JOINED ROOM')
+        console.log('[DEBUG] Duration:', joinDuration, 'ms')
+        console.log('[DEBUG] Timestamp:', new Date().toISOString())
+        console.log('[DEBUG] Meeting state:', daily.meetingState())
+
+        try {
+          const participants = daily.participants()
+          console.log('[DEBUG] Participants:', JSON.stringify(participants, null, 2))
+          console.log('[DEBUG] Local participant:', JSON.stringify(participants.local, null, 2))
+          console.log('[DEBUG] Participant count:', Object.keys(participants).length)
+        } catch (e) {
+          console.error('[DEBUG] Error getting participants:', e)
+        }
+
+        try {
+          const networkTopology = daily.getNetworkTopology()
+          console.log('[DEBUG] Network topology:', JSON.stringify(networkTopology, null, 2))
+        } catch (e) {
+          console.log('[DEBUG] Network topology not available:', e)
+        }
+
+        console.log('========================================\n')
         setIsLoading(false)
       })
       .catch((error) => {
         const joinDuration = Date.now() - joinStartTime
         clearTimeout(joinTimeout)
-        console.error('[MEMBER DailyVideoCall] ❌ Failed to join room after', joinDuration, 'ms')
-        console.error('[MEMBER DailyVideoCall] Error object:', error)
-        console.error('[MEMBER DailyVideoCall] Error name:', error.name)
-        console.error('[MEMBER DailyVideoCall] Error message:', error.message)
-        console.error('[MEMBER DailyVideoCall] Error stack:', error.stack)
-        console.error('[MEMBER DailyVideoCall] Meeting state after error:', daily.meetingState())
+        clearInterval(stateCheckInterval)
+
+        console.error('\n========================================')
+        console.error('[DEBUG] ❌ FAILED TO JOIN ROOM')
+        console.error('[DEBUG] Duration:', joinDuration, 'ms')
+        console.error('[DEBUG] Timestamp:', new Date().toISOString())
+        console.error('[DEBUG] Error type:', error.constructor.name)
+        console.error('[DEBUG] Error name:', error.name)
+        console.error('[DEBUG] Error message:', error.message)
+        console.error('[DEBUG] Error code:', error.code)
+        console.error('[DEBUG] Error details:', JSON.stringify(error, null, 2))
+        console.error('[DEBUG] Error stack:', error.stack)
+        console.error('[DEBUG] Meeting state after error:', daily.meetingState())
+
+        try {
+          const participants = daily.participants()
+          console.error('[DEBUG] Participants after error:', JSON.stringify(participants, null, 2))
+        } catch (e) {
+          console.error('[DEBUG] Could not get participants after error:', e)
+        }
 
         // Better error messages
         let errorMessage = 'Failed to join video consultation. '
         if (error.message?.includes('permission') || error.message?.includes('Permission')) {
           errorMessage += 'Please allow camera and microphone access in your browser.'
-          console.error('[MEMBER DailyVideoCall] 🔒 Permission error detected')
+          console.error('[DEBUG] 🔒 PERMISSION ERROR DETECTED')
         } else if (error.message?.includes('devices') || error.message?.includes('Device')) {
           errorMessage += 'Camera or microphone not found. Please check your devices.'
-          console.error('[MEMBER DailyVideoCall] 📹 Device error detected')
+          console.error('[DEBUG] 📹 DEVICE ERROR DETECTED')
         } else if (error.message?.includes('constraint') || error.message?.includes('Constraint')) {
           errorMessage += 'Camera/microphone configuration error. Please check your browser settings.'
-          console.error('[MEMBER DailyVideoCall] ⚙️ Constraint error detected')
+          console.error('[DEBUG] ⚙️ CONSTRAINT ERROR DETECTED')
+        } else if (error.message?.includes('network') || error.message?.includes('Network') || error.message?.includes('WebSocket')) {
+          errorMessage += 'Network connection error. Please check your internet connection.'
+          console.error('[DEBUG] 🌐 NETWORK ERROR DETECTED')
         } else {
           errorMessage += error.message || 'Unknown error occurred.'
-          console.error('[MEMBER DailyVideoCall] ❓ Unknown error type')
+          console.error('[DEBUG] ❓ UNKNOWN ERROR TYPE')
         }
 
+        console.error('========================================\n')
         setError(errorMessage)
         setIsLoading(false)
       })
 
     return () => {
-      console.log('[MEMBER DailyVideoCall] 🧹 Cleanup: Leaving room')
+      console.log('\n[DEBUG] 🧹 CLEANUP: Leaving room')
       clearTimeout(joinTimeout)
+      clearInterval(stateCheckInterval)
       if (daily) {
         daily.leave().catch(err => {
-          console.error('[MEMBER DailyVideoCall] Error during leave:', err)
+          console.error('[DEBUG] Error during leave:', err)
         })
       }
     }
-  }, [daily, roomUrl, patientName])
+  }, [daily, roomUrl, doctorName])
 
-  // Handle room events
+  // Handle room events - COMPREHENSIVE DEBUGGING
   useDailyEvent(
     'joined-meeting',
     useCallback(() => {
-      console.log('[MEMBER DailyVideoCall] ✅ EVENT: joined-meeting')
-      console.log('[MEMBER DailyVideoCall] Meeting state:', daily?.meetingState())
+      console.log('\n========================================')
+      console.log('[DEBUG] ✅ EVENT: joined-meeting')
+      console.log('[DEBUG] Timestamp:', new Date().toISOString())
+      console.log('[DEBUG] Meeting state:', daily?.meetingState())
+      console.log('[DEBUG] Participants:', JSON.stringify(daily?.participants(), null, 2))
+      console.log('========================================\n')
     }, [daily])
   )
 
   useDailyEvent(
     'participant-joined',
     useCallback((event) => {
-      console.log('[MEMBER DailyVideoCall] 👤 EVENT: participant-joined')
-      console.log('[MEMBER DailyVideoCall] Participant info:', event?.participant)
-      console.log('[MEMBER DailyVideoCall] Total participants:', Object.keys(daily?.participants() || {}).length)
-      setWaitingForDoctor(false)
+      console.log('\n[DEBUG] 👤 EVENT: participant-joined')
+      console.log('[DEBUG] Timestamp:', new Date().toISOString())
+      console.log('[DEBUG] Participant:', JSON.stringify(event?.participant, null, 2))
+      console.log('[DEBUG] Total participants:', Object.keys(daily?.participants() || {}).length)
+      console.log('[DEBUG] All participants:', JSON.stringify(daily?.participants(), null, 2))
     }, [daily])
   )
 
   useDailyEvent(
     'participant-left',
     useCallback((event) => {
-      console.log('[MEMBER DailyVideoCall] 🚪 EVENT: participant-left')
-      console.log('[MEMBER DailyVideoCall] Participant info:', event?.participant)
-      console.log('[MEMBER DailyVideoCall] Remaining participants:', Object.keys(daily?.participants() || {}).length)
+      console.log('\n[DEBUG] 🚪 EVENT: participant-left')
+      console.log('[DEBUG] Timestamp:', new Date().toISOString())
+      console.log('[DEBUG] Participant:', JSON.stringify(event?.participant, null, 2))
+      console.log('[DEBUG] Remaining participants:', Object.keys(daily?.participants() || {}).length)
     }, [daily])
   )
 
   useDailyEvent(
     'left-meeting',
     useCallback(() => {
-      console.log('[MEMBER DailyVideoCall] 🚪 EVENT: left-meeting')
-      console.log('[MEMBER DailyVideoCall] Calling onEnd()')
+      console.log('\n[DEBUG] 🚪 EVENT: left-meeting')
+      console.log('[DEBUG] Timestamp:', new Date().toISOString())
+      console.log('[DEBUG] Calling onEnd()')
       onEnd()
     }, [onEnd])
   )
@@ -176,9 +334,13 @@ function VideoCallContent({
   useDailyEvent(
     'error',
     useCallback((event) => {
-      console.error('[MEMBER DailyVideoCall] ❌ EVENT: error')
-      console.error('[MEMBER DailyVideoCall] Error event:', event)
-      console.error('[MEMBER DailyVideoCall] Error type:', event?.errorMsg)
+      console.error('\n========================================')
+      console.error('[DEBUG] ❌ EVENT: error')
+      console.error('[DEBUG] Timestamp:', new Date().toISOString())
+      console.error('[DEBUG] Error event:', JSON.stringify(event, null, 2))
+      console.error('[DEBUG] Error message:', event?.errorMsg)
+      console.error('[DEBUG] Error details:', event?.error)
+      console.error('========================================\n')
       setError('An error occurred during the video consultation')
     }, [])
   )
@@ -186,36 +348,66 @@ function VideoCallContent({
   useDailyEvent(
     'camera-error',
     useCallback((event) => {
-      console.error('[MEMBER DailyVideoCall] 📹 EVENT: camera-error')
-      console.error('[MEMBER DailyVideoCall] Camera error:', event)
+      console.error('\n[DEBUG] 📹 EVENT: camera-error')
+      console.error('[DEBUG] Timestamp:', new Date().toISOString())
+      console.error('[DEBUG] Error:', JSON.stringify(event, null, 2))
     }, [])
   )
 
   useDailyEvent(
     'loading',
     useCallback((event) => {
-      console.log('[MEMBER DailyVideoCall] ⏳ EVENT: loading', event)
+      console.log('[DEBUG] ⏳ EVENT: loading', JSON.stringify(event, null, 2))
     }, [])
   )
 
   useDailyEvent(
     'loaded',
     useCallback((event) => {
-      console.log('[MEMBER DailyVideoCall] ✅ EVENT: loaded', event)
+      console.log('[DEBUG] ✅ EVENT: loaded', JSON.stringify(event, null, 2))
     }, [])
   )
 
   useDailyEvent(
     'started-camera',
     useCallback((event) => {
-      console.log('[MEMBER DailyVideoCall] 📹 EVENT: started-camera', event)
+      console.log('[DEBUG] 📹 EVENT: started-camera', JSON.stringify(event, null, 2))
     }, [])
   )
 
   useDailyEvent(
     'access-state-updated',
     useCallback((event) => {
-      console.log('[MEMBER DailyVideoCall] 🔐 EVENT: access-state-updated', event)
+      console.log('[DEBUG] 🔐 EVENT: access-state-updated', JSON.stringify(event, null, 2))
+    }, [])
+  )
+
+  // Additional important events for debugging
+  useDailyEvent(
+    'network-quality-change',
+    useCallback((event) => {
+      console.log('[DEBUG] 📶 EVENT: network-quality-change', JSON.stringify(event, null, 2))
+    }, [])
+  )
+
+  useDailyEvent(
+    'network-connection',
+    useCallback((event) => {
+      console.log('[DEBUG] 🌐 EVENT: network-connection', JSON.stringify(event, null, 2))
+    }, [])
+  )
+
+  useDailyEvent(
+    'track-started',
+    useCallback((event) => {
+      console.log('[DEBUG] 🎬 EVENT: track-started', JSON.stringify(event, null, 2))
+    }, [])
+  )
+
+  useDailyEvent(
+    'track-stopped',
+    useCallback((event) => {
+      console.log('[DEBUG] ⏹️ EVENT: track-stopped', JSON.stringify(event, null, 2))
     }, [])
   )
 
@@ -232,11 +424,11 @@ function VideoCallContent({
       <div className="flex flex-col items-center justify-center h-full p-8">
         <div className="card max-w-md w-full bg-red-50 border-red-200">
           <h3 className="text-lg font-semibold text-red-900 mb-2">
-            Failed to Join Video Consultation
+            Failed to Start Video Consultation
           </h3>
           <p className="text-red-700 mb-4">{error}</p>
           <button onClick={onEnd} className="btn-secondary">
-            Back to Appointments
+            Back to Appointment
           </button>
         </div>
       </div>
@@ -254,9 +446,9 @@ function VideoCallContent({
         </div>
       )}
 
-      {waitingForDoctor && !isLoading && (
+      {participantIds.length === 1 && !isLoading && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg shadow-lg z-20">
-          Waiting for doctor to join...
+          Waiting for patient to join...
         </div>
       )}
 
@@ -276,11 +468,14 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
   const [callObject, setCallObject] = useState<DailyIframe | null>(null)
 
   useEffect(() => {
-    console.log('[MEMBER DailyVideoCall] 🏗️ Creating Daily call object')
-    console.log('[MEMBER DailyVideoCall] DailyIframe available:', typeof DailyIframe)
+    console.log('\n========================================')
+    console.log('[DEBUG] 🏗️ CREATING DAILY CALL OBJECT')
+    console.log('[DEBUG] Timestamp:', new Date().toISOString())
+    console.log('[DEBUG] DailyIframe available:', typeof DailyIframe)
+    console.log('[DEBUG] DailyIframe.createFrame available:', typeof DailyIframe.createFrame)
 
     try {
-      const daily = DailyIframe.createFrame({
+      const frameConfig = {
         showLeaveButton: false,
         showFullscreenButton: true,
         iframeStyle: {
@@ -289,23 +484,45 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
           height: '100%',
           border: '0',
         },
+      }
+      console.log('[DEBUG] Frame config:', JSON.stringify(frameConfig, null, 2))
+
+      const daily = DailyIframe.createFrame(frameConfig)
+
+      console.log('[DEBUG] ✅ Daily call object created successfully')
+      console.log('[DEBUG] Call object type:', typeof daily)
+      console.log('[DEBUG] Call object methods:', Object.keys(daily))
+      console.log('[DEBUG] Initial meeting state:', daily.meetingState())
+
+      // Log all available daily methods for debugging
+      console.log('[DEBUG] Available Daily methods:', {
+        join: typeof daily.join,
+        leave: typeof daily.leave,
+        meetingState: typeof daily.meetingState,
+        participants: typeof daily.participants,
+        getNetworkTopology: typeof daily.getNetworkTopology,
+        getNetworkStats: typeof daily.getNetworkStats,
       })
-      console.log('[MEMBER DailyVideoCall] ✅ Daily call object created successfully')
-      console.log('[MEMBER DailyVideoCall] Call object type:', typeof daily)
-      console.log('[MEMBER DailyVideoCall] Initial meeting state:', daily.meetingState())
+
+      console.log('========================================\n')
       setCallObject(daily)
     } catch (error) {
-      console.error('[MEMBER DailyVideoCall] ❌ Error creating Daily call object:', error)
+      console.error('\n========================================')
+      console.error('[DEBUG] ❌ ERROR CREATING DAILY CALL OBJECT')
+      console.error('[DEBUG] Error type:', error?.constructor?.name)
+      console.error('[DEBUG] Error message:', (error as Error)?.message)
+      console.error('[DEBUG] Error stack:', (error as Error)?.stack)
+      console.error('========================================\n')
     }
 
     return () => {
-      console.log('[MEMBER DailyVideoCall] 🗑️ Destroying Daily call object')
+      console.log('\n[DEBUG] 🗑️ DESTROYING DAILY CALL OBJECT')
       if (callObject) {
         try {
           callObject.destroy()
-          console.log('[MEMBER DailyVideoCall] ✅ Call object destroyed')
+          console.log('[DEBUG] ✅ Call object destroyed')
         } catch (error) {
-          console.error('[MEMBER DailyVideoCall] ❌ Error destroying call object:', error)
+          console.error('[DEBUG] ❌ Error destroying call object:', error)
         }
       }
     }

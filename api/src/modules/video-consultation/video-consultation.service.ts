@@ -24,6 +24,28 @@ export class VideoConsultationService {
   private async createDailyRoom(roomName: string): Promise<{ url: string; name: string }> {
     const apiKey = process.env.DAILY_API_KEY || '1317f4d3f42ab7b4ffb63e3ac66baa67306852a491393aaff8d5a665ffc02f09';
 
+    console.log('\n========================================');
+    console.log('[DEBUG] 🎬 DAILY.CO ROOM CREATION STARTED');
+    console.log('[DEBUG] Timestamp:', new Date().toISOString());
+    console.log('[DEBUG] Room Name:', roomName);
+    console.log('[DEBUG] API Key (first 20 chars):', apiKey.substring(0, 20) + '...');
+    console.log('[DEBUG] API Key Length:', apiKey.length);
+    console.log('[DEBUG] API Endpoint:', 'https://api.daily.co/v1/rooms');
+    console.log('[DEBUG] Request Config:', JSON.stringify({
+      privacy: 'public',
+      properties: {
+        enable_screenshare: true,
+        enable_chat: true,
+        start_video_off: false,
+        start_audio_off: false,
+        enable_recording: 'cloud',
+        max_participants: 2,
+      },
+    }, null, 2));
+    console.log('========================================\n');
+
+    const requestStartTime = Date.now();
+
     try {
       const response = await axios.post(
         'https://api.daily.co/v1/rooms',
@@ -47,12 +69,50 @@ export class VideoConsultationService {
         }
       );
 
+      const requestDuration = Date.now() - requestStartTime;
+
+      console.log('\n========================================');
+      console.log('[DEBUG] ✅ DAILY.CO ROOM CREATION SUCCESS');
+      console.log('[DEBUG] Duration:', requestDuration, 'ms');
+      console.log('[DEBUG] Response Status:', response.status);
+      console.log('[DEBUG] Response StatusText:', response.statusText);
+      console.log('[DEBUG] Response Headers:', JSON.stringify(response.headers, null, 2));
+      console.log('[DEBUG] Response Data:', JSON.stringify(response.data, null, 2));
+      console.log('[DEBUG] Room URL:', response.data.url);
+      console.log('[DEBUG] Room Name:', response.data.name);
+      console.log('[DEBUG] Room ID:', response.data.id);
+      console.log('[DEBUG] Room Config:', JSON.stringify(response.data.config, null, 2));
+      console.log('[DEBUG] Room Privacy:', response.data.privacy);
+      console.log('========================================\n');
+
       return {
         url: response.data.url,
         name: response.data.name,
       };
     } catch (error) {
-      console.error('Failed to create Daily.co room:', error.response?.data || error.message);
+      const requestDuration = Date.now() - requestStartTime;
+
+      console.error('\n========================================');
+      console.error('[DEBUG] ❌ DAILY.CO ROOM CREATION FAILED');
+      console.error('[DEBUG] Duration:', requestDuration, 'ms');
+      console.error('[DEBUG] Error Type:', error.constructor.name);
+      console.error('[DEBUG] Error Message:', error.message);
+
+      if (axios.isAxiosError(error)) {
+        console.error('[DEBUG] Axios Error Details:');
+        console.error('[DEBUG] - Status:', error.response?.status);
+        console.error('[DEBUG] - StatusText:', error.response?.statusText);
+        console.error('[DEBUG] - Headers:', JSON.stringify(error.response?.headers, null, 2));
+        console.error('[DEBUG] - Data:', JSON.stringify(error.response?.data, null, 2));
+        console.error('[DEBUG] - Request URL:', error.config?.url);
+        console.error('[DEBUG] - Request Method:', error.config?.method);
+        console.error('[DEBUG] - Request Headers:', JSON.stringify(error.config?.headers, null, 2));
+      }
+
+      console.error('[DEBUG] Full Error Object:', JSON.stringify(error, null, 2));
+      console.error('[DEBUG] Stack Trace:', error.stack);
+      console.error('========================================\n');
+
       throw new BadRequestException('Failed to create video consultation room');
     }
   }
@@ -136,7 +196,7 @@ export class VideoConsultationService {
       consultationStartedAt: new Date(),
     });
 
-    return {
+    const result = {
       consultationId: consultation.consultationId,
       roomName: consultation.roomName,
       roomUrl: consultation.roomUrl,
@@ -144,6 +204,20 @@ export class VideoConsultationService {
       patientName: consultation.patientName,
       status: consultation.status,
     };
+
+    console.log('\n========================================');
+    console.log('[DEBUG] 📤 RETURNING CONSULTATION DATA TO FRONTEND');
+    console.log('[DEBUG] Timestamp:', new Date().toISOString());
+    console.log('[DEBUG] Consultation Data:', JSON.stringify(result, null, 2));
+    console.log('[DEBUG] Room URL Structure:', {
+      fullUrl: result.roomUrl,
+      protocol: result.roomUrl.split('://')[0],
+      domain: result.roomUrl.split('://')[1]?.split('/')[0],
+      roomPath: result.roomUrl.split('://')[1]?.split('/').slice(1).join('/'),
+    });
+    console.log('========================================\n');
+
+    return result;
   }
 
   async joinConsultation(appointmentId: string, patientId: string) {

@@ -28,22 +28,58 @@ export default function VideoConsultationPage() {
   const [ending, setEnding] = useState(false)
 
   const initializeConsultation = useCallback(async () => {
+    console.log('\n========================================')
+    console.log('[DEBUG] 🎬 INITIALIZING VIDEO CONSULTATION')
+    console.log('[DEBUG] Timestamp:', new Date().toISOString())
+    console.log('[DEBUG] Appointment ID:', appointmentId)
+    console.log('[DEBUG] Current URL:', window.location.href)
+    console.log('========================================\n')
+
     try {
       setLoading(true)
       setError('')
+
+      console.log('[DEBUG] 📞 Fetching appointment details...')
+      const fetchStart = Date.now()
 
       // Get appointment details first to verify it's ONLINE
       const appointmentResponse = await getAppointmentDetails(appointmentId)
       const appointment = appointmentResponse.appointment
 
+      console.log('[DEBUG] ✅ Appointment details received in', Date.now() - fetchStart, 'ms')
+      console.log('[DEBUG] Appointment data:', JSON.stringify(appointment, null, 2))
+      console.log('[DEBUG] Appointment Type:', appointment.appointmentType)
+      console.log('[DEBUG] Appointment MongoDB _id:', appointment._id)
+
       if (appointment.appointmentType !== 'ONLINE') {
+        console.error('[DEBUG] ❌ Not an online consultation')
         throw new Error('This is not an online consultation appointment')
       }
 
+      console.log('\n[DEBUG] 🚀 Starting video consultation...')
+      console.log('[DEBUG] Using MongoDB _id:', appointment._id)
+      const consultStart = Date.now()
+
       // Start the consultation using the MongoDB _id
       const consultationData = await startVideoConsultation(appointment._id)
+
+      console.log('[DEBUG] ✅ Consultation started in', Date.now() - consultStart, 'ms')
+      console.log('[DEBUG] Consultation data:', JSON.stringify(consultationData, null, 2))
+      console.log('[DEBUG] Room URL:', consultationData.roomUrl)
+      console.log('[DEBUG] Consultation ID:', consultationData.consultationId)
+
       setConsultation(consultationData)
+
+      console.log('\n[DEBUG] ✅ CONSULTATION INITIALIZATION COMPLETE')
     } catch (err: any) {
+      console.error('\n========================================')
+      console.error('[DEBUG] ❌ CONSULTATION INITIALIZATION FAILED')
+      console.error('[DEBUG] Error type:', err?.constructor?.name)
+      console.error('[DEBUG] Error message:', err?.message)
+      console.error('[DEBUG] Error stack:', err?.stack)
+      console.error('[DEBUG] Full error object:', JSON.stringify(err, null, 2))
+      console.error('========================================\n')
+
       setError(err.message || 'Failed to start consultation')
     } finally {
       setLoading(false)
