@@ -153,6 +153,8 @@ function VideoCallContent({
 
     // Set a timeout to prevent infinite loading
     const joinTimeout = setTimeout(() => {
+      clearInterval(stateCheckInterval) // FIX: Stop the infinite logging
+
       console.error('\n========================================')
       console.error('[DEBUG] ❌ JOIN TIMEOUT AFTER 15 SECONDS')
       console.error('[DEBUG] Timestamp:', new Date().toISOString())
@@ -173,7 +175,16 @@ function VideoCallContent({
       }
 
       console.error('========================================\n')
-      setError('Connection timeout. Please check your camera and microphone permissions and try again.')
+
+      // Check if this is a cross-origin/domain configuration issue
+      if (daily.meetingState() === 'joining-meeting') {
+        console.error('[DEBUG] 🚨 LIKELY CAUSE: Daily.co domain not configured')
+        console.error('[DEBUG] 💡 SOLUTION: Add your domain to Daily.co dashboard allowed domains')
+        setError('Unable to connect to video service. Domain configuration required. Please contact support.')
+      } else {
+        setError('Connection timeout. Please check your camera and microphone permissions and try again.')
+      }
+
       setIsLoading(false)
     }, 15000)
 
