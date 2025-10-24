@@ -89,38 +89,60 @@ export class AssignmentsController {
   @ApiResponse({ status: 200, description: 'User policy configuration retrieved' })
   @ApiResponse({ status: 404, description: 'No active policy assignment found' })
   async getMyPolicyConfig(@Request() req: any) {
-    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/my-policy for user:', req.user?.userId);
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/my-policy for user:', req.user?.userId, req.user?.email);
 
-    // Get user's active assignments
-    const assignments = await this.assignmentsService.getUserAssignments(req.user.userId);
+    try {
+      // Get user's active assignments
+      const assignments = await this.assignmentsService.getUserAssignments(req.user.userId);
+      console.log('🔵 [ASSIGNMENTS CONTROLLER] User assignments found:', assignments?.length || 0);
 
-    if (!assignments || assignments.length === 0) {
-      throw new NotFoundException('No active policy assignment found for user');
-    }
+      if (!assignments || assignments.length === 0) {
+        console.log('⚠️ [ASSIGNMENTS CONTROLLER] No active assignments found for user');
+        throw new NotFoundException('No active policy assignment found for user');
+      }
 
-    // Get the first active assignment (assuming one policy per user)
-    const activeAssignment = assignments[0];
+      // Get the first active assignment (assuming one policy per user)
+      const activeAssignment = assignments[0];
+      console.log('🔵 [ASSIGNMENTS CONTROLLER] Active assignment:', {
+        assignmentId: activeAssignment.assignmentId,
+        policyId: activeAssignment.policyId?.toString(),
+        planVersionOverride: activeAssignment.planVersionOverride
+      });
 
-    // Get the plan configuration for this policy
-    const planConfig = await this.assignmentsService.getPolicyConfigForUser(
-      activeAssignment.policyId.toString(),
-      activeAssignment.planVersionOverride
-    );
+      // Get the plan configuration for this policy
+      const planConfig = await this.assignmentsService.getPolicyConfigForUser(
+        activeAssignment.policyId.toString(),
+        activeAssignment.planVersionOverride
+      );
 
-    // Return the policy details with copay configuration
-    return {
-      policyId: activeAssignment.policyId,
-      assignmentId: activeAssignment.assignmentId,
-      effectiveFrom: activeAssignment.effectiveFrom,
-      effectiveTo: activeAssignment.effectiveTo,
-      copay: planConfig?.currentVersion?.copay || {
+      console.log('🔵 [ASSIGNMENTS CONTROLLER] Plan config retrieved:', JSON.stringify(planConfig, null, 2));
+
+      // Extract copay from plan config
+      const copayConfig = planConfig?.currentVersion?.copay || {
         percentage: 20, // Default fallback
         mode: 'PERCENT',
         value: 20
-      },
-      walletEnabled: planConfig?.currentVersion?.wallet ? true : true, // Default to enabled
-      planConfig: planConfig?.currentVersion
-    };
+      };
+
+      console.log('🔵 [ASSIGNMENTS CONTROLLER] Copay config:', copayConfig);
+
+      const response = {
+        policyId: activeAssignment.policyId,
+        assignmentId: activeAssignment.assignmentId,
+        effectiveFrom: activeAssignment.effectiveFrom,
+        effectiveTo: activeAssignment.effectiveTo,
+        copay: copayConfig,
+        walletEnabled: planConfig?.currentVersion?.wallet ? true : true, // Default to enabled
+        planConfig: planConfig?.currentVersion
+      };
+
+      console.log('✅ [ASSIGNMENTS CONTROLLER] Returning policy config:', JSON.stringify(response, null, 2));
+
+      return response;
+    } catch (error) {
+      console.error('❌ [ASSIGNMENTS CONTROLLER] Error getting my-policy:', error);
+      throw error;
+    }
   }
 
   @Get('search-primary-members')

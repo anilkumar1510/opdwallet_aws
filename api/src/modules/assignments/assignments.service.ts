@@ -210,22 +210,31 @@ export class AssignmentsService {
         return null;
       }
 
+      console.log('🟡 [ASSIGNMENTS SERVICE] Raw config from planConfigService:', JSON.stringify(config, null, 2));
+
       // Access the wallet config from the planConfig
       const walletConfig = (config as any).wallet;
+      console.log('🟡 [ASSIGNMENTS SERVICE] Wallet config extracted:', JSON.stringify(walletConfig, null, 2));
+
       const copayConfig = walletConfig?.copay;
+      console.log('🟡 [ASSIGNMENTS SERVICE] Copay config from wallet:', JSON.stringify(copayConfig, null, 2));
+
+      // Build the copay object with proper percentage
+      const copayValue = copayConfig?.value || 20;
+      const copayMode = copayConfig?.mode || 'PERCENT';
+
+      const finalCopay = {
+        percentage: copayValue, // Always use the value as percentage
+        mode: copayMode,
+        value: copayValue
+      };
+
+      console.log('🟡 [ASSIGNMENTS SERVICE] Final copay config to return:', finalCopay);
 
       // Return the config with copay details
-      return {
+      const result = {
         currentVersion: {
-          copay: copayConfig ? {
-            percentage: copayConfig.value || 20,
-            mode: copayConfig.mode || 'PERCENT',
-            value: copayConfig.value || 20
-          } : {
-            percentage: 20,
-            mode: 'PERCENT',
-            value: 20
-          },
+          copay: finalCopay,
           wallet: walletConfig || {
             totalAnnualAmount: 5000000,
             perClaimLimit: 500000,
@@ -240,6 +249,10 @@ export class AssignmentsService {
         },
         policyId: config.policyId,
       };
+
+      console.log('✅ [ASSIGNMENTS SERVICE] Returning policy config:', JSON.stringify(result, null, 2));
+
+      return result;
     } catch (error) {
       console.error('❌ [ASSIGNMENTS SERVICE] Error getting policy config:', error);
       return null;

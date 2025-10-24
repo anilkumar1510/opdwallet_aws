@@ -73,34 +73,74 @@ export class PaymentController {
   @ApiResponse({ status: 400, description: 'Invalid payment data' })
   async createPayment(
     @Request() req: AuthRequest,
-    @Body() createPaymentDto: {
-      amount: number;
-      paymentType: PaymentType;
-      serviceType: ServiceType;
-      serviceReferenceId?: string;
-      description: string;
-      patientId?: string;
-      metadata?: Record<string, any>;
-    },
+    @Body() createPaymentDto: any,  // Use any to handle frontend payload
   ) {
-    // Use the userId from the authenticated user
-    const userId = req.user.userId;
+    console.log('🔵 [PAYMENT CONTROLLER] POST /payments - Creating payment');
+    console.log('🔵 [PAYMENT CONTROLLER] Request body:', JSON.stringify(createPaymentDto, null, 2));
+    console.log('🔵 [PAYMENT CONTROLLER] User:', req.user?.email, req.user?.userId);
 
-    // For now, use a placeholder serviceId since the frontend doesn't always send it
-    // In production, this should be linked to actual service records
-    const serviceId = createPaymentDto.metadata?.serviceId ||
-                     new Types.ObjectId().toString();
+    try {
+      // Use the userId from the authenticated user
+      const userId = req.user.userId;
 
-    return this.paymentService.createPaymentRequest({
-      userId,
-      amount: createPaymentDto.amount,
-      paymentType: createPaymentDto.paymentType,
-      serviceType: createPaymentDto.serviceType,
-      serviceId,
-      serviceReferenceId: createPaymentDto.serviceReferenceId || `REF-${Date.now()}`,
-      description: createPaymentDto.description,
-      notes: createPaymentDto.metadata ? JSON.stringify(createPaymentDto.metadata) : undefined,
-    });
+      // Map frontend fields to backend expectations
+      let paymentType = createPaymentDto.paymentType;
+      if (!Object.values(PaymentType).includes(paymentType)) {
+        // Default to COPAY if invalid type
+        paymentType = PaymentType.COPAY;
+      }
+
+      // Map frontend service types to backend enum
+      let serviceType: ServiceType;
+      const frontendServiceType = createPaymentDto.serviceType as string;
+
+      if (frontendServiceType === 'ONLINE_CONSULTATION' ||
+          frontendServiceType === 'consultation' ||
+          frontendServiceType === 'APPOINTMENT') {
+        serviceType = ServiceType.APPOINTMENT;
+      } else if (Object.values(ServiceType).includes(frontendServiceType as ServiceType)) {
+        serviceType = frontendServiceType as ServiceType;
+      } else {
+        // Default to APPOINTMENT if invalid type
+        serviceType = ServiceType.APPOINTMENT;
+      }
+
+      // For now, use a placeholder serviceId since the frontend doesn't always send it
+      const serviceId = createPaymentDto.metadata?.serviceId ||
+                       createPaymentDto.serviceId ||
+                       new Types.ObjectId().toString();
+
+      const paymentData = {
+        userId,
+        amount: createPaymentDto.amount || 0,
+        paymentType,
+        serviceType,
+        serviceId,
+        serviceReferenceId: createPaymentDto.serviceReferenceId ||
+                           createPaymentDto.paymentId || // Use frontend paymentId if exists
+                           `REF-${Date.now()}`,
+        description: createPaymentDto.description || 'Payment Request',
+        notes: createPaymentDto.metadata ? JSON.stringify(createPaymentDto.metadata) :
+               createPaymentDto.notes || undefined,
+      };
+
+      console.log('🔵 [PAYMENT CONTROLLER] Processed payment data:', paymentData);
+
+      const result = await this.paymentService.createPaymentRequest(paymentData);
+
+      console.log('✅ [PAYMENT CONTROLLER] Payment created successfully:', result.paymentId);
+
+      // Return the created payment with the frontend's expected format
+      return {
+        ...result.toObject ? result.toObject() : result,
+        paymentId: result.paymentId,
+        status: result.status || 'PENDING',
+      };
+    } catch (error) {
+      console.error('❌ [PAYMENT CONTROLLER] Error creating payment:', error);
+      console.error('❌ [PAYMENT CONTROLLER] Error stack:', error.stack);
+      throw error;
+    }
   }
 
   @Post(':paymentId/mark-paid')

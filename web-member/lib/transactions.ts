@@ -97,13 +97,19 @@ export async function createPendingPayment(data: {
   patientId?: string;
   metadata?: Record<string, any>;
 }): Promise<PendingPayment> {
+  console.log('[Transactions] Creating pending payment with data:', JSON.stringify(data, null, 2));
+
   const payment: PendingPayment = {
     paymentId: generatePaymentId(),
     ...data,
     status: 'PENDING'
   };
 
+  console.log('[Transactions] Generated payment object:', JSON.stringify(payment, null, 2));
+
   try {
+    console.log('[Transactions] Sending POST request to /api/payments...');
+
     const response = await fetch('/api/payments', {
       method: 'POST',
       headers: {
@@ -113,12 +119,29 @@ export async function createPendingPayment(data: {
       body: JSON.stringify(payment)
     });
 
+    console.log('[Transactions] Response status:', response.status, response.statusText);
+
     if (!response.ok) {
-      console.error('Failed to create pending payment:', await response.text());
+      const errorText = await response.text();
+      console.error('[Transactions] Failed to create pending payment:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText,
+        requestPayload: payment
+      });
+
+      // Try to parse error as JSON if possible
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error('[Transactions] Parsed error:', errorJson);
+      } catch (e) {
+        // Error is not JSON
+      }
     }
 
     const savedPayment = await response.json();
-    console.log('Pending payment created:', savedPayment.paymentId);
+    console.log('[Transactions] Pending payment created successfully:', savedPayment);
+    console.log('[Transactions] Payment ID:', savedPayment.paymentId);
 
     // Store in session for later completion
     sessionStorage.setItem(`payment_${savedPayment.paymentId}`, JSON.stringify({
@@ -128,7 +151,8 @@ export async function createPendingPayment(data: {
 
     return savedPayment;
   } catch (error) {
-    console.error('Error creating pending payment:', error);
+    console.error('[Transactions] Exception creating pending payment:', error);
+    console.log('[Transactions] Falling back to local payment object');
     // Return the payment object even if API fails
     sessionStorage.setItem(`payment_${payment.paymentId}`, JSON.stringify({
       ...payment,
