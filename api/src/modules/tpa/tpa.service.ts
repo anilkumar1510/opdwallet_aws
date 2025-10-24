@@ -10,12 +10,21 @@ import { ApproveClaimDto } from './dto/approve-claim.dto';
 import { RejectClaimDto } from './dto/reject-claim.dto';
 import { RequestDocumentsDto } from './dto/request-documents.dto';
 import { UpdateClaimStatusDto } from './dto/update-status.dto';
+import { WalletService } from '../wallet/wallet.service';
+
+// Category code mapping for wallet refunds
+const CATEGORY_CODE_MAP: Record<string, string> = {
+  'CONSULTATION': 'CAT001',
+  'DIAGNOSTICS': 'CAT002',
+  'PHARMACY': 'CAT003',
+};
 
 @Injectable()
 export class TpaService {
   constructor(
     @InjectModel(MemberClaim.name) private memberClaimModel: Model<MemberClaimDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly walletService: WalletService,
   ) {}
 
   // Helper method to add status history
@@ -491,6 +500,32 @@ export class TpaService {
     if (userRole === UserRole.TPA_USER) {
       if (!claim.assignedTo || claim.assignedTo.toString() !== userId) {
         throw new ForbiddenException('You can only reject claims assigned to you');
+      }
+    }
+
+    // Refund wallet if amount was debited
+    if (claim.walletDebitAmount && claim.walletDebitAmount > 0) {
+      const categoryCode = CATEGORY_CODE_MAP[claim.category];
+
+      if (categoryCode) {
+        try {
+          await this.walletService.creditWallet(
+            claim.userId.toString(),
+            claim.walletDebitAmount,
+            categoryCode,
+            (claim._id as any).toString(),
+            'CLAIM',
+            claim.providerName || 'Provider',
+            `Claim ${claimId} rejected - Wallet refund for ${claim.category}`
+          );
+
+          console.log(`✅ [TPA] Refunded ₹${claim.walletDebitAmount} to user ${claim.userId} for rejected claim ${claimId}`);
+        } catch (error) {
+          console.error(`❌ [TPA] Failed to refund wallet for claim ${claimId}:`, error);
+          // Log error but don't block rejection - claim rejection is more important
+        }
+      } else {
+        console.warn(`⚠️ [TPA] No category code mapping found for category: ${claim.category}`);
       }
     }
 
