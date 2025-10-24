@@ -20,7 +20,8 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { PaymentStatus, ServiceType } from './schemas/payment.schema';
+import { PaymentStatus, ServiceType, PaymentType } from './schemas/payment.schema';
+import { Types } from 'mongoose';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -63,6 +64,43 @@ export class PaymentController {
   @ApiResponse({ status: 200, description: 'Payment summary fetched' })
   getPaymentSummary(@Request() req: AuthRequest) {
     return this.paymentService.getPaymentSummary(req.user.userId);
+  }
+
+  @Post()
+  @Roles(UserRole.MEMBER)
+  @ApiOperation({ summary: 'Create a new payment request' })
+  @ApiResponse({ status: 201, description: 'Payment created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid payment data' })
+  async createPayment(
+    @Request() req: AuthRequest,
+    @Body() createPaymentDto: {
+      amount: number;
+      paymentType: PaymentType;
+      serviceType: ServiceType;
+      serviceReferenceId?: string;
+      description: string;
+      patientId?: string;
+      metadata?: Record<string, any>;
+    },
+  ) {
+    // Use the userId from the authenticated user
+    const userId = req.user.userId;
+
+    // For now, use a placeholder serviceId since the frontend doesn't always send it
+    // In production, this should be linked to actual service records
+    const serviceId = createPaymentDto.metadata?.serviceId ||
+                     new Types.ObjectId().toString();
+
+    return this.paymentService.createPaymentRequest({
+      userId,
+      amount: createPaymentDto.amount,
+      paymentType: createPaymentDto.paymentType,
+      serviceType: createPaymentDto.serviceType,
+      serviceId,
+      serviceReferenceId: createPaymentDto.serviceReferenceId || `REF-${Date.now()}`,
+      description: createPaymentDto.description,
+      notes: createPaymentDto.metadata ? JSON.stringify(createPaymentDto.metadata) : undefined,
+    });
   }
 
   @Post(':paymentId/mark-paid')

@@ -62,23 +62,55 @@ export async function getWalletBalance(patientId: string): Promise<WalletBalance
 // Get user's policy details for copay calculation
 export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
   try {
-    // For now, return default copay of 20% as per existing system
-    // This should be fetched from user's actual policy later
+    // Fetch the actual policy configuration from the API
+    const response = await fetch('/api/assignments/my-policy', {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch user policy, using default copay');
+      // Return default copay if API fails
+      return {
+        copay: {
+          percentage: 20,
+          mode: 'PERCENT',
+          value: 20
+        },
+        walletEnabled: true
+      };
+    }
+
+    const data = await response.json();
+
+    // Extract copay configuration from the response
+    const copay = data.copay || data.planConfig?.copay;
+    const copayPercentage = copay?.percentage || copay?.value || 20;
+
+    console.log('User policy fetched:', {
+      policyId: data.policyId,
+      copayPercentage,
+      copayMode: copay?.mode || 'PERCENT'
+    });
+
+    return {
+      copay: {
+        percentage: copayPercentage,
+        mode: copay?.mode || 'PERCENT',
+        value: copayPercentage
+      },
+      walletEnabled: data.walletEnabled !== false
+    };
+  } catch (error) {
+    console.error('Error fetching user policy:', error);
+    // Return default fallback in case of error
     return {
       copay: {
         percentage: 20,
         mode: 'PERCENT',
         value: 20
-      },
-      walletEnabled: true
-    };
-  } catch (error) {
-    console.error('Error fetching user policy:', error);
-    return {
-      copay: {
-        percentage: 0,
-        mode: 'PERCENT',
-        value: 0
       },
       walletEnabled: true
     };

@@ -198,6 +198,54 @@ export class AssignmentsService {
       .sort({ createdAt: -1 });
   }
 
+  async getPolicyConfigForUser(policyId: string, versionOverride?: number) {
+    console.log('🟡 [ASSIGNMENTS SERVICE] Getting policy config for user, policyId:', policyId, 'versionOverride:', versionOverride);
+
+    try {
+      // Get the plan configuration with copay details
+      const config = await this.planConfigService.getConfig(policyId, versionOverride);
+
+      if (!config) {
+        console.log('⚠️ [ASSIGNMENTS SERVICE] No plan config found for policy:', policyId);
+        return null;
+      }
+
+      // Access the wallet config from the planConfig
+      const walletConfig = (config as any).wallet;
+      const copayConfig = walletConfig?.copay;
+
+      // Return the config with copay details
+      return {
+        currentVersion: {
+          copay: copayConfig ? {
+            percentage: copayConfig.value || 20,
+            mode: copayConfig.mode || 'PERCENT',
+            value: copayConfig.value || 20
+          } : {
+            percentage: 20,
+            mode: 'PERCENT',
+            value: 20
+          },
+          wallet: walletConfig || {
+            totalAnnualAmount: 5000000,
+            perClaimLimit: 500000,
+            copay: { mode: 'PERCENT', value: 20 },
+            partialPaymentEnabled: true,
+            carryForward: { enabled: true, maxAmount: 1000000 },
+            topUpAllowed: true
+          },
+          services: (config as any).services,
+          limits: (config as any).limits,
+          version: config.version,
+        },
+        policyId: config.policyId,
+      };
+    } catch (error) {
+      console.error('❌ [ASSIGNMENTS SERVICE] Error getting policy config:', error);
+      return null;
+    }
+  }
+
   async searchPrimaryMembers(policyId: string, search: string) {
     console.log('🟡 [ASSIGNMENTS SERVICE] Searching primary members for policy:', policyId, 'search:', search);
 

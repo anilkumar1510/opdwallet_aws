@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
@@ -80,6 +81,46 @@ export class AssignmentsController {
   async getPolicyAssignments(@Param('policyId') policyId: string) {
     console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/policy/' + policyId);
     return this.assignmentsService.getPolicyAssignments(policyId);
+  }
+
+  @Get('my-policy')
+  @Roles(UserRole.MEMBER)
+  @ApiOperation({ summary: 'Get current user policy configuration with copay details' })
+  @ApiResponse({ status: 200, description: 'User policy configuration retrieved' })
+  @ApiResponse({ status: 404, description: 'No active policy assignment found' })
+  async getMyPolicyConfig(@Request() req: any) {
+    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/my-policy for user:', req.user?.userId);
+
+    // Get user's active assignments
+    const assignments = await this.assignmentsService.getUserAssignments(req.user.userId);
+
+    if (!assignments || assignments.length === 0) {
+      throw new NotFoundException('No active policy assignment found for user');
+    }
+
+    // Get the first active assignment (assuming one policy per user)
+    const activeAssignment = assignments[0];
+
+    // Get the plan configuration for this policy
+    const planConfig = await this.assignmentsService.getPolicyConfigForUser(
+      activeAssignment.policyId.toString(),
+      activeAssignment.planVersionOverride
+    );
+
+    // Return the policy details with copay configuration
+    return {
+      policyId: activeAssignment.policyId,
+      assignmentId: activeAssignment.assignmentId,
+      effectiveFrom: activeAssignment.effectiveFrom,
+      effectiveTo: activeAssignment.effectiveTo,
+      copay: planConfig?.currentVersion?.copay || {
+        percentage: 20, // Default fallback
+        mode: 'PERCENT',
+        value: 20
+      },
+      walletEnabled: planConfig?.currentVersion?.wallet ? true : true, // Default to enabled
+      planConfig: planConfig?.currentVersion
+    };
   }
 
   @Get('search-primary-members')
