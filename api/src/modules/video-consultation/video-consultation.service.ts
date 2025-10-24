@@ -33,8 +33,8 @@ export class VideoConsultationService {
     console.log('[DEBUG] API Endpoint:', 'https://api.daily.co/v1/rooms');
     console.log('[DEBUG] Request Config:', JSON.stringify({
       privacy: 'public',
-      geo: 'ap-south-1',
       properties: {
+        geo: 'ap-south-1',
         enable_screenshare: true,
         enable_chat: true,
         start_video_off: false,
@@ -53,8 +53,8 @@ export class VideoConsultationService {
         {
           name: roomName,
           privacy: 'public',
-          geo: 'ap-south-1', // Force India/Asia-South region for optimal performance
           properties: {
+            geo: 'ap-south-1', // Force India/Asia-South region for optimal performance
             enable_screenshare: true,
             enable_chat: true,
             start_video_off: false,
