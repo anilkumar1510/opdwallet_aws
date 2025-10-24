@@ -566,10 +566,10 @@ export default function PlanConfigEdit() {
       />
 
       <Tabs defaultValue="coverage" className="space-y-4">
-        <TabsList className="bg-white">
-          <TabsTrigger value="coverage" className="data-[state=active]:bg-white data-[state=active]:text-black">Coverage</TabsTrigger>
-          <TabsTrigger value="benefits" className="data-[state=active]:bg-white data-[state=active]:text-black">Benefits</TabsTrigger>
-          <TabsTrigger value="wallet" className="data-[state=active]:bg-white data-[state=active]:text-black">Wallet</TabsTrigger>
+        <TabsList className="bg-gray-100">
+          <TabsTrigger value="coverage" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Coverage</TabsTrigger>
+          <TabsTrigger value="benefits" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Benefits</TabsTrigger>
+          <TabsTrigger value="wallet" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Wallet</TabsTrigger>
         </TabsList>
 
         <TabsContent value="coverage">

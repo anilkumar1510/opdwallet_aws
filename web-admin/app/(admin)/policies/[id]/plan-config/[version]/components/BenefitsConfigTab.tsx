@@ -50,7 +50,7 @@ export function BenefitsConfigTab({
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-6 bg-white">
+      <CardContent className="bg-white p-0">
         {categoriesLoading ? (
           <div className="text-center py-8 text-gray-600">
             Loading categories...
@@ -60,117 +60,102 @@ export function BenefitsConfigTab({
             No active categories found. Please create categories first.
           </div>
         ) : (
-          categories.map((category) => {
-            const benefit = currentBenefits[category.categoryId];
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Enabled</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Annual Limit (₹)</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Online</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Offline</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">VAS</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {categories.map((category, index) => {
+                  const benefit = currentBenefits[category.categoryId];
+                  const isAvailableOnline = (category as any).isAvailableOnline;
 
-            return (
-              <div key={category.categoryId} className="border border-gray-200 rounded-lg p-4 bg-white">
-                <div className="bg-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <Label htmlFor={`${category.categoryId}-enabled`} className="text-lg font-medium">
-                        {category.name}
-                      </Label>
-                      <div className="text-sm text-gray-500 mt-1">
-                        Category ID: {category.categoryId}
-                      </div>
-                      {selectedRelationship !== 'PRIMARY' && isInheriting && (
-                        <div className="text-xs text-green-600 mt-1">
-                          ✓ Inherited from Primary Member
+                  return (
+                    <tr key={category.categoryId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">{category.name}</div>
+                          <div className="text-xs text-gray-600">ID: {category.categoryId}</div>
+                          {category.description && (
+                            <div className="text-xs text-gray-500 mt-1">{category.description}</div>
+                          )}
+                          {selectedRelationship !== 'PRIMARY' && isInheriting && (
+                            <div className="text-xs text-green-600 mt-1">✓ Inherited</div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <Switch
-                      id={`${category.categoryId}-enabled`}
-                      checked={benefit?.enabled || false}
-                      onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'enabled', checked)}
-                      disabled={isDisabled}
-                    />
-                  </div>
-
-                  {benefit?.enabled && (
-                    <div className="space-y-4 pl-4">
-                      <div>
-                        <Label htmlFor={`${category.categoryId}-limit`}>Annual Limit (₹)</Label>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Switch
+                          id={`${category.categoryId}-enabled`}
+                          checked={benefit?.enabled || false}
+                          onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'enabled', checked)}
+                          disabled={isDisabled}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
                         <Input
                           id={`${category.categoryId}-limit`}
                           type="number"
-                          value={benefit.annualLimit || ''}
+                          value={benefit?.enabled ? (benefit.annualLimit || '') : ''}
                           onChange={(e) => onUpdateBenefit(category.categoryId, 'annualLimit', parseInt(e.target.value) || 0)}
-                          disabled={isDisabled}
-                          placeholder="Enter annual limit"
-                          className="bg-white"
+                          disabled={isDisabled || !benefit?.enabled}
+                          placeholder="0"
+                          className="w-full text-sm"
                         />
-                      </div>
-
-                      {(category as any).isAvailableOnline && (
-                        <div className="flex items-center space-x-6">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id={`${category.categoryId}-online`}
-                              checked={benefit.onlineEnabled || false}
-                              onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'onlineEnabled', checked)}
-                              disabled={isDisabled}
-                            />
-                            <Label htmlFor={`${category.categoryId}-online`}>Online</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id={`${category.categoryId}-offline`}
-                              checked={benefit.offlineEnabled || false}
-                              onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'offlineEnabled', checked)}
-                              disabled={isDisabled}
-                            />
-                            <Label htmlFor={`${category.categoryId}-offline`}>Offline</Label>
-                          </div>
-                        </div>
-                      )}
-                      {!(category as any).isAvailableOnline && (
-                        <div className="flex items-center space-x-2">
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {isAvailableOnline ? (
                           <Switch
-                            id={`${category.categoryId}-offline`}
-                            checked={benefit.offlineEnabled || false}
-                            onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'offlineEnabled', checked)}
-                            disabled={isDisabled}
+                            id={`${category.categoryId}-online`}
+                            checked={benefit?.enabled ? (benefit.onlineEnabled || false) : false}
+                            onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'onlineEnabled', checked)}
+                            disabled={isDisabled || !benefit?.enabled}
                           />
-                          <Label htmlFor={`${category.categoryId}-offline`}>Offline</Label>
-                        </div>
-                      )}
-
-                      <div className="flex items-center space-x-2">
+                        ) : (
+                          <span className="text-xs text-gray-400">N/A</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Switch
+                          id={`${category.categoryId}-offline`}
+                          checked={benefit?.enabled ? (benefit.offlineEnabled || false) : false}
+                          onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'offlineEnabled', checked)}
+                          disabled={isDisabled || !benefit?.enabled}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <Switch
                           id={`${category.categoryId}-vas`}
-                          checked={benefit.vasEnabled || false}
+                          checked={benefit?.enabled ? (benefit.vasEnabled || false) : false}
                           onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'vasEnabled', checked)}
-                          disabled={isDisabled}
+                          disabled={isDisabled || !benefit?.enabled}
                         />
-                        <Label htmlFor={`${category.categoryId}-vas`}>VAS Enabled</Label>
-                      </div>
-
-                      <div>
-                        <Label htmlFor={`${category.categoryId}-notes`}>Notes</Label>
-                        <Textarea
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
                           id={`${category.categoryId}-notes`}
-                          value={benefit.notes || ''}
+                          type="text"
+                          value={benefit?.enabled ? (benefit.notes || '') : ''}
                           onChange={(e) => onUpdateBenefit(category.categoryId, 'notes', e.target.value)}
-                          disabled={isDisabled}
-                          placeholder="Additional notes or conditions"
-                          rows={2}
-                          className="bg-white"
+                          disabled={isDisabled || !benefit?.enabled}
+                          placeholder="Notes..."
+                          className="w-full text-sm"
                         />
-                      </div>
-
-                      {category.description && (
-                        <div className="text-sm text-gray-600 italic">
-                          {category.description}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </CardContent>
     </Card>

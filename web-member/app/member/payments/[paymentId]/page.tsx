@@ -59,6 +59,74 @@ export default function PaymentPage() {
     setError('');
 
     try {
+      // Check if there's a pending booking in session storage
+      const pendingBookingData = sessionStorage.getItem('pendingBooking');
+
+      if (pendingBookingData) {
+        const bookingData = JSON.parse(pendingBookingData);
+
+        // Complete the appointment creation if pending
+        if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
+          const appointmentPayload = {
+            userId: bookingData.userId,
+            patientId: bookingData.patientId,
+            doctorId: bookingData.serviceDetails?.doctorId,
+            doctorName: bookingData.serviceDetails?.doctorName,
+            patientName: bookingData.patientName,
+            appointmentType: bookingData.serviceType === 'APPOINTMENT' ? 'IN_CLINIC' : 'ONLINE',
+            appointmentDate: bookingData.serviceDetails?.date,
+            timeSlot: bookingData.serviceDetails?.time,
+            consultationFee: bookingData.consultationFee,
+            clinicName: bookingData.serviceDetails?.clinicName || '',
+            clinicAddress: bookingData.serviceDetails?.clinicAddress || '',
+            status: 'CONFIRMED',
+            paymentId: paymentId
+          };
+
+          // Create the appointment
+          const appointmentResponse = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(appointmentPayload)
+          });
+
+          if (!appointmentResponse.ok) {
+            console.error('Failed to create appointment after payment');
+          }
+        }
+
+        // Create transaction record
+        const transactionPayload = {
+          userId: bookingData.userId,
+          patientId: bookingData.patientId,
+          serviceType: bookingData.serviceType,
+          serviceName: `Consultation with ${bookingData.serviceDetails?.doctorName}`,
+          totalAmount: bookingData.consultationFee,
+          walletAmount: bookingData.walletCoverage || 0,
+          selfPaidAmount: payment?.amount || 0,
+          copayAmount: payment?.amount || 0,
+          paymentMethod: payment?.paymentType || 'COPAY',
+          status: 'COMPLETED',
+          paymentGatewayId: paymentId
+        };
+
+        await fetch('/api/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(transactionPayload)
+        });
+
+        // Clear pending booking from session
+        sessionStorage.removeItem('pendingBooking');
+      }
+
+      // Mark payment as completed
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/payments/${paymentId}/mark-paid`, {
         method: 'POST',

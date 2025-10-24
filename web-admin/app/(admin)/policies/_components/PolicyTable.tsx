@@ -73,33 +73,6 @@ export default function PolicyTable({
     }
   }
 
-  const getStatusBadgeClass = (status: PolicyStatus) => {
-    switch (status) {
-      case PolicyStatus.ACTIVE:
-        return 'badge-success'
-      case PolicyStatus.DRAFT:
-        return 'badge-warning'
-      case PolicyStatus.INACTIVE:
-      case PolicyStatus.EXPIRED:
-        return 'badge-default'
-      default:
-        return 'badge-default'
-    }
-  }
-
-  const getStatusDotClass = (status: PolicyStatus) => {
-    switch (status) {
-      case PolicyStatus.ACTIVE:
-        return 'status-active'
-      case PolicyStatus.DRAFT:
-        return 'status-pending'
-      case PolicyStatus.INACTIVE:
-      case PolicyStatus.EXPIRED:
-        return 'status-inactive'
-      default:
-        return 'status-inactive'
-    }
-  }
 
   const formatDate = (date: string | undefined | null) => {
     if (!date) return 'Ongoing'
@@ -182,62 +155,65 @@ export default function PolicyTable({
   return (
     <>
       {/* Desktop Table View */}
-      <div className="hidden lg:block table-container">
-        <div className="overflow-x-auto">
-          <table className="table" role="table" aria-label="Policies table">
-            <thead>
+      <div className="hidden lg:block">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+          <table className="w-full" role="table" aria-label="Policies table">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr role="row">
-                <th role="columnheader" scope="col">Policy</th>
-                <th role="columnheader" scope="col">Owner/Payer</th>
-                <th role="columnheader" scope="col">Status</th>
-                <th role="columnheader" scope="col">Validity</th>
-                <th role="columnheader" scope="col">Current Version</th>
-                <th role="columnheader" scope="col">Updated</th>
-                <th role="columnheader" scope="col" className="text-right">Actions</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Policy</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Owner/Payer</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Validity</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Version</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Updated</th>
+                <th role="columnheader" scope="col" className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {policies.map((policy) => (
+            <tbody className="divide-y divide-gray-200">
+              {policies.map((policy, index) => (
                 <tr
                   key={policy._id}
                   role="row"
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  className={`hover:bg-blue-50/50 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
                   onClick={() => router.push(`/policies/${policy._id}`)}
                 >
-                  <td role="cell">
+                  <td role="cell" className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="font-medium text-gray-900">{policy.name}</div>
-                      <div className="font-mono text-sm text-gray-500">{policy.policyNumber}</div>
+                      <div className="font-semibold text-gray-900">{policy.name}</div>
+                      <div className="font-mono text-xs text-gray-600 mt-1">{policy.policyNumber}</div>
                     </div>
                   </td>
-                  <td role="cell">
-                    <div className="text-sm text-gray-900">{policy.ownerPayer}</div>
+                  <td role="cell" className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{policy.ownerPayer}</div>
                     {policy.sponsorName && (
-                      <div className="text-sm text-gray-500">{policy.sponsorName}</div>
+                      <div className="text-xs text-gray-600 mt-1">{policy.sponsorName}</div>
                     )}
                   </td>
-                  <td role="cell">
-                    <span className={getStatusBadgeClass(policy.status)}>
-                      <span className={`status-dot mr-1 ${getStatusDotClass(policy.status)}`}></span>
+                  <td role="cell" className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      policy.status === PolicyStatus.ACTIVE ? 'bg-green-100 text-green-800' :
+                      policy.status === PolicyStatus.DRAFT ? 'bg-amber-100 text-amber-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
                       {policy.status}
                     </span>
                   </td>
-                  <td role="cell">
-                    <div className="text-sm text-gray-900">
+                  <td role="cell" className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
                       {formatDate(policy.effectiveFrom)}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-xs text-gray-600 mt-1">
                       to {formatDate(policy.effectiveTo)}
                     </div>
                   </td>
-                  <td role="cell">
-                    <span className="badge-default">
-                      Has Configurations
+                  <td role="cell" className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      Configured
                     </span>
                   </td>
-                  <td role="cell">
+                  <td role="cell" className="px-6 py-4 whitespace-nowrap">
                     <div
-                      className="text-sm text-gray-900"
+                      className="text-sm font-medium text-gray-700"
                       title={new Date(policy.updatedAt).toLocaleString()}
                     >
                       {formatRelativeTime(policy.updatedAt)}
@@ -339,7 +315,7 @@ export default function PolicyTable({
         {policies.map((policy) => (
           <div
             key={policy._id}
-            className="card hover:shadow-md transition-shadow"
+            className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
             onClick={() => router.push(`/policies/${policy._id}`)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -355,23 +331,26 @@ export default function PolicyTable({
               {/* Header */}
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{policy.name}</h3>
+                  <h3 className="font-semibold text-gray-900">{policy.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-sm text-gray-500">{policy.policyNumber}</span>
+                    <span className="font-mono text-xs text-gray-700">{policy.policyNumber}</span>
                     <span className="text-gray-400">•</span>
-                    <span className="text-sm text-gray-600">{policy.ownerPayer}</span>
+                    <span className="text-sm font-medium text-gray-700">{policy.ownerPayer}</span>
                     <span className="text-gray-400">•</span>
-                    <span className="badge-default text-xs">Has Configurations</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Configured</span>
                   </div>
                 </div>
-                <span className={getStatusBadgeClass(policy.status)}>
-                  <span className={`status-dot mr-1 ${getStatusDotClass(policy.status)}`}></span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  policy.status === PolicyStatus.ACTIVE ? 'bg-green-100 text-green-800' :
+                  policy.status === PolicyStatus.DRAFT ? 'bg-amber-100 text-amber-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
                   {policy.status}
                 </span>
               </div>
 
               {/* Dates */}
-              <div className="text-sm text-gray-600">
+              <div className="text-sm font-medium text-gray-700">
                 {formatDate(policy.effectiveFrom)} → {formatDate(policy.effectiveTo)}
               </div>
 

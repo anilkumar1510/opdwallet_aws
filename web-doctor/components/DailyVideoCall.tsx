@@ -307,7 +307,9 @@ function VideoCallContent({
       console.log('[DEBUG] Timestamp:', new Date().toISOString())
       console.log('[DEBUG] Meeting state:', daily?.meetingState())
       console.log('[DEBUG] Participants:', JSON.stringify(daily?.participants(), null, 2))
+      console.log('[DEBUG] Clearing loading state - video should now be visible')
       console.log('========================================\n')
+      setIsLoading(false)
     }, [daily])
   )
 

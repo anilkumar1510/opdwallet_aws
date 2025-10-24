@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '../../../../components/ui/Card'
+import PaymentProcessor from '@/components/PaymentProcessor'
+import { createTransaction } from '@/lib/transactions'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -21,7 +24,9 @@ import {
   AcademicCapIcon,
   BeakerIcon,
   EyeIcon,
-  PlusIcon
+  PlusIcon,
+  CreditCardIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid, StarIcon as StarSolid } from '@heroicons/react/24/solid'
 
@@ -32,8 +37,11 @@ interface BookingState {
   date: string
   timeSlot: string
   familyMember: string
+  familyMemberDetails?: any
   location: string
   specialization: string
+  paymentProcessed?: boolean
+  transactionId?: string
 }
 
 interface Provider {
@@ -62,6 +70,7 @@ interface TimeSlot {
 }
 
 export default function NewBookingPage() {
+  const router = useRouter()
   const [bookingState, setBookingState] = useState<BookingState>({
     step: 1,
     serviceType: '',
@@ -80,6 +89,8 @@ export default function NewBookingPage() {
   const [providers, setProviders] = useState<Provider[]>([])
   const [filteredProviders, setFilteredProviders] = useState<Provider[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [loggedInUserId, setLoggedInUserId] = useState<string>('')
+  const [familyMembersList, setFamilyMembersList] = useState<any[]>([])
   const providerScrollRef = useRef<HTMLDivElement>(null)
 
   // Mock data
@@ -112,11 +123,9 @@ export default function NewBookingPage() {
     'Pediatrician', 'Orthopedic', 'Gynecologist', 'ENT', 'Psychiatrist'
   ]
 
-  const familyMembers = [
-    { id: 'self', name: 'Self', relation: '' },
-    { id: 'spouse', name: 'John Smith', relation: 'Spouse' },
-    { id: 'child1', name: 'Emily Smith', relation: 'Daughter' },
-    { id: 'child2', name: 'Michael Smith', relation: 'Son' }
+  // Fetched dynamically from user profile
+  const familyMembers = familyMembersList.length > 0 ? familyMembersList : [
+    { id: 'self', userId: 'self', name: 'Self', relation: '' }
   ]
 
   const mockProvidersData: Provider[] = useMemo(() => [
@@ -219,6 +228,51 @@ export default function NewBookingPage() {
     setFilteredProviders(mockProvidersData)
   }, [mockProvidersData])
 
+  // Fetch user profile and family members
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/member/profile', {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setLoggedInUserId(data.user._id)
+
+          // Build family members list
+          const members = [
+            {
+              id: data.user._id,
+              userId: data.user._id,
+              name: `${data.user.name.firstName} ${data.user.name.lastName}`,
+              relation: 'Self'
+            },
+            ...data.dependents.map((dep: any) => ({
+              id: dep._id,
+              userId: dep._id,
+              name: `${dep.name.firstName} ${dep.name.lastName}`,
+              relation: dep.relationship || 'Family Member'
+            }))
+          ]
+          setFamilyMembersList(members)
+
+          // Set default to self
+          if (members.length > 0) {
+            setBookingState(prev => ({
+              ...prev,
+              familyMember: members[0].id,
+              familyMemberDetails: members[0]
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error)
+      }
+    }
+
+    fetchUserProfile()
+  }, [])
+
   useEffect(() => {
     let filtered = providers
 
@@ -246,8 +300,18 @@ export default function NewBookingPage() {
   }, [searchQuery, bookingState.specialization, bookingState.location, providers])
 
   const handleNext = () => {
-    if (bookingState.step < 4) {
-      setBookingState(prev => ({ ...prev, step: prev.step + 1 }))
+    if (bookingState.step < 5) {
+      // If moving from step 4 to 5, save selected family member details
+      if (bookingState.step === 4) {
+        const selectedMember = familyMembers.find(m => m.id === bookingState.familyMember)
+        setBookingState(prev => ({
+          ...prev,
+          step: prev.step + 1,
+          familyMemberDetails: selectedMember
+        }))
+      } else {
+        setBookingState(prev => ({ ...prev, step: prev.step + 1 }))
+      }
     }
   }
 
@@ -295,7 +359,7 @@ export default function NewBookingPage() {
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center mb-6">
-      {[1, 2, 3, 4].map((step, index) => (
+      {[1, 2, 3, 4, 5].map((step, index) => (
         <div key={step} className="flex items-center">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
             bookingState.step >= step
@@ -308,8 +372,8 @@ export default function NewBookingPage() {
               step
             )}
           </div>
-          {index < 3 && (
-            <div className={`w-8 sm:w-12 h-0.5 mx-2 ${
+          {index < 4 && (
+            <div className={`w-6 sm:w-10 h-0.5 mx-1 ${
               bookingState.step > step ? 'bg-brand-600' : 'bg-gray-200'
             }`} />
           )}
@@ -724,7 +788,7 @@ export default function NewBookingPage() {
         <button onClick={handleBack} className="btn-ghost p-2">
           <ArrowLeftIcon className="w-5 h-5" />
         </button>
-        <h2 className="text-xl font-bold text-gray-900">Confirm Booking</h2>
+        <h2 className="text-xl font-bold text-gray-900">Select Patient</h2>
         <div className="w-10" />
       </div>
 
@@ -740,7 +804,14 @@ export default function NewBookingPage() {
                   name="familyMember"
                   value={member.id}
                   checked={bookingState.familyMember === member.id}
-                  onChange={(e) => setBookingState(prev => ({ ...prev, familyMember: e.target.value }))}
+                  onChange={(e) => {
+                    const selectedMember = familyMembers.find(m => m.id === e.target.value)
+                    setBookingState(prev => ({
+                      ...prev,
+                      familyMember: e.target.value,
+                      familyMemberDetails: selectedMember
+                    }))
+                  }}
                   className="text-brand-600 focus:ring-brand-600"
                 />
                 <div className="flex-1">
@@ -755,105 +826,223 @@ export default function NewBookingPage() {
         </div>
       </Card>
 
-      {/* Booking Summary */}
+      {/* Summary Preview */}
       <Card>
         <div className="p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Booking Summary</h3>
-          <div className="space-y-4">
-            {/* Doctor Info */}
+          <h3 className="font-semibold text-gray-900 mb-4">Appointment Details</h3>
+          <div className="space-y-3">
             <div className="flex items-start space-x-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center text-white font-semibold text-lg">
-                {bookingState.provider.name.split(' ').map((n: string) => n[0]).join('')}
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center text-white font-semibold">
+                {bookingState.provider?.name?.split(' ').map((n: string) => n[0]).join('')}
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">{bookingState.provider.name}</h4>
-                <p className="text-sm text-gray-600">{bookingState.provider.specialty}</p>
-                <p className="text-sm text-gray-600">{bookingState.provider.hospital}</p>
-                <div className="flex items-center mt-2">
-                  <StarSolid className="w-4 h-4 text-yellow-400 mr-1" />
-                  <span className="text-sm text-gray-600">
-                    {bookingState.provider.rating} ({bookingState.provider.reviews} reviews)
-                  </span>
-                </div>
+                <h4 className="font-semibold text-gray-900">{bookingState.provider?.name}</h4>
+                <p className="text-sm text-gray-600">{bookingState.provider?.specialty}</p>
+                <p className="text-sm text-gray-600">{bookingState.provider?.hospital}</p>
               </div>
             </div>
 
-            <div className="border-t border-gray-100 pt-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Service Type</span>
-                <span className="font-medium text-gray-900 capitalize">
-                  {bookingState.serviceType.replace('-', ' ')}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Date</span>
                 <span className="font-medium text-gray-900">
-                  {new Date(bookingState.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
+                  {bookingState.date && new Date(bookingState.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
                     day: 'numeric'
                   })}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Time</span>
                 <span className="font-medium text-gray-900">{bookingState.timeSlot}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Patient</span>
-                <span className="font-medium text-gray-900">
-                  {familyMembers.find(m => m.id === bookingState.familyMember)?.name}
-                </span>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Consultation Fee</span>
+                <span className="font-medium text-gray-900">₹{bookingState.provider?.consultationFee}</span>
               </div>
-            </div>
-
-            <div className="border-t border-gray-100 pt-4">
-              <div className="flex justify-between items-center text-lg">
-                <span className="font-semibold text-gray-900">Consultation Fee</span>
-                <span className="font-bold text-gray-900">₹{bookingState.provider.consultationFee}</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                Pay at the clinic or through the app
-              </p>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Terms and Conditions */}
-      <Card className="bg-gray-50">
-        <div className="p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Important Notes</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Please arrive 10 minutes before your appointment time</li>
-            <li>• Bring a valid ID and any relevant medical documents</li>
-            <li>• Cancellation allowed up to 2 hours before appointment</li>
-            <li>• Consultation fee is non-refundable after appointment</li>
-          </ul>
-        </div>
-      </Card>
-
-      {/* Book Button */}
+      {/* Continue Button */}
       <button
-        onClick={handleBooking}
-        disabled={isLoading}
-        className="w-full btn-primary py-4 text-base font-medium sticky bottom-4 disabled:opacity-50"
+        onClick={handleNext}
+        className="w-full btn-primary py-4 text-base font-medium sticky bottom-4"
       >
-        {isLoading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-            Booking...
-          </div>
-        ) : (
-          <>
-            Confirm Booking
-            <CheckCircleIcon className="w-5 h-5 ml-2" />
-          </>
-        )}
+        Continue to Payment
+        <ArrowRightIcon className="w-5 h-5 ml-2" />
       </button>
     </div>
   )
+
+  const renderStep5 = () => {
+    // Payment and confirmation step
+    if (!bookingState.provider || !bookingState.familyMemberDetails) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-600">Missing booking information. Please go back and complete previous steps.</p>
+        </div>
+      )
+    }
+
+    const handlePaymentSuccess = async (transaction: any) => {
+      // Create the actual appointment after payment success
+      try {
+        const appointmentData = {
+          userId: loggedInUserId,
+          patientId: bookingState.familyMemberDetails.userId,
+          doctorId: bookingState.provider.id,
+          doctorName: bookingState.provider.name,
+          specialty: bookingState.provider.specialty,
+          patientName: bookingState.familyMemberDetails.name,
+          appointmentType: 'IN_CLINIC',
+          appointmentDate: bookingState.date,
+          timeSlot: bookingState.timeSlot,
+          consultationFee: bookingState.provider.consultationFee,
+          clinicName: bookingState.provider.hospital,
+          clinicAddress: bookingState.provider.location,
+          status: 'CONFIRMED',
+          transactionId: transaction.transactionId
+        }
+
+        const response = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(appointmentData)
+        })
+
+        if (response.ok) {
+          const appointment = await response.json()
+          setBookingState(prev => ({
+            ...prev,
+            paymentProcessed: true,
+            transactionId: transaction.transactionId
+          }))
+
+          // Show success message
+          alert(`Booking confirmed! Appointment ID: ${appointment.appointmentId}`)
+
+          // Redirect to appointments page
+          setTimeout(() => {
+            router.push('/member/appointments')
+          }, 2000)
+        } else {
+          throw new Error('Failed to create appointment')
+        }
+      } catch (error) {
+        console.error('Failed to create appointment:', error)
+        alert('Payment successful but failed to create appointment. Please contact support.')
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <button onClick={handleBack} className="btn-ghost p-2">
+            <ArrowLeftIcon className="w-5 h-5" />
+          </button>
+          <h2 className="text-xl font-bold text-gray-900">Payment & Confirmation</h2>
+          <div className="w-10" />
+        </div>
+
+        {/* Booking Summary */}
+        <Card>
+          <div className="p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Final Booking Details</h3>
+            <div className="space-y-4">
+              {/* Doctor Info */}
+              <div className="flex items-start space-x-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center text-white font-semibold text-lg">
+                  {bookingState.provider.name.split(' ').map((n: string) => n[0]).join('')}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900">{bookingState.provider.name}</h4>
+                  <p className="text-sm text-gray-600">{bookingState.provider.specialty}</p>
+                  <p className="text-sm text-gray-600">{bookingState.provider.hospital}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Patient</span>
+                  <span className="font-medium text-gray-900">
+                    {bookingState.familyMemberDetails.name}
+                    {bookingState.familyMemberDetails.relation && ` (${bookingState.familyMemberDetails.relation})`}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Date</span>
+                  <span className="font-medium text-gray-900">
+                    {new Date(bookingState.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Time</span>
+                  <span className="font-medium text-gray-900">{bookingState.timeSlot}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Location</span>
+                  <span className="font-medium text-gray-900">{bookingState.provider.location}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Payment Component */}
+        {!bookingState.paymentProcessed ? (
+          <PaymentProcessor
+            consultationFee={bookingState.provider.consultationFee}
+            userId={loggedInUserId}
+            patientId={bookingState.familyMemberDetails.userId}
+            patientName={bookingState.familyMemberDetails.name}
+            serviceType="APPOINTMENT"
+            serviceDetails={{
+              doctorName: bookingState.provider.name,
+              doctorId: bookingState.provider.id,
+              date: bookingState.date,
+              time: bookingState.timeSlot,
+              clinicName: bookingState.provider.hospital
+            }}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentFailure={(error) => {
+              alert(`Payment failed: ${error}`)
+            }}
+          />
+        ) : (
+          <Card className="bg-green-50 border-green-300">
+            <div className="p-4 text-center">
+              <CheckCircleIcon className="w-16 h-16 text-green-600 mx-auto mb-3" />
+              <h3 className="font-semibold text-green-900 text-lg">Booking Confirmed!</h3>
+              <p className="text-green-700 mt-2">Your appointment has been successfully booked.</p>
+              <p className="text-sm text-green-600 mt-1">Transaction ID: {bookingState.transactionId}</p>
+            </div>
+          </Card>
+        )}
+
+        {/* Terms and Conditions */}
+        <Card className="bg-gray-50">
+          <div className="p-4">
+            <h4 className="font-medium text-gray-900 mb-2">Important Notes</h4>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Please arrive 10 minutes before your appointment time</li>
+              <li>• Bring a valid ID and any relevant medical documents</li>
+              <li>• Cancellation allowed up to 2 hours before appointment</li>
+              <li>• Consultation fee is non-refundable after payment</li>
+            </ul>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   const renderCurrentStep = () => {
     switch (bookingState.step) {
@@ -865,6 +1054,8 @@ export default function NewBookingPage() {
         return renderStep3()
       case 4:
         return renderStep4()
+      case 5:
+        return renderStep5()
       default:
         return renderStep1()
     }

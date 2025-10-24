@@ -30,7 +30,7 @@ export function CoverageConfigTab({
           Define which relationships are covered under this plan and their individual configurations.
         </p>
       </CardHeader>
-      <CardContent className="space-y-6 bg-white">
+      <CardContent className="bg-white p-0">
         {relationshipsLoading ? (
           <div className="text-center py-8 text-gray-600">
             Loading relationships...
@@ -40,104 +40,130 @@ export function CoverageConfigTab({
             No relationships found. Please check relationship master data.
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h4 className="font-medium mb-4 text-gray-900">Select Covered Relationships</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Choose which family relationships are covered under this plan. Only selected relationships will be available for assignment.
-              </p>
-
-              <div className="space-y-3">
-                {relationships.map((relationship) => (
-                  <div key={relationship.relationshipCode} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-gray-50">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
-                        {relationship.displayName}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Code: {relationship.relationshipCode}
-                      </div>
-                    </div>
-                    <Switch
-                      checked={coveredRelationships.includes(relationship.relationshipCode) || false}
-                      onCheckedChange={(checked) => onToggleRelationship(relationship.relationshipCode, checked)}
-                      disabled={isReadOnly}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="text-sm text-blue-800">
-                  <strong>Selected relationships:</strong> {coveredRelationships.length === 0 ? 'None' : coveredRelationships.join(', ')}
-                </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  Note: Primary Member is always covered and cannot be disabled.
-                </div>
-              </div>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h4 className="font-medium mb-4 text-gray-900">Individual Member Configuration</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Configure benefits and wallet settings for each covered relationship. You can choose to inherit from primary member or create custom configurations.
-              </p>
-
-              {coveredRelationships.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded">
-                  Add relationships above to configure individual member settings
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {coveredRelationships.map((relationshipCode) => {
-                    const relationship = relationships.find(r => r.relationshipCode === relationshipCode);
-                    const memberConfig = memberConfigs?.[relationshipCode];
+          <div>
+            {/* Coverage Matrix Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Relationship
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                      Covered
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">
+                      Inherit from Primary
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Configuration Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {relationships.map((relationship, index) => {
+                    const isRelationshipCovered = coveredRelationships.includes(relationship.relationshipCode);
+                    const memberConfig = memberConfigs?.[relationship.relationshipCode];
                     const isInheriting = memberConfig?.inheritFromPrimary !== false;
+                    const isPrimary = relationship.relationshipCode === 'PRIMARY';
 
                     return (
-                      <div key={relationshipCode} className="border border-gray-100 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
+                      <tr key={relationship.relationshipCode} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div>
-                            <h5 className="font-medium text-gray-900">
-                              {relationship?.displayName || relationshipCode}
-                            </h5>
-                            <div className="text-sm text-gray-500">
-                              Code: {relationshipCode}
-                            </div>
+                            <div className="text-sm font-semibold text-gray-900">{relationship.displayName}</div>
+                            <div className="text-xs text-gray-600">Code: {relationship.relationshipCode}</div>
                           </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-600">Inherit from Primary:</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {isPrimary ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Always Covered
+                            </span>
+                          ) : (
                             <Switch
-                              checked={isInheriting}
-                              onCheckedChange={(checked) => onToggleInheritance(relationshipCode, checked)}
+                              id={`${relationship.relationshipCode}-covered`}
+                              checked={isRelationshipCovered}
+                              onCheckedChange={(checked) => onToggleRelationship(relationship.relationshipCode, checked)}
                               disabled={isReadOnly}
                             />
-                          </div>
-                        </div>
-
-                        {isInheriting && (
-                          <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                            ✓ Inheriting all settings from Primary Member
-                          </div>
-                        )}
-
-                        {!isInheriting && (
-                          <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded">
-                            ⚙️ Custom configuration - Settings will be defined individually for this relationship
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {isPrimary ? (
+                            <span className="text-xs text-gray-500">N/A</span>
+                          ) : isRelationshipCovered ? (
+                            <Switch
+                              id={`${relationship.relationshipCode}-inherit`}
+                              checked={isInheriting}
+                              onCheckedChange={(checked) => onToggleInheritance(relationship.relationshipCode, checked)}
+                              disabled={isReadOnly}
+                            />
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {isPrimary ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Primary Configuration
+                            </span>
+                          ) : !isRelationshipCovered ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                              Not Covered
+                            </span>
+                          ) : isInheriting ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              ✓ Inheriting from Primary
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                              ⚙️ Custom Configuration
+                            </span>
+                          )}
+                        </td>
+                      </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
 
-                  <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="text-sm text-yellow-800">
-                      <strong>Note:</strong> Individual configurations for benefits and wallet settings will be available in their respective tabs once relationships are configured here.
-                    </div>
+            {/* Summary Section */}
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Total Relationships:</span>
+                  <span className="text-sm font-medium text-gray-900">{relationships.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Covered Relationships:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {coveredRelationships.length + 1} (including Primary)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">Custom Configurations:</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {coveredRelationships.filter(code => memberConfigs?.[code]?.inheritFromPrimary === false).length}
+                  </span>
+                </div>
+              </div>
+
+              {coveredRelationships.length > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-xs text-blue-800">
+                    <strong>Active Coverage:</strong> PRIMARY{coveredRelationships.length > 0 && ', ' + coveredRelationships.join(', ')}
                   </div>
                 </div>
               )}
+
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="text-xs text-amber-800">
+                  <strong>Note:</strong> Individual benefit and wallet configurations are available in their respective tabs.
+                  Custom configurations allow you to set specific benefits and limits for each relationship type.
+                </div>
+              </div>
             </div>
           </div>
         )}

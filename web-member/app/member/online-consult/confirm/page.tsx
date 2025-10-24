@@ -9,10 +9,14 @@ import {
   PhoneIcon,
   VideoCameraIcon,
   CalendarIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CreditCardIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline'
 import SlotSelectionModal from '@/components/SlotSelectionModal'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
+import PaymentProcessor from '@/components/PaymentProcessor'
+import { createTransaction } from '@/lib/transactions'
 
 // Success screen component
 function BookingSuccessScreen({
@@ -166,6 +170,9 @@ function OnlineConfirmContent() {
   const [showSlotModal, setShowSlotModal] = useState(false)
   const [bookingSuccess, setBookingSuccess] = useState(false)
   const [appointmentId, setAppointmentId] = useState('')
+  const [showPaymentStep, setShowPaymentStep] = useState(false)
+  const [paymentProcessed, setPaymentProcessed] = useState(false)
+  const [transactionId, setTransactionId] = useState('')
 
   // Helper function to build self member
   const buildSelfMember = (userData: any): FamilyMember => ({
@@ -324,7 +331,7 @@ function OnlineConfirmContent() {
   }
 
   const handleConfirmBooking = async () => {
-    console.log('[OnlineConfirm] Starting booking process')
+    console.log('[OnlineConfirm] Starting booking validation')
     console.log('[OnlineConfirm] Selected patient:', selectedPatient)
     console.log('[OnlineConfirm] Contact number:', contactNumber)
     console.log('[OnlineConfirm] Time choice:', timeChoice)
@@ -333,36 +340,43 @@ function OnlineConfirmContent() {
       return
     }
 
-    setLoading(true)
+    // Show payment step instead of directly creating appointment
+    setShowPaymentStep(true)
+  }
+
+  const handlePaymentSuccess = async (transaction: any) => {
+    console.log('[OnlineConfirm] Payment successful, creating appointment')
 
     try {
       const { appointmentDate, appointmentTime } = getAppointmentDateTime()
-      console.log('[OnlineConfirm] Appointment date:', appointmentDate)
-      console.log('[OnlineConfirm] Appointment time:', appointmentTime)
-
       const payload = buildAppointmentPayload(appointmentDate, appointmentTime)
-      console.log('[OnlineConfirm] Payload details:', {
-        userId: loggedInUserId,
-        patientId: selectedPatient?.userId,
-        patientName: selectedPatient?.name,
-        isPrimaryPatient: selectedPatient?.isPrimary,
-        consultationFee: parseFloat(consultationFee)
-      })
 
-      const appointment = await createAppointmentAPI(payload)
+      // Add transaction ID to payload
+      const appointmentWithTransaction = {
+        ...payload,
+        transactionId: transaction.transactionId
+      }
+
+      const appointment = await createAppointmentAPI(appointmentWithTransaction)
       console.log('[OnlineConfirm] Appointment created successfully:', appointment)
 
       setAppointmentId(appointment.appointmentId)
+      setTransactionId(transaction.transactionId)
+      setPaymentProcessed(true)
       setBookingSuccess(true)
 
-      // Emit appointment created event to update nudge
+      // Emit appointment created event
       emitAppointmentEvent(AppointmentEvents.BOOKING_CREATED)
     } catch (error) {
-      console.error('[OnlineConfirm] Error creating appointment:', error)
-      alert(`Failed to book appointment: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setLoading(false)
+      console.error('[OnlineConfirm] Error creating appointment after payment:', error)
+      alert(`Payment successful but failed to book appointment: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+  }
+
+  const handlePaymentFailure = (error: string) => {
+    console.error('[OnlineConfirm] Payment failed:', error)
+    alert(`Payment failed: ${error}`)
+    setShowPaymentStep(false)
   }
 
   const handleScheduleLater = () => {
@@ -425,6 +439,91 @@ function OnlineConfirmContent() {
         onViewAppointments={handleViewAppointments}
         onBackToDashboard={handleBackToDashboard}
       />
+    )
+  }
+
+  // Show payment step
+  if (showPaymentStep && selectedPatient && !paymentProcessed) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm">
+          <div className="px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowPaymentStep(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Payment & Confirmation</h1>
+                <p className="text-sm text-gray-600">Complete payment to confirm booking</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 max-w-2xl mx-auto space-y-4">
+          {/* Booking Summary */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-3">Booking Summary</h3>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <UserIcon className="h-6 w-6" style={{ color: '#0a529f' }} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{doctorName}</h4>
+                  <p className="text-sm text-gray-600">{specialty}</p>
+                  <p className="text-sm text-gray-500 mt-1">Online Consultation</p>
+                </div>
+              </div>
+
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Patient</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedPatient.name} {!selectedPatient.isPrimary && `(${selectedPatient.relation})`}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Date & Time</span>
+                  <span className="font-medium text-gray-900">
+                    {timeChoice === 'NOW' ? 'Immediate' : `${selectedDate} at ${selectedTime}`}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Contact</span>
+                  <span className="font-medium text-gray-900">{contactNumber}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Preference</span>
+                  <span className="font-medium text-gray-900">
+                    {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Component */}
+          <PaymentProcessor
+            consultationFee={parseFloat(consultationFee)}
+            userId={loggedInUserId}
+            patientId={selectedPatient.userId}
+            patientName={selectedPatient.name}
+            serviceType="ONLINE_CONSULTATION"
+            serviceDetails={{
+              doctorName: doctorName,
+              doctorId: doctorId,
+              date: timeChoice === 'NOW' ? new Date().toISOString().split('T')[0] : selectedDate,
+              time: timeChoice === 'NOW' ? 'Immediate' : selectedTime
+            }}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentFailure={handlePaymentFailure}
+          />
+        </div>
+      </div>
     )
   }
 
@@ -616,12 +715,13 @@ function OnlineConfirmContent() {
         <button
           onClick={handleConfirmBooking}
           disabled={loading || !selectedPatient || !contactNumber}
-          className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors"
+          className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors flex items-center justify-center"
           style={!(loading || !selectedPatient || !contactNumber) ? { backgroundColor: '#0a529f' } : {}}
           onMouseEnter={(e) => { if (!(loading || !selectedPatient || !contactNumber)) e.currentTarget.style.backgroundColor = '#084080' }}
           onMouseLeave={(e) => { if (!(loading || !selectedPatient || !contactNumber)) e.currentTarget.style.backgroundColor = '#0a529f' }}
         >
-          {loading ? 'Booking...' : 'Confirm Booking'}
+          <CreditCardIcon className="h-6 w-6 mr-2" />
+          {loading ? 'Processing...' : 'Proceed to Payment'}
         </button>
       </div>
 
