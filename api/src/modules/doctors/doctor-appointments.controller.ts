@@ -227,11 +227,21 @@ export class DoctorAppointmentsController {
       throw new BadRequestException('Doctor ID is required');
     }
 
+    // Check if appointmentId is a MongoDB ObjectId (24-character hex string)
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(appointmentId);
+
+    const query: any = { doctorId };
+
+    if (isObjectId) {
+      // If it's an ObjectId, search by _id
+      query._id = appointmentId;
+    } else {
+      // Otherwise, search by appointmentId field
+      query.appointmentId = appointmentId;
+    }
+
     const appointment = await this.appointmentModel
-      .findOne({
-        appointmentId,
-        doctorId,
-      })
+      .findOne(query)
       .populate('prescriptionId')
       .exec();
 
@@ -256,10 +266,18 @@ export class DoctorAppointmentsController {
       throw new BadRequestException('Doctor ID is required');
     }
 
-    const appointment = await this.appointmentModel.findOne({
-      appointmentId,
-      doctorId,
-    });
+    // Check if appointmentId is a MongoDB ObjectId (24-character hex string)
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(appointmentId);
+
+    const query: any = { doctorId };
+
+    if (isObjectId) {
+      query._id = appointmentId;
+    } else {
+      query.appointmentId = appointmentId;
+    }
+
+    const appointment = await this.appointmentModel.findOne(query);
 
     if (!appointment) {
       throw new NotFoundException('Appointment not found');
@@ -289,10 +307,18 @@ export class DoctorAppointmentsController {
       throw new BadRequestException('Doctor ID is required');
     }
 
-    const appointment = await this.appointmentModel.findOne({
-      appointmentId,
-      doctorId,
-    });
+    // Check if appointmentId is a MongoDB ObjectId (24-character hex string)
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(appointmentId);
+
+    const query: any = { doctorId };
+
+    if (isObjectId) {
+      query._id = appointmentId;
+    } else {
+      query.appointmentId = appointmentId;
+    }
+
+    const appointment = await this.appointmentModel.findOne(query);
 
     if (!appointment) {
       console.error('[DoctorAppointmentsController] Appointment not found:', appointmentId);
