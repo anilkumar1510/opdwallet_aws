@@ -19,6 +19,8 @@ async function bootstrap() {
     './uploads/lab-prescriptions',
     './uploads/lab-reports',
     './uploads/doctors',
+    './uploads/prescriptions',
+    './uploads/prescriptions/generated',
   ];
 
   uploadDirs.forEach(dir => {

@@ -132,29 +132,8 @@ export default function PaymentPage() {
           }
         }
 
-        // Create transaction record
-        const transactionPayload = {
-          userId: bookingData.userId,
-          patientId: bookingData.patientId,
-          serviceType: bookingData.serviceType,
-          serviceName: `Consultation with ${bookingData.serviceDetails?.doctorName}`,
-          totalAmount: bookingData.consultationFee,
-          walletAmount: bookingData.walletCoverage || 0,
-          selfPaidAmount: payment?.amount || 0,
-          copayAmount: payment?.amount || 0,
-          paymentMethod: payment?.paymentType || 'COPAY',
-          status: 'COMPLETED',
-          paymentGatewayId: paymentId
-        };
-
-        await fetch('/api/transactions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(transactionPayload)
-        });
+        // Transaction is created automatically by the appointments service
+        // No need to create it manually here
 
         // Clear pending booking from session
         sessionStorage.removeItem('pendingBooking');
