@@ -153,10 +153,10 @@ function VideoCallContent({
 
     // Set a timeout to prevent infinite loading
     const joinTimeout = setTimeout(() => {
-      clearInterval(stateCheckInterval) // FIX: Stop the infinite logging
+      clearInterval(stateCheckInterval) // Stop the interval logging
 
       console.error('\n========================================')
-      console.error('[DEBUG] ❌ JOIN TIMEOUT AFTER 60 SECONDS')
+      console.error('[DEBUG] ❌ JOIN TIMEOUT AFTER 10 SECONDS')
       console.error('[DEBUG] Timestamp:', new Date().toISOString())
       console.error('[DEBUG] Meeting state:', daily.meetingState())
 
@@ -176,17 +176,10 @@ function VideoCallContent({
 
       console.error('========================================\n')
 
-      // Check if this is a cross-origin/domain configuration issue
-      if (daily.meetingState() === 'joining-meeting') {
-        console.error('[DEBUG] 🚨 LIKELY CAUSE: Daily.co domain not configured')
-        console.error('[DEBUG] 💡 SOLUTION: Add your domain to Daily.co dashboard allowed domains')
-        setError('Unable to connect to video service. Domain configuration required. Please contact support.')
-      } else {
-        setError('Connection timeout. Please check your camera and microphone permissions and try again.')
-      }
-
+      // Show generic timeout error
+      setError('Connection timeout. Please check your internet connection and try again.')
       setIsLoading(false)
-    }, 60000)
+    }, 10000)
 
     console.log('\n[DEBUG] 📞 CALLING daily.join()...')
     console.log('[DEBUG] Join config:', JSON.stringify({
@@ -483,46 +476,38 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
 
   useEffect(() => {
     console.log('\n========================================')
-    console.log('[DEBUG] 🏗️ CREATING DAILY CALL OBJECT WITH FRAME')
+    console.log('[DEBUG] 🏗️ CREATING DAILY CALL OBJECT (NO IFRAME)')
     console.log('[DEBUG] Timestamp:', new Date().toISOString())
     console.log('[DEBUG] DailyIframe available:', typeof DailyIframe)
-    console.log('[DEBUG] DailyIframe.createFrame available:', typeof DailyIframe.createFrame)
-    console.log('[DEBUG] Container ref available:', !!containerRef.current)
+    console.log('[DEBUG] DailyIframe.createCallObject available:', typeof DailyIframe.createCallObject)
 
-    // Wait a tick for container to be available
-    const timeoutId = setTimeout(() => {
-      if (!containerRef.current) {
-        console.error('[DEBUG] ❌ Container ref not available')
-        return
-      }
+    try {
+      console.log('[DEBUG] 🚀 Using createCallObject() method - NO IFRAME')
+      console.log('[DEBUG] This avoids cross-origin iframe communication issues')
 
-      try {
-        console.log('[DEBUG] 🚀 Using createFrame() method with container')
-        const daily = DailyIframe.createFrame(containerRef.current, {
-          showLeaveButton: true,
-          showFullscreenButton: true,
-        })
-        console.log('[DEBUG] ✅ createFrame() called successfully')
+      const daily = DailyIframe.createCallObject({
+        // Using call object mode instead of iframe to avoid cross-origin issues
+        // We'll build our own UI using the Daily React hooks
+      })
 
-        console.log('[DEBUG] ✅ Daily call object created successfully')
-        console.log('[DEBUG] Call object type:', typeof daily)
-        console.log('[DEBUG] Call object methods:', Object.keys(daily))
-        console.log('[DEBUG] Initial meeting state:', daily.meetingState())
+      console.log('[DEBUG] ✅ createCallObject() called successfully')
+      console.log('[DEBUG] ✅ Daily call object created successfully')
+      console.log('[DEBUG] Call object type:', typeof daily)
+      console.log('[DEBUG] Call object methods:', Object.keys(daily))
+      console.log('[DEBUG] Initial meeting state:', daily.meetingState())
 
-        console.log('========================================\n')
-        setCallObject(daily)
-      } catch (error) {
-        console.error('\n========================================')
-        console.error('[DEBUG] ❌ ERROR CREATING DAILY CALL OBJECT')
-        console.error('[DEBUG] Error type:', error?.constructor?.name)
-        console.error('[DEBUG] Error message:', (error as Error)?.message)
-        console.error('[DEBUG] Error stack:', (error as Error)?.stack)
-        console.error('========================================\n')
-      }
-    }, 100)
+      console.log('========================================\n')
+      setCallObject(daily)
+    } catch (error) {
+      console.error('\n========================================')
+      console.error('[DEBUG] ❌ ERROR CREATING DAILY CALL OBJECT')
+      console.error('[DEBUG] Error type:', error?.constructor?.name)
+      console.error('[DEBUG] Error message:', (error as Error)?.message)
+      console.error('[DEBUG] Error stack:', (error as Error)?.stack)
+      console.error('========================================\n')
+    }
 
     return () => {
-      clearTimeout(timeoutId)
       console.log('\n[DEBUG] 🗑️ DESTROYING DAILY CALL OBJECT')
       if (callObject) {
         try {
@@ -537,7 +522,7 @@ export default function DailyVideoCall(props: DailyVideoCallProps) {
 
   return (
     <div className="relative w-full h-full bg-gray-900">
-      {/* Daily.co iframe container */}
+      {/* Daily.co video container - using call object mode */}
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
 
       {!callObject && (
