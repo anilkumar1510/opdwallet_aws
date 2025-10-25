@@ -85,12 +85,20 @@ export class AppointmentsService {
       }
 
       if (activeAssignment && activeAssignment.policyId) {
-        policyId = activeAssignment.policyId._id || activeAssignment.policyId;
+        // Handle policyId as object or string
+        if (typeof activeAssignment.policyId === 'object' && activeAssignment.policyId._id) {
+          policyId = activeAssignment.policyId._id.toString();
+        } else if (typeof activeAssignment.policyId === 'string') {
+          policyId = activeAssignment.policyId;
+        } else {
+          policyId = activeAssignment.policyId.toString();
+        }
         console.log('✅ [POLICY] Found policyId:', policyId);
+        console.log('✅ [POLICY] PolicyId type:', typeof policyId);
 
         // Fetch plan config
-        console.log('🔍 [POLICY] Fetching plan config for policyId:', policyId.toString());
-        const planConfig = await this.planConfigService.getConfig(policyId.toString());
+        console.log('🔍 [POLICY] Fetching plan config for policyId:', policyId);
+        const planConfig = await this.planConfigService.getConfig(policyId);
         console.log('📄 [POLICY] Plan config retrieved:', planConfig ? 'YES' : 'NO');
 
         if (planConfig && planConfig.benefits && (planConfig.benefits as any)['CAT001']) {
@@ -205,7 +213,7 @@ export class AppointmentsService {
       requestedAt: new Date(),
       slotId: createAppointmentDto.slotId,
       doctorName: createAppointmentDto.doctorName || '',
-      specialty: createAppointmentDto.specialty || '',
+      specialty: createAppointmentDto.specialty || 'General Physician', // Default to General Physician if not provided
       clinicId: createAppointmentDto.clinicId || '',
       clinicName: createAppointmentDto.clinicName || '',
       clinicAddress: createAppointmentDto.clinicAddress || '',

@@ -79,6 +79,7 @@ export default function PaymentPage() {
             patientName: bookingData.patientName,
             doctorId: bookingData.serviceDetails?.doctorId,
             doctorName: bookingData.serviceDetails?.doctorName,
+            specialty: bookingData.serviceDetails?.specialty || 'General Physician', // Add specialty field
             appointmentType: bookingData.serviceType === 'APPOINTMENT' ? 'IN_CLINIC' : 'ONLINE',
             appointmentDate: bookingData.serviceDetails?.date,
             timeSlot: bookingData.serviceDetails?.time,
