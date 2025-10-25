@@ -1,0 +1,90 @@
+name: Seed Medical Data (Diagnoses & Symptoms) on AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "seed" to confirm seeding diagnoses and symptoms'
+        required: true
+        default: ''
+
+jobs:
+  seed-medical-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "seed" ]; then
+            echo "❌ ERROR: You must type 'seed' to confirm"
+            exit 1
+          fi
+          echo "✅ Confirmation validated"
+
+      - name: Seed Diagnoses and Symptoms on AWS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          command_timeout: 5m
+          script: |
+            echo "🌱 Starting medical data seeding on AWS..."
+
+            cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }
+
+            # Pull latest code
+            echo "📥 Pulling latest code from GitHub..."
+            git pull origin main
+
+            # Seed Diagnoses
+            echo "🏥 Seeding Diagnoses Database..."
+            docker exec opd-api-prod npm run seed:diagnoses
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Diagnoses seeded successfully!"
+
+              # Verify diagnoses count
+              echo "🔍 Verifying diagnoses count..."
+              docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+                const count = db.diagnosis_database.countDocuments();
+                print('📊 Total diagnoses in database: ' + count);
+              "
+            else
+              echo "❌ ERROR: Diagnoses seeding failed"
+              exit 1
+            fi
+
+            # Seed Symptoms
+            echo "🩺 Seeding Symptoms Database..."
+            docker exec opd-api-prod npm run seed:symptoms
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Symptoms seeded successfully!"
+
+              # Verify symptoms count
+              echo "🔍 Verifying symptoms count..."
+              docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+                const count = db.symptom_database.countDocuments();
+                print('📊 Total symptoms in database: ' + count);
+              "
+            else
+              echo "❌ ERROR: Symptoms seeding failed"
+              exit 1
+            fi
+
+            # Summary
+            echo "🎉 Medical data seeding complete!"
+            echo "📊 Final counts:"
+            docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+              const diagnosesCount = db.diagnosis_database.countDocuments();
+              const symptomsCount = db.symptom_database.countDocuments();
+              const medicinesCount = db.medicine_database.countDocuments();
+              print('   Diagnoses: ' + diagnosesCount);
+              print('   Symptoms: ' + symptomsCount);
+              print('   Medicines: ' + medicinesCount);
+            "
+
+            echo "✨ All medical databases are ready for autocomplete!"
