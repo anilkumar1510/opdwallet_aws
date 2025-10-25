@@ -8,10 +8,34 @@ import {
   UserIcon,
   TrashIcon,
   ArrowDownTrayIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline'
+import Link from 'next/link'
+
+interface DigitalPrescription {
+  _id: string
+  prescriptionId: string
+  appointmentId: string
+  doctorId: string
+  doctorName: string
+  userId: string
+  patientName: string
+  diagnosis: string
+  medicines: any[]
+  labTests: any[]
+  advice: string
+  followUpDate?: string
+  createdAt: string
+  updatedAt: string
+  pdfGenerated: boolean
+  pdfPath?: string
+  pdfFileName?: string
+}
+
+type CombinedPrescription = (Prescription & { type: 'upload' }) | (DigitalPrescription & { type: 'digital' })
 
 export default function PrescriptionsPage() {
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [prescriptions, setPrescriptions] = useState<CombinedPrescription[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -21,9 +45,34 @@ export default function PrescriptionsPage() {
   const fetchPrescriptions = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await getDoctorPrescriptions(currentPage, 20)
-      setPrescriptions(response.prescriptions)
-      setTotalPages(response.totalPages)
+
+      // Fetch both types of prescriptions in parallel
+      const [uploadedResponse, digitalResponse] = await Promise.all([
+        getDoctorPrescriptions(currentPage, 20).catch(() => ({ prescriptions: [], total: 0, totalPages: 0 })),
+        fetch(`/api/doctor/digital-prescriptions?page=${currentPage}&limit=20`, {
+          credentials: 'include',
+        }).then(res => res.ok ? res.json() : { prescriptions: [], total: 0, totalPages: 0 })
+      ])
+
+      // Combine and sort by date
+      const uploadedPrescriptions = uploadedResponse.prescriptions.map((p: Prescription) => ({
+        ...p,
+        type: 'upload' as const,
+        sortDate: new Date(p.uploadDate)
+      }))
+
+      const digitalPrescriptions = digitalResponse.prescriptions.map((p: DigitalPrescription) => ({
+        ...p,
+        type: 'digital' as const,
+        sortDate: new Date(p.createdAt)
+      }))
+
+      const combined = [...uploadedPrescriptions, ...digitalPrescriptions].sort((a, b) =>
+        b.sortDate.getTime() - a.sortDate.getTime()
+      )
+
+      setPrescriptions(combined)
+      setTotalPages(Math.max(uploadedResponse.totalPages, digitalResponse.totalPages))
     } catch (err: any) {
       setError(err.message || 'Failed to fetch prescriptions')
     } finally {
@@ -72,7 +121,7 @@ export default function PrescriptionsPage() {
             Prescriptions
           </h1>
           <p className="text-gray-600">
-            View and manage all uploaded prescriptions
+            View and manage all prescriptions (digital and uploaded)
           </p>
         </div>
 
@@ -112,15 +161,32 @@ export default function PrescriptionsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
                     <div className="flex-shrink-0">
-                      <div className="h-12 w-12 bg-brand-100 rounded-lg flex items-center justify-center">
-                        <DocumentTextIcon className="h-6 w-6 text-brand-600" />
+                      <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${
+                        prescription.type === 'digital' ? 'bg-green-100' : 'bg-brand-100'
+                      }`}>
+                        {prescription.type === 'digital' ? (
+                          <ClipboardDocumentListIcon className="h-6 w-6 text-green-600" />
+                        ) : (
+                          <DocumentTextIcon className="h-6 w-6 text-brand-600" />
+                        )}
                       </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 mb-1">
-                        {prescription.fileName}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {prescription.type === 'digital'
+                            ? prescription.prescriptionId
+                            : (prescription as any).fileName}
+                        </h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          prescription.type === 'digital'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {prescription.type === 'digital' ? 'Digital' : 'Uploaded'}
+                        </span>
+                      </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                         <div className="flex items-center text-sm text-gray-600">
@@ -130,12 +196,14 @@ export default function PrescriptionsPage() {
 
                         <div className="flex items-center text-sm text-gray-600">
                           <CalendarDaysIcon className="h-4 w-4 mr-2" />
-                          <span>{formatDate(prescription.uploadDate)}</span>
+                          <span>{formatDate(prescription.type === 'digital' ? prescription.createdAt : (prescription as any).uploadDate)}</span>
                         </div>
 
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">Size:</span> {formatFileSize(prescription.fileSize)}
-                        </div>
+                        {prescription.type === 'upload' && (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Size:</span> {formatFileSize((prescription as any).fileSize)}
+                          </div>
+                        )}
                       </div>
 
                       {prescription.diagnosis && (
@@ -146,10 +214,21 @@ export default function PrescriptionsPage() {
                         </div>
                       )}
 
-                      {prescription.notes && (
+                      {prescription.type === 'digital' && (
+                        <div className="flex gap-4 text-sm text-gray-600">
+                          <div>
+                            <span className="font-medium">Medicines:</span> {prescription.medicines?.length || 0}
+                          </div>
+                          <div>
+                            <span className="font-medium">Lab Tests:</span> {prescription.labTests?.length || 0}
+                          </div>
+                        </div>
+                      )}
+
+                      {prescription.type === 'upload' && (prescription as any).notes && (
                         <div>
                           <p className="text-sm text-gray-600">
-                            <span className="font-medium">Notes:</span> {prescription.notes}
+                            <span className="font-medium">Notes:</span> {(prescription as any).notes}
                           </p>
                         </div>
                       )}
@@ -157,22 +236,44 @@ export default function PrescriptionsPage() {
                   </div>
 
                   <div className="flex items-center space-x-2 ml-4">
-                    <a
-                      href={`/api/doctor/prescriptions/${prescription.prescriptionId}/download`}
-                      className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
-                      title="Download"
-                    >
-                      <ArrowDownTrayIcon className="h-5 w-5" />
-                    </a>
-
-                    <button
-                      onClick={() => handleDelete(prescription.prescriptionId)}
-                      disabled={deleting === prescription.prescriptionId}
-                      className="p-2 text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
-                      title="Delete"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
+                    {prescription.type === 'digital' ? (
+                      <>
+                        <Link
+                          href={`/doctorview/appointments/${prescription.appointmentId}`}
+                          className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+                          title="View Details"
+                        >
+                          <ClipboardDocumentListIcon className="h-5 w-5" />
+                        </Link>
+                        {prescription.pdfGenerated && (
+                          <a
+                            href={`/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
+                            className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+                            title="Download PDF"
+                          >
+                            <ArrowDownTrayIcon className="h-5 w-5" />
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <a
+                          href={`/api/doctor/prescriptions/${prescription.prescriptionId}/download`}
+                          className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+                          title="Download"
+                        >
+                          <ArrowDownTrayIcon className="h-5 w-5" />
+                        </a>
+                        <button
+                          onClick={() => handleDelete(prescription.prescriptionId)}
+                          disabled={deleting === prescription.prescriptionId}
+                          className="p-2 text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                          title="Delete"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
