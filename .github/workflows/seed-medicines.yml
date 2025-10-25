@@ -1,0 +1,56 @@
+name: Seed Medicine Database on AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "seed" to confirm seeding the medicine database'
+        required: true
+        default: ''
+
+jobs:
+  seed-medicines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "seed" ]; then
+            echo "❌ ERROR: You must type 'seed' to confirm"
+            exit 1
+          fi
+          echo "✅ Confirmation validated"
+
+      - name: Seed Medicine Database on AWS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          command_timeout: 5m
+          script: |
+            echo "🌱 Starting medicine database seeding on AWS..."
+
+            cd ~/opdwallet_aws/api || { echo "❌ ERROR: Cannot access opdwallet_aws/api directory"; exit 1; }
+
+            echo "📊 Running medicine seeding script..."
+            docker exec opd-api-prod npm run seed:medicines
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Medicine database seeded successfully!"
+
+              # Verify the count
+              echo "🔍 Verifying medicine count in database..."
+              docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+                db.medicine_database.countDocuments().then(count => {
+                  print('📊 Total medicines in database: ' + count);
+                });
+              "
+            else
+              echo "❌ ERROR: Medicine seeding failed"
+              exit 1
+            fi
+
+            echo "🎉 Medicine database setup complete!"
