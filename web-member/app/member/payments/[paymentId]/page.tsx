@@ -70,15 +70,19 @@ export default function PaymentPage() {
           const appointmentPayload = {
             userId: bookingData.userId,
             patientId: bookingData.patientId,
+            patientName: bookingData.patientName,
             doctorId: bookingData.serviceDetails?.doctorId,
             doctorName: bookingData.serviceDetails?.doctorName,
-            patientName: bookingData.patientName,
             appointmentType: bookingData.serviceType === 'APPOINTMENT' ? 'IN_CLINIC' : 'ONLINE',
             appointmentDate: bookingData.serviceDetails?.date,
             timeSlot: bookingData.serviceDetails?.time,
+            slotId: bookingData.serviceDetails?.slotId ||
+                    `${bookingData.serviceDetails?.doctorId}_${bookingData.serviceType === 'APPOINTMENT' ? 'IN_CLINIC' : 'ONLINE'}_${bookingData.serviceDetails?.date}_${bookingData.serviceDetails?.time}`,
             consultationFee: bookingData.consultationFee,
-            clinicName: bookingData.serviceDetails?.clinicName || '',
-            clinicAddress: bookingData.serviceDetails?.clinicAddress || '',
+            clinicId: bookingData.serviceType === 'ONLINE_CONSULTATION' ? undefined : bookingData.serviceDetails?.clinicId,
+            clinicName: bookingData.serviceType === 'ONLINE_CONSULTATION' ? undefined : bookingData.serviceDetails?.clinicName,
+            clinicAddress: bookingData.serviceType === 'ONLINE_CONSULTATION' ? undefined : bookingData.serviceDetails?.clinicAddress,
+            contactNumber: bookingData.serviceDetails?.contactNumber || '',
             status: 'CONFIRMED',
             paymentId: paymentId
           };

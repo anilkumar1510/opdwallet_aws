@@ -213,7 +213,10 @@ export default function PaymentProcessor({
         // Store booking data for completion after payment
         sessionStorage.setItem('pendingBooking', JSON.stringify({
           serviceType,
-          serviceDetails,
+          serviceDetails: {
+            ...serviceDetails,
+            slotId: serviceDetails.slotId || `${serviceDetails.doctorId}_${serviceType === 'APPOINTMENT' ? 'IN_CLINIC' : 'ONLINE'}_${serviceDetails.date}_${serviceDetails.time}`
+          },
           patientId,
           patientName,
           userId,

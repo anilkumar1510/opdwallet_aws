@@ -517,7 +517,11 @@ function OnlineConfirmContent() {
               doctorName: doctorName,
               doctorId: doctorId,
               date: timeChoice === 'NOW' ? new Date().toISOString().split('T')[0] : selectedDate,
-              time: timeChoice === 'NOW' ? 'Immediate' : selectedTime
+              time: timeChoice === 'NOW' ? 'Immediate' : selectedTime,
+              slotId: timeChoice === 'NOW'
+                ? `${doctorId}_ONLINE_${new Date().toISOString().split('T')[0]}_Immediate`
+                : selectedSlotId || `${doctorId}_ONLINE_${selectedDate}_${selectedTime}`,
+              contactNumber: contactNumber
             }}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentFailure={handlePaymentFailure}
