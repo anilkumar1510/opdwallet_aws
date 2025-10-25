@@ -52,6 +52,24 @@ export interface Medicine {
   strength?: string;
 }
 
+export interface Diagnosis {
+  _id: string;
+  diagnosisName: string;
+  icdCode?: string;
+  category: string;
+  description?: string;
+  commonSymptoms?: string[];
+}
+
+export interface Symptom {
+  _id: string;
+  symptomName: string;
+  category: string;
+  severityLevels?: string[];
+  relatedConditions?: string[];
+  description?: string;
+}
+
 export async function createDigitalPrescription(
   payload: CreateDigitalPrescriptionPayload
 ): Promise<any> {
@@ -138,6 +156,46 @@ export async function searchMedicines(query: string, limit = 20): Promise<Medici
 
   const data = await response.json();
   return data.medicines || [];
+}
+
+export async function searchDiagnoses(query: string, limit = 20): Promise<Diagnosis[]> {
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+
+  const response = await fetch(
+    `${API_BASE}/diagnoses/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+    {
+      credentials: 'include',
+    }
+  );
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = await response.json();
+  return data.diagnoses || [];
+}
+
+export async function searchSymptoms(query: string, limit = 20): Promise<Symptom[]> {
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+
+  const response = await fetch(
+    `${API_BASE}/symptoms/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+    {
+      credentials: 'include',
+    }
+  );
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = await response.json();
+  return data.symptoms || [];
 }
 
 export function getDigitalPrescriptionPDFUrl(prescriptionId: string): string {

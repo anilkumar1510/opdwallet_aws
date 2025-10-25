@@ -3,6 +3,8 @@
 import { useState, FormEvent } from 'react'
 import { createDigitalPrescription, generatePrescriptionPDF, MedicineItem, LabTestItem } from '@/lib/api/digital-prescriptions'
 import MedicineAutocomplete from './MedicineAutocomplete'
+import DiagnosisAutocomplete from './DiagnosisAutocomplete'
+import SymptomsAutocomplete from './SymptomsAutocomplete'
 import {
   PlusIcon,
   TrashIcon,
@@ -192,16 +194,17 @@ export default function DigitalPrescriptionWriter({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Chief Complaint
+              Chief Complaint / Symptoms
             </label>
-            <input
-              type="text"
+            <SymptomsAutocomplete
               value={chiefComplaint}
-              onChange={(e) => setChiefComplaint(e.target.value)}
-              className="input-field"
-              placeholder="e.g., Fever and cough since 3 days"
+              onChange={(value) => setChiefComplaint(value)}
+              placeholder="Search and add symptoms (e.g., Fever, Cough)..."
               disabled={loading}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Search from database or type custom symptoms separated by commas
+            </p>
           </div>
 
           <div>
@@ -213,7 +216,7 @@ export default function DigitalPrescriptionWriter({
               onChange={(e) => setClinicalFindings(e.target.value)}
               rows={2}
               className="input-field"
-              placeholder="e.g., Temp: 100°F, Throat congestion noted"
+              placeholder="e.g., Temp: 100°F, Throat congestion noted, BP: 120/80"
               disabled={loading}
             />
           </div>
@@ -222,14 +225,15 @@ export default function DigitalPrescriptionWriter({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Diagnosis
             </label>
-            <input
-              type="text"
+            <DiagnosisAutocomplete
               value={diagnosis}
-              onChange={(e) => setDiagnosis(e.target.value)}
-              className="input-field"
-              placeholder="e.g., Upper Respiratory Tract Infection"
+              onChange={(value) => setDiagnosis(value)}
+              placeholder="Search diagnosis (e.g., Upper Respiratory Tract Infection)..."
               disabled={loading}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Search from database with ICD-10 codes or type custom diagnosis
+            </p>
           </div>
         </div>
 
