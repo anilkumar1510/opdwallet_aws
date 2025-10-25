@@ -41,14 +41,14 @@ jobs:
 
             # Seed Diagnoses
             echo "🏥 Seeding Diagnoses Database..."
-            docker exec opd-api-prod npm run seed:diagnoses
+            docker exec opd-api-dev npm run seed:diagnoses
 
             if [ $? -eq 0 ]; then
               echo "✅ Diagnoses seeded successfully!"
 
               # Verify diagnoses count
               echo "🔍 Verifying diagnoses count..."
-              docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+              docker exec opd-mongo-dev mongosh opd_wallet --quiet --eval "
                 const count = db.diagnosis_database.countDocuments();
                 print('📊 Total diagnoses in database: ' + count);
               "
@@ -59,14 +59,14 @@ jobs:
 
             # Seed Symptoms
             echo "🩺 Seeding Symptoms Database..."
-            docker exec opd-api-prod npm run seed:symptoms
+            docker exec opd-api-dev npm run seed:symptoms
 
             if [ $? -eq 0 ]; then
               echo "✅ Symptoms seeded successfully!"
 
               # Verify symptoms count
               echo "🔍 Verifying symptoms count..."
-              docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+              docker exec opd-mongo-dev mongosh opd_wallet --quiet --eval "
                 const count = db.symptom_database.countDocuments();
                 print('📊 Total symptoms in database: ' + count);
               "
@@ -78,7 +78,7 @@ jobs:
             # Summary
             echo "🎉 Medical data seeding complete!"
             echo "📊 Final counts:"
-            docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+            docker exec opd-mongo-dev mongosh opd_wallet --quiet --eval "
               const diagnosesCount = db.diagnosis_database.countDocuments();
               const symptomsCount = db.symptom_database.countDocuments();
               const medicinesCount = db.medicine_database.countDocuments();
