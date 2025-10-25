@@ -4,7 +4,6 @@ interface VideoConsultationResponse {
   consultationId: string
   roomName: string
   roomUrl: string
-  jitsiDomain: string
   doctorName: string
   patientName: string
   status: string

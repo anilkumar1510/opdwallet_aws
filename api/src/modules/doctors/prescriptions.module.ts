@@ -3,17 +3,29 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrescriptionsService } from './prescriptions.service';
+import { DigitalPrescriptionService } from './digital-prescription.service';
+import { PdfGenerationService } from './pdf-generation.service';
 import { DoctorAuthService } from './doctor-auth.service';
 import {
   DoctorPrescriptionsController,
   MemberPrescriptionsController,
 } from './prescriptions.controller';
+import {
+  DoctorDigitalPrescriptionsController,
+  MemberDigitalPrescriptionsController,
+  MedicinesController,
+} from './digital-prescription.controller';
 import { DoctorAuthController } from './doctor-auth.controller';
 import { DoctorAppointmentsController } from './doctor-appointments.controller';
 import {
   DoctorPrescription,
   DoctorPrescriptionSchema,
 } from './schemas/doctor-prescription.schema';
+import {
+  DigitalPrescription,
+  DigitalPrescriptionSchema,
+} from './schemas/digital-prescription.schema';
+import { Medicine, MedicineSchema } from './schemas/medicine.schema';
 import { Doctor, DoctorSchema } from './schemas/doctor.schema';
 import {
   Appointment,
@@ -24,6 +36,8 @@ import {
   imports: [
     MongooseModule.forFeature([
       { name: DoctorPrescription.name, schema: DoctorPrescriptionSchema },
+      { name: DigitalPrescription.name, schema: DigitalPrescriptionSchema },
+      { name: Medicine.name, schema: MedicineSchema },
       { name: Doctor.name, schema: DoctorSchema },
       { name: Appointment.name, schema: AppointmentSchema },
     ]),
@@ -41,10 +55,18 @@ import {
   controllers: [
     DoctorPrescriptionsController,
     MemberPrescriptionsController,
+    DoctorDigitalPrescriptionsController,
+    MemberDigitalPrescriptionsController,
+    MedicinesController,
     DoctorAuthController,
     DoctorAppointmentsController,
   ],
-  providers: [PrescriptionsService, DoctorAuthService],
-  exports: [PrescriptionsService, DoctorAuthService],
+  providers: [
+    PrescriptionsService,
+    DigitalPrescriptionService,
+    PdfGenerationService,
+    DoctorAuthService,
+  ],
+  exports: [PrescriptionsService, DigitalPrescriptionService, PdfGenerationService, DoctorAuthService],
 })
 export class PrescriptionsModule {}

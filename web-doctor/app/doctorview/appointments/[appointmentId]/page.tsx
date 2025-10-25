@@ -6,6 +6,7 @@ import { getAppointmentDetails, markAppointmentComplete } from '@/lib/api/appoin
 import { Appointment } from '@/lib/api/appointments'
 import { getStatusColor, getAppointmentTypeText } from '@/lib/utils/appointment-helpers'
 import PrescriptionUpload from '@/components/PrescriptionUpload'
+import DigitalPrescriptionWriter from '@/components/DigitalPrescriptionWriter'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import {
   ArrowLeftIcon,
@@ -16,6 +17,8 @@ import {
   VideoCameraIcon,
   MapPinIcon,
   CheckCircleIcon,
+  PencilSquareIcon,
+  DocumentArrowUpIcon,
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
@@ -28,6 +31,7 @@ export default function AppointmentDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [completing, setCompleting] = useState(false)
+  const [prescriptionMode, setPrescriptionMode] = useState<'write' | 'upload'>('write')
 
   const fetchAppointment = useCallback(async () => {
     try {
@@ -194,19 +198,57 @@ export default function AppointmentDetailPage() {
             <CheckCircleIcon className="h-8 w-8 text-green-600" />
             <div>
               <h3 className="font-semibold text-green-900">
-                Prescription Already Uploaded
+                Prescription Already Created
               </h3>
               <p className="text-sm text-green-700">
-                You have already uploaded a prescription for this appointment.
+                You have already created a prescription for this appointment.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <PrescriptionUpload
-          appointmentId={appointment._id}
-          onSuccess={fetchAppointment}
-        />
+        <>
+          {/* Mode Toggle */}
+          <div className="mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-2 inline-flex space-x-2">
+              <button
+                onClick={() => setPrescriptionMode('write')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  prescriptionMode === 'write'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <PencilSquareIcon className="h-5 w-5" />
+                Write Digital Prescription
+              </button>
+              <button
+                onClick={() => setPrescriptionMode('upload')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  prescriptionMode === 'upload'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <DocumentArrowUpIcon className="h-5 w-5" />
+                Upload PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Conditional Rendering based on mode */}
+          {prescriptionMode === 'write' ? (
+            <DigitalPrescriptionWriter
+              appointmentId={appointment._id}
+              onSuccess={fetchAppointment}
+            />
+          ) : (
+            <PrescriptionUpload
+              appointmentId={appointment._id}
+              onSuccess={fetchAppointment}
+            />
+          )}
+        </>
       )}
     </div>
     </ErrorBoundary>
