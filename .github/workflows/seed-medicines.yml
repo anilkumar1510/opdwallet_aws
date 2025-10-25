@@ -35,11 +35,16 @@ jobs:
 
             cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }
 
+            # Pull latest code
+            echo "📥 Pulling latest code from GitHub..."
+            git pull origin main
+
             # Check if medicines.json exists
             if [ ! -f "api/src/scripts/medicines.json" ]; then
-              echo "❌ ERROR: medicines.json not found. Please pull latest code first."
+              echo "❌ ERROR: medicines.json not found even after git pull."
               exit 1
             fi
+            echo "✅ Found medicines.json file"
 
             echo "📊 Clearing existing medicines..."
             docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
