@@ -40,6 +40,7 @@ export default function DigitizePrescriptionPage() {
   const [selectedTests, setSelectedTests] = useState<SelectedTest[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchPrescription = useCallback(async () => {
     try {
@@ -47,13 +48,17 @@ export default function DigitizePrescriptionPage() {
         credentials: 'include',
       })
 
-      if (!response.ok) throw new Error('Failed to fetch prescription')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to fetch prescription (${response.status})`)
+      }
 
       const data = await response.json()
       setPrescription(data.data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching prescription:', error)
-      toast.error('Failed to fetch prescription')
+      setError(error.message || 'Failed to fetch prescription')
+      toast.error(error.message || 'Failed to fetch prescription')
     } finally {
       setLoading(false)
     }
@@ -63,12 +68,17 @@ export default function DigitizePrescriptionPage() {
     try {
       const response = await apiFetch('/api/admin/lab/services')
 
-      if (!response.ok) throw new Error('Failed to fetch services')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to fetch lab services (${response.status})`)
+      }
 
       const data = await response.json()
       setServices(data.data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching services:', error)
+      setError(error.message || 'Failed to fetch lab services')
+      toast.error(error.message || 'Failed to fetch lab services. Please refresh the page.')
     }
   }
 
@@ -149,6 +159,41 @@ export default function DigitizePrescriptionPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="mb-4">
+            <svg className="h-16 w-16 text-red-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Page</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setError(null)
+                setLoading(true)
+                fetchPrescription()
+                fetchServices()
+              }}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
       </div>
     )
   }

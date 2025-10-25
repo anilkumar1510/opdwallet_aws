@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppointmentsController } from './appointments.controller';
 import { AppointmentsService } from './appointments.service';
@@ -18,7 +18,7 @@ import { AssignmentsModule } from '../assignments/assignments.module';
     PlanConfigModule,
     PaymentModule,
     TransactionSummaryModule,
-    AssignmentsModule,
+    forwardRef(() => AssignmentsModule),
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],

@@ -21,7 +21,7 @@ import { LabServiceCategory } from '../schemas/lab-service.schema';
 
 @Controller('admin/lab')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.OPS)
 export class LabAdminController {
   constructor(
     private readonly serviceService: LabServiceService,

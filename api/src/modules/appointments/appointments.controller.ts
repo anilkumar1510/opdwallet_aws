@@ -9,13 +9,16 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 @Controller('appointments')
 @UseGuards(JwtAuthGuard)
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
+  constructor(private readonly appointmentsService: AppointmentsService) {
+    console.log('✅✅✅ [DEPLOY_V4] AppointmentsController initialized successfully');
+    console.log('✅✅✅ [DEPLOY_V4] AssignmentsService injection:', this.appointmentsService ? 'SUCCESS' : 'FAILED');
+  }
 
   @Post()
   async create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req: any) {
     try {
       const userId = req.user.userId;
-      console.log('🚨🚨🚨 [DEPLOY_V3] APPOINTMENT CONTROLLER HIT - VERSION 2025-10-25-V3 🚨🚨🚨');
+      console.log('🚨🚨🚨 [DEPLOY_V4] APPOINTMENT CONTROLLER HIT - VERSION 2025-10-25-V4-CIRCULAR-FIX 🚨🚨🚨');
       console.log('🔵 [AppointmentsController] ========== CREATE APPOINTMENT START ==========');
       console.log('👤 [AppointmentsController] User ID from JWT:', userId);
       console.log('📥 [AppointmentsController] Request body:', JSON.stringify(createAppointmentDto, null, 2));
