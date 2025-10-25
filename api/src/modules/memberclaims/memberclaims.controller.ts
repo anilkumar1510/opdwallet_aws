@@ -106,11 +106,16 @@ export class MemberClaimsController {
       throw new BadRequestException('User ID is required');
     }
 
-    const claim = await this.memberClaimsService.submitClaim(claimId, userId);
+    const result = await this.memberClaimsService.submitClaim(claimId, userId);
 
     return {
       message: 'Claim submitted successfully',
-      claim: claim.toObject(),
+      claim: result.claim.toObject(),
+      paymentRequired: result.paymentRequired,
+      paymentId: result.paymentId,
+      transactionId: result.transactionId,
+      copayAmount: result.copayAmount,
+      walletDebitAmount: result.walletDebitAmount,
     };
   }
 
