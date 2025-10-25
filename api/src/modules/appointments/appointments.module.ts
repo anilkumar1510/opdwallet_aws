@@ -8,6 +8,7 @@ import { WalletModule } from '../wallet/wallet.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { PaymentModule } from '../payments/payment.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
+import { AssignmentsModule } from '../assignments/assignments.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TransactionSummaryModule } from '../transactions/transaction-summary.mo
     PlanConfigModule,
     PaymentModule,
     TransactionSummaryModule,
+    AssignmentsModule,
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],

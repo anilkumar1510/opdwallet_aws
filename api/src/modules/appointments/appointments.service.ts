@@ -8,6 +8,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { PlanConfigService } from '../plan-config/plan-config.service';
 import { PaymentService } from '../payments/payment.service';
 import { TransactionSummaryService } from '../transactions/transaction-summary.service';
+import { AssignmentsService } from '../assignments/assignments.service';
 import { CopayCalculator } from '../plan-config/utils/copay-calculator';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
@@ -21,6 +22,7 @@ export class AppointmentsService {
     private readonly planConfigService: PlanConfigService,
     private readonly paymentService: PaymentService,
     private readonly transactionService: TransactionSummaryService,
+    private readonly assignmentsService: AssignmentsService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<any> {
@@ -62,21 +64,20 @@ export class AppointmentsService {
     let policyId = null;
 
     try {
-      console.log('🔍 [POLICY] Searching for assignment with memberId:', patientId);
-      // Fetch user's assignment to get policyId
-      const assignment = await (this.walletService as any)['assignmentModel']
-        .findOne({ memberId: patientId })
-        .populate('policyId')
-        .lean()
-        .exec();
+      console.log('🔍 [POLICY] Searching for assignments for userId:', patientId);
+      // Fetch user's assignment to get policyId using proper service
+      const assignments = await this.assignmentsService.getUserAssignments(patientId);
 
-      console.log('📄 [POLICY] Assignment found:', assignment ? 'YES' : 'NO');
-      if (assignment) {
-        console.log('📄 [POLICY] Assignment details:', JSON.stringify(assignment, null, 2));
+      console.log('📄 [POLICY] Assignments found:', assignments ? assignments.length : 0);
+
+      const activeAssignment = assignments && assignments.length > 0 ? assignments[0] : null;
+
+      if (activeAssignment) {
+        console.log('📄 [POLICY] Active assignment details:', JSON.stringify(activeAssignment, null, 2));
       }
 
-      if (assignment && assignment.policyId) {
-        policyId = assignment.policyId._id || assignment.policyId;
+      if (activeAssignment && activeAssignment.policyId) {
+        policyId = activeAssignment.policyId._id || activeAssignment.policyId;
         console.log('✅ [POLICY] Found policyId:', policyId);
 
         // Fetch plan config
