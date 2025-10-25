@@ -17,6 +17,8 @@
     "seed:full": "ts-node -r tsconfig-paths/register src/scripts/seed-full.ts",
     "seed:masters": "ts-node -r tsconfig-paths/register src/modules/masters/seed-masters.script.ts",
     "seed:medicines": "ts-node -r tsconfig-paths/register src/scripts/seed-medicines.ts",
+    "seed:diagnoses": "ts-node -r tsconfig-paths/register src/scripts/seed-diagnoses.ts",
+    "seed:symptoms": "ts-node -r tsconfig-paths/register src/scripts/seed-symptoms.ts",
     "seed:lab": "ts-node -r tsconfig-paths/register src/scripts/seed-lab.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

@@ -16,6 +16,8 @@ import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
 import { DigitalPrescriptionService } from './digital-prescription.service';
 import { PdfGenerationService } from './pdf-generation.service';
+import { DiagnosisService } from './diagnosis.service';
+import { SymptomsService } from './symptoms.service';
 import { CreateDigitalPrescriptionDto, UpdateDigitalPrescriptionDto } from './dto/create-digital-prescription.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -243,6 +245,92 @@ export class MedicinesController {
     return {
       message: 'Medicines retrieved successfully',
       medicines,
+    };
+  }
+}
+
+// Diagnosis search controller
+@Controller('diagnoses')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.DOCTOR, UserRole.MEMBER)
+export class DiagnosesController {
+  constructor(
+    private readonly diagnosisService: DiagnosisService,
+  ) {}
+
+  @Get('search')
+  async searchDiagnoses(
+    @Query('q') query: string,
+    @Query('limit') limit = 20,
+  ) {
+    if (!query || query.trim().length < 2) {
+      return {
+        message: 'Search query must be at least 2 characters',
+        diagnoses: [],
+      };
+    }
+
+    const diagnoses = await this.diagnosisService.searchDiagnoses(
+      query.trim(),
+      +limit,
+    );
+
+    return {
+      message: 'Diagnoses retrieved successfully',
+      diagnoses,
+    };
+  }
+
+  @Get('categories')
+  async getCategories() {
+    const categories = await this.diagnosisService.getCategories();
+
+    return {
+      message: 'Categories retrieved successfully',
+      categories,
+    };
+  }
+}
+
+// Symptoms search controller
+@Controller('symptoms')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.DOCTOR, UserRole.MEMBER)
+export class SymptomsController {
+  constructor(
+    private readonly symptomsService: SymptomsService,
+  ) {}
+
+  @Get('search')
+  async searchSymptoms(
+    @Query('q') query: string,
+    @Query('limit') limit = 20,
+  ) {
+    if (!query || query.trim().length < 2) {
+      return {
+        message: 'Search query must be at least 2 characters',
+        symptoms: [],
+      };
+    }
+
+    const symptoms = await this.symptomsService.searchSymptoms(
+      query.trim(),
+      +limit,
+    );
+
+    return {
+      message: 'Symptoms retrieved successfully',
+      symptoms,
+    };
+  }
+
+  @Get('categories')
+  async getCategories() {
+    const categories = await this.symptomsService.getCategories();
+
+    return {
+      message: 'Categories retrieved successfully',
+      categories,
     };
   }
 }

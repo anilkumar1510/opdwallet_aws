@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrescriptionsService } from './prescriptions.service';
 import { DigitalPrescriptionService } from './digital-prescription.service';
 import { PdfGenerationService } from './pdf-generation.service';
+import { DiagnosisService } from './diagnosis.service';
+import { SymptomsService } from './symptoms.service';
 import { DoctorAuthService } from './doctor-auth.service';
 import {
   DoctorPrescriptionsController,
@@ -14,6 +16,8 @@ import {
   DoctorDigitalPrescriptionsController,
   MemberDigitalPrescriptionsController,
   MedicinesController,
+  DiagnosesController,
+  SymptomsController,
 } from './digital-prescription.controller';
 import { DoctorAuthController } from './doctor-auth.controller';
 import { DoctorAppointmentsController } from './doctor-appointments.controller';
@@ -26,6 +30,8 @@ import {
   DigitalPrescriptionSchema,
 } from './schemas/digital-prescription.schema';
 import { Medicine, MedicineSchema } from './schemas/medicine.schema';
+import { Diagnosis, DiagnosisSchema } from './schemas/diagnosis.schema';
+import { Symptom, SymptomSchema } from './schemas/symptom.schema';
 import { Doctor, DoctorSchema } from './schemas/doctor.schema';
 import {
   Appointment,
@@ -38,6 +44,8 @@ import {
       { name: DoctorPrescription.name, schema: DoctorPrescriptionSchema },
       { name: DigitalPrescription.name, schema: DigitalPrescriptionSchema },
       { name: Medicine.name, schema: MedicineSchema },
+      { name: Diagnosis.name, schema: DiagnosisSchema },
+      { name: Symptom.name, schema: SymptomSchema },
       { name: Doctor.name, schema: DoctorSchema },
       { name: Appointment.name, schema: AppointmentSchema },
     ]),
@@ -58,6 +66,8 @@ import {
     DoctorDigitalPrescriptionsController,
     MemberDigitalPrescriptionsController,
     MedicinesController,
+    DiagnosesController,
+    SymptomsController,
     DoctorAuthController,
     DoctorAppointmentsController,
   ],
@@ -65,6 +75,8 @@ import {
     PrescriptionsService,
     DigitalPrescriptionService,
     PdfGenerationService,
+    DiagnosisService,
+    SymptomsService,
     DoctorAuthService,
   ],
   exports: [PrescriptionsService, DigitalPrescriptionService, PdfGenerationService, DoctorAuthService],
