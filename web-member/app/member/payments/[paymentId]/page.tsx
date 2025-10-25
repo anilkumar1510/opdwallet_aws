@@ -67,8 +67,10 @@ export default function PaymentPage() {
 
         // Complete the appointment creation if pending
         if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
-          const appointmentPayload = {
-            userId: bookingData.userId,
+          console.log('[PaymentPage] Creating appointment with booking data:', bookingData);
+
+          // Build appointment payload - only include fields that are in the DTO
+          const appointmentPayload: any = {
             patientId: bookingData.patientId,
             patientName: bookingData.patientName,
             doctorId: bookingData.serviceDetails?.doctorId,
@@ -79,13 +81,24 @@ export default function PaymentPage() {
             slotId: bookingData.serviceDetails?.slotId ||
                     `${bookingData.serviceDetails?.doctorId}_${bookingData.serviceType === 'APPOINTMENT' ? 'IN_CLINIC' : 'ONLINE'}_${bookingData.serviceDetails?.date}_${bookingData.serviceDetails?.time}`,
             consultationFee: bookingData.consultationFee,
-            clinicId: bookingData.serviceType === 'ONLINE_CONSULTATION' ? undefined : bookingData.serviceDetails?.clinicId,
-            clinicName: bookingData.serviceType === 'ONLINE_CONSULTATION' ? undefined : bookingData.serviceDetails?.clinicName,
-            clinicAddress: bookingData.serviceType === 'ONLINE_CONSULTATION' ? undefined : bookingData.serviceDetails?.clinicAddress,
             contactNumber: bookingData.serviceDetails?.contactNumber || '',
-            status: 'CONFIRMED',
-            paymentId: paymentId
+            callPreference: bookingData.serviceDetails?.callPreference || 'BOTH'
           };
+
+          // Only add clinic fields for IN_CLINIC appointments
+          if (bookingData.serviceType === 'APPOINTMENT') {
+            if (bookingData.serviceDetails?.clinicId) {
+              appointmentPayload.clinicId = bookingData.serviceDetails.clinicId;
+            }
+            if (bookingData.serviceDetails?.clinicName) {
+              appointmentPayload.clinicName = bookingData.serviceDetails.clinicName;
+            }
+            if (bookingData.serviceDetails?.clinicAddress) {
+              appointmentPayload.clinicAddress = bookingData.serviceDetails.clinicAddress;
+            }
+          }
+
+          console.log('[PaymentPage] Appointment payload:', JSON.stringify(appointmentPayload, null, 2));
 
           // Create the appointment
           const appointmentResponse = await fetch('/api/appointments', {
@@ -97,8 +110,25 @@ export default function PaymentPage() {
             body: JSON.stringify(appointmentPayload)
           });
 
+          console.log('[PaymentPage] Appointment response status:', appointmentResponse.status);
+
           if (!appointmentResponse.ok) {
-            console.error('Failed to create appointment after payment');
+            const errorText = await appointmentResponse.text();
+            console.error('[PaymentPage] Failed to create appointment:', {
+              status: appointmentResponse.status,
+              statusText: appointmentResponse.statusText,
+              errorBody: errorText
+            });
+
+            try {
+              const errorJson = JSON.parse(errorText);
+              console.error('[PaymentPage] Parsed error:', errorJson);
+            } catch (e) {
+              // Error is not JSON
+            }
+          } else {
+            const appointmentData = await appointmentResponse.json();
+            console.log('[PaymentPage] Appointment created successfully:', appointmentData);
           }
         }
 
