@@ -9,6 +9,7 @@ import {
   TrashIcon,
   ArrowDownTrayIcon,
   ClipboardDocumentListIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
@@ -236,15 +237,17 @@ export default function PrescriptionsPage() {
                   </div>
 
                   <div className="flex items-center space-x-2 ml-4">
+                    {/* View Details button for all prescriptions */}
+                    <Link
+                      href={`/doctorview/prescriptions/${prescription.prescriptionId}`}
+                      className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+                      title="View Details"
+                    >
+                      <EyeIcon className="h-5 w-5" />
+                    </Link>
+
                     {prescription.type === 'digital' ? (
                       <>
-                        <Link
-                          href={`/doctorview/appointments/${prescription.appointmentId}`}
-                          className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
-                          title="View Details"
-                        >
-                          <ClipboardDocumentListIcon className="h-5 w-5" />
-                        </Link>
                         {prescription.pdfGenerated && (
                           <a
                             href={`/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
@@ -260,7 +263,7 @@ export default function PrescriptionsPage() {
                         <a
                           href={`/api/doctor/prescriptions/${prescription.prescriptionId}/download`}
                           className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
-                          title="Download"
+                          title="Download PDF"
                         >
                           <ArrowDownTrayIcon className="h-5 w-5" />
                         </a>
