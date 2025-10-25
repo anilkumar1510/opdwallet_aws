@@ -33,20 +33,52 @@ jobs:
           script: |
             echo "🌱 Starting medicine database seeding on AWS..."
 
-            cd ~/opdwallet_aws/api || { echo "❌ ERROR: Cannot access opdwallet_aws/api directory"; exit 1; }
+            cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }
 
-            echo "📊 Running medicine seeding script..."
-            docker exec opd-api-prod npm run seed:medicines
+            # Check if medicines.json exists
+            if [ ! -f "api/src/scripts/medicines.json" ]; then
+              echo "❌ ERROR: medicines.json not found. Please pull latest code first."
+              exit 1
+            fi
+
+            echo "📊 Clearing existing medicines..."
+            docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+              const count = db.medicine_database.countDocuments();
+              print('Current medicines count: ' + count);
+              db.medicine_database.deleteMany({});
+              print('✅ Cleared existing medicines');
+            "
+
+            echo "📊 Importing medicines from JSON..."
+            # Copy JSON file into the MongoDB container
+            docker cp api/src/scripts/medicines.json opd-mongodb-prod:/tmp/medicines.json
+
+            # Import using mongoimport
+            docker exec opd-mongodb-prod mongoimport \
+              --db opd_wallet \
+              --collection medicine_database \
+              --file /tmp/medicines.json \
+              --jsonArray
 
             if [ $? -eq 0 ]; then
               echo "✅ Medicine database seeded successfully!"
 
+              # Create text index for search
+              echo "📊 Creating text index for search..."
+              docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
+                db.medicine_database.createIndex({
+                  genericName: 'text',
+                  brandNames: 'text',
+                  searchText: 'text'
+                });
+                print('✅ Text index created');
+              "
+
               # Verify the count
               echo "🔍 Verifying medicine count in database..."
               docker exec opd-mongodb-prod mongosh opd_wallet --quiet --eval "
-                db.medicine_database.countDocuments().then(count => {
-                  print('📊 Total medicines in database: ' + count);
-                });
+                const count = db.medicine_database.countDocuments();
+                print('📊 Total medicines in database: ' + count);
               "
             else
               echo "❌ ERROR: Medicine seeding failed"
