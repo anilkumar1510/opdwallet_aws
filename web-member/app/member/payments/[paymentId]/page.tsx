@@ -55,6 +55,10 @@ export default function PaymentPage() {
   }, [paymentId, fetchPaymentDetails]);
 
   const handleMarkAsPaid = async () => {
+    console.log('🚀🚀🚀 DEPLOYMENT VERSION: 2025-10-25-V3-UNIQUE 🚀🚀🚀');
+    console.log('📍 [DEPLOY_CHECK] Starting payment process at:', new Date().toISOString());
+    console.log('📍 [DEPLOY_CHECK] This is the LATEST code with AssignmentsService fix');
+
     setProcessing(true);
     setError('');
 
@@ -99,6 +103,7 @@ export default function PaymentPage() {
           }
 
           console.log('[PaymentPage] Appointment payload:', JSON.stringify(appointmentPayload, null, 2));
+          console.log('🔥🔥🔥 [DEPLOY_V3] About to call /api/appointments endpoint 🔥🔥🔥');
 
           // Create the appointment
           const appointmentResponse = await fetch('/api/appointments', {

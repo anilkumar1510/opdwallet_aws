@@ -15,6 +15,7 @@ export class AppointmentsController {
   async create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req: any) {
     try {
       const userId = req.user.userId;
+      console.log('🚨🚨🚨 [DEPLOY_V3] APPOINTMENT CONTROLLER HIT - VERSION 2025-10-25-V3 🚨🚨🚨');
       console.log('🔵 [AppointmentsController] ========== CREATE APPOINTMENT START ==========');
       console.log('👤 [AppointmentsController] User ID from JWT:', userId);
       console.log('📥 [AppointmentsController] Request body:', JSON.stringify(createAppointmentDto, null, 2));

@@ -26,6 +26,9 @@ export class AppointmentsService {
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<any> {
+    console.log('🚀🚀🚀 DEPLOYMENT VERSION: 2025-10-25-V3-BACKEND 🚀🚀🚀');
+    console.log('🔥 [DEPLOY_V3] This is the LATEST backend code with AssignmentsService fix');
+    console.log('🔥 [DEPLOY_V3] Timestamp:', new Date().toISOString());
     console.log('🚀 [APPOINTMENTS SERVICE] ========== APPOINTMENT CREATION START ==========');
     console.log('📥 [INPUT] Complete appointment DTO:', JSON.stringify(createAppointmentDto, null, 2));
 
@@ -65,9 +68,13 @@ export class AppointmentsService {
 
     try {
       console.log('🔍 [POLICY] Searching for assignments for userId:', patientId);
+      console.log('🎯🎯🎯 [DEPLOY_V3] About to call assignmentsService.getUserAssignments()');
+      console.log('🎯🎯🎯 [DEPLOY_V3] This should NOT crash if AssignmentsService is properly injected');
+
       // Fetch user's assignment to get policyId using proper service
       const assignments = await this.assignmentsService.getUserAssignments(patientId);
 
+      console.log('✅✅✅ [DEPLOY_V3] Successfully called assignmentsService - No crash!');
       console.log('📄 [POLICY] Assignments found:', assignments ? assignments.length : 0);
 
       const activeAssignment = assignments && assignments.length > 0 ? assignments[0] : null;
@@ -106,8 +113,11 @@ export class AppointmentsService {
         console.log('⚠️ [POLICY] No assignment or policyId found for member');
       }
     } catch (error) {
+      console.error('❌❌❌ [DEPLOY_V3] ERROR IN ASSIGNMENTS SERVICE CALL ❌❌❌');
       console.error('❌ [POLICY ERROR] Failed to fetch policy/copay config:', error);
+      console.error('❌ [POLICY ERROR] Error message:', error.message);
       console.error('❌ [POLICY ERROR] Error stack:', error.stack);
+      console.error('❌❌❌ [DEPLOY_V3] This error indicates old code is running if it says "Cannot read properties of undefined" ❌❌❌');
       // Continue without copay if config fetch fails
     }
 
