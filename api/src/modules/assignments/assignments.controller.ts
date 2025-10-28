@@ -128,8 +128,8 @@ export class AssignmentsController {
 
       // ✅ FIX: Extract actual _id from populated policyId object
       const policyIdString = typeof activeAssignment.policyId === 'object' && activeAssignment.policyId !== null
-        ? (activeAssignment.policyId as any)._id?.toString() || activeAssignment.policyId.toString()
-        : activeAssignment.policyId.toString();
+        ? ((activeAssignment.policyId as any)._id?.toString() || (activeAssignment.policyId as any).toString())
+        : (activeAssignment.policyId as any).toString();
 
       console.log('✅ [MY-POLICY] Active assignment:', {
         assignmentId: activeAssignment.assignmentId,
