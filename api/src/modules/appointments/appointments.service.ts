@@ -10,6 +10,7 @@ import { PaymentService } from '../payments/payment.service';
 import { TransactionSummaryService } from '../transactions/transaction-summary.service';
 import { AssignmentsService } from '../assignments/assignments.service';
 import { CopayCalculator } from '../plan-config/utils/copay-calculator';
+import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 
@@ -66,6 +67,7 @@ export class AppointmentsService {
     console.log('📋 [STEP 1] Fetching policy config and copay settings...');
     let copayCalculation = null;
     let policyId = null;
+    let userRelationship = null;
 
     try {
       console.log('🔍 [POLICY] Searching for assignments for userId:', patientId);
@@ -96,27 +98,61 @@ export class AppointmentsService {
         console.log('✅ [POLICY] Found policyId:', policyId);
         console.log('✅ [POLICY] PolicyId type:', typeof policyId);
 
+        // Fetch user details to get relationship
+        console.log('🔍 [USER] Fetching user details to get relationship for patientId:', patientId);
+        try {
+          const userModel = this.appointmentModel.db.model('User');
+          const userDoc = await userModel.findById(patientId).select('relationship').lean();
+          if (userDoc && userDoc.relationship) {
+            userRelationship = userDoc.relationship;
+            console.log('✅ [USER] Found user relationship:', userRelationship);
+          } else {
+            console.log('⚠️ [USER] No relationship found for user, will use global config');
+          }
+        } catch (userError) {
+          console.error('❌ [USER ERROR] Failed to fetch user relationship:', userError.message);
+        }
+
         // Fetch plan config
         console.log('🔍 [POLICY] Fetching plan config for policyId:', policyId);
         const planConfig = await this.planConfigService.getConfig(policyId);
         console.log('📄 [POLICY] Plan config retrieved:', planConfig ? 'YES' : 'NO');
 
-        if (planConfig && planConfig.benefits && (planConfig.benefits as any)['CAT001']) {
-          const consultBenefit = (planConfig.benefits as any)['CAT001'];
-          const copayConfig = consultBenefit.copay;
+        if (planConfig) {
+          console.log('📄 [POLICY] Plan config structure:', JSON.stringify({
+            hasWallet: !!planConfig.wallet,
+            hasMemberConfigs: !!planConfig.memberConfigs,
+            memberConfigKeys: planConfig.memberConfigs ? Object.keys(planConfig.memberConfigs) : []
+          }, null, 2));
 
-          console.log('📄 [COPAY] Consult benefit found:', JSON.stringify(consultBenefit, null, 2));
-          console.log('📄 [COPAY] Copay config:', JSON.stringify(copayConfig, null, 2));
+          // ✅ FIX: Use CopayResolver to get copay config from correct location
+          console.log('💰 [COPAY FIX] Using CopayResolver to resolve copay config...');
+          const copayConfig = CopayResolver.resolve(planConfig, userRelationship);
+          const copaySource = CopayResolver.getSource(planConfig, userRelationship);
 
-          if (copayConfig && consultBenefit.enabled) {
+          console.log('📄 [COPAY] Copay source:', copaySource);
+          console.log('📄 [COPAY] Resolved copay config:', JSON.stringify(copayConfig, null, 2));
+
+          // Check if consultation benefit is enabled before applying copay
+          const consultBenefit = planConfig.benefits && (planConfig.benefits as any)['CAT001'];
+          const consultEnabled = consultBenefit && consultBenefit.enabled;
+
+          console.log('📄 [BENEFIT] Consultation benefit enabled:', consultEnabled);
+
+          if (copayConfig && consultEnabled) {
             console.log('💰 [COPAY] Calculating copay for fee:', consultationFee);
             copayCalculation = CopayCalculator.calculate(consultationFee, copayConfig);
             console.log('✅ [COPAY] Copay calculation result:', JSON.stringify(copayCalculation, null, 2));
           } else {
-            console.log('⚠️ [COPAY] Copay not applicable - config missing or benefit disabled');
+            if (!copayConfig) {
+              console.log('⚠️ [COPAY] No copay config found in plan');
+            }
+            if (!consultEnabled) {
+              console.log('⚠️ [COPAY] Consultation benefit not enabled');
+            }
           }
         } else {
-          console.log('⚠️ [POLICY] No consultation benefit (CAT001) found in plan config');
+          console.log('⚠️ [POLICY] Plan config is null');
         }
       } else {
         console.log('⚠️ [POLICY] No assignment or policyId found for member');
