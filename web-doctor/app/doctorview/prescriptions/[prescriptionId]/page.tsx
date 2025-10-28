@@ -32,6 +32,8 @@ interface DigitalPrescription {
   _id: string
   prescriptionId: string
   doctorName: string
+  doctorQualification?: string
+  doctorSpecialty?: string
   patientName: string
   createdAt: string
   chiefComplaint?: string
@@ -218,6 +220,12 @@ export default function PrescriptionDetailsPage() {
               <div>
                 <p className="text-sm text-gray-600">Doctor</p>
                 <p className="font-medium text-gray-900">{data.doctorName}</p>
+                {data.doctorQualification && (
+                  <p className="text-sm text-gray-600">{data.doctorQualification}</p>
+                )}
+                {data.doctorSpecialty && (
+                  <p className="text-xs text-gray-500">{data.doctorSpecialty}</p>
+                )}
               </div>
             </div>
 

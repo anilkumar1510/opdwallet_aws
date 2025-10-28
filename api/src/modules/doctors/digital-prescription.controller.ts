@@ -48,23 +48,73 @@ export class DoctorDigitalPrescriptionsController {
     @Body() createDto: CreateDigitalPrescriptionDto,
     @Request() req: AuthRequest,
   ) {
+    console.log('🔵 [DigitalPrescriptionController] ========== CREATE PRESCRIPTION START ==========');
+    console.log('🔵 [DigitalPrescriptionController] POST /doctor/digital-prescriptions');
+    console.log('🔵 [DigitalPrescriptionController] Request user:', JSON.stringify(req.user, null, 2));
+    console.log('🔵 [DigitalPrescriptionController] Create DTO:', JSON.stringify(createDto, null, 2));
+
     const doctorId = req.user.doctorId;
-    const doctorName = req.user.name || 'Unknown Doctor';
+    console.log('🔵 [DigitalPrescriptionController] Doctor ID from JWT:', doctorId);
 
     if (!doctorId) {
+      console.error('❌ [DigitalPrescriptionController] No doctorId found in request!');
       throw new BadRequestException('Doctor ID is required');
     }
 
-    const prescription = await this.digitalPrescriptionService.createDigitalPrescription(
-      createDto,
-      doctorId,
-      doctorName,
-    );
+    try {
+      // Fetch doctor details from database to get qualification and specialty
+      console.log('🔍 [DigitalPrescriptionController] Fetching doctor details from database...');
+      const doctor = await this.digitalPrescriptionService.getDoctorDetails(doctorId);
 
-    return {
-      message: 'Digital prescription created successfully',
-      prescription: prescription.toObject(),
-    };
+      if (!doctor) {
+        console.error('❌ [DigitalPrescriptionController] Doctor not found in database:', doctorId);
+        throw new BadRequestException('Doctor not found');
+      }
+
+      console.log('✅ [DigitalPrescriptionController] Doctor found:', {
+        doctorId: doctor.doctorId,
+        name: doctor.name,
+        qualifications: doctor.qualifications,
+        specialty: doctor.specialty,
+        specializations: doctor.specializations,
+        registrationNumber: doctor.registrationNumber,
+      });
+
+      const doctorName = doctor.name || 'Unknown Doctor';
+      const doctorQualification = doctor.qualifications || '';
+      const doctorSpecialty = doctor.specialty || (doctor.specializations && doctor.specializations.length > 0 ? doctor.specializations[0] : '');
+      const doctorRegistrationNumber = doctor.registrationNumber || '';
+
+      console.log('📝 [DigitalPrescriptionController] Creating prescription with doctor info:', {
+        doctorId,
+        doctorName,
+        doctorQualification,
+        doctorSpecialty,
+        doctorRegistrationNumber,
+      });
+
+      const prescription = await this.digitalPrescriptionService.createDigitalPrescription(
+        createDto,
+        doctorId,
+        doctorName,
+        doctorQualification,
+        doctorRegistrationNumber,
+        doctorSpecialty,
+      );
+
+      console.log('✅ [DigitalPrescriptionController] Prescription created successfully:', prescription.prescriptionId);
+      console.log('🔵 [DigitalPrescriptionController] ========== CREATE PRESCRIPTION END ==========');
+
+      return {
+        message: 'Digital prescription created successfully',
+        prescription: prescription.toObject(),
+      };
+    } catch (error) {
+      console.error('❌ [DigitalPrescriptionController] Error creating prescription:', error);
+      console.error('❌ [DigitalPrescriptionController] Error stack:', error.stack);
+      console.log('🔵 [DigitalPrescriptionController] ========== CREATE PRESCRIPTION ERROR END ==========');
+      throw error;
+    }
   }
 
   @Patch(':prescriptionId')

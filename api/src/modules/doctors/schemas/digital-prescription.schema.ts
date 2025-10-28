@@ -60,6 +60,9 @@ export class DigitalPrescription {
   doctorQualification?: string;
 
   @Prop()
+  doctorSpecialty?: string;
+
+  @Prop()
   doctorRegistrationNumber?: string;
 
   @Prop({ required: true, type: Types.ObjectId, ref: 'User' })

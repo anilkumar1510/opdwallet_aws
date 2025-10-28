@@ -44,7 +44,9 @@ export default function MedicineAutocomplete({
 
   const handleInputChange = (inputValue: string) => {
     setQuery(inputValue)
-    onChange(inputValue)
+    // Don't call onChange during typing - only when an item is selected from dropdown
+    // This prevents search text (e.g., "para") from being saved instead of selected medicine name (e.g., "PARACETAMOL (Crocin) - Tablet 500mg")
+    // onChange(inputValue) // <-- REMOVED
 
     // Debounce search
     if (debounceRef.current) {
@@ -83,6 +85,17 @@ export default function MedicineAutocomplete({
     setShowDropdown(false)
   }
 
+  const handleBlur = () => {
+    // If user typed custom medicine name (not from dropdown), save it when field loses focus
+    setTimeout(() => {
+      // Delay to allow click on dropdown to register first
+      if (query.trim() && query !== value) {
+        onChange(query.trim())
+      }
+      setShowDropdown(false)
+    }, 200)
+  }
+
   return (
     <div ref={wrapperRef} className="relative">
       <div className="relative">
@@ -94,6 +107,7 @@ export default function MedicineAutocomplete({
           onFocus={() => {
             if (medicines.length > 0) setShowDropdown(true)
           }}
+          onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
           className="input-field pl-10 pr-4"

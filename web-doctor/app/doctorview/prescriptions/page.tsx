@@ -16,7 +16,14 @@ import Link from 'next/link'
 interface DigitalPrescription {
   _id: string
   prescriptionId: string
-  appointmentId: string
+  appointmentId: {
+    _id: string
+    appointmentId: string
+    appointmentNumber: string
+    appointmentDate: string
+    timeSlot: string
+    status: string
+  } | string
   doctorId: string
   doctorName: string
   userId: string
@@ -105,6 +112,16 @@ export default function PrescriptionsPage() {
       month: 'short',
       day: 'numeric',
     })
+  }
+
+  const formatTime = (timeSlot: string) => {
+    if (!timeSlot) return ''
+    // timeSlot format is typically like "09:00", "14:30", etc.
+    const [hours, minutes] = timeSlot.split(':')
+    const hour = parseInt(hours, 10)
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour % 12 || 12
+    return `${displayHour}:${minutes} ${ampm}`
   }
 
   const formatFileSize = (bytes: number) => {
@@ -197,7 +214,14 @@ export default function PrescriptionsPage() {
 
                         <div className="flex items-center text-sm text-gray-600">
                           <CalendarDaysIcon className="h-4 w-4 mr-2" />
-                          <span>{formatDate(prescription.type === 'digital' ? prescription.createdAt : (prescription as any).uploadDate)}</span>
+                          <span>
+                            {formatDate(prescription.type === 'digital' ? prescription.createdAt : (prescription as any).uploadDate)}
+                            {prescription.type === 'digital' &&
+                             typeof prescription.appointmentId === 'object' &&
+                             prescription.appointmentId?.timeSlot && (
+                              <span className="text-gray-500"> • {formatTime(prescription.appointmentId.timeSlot)}</span>
+                            )}
+                          </span>
                         </div>
 
                         {prescription.type === 'upload' && (

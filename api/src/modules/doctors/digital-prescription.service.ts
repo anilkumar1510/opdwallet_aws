@@ -11,6 +11,7 @@ import {
 } from './schemas/digital-prescription.schema';
 import { Medicine, MedicineDocument } from './schemas/medicine.schema';
 import { Appointment, AppointmentDocument } from '../appointments/schemas/appointment.schema';
+import { Doctor, DoctorDocument } from './schemas/doctor.schema';
 import { CreateDigitalPrescriptionDto, UpdateDigitalPrescriptionDto } from './dto/create-digital-prescription.dto';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -24,6 +25,8 @@ export class DigitalPrescriptionService {
     private medicineModel: Model<MedicineDocument>,
     @InjectModel(Appointment.name)
     private appointmentModel: Model<AppointmentDocument>,
+    @InjectModel(Doctor.name)
+    private doctorModel: Model<DoctorDocument>,
   ) {}
 
   async createDigitalPrescription(
@@ -32,6 +35,7 @@ export class DigitalPrescriptionService {
     doctorName: string,
     doctorQualification?: string,
     doctorRegistrationNumber?: string,
+    doctorSpecialty?: string,
   ): Promise<DigitalPrescriptionDocument> {
     // Verify appointment exists and belongs to this doctor
     const appointment = await this.appointmentModel.findOne({
@@ -63,6 +67,7 @@ export class DigitalPrescriptionService {
       doctorId,
       doctorName,
       doctorQualification,
+      doctorSpecialty,
       doctorRegistrationNumber,
       userId: appointment.userId,
       patientName: appointment.patientName,
@@ -145,6 +150,10 @@ export class DigitalPrescriptionService {
     const [prescriptions, total] = await Promise.all([
       this.digitalPrescriptionModel
         .find({ doctorId, isActive: true })
+        .populate({
+          path: 'appointmentId',
+          select: 'appointmentId appointmentNumber appointmentDate timeSlot status',
+        })
         .sort({ createdDate: -1 })
         .skip(skip)
         .limit(limit)
@@ -300,6 +309,34 @@ export class DigitalPrescriptionService {
       return result.upsertedCount + result.modifiedCount;
     } catch (error) {
       throw new BadRequestException('Failed to seed medicine database: ' + error.message);
+    }
+  }
+
+  // Get doctor details by doctorId
+  async getDoctorDetails(doctorId: string): Promise<DoctorDocument | null> {
+    console.log('🔍 [DigitalPrescriptionService] getDoctorDetails - doctorId:', doctorId);
+
+    try {
+      const doctor = await this.doctorModel.findOne({ doctorId }).exec();
+
+      if (!doctor) {
+        console.warn('⚠️ [DigitalPrescriptionService] Doctor not found with doctorId:', doctorId);
+        return null;
+      }
+
+      console.log('✅ [DigitalPrescriptionService] Doctor found:', {
+        doctorId: doctor.doctorId,
+        name: doctor.name,
+        qualifications: doctor.qualifications,
+        specialty: doctor.specialty,
+        specializations: doctor.specializations,
+        registrationNumber: doctor.registrationNumber,
+      });
+
+      return doctor;
+    } catch (error) {
+      console.error('❌ [DigitalPrescriptionService] Error fetching doctor:', error);
+      throw new BadRequestException('Failed to fetch doctor details: ' + error.message);
     }
   }
 }
