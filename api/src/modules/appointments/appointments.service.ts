@@ -102,7 +102,7 @@ export class AppointmentsService {
         console.log('🔍 [USER] Fetching user details to get relationship for patientId:', patientId);
         try {
           const userModel = this.appointmentModel.db.model('User');
-          const userDoc = await userModel.findById(patientId).select('relationship').lean();
+          const userDoc = await userModel.findById(patientId).select('relationship').lean() as { relationship?: string } | null;
           if (userDoc && userDoc.relationship) {
             userRelationship = userDoc.relationship;
             console.log('✅ [USER] Found user relationship:', userRelationship);
