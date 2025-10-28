@@ -76,20 +76,21 @@ export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[PaymentValidator] Failed to fetch user policy:', {
+      console.error('❌❌ [PaymentValidator] Failed to fetch user policy:', {
         status: response.status,
         statusText: response.statusText,
         errorBody: errorText
       });
-      console.log('[PaymentValidator] Using default copay 20% due to API error');
-      // Return default copay if API fails
+      console.error('❌❌ [PaymentValidator] This likely means NO POLICY is assigned to the user!');
+      console.error('❌❌ [PaymentValidator] Returning NO COPAY (0%) - Admin needs to assign policy');
+      // Return NO copay if API fails (likely no assignment)
       return {
         copay: {
-          percentage: 20,
+          percentage: 0,
           mode: 'PERCENT',
-          value: 20
+          value: 0
         },
-        walletEnabled: true
+        walletEnabled: false
       };
     }
 
@@ -98,7 +99,7 @@ export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
 
     // Extract copay configuration from the response
     const copay = data.copay || data.planConfig?.copay;
-    const copayPercentage = copay?.percentage || copay?.value || 20;
+    const copayPercentage = copay?.percentage || copay?.value || 0; // Changed from 20 to 0
 
     console.log('[PaymentValidator] Extracted copay details:', {
       rawCopay: copay,
@@ -120,16 +121,16 @@ export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
     console.log('[PaymentValidator] Returning policy details:', result);
     return result;
   } catch (error) {
-    console.error('[PaymentValidator] Exception in getUserPolicy:', error);
-    console.log('[PaymentValidator] Using fallback copay 20% due to exception');
-    // Return default fallback in case of error
+    console.error('❌❌ [PaymentValidator] Exception in getUserPolicy:', error);
+    console.error('❌❌ [PaymentValidator] Returning NO COPAY (0%) due to exception');
+    // Return NO copay fallback in case of error
     return {
       copay: {
-        percentage: 20,
+        percentage: 0,
         mode: 'PERCENT',
-        value: 20
+        value: 0
       },
-      walletEnabled: true
+      walletEnabled: false
     };
   }
 }

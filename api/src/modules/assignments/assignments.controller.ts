@@ -22,13 +22,20 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { CopayResolver } from '../plan-config/utils/copay-resolver';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @ApiTags('assignments')
 @Controller('assignments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class AssignmentsController {
-  constructor(private readonly assignmentsService: AssignmentsService) {}
+  constructor(
+    private readonly assignmentsService: AssignmentsService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {}
 
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
@@ -89,58 +96,94 @@ export class AssignmentsController {
   @ApiResponse({ status: 200, description: 'User policy configuration retrieved' })
   @ApiResponse({ status: 404, description: 'No active policy assignment found' })
   async getMyPolicyConfig(@Request() req: any) {
-    console.log('🔵 [ASSIGNMENTS CONTROLLER] GET /assignments/my-policy for user:', req.user?.userId, req.user?.email);
+    console.log('🔵 [MY-POLICY] ========== GET /assignments/my-policy START ==========');
+    console.log('🔵 [MY-POLICY] User:', req.user?.userId, req.user?.email, 'MemberID:', req.user?.memberId);
 
     try {
-      // Get user's active assignments
-      const assignments = await this.assignmentsService.getUserAssignments(req.user.userId);
-      console.log('🔵 [ASSIGNMENTS CONTROLLER] User assignments found:', assignments?.length || 0);
-
-      if (!assignments || assignments.length === 0) {
-        console.log('⚠️ [ASSIGNMENTS CONTROLLER] No active assignments found for user');
-        throw new NotFoundException('No active policy assignment found for user');
+      // Step 1: Get user's relationship for member-specific copay config
+      let userRelationship: string | null = null;
+      try {
+        const user = await this.userModel.findById(req.user.userId).select('relationship').lean() as { relationship?: string } | null;
+        if (user && user.relationship) {
+          userRelationship = user.relationship;
+          console.log('✅ [MY-POLICY] User relationship found:', userRelationship);
+        } else {
+          console.log('⚠️ [MY-POLICY] No relationship found for user');
+        }
+      } catch (userError) {
+        console.error('❌ [MY-POLICY] Failed to fetch user relationship:', userError.message);
       }
 
-      // Get the first active assignment (assuming one policy per user)
+      // Step 2: Get user's active assignments
+      const assignments = await this.assignmentsService.getUserAssignments(req.user.userId);
+      console.log('🔵 [MY-POLICY] User assignments found:', assignments?.length || 0);
+
+      if (!assignments || assignments.length === 0) {
+        console.log('❌ [MY-POLICY] No active assignments found for user');
+        throw new NotFoundException('No active policy assignment found for user. Please contact your administrator to assign a policy.');
+      }
+
+      // Step 3: Get the first active assignment (assuming one policy per user)
       const activeAssignment = assignments[0];
-      console.log('🔵 [ASSIGNMENTS CONTROLLER] Active assignment:', {
+      console.log('✅ [MY-POLICY] Active assignment:', {
         assignmentId: activeAssignment.assignmentId,
         policyId: activeAssignment.policyId?.toString(),
         planVersionOverride: activeAssignment.planVersionOverride
       });
 
-      // Get the plan configuration for this policy
+      // Step 4: Get the plan configuration for this policy
       const planConfig = await this.assignmentsService.getPolicyConfigForUser(
         activeAssignment.policyId.toString(),
         activeAssignment.planVersionOverride
       );
 
-      console.log('🔵 [ASSIGNMENTS CONTROLLER] Plan config retrieved:', JSON.stringify(planConfig, null, 2));
+      console.log('📄 [MY-POLICY] Plan config retrieved:', planConfig ? 'YES' : 'NO');
+      if (planConfig?.currentVersion) {
+        console.log('📄 [MY-POLICY] Plan config structure:', JSON.stringify({
+          hasWallet: !!planConfig.currentVersion.wallet,
+          hasMemberConfigs: !!planConfig.currentVersion.memberConfigs,
+          memberConfigKeys: planConfig.currentVersion.memberConfigs ? Object.keys(planConfig.currentVersion.memberConfigs) : []
+        }, null, 2));
+      }
 
-      // Extract copay from plan config
-      const copayConfig = planConfig?.currentVersion?.copay || {
-        percentage: 20, // Default fallback
-        mode: 'PERCENT',
-        value: 20
-      };
+      // Step 5: ✅ FIX - Use CopayResolver to get copay from correct location (wallet.copay)
+      console.log('💰 [MY-POLICY FIX] Using CopayResolver to resolve copay config...');
+      const copayConfig = CopayResolver.resolve(planConfig?.currentVersion, userRelationship);
+      const copaySource = CopayResolver.getSource(planConfig?.currentVersion, userRelationship);
 
-      console.log('🔵 [ASSIGNMENTS CONTROLLER] Copay config:', copayConfig);
+      console.log('📄 [MY-POLICY] Copay source:', copaySource);
+      console.log('📄 [MY-POLICY] Resolved copay config:', JSON.stringify(copayConfig, null, 2));
+
+      // Convert to frontend-expected format
+      const formattedCopay = copayConfig ? {
+        percentage: copayConfig.mode === 'PERCENT' ? copayConfig.value : (copayConfig.value / 1) * 100,
+        mode: copayConfig.mode,
+        value: copayConfig.value
+      } : null;
+
+      console.log('📄 [MY-POLICY] Formatted copay for frontend:', JSON.stringify(formattedCopay, null, 2));
 
       const response = {
         policyId: activeAssignment.policyId,
         assignmentId: activeAssignment.assignmentId,
         effectiveFrom: activeAssignment.effectiveFrom,
         effectiveTo: activeAssignment.effectiveTo,
-        copay: copayConfig,
-        walletEnabled: planConfig?.currentVersion?.wallet ? true : true, // Default to enabled
+        copay: formattedCopay,
+        copaySource: copaySource, // Add source for debugging
+        walletEnabled: planConfig?.currentVersion?.wallet ? true : true,
         planConfig: planConfig?.currentVersion
       };
 
-      console.log('✅ [ASSIGNMENTS CONTROLLER] Returning policy config:', JSON.stringify(response, null, 2));
+      console.log('✅✅ [MY-POLICY] ========== RETURNING POLICY CONFIG ==========');
+      console.log('✅✅ [MY-POLICY] Response:', JSON.stringify(response, null, 2));
+      console.log('✅✅ [MY-POLICY] ========== GET /assignments/my-policy END ==========');
 
       return response;
     } catch (error) {
-      console.error('❌ [ASSIGNMENTS CONTROLLER] Error getting my-policy:', error);
+      console.error('❌❌ [MY-POLICY] ========== ERROR ==========');
+      console.error('❌❌ [MY-POLICY] Error name:', error.name);
+      console.error('❌❌ [MY-POLICY] Error message:', error.message);
+      console.error('❌❌ [MY-POLICY] Error stack:', error.stack);
       throw error;
     }
   }
