@@ -51,29 +51,45 @@ export class UsersService {
   }
 
   private async validateRelationship(createUserDto: CreateUserDto): Promise<void> {
+    // If relationship is not provided, skip validation (it's optional now)
+    if (!createUserDto.relationship) {
+      console.log('⚠️ [USER-CREATION] No relationship provided - skipping relationship validation');
+      return;
+    }
+
+    console.log('🔍 [USER-CREATION] Validating relationship:', createUserDto.relationship);
+
     const isSelf = createUserDto.relationship === 'REL001' ||
                    createUserDto.relationship === RelationshipType.SELF ||
                    createUserDto.relationship === 'SELF';
 
     if (isSelf) {
+      console.log('✅ [USER-CREATION] Relationship is SELF');
       if (createUserDto.primaryMemberId) {
+        console.error('❌ [USER-CREATION] Primary Member ID should not be set for SELF');
         throw new BadRequestException('Primary Member ID should not be set for SELF relationship');
       }
       return;
     }
 
+    console.log('🔍 [USER-CREATION] Relationship is dependent, checking for primaryMemberId');
     if (!createUserDto.primaryMemberId) {
+      console.error('❌ [USER-CREATION] Primary Member ID is required for dependents');
       throw new BadRequestException('Primary Member ID is required for dependents');
     }
 
+    console.log('🔍 [USER-CREATION] Validating primaryMemberId:', createUserDto.primaryMemberId);
     const primaryMember = await this.userModel.findOne({
       memberId: createUserDto.primaryMemberId,
       relationship: { $in: ['REL001', RelationshipType.SELF, 'SELF'] }
     }).lean();
 
     if (!primaryMember) {
+      console.error('❌ [USER-CREATION] Invalid Primary Member ID or member is not SELF');
       throw new BadRequestException('Invalid Primary Member ID or member is not SELF');
     }
+
+    console.log('✅ [USER-CREATION] Primary member validated successfully');
   }
 
   private async prepareUserData(createUserDto: CreateUserDto, createdBy: string) {
@@ -93,12 +109,33 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto, createdBy: string) {
-    await this.validateUniqueFields(createUserDto);
-    await this.validateRelationship(createUserDto);
+    console.log('🔍 ==================== USER CREATION START ====================');
+    console.log('📦 Received DTO:', JSON.stringify(createUserDto, null, 2));
+    console.log('📋 DTO Fields Present:');
+    console.log('  - uhid:', createUserDto.uhid);
+    console.log('  - memberId:', createUserDto.memberId);
+    console.log('  - email:', createUserDto.email);
+    console.log('  - phone:', createUserDto.phone);
+    console.log('  - relationship:', createUserDto.relationship || '(undefined)');
+    console.log('  - primaryMemberId:', createUserDto.primaryMemberId || '(undefined)');
+    console.log('  - role:', createUserDto.role);
+    console.log('  - name:', JSON.stringify(createUserDto.name));
+    console.log('  - createdBy:', createdBy);
 
+    console.log('🔍 [USER-CREATION] Step 1: Validating unique fields...');
+    await this.validateUniqueFields(createUserDto);
+    console.log('✅ [USER-CREATION] Unique fields validated');
+
+    console.log('🔍 [USER-CREATION] Step 2: Validating relationship...');
+    await this.validateRelationship(createUserDto);
+    console.log('✅ [USER-CREATION] Relationship validated');
+
+    console.log('🔍 [USER-CREATION] Step 3: Preparing user data...');
     const { userId, password, passwordHash, email, mustChangePassword, createdBy: creator } =
       await this.prepareUserData(createUserDto, createdBy);
+    console.log('✅ [USER-CREATION] User data prepared. Generated userId:', userId);
 
+    console.log('🔍 [USER-CREATION] Step 4: Creating user document...');
     const user = new this.userModel({
       ...createUserDto,
       userId,
@@ -108,9 +145,21 @@ export class UsersService {
       createdBy: creator,
     });
 
+    console.log('🔍 [USER-CREATION] Step 5: Saving user to database...');
     const savedUser = await user.save();
+    console.log('✅ [USER-CREATION] User saved successfully. MongoDB _id:', savedUser._id);
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...result } = savedUser.toObject();
+
+    console.log('🔍 ==================== USER CREATION SUCCESS ====================');
+    console.log('✅ Created user:', {
+      userId: result.userId,
+      memberId: result.memberId,
+      email: result.email,
+      role: result.role,
+      relationship: result.relationship || '(not set)',
+    });
 
     return {
       ...result,
@@ -147,7 +196,7 @@ export class UsersService {
     const [users, total] = await Promise.all([
       this.userModel
         .find(filter)
-        .select('userId memberId uhid employeeId name email phone role relationship status primaryMemberId createdAt updatedAt')
+        .select('userId memberId uhid employeeId name email phone role status createdAt updatedAt')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })

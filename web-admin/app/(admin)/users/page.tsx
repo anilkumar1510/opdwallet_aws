@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
-import { relationshipsApi, type Relationship } from '@/lib/api/relationships'
 
 export default function UsersPage() {
   const router = useRouter()
@@ -15,13 +14,11 @@ export default function UsersPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [newPassword, setNewPassword] = useState('')
-  const [relationships, setRelationships] = useState<Relationship[]>([])
   const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null)
   const [settingPassword, setSettingPassword] = useState(false)
 
   useEffect(() => {
     fetchUsers()
-    fetchRelationships()
   }, [])
 
   const fetchUsers = async () => {
@@ -36,23 +33,6 @@ export default function UsersPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const fetchRelationships = async () => {
-    try {
-      const data = await relationshipsApi.getAll()
-      setRelationships(data)
-    } catch (error) {
-      console.error('Failed to fetch relationships:', error)
-    }
-  }
-
-  const getRelationshipName = (relationshipCode: string) => {
-    if (!relationshipCode) {
-      return 'Primary Member'
-    }
-    const relationship = relationships.find(rel => rel.relationshipCode === relationshipCode)
-    return relationship?.displayName || relationshipCode
   }
 
   const handleResetPassword = async (userId: string) => {
@@ -207,9 +187,9 @@ export default function UsersPage() {
                   <th className="hidden sm:table-cell">Employee ID</th>
                   <th>Name</th>
                   <th className="hidden md:table-cell">Email</th>
-                  <th className="hidden lg:table-cell">
-                    {activeTab === 'external' ? 'Relationship' : 'Role'}
-                  </th>
+                  {activeTab === 'internal' && (
+                    <th className="hidden lg:table-cell">Role</th>
+                  )}
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -255,11 +235,6 @@ export default function UsersPage() {
                           <div className="text-sm text-gray-500 md:hidden">
                             {user.email}
                           </div>
-                          {activeTab === 'external' && user.relationship && (
-                            <div className="text-xs text-blue-600">
-                              Primary: {user.primaryMemberId}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -267,19 +242,13 @@ export default function UsersPage() {
                       <div className="text-gray-900">{user.email}</div>
                       <div className="text-xs text-gray-500">{user.phone}</div>
                     </td>
-                    <td className="hidden lg:table-cell">
-                      {activeTab === 'external' ? (
-                        <span className={`badge ${
-                          !user.relationship ? 'badge-info' : 'badge-warning'
-                        }`}>
-                          {getRelationshipName(user.relationship)}
-                        </span>
-                      ) : (
+                    {activeTab === 'internal' && (
+                      <td className="hidden lg:table-cell">
                         <span className="badge-info">
                           {user.role}
                         </span>
-                      )}
-                    </td>
+                      </td>
+                    )}
                     <td>
                       <span className={user.status === 'ACTIVE' ? 'badge-success' : 'badge-default'}>
                         <span className={`status-dot mr-1 ${user.status === 'ACTIVE' ? 'status-active' : 'status-inactive'}`}></span>
