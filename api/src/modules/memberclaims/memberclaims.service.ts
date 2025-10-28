@@ -22,6 +22,7 @@ import { PlanConfigService } from '../plan-config/plan-config.service';
 import { PaymentService } from '../payments/payment.service';
 import { TransactionSummaryService } from '../transactions/transaction-summary.service';
 import { CopayCalculator } from '../plan-config/utils/copay-calculator';
+import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { UserRole } from '@/common/constants/roles.enum';
@@ -236,32 +237,55 @@ export class MemberClaimsService {
     // Step 1: Get policy config and copay settings
     let copayCalculation = null;
     let policyId = null;
+    let userRelationship: string | null = null;
 
     try {
-      // Fetch user's assignment to get policyId
-      const user = await this.userModel.findById(claimUserId).lean();
-      if (user && user.memberId) {
-        const assignment = await (this.walletService as any)['assignmentModel']
-          .findOne({ memberId: user.memberId })
-          .populate('policyId')
-          .lean()
-          .exec();
+      // Fetch user's assignment to get policyId and relationship
+      const user = await this.userModel.findById(claimUserId).lean() as { memberId?: string; relationship?: string } | null;
+      if (user) {
+        userRelationship = user.relationship || null;
+        console.log('🔍 [CLAIMS SERVICE] User relationship:', userRelationship || 'NOT PROVIDED');
 
-        if (assignment && assignment.policyId) {
-          policyId = assignment.policyId._id || assignment.policyId;
-          console.log('💰 [CLAIMS SERVICE] Found policyId:', policyId);
+        if (user.memberId) {
+          const assignment = await (this.walletService as any)['assignmentModel']
+            .findOne({ memberId: user.memberId })
+            .populate('policyId')
+            .lean()
+            .exec();
 
-          // Fetch plan config
-          const planConfig = await this.planConfigService.getConfig(policyId.toString());
+          if (assignment && assignment.policyId) {
+            policyId = assignment.policyId._id || assignment.policyId;
+            console.log('💰 [CLAIMS SERVICE] Found policyId:', policyId);
 
-          if (planConfig && planConfig.benefits && (planConfig.benefits as any)[categoryCode]) {
-            const categoryBenefit = (planConfig.benefits as any)[categoryCode];
-            const copayConfig = categoryBenefit.copay;
+            // Fetch plan config
+            const planConfig = await this.planConfigService.getConfig(policyId.toString());
 
-            if (copayConfig && categoryBenefit.enabled) {
-              console.log('💰 [CLAIMS SERVICE] Copay config found:', copayConfig);
-              copayCalculation = CopayCalculator.calculate(claim.billAmount, copayConfig);
-              console.log('💰 [CLAIMS SERVICE] Copay calculation:', copayCalculation);
+            if (planConfig) {
+              console.log('📄 [CLAIMS SERVICE] Plan config structure:', JSON.stringify({
+                hasWallet: !!planConfig.wallet,
+                hasMemberConfigs: !!planConfig.memberConfigs,
+                memberConfigKeys: planConfig.memberConfigs ? Object.keys(planConfig.memberConfigs) : []
+              }, null, 2));
+
+              // ✅ FIX: Use CopayResolver to get copay config from correct location
+              console.log('💰 [CLAIMS SERVICE FIX] Using CopayResolver to resolve copay config...');
+              const copayConfig = CopayResolver.resolve(planConfig, userRelationship);
+              const copaySource = CopayResolver.getSource(planConfig, userRelationship);
+
+              console.log('📄 [CLAIMS SERVICE] Copay source:', copaySource);
+              console.log('📄 [CLAIMS SERVICE] Resolved copay config:', JSON.stringify(copayConfig, null, 2));
+
+              // Check if benefit is enabled
+              const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryCode];
+              const categoryEnabled = categoryBenefit && categoryBenefit.enabled;
+
+              console.log('📄 [CLAIMS SERVICE] Category benefit enabled:', categoryEnabled);
+
+              if (copayConfig && categoryEnabled) {
+                console.log('💰 [CLAIMS SERVICE] Calculating copay for amount:', claim.billAmount);
+                copayCalculation = CopayCalculator.calculate(claim.billAmount, copayConfig);
+                console.log('✅ [CLAIMS SERVICE] Copay calculation result:', JSON.stringify(copayCalculation, null, 2));
+              }
             }
           }
         }
