@@ -191,14 +191,42 @@ export class DoctorAppointmentsController {
     @Request() req: AuthRequest,
     @Query('limit') limit = 10,
   ) {
+    console.log('=== DOCTOR APPOINTMENTS UPCOMING DEBUG START ===');
+    console.log('[DoctorAppointmentsController] GET /doctor/appointments/upcoming');
+    console.log('[DoctorAppointmentsController] Query limit:', limit);
+    console.log('[DoctorAppointmentsController] Request user:', req.user);
+    console.log('[DoctorAppointmentsController] Request user keys:', req.user ? Object.keys(req.user) : 'null');
+
     const doctorId = req.user.doctorId;
+    console.log('[DoctorAppointmentsController] Extracted doctorId:', doctorId);
 
     if (!doctorId) {
+      console.error('[DoctorAppointmentsController] No doctorId found in request!');
+      console.error('[DoctorAppointmentsController] Full req.user object:', JSON.stringify(req.user, null, 2));
       throw new BadRequestException('Doctor ID is required');
     }
 
     const today = new Date().toISOString().split('T')[0];
+    console.log('[DoctorAppointmentsController] Today date:', today);
 
+    console.log('[DoctorAppointmentsController] Querying appointments with:', {
+      doctorId,
+      appointmentDate: { $gte: today },
+      status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING_CONFIRMATION] },
+    });
+
+    // Check all appointments for this doctor regardless of date/status
+    const doctorAllAppts = await this.appointmentModel.find({ doctorId }).exec();
+    console.log('[DoctorAppointmentsController] Total appointments for doctorId', doctorId, ':', doctorAllAppts.length);
+
+    // Check how many are upcoming (>= today)
+    const upcomingAllStatuses = await this.appointmentModel.find({
+      doctorId,
+      appointmentDate: { $gte: today }
+    }).exec();
+    console.log('[DoctorAppointmentsController] Upcoming appointments (all statuses):', upcomingAllStatuses.length);
+
+    // Now get the filtered appointments
     const appointments = await this.appointmentModel
       .find({
         doctorId,
@@ -209,11 +237,25 @@ export class DoctorAppointmentsController {
       .limit(+limit)
       .exec();
 
-    return {
+    console.log('[DoctorAppointmentsController] Found appointments matching criteria:', appointments.length);
+    console.log('[DoctorAppointmentsController] Appointments:', appointments.map(a => ({
+      appointmentId: a.appointmentId,
+      patientName: a.patientName,
+      appointmentDate: a.appointmentDate,
+      timeSlot: a.timeSlot,
+      status: a.status
+    })));
+
+    const response = {
       message: 'Upcoming appointments retrieved successfully',
       appointments: appointments.map(apt => apt.toObject()),
       total: appointments.length,
     };
+
+    console.log('[DoctorAppointmentsController] Sending response with', response.total, 'appointments');
+    console.log('=== DOCTOR APPOINTMENTS UPCOMING DEBUG END ===');
+
+    return response;
   }
 
   @Get(':appointmentId')

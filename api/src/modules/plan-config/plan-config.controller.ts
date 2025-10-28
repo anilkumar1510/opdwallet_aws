@@ -35,7 +35,19 @@ export class PlanConfigController {
     @Body() dto: CreatePlanConfigDto,
     @Request() req: any,
   ) {
-    return this.planConfigService.createConfig(policyId, dto, req.user.userId);
+    console.log('🔵 [PLAN CONFIG CONTROLLER] createConfig called');
+    console.log('🔵 [PLAN CONFIG CONTROLLER] policyId:', policyId);
+    console.log('🔵 [PLAN CONFIG CONTROLLER] dto:', JSON.stringify(dto, null, 2));
+    console.log('🔵 [PLAN CONFIG CONTROLLER] req.user:', req.user);
+
+    try {
+      const result = await this.planConfigService.createConfig(policyId, dto, req.user.userId);
+      console.log('✅ [PLAN CONFIG CONTROLLER] createConfig success:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [PLAN CONFIG CONTROLLER] createConfig error:', error);
+      throw error;
+    }
   }
 
   @Get()

@@ -10,6 +10,13 @@ export class UpdatePlanConfigDto {
   wallet?: any;
 
   @IsOptional()
+  @IsObject()
+  policyDescription?: {
+    inclusions?: Array<{ headline: string; description: string }>;
+    exclusions?: Array<{ headline: string; description: string }>;
+  };
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   coveredRelationships?: string[];

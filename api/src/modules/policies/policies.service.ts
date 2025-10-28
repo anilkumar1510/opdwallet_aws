@@ -189,4 +189,53 @@ export class PoliciesService {
       planConfigsDeleted: planConfigsDeleted.deletedCount
     };
   }
+
+  async getPolicyWithCurrentConfig(policyId: string) {
+    console.log('🟣 [POLICIES SERVICE] getPolicyWithCurrentConfig called for policyId:', policyId);
+
+    // Fetch the policy
+    const policy = await this.policyModel.findById(policyId).lean();
+    if (!policy) {
+      console.error('❌ [POLICIES SERVICE] Policy not found');
+      throw new NotFoundException('Policy not found');
+    }
+
+    console.log('🟣 [POLICIES SERVICE] Policy found:', policy.policyNumber);
+
+    // Get current plan config
+    const currentConfig = await this.planConfigModel
+      .findOne({ policyId, isCurrent: true })
+      .lean();
+
+    if (!currentConfig) {
+      console.log('⚠️ [POLICIES SERVICE] No current config found, trying latest published...');
+      // If no current, get latest published
+      const latestPublished = await this.planConfigModel
+        .findOne({ policyId, status: 'PUBLISHED' })
+        .sort({ version: -1 })
+        .lean();
+
+      if (!latestPublished) {
+        console.log('⚠️ [POLICIES SERVICE] No published config found');
+      }
+
+      return {
+        policyNumber: policy.policyNumber,
+        policyName: policy.name,
+        corporateName: policy.corporateName,
+        validTill: policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Expiry',
+        policyDescription: latestPublished?.policyDescription || { inclusions: [], exclusions: [] }
+      };
+    }
+
+    console.log('✅ [POLICIES SERVICE] Current config found, version:', currentConfig.version);
+
+    return {
+      policyNumber: policy.policyNumber,
+      policyName: policy.name,
+      corporateName: policy.corporateName,
+      validTill: policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Expiry',
+      policyDescription: currentConfig.policyDescription || { inclusions: [], exclusions: [] }
+    };
+  }
 }

@@ -134,15 +134,41 @@ export async function getAppointmentsByDate(date: string): Promise<AppointmentsR
 }
 
 export async function getUpcomingAppointments(limit = 10): Promise<AppointmentsResponse> {
-  const response = await fetch(`/api/doctor/appointments/upcoming?limit=${limit}`, {
+  console.group('🔍 [API] getUpcomingAppointments')
+  console.log('📊 Limit parameter:', limit)
+  console.log('🌐 Window location:', window.location.href)
+
+  const url = `/api/doctor/appointments/upcoming?limit=${limit}`
+  console.log('🎯 Target URL:', url)
+  console.log('🎯 Full URL will be:', window.location.origin + url)
+
+  console.log('📡 Making fetch request...')
+  const fetchStart = Date.now()
+  const response = await fetch(url, {
     credentials: 'include',
   });
+  const fetchDuration = Date.now() - fetchStart
+
+  console.log(`📨 Response received in ${fetchDuration}ms`)
+  console.log('📨 Response status:', response.status)
+  console.log('📨 Response statusText:', response.statusText)
+  console.log('📨 Response ok:', response.ok)
+  console.log('📨 Response headers:', Object.fromEntries(response.headers.entries()))
 
   if (!response.ok) {
+    const errorText = await response.text()
+    console.error('❌ Response not OK')
+    console.error('❌ Response status:', response.status)
+    console.error('❌ Response body:', errorText)
+    console.groupEnd()
     throw new Error('Failed to fetch upcoming appointments');
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log('✅ Success! Data:', data)
+  console.log('✅ Appointments count:', data.appointments?.length || 0)
+  console.groupEnd()
+  return data;
 }
 
 export async function getAppointmentDetails(appointmentId: string): Promise<{ message: string; appointment: Appointment }> {

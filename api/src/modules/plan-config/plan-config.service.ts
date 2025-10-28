@@ -16,6 +16,11 @@ export class PlanConfigService {
   ) {}
 
   async createConfig(policyId: string, dto: CreatePlanConfigDto, userId: string) {
+    console.log('🟢 [PLAN CONFIG SERVICE] createConfig called');
+    console.log('🟢 [PLAN CONFIG SERVICE] policyId:', policyId);
+    console.log('🟢 [PLAN CONFIG SERVICE] dto:', JSON.stringify(dto, null, 2));
+    console.log('🟢 [PLAN CONFIG SERVICE] userId:', userId);
+
     // Get next version number
     const latestConfig = await this.planConfigModel
       .findOne({ policyId })
@@ -23,6 +28,7 @@ export class PlanConfigService {
       .exec();
 
     const nextVersion = dto.version || (latestConfig ? latestConfig.version + 1 : 1);
+    console.log('🟢 [PLAN CONFIG SERVICE] nextVersion:', nextVersion);
 
     const config = new this.planConfigModel({
       policyId,
@@ -31,13 +37,17 @@ export class PlanConfigService {
       isCurrent: false,
       benefits: dto.benefits || {},
       wallet: dto.wallet || {},
+      policyDescription: dto.policyDescription || { inclusions: [], exclusions: [] },
       coveredRelationships: dto.coveredRelationships || ['SELF'],
       memberConfigs: dto.memberConfigs || {},
       createdBy: userId,
       updatedBy: userId,
     });
 
-    return config.save();
+    console.log('🟢 [PLAN CONFIG SERVICE] config to save:', JSON.stringify(config.toObject(), null, 2));
+    const saved = await config.save();
+    console.log('✅ [PLAN CONFIG SERVICE] config saved successfully with id:', saved._id);
+    return saved;
   }
 
   async getConfig(policyId: string, version?: number) {

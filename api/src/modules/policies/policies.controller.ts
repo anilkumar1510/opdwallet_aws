@@ -77,6 +77,16 @@ export class PoliciesController {
     return this.policiesService.findOne(id);
   }
 
+  @Get(':id/current')
+  @Roles(UserRole.MEMBER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get policy with current configuration for members' })
+  @ApiResponse({ status: 200, description: 'Policy with current config retrieved' })
+  @ApiResponse({ status: 404, description: 'Policy not found' })
+  getPolicyWithCurrentConfig(@Param('id') id: string) {
+    console.log('🔵 [POLICIES CONTROLLER] getPolicyWithCurrentConfig called for id:', id);
+    return this.policiesService.getPolicyWithCurrentConfig(id);
+  }
+
   @Put(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Update policy' })
