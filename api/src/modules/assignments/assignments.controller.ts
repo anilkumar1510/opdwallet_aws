@@ -139,10 +139,11 @@ export class AssignmentsController {
 
       console.log('📄 [MY-POLICY] Plan config retrieved:', planConfig ? 'YES' : 'NO');
       if (planConfig?.currentVersion) {
+        const currentVer = planConfig.currentVersion as any; // Type assertion for dynamic schema
         console.log('📄 [MY-POLICY] Plan config structure:', JSON.stringify({
-          hasWallet: !!planConfig.currentVersion.wallet,
-          hasMemberConfigs: !!planConfig.currentVersion.memberConfigs,
-          memberConfigKeys: planConfig.currentVersion.memberConfigs ? Object.keys(planConfig.currentVersion.memberConfigs) : []
+          hasWallet: !!currentVer.wallet,
+          hasMemberConfigs: !!currentVer.memberConfigs,
+          memberConfigKeys: currentVer.memberConfigs ? Object.keys(currentVer.memberConfigs) : []
         }, null, 2));
       }
 
