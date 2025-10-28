@@ -36,14 +36,12 @@ export class User {
   employeeId?: string;
 
   @Prop({
-    required: true,
+    required: false,
   })
-  relationship!: string;
+  relationship?: string;
 
   @Prop({
-    required: function() {
-      return this.relationship !== 'REL001' && this.relationship !== 'SELF';
-    },
+    required: false,
   })
   primaryMemberId?: string;
 

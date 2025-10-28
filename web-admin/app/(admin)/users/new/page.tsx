@@ -2,15 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { relationshipsApi, type Relationship } from '@/lib/api/relationships'
 import { apiFetch } from '@/lib/api'
 
 export default function NewUserPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
-  const [relationships, setRelationships] = useState<Relationship[]>([])
-  const [relationshipsLoading, setRelationshipsLoading] = useState(true)
   const [formData, setFormData] = useState({
     uhid: '',
     memberId: '',
@@ -20,7 +17,6 @@ export default function NewUserPage() {
     confirmPassword: '',
     role: 'MEMBER',
     status: 'ACTIVE',
-    relationship: 'REL002', // Default to Spouse (since Self is not a relationship)
     firstName: '',
     lastName: '',
     dateOfBirth: '',
@@ -46,7 +42,6 @@ export default function NewUserPage() {
       confirmPassword: 'Password@123',
       role: 'MEMBER',
       status: 'ACTIVE',
-      relationship: 'REL002',
       firstName: 'John',
       lastName: 'Doe',
       dateOfBirth: '1990-01-15',
@@ -84,41 +79,7 @@ export default function NewUserPage() {
     console.log('  - Online:', navigator.onLine)
     console.log('  - Cookies Enabled:', navigator.cookieEnabled)
     console.groupEnd()
-
-    fetchRelationships()
   }, [])
-
-  const fetchRelationships = async () => {
-    console.group('🔗 [USER CREATION] Fetching Relationships')
-    try {
-      setRelationshipsLoading(true)
-      console.log('Calling relationshipsApi.getAll()...')
-      const data = await relationshipsApi.getAll()
-      console.log('Raw Relationships Data:', data)
-      console.log('Total Relationships:', data.length)
-
-      const activeRelationships = data.filter(rel => rel.isActive)
-      console.log('Active Relationships:', activeRelationships.length)
-      console.log('Active Relationships List:', activeRelationships.map(r => ({
-        code: r.relationshipCode,
-        name: r.displayName,
-        isActive: r.isActive
-      })))
-
-      setRelationships(activeRelationships)
-      console.log('✅ Relationships loaded successfully')
-    } catch (error: any) {
-      console.error('❌ Failed to fetch relationships')
-      console.error('Error Type:', error?.constructor?.name)
-      console.error('Error Message:', error?.message)
-      console.error('Error Stack:', error?.stack)
-      console.error('Full Error:', error)
-      setErrors(['Failed to load relationships'])
-    } finally {
-      setRelationshipsLoading(false)
-      console.groupEnd()
-    }
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -213,7 +174,6 @@ export default function NewUserPage() {
       password: formData.password,
       role: formData.role,
       status: formData.status,
-      relationship: formData.relationship,
       name: {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -232,7 +192,6 @@ export default function NewUserPage() {
     console.log('- password:', payload.password ? `[${payload.password.length} chars]` : '(empty)')
     console.log('- role:', payload.role)
     console.log('- status:', payload.status)
-    console.log('- relationship:', payload.relationship)
     console.log('- name:', payload.name)
     console.log('- dob:', payload.dob || '(not set)')
     console.log('- gender:', payload.gender)
@@ -624,35 +583,6 @@ export default function NewUserPage() {
                 <option value="INACTIVE">Inactive</option>
                 <option value="SUSPENDED">Suspended</option>
               </select>
-            </div>
-
-            <div>
-              <label htmlFor="relationship" className="label">
-                Relationship
-              </label>
-              <select
-                id="relationship"
-                name="relationship"
-                value={formData.relationship}
-                onChange={handleInputChange}
-                className="input"
-                disabled={relationshipsLoading}
-              >
-                {relationshipsLoading ? (
-                  <option value="">Loading relationships...</option>
-                ) : relationships.length > 0 ? (
-                  relationships.map((rel) => (
-                    <option key={rel._id} value={rel.relationshipCode}>
-                      {rel.displayName}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No relationships available</option>
-                )}
-              </select>
-              {relationshipsLoading && (
-                <p className="text-xs text-gray-500 mt-1">Loading relationships from master data...</p>
-              )}
             </div>
           </div>
         </div>

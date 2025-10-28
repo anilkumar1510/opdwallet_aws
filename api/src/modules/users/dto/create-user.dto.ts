@@ -68,13 +68,13 @@ export class CreateUserDto {
   @IsOptional()
   employeeId?: string;
 
-  @ApiProperty({
-    description: 'Relationship code (e.g., REL001 for Self, REL002 for Spouse) or legacy enum value',
+  @ApiPropertyOptional({
+    description: 'Relationship code (e.g., REL001 for Self, REL002 for Spouse) - Can be assigned later during policy assignment',
     example: 'REL001'
   })
   @IsString()
-  @IsNotEmpty()
-  relationship!: string;
+  @IsOptional()
+  relationship?: string;
 
   @ApiPropertyOptional()
   @IsString()
