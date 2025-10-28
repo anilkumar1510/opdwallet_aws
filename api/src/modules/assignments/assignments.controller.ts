@@ -125,15 +125,22 @@ export class AssignmentsController {
 
       // Step 3: Get the first active assignment (assuming one policy per user)
       const activeAssignment = assignments[0];
+
+      // ✅ FIX: Extract actual _id from populated policyId object
+      const policyIdString = typeof activeAssignment.policyId === 'object' && activeAssignment.policyId !== null
+        ? (activeAssignment.policyId as any)._id?.toString() || activeAssignment.policyId.toString()
+        : activeAssignment.policyId.toString();
+
       console.log('✅ [MY-POLICY] Active assignment:', {
         assignmentId: activeAssignment.assignmentId,
-        policyId: activeAssignment.policyId?.toString(),
+        policyId: policyIdString,
+        policyIdType: typeof activeAssignment.policyId,
         planVersionOverride: activeAssignment.planVersionOverride
       });
 
       // Step 4: Get the plan configuration for this policy
       const planConfig = await this.assignmentsService.getPolicyConfigForUser(
-        activeAssignment.policyId.toString(),
+        policyIdString,
         activeAssignment.planVersionOverride
       );
 
