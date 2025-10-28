@@ -23,7 +23,14 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **Reverse Proxy**: Nginx
 - **Deployment**: Docker & Docker Compose
 - **Video Calls**: Daily.co (migrated from Jitsi Meet)
+  - Region: ap-south-1 (India/Asia-South) for optimal performance
+  - Features: Screen sharing, chat, cloud recording, max 2 participants
 - **Authentication**: JWT tokens with httpOnly cookies
+- **PDF Generation**: PDFKit for generating prescription PDFs
+- **Medical Data**:
+  - 15,000+ Indian medicines database with autocomplete
+  - 500+ common diagnoses with ICD-10 codes
+  - 200+ symptoms categorized by body systems
 
 ---
 
@@ -84,12 +91,18 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **relationship_masters** - Family relationship types like spouse, child, parent
 - **cug_master** - Corporate User Group definitions for companies
 
+### Digital Prescription System
+- **digital_prescriptions** - Digital prescriptions created by doctors with structured medicine, lab test, diagnosis, and symptom data
+- **medicine_database** - Comprehensive Indian medicine database (15,000+ medicines) with generic names, brand names, and compositions
+- **diagnosis_database** - Diagnosis database with ICD-10 codes and categories (500+ diagnoses) for autocomplete
+- **symptom_database** - Symptoms database categorized by body systems (200+ symptoms) for prescription writing
+
 ### System
 - **notifications** - System notifications sent to users
 - **auditLogs** - Audit trail of all admin actions for compliance
 - **counters** - Auto-increment counters for generating sequential IDs
 
-**Total Collections**: 30
+**Total Collections**: 34
 
 ---
 

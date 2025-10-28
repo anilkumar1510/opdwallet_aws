@@ -57,6 +57,9 @@
 - **/member/orders/[transactionId]** - View detailed order information
 - **/member/payments/[paymentId]** - View payment details and receipt
 
+### Policy Details
+- **/member/policy-details/[policyId]** - View detailed policy information including inclusions and exclusions
+
 ### Services
 - **/member/services** - Browse all available healthcare services
 
@@ -93,16 +96,32 @@
 - **GET /api/specialties** - Get all active medical specialties for selection
 
 ### Video Consultations
-- **POST /api/video-consultations/:appointmentId/start** - Start video consultation as doctor
-- **POST /api/video-consultations/:appointmentId/join** - Join video consultation as member
-- **POST /api/video-consultations/:appointmentId/end** - End consultation session
-- **GET /api/video-consultations/:appointmentId/status** - Get current status of consultation
-- **GET /api/video-consultations/history** - Get patient's past consultation history
+- **POST /api/video-consultations/start** - Start video consultation session (doctor initiates, creates Daily.co room)
+- **POST /api/video-consultations/join** - Join video consultation session (patient joins with appointment ID)
+- **POST /api/video-consultations/:consultationId/end** - End consultation session
+- **GET /api/video-consultations/:consultationId/status** - Get current status of consultation
+- **GET /api/video-consultations/patient/history** - Get patient's past consultation history with pagination
 
 ### Prescriptions
-- **GET /api/prescriptions** - Get all prescriptions issued by doctors for the member
-- **GET /api/prescriptions/:id** - Get prescription details
+- **GET /api/prescriptions** - Get all prescriptions (both digital and uploaded PDF) issued by doctors for the member
+- **GET /api/prescriptions/:id** - Get prescription details (supports both digital and PDF types)
 - **GET /api/prescriptions/:id/download** - Download prescription as PDF
+
+### Digital Prescriptions
+- **GET /api/member/digital-prescriptions** - Get all digital prescriptions issued for the member with pagination
+- **GET /api/member/digital-prescriptions/:prescriptionId** - Get specific digital prescription details including medicines and lab tests
+- **GET /api/member/digital-prescriptions/:prescriptionId/download-pdf** - Download digital prescription as PDF
+
+### Medicine Search
+- **GET /api/medicines/search** - Search Indian medicine database by name with autocomplete (minimum 2 characters, limit 20 results)
+
+### Diagnosis Search
+- **GET /api/diagnoses/search** - Search diagnosis database with autocomplete support (minimum 2 characters)
+- **GET /api/diagnoses/categories** - Get all diagnosis categories
+
+### Symptoms Search
+- **GET /api/symptoms/search** - Search symptoms database with autocomplete support (minimum 2 characters)
+- **GET /api/symptoms/categories** - Get all symptom categories
 
 ### Lab Tests
 - **POST /api/member/lab/prescriptions/upload** - Upload prescription image for lab tests
