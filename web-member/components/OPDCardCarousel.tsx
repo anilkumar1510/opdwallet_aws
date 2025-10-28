@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import OPDECard from './OPDECard'
 
@@ -20,14 +21,17 @@ interface OPDCardCarouselProps {
   getPolicyNumber: (userId: string) => string
   getValidTill: (userId: string) => string
   getCorporateName: (member: any) => string
+  getPolicyId: (userId: string) => string
 }
 
 export default function OPDCardCarousel({
   members,
   getPolicyNumber,
   getValidTill,
-  getCorporateName
+  getCorporateName,
+  getPolicyId
 }: OPDCardCarouselProps) {
+  const router = useRouter()
   const [activeIndex, setActiveIndex] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftArrow, setShowLeftArrow] = useState(false)
@@ -76,6 +80,12 @@ export default function OPDCardCarousel({
     scrollToCard(newIndex)
   }
 
+  const handleCardClick = (policyId: string) => {
+    if (policyId && policyId !== 'N/A') {
+      router.push(`/member/policy-details/${policyId}`)
+    }
+  }
+
   return (
     <div className="relative group">
       {/* Scroll Container */}
@@ -89,6 +99,7 @@ export default function OPDCardCarousel({
       >
         {members.map((member, index) => {
           const memberId = member._id || member.id || ''
+          const policyId = getPolicyId(memberId)
           return (
             <div
               key={memberId || index}
@@ -99,6 +110,8 @@ export default function OPDCardCarousel({
                 policyNumber={getPolicyNumber(memberId)}
                 validTill={getValidTill(memberId)}
                 corporateName={getCorporateName(member)}
+                policyId={policyId}
+                onClick={() => handleCardClick(policyId)}
               />
             </div>
           )

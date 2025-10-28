@@ -36,10 +36,34 @@ export default function EditClinicPage() {
     setSaving(true)
 
     try {
+      // Clean the data to match UpdateClinicDto - remove database fields
+      const updateData = {
+        name: formData.name,
+        contactNumber: formData.contactNumber,
+        email: formData.email || undefined,
+        address: formData.address ? {
+          line1: formData.address.line1,
+          line2: formData.address.line2 || undefined,
+          city: formData.address.city,
+          state: formData.address.state,
+          pincode: formData.address.pincode,
+          country: formData.address.country || 'India'
+        } : undefined,
+        location: formData.location || undefined,
+        operatingHours: formData.operatingHours || undefined,
+        facilities: formData.facilities || undefined,
+        isActive: formData.isActive !== undefined ? formData.isActive : true
+      }
+
+      // Remove undefined values to avoid sending empty fields
+      const cleanedData = JSON.parse(JSON.stringify(updateData))
+
+      console.log('[EditClinicPage] Sending update request:', { clinicId, cleanedData })
+
       const response = await apiFetch(`/api/clinics/${clinicId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(cleanedData),
       })
 
       if (response.ok) {
@@ -47,11 +71,11 @@ export default function EditClinicPage() {
         router.push('/operations/clinics')
       } else {
         const error = await response.json()
-        console.error('Failed to update clinic:', error)
+        console.error('[EditClinicPage] Failed to update clinic:', error)
         toast.error(`Failed to update clinic: ${error.message || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Failed to update clinic:', error)
+      console.error('[EditClinicPage] Failed to update clinic:', error)
       toast.error('Failed to update clinic. Please try again.')
     } finally {
       setSaving(false)

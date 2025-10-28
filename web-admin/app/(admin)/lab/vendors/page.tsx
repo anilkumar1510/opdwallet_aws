@@ -30,11 +30,16 @@ interface LabVendor {
 }
 
 export default function LabVendorsPage() {
+  console.log('🔍 [VENDORS] Component rendering')
+
   const router = useRouter()
   const [vendors, setVendors] = useState<LabVendor[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingVendor, setEditingVendor] = useState<LabVendor | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  console.log('🔍 [VENDORS] State:', { loading, vendorsCount: vendors.length, error })
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,18 +59,33 @@ export default function LabVendorsPage() {
   }, [])
 
   const fetchVendors = async () => {
+    console.log('🔍 [VENDORS] fetchVendors called')
     try {
       setLoading(true)
-      const response = await apiFetch('/api/admin/lab/vendors')
+      setError(null)
+      const url = '/api/admin/lab/vendors'
+      console.log('🔍 [VENDORS] Fetching from:', url)
 
-      if (!response.ok) throw new Error('Failed to fetch vendors')
+      const response = await apiFetch(url)
+      console.log('🔍 [VENDORS] Response status:', response.status)
+      console.log('🔍 [VENDORS] Response ok:', response.ok)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ [VENDORS] Error response:', errorData)
+        throw new Error(errorData.message || 'Failed to fetch vendors')
+      }
 
       const data = await response.json()
+      console.log('✅ [VENDORS] Data received:', data)
+      console.log('✅ [VENDORS] Vendors count:', data.data?.length || 0)
       setVendors(data.data || [])
-    } catch (error) {
-      console.error('Error fetching vendors:', error)
-      toast.error('Failed to fetch vendors')
+    } catch (error: any) {
+      console.error('❌ [VENDORS] Exception:', error)
+      setError(error.message || 'Failed to fetch vendors')
+      toast.error(error.message || 'Failed to fetch vendors')
     } finally {
+      console.log('🔍 [VENDORS] Setting loading to false')
       setLoading(false)
     }
   }
@@ -152,6 +172,54 @@ export default function LabVendorsPage() {
     })
   }
 
+  console.log('🔍 [VENDORS] Render conditions - loading:', loading, 'error:', error)
+
+  if (loading) {
+    console.log('🔍 [VENDORS] Showing loading spinner')
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    console.log('🔍 [VENDORS] Showing error screen:', error)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="mb-4">
+            <svg className="h-16 w-16 text-red-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Vendors</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setError(null)
+                setLoading(true)
+                fetchVendors()
+              }}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('🔍 [VENDORS] Rendering main content')
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -173,11 +241,7 @@ export default function LabVendorsPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-          </div>
-        ) : vendors.length === 0 ? (
+        {vendors.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No vendors found. Add your first vendor to get started.
           </div>

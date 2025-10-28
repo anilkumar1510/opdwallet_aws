@@ -591,6 +591,13 @@ export default function DashboardPage() {
                 return getPolicyExpiryForMember(userId)
               }}
               getCorporateName={(member) => member?.corporateName || user?.corporateName || 'N/A'}
+              getPolicyId={(userId) => {
+                if (userId === (user?._id || user?.id)) {
+                  return userPolicy?.policyId?._id || userPolicy?.policyId?.id || 'N/A'
+                }
+                const policy = getUserPolicyForMember(userId)
+                return policy?.policyId?._id || policy?.policyId?.id || 'N/A'
+              }}
             />
           </div>
 

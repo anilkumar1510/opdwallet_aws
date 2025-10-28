@@ -156,25 +156,6 @@ export default function AdminDashboardClient() {
           ))}
         </div>
       </div>
-
-      {/* Recent Activity Section Placeholder */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-          <button className="btn-ghost text-sm">View All</button>
-        </div>
-        <div className="empty-state">
-          <div className="empty-state-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <h4 className="empty-state-title">No recent activity</h4>
-          <p className="empty-state-description">
-            Activity from user registrations, policy updates, and system changes will appear here.
-          </p>
-        </div>
-      </div>
     </div>
   )
 }

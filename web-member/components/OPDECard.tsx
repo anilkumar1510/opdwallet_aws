@@ -5,6 +5,8 @@ interface OPDECardProps {
   policyNumber: string
   validTill: string
   corporateName: string
+  policyId?: string
+  onClick?: () => void
 }
 
 // Helper function to calculate age from DOB
@@ -24,15 +26,26 @@ export default function OPDECard({
   member,
   policyNumber,
   validTill,
-  corporateName
+  corporateName,
+  policyId,
+  onClick
 }: OPDECardProps) {
   const fullName = `${member?.name?.firstName || ''} ${member?.name?.lastName || ''}`.trim()
   const age = calculateAge(member?.dob)
 
   return (
     <div
-      className="rounded-2xl p-6 text-white shadow-lg min-w-[280px] sm:min-w-[320px]"
+      className="rounded-2xl p-6 text-white shadow-lg min-w-[280px] sm:min-w-[320px] cursor-pointer hover:shadow-xl transition-shadow"
       style={{ backgroundColor: '#0a529f' }}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
     >
       {/* Name and Age */}
       <div className="flex items-center space-x-3 mb-4">

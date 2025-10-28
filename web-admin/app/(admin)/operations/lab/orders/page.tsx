@@ -101,7 +101,7 @@ export default function OpsLabOrdersPage() {
   }
 
   const handleUploadReport = (orderId: string) => {
-    router.push(`/ops/lab/orders/${orderId}/upload-report`)
+    router.push(`/operations/lab/orders/${orderId}/upload-report`)
   }
 
   const getStatusColor = (status: string) => {

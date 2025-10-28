@@ -97,6 +97,19 @@ export class PlanConfig {
     topUpAllowed?: boolean;
   };
 
+  // Policy Description with Inclusions and Exclusions
+  @Prop({ type: Object, default: {} })
+  policyDescription: {
+    inclusions?: Array<{
+      headline: string;
+      description: string;
+    }>;
+    exclusions?: Array<{
+      headline: string;
+      description: string;
+    }>;
+  };
+
   // Covered Relationships Configuration
   @Prop({ type: [String], default: ['SELF'] })
   coveredRelationships: string[];

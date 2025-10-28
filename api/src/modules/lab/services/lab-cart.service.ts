@@ -20,36 +20,79 @@ export class LabCartService {
     createCartDto: CreateCartDto,
     createdBy: string,
   ): Promise<LabCart> {
-    const cartId = `CART-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    console.log('🔍 [CART SERVICE] ==================== CREATE CART START ====================');
+    console.log('🔍 [CART SERVICE] Input userId:', userId);
+    console.log('🔍 [CART SERVICE] Input userId type:', typeof userId);
+    console.log('🔍 [CART SERVICE] Input prescriptionId:', createCartDto.prescriptionId);
+    console.log('🔍 [CART SERVICE] Input items:', JSON.stringify(createCartDto.items, null, 2));
+    console.log('🔍 [CART SERVICE] Created by:', createdBy);
 
-    // Fetch prescription to get patient details
-    const prescription = await this.prescriptionModel.findById(
-      new Types.ObjectId(createCartDto.prescriptionId),
-    );
+    try {
+      const cartId = `CART-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      console.log('✅ [CART SERVICE] Generated cartId:', cartId);
 
-    if (!prescription) {
-      throw new NotFoundException('Prescription not found');
+      // Fetch prescription to get patient details
+      console.log('🔍 [CART SERVICE] Converting prescriptionId to ObjectId:', createCartDto.prescriptionId);
+      const prescriptionObjectId = new Types.ObjectId(createCartDto.prescriptionId);
+      console.log('✅ [CART SERVICE] Prescription ObjectId:', prescriptionObjectId);
+
+      console.log('🔍 [CART SERVICE] Fetching prescription from database...');
+      const prescription = await this.prescriptionModel.findById(prescriptionObjectId);
+
+      if (!prescription) {
+        console.error('❌ [CART SERVICE] Prescription not found for ID:', createCartDto.prescriptionId);
+        throw new NotFoundException('Prescription not found');
+      }
+      console.log('✅ [CART SERVICE] Prescription found:', {
+        prescriptionId: prescription.prescriptionId,
+        patientId: prescription.patientId,
+        patientName: prescription.patientName,
+      });
+
+      console.log('🔍 [CART SERVICE] Converting item serviceIds to ObjectIds...');
+      const items = createCartDto.items.map((item, index) => {
+        console.log(`🔍 [CART SERVICE] Item ${index + 1}: serviceId = ${item.serviceId} (type: ${typeof item.serviceId})`);
+        const serviceObjectId = new Types.ObjectId(item.serviceId);
+        console.log(`✅ [CART SERVICE] Item ${index + 1}: converted to ObjectId = ${serviceObjectId}`);
+        return {
+          serviceId: serviceObjectId,
+          serviceName: item.serviceName,
+          serviceCode: item.serviceCode,
+          category: (item as any).category || 'PATHOLOGY',
+        };
+      });
+      console.log('✅ [CART SERVICE] All items converted successfully');
+
+      console.log('🔍 [CART SERVICE] Creating cart document...');
+      const cart = new this.cartModel({
+        cartId,
+        userId,
+        prescriptionId: prescriptionObjectId,
+        patientId: prescription.patientId,
+        patientName: prescription.patientName,
+        items,
+        status: CartStatus.CREATED,
+        createdBy,
+      });
+      console.log('✅ [CART SERVICE] Cart document created in memory');
+
+      console.log('🔍 [CART SERVICE] Saving cart to database...');
+      const savedCart = await cart.save();
+      console.log('✅ [CART SERVICE] Cart saved successfully:', {
+        cartId: savedCart.cartId,
+        itemsCount: savedCart.items.length,
+      });
+
+      console.log('🔍 [CART SERVICE] ==================== CREATE CART SUCCESS ====================');
+      return savedCart;
+    } catch (error) {
+      console.error('❌ [CART SERVICE] ==================== CREATE CART ERROR ====================');
+      console.error('❌ [CART SERVICE] Error type:', error.constructor.name);
+      console.error('❌ [CART SERVICE] Error message:', error.message);
+      console.error('❌ [CART SERVICE] Error stack:', error.stack);
+      console.error('❌ [CART SERVICE] ==================== ERROR END ====================');
+      throw error;
     }
-
-    const items = createCartDto.items.map(item => ({
-      serviceId: new Types.ObjectId(item.serviceId),
-      serviceName: item.serviceName,
-      serviceCode: item.serviceCode,
-      category: (item as any).category || 'PATHOLOGY',
-    }));
-
-    const cart = new this.cartModel({
-      cartId,
-      userId,
-      prescriptionId: new Types.ObjectId(createCartDto.prescriptionId),
-      patientId: prescription.patientId,
-      patientName: prescription.patientName,
-      items,
-      status: CartStatus.CREATED,
-      createdBy,
-    });
-
-    return cart.save();
   }
 
   async getCartById(cartId: string): Promise<LabCart> {

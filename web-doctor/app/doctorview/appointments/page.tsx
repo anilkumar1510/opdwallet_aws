@@ -20,11 +20,41 @@ export default function AppointmentsPage() {
   }, [])
 
   const fetchAppointments = async () => {
+    console.group('📅 [AppointmentsPage] Fetch Appointments')
+    console.log('⏰ Timestamp:', new Date().toISOString())
+    console.log('🌐 Current URL:', window.location.href)
+    console.log('🍪 Document cookies:', document.cookie || 'NONE')
+
     try {
       setLoading(true)
+      setError('')
+
+      console.log('📡 [AppointmentsPage] Calling getUpcomingAppointments(50)...')
+      const fetchStart = Date.now()
       const response = await getUpcomingAppointments(50)
+      const fetchDuration = Date.now() - fetchStart
+
+      console.log(`✅ [AppointmentsPage] Success! Took ${fetchDuration}ms`)
+      console.log('📦 [AppointmentsPage] Response:', JSON.stringify(response, null, 2))
+      console.log('📊 [AppointmentsPage] Appointments count:', response.appointments?.length || 0)
+      console.log('📊 [AppointmentsPage] Total from API:', response.total)
+
+      if (response.appointments && response.appointments.length > 0) {
+        console.log('👥 [AppointmentsPage] First appointment:', JSON.stringify(response.appointments[0], null, 2))
+      } else {
+        console.warn('⚠️ [AppointmentsPage] No appointments received!')
+      }
+
       setAppointments(response.appointments)
+      console.groupEnd()
     } catch (err: any) {
+      console.error('❌ [AppointmentsPage] Failed to fetch appointments')
+      console.error('❌ Error type:', err?.constructor?.name)
+      console.error('❌ Error message:', err?.message)
+      console.error('❌ Error stack:', err?.stack)
+      console.error('❌ Full error object:', err)
+      console.groupEnd()
+
       setError(err.message || 'Failed to fetch appointments')
     } finally {
       setLoading(false)

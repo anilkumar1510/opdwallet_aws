@@ -43,7 +43,19 @@ export class ClinicsController {
     @Param('clinicId') clinicId: string,
     @Body() updateClinicDto: UpdateClinicDto,
   ) {
-    return this.clinicsService.update(clinicId, updateClinicDto);
+    console.log('🏥 [ClinicsController] ========== UPDATE CLINIC START ==========');
+    console.log('🏥 [ClinicsController] Clinic ID:', clinicId);
+    console.log('🏥 [ClinicsController] Update DTO:', JSON.stringify(updateClinicDto, null, 2));
+
+    try {
+      const result = await this.clinicsService.update(clinicId, updateClinicDto);
+      console.log('✅ [ClinicsController] Clinic updated successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ [ClinicsController] Error updating clinic:', error);
+      console.error('❌ [ClinicsController] Error details:', JSON.stringify(error, null, 2));
+      throw error;
+    }
   }
 
   @Patch(':clinicId/activate')

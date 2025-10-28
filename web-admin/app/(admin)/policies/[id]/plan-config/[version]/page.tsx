@@ -18,6 +18,7 @@ import { RelationshipSelector } from './components/RelationshipSelector';
 import { BenefitsConfigTab } from './components/BenefitsConfigTab';
 import { WalletConfigTab } from './components/WalletConfigTab';
 import { CoverageConfigTab } from './components/CoverageConfigTab';
+import { PolicyDescriptionTab } from './components/PolicyDescriptionTab';
 
 // Extended type for local state with relationship configurations
 interface ExtendedPlanConfig extends Partial<PlanConfig> {
@@ -32,6 +33,10 @@ interface ExtendedPlanConfig extends Partial<PlanConfig> {
       wallet?: any;
     };
   };
+  policyDescription?: {
+    inclusions?: Array<{ headline: string; description: string }>;
+    exclusions?: Array<{ headline: string; description: string }>;
+  };
 }
 
 const getInitialConfig = (): ExtendedPlanConfig => ({
@@ -43,6 +48,10 @@ const getInitialConfig = (): ExtendedPlanConfig => ({
     partialPaymentEnabled: false,
     carryForward: { enabled: false, percent: 0, months: 0 },
     topUpAllowed: false,
+  },
+  policyDescription: {
+    inclusions: [],
+    exclusions: []
   },
   coveredRelationships: [],
   memberConfigs: {}
@@ -317,7 +326,8 @@ export default function PlanConfigEdit() {
 
     const updateData = {
       benefits: config.benefits,
-      wallet: config.wallet
+      wallet: config.wallet,
+      policyDescription: config.policyDescription
     };
 
     console.log('🔵 [EDIT SAVE DEBUG] Filtered update data (removing metadata):', JSON.stringify(updateData, null, 2));
@@ -570,6 +580,7 @@ export default function PlanConfigEdit() {
           <TabsTrigger value="coverage" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Coverage</TabsTrigger>
           <TabsTrigger value="benefits" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Benefits</TabsTrigger>
           <TabsTrigger value="wallet" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Wallet</TabsTrigger>
+          <TabsTrigger value="policy-description" className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold">Policy Description</TabsTrigger>
         </TabsList>
 
         <TabsContent value="coverage">
@@ -607,6 +618,32 @@ export default function PlanConfigEdit() {
             onUpdateWallet={updateWallet}
             onUpdateCopay={updateCopay}
             onUpdateCarryForward={updateCarryForward}
+          />
+        </TabsContent>
+
+        <TabsContent value="policy-description">
+          <PolicyDescriptionTab
+            inclusions={config.policyDescription?.inclusions || []}
+            exclusions={config.policyDescription?.exclusions || []}
+            isReadOnly={isReadOnly}
+            onUpdateInclusions={(inclusions) =>
+              setConfig(prev => ({
+                ...prev,
+                policyDescription: {
+                  ...prev.policyDescription,
+                  inclusions
+                }
+              }))
+            }
+            onUpdateExclusions={(exclusions) =>
+              setConfig(prev => ({
+                ...prev,
+                policyDescription: {
+                  ...prev.policyDescription,
+                  exclusions
+                }
+              }))
+            }
           />
         </TabsContent>
       </Tabs>

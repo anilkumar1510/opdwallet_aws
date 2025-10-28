@@ -140,9 +140,12 @@ export class LabVendorService {
   }
 
   async getVendorPricing(vendorId: string): Promise<LabVendorPricing[]> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     return this.pricingModel
       .find({
-        vendorId: new Types.ObjectId(vendorId),
+        vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
         isActive: true,
       })
       .populate('serviceId', 'name code category')
@@ -153,9 +156,12 @@ export class LabVendorService {
     vendorId: string,
     serviceId: string,
   ): Promise<LabVendorPricing | null> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     return this.pricingModel
       .findOne({
-        vendorId: new Types.ObjectId(vendorId),
+        vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
         serviceId: new Types.ObjectId(serviceId),
         isActive: true,
       })
@@ -168,8 +174,11 @@ export class LabVendorService {
     serviceId: string,
     updateDto: Partial<CreatePricingDto>,
   ): Promise<LabVendorPricing> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     const pricing = await this.pricingModel.findOne({
-      vendorId: new Types.ObjectId(vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       serviceId: new Types.ObjectId(serviceId),
     });
 
@@ -202,11 +211,14 @@ export class LabVendorService {
     endTime: string,
     maxBookings: number = 5,
   ): Promise<LabVendorSlot> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     const slotId = `SLOT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     const slot = new this.slotModel({
       slotId,
-      vendorId: new Types.ObjectId(vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       pincode,
       date,
       timeSlot,
@@ -225,9 +237,12 @@ export class LabVendorService {
     pincode: string,
     date: string,
   ): Promise<LabVendorSlot[]> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     return this.slotModel
       .find({
-        vendorId: new Types.ObjectId(vendorId),
+        vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
         pincode,
         date,
         isActive: true,

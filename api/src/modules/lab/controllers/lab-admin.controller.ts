@@ -46,18 +46,29 @@ export class LabAdminController {
     @Query('category') category?: LabServiceCategory,
     @Query('search') search?: string,
   ) {
-    let services;
+    console.log('🔍 [LAB-ADMIN] GET /admin/lab/services called');
+    console.log('🔍 [LAB-ADMIN] Category filter:', category);
+    console.log('🔍 [LAB-ADMIN] Search query:', search);
 
-    if (search) {
-      services = await this.serviceService.searchServices(search);
-    } else {
-      services = await this.serviceService.getAllServices(category);
+    try {
+      let services;
+
+      if (search) {
+        services = await this.serviceService.searchServices(search);
+      } else {
+        services = await this.serviceService.getAllServices(category);
+      }
+
+      console.log('✅ [LAB-ADMIN] Services found:', services.length);
+
+      return {
+        success: true,
+        data: services,
+      };
+    } catch (error) {
+      console.error('❌ [LAB-ADMIN] Error fetching services:', error.message);
+      throw error;
     }
-
-    return {
-      success: true,
-      data: services,
-    };
   }
 
   @Get('services/:id')
@@ -110,12 +121,21 @@ export class LabAdminController {
 
   @Get('vendors')
   async getVendors() {
-    const vendors = await this.vendorService.getAllVendors();
+    console.log('🔍 [LAB-ADMIN] GET /admin/lab/vendors called');
 
-    return {
-      success: true,
-      data: vendors,
-    };
+    try {
+      const vendors = await this.vendorService.getAllVendors();
+      console.log('✅ [LAB-ADMIN] Vendors found:', vendors.length);
+
+      return {
+        success: true,
+        data: vendors,
+      };
+    } catch (error) {
+      console.error('❌ [LAB-ADMIN] Error fetching vendors:', error.message);
+      console.error('❌ [LAB-ADMIN] Error stack:', error.stack);
+      throw error;
+    }
   }
 
   @Get('vendors/:id')

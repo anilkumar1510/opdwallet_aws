@@ -165,7 +165,7 @@ export default function OpsLabPrescriptionsPage() {
                       </button>
                       {prescription.status !== 'DIGITIZED' && (
                         <button
-                          onClick={() => router.push(`/ops/lab/prescriptions/${prescription.prescriptionId}/digitize`)}
+                          onClick={() => router.push(`/operations/lab/prescriptions/${prescription.prescriptionId}/digitize`)}
                           className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                         >
                           <PencilSquareIcon className="h-4 w-4 mr-1" />

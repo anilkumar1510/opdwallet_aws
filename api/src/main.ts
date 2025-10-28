@@ -71,6 +71,18 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // Global Request Logger - Log ALL incoming requests
+  app.use((req: any, res: any, next: any) => {
+    const timestamp = new Date().toISOString();
+    console.log(`🌐 [${timestamp}] ${req.method} ${req.url}`);
+    console.log(`   Headers:`, {
+      cookie: req.headers.cookie ? 'present' : 'missing',
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+    });
+    next();
+  });
+
   // CORS Configuration (Production-ready)
   const isProduction = configService.get('NODE_ENV') === 'production';
   const corsOrigins = isProduction

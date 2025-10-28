@@ -47,13 +47,23 @@ export class LabOpsController {
   }
 
   @Get('prescriptions/:id')
-  async getPrescriptionById(@Param('id') id: string) {
-    const prescription = await this.prescriptionService.getPrescriptionById(id);
+  async getPrescriptionById(@Param('id') id: string, @Request() req: any) {
+    console.log('🔍 [LAB-OPS] GET /ops/lab/prescriptions/:id called');
+    console.log('🔍 [LAB-OPS] Prescription ID:', id);
+    console.log('🔍 [LAB-OPS] User:', req.user);
 
-    return {
-      success: true,
-      data: prescription,
-    };
+    try {
+      const prescription = await this.prescriptionService.getPrescriptionById(id);
+      console.log('✅ [LAB-OPS] Prescription found:', prescription.prescriptionId);
+
+      return {
+        success: true,
+        data: prescription,
+      };
+    } catch (error) {
+      console.error('❌ [LAB-OPS] Error fetching prescription:', error.message);
+      throw error;
+    }
   }
 
   @Post('prescriptions/:id/digitize')
@@ -62,38 +72,75 @@ export class LabOpsController {
     @Body() digitizeDto: DigitizePrescriptionDto,
     @Request() req: any,
   ) {
-    // Update prescription status
-    await this.prescriptionService.updatePrescriptionStatus(
-      id,
-      digitizeDto.status,
-      digitizeDto.delayReason,
-    );
+    console.log('🔍 [DIGITIZE] ==================== START ====================');
+    console.log('🔍 [DIGITIZE] Prescription ID:', id);
+    console.log('🔍 [DIGITIZE] DTO:', JSON.stringify(digitizeDto, null, 2));
+    console.log('🔍 [DIGITIZE] User:', JSON.stringify(req.user, null, 2));
 
-    // Create cart if status is DIGITIZED
-    if (digitizeDto.status === PrescriptionStatus.DIGITIZED) {
-      const prescription = await this.prescriptionService.getPrescriptionById(id);
-      const opsUserId = req.user?.userId || req.user?.email || 'OPS_TEAM';
-
-      const cart = await this.cartService.createCart(
-        prescription.userId,
-        {
-          prescriptionId: id,
-          items: digitizeDto.items,
-        },
-        opsUserId,
+    try {
+      // Update prescription status
+      console.log('🔍 [DIGITIZE] Step 1: Updating prescription status to', digitizeDto.status);
+      await this.prescriptionService.updatePrescriptionStatus(
+        id,
+        digitizeDto.status,
+        digitizeDto.delayReason,
       );
+      console.log('✅ [DIGITIZE] Prescription status updated successfully');
 
+      // Create cart if status is DIGITIZED
+      if (digitizeDto.status === PrescriptionStatus.DIGITIZED) {
+        console.log('🔍 [DIGITIZE] Step 2: Fetching prescription details');
+        const prescription = await this.prescriptionService.getPrescriptionById(id);
+        console.log('✅ [DIGITIZE] Prescription fetched:', {
+          prescriptionId: prescription.prescriptionId,
+          userId: prescription.userId,
+          patientName: prescription.patientName,
+        });
+
+        const opsUserId = req.user?.userId || req.user?.email || 'OPS_TEAM';
+        console.log('🔍 [DIGITIZE] Step 3: Creating cart for user:', prescription.userId);
+        console.log('🔍 [DIGITIZE] Cart data:', {
+          userId: prescription.userId,
+          prescriptionId: id,
+          itemsCount: digitizeDto.items.length,
+          items: digitizeDto.items,
+          createdBy: opsUserId,
+        });
+
+        const cart = await this.cartService.createCart(
+          prescription.userId,
+          {
+            prescriptionId: (prescription as unknown as { _id: any })._id.toString(),
+            items: digitizeDto.items,
+          },
+          opsUserId,
+        );
+        console.log('✅ [DIGITIZE] Cart created successfully:', {
+          cartId: cart.cartId,
+          items: cart.items.length,
+        });
+
+        console.log('🔍 [DIGITIZE] ==================== SUCCESS ====================');
+        return {
+          success: true,
+          message: 'Prescription digitized and cart created successfully',
+          data: { prescription, cart },
+        };
+      }
+
+      console.log('🔍 [DIGITIZE] ==================== END (NO CART) ====================');
       return {
         success: true,
-        message: 'Prescription digitized and cart created successfully',
-        data: { prescription, cart },
+        message: 'Prescription status updated successfully',
       };
+    } catch (error) {
+      console.error('❌ [DIGITIZE] ==================== ERROR ====================');
+      console.error('❌ [DIGITIZE] Error type:', error.constructor.name);
+      console.error('❌ [DIGITIZE] Error message:', error.message);
+      console.error('❌ [DIGITIZE] Error stack:', error.stack);
+      console.error('❌ [DIGITIZE] ==================== ERROR END ====================');
+      throw error;
     }
-
-    return {
-      success: true,
-      message: 'Prescription status updated successfully',
-    };
   }
 
   @Patch('prescriptions/:id/status')
@@ -117,13 +164,23 @@ export class LabOpsController {
   // ============ ORDER MANAGEMENT ============
 
   @Get('orders')
-  async getOrders(@Query('status') status?: OrderStatus) {
-    const orders = await this.orderService.getAllOrders(status);
+  async getOrders(@Request() req: any, @Query('status') status?: OrderStatus) {
+    console.log('🔍 [LAB-OPS] GET /ops/lab/orders called');
+    console.log('🔍 [LAB-OPS] Status filter:', status);
+    console.log('🔍 [LAB-OPS] User:', req.user);
 
-    return {
-      success: true,
-      data: orders,
-    };
+    try {
+      const orders = await this.orderService.getAllOrders(status);
+      console.log('✅ [LAB-OPS] Orders found:', orders.length);
+
+      return {
+        success: true,
+        data: orders,
+      };
+    } catch (error) {
+      console.error('❌ [LAB-OPS] Error fetching orders:', error.message);
+      throw error;
+    }
   }
 
   @Get('orders/:orderId')

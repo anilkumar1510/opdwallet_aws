@@ -30,9 +30,14 @@ interface Prescription {
 }
 
 export default function DigitizePrescriptionPage() {
+  console.log('🔍 [COMPONENT] DigitizePrescriptionPage rendering')
+
   const router = useRouter()
   const params = useParams()
   const prescriptionId = params.id as string
+
+  console.log('🔍 [COMPONENT] Params:', params)
+  console.log('🔍 [COMPONENT] Prescription ID:', prescriptionId)
 
   const [prescription, setPrescription] = useState<Prescription | null>(null)
   const [services, setServices] = useState<LabService[]>([])
@@ -42,53 +47,76 @@ export default function DigitizePrescriptionPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  console.log('🔍 [COMPONENT] State - loading:', loading, 'error:', error, 'prescription:', !!prescription, 'services:', services.length)
+
   const fetchPrescription = useCallback(async () => {
+    console.log('🔍 [FETCH PRESCRIPTION] Starting fetch for:', prescriptionId)
     try {
-      const response = await fetch(`/api/ops/lab/prescriptions/${prescriptionId}`, {
+      const url = `/api/ops/lab/prescriptions/${prescriptionId}`
+      console.log('🔍 [FETCH PRESCRIPTION] URL:', url)
+
+      const response = await fetch(url, {
         credentials: 'include',
       })
 
+      console.log('🔍 [FETCH PRESCRIPTION] Response status:', response.status)
+      console.log('🔍 [FETCH PRESCRIPTION] Response ok:', response.ok)
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        console.error('❌ [FETCH PRESCRIPTION] Error response:', errorData)
         throw new Error(errorData.message || `Failed to fetch prescription (${response.status})`)
       }
 
       const data = await response.json()
+      console.log('✅ [FETCH PRESCRIPTION] Success:', data)
       setPrescription(data.data)
     } catch (error: any) {
-      console.error('Error fetching prescription:', error)
+      console.error('❌ [FETCH PRESCRIPTION] Exception:', error)
       setError(error.message || 'Failed to fetch prescription')
       toast.error(error.message || 'Failed to fetch prescription')
     } finally {
+      console.log('🔍 [FETCH PRESCRIPTION] Setting loading to false')
       setLoading(false)
     }
   }, [prescriptionId])
 
   const fetchServices = async () => {
+    console.log('🔍 [FETCH SERVICES] Starting fetch')
     try {
-      const response = await apiFetch('/api/admin/lab/services')
+      const url = '/api/admin/lab/services'
+      console.log('🔍 [FETCH SERVICES] URL:', url)
+
+      const response = await apiFetch(url)
+      console.log('🔍 [FETCH SERVICES] Response status:', response.status)
+      console.log('🔍 [FETCH SERVICES] Response ok:', response.ok)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        console.error('❌ [FETCH SERVICES] Error response:', errorData)
         throw new Error(errorData.message || `Failed to fetch lab services (${response.status})`)
       }
 
       const data = await response.json()
+      console.log('✅ [FETCH SERVICES] Success, services count:', data.data?.length || 0)
+      console.log('✅ [FETCH SERVICES] Data:', data)
       setServices(data.data || [])
     } catch (error: any) {
-      console.error('Error fetching services:', error)
+      console.error('❌ [FETCH SERVICES] Exception:', error)
       setError(error.message || 'Failed to fetch lab services')
       toast.error(error.message || 'Failed to fetch lab services. Please refresh the page.')
     }
   }
 
   useEffect(() => {
+    console.log('🔍 [USE EFFECT] Component mounted, prescriptionId:', prescriptionId)
+    console.log('🔍 [USE EFFECT] Calling fetchPrescription and fetchServices')
     fetchPrescription()
     fetchServices()
   }, [fetchPrescription])
 
   const handleAddTest = (service: LabService) => {
-    if (selectedTests.find((t) => t.serviceId === service.serviceId)) {
+    if (selectedTests.find((t) => t.serviceId === service._id)) {
       toast.warning('Test already added')
       return
     }
@@ -96,7 +124,7 @@ export default function DigitizePrescriptionPage() {
     setSelectedTests([
       ...selectedTests,
       {
-        serviceId: service.serviceId,
+        serviceId: service._id,
         serviceName: service.name,
         serviceCode: service.code,
         category: service.category,
@@ -140,7 +168,7 @@ export default function DigitizePrescriptionPage() {
 
       const data = await response.json()
       toast.success(data.message)
-      router.push('/ops/lab/prescriptions')
+      router.push('/operations/lab/prescriptions')
     } catch (error) {
       console.error('Error digitizing prescription:', error)
       toast.error('Failed to digitize prescription')
@@ -155,7 +183,10 @@ export default function DigitizePrescriptionPage() {
       service.code.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  console.log('🔍 [RENDER] Checking render conditions - loading:', loading, 'error:', error)
+
   if (loading) {
+    console.log('🔍 [RENDER] Showing loading spinner')
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
@@ -164,6 +195,7 @@ export default function DigitizePrescriptionPage() {
   }
 
   if (error) {
+    console.log('🔍 [RENDER] Showing error screen:', error)
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
@@ -197,6 +229,10 @@ export default function DigitizePrescriptionPage() {
       </div>
     )
   }
+
+  console.log('🔍 [RENDER] Rendering main content')
+  console.log('🔍 [RENDER] Prescription data:', prescription)
+  console.log('🔍 [RENDER] Services count:', services.length)
 
   return (
     <div className="p-6">

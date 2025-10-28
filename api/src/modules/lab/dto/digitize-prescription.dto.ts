@@ -14,6 +14,10 @@ export class CartItemDto {
   @IsNotEmpty()
   @IsString()
   serviceCode: string;
+
+  @IsNotEmpty()
+  @IsString()
+  category: string;
 }
 
 export class DigitizePrescriptionDto {
