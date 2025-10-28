@@ -36,6 +36,9 @@ export class Policy {
   @Prop()
   sponsorName?: string;
 
+  @Prop()
+  corporateName?: string;
+
   @Prop({
     required: true,
     enum: PolicyStatus,
