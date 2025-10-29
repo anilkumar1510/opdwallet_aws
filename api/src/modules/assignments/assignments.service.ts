@@ -294,17 +294,28 @@ export class AssignmentsService {
       return [];
     }
 
-    const assignedUserIds = assignments.map(a => a.userId);
-    console.log('👥 [SEARCH-PRIMARY] Assigned user IDs:', assignedUserIds.length);
+    // ✅ FIX: Filter assignments to get only primary members (SELF/REL001)
+    const primaryAssignments = assignments.filter(a =>
+      a.relationshipId === 'SELF' || a.relationshipId === 'REL001' || !a.relationshipId
+    );
 
-    // Step 2: Search for primary members within assigned users
-    console.log('🔍 [SEARCH-PRIMARY] Step 2: Searching for primary members (REL001/SELF)...');
+    console.log('👥 [SEARCH-PRIMARY] Total assignments:', assignments.length);
+    console.log('👤 [SEARCH-PRIMARY] Primary member assignments (SELF/REL001):', primaryAssignments.length);
+
+    if (primaryAssignments.length === 0) {
+      console.log('⚠️ [SEARCH-PRIMARY] No primary member assignments found');
+      return [];
+    }
+
+    const primaryUserIds = primaryAssignments.map(a => a.userId);
+
+    // Step 2: Search for users within primary assignments
+    console.log('🔍 [SEARCH-PRIMARY] Step 2: Searching users by name/ID...');
     const searchRegex = new RegExp(search, 'i');
 
     const primaryMembers = await this.userModel
       .find({
-        _id: { $in: assignedUserIds },
-        relationship: { $in: ['REL001', 'SELF'] },
+        _id: { $in: primaryUserIds },
         $or: [
           { memberId: searchRegex },
           { 'name.firstName': searchRegex },
@@ -327,19 +338,14 @@ export class AssignmentsService {
       });
     }
 
-    // DEBUG: Also check what relationships exist in assigned users
-    const allAssignedUsers = await this.userModel
-      .find({ _id: { $in: assignedUserIds } })
-      .select('memberId relationship name')
-      .lean();
-
-    console.log('🔍 [SEARCH-PRIMARY] DEBUG - All assigned users relationships:');
-    const relationshipCounts: Record<string, number> = {};
-    allAssignedUsers.forEach((user: any) => {
-      const rel = user.relationship || 'undefined';
-      relationshipCounts[rel] = (relationshipCounts[rel] || 0) + 1;
+    // DEBUG: Show assignment relationshipId distribution
+    console.log('🔍 [SEARCH-PRIMARY] DEBUG - Assignment relationshipId distribution:');
+    const assignmentRelCounts: Record<string, number> = {};
+    assignments.forEach((assignment: any) => {
+      const rel = assignment.relationshipId || 'undefined';
+      assignmentRelCounts[rel] = (assignmentRelCounts[rel] || 0) + 1;
     });
-    console.log('📊 [SEARCH-PRIMARY] Relationship distribution:', relationshipCounts);
+    console.log('📊 [SEARCH-PRIMARY] Assignment relationships:', assignmentRelCounts);
 
     return primaryMembers.map(user => ({
       _id: user._id,
