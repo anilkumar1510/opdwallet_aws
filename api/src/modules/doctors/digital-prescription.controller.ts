@@ -509,13 +509,21 @@ export class MemberDigitalPrescriptionsController {
       throw new BadRequestException('User ID is required');
     }
 
-    const prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
+    let prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
       prescriptionId,
       userId,
     );
 
+    // Auto-generate PDF if not generated yet
     if (!prescription.pdfGenerated || !prescription.pdfPath) {
-      throw new BadRequestException('PDF not generated yet');
+      console.log('[MemberPrescriptionDownload] PDF not generated, generating now for:', prescriptionId);
+      await this.pdfGenerationService.generatePrescriptionPDF(prescriptionId);
+
+      // Reload prescription to get updated PDF path
+      prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
+        prescriptionId,
+        userId,
+      );
     }
 
     if (!existsSync(prescription.pdfPath)) {
