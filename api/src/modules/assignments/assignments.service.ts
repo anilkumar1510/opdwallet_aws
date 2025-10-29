@@ -260,13 +260,16 @@ export class AssignmentsService {
   }
 
   async searchPrimaryMembers(policyId: string, search: string) {
-    console.log('🟡 [ASSIGNMENTS SERVICE] Searching primary members for policy:', policyId, 'search:', search);
+    console.log('🟡 [SEARCH-PRIMARY] ========== SEARCHING PRIMARY MEMBERS ==========');
+    console.log('🟡 [SEARCH-PRIMARY] Policy ID:', policyId);
+    console.log('🟡 [SEARCH-PRIMARY] Search term:', search);
 
     if (!policyId) {
       throw new BadRequestException('policyId is required');
     }
 
     if (!search || search.length < 2) {
+      console.log('⚠️ [SEARCH-PRIMARY] Search term too short or empty');
       return [];
     }
 
@@ -275,21 +278,27 @@ export class AssignmentsService {
     }
 
     // Step 1: Get all active assignments for this policy
+    console.log('🔍 [SEARCH-PRIMARY] Step 1: Finding all active assignments for policy...');
     const assignments = await this.assignmentModel
       .find({
         policyId: new Types.ObjectId(policyId),
         isActive: true,
       })
-      .select('userId')
+      .select('userId relationshipId')
       .lean();
 
+    console.log('📊 [SEARCH-PRIMARY] Found', assignments.length, 'total active assignments');
+
     if (assignments.length === 0) {
+      console.log('⚠️ [SEARCH-PRIMARY] No active assignments found for this policy');
       return [];
     }
 
     const assignedUserIds = assignments.map(a => a.userId);
+    console.log('👥 [SEARCH-PRIMARY] Assigned user IDs:', assignedUserIds.length);
 
     // Step 2: Search for primary members within assigned users
+    console.log('🔍 [SEARCH-PRIMARY] Step 2: Searching for primary members (REL001/SELF)...');
     const searchRegex = new RegExp(search, 'i');
 
     const primaryMembers = await this.userModel
@@ -305,11 +314,32 @@ export class AssignmentsService {
           { uhid: searchRegex },
         ],
       })
-      .select('_id memberId uhid employeeId name email')
+      .select('_id memberId uhid employeeId name email relationship')
       .limit(10)
       .lean();
 
-    console.log('✅ [ASSIGNMENTS SERVICE] Found', primaryMembers.length, 'primary members');
+    console.log('✅ [SEARCH-PRIMARY] Found', primaryMembers.length, 'primary members matching search');
+
+    if (primaryMembers.length > 0) {
+      console.log('📋 [SEARCH-PRIMARY] Results:');
+      primaryMembers.forEach((user, index) => {
+        console.log(`  ${index + 1}. ${user.name?.fullName || user.name?.firstName + ' ' + user.name?.lastName} (${user.memberId}) - Relationship: ${user.relationship}`);
+      });
+    }
+
+    // DEBUG: Also check what relationships exist in assigned users
+    const allAssignedUsers = await this.userModel
+      .find({ _id: { $in: assignedUserIds } })
+      .select('memberId relationship name')
+      .lean();
+
+    console.log('🔍 [SEARCH-PRIMARY] DEBUG - All assigned users relationships:');
+    const relationshipCounts = {};
+    allAssignedUsers.forEach(user => {
+      const rel = user.relationship || 'undefined';
+      relationshipCounts[rel] = (relationshipCounts[rel] || 0) + 1;
+    });
+    console.log('📊 [SEARCH-PRIMARY] Relationship distribution:', relationshipCounts);
 
     return primaryMembers.map(user => ({
       _id: user._id,

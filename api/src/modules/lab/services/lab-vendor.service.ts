@@ -117,18 +117,31 @@ export class LabVendorService {
 
   // Pricing Management
   async createPricing(createDto: CreatePricingDto): Promise<LabVendorPricing> {
+    console.log('🔍 [LAB-VENDOR] Creating pricing:', {
+      vendorId: createDto.vendorId,
+      serviceId: createDto.serviceId,
+      actualPrice: createDto.actualPrice,
+      discountedPrice: createDto.discountedPrice,
+    });
+
+    // First get the vendor document by string vendorId to get MongoDB _id
+    // This allows vendorId to be either the string "VENDOR-002" or a MongoDB _id
+    const vendor = await this.getVendorById(createDto.vendorId);
+    console.log('✅ [LAB-VENDOR] Found vendor MongoDB _id:', vendor._id);
+
     // Check if pricing already exists
     const existingPricing = await this.pricingModel.findOne({
-      vendorId: new Types.ObjectId(createDto.vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       serviceId: new Types.ObjectId(createDto.serviceId),
     });
 
     if (existingPricing) {
+      console.log('❌ [LAB-VENDOR] Pricing already exists for this vendor and service');
       throw new ConflictException('Pricing for this vendor and service already exists');
     }
 
     const pricing = new this.pricingModel({
-      vendorId: new Types.ObjectId(createDto.vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       serviceId: new Types.ObjectId(createDto.serviceId),
       actualPrice: createDto.actualPrice,
       discountedPrice: createDto.discountedPrice,
@@ -136,20 +149,47 @@ export class LabVendorService {
       isActive: true,
     });
 
-    return pricing.save();
+    const saved = await pricing.save();
+    console.log('✅ [LAB-VENDOR] Pricing created successfully:', saved._id);
+
+    return saved;
   }
 
-  async getVendorPricing(vendorId: string): Promise<LabVendorPricing[]> {
+  async getVendorPricing(vendorId: string): Promise<any[]> {
+    console.log('🔍 [LAB-VENDOR] Getting pricing for vendor:', vendorId);
+
     // First get the vendor document by string vendorId to get MongoDB _id
     const vendor = await this.getVendorById(vendorId);
+    console.log('✅ [LAB-VENDOR] Found vendor MongoDB _id:', vendor._id);
 
-    return this.pricingModel
+    const pricingRecords = await this.pricingModel
       .find({
         vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
         isActive: true,
       })
       .populate('serviceId', 'name code category')
       .exec();
+
+    console.log('✅ [LAB-VENDOR] Found pricing records:', pricingRecords.length);
+
+    // Transform to flatten service data for frontend
+    const transformedPricing = pricingRecords.map((pricing) => {
+      const serviceData = pricing.serviceId as any;
+      return {
+        _id: pricing._id,
+        serviceId: serviceData._id,
+        serviceName: serviceData.name,
+        serviceCode: serviceData.code,
+        actualPrice: pricing.actualPrice,
+        discountedPrice: pricing.discountedPrice,
+        homeCollectionCharges: pricing.homeCollectionCharges,
+        isActive: pricing.isActive,
+      };
+    });
+
+    console.log('✅ [LAB-VENDOR] Transformed pricing records with service names');
+
+    return transformedPricing;
   }
 
   async getPricingForService(

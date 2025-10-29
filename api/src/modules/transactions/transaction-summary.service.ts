@@ -230,7 +230,7 @@ export class TransactionSummaryService {
       {
         $match: {
           userId: new Types.ObjectId(userId),
-          status: TransactionStatus.COMPLETED,
+          // Count all transactions regardless of status
         },
       },
       {

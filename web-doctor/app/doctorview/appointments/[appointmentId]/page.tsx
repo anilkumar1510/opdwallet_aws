@@ -62,7 +62,8 @@ export default function AppointmentDetailPage() {
         try {
           setPrescriptionLoading(true)
           const data = await getDigitalPrescription(appointment.prescriptionId)
-          setPrescription(data)
+          // Extract prescription object from API response
+          setPrescription(data.prescription)
         } catch (err: any) {
           console.error('Failed to fetch prescription:', err)
         } finally {
