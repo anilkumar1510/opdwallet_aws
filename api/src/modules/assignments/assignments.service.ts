@@ -334,8 +334,8 @@ export class AssignmentsService {
       .lean();
 
     console.log('🔍 [SEARCH-PRIMARY] DEBUG - All assigned users relationships:');
-    const relationshipCounts = {};
-    allAssignedUsers.forEach(user => {
+    const relationshipCounts: Record<string, number> = {};
+    allAssignedUsers.forEach((user: any) => {
       const rel = user.relationship || 'undefined';
       relationshipCounts[rel] = (relationshipCounts[rel] || 0) + 1;
     });
