@@ -97,12 +97,15 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **diagnosis_database** - Diagnosis database with ICD-10 codes and categories (500+ diagnoses) for autocomplete
 - **symptom_database** - Symptoms database categorized by body systems (200+ symptoms) for prescription writing
 
+### User Addresses
+- **addresses** - User address management with default address support
+
 ### System
 - **notifications** - System notifications sent to users
 - **auditLogs** - Audit trail of all admin actions for compliance
 - **counters** - Auto-increment counters for generating sequential IDs
 
-**Total Collections**: 34
+**Total Collections**: 35
 
 ---
 

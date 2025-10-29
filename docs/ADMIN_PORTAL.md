@@ -74,27 +74,40 @@
 - **GET /api/users/:id** - Get details of a specific user by ID
 - **PUT /api/users/:id** - Update user information like name, email, phone, or role
 - **DELETE /api/users/:id** - Delete user account from system
-- **POST /api/users/:id/reset-password** - Reset or set password for a user
+- **POST /api/users/:id/set-password** - Set password for a user
 - **GET /api/users/:id/dependents** - Get family members and dependents of a user
+- **GET /api/users/:id/assignments** - Get policy assignments for a specific user
+- **GET /api/users/:id/addresses** - Get all addresses for a user
+- **POST /api/users/:id/addresses** - Create a new address for a user
+- **PATCH /api/users/:id/addresses/:addressId/default** - Set an address as default
+- **DELETE /api/users/:id/addresses/:addressId** - Delete an address
 
 ### Policy Management
 - **GET /api/policies** - Get all insurance policies in the system
-- **POST /api/policies** - Create new insurance policy with corporate details
+- **POST /api/policies** - Create new insurance policy with corporate details and optional corporateName
 - **GET /api/policies/:id** - Get details of specific policy by ID
-- **PUT /api/policies/:id** - Update policy information
+- **GET /api/policies/:id/current** - Get policy with current active configuration for members
+- **PUT /api/policies/:id** - Update policy information including corporateName
 - **DELETE /api/policies/:id** - Delete policy if it's not assigned to any users
 - **POST /api/policies/:id/assign** - Assign policy to one or more users
 
 ### Plan Configuration
-- **POST /api/policies/:policyId/plan-config** - Create plan configuration with wallet categories and limits
-- **GET /api/policies/:policyId/plan-configs** - Get all plan configurations for a policy
-- **PUT /api/plan-configs/:id** - Update plan configuration settings
-- **GET /api/plan-configs/:id** - Get details of a specific plan configuration version
+- **POST /api/policies/:policyId/config** - Create plan configuration with wallet categories and limits
+- **GET /api/policies/:policyId/config/all** - Get all plan configurations for a policy
+- **GET /api/policies/:policyId/config/:version** - Get details of a specific plan configuration version
+- **PUT /api/policies/:policyId/config/:version** - Update plan configuration settings
+- **POST /api/policies/:policyId/config/:version/publish** - Publish plan configuration
+- **POST /api/policies/:policyId/config/:version/set-current** - Set configuration as current
+- **DELETE /api/policies/:policyId/config/:version** - Delete plan configuration
 
 ### Assignments
 - **GET /api/assignments** - Get policy assignments for users
 - **POST /api/assignments** - Assign policy to users with start and end dates
 - **PUT /api/assignments/:id** - Update assignment details like effective dates
+- **GET /api/assignments/my-policy** - Get current user policy configuration with copay details (MEMBER role)
+- **GET /api/assignments/search-primary-members** - Search primary members assigned to a policy
+- **DELETE /api/assignments/:assignmentId** - Remove assignment (deactivate)
+- **DELETE /api/assignments/user/:userId/policy/:policyId** - Unassign policy from user
 
 ### Operations - Member Management
 - **GET /api/ops/members/search** - Search members by name, email, phone, or member ID

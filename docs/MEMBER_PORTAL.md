@@ -47,6 +47,9 @@
 - **/member/lab-tests/orders** - View all lab test orders (pending, completed, cancelled)
 - **/member/lab-tests/orders/[orderId]** - View detailed lab order status and information
 
+### Pharmacy
+- **/member/pharmacy** - Pharmacy services (Coming Soon)
+
 ### Claims & Reimbursements
 - **/member/claims** - View all submitted reimbursement claims
 - **/member/claims/new** - Submit new claim with bill upload and details
@@ -73,7 +76,11 @@
 ### Member Profile
 - **GET /api/member/profile** - Get complete member profile with family members and policy details
 - **GET /api/member/family** - Get list of family members and dependents
-- **PUT /api/member/profile** - Update profile information like email and mobile number
+- **PATCH /api/member/profile** - Update profile information like email and mobile number
+- **GET /api/member/addresses** - Get all addresses for logged-in member
+- **POST /api/member/addresses** - Create a new address for logged-in member
+- **PATCH /api/member/addresses/:addressId/default** - Set an address as default
+- **DELETE /api/member/addresses/:addressId** - Delete an address
 
 ### Wallet
 - **GET /api/wallet/balance** - Get wallet balance for logged-in member or specific family member (supports userId query parameter)
@@ -138,18 +145,21 @@
 - **GET /api/member/lab/orders/:id** - Get detailed lab order information
 
 ### Claims & Reimbursements
-- **POST /api/claims** - Submit new reimbursement claim with bill and documents
-- **GET /api/claims** - Get all claims submitted by logged-in member
-- **GET /api/claims/summary** - Get claims summary with counts and amounts
-- **GET /api/claims/:id** - Get full claim details including status and documents
-- **GET /api/claims/:id/timeline** - Get claim processing timeline
-- **GET /api/claims/:claimId/tpa-notes** - Get TPA notes and comments on claim
-- **PUT /api/claims/:id** - Update claim information
-- **POST /api/claims/:id/documents** - Add more documents to existing claim
-- **DELETE /api/claims/:id/documents/:docId** - Remove document from claim
-- **POST /api/claims/:claimId/resubmit-documents** - Resubmit documents after TPA requests more information
-- **PATCH /api/claims/:claimId/cancel** - Cancel submitted claim
-- **GET /api/claims/:id/documents/:docId/download** - Download claim document
+- **POST /api/member/claims** - Submit new reimbursement claim with bill and documents
+- **POST /api/member/claims/:claimId/submit** - Submit claim after creation
+- **GET /api/member/claims** - Get all claims submitted by logged-in member
+- **GET /api/member/claims/summary** - Get claims summary with counts and amounts
+- **GET /api/member/claims/:id** - Get full claim details including status and documents
+- **GET /api/member/claims/claim/:claimId** - Alternative endpoint to get claim by ID
+- **GET /api/member/claims/:id/timeline** - Get claim processing timeline
+- **GET /api/member/claims/:claimId/tpa-notes** - Get TPA notes and comments on claim
+- **PATCH /api/member/claims/:id** - Update claim information
+- **POST /api/member/claims/:id/documents** - Add more documents to existing claim
+- **DELETE /api/member/claims/:id/documents/:docId** - Remove document from claim
+- **POST /api/member/claims/:claimId/resubmit-documents** - Resubmit documents after TPA requests more information
+- **PATCH /api/member/claims/:claimId/cancel** - Cancel submitted claim
+- **GET /api/member/claims/:id/documents/:docId/download** - Download claim document
+- **GET /api/member/claims/files/:userId/:filename** - Download claim files
 
 ### Payments
 - **GET /api/payments/:id** - Get payment details
