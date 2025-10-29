@@ -24,6 +24,7 @@ export default function SymptomsAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>()
+  const justSelectedRef = useRef(false)
 
   // Initialize selectedSymptoms from value
   useEffect(() => {
@@ -84,6 +85,9 @@ export default function SymptomsAutocomplete({
   }
 
   const handleSelect = (symptom: Symptom) => {
+    // Mark that we just selected from dropdown
+    justSelectedRef.current = true
+
     // Add symptom if not already selected
     if (!selectedSymptoms.includes(symptom.symptomName)) {
       setSelectedSymptoms([...selectedSymptoms, symptom.symptomName])
@@ -91,6 +95,11 @@ export default function SymptomsAutocomplete({
     setQuery('')
     setShowDropdown(false)
     setSymptoms([])
+
+    // Reset flag after a short delay
+    setTimeout(() => {
+      justSelectedRef.current = false
+    }, 100)
   }
 
   const removeSymptom = (symptomToRemove: string) => {

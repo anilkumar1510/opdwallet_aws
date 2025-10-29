@@ -60,6 +60,11 @@ export class DigitalPrescriptionService {
     // Generate prescription ID
     const prescriptionId = `DPRESC-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
+    console.log('🔵 [DigitalPrescriptionService] Creating prescription with medicines:', {
+      medicinesCount: createDto.medicines?.length || 0,
+      medicines: createDto.medicines || [],
+    });
+
     // Create digital prescription
     const prescription = new this.digitalPrescriptionModel({
       prescriptionId,
@@ -88,6 +93,12 @@ export class DigitalPrescriptionService {
     });
 
     const savedPrescription = await prescription.save();
+
+    console.log('✅ [DigitalPrescriptionService] Prescription saved to database:', {
+      prescriptionId: savedPrescription.prescriptionId,
+      medicinesCount: savedPrescription.medicines?.length || 0,
+      medicines: savedPrescription.medicines || [],
+    });
 
     // Update appointment to link prescription
     await this.appointmentModel.updateOne(

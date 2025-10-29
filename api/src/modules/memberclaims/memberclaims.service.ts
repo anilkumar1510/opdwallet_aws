@@ -26,14 +26,17 @@ import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { UserRole } from '@/common/constants/roles.enum';
+import { CATEGORY_CODE_TO_KEY } from '@/common/constants/coverage.constants';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
 // Category code mapping for wallet debit
+// Note: CONSULTATION maps to IN_CLINIC by default (CAT001)
+// For ONLINE consultations, the appointment metadata should specify CAT005
 const CATEGORY_CODE_MAP: Record<string, string> = {
-  [ClaimCategory.CONSULTATION]: 'CAT001', // Consult
-  [ClaimCategory.DIAGNOSTICS]: 'CAT002', // Lab
-  [ClaimCategory.PHARMACY]: 'CAT003', // Pharmacy
+  [ClaimCategory.CONSULTATION]: 'CAT001', // In-Clinic Consultation
+  [ClaimCategory.PHARMACY]: 'CAT002',     // Pharmacy
+  [ClaimCategory.DIAGNOSTICS]: 'CAT003',  // Diagnostics/Labs
 };
 
 @Injectable()
@@ -275,11 +278,27 @@ export class MemberClaimsService {
               console.log('📄 [CLAIMS SERVICE] Copay source:', copaySource);
               console.log('📄 [CLAIMS SERVICE] Resolved copay config:', JSON.stringify(copayConfig, null, 2));
 
-              // Check if benefit is enabled
-              const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryCode];
+              // Check if benefit is enabled and claims are allowed
+              const categoryKey = CATEGORY_CODE_TO_KEY[categoryCode];
+              const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryKey];
               const categoryEnabled = categoryBenefit && categoryBenefit.enabled;
+              const claimEnabled = categoryBenefit && categoryBenefit.claimEnabled;
 
+              console.log('📄 [CLAIMS SERVICE] Category key:', categoryKey);
               console.log('📄 [CLAIMS SERVICE] Category benefit enabled:', categoryEnabled);
+              console.log('📄 [CLAIMS SERVICE] Claim enabled:', claimEnabled);
+
+              if (!categoryEnabled) {
+                throw new BadRequestException(
+                  `Category ${categoryCode} is not enabled under your policy`
+                );
+              }
+
+              if (!claimEnabled) {
+                throw new BadRequestException(
+                  `Claims are not allowed for category ${categoryCode}. This category only supports wallet payments.`
+                );
+              }
 
               if (copayConfig && categoryEnabled) {
                 console.log('💰 [CLAIMS SERVICE] Calculating copay for amount:', claim.billAmount);

@@ -22,6 +22,18 @@ export class LabPrescription extends Document {
   @Prop({ required: true })
   patientName: string;
 
+  @Prop({ required: true })
+  patientRelationship: string; // SELF, SPOUSE, SON, DAUGHTER, FATHER, MOTHER
+
+  @Prop({ required: true })
+  prescriptionDate: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'Address' })
+  addressId?: Types.ObjectId;
+
+  @Prop({ required: true })
+  pincode: string;
+
   // File info
   @Prop({ required: true })
   fileName: string;
@@ -74,3 +86,4 @@ export const LabPrescriptionSchema = SchemaFactory.createForClass(LabPrescriptio
 LabPrescriptionSchema.index({ prescriptionId: 1 }, { unique: true });
 LabPrescriptionSchema.index({ userId: 1, status: 1 });
 LabPrescriptionSchema.index({ status: 1, uploadedAt: 1 });
+LabPrescriptionSchema.index({ pincode: 1, status: 1 });

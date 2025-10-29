@@ -23,9 +23,19 @@ export default function DiagnosisAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>()
+  const justSelectedRef = useRef(false)
+  const initializedRef = useRef(false)
 
+  // Only sync with parent value on mount or when externally cleared
   useEffect(() => {
-    setQuery(value)
+    if (!initializedRef.current) {
+      // First mount - initialize from parent
+      initializedRef.current = true
+      setQuery(value)
+    } else if (value === '' && query !== '') {
+      // Parent cleared the value - sync local state
+      setQuery('')
+    }
   }, [value])
 
   useEffect(() => {
@@ -44,7 +54,8 @@ export default function DiagnosisAutocomplete({
 
   const handleInputChange = (inputValue: string) => {
     setQuery(inputValue)
-    onChange(inputValue)
+    // Don't call onChange during typing - only when selected from dropdown
+    // This prevents search text from being saved instead of selected diagnosis name
 
     // Debounce search
     if (debounceRef.current) {
@@ -73,14 +84,40 @@ export default function DiagnosisAutocomplete({
   }
 
   const handleSelect = (diagnosis: Diagnosis) => {
+    // Mark that we just selected from dropdown to prevent handleBlur from overwriting
+    justSelectedRef.current = true
+
     // Format: "Diagnosis Name (ICD Code)"
     const displayName = diagnosis.icdCode
       ? `${diagnosis.diagnosisName} (${diagnosis.icdCode})`
       : diagnosis.diagnosisName
 
+    console.log('🔵 [DiagnosisAutocomplete] handleSelect called:', {
+      displayName,
+      query: query,
+    })
+
     setQuery(displayName)
     onChange(displayName)
     setShowDropdown(false)
+  }
+
+  const handleBlur = () => {
+    // If user typed custom diagnosis name (not from dropdown), save it when field loses focus
+    setTimeout(() => {
+      // If user just selected from dropdown, don't override the selection
+      if (justSelectedRef.current) {
+        justSelectedRef.current = false
+        setShowDropdown(false)
+        return
+      }
+
+      // Save custom diagnosis name
+      if (query.trim() && query !== value) {
+        onChange(query.trim())
+      }
+      setShowDropdown(false)
+    }, 200)
   }
 
   return (
@@ -94,6 +131,7 @@ export default function DiagnosisAutocomplete({
           onFocus={() => {
             if (diagnoses.length > 0) setShowDropdown(true)
           }}
+          onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
           className="input-field pl-10 pr-4"

@@ -9,11 +9,10 @@ export interface PlanConfig {
   benefits: {
     [categoryId: string]: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
     };
   };
   wallet: {

@@ -266,4 +266,130 @@ export class LabVendorService {
     slot.currentBookings += 1;
     return slot.save();
   }
+
+  /**
+   * Get eligible vendors based on selected tests and pincode
+   * Returns vendors that:
+   * 1. Serve the specified pincode
+   * 2. Have pricing for ALL selected tests
+   */
+  async getEligibleVendors(serviceIds: string[], pincode: string): Promise<any[]> {
+    // Convert serviceIds to ObjectIds
+    const serviceObjectIds = serviceIds.map(id => new Types.ObjectId(id));
+
+    // Find vendors that serve this pincode
+    const vendorsInPincode = await this.vendorModel.find({
+      isActive: true,
+      serviceablePincodes: pincode,
+    });
+
+    if (vendorsInPincode.length === 0) {
+      return [];
+    }
+
+    const eligibleVendors = [];
+
+    // For each vendor, check if they have pricing for ALL selected tests
+    for (const vendor of vendorsInPincode) {
+      const vendorPricing = await this.pricingModel.find({
+        vendorId: vendor._id,
+        serviceId: { $in: serviceObjectIds },
+        isActive: true,
+      }).populate('serviceId', 'name code category');
+
+      // Vendor is eligible only if they have pricing for ALL tests
+      if (vendorPricing.length === serviceIds.length) {
+        // Calculate total price
+        const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
+        const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
+
+        eligibleVendors.push({
+          _id: vendor._id,
+          vendorId: vendor.vendorId,
+          name: vendor.name,
+          code: vendor.code,
+          homeCollection: vendor.homeCollection,
+          centerVisit: vendor.centerVisit,
+          homeCollectionCharges: vendor.homeCollectionCharges,
+          pricing: vendorPricing.map(p => ({
+            serviceId: (p.serviceId as any)._id,
+            serviceName: (p.serviceId as any).name,
+            serviceCode: (p.serviceId as any).code,
+            actualPrice: p.actualPrice,
+            discountedPrice: p.discountedPrice,
+          })),
+          totalActualPrice,
+          totalDiscountedPrice,
+          totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
+        });
+      }
+    }
+
+    // Sort by total price (cheapest first)
+    eligibleVendors.sort((a, b) => a.totalDiscountedPrice - b.totalDiscountedPrice);
+
+    return eligibleVendors;
+  }
+
+  /**
+   * Get selected vendors with pricing for cart items
+   * Used by members to see vendor comparison for their cart
+   */
+  async getSelectedVendorsForCart(
+    selectedVendorIds: Types.ObjectId[],
+    serviceIds: Types.ObjectId[],
+  ): Promise<any[]> {
+    if (selectedVendorIds.length === 0) {
+      return [];
+    }
+
+    const selectedVendors = [];
+
+    // For each selected vendor, get their pricing for the cart items
+    for (const vendorId of selectedVendorIds) {
+      const vendor = await this.vendorModel.findById(vendorId);
+
+      if (!vendor || !vendor.isActive) {
+        continue;
+      }
+
+      const vendorPricing = await this.pricingModel.find({
+        vendorId: vendor._id,
+        serviceId: { $in: serviceIds },
+        isActive: true,
+      }).populate('serviceId', 'name code category');
+
+      // Only include vendor if they have pricing for all tests
+      if (vendorPricing.length === serviceIds.length) {
+        // Calculate total price
+        const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
+        const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
+
+        selectedVendors.push({
+          _id: vendor._id,
+          vendorId: vendor.vendorId,
+          name: vendor.name,
+          code: vendor.code,
+          homeCollection: vendor.homeCollection,
+          centerVisit: vendor.centerVisit,
+          homeCollectionCharges: vendor.homeCollectionCharges,
+          pricing: vendorPricing.map(p => ({
+            serviceId: (p.serviceId as any)._id,
+            serviceName: (p.serviceId as any).name,
+            serviceCode: (p.serviceId as any).code,
+            actualPrice: p.actualPrice,
+            discountedPrice: p.discountedPrice,
+          })),
+          totalActualPrice,
+          totalDiscountedPrice,
+          totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
+        });
+      }
+    }
+
+    // Sort by total price (cheapest first)
+    selectedVendors.sort((a, b) => a.totalDiscountedPrice - b.totalDiscountedPrice);
+
+    return selectedVendors;
+  }
 }

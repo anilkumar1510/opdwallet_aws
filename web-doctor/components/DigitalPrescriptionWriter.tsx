@@ -75,9 +75,16 @@ export default function DigitalPrescriptionWriter({
   }
 
   const updateMedicine = (index: number, field: keyof MedicineItem, value: string) => {
+    console.log('🔵 [DigitalPrescriptionWriter] updateMedicine called:', {
+      index,
+      field,
+      value,
+      currentValue: medicines[index]?.[field],
+    })
     const updated = [...medicines]
     updated[index] = { ...updated[index], [field]: value }
     setMedicines(updated)
+    console.log('✅ [DigitalPrescriptionWriter] Medicine updated:', updated[index])
   }
 
   const addLabTest = () => {
@@ -103,6 +110,12 @@ export default function DigitalPrescriptionWriter({
     // Validate
     const validMedicines = medicines.filter(m => m.medicineName.trim() && m.dosage.trim())
 
+    console.log('🔵 [DigitalPrescriptionWriter] Form submission:', {
+      allMedicines: medicines,
+      validMedicines,
+      diagnosis: diagnosis.trim(),
+    })
+
     if (!diagnosis.trim() && validMedicines.length === 0) {
       setError('Please provide at least a diagnosis or add medicines')
       setLoading(false)
@@ -110,7 +123,7 @@ export default function DigitalPrescriptionWriter({
     }
 
     try {
-      const response = await createDigitalPrescription({
+      const prescriptionData = {
         appointmentId,
         chiefComplaint: chiefComplaint.trim() || undefined,
         clinicalFindings: clinicalFindings.trim() || undefined,
@@ -123,7 +136,13 @@ export default function DigitalPrescriptionWriter({
         followUpInstructions: followUpInstructions.trim() || undefined,
         generalInstructions: generalInstructions.trim() || undefined,
         dietaryAdvice: dietaryAdvice.trim() || undefined,
-      })
+      }
+
+      console.log('🔵 [DigitalPrescriptionWriter] Sending prescription to API:', prescriptionData)
+
+      const response = await createDigitalPrescription(prescriptionData)
+
+      console.log('✅ [DigitalPrescriptionWriter] Prescription created successfully:', response.prescription.prescriptionId)
 
       setPrescriptionId(response.prescription.prescriptionId)
       setSuccess(true)
@@ -276,10 +295,20 @@ export default function DigitalPrescriptionWriter({
                   <MedicineAutocomplete
                     value={medicine.medicineName}
                     onChange={(value, genericName) => {
-                      updateMedicine(index, 'medicineName', value)
-                      if (genericName) {
-                        updateMedicine(index, 'genericName', genericName)
+                      console.log('🔵 [DigitalPrescriptionWriter] MedicineAutocomplete onChange:', {
+                        index,
+                        medicineName: value,
+                        genericName,
+                      });
+                      // Update both fields in a single state update to avoid race condition
+                      const updated = [...medicines]
+                      updated[index] = {
+                        ...updated[index],
+                        medicineName: value,
+                        ...(genericName && { genericName })
                       }
+                      setMedicines(updated)
+                      console.log('✅ [DigitalPrescriptionWriter] Medicine updated in single operation:', updated[index]);
                     }}
                     placeholder="Search medicine by generic or brand name..."
                     disabled={loading}

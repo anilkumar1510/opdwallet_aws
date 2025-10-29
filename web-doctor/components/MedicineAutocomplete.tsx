@@ -23,9 +23,29 @@ export default function MedicineAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>()
+  const justSelectedRef = useRef(false)
+  const initializedRef = useRef(false)
 
+  // Only sync with parent value on mount or when externally cleared
   useEffect(() => {
-    setQuery(value)
+    console.log('🔵 [MedicineAutocomplete] useEffect triggered', {
+      initialized: initializedRef.current,
+      parentValue: value,
+      localQuery: query,
+    });
+
+    if (!initializedRef.current) {
+      // First mount - initialize from parent
+      console.log('🔵 [MedicineAutocomplete] First mount - initializing from parent value');
+      initializedRef.current = true
+      setQuery(value)
+    } else if (value === '' && query !== '') {
+      // Parent cleared the value - sync local state
+      console.log('🔵 [MedicineAutocomplete] Parent cleared value - syncing local state');
+      setQuery('')
+    } else {
+      console.log('🔵 [MedicineAutocomplete] No sync needed - maintaining local state');
+    }
   }, [value])
 
   useEffect(() => {
@@ -43,6 +63,10 @@ export default function MedicineAutocomplete({
   }, [])
 
   const handleInputChange = (inputValue: string) => {
+    console.log('🔵 [MedicineAutocomplete] handleInputChange called:', {
+      inputValue,
+      previousQuery: query,
+    });
     setQuery(inputValue)
     // Don't call onChange during typing - only when an item is selected from dropdown
     // This prevents search text (e.g., "para") from being saved instead of selected medicine name (e.g., "PARACETAMOL (Crocin) - Tablet 500mg")
@@ -54,19 +78,23 @@ export default function MedicineAutocomplete({
     }
 
     if (inputValue.trim().length < 2) {
+      console.log('🔵 [MedicineAutocomplete] Query too short, clearing results');
       setMedicines([])
       setShowDropdown(false)
       return
     }
 
+    console.log('🔵 [MedicineAutocomplete] Scheduling search with 300ms debounce');
     debounceRef.current = setTimeout(async () => {
+      console.log('🔵 [MedicineAutocomplete] Executing debounced search for:', inputValue);
       setLoading(true)
       try {
         const results = await searchMedicines(inputValue, 20)
+        console.log('✅ [MedicineAutocomplete] Search results received:', results.length);
         setMedicines(results)
         setShowDropdown(results.length > 0)
       } catch (error) {
-        console.error('Medicine search failed:', error)
+        console.error('❌ [MedicineAutocomplete] Medicine search failed:', error)
         setMedicines([])
       } finally {
         setLoading(false)
@@ -75,10 +103,19 @@ export default function MedicineAutocomplete({
   }
 
   const handleSelect = (medicine: Medicine) => {
+    // Mark that we just selected from dropdown to prevent handleBlur from overwriting
+    justSelectedRef.current = true
+
     // Format: "GENERIC NAME (Brand Name) - Form Strength"
     const displayName = medicine.brandNames && medicine.brandNames.length > 0
       ? `${medicine.genericName.toUpperCase()} (${medicine.brandNames[0]})${medicine.form ? ` - ${medicine.form}` : ''}${medicine.strength ? ` ${medicine.strength}` : ''}`
       : `${medicine.genericName.toUpperCase()}${medicine.form ? ` - ${medicine.form}` : ''}${medicine.strength ? ` ${medicine.strength}` : ''}`
+
+    console.log('🔵 [MedicineAutocomplete] handleSelect called:', {
+      displayName,
+      genericName: medicine.genericName,
+      query: query,
+    })
 
     setQuery(displayName)
     onChange(displayName, medicine.genericName)
@@ -86,11 +123,34 @@ export default function MedicineAutocomplete({
   }
 
   const handleBlur = () => {
+    console.log('🔵 [MedicineAutocomplete] handleBlur called:', {
+      query,
+      parentValue: value,
+      justSelected: justSelectedRef.current,
+    });
+
     // If user typed custom medicine name (not from dropdown), save it when field loses focus
     setTimeout(() => {
+      console.log('🔵 [MedicineAutocomplete] handleBlur timeout executing:', {
+        query,
+        parentValue: value,
+        justSelected: justSelectedRef.current,
+      });
+
+      // If user just selected from dropdown, don't override the selection
+      if (justSelectedRef.current) {
+        console.log('✅ [MedicineAutocomplete] Item was just selected, skipping blur handler');
+        justSelectedRef.current = false
+        setShowDropdown(false)
+        return
+      }
+
       // Delay to allow click on dropdown to register first
       if (query.trim() && query !== value) {
+        console.log('🔵 [MedicineAutocomplete] Saving custom medicine name from blur:', query.trim());
         onChange(query.trim())
+      } else {
+        console.log('🔵 [MedicineAutocomplete] No custom value to save');
       }
       setShowDropdown(false)
     }, 200)

@@ -19,6 +19,7 @@ import { UserRole } from '@/common/constants/roles.enum';
 import { LabPrescriptionService } from '../services/lab-prescription.service';
 import { LabCartService } from '../services/lab-cart.service';
 import { LabOrderService } from '../services/lab-order.service';
+import { LabVendorService } from '../services/lab-vendor.service';
 import { DigitizePrescriptionDto } from '../dto/digitize-prescription.dto';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import { PrescriptionStatus } from '../schemas/lab-prescription.schema';
@@ -32,6 +33,7 @@ export class LabOpsController {
     private readonly prescriptionService: LabPrescriptionService,
     private readonly cartService: LabCartService,
     private readonly orderService: LabOrderService,
+    private readonly vendorService: LabVendorService,
   ) {}
 
   // ============ PRESCRIPTION DIGITIZATION ============
@@ -64,6 +66,25 @@ export class LabOpsController {
       console.error('❌ [LAB-OPS] Error fetching prescription:', error.message);
       throw error;
     }
+  }
+
+  @Post('prescriptions/:id/eligible-vendors')
+  async getEligibleVendors(
+    @Param('id') id: string,
+    @Body() body: { serviceIds: string[] },
+  ) {
+    console.log('🔍 [LAB-OPS] Getting eligible vendors for prescription:', id);
+
+    const prescription = await this.prescriptionService.getPrescriptionById(id);
+    const eligibleVendors = await this.vendorService.getEligibleVendors(
+      body.serviceIds,
+      prescription.pincode,
+    );
+
+    return {
+      success: true,
+      data: eligibleVendors,
+    };
   }
 
   @Post('prescriptions/:id/digitize')
@@ -114,6 +135,7 @@ export class LabOpsController {
             items: digitizeDto.items,
           },
           opsUserId,
+          digitizeDto.selectedVendorIds,
         );
         console.log('✅ [DIGITIZE] Cart created successfully:', {
           cartId: cart.cartId,

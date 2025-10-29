@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class UploadPrescriptionDto {
   @IsNotEmpty()
@@ -8,6 +8,22 @@ export class UploadPrescriptionDto {
   @IsNotEmpty()
   @IsString()
   patientName: string;
+
+  @IsNotEmpty()
+  @IsString()
+  patientRelationship: string; // SELF, SPOUSE, SON, DAUGHTER, FATHER, MOTHER
+
+  @IsNotEmpty()
+  @IsDateString()
+  prescriptionDate: string; // ISO date string
+
+  @IsOptional()
+  @IsString()
+  addressId?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  pincode: string;
 
   @IsOptional()
   @IsString()

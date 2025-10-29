@@ -24,9 +24,33 @@ interface SelectedTest {
 interface Prescription {
   prescriptionId: string
   patientName: string
+  patientRelationship: string
+  prescriptionDate: string
+  pincode: string
+  addressId?: string
   fileName: string
   filePath: string
   status: string
+}
+
+interface EligibleVendor {
+  _id: string
+  vendorId: string
+  name: string
+  code: string
+  homeCollection: boolean
+  centerVisit: boolean
+  homeCollectionCharges: number
+  pricing: Array<{
+    serviceId: string
+    serviceName: string
+    serviceCode: string
+    actualPrice: number
+    discountedPrice: number
+  }>
+  totalActualPrice: number
+  totalDiscountedPrice: number
+  totalWithHomeCollection: number
 }
 
 export default function DigitizePrescriptionPage() {
@@ -43,6 +67,9 @@ export default function DigitizePrescriptionPage() {
   const [services, setServices] = useState<LabService[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTests, setSelectedTests] = useState<SelectedTest[]>([])
+  const [eligibleVendors, setEligibleVendors] = useState<EligibleVendor[]>([])
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([])
+  const [loadingVendors, setLoadingVendors] = useState(false)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -134,12 +161,67 @@ export default function DigitizePrescriptionPage() {
   }
 
   const handleRemoveTest = (serviceId: string) => {
-    setSelectedTests(selectedTests.filter((t) => t.serviceId !== serviceId))
+    const newSelectedTests = selectedTests.filter((t) => t.serviceId !== serviceId)
+    setSelectedTests(newSelectedTests)
+
+    // Reset vendor selection when tests change
+    setEligibleVendors([])
+    setSelectedVendorIds([])
+  }
+
+  const fetchEligibleVendors = async () => {
+    if (!prescription || selectedTests.length === 0) {
+      toast.warning('Please select at least one test first')
+      return
+    }
+
+    setLoadingVendors(true)
+
+    try {
+      const serviceIds = selectedTests.map(t => t.serviceId)
+      const response = await fetch(`/api/ops/lab/prescriptions/${prescriptionId}/eligible-vendors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ serviceIds }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch eligible vendors')
+      }
+
+      const data = await response.json()
+      setEligibleVendors(data.data || [])
+
+      if (data.data.length === 0) {
+        toast.warning('No vendors available for selected tests in this pincode')
+      } else {
+        toast.success(`Found ${data.data.length} eligible vendors`)
+      }
+    } catch (error) {
+      console.error('Error fetching eligible vendors:', error)
+      toast.error('Failed to fetch eligible vendors')
+    } finally {
+      setLoadingVendors(false)
+    }
+  }
+
+  const handleVendorToggle = (vendorId: string) => {
+    setSelectedVendorIds(prev =>
+      prev.includes(vendorId)
+        ? prev.filter(id => id !== vendorId)
+        : [...prev, vendorId]
+    )
   }
 
   const handleSubmit = async (status: 'DIGITIZED' | 'DELAYED') => {
     if (status === 'DIGITIZED' && selectedTests.length === 0) {
       toast.error('Please add at least one test')
+      return
+    }
+
+    if (status === 'DIGITIZED' && selectedVendorIds.length === 0) {
+      toast.error('Please select at least one vendor to push to member')
       return
     }
 
@@ -160,6 +242,7 @@ export default function DigitizePrescriptionPage() {
           prescriptionId,
           items: selectedTests,
           status,
+          selectedVendorIds: status === 'DIGITIZED' ? selectedVendorIds : undefined,
           delayReason: status === 'DELAYED' ? delayReason : undefined,
         }),
       })
@@ -238,9 +321,20 @@ export default function DigitizePrescriptionPage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Digitize Prescription</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          ID: {prescription?.prescriptionId} | Patient: {prescription?.patientName}
-        </p>
+        <div className="mt-2 space-y-1">
+          <p className="text-sm text-gray-600">
+            <strong>ID:</strong> {prescription?.prescriptionId}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Patient:</strong> {prescription?.patientName} ({prescription?.patientRelationship})
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Prescription Date:</strong> {prescription?.prescriptionDate ? new Date(prescription.prescriptionDate).toLocaleDateString() : 'N/A'}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Pincode:</strong> {prescription?.pincode}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
@@ -305,7 +399,18 @@ export default function DigitizePrescriptionPage() {
 
           {/* Selected Tests */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h3 className="font-semibold mb-4">Selected Tests ({selectedTests.length})</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Selected Tests ({selectedTests.length})</h3>
+              {selectedTests.length > 0 && (
+                <button
+                  onClick={fetchEligibleVendors}
+                  disabled={loadingVendors}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingVendors ? 'Loading...' : 'Find Vendors'}
+                </button>
+              )}
+            </div>
 
             {selectedTests.length === 0 ? (
               <p className="text-center py-8 text-gray-500">No tests added yet</p>
@@ -333,6 +438,86 @@ export default function DigitizePrescriptionPage() {
               </div>
             )}
           </div>
+
+          {/* Eligible Vendors */}
+          {eligibleVendors.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">
+                  Eligible Vendors ({eligibleVendors.length}) - Select vendors to push to member
+                </h3>
+                <span className="text-sm text-gray-600">
+                  {selectedVendorIds.length} selected
+                </span>
+              </div>
+
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {eligibleVendors.map((vendor) => (
+                  <div
+                    key={vendor._id}
+                    className={`p-4 border-2 rounded-lg transition-colors cursor-pointer ${
+                      selectedVendorIds.includes(vendor._id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                    onClick={() => handleVendorToggle(vendor._id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3 flex-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedVendorIds.includes(vendor._id)}
+                          onChange={() => handleVendorToggle(vendor._id)}
+                          className="mt-1 h-5 w-5 text-blue-600 rounded"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-lg">{vendor.name}</h4>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-blue-600">
+                                ₹{vendor.totalDiscountedPrice}
+                              </p>
+                              <p className="text-xs text-gray-500 line-through">
+                                ₹{vendor.totalActualPrice}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mb-2">
+                            <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded mr-2">
+                              {vendor.code}
+                            </span>
+                            {vendor.homeCollection && (
+                              <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded mr-2">
+                                Home Collection (+₹{vendor.homeCollectionCharges})
+                              </span>
+                            )}
+                            {vendor.centerVisit && (
+                              <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                Center Visit
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-2">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Test Pricing:</p>
+                            <div className="space-y-1">
+                              {vendor.pricing.map((price, idx) => (
+                                <div key={idx} className="flex justify-between text-xs text-gray-600">
+                                  <span>{price.serviceName}</span>
+                                  <span className="font-medium">₹{price.discountedPrice}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex space-x-3">

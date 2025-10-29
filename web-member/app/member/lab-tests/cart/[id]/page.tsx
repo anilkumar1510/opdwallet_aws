@@ -16,6 +16,16 @@ interface Cart {
   items: CartItem[]
   status: string
   prescriptionId: string
+  pincode: string
+  selectedVendorIds: string[]
+}
+
+interface VendorPricing {
+  serviceId: string
+  serviceName: string
+  serviceCode: string
+  actualPrice: number
+  discountedPrice: number
 }
 
 interface Vendor {
@@ -23,12 +33,13 @@ interface Vendor {
   vendorId: string
   name: string
   code: string
-  contactInfo: {
-    phone: string
-    address: string
-  }
   homeCollection: boolean
   centerVisit: boolean
+  homeCollectionCharges: number
+  pricing: VendorPricing[]
+  totalActualPrice: number
+  totalDiscountedPrice: number
+  totalWithHomeCollection: number
 }
 
 export default function CartDetailPage() {
@@ -38,9 +49,8 @@ export default function CartDetailPage() {
 
   const [cart, setCart] = useState<Cart | null>(null)
   const [vendors, setVendors] = useState<Vendor[]>([])
-  const [pincode, setPincode] = useState('')
   const [loading, setLoading] = useState(true)
-  const [searchingVendors, setSearchingVendors] = useState(false)
+  const [loadingVendors, setLoadingVendors] = useState(false)
 
   const fetchCart = useCallback(async () => {
     try {
@@ -53,6 +63,9 @@ export default function CartDetailPage() {
 
       const data = await response.json()
       setCart(data.data)
+
+      // Auto-fetch vendors after cart is loaded
+      fetchVendors()
     } catch (error) {
       console.error('Error fetching cart:', error)
       alert('Failed to fetch cart')
@@ -61,20 +74,10 @@ export default function CartDetailPage() {
     }
   }, [cartId])
 
-  useEffect(() => {
-    fetchCart()
-  }, [fetchCart])
-
-  const handleSearchVendors = async () => {
-    if (!pincode || pincode.length !== 6) {
-      alert('Please enter a valid 6-digit pincode')
-      return
-    }
-
-    setSearchingVendors(true)
-
+  const fetchVendors = async () => {
     try {
-      const response = await fetch(`/api/member/lab/vendors/available?pincode=${pincode}`, {
+      setLoadingVendors(true)
+      const response = await fetch(`/api/member/lab/carts/${cartId}/vendors`, {
         credentials: 'include',
       })
 
@@ -83,16 +86,20 @@ export default function CartDetailPage() {
       const data = await response.json()
       setVendors(data.data || [])
 
-      if (data.data.length === 0) {
-        alert('No vendors available for this pincode')
+      if (data.data.length === 0 && data.message) {
+        console.log(data.message)
       }
     } catch (error) {
       console.error('Error fetching vendors:', error)
       alert('Failed to fetch vendors')
     } finally {
-      setSearchingVendors(false)
+      setLoadingVendors(false)
     }
   }
+
+  useEffect(() => {
+    fetchCart()
+  }, [fetchCart])
 
   const handleSelectVendor = (vendor: Vendor) => {
     // Navigate to vendor details/booking page
@@ -134,11 +141,19 @@ export default function CartDetailPage() {
       </div>
 
       <div className="p-4 max-w-2xl mx-auto space-y-4">
-        {/* Tests in Cart */}
+        {/* Cart Info */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">
-            Tests ({cart.items.length})
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">
+              Tests ({cart.items.length})
+            </h3>
+            {cart.pincode && (
+              <div className="flex items-center text-sm text-gray-600">
+                <MapPinIcon className="h-4 w-4 mr-1" />
+                <span>Pincode: {cart.pincode}</span>
+              </div>
+            )}
+          </div>
           <div className="space-y-3">
             {cart.items.map((item, index) => (
               <div
@@ -159,89 +174,126 @@ export default function CartDetailPage() {
           </div>
         </div>
 
-        {/* Pincode Search */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Find Lab Partners</h3>
-          <div className="flex space-x-3">
-            <div className="flex-1 relative">
-              <MapPinIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Enter your pincode"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              onClick={handleSearchVendors}
-              disabled={searchingVendors}
-              className="px-6 py-3 disabled:bg-gray-300 text-white rounded-xl font-medium transition-colors"
-              style={!searchingVendors ? { backgroundColor: '#0a529f' } : undefined}
-              onMouseEnter={(e) => !searchingVendors && (e.currentTarget.style.backgroundColor = '#084080')}
-              onMouseLeave={(e) => !searchingVendors && (e.currentTarget.style.backgroundColor = '#0a529f')}
-            >
-              {searchingVendors ? 'Searching...' : 'Search'}
-            </button>
+        {/* Loading Vendors */}
+        {loadingVendors && (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <div className="h-12 w-12 mx-auto rounded-full border-4 border-t-transparent animate-spin mb-3" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+            <p className="text-gray-600">Loading lab partners...</p>
           </div>
-        </div>
+        )}
 
         {/* Available Vendors */}
-        {vendors.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">
-              Available Lab Partners ({vendors.length})
-            </h3>
-            <div className="space-y-3">
-              {vendors.map((vendor) => (
-                <div
-                  key={vendor._id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSelectVendor(vendor)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      handleSelectVendor(vendor)
-                    }
-                  }}
-                  className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{vendor.name}</h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        <span className="font-mono">{vendor.code}</span>
-                      </p>
+        {!loadingVendors && vendors.length > 0 && (
+          <div className="space-y-3">
+            <div className="bg-white rounded-2xl shadow-sm p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Available Lab Partners ({vendors.length})
+              </h3>
+              <p className="text-sm text-gray-600">
+                Compare prices and select your preferred lab partner
+              </p>
+            </div>
+
+            {vendors.map((vendor, index) => (
+              <div
+                key={vendor._id}
+                className="bg-white rounded-2xl shadow-sm p-4 border-2 transition-colors hover:border-blue-300"
+                style={{ borderColor: index === 0 ? '#0a529f' : '#e5e7eb' }}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-lg text-gray-900">{vendor.name}</h4>
+                      {index === 0 && (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                          BEST PRICE
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      <span className="font-mono">{vendor.code}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: '#e6f0fa' }}>
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="text-sm text-gray-700 font-medium">Total Price:</span>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold" style={{ color: '#0a529f' }}>
+                        ₹{vendor.totalDiscountedPrice}
+                      </span>
+                      {vendor.totalActualPrice > vendor.totalDiscountedPrice && (
+                        <span className="ml-2 text-sm text-gray-500 line-through">
+                          ₹{vendor.totalActualPrice}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 mt-2">
-                    {vendor.homeCollection && (
-                      <span className="text-green-600">✓ Home Collection</span>
-                    )}
-                    {vendor.centerVisit && (
-                      <span className="text-green-600">✓ Center Visit</span>
-                    )}
-                  </div>
-                  <button
-                    className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium transition-colors"
-                    style={{ backgroundColor: '#0a529f' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-                  >
-                    View Pricing & Book
-                  </button>
+                  {vendor.totalActualPrice > vendor.totalDiscountedPrice && (
+                    <p className="text-xs text-right text-green-600 font-medium">
+                      Save ₹{vendor.totalActualPrice - vendor.totalDiscountedPrice}
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
+
+                {/* Features */}
+                <div className="flex items-center space-x-3 mb-3 text-sm">
+                  {vendor.homeCollection && (
+                    <span className="flex items-center text-green-600">
+                      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Home Collection (+₹{vendor.homeCollectionCharges})
+                    </span>
+                  )}
+                  {vendor.centerVisit && (
+                    <span className="flex items-center text-blue-600">
+                      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Center Visit
+                    </span>
+                  )}
+                </div>
+
+                {/* Test Pricing Breakdown */}
+                <div className="border-t border-gray-200 pt-3 mb-3">
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Price Breakdown:</p>
+                  <div className="space-y-1">
+                    {vendor.pricing.map((price, idx) => (
+                      <div key={idx} className="flex justify-between text-xs text-gray-600">
+                        <span>{price.serviceName}</span>
+                        <span className="font-medium">₹{price.discountedPrice}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Book Button */}
+                <button
+                  onClick={() => handleSelectVendor(vendor)}
+                  className="w-full py-3 text-white rounded-xl font-semibold transition-colors"
+                  style={{ backgroundColor: '#0a529f' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                >
+                  Select & Book Slot
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
         {/* Empty State */}
-        {vendors.length === 0 && pincode && !searchingVendors && (
-          <div className="bg-gray-50 rounded-2xl p-8 text-center">
+        {!loadingVendors && vendors.length === 0 && (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
             <MapPinIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-600">Enter your pincode to find lab partners</p>
+            <p className="text-gray-600 font-medium mb-2">No lab partners available yet</p>
+            <p className="text-sm text-gray-500">
+              Our team is processing your prescription. Lab partners will appear here once available.
+            </p>
           </div>
         )}
       </div>

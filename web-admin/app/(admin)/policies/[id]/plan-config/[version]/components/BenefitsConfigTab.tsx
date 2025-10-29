@@ -67,8 +67,7 @@ export function BenefitsConfigTab({
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Enabled</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Annual Limit (₹)</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Online</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Offline</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Claims</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">VAS</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Notes</th>
                 </tr>
@@ -112,31 +111,19 @@ export function BenefitsConfigTab({
                         />
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {isAvailableOnline ? (
-                          <Switch
-                            id={`${category.categoryId}-online`}
-                            checked={benefit?.enabled ? (benefit.onlineEnabled || false) : false}
-                            onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'onlineEnabled', checked)}
-                            disabled={isDisabled || !benefit?.enabled}
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-400">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
                         <Switch
-                          id={`${category.categoryId}-offline`}
-                          checked={benefit?.enabled ? (benefit.offlineEnabled || false) : false}
-                          onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'offlineEnabled', checked)}
+                          id={`${category.categoryId}-claim`}
+                          checked={benefit?.enabled ? (benefit.claimEnabled || false) : false}
+                          onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'claimEnabled', checked)}
                           disabled={isDisabled || !benefit?.enabled}
                         />
                       </td>
                       <td className="px-4 py-3 text-center">
                         <Switch
                           id={`${category.categoryId}-vas`}
-                          checked={benefit?.enabled ? (benefit.vasEnabled || false) : false}
+                          checked={benefit?.vasEnabled || false}
                           onCheckedChange={(checked) => onUpdateBenefit(category.categoryId, 'vasEnabled', checked)}
-                          disabled={isDisabled || !benefit?.enabled}
+                          disabled={isDisabled}
                         />
                       </td>
                       <td className="px-4 py-3">

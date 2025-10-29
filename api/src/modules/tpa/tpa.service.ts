@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { MemberClaim, MemberClaimDocument, ClaimStatus, PaymentStatus } from '@/modules/memberclaims/schemas/memberclaim.schema';
+import { MemberClaim, MemberClaimDocument, ClaimStatus, PaymentStatus, ClaimCategory } from '@/modules/memberclaims/schemas/memberclaim.schema';
 import { User, UserDocument } from '@/modules/users/schemas/user.schema';
 import { UserRole } from '@/common/constants/roles.enum';
 import { AssignClaimDto } from './dto/assign-claim.dto';
@@ -13,10 +13,12 @@ import { UpdateClaimStatusDto } from './dto/update-status.dto';
 import { WalletService } from '../wallet/wallet.service';
 
 // Category code mapping for wallet refunds
+// Note: CONSULTATION maps to IN_CLINIC by default (CAT001)
+// For ONLINE consultations, the claim metadata should specify CAT005
 const CATEGORY_CODE_MAP: Record<string, string> = {
-  'CONSULTATION': 'CAT001',
-  'DIAGNOSTICS': 'CAT002',
-  'PHARMACY': 'CAT003',
+  [ClaimCategory.CONSULTATION]: 'CAT001', // In-Clinic Consultation
+  [ClaimCategory.PHARMACY]: 'CAT002',     // Pharmacy
+  [ClaimCategory.DIAGNOSTICS]: 'CAT003',  // Diagnostics/Labs
 };
 
 @Injectable()

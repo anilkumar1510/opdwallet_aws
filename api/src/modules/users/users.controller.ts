@@ -9,23 +9,27 @@ import {
   Query,
   UseGuards,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { AuthRequest } from '@/common/interfaces/auth-request.interface';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { CreateAddressDto } from './dto/create-address.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
 import { AssignmentsService } from '../assignments/assignments.service';
+import { AddressService } from './address.service';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 
 @ApiTags('users')
 @Controller('users')
@@ -35,6 +39,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly assignmentsService: AssignmentsService,
+    private readonly addressService: AddressService,
   ) {}
 
   @Post()
@@ -122,5 +127,61 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   delete(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.usersService.delete(id, req.user.userId);
+  }
+
+  // Address Management Endpoints
+  @Get(':id/addresses')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MEMBER)
+  @ApiOperation({ summary: 'Get all addresses for a user' })
+  @ApiResponse({ status: 200, description: 'Addresses retrieved successfully' })
+  getUserAddresses(@Param('id') userId: string) {
+    return this.addressService.getUserAddresses(new Types.ObjectId(userId));
+  }
+
+  @Post(':id/addresses')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MEMBER)
+  @ApiOperation({ summary: 'Create a new address for a user' })
+  @ApiResponse({ status: 201, description: 'Address created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  createAddress(
+    @Param('id') userId: string,
+    @Body() createAddressDto: CreateAddressDto,
+  ) {
+    return this.addressService.createAddress(
+      new Types.ObjectId(userId),
+      createAddressDto,
+    );
+  }
+
+  @Patch(':id/addresses/:addressId/default')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MEMBER)
+  @ApiOperation({ summary: 'Set an address as default' })
+  @ApiResponse({ status: 200, description: 'Default address updated successfully' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
+  @ApiResponse({ status: 409, description: 'Address does not belong to user' })
+  setDefaultAddress(
+    @Param('id') userId: string,
+    @Param('addressId') addressId: string,
+  ) {
+    return this.addressService.setDefaultAddress(
+      new Types.ObjectId(userId),
+      addressId,
+    );
+  }
+
+  @Delete(':id/addresses/:addressId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MEMBER)
+  @ApiOperation({ summary: 'Delete an address' })
+  @ApiResponse({ status: 200, description: 'Address deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
+  @ApiResponse({ status: 409, description: 'Address does not belong to user' })
+  deleteAddress(
+    @Param('id') userId: string,
+    @Param('addressId') addressId: string,
+  ) {
+    return this.addressService.deleteAddress(
+      new Types.ObjectId(userId),
+      addressId,
+    );
   }
 }

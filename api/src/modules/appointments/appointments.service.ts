@@ -13,6 +13,7 @@ import { CopayCalculator } from '../plan-config/utils/copay-calculator';
 import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
+import { CATEGORY_CODE_TO_KEY, APPOINTMENT_TYPE_TO_CATEGORY } from '@/common/constants/coverage.constants';
 
 @Injectable()
 export class AppointmentsService {
@@ -40,9 +41,11 @@ export class AppointmentsService {
     const consultationFee = createAppointmentDto.consultationFee || 0;
     const userId = createAppointmentDto.userId;
     const patientId = createAppointmentDto.patientId;
+    const appointmentType = createAppointmentDto.appointmentType;
 
     console.log('👤 [USER INFO] userId:', userId);
     console.log('👤 [USER INFO] patientId:', patientId);
+    console.log('📅 [APPOINTMENT] Type:', appointmentType);
     console.log('💰 [FEE] Consultation fee:', consultationFee);
 
     // Validate userId is provided
@@ -68,6 +71,8 @@ export class AppointmentsService {
     let copayCalculation = null;
     let policyId = null;
     let userRelationship = null;
+    let categoryCode = APPOINTMENT_TYPE_TO_CATEGORY[appointmentType] || 'CAT001';
+    let mustUseVAS = false;
 
     try {
       console.log('🔍 [POLICY] Searching for assignments for userId:', patientId);
@@ -133,13 +138,39 @@ export class AppointmentsService {
           console.log('📄 [COPAY] Copay source:', copaySource);
           console.log('📄 [COPAY] Resolved copay config:', JSON.stringify(copayConfig, null, 2));
 
-          // Check if consultation benefit is enabled before applying copay
-          const consultBenefit = planConfig.benefits && (planConfig.benefits as any)['CAT001'];
-          const consultEnabled = consultBenefit && consultBenefit.enabled;
+          // Determine category based on appointment type
+          categoryCode = APPOINTMENT_TYPE_TO_CATEGORY[appointmentType] || 'CAT001';
+          const categoryKey = CATEGORY_CODE_TO_KEY[categoryCode];
+          const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryKey];
 
-          console.log('📄 [BENEFIT] Consultation benefit enabled:', consultEnabled);
+          console.log('📄 [CATEGORY] Appointment type:', appointmentType);
+          console.log('📄 [CATEGORY] Category code:', categoryCode);
+          console.log('📄 [CATEGORY] Category key:', categoryKey);
+          console.log('📄 [CATEGORY] Category benefit:', JSON.stringify(categoryBenefit, null, 2));
 
-          if (copayConfig && consultEnabled) {
+          // Check if category is enabled OR vasEnabled (VAS = show but self-pay only)
+          const categoryEnabled = categoryBenefit && categoryBenefit.enabled;
+          const vasEnabled = categoryBenefit && categoryBenefit.vasEnabled;
+
+          console.log('📄 [BENEFIT] Category enabled:', categoryEnabled);
+          console.log('📄 [BENEFIT] VAS enabled:', vasEnabled);
+
+          if (!categoryEnabled && !vasEnabled) {
+            throw new BadRequestException(
+              `${appointmentType === 'ONLINE' ? 'Online' : 'In-clinic'} consultations are not available under your policy`
+            );
+          }
+
+          // If only VAS is enabled, user must pay out of pocket (no wallet deduction)
+          mustUseVAS = !categoryEnabled && vasEnabled;
+
+          if (mustUseVAS) {
+            console.log('⚠️ [VAS] User must use VAS (self-pay) for category:', categoryCode);
+            console.log('⚠️ [VAS] Forcing full out-of-pocket payment');
+            // Will force wallet deduction to 0 and user pays full amount
+          }
+
+          if (copayConfig && categoryEnabled) {
             console.log('💰 [COPAY] Calculating copay for fee:', consultationFee);
             copayCalculation = CopayCalculator.calculate(consultationFee, copayConfig);
             console.log('✅ [COPAY] Copay calculation result:', JSON.stringify(copayCalculation, null, 2));
@@ -147,8 +178,8 @@ export class AppointmentsService {
             if (!copayConfig) {
               console.log('⚠️ [COPAY] No copay config found in plan');
             }
-            if (!consultEnabled) {
-              console.log('⚠️ [COPAY] Consultation benefit not enabled');
+            if (!categoryEnabled) {
+              console.log('⚠️ [COPAY] Category not enabled (VAS mode or disabled)');
             }
           }
         } else {
@@ -186,12 +217,12 @@ export class AppointmentsService {
       try {
         console.log('🔍 [WALLET] Checking balance for userId:', walletUserId);
         console.log('🔍 [WALLET] Required amount:', walletDebitAmount);
-        console.log('🔍 [WALLET] Category: CAT001');
+        console.log('🔍 [WALLET] Category:', categoryCode);
 
         const balanceCheck = await this.walletService.checkSufficientBalance(
           walletUserId,
           walletDebitAmount,
-          'CAT001'
+          categoryCode
         );
 
         hasSufficientBalance = balanceCheck.hasSufficient;
@@ -248,6 +279,7 @@ export class AppointmentsService {
       status: appointmentStatus,
       requestedAt: new Date(),
       slotId: createAppointmentDto.slotId,
+      categoryCode: categoryCode, // Add category code based on appointment type
       doctorName: createAppointmentDto.doctorName || '',
       specialty: createAppointmentDto.specialty || 'General Physician', // Default to General Physician if not provided
       clinicId: createAppointmentDto.clinicId || '',
@@ -260,6 +292,41 @@ export class AppointmentsService {
     };
 
     console.log('📝 [APPOINTMENT] Appointment data prepared:', JSON.stringify(appointmentData, null, 2));
+
+    // ✅ SLOT AVAILABILITY CHECK - Prevent double booking
+    console.log('🔍 [SLOT VALIDATION] Checking if slot is already booked...');
+    console.log('🔍 [SLOT VALIDATION] Doctor ID:', createAppointmentDto.doctorId);
+    console.log('🔍 [SLOT VALIDATION] Date:', createAppointmentDto.appointmentDate);
+    console.log('🔍 [SLOT VALIDATION] Time Slot:', createAppointmentDto.timeSlot);
+    console.log('🔍 [SLOT VALIDATION] Slot ID:', createAppointmentDto.slotId);
+
+    const existingBooking = await this.appointmentModel.findOne({
+      doctorId: new Types.ObjectId(createAppointmentDto.doctorId),
+      appointmentDate: createAppointmentDto.appointmentDate,
+      timeSlot: createAppointmentDto.timeSlot,
+      slotId: createAppointmentDto.slotId,
+      status: {
+        $in: [
+          AppointmentStatus.PENDING_CONFIRMATION,
+          AppointmentStatus.CONFIRMED,
+          AppointmentStatus.PENDING_PAYMENT
+        ]
+      }
+    }).lean();
+
+    if (existingBooking) {
+      console.error('❌ [SLOT VALIDATION] Slot already booked!');
+      console.error('❌ [SLOT VALIDATION] Existing booking:', {
+        appointmentId: (existingBooking as any).appointmentId,
+        status: (existingBooking as any).status,
+        patientName: (existingBooking as any).patientName,
+      });
+      throw new BadRequestException(
+        'This time slot has already been booked. Please select another slot.'
+      );
+    }
+
+    console.log('✅ [SLOT VALIDATION] Slot is available - proceeding with booking');
 
     const appointment = new this.appointmentModel(appointmentData);
     const saved = await appointment.save();
@@ -344,7 +411,7 @@ export class AppointmentsService {
           await this.walletService.debitWallet(
             walletUserId,
             walletAmountToUse,
-            'CAT001',
+            categoryCode,
             (saved._id as Types.ObjectId).toString(),
             'CONSULTATION',
             createAppointmentDto.doctorName || 'Doctor',
@@ -406,14 +473,14 @@ export class AppointmentsService {
         console.log('💰 [WALLET DEBIT] Debiting wallet:', {
           userId: walletUserId,
           amount: walletDebitAmount,
-          category: 'CAT001',
+          category: categoryCode,
           referenceId: (saved._id as Types.ObjectId).toString(),
         });
 
         await this.walletService.debitWallet(
           walletUserId,
           walletDebitAmount,
-          'CAT001',
+          categoryCode,
           (saved._id as Types.ObjectId).toString(),
           'CONSULTATION',
           createAppointmentDto.doctorName || 'Doctor',
@@ -479,14 +546,14 @@ export class AppointmentsService {
           console.log('💰 [WALLET DEBIT] Debiting wallet:', {
             userId: walletUserId,
             amount: walletDebitAmount,
-            category: 'CAT001',
+            category: categoryCode,
             referenceId: (saved._id as Types.ObjectId).toString(),
           });
 
           await this.walletService.debitWallet(
             walletUserId,
             walletDebitAmount,
-            'CAT001',
+            categoryCode,
             (saved._id as Types.ObjectId).toString(),
             'CONSULTATION',
             createAppointmentDto.doctorName || 'Doctor',
@@ -755,7 +822,7 @@ export class AppointmentsService {
         await this.walletService.creditWallet(
           appointment.patientId,
           appointment.consultationFee,
-          'CAT001', // Consult category
+          appointment.categoryCode || APPOINTMENT_TYPE_TO_CATEGORY[appointment.appointmentType] || 'CAT001',
           (appointment._id as any).toString(),
           'CONSULTATION_REFUND',
           appointment.doctorName || 'Doctor',
@@ -819,7 +886,7 @@ export class AppointmentsService {
         await this.walletService.creditWallet(
           appointment.patientId,
           appointment.consultationFee,
-          'CAT001', // Consult category
+          appointment.categoryCode || APPOINTMENT_TYPE_TO_CATEGORY[appointment.appointmentType] || 'CAT001',
           (appointment._id as any).toString(),
           'CONSULTATION_REFUND',
           appointment.doctorName || 'Doctor',
@@ -836,35 +903,42 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async confirmAppointmentAfterPayment(appointmentId: string, paymentId: string): Promise<Appointment> {
+  async confirmAppointmentAfterPayment(appointmentMongoId: string, transactionId: string): Promise<Appointment> {
     console.log('💰 [APPOINTMENTS SERVICE] Confirming appointment after payment');
-    console.log('  - appointmentId:', appointmentId);
-    console.log('  - paymentId:', paymentId);
+    console.log('  - appointmentMongoId:', appointmentMongoId);
+    console.log('  - transactionId:', transactionId);
 
-    const appointment = await this.appointmentModel.findOne({ appointmentId });
+    // Search by MongoDB _id (not appointmentId string)
+    const appointment = await this.appointmentModel.findById(appointmentMongoId);
 
     if (!appointment) {
+      console.error('❌ [APPOINTMENTS SERVICE] Appointment not found with _id:', appointmentMongoId);
       throw new NotFoundException('Appointment not found');
     }
 
+    console.log('✅ [APPOINTMENTS SERVICE] Found appointment:', {
+      appointmentId: appointment.appointmentId,
+      status: appointment.status,
+      patientName: appointment.patientName,
+    });
+
     if (appointment.status !== AppointmentStatus.PENDING_PAYMENT) {
+      console.error('❌ [APPOINTMENTS SERVICE] Invalid status for confirmation:', appointment.status);
       throw new BadRequestException('Only appointments with PENDING_PAYMENT status can be confirmed after payment');
     }
 
-    // Verify payment is completed
-    const payment = await this.paymentService.getPayment(paymentId);
-    if (!payment || payment.status !== 'COMPLETED') {
-      throw new BadRequestException('Payment is not completed');
-    }
-
-    // Update appointment status
+    // Update appointment status to CONFIRMED
+    console.log('🔄 [APPOINTMENTS SERVICE] Updating appointment status to CONFIRMED...');
     appointment.status = AppointmentStatus.CONFIRMED;
     appointment.confirmedAt = new Date();
     await appointment.save();
 
+    console.log('✅ [APPOINTMENTS SERVICE] Appointment status updated to CONFIRMED');
+
     // Update transaction status to COMPLETED
     if (appointment.transactionId) {
       try {
+        console.log('🔄 [APPOINTMENTS SERVICE] Updating transaction status to COMPLETED...');
         await this.transactionService.updateTransactionStatus(
           appointment.transactionId,
           TransactionStatus.COMPLETED
@@ -875,7 +949,7 @@ export class AppointmentsService {
       }
     }
 
-    console.log('✅ [APPOINTMENTS SERVICE] Appointment confirmed after payment');
+    console.log('✅ [APPOINTMENTS SERVICE] Appointment confirmed after payment successfully');
     return appointment;
   }
 }

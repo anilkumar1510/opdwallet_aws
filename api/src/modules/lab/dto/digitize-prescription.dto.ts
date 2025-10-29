@@ -34,6 +34,11 @@ export class DigitizePrescriptionDto {
   status: PrescriptionStatus;
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  selectedVendorIds?: string[]; // Vendor IDs selected by operations team
+
+  @IsOptional()
   @IsString()
   delayReason?: string;
 }

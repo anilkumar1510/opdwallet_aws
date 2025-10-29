@@ -19,6 +19,7 @@ export class LabCartService {
     userId: Types.ObjectId,
     createCartDto: CreateCartDto,
     createdBy: string,
+    selectedVendorIds?: string[],
   ): Promise<LabCart> {
     console.log('🔍 [CART SERVICE] ==================== CREATE CART START ====================');
     console.log('🔍 [CART SERVICE] Input userId:', userId);
@@ -70,7 +71,9 @@ export class LabCartService {
         prescriptionId: prescriptionObjectId,
         patientId: prescription.patientId,
         patientName: prescription.patientName,
+        pincode: prescription.pincode,
         items,
+        selectedVendorIds: selectedVendorIds ? selectedVendorIds.map(id => new Types.ObjectId(id)) : [],
         status: CartStatus.CREATED,
         createdBy,
       });

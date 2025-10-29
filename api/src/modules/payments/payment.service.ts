@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -13,6 +15,7 @@ import {
   ServiceType,
 } from './schemas/payment.schema';
 import { CounterService } from '../counters/counter.service';
+import { AppointmentsService } from '../appointments/appointments.service';
 
 @Injectable()
 export class PaymentService {
@@ -20,6 +23,8 @@ export class PaymentService {
     @InjectModel(Payment.name)
     private paymentModel: Model<PaymentDocument>,
     private readonly counterService: CounterService,
+    @Inject(forwardRef(() => AppointmentsService))
+    private readonly appointmentsService: AppointmentsService,
   ) {}
 
   /**
@@ -109,7 +114,25 @@ export class PaymentService {
     console.log('✅ [PAYMENT SERVICE] Payment marked as paid:', {
       paymentId,
       transactionId: payment.transactionId,
+      serviceType: payment.serviceType,
+      serviceId: payment.serviceId,
     });
+
+    // If this is an appointment payment, confirm the appointment
+    if (payment.serviceType === ServiceType.APPOINTMENT && payment.serviceId) {
+      console.log('🔔 [PAYMENT SERVICE] Triggering appointment confirmation for:', payment.serviceId.toString());
+      try {
+        await this.appointmentsService.confirmAppointmentAfterPayment(
+          payment.serviceId.toString(),
+          payment.transactionId,
+        );
+        console.log('✅ [PAYMENT SERVICE] Appointment confirmed successfully');
+      } catch (error) {
+        console.error('❌ [PAYMENT SERVICE] Failed to confirm appointment:', error);
+        // Don't throw error - payment is already marked as paid
+        // Log the error and continue
+      }
+    }
 
     return updated;
   }

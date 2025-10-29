@@ -280,22 +280,41 @@ export class MedicinesController {
     @Query('q') query: string,
     @Query('limit') limit = 20,
   ) {
+    console.log('🔍 [MedicinesController] ========== MEDICINE SEARCH START ==========');
+    console.log('🔍 [MedicinesController] GET /medicines/search');
+    console.log('🔍 [MedicinesController] Query:', query);
+    console.log('🔍 [MedicinesController] Limit:', limit);
+
     if (!query || query.trim().length < 2) {
+      console.log('⚠️ [MedicinesController] Query too short (< 2 characters)');
+      console.log('🔍 [MedicinesController] ========== MEDICINE SEARCH END (empty query) ==========');
       return {
         message: 'Search query must be at least 2 characters',
         medicines: [],
       };
     }
 
-    const medicines = await this.digitalPrescriptionService.searchMedicines(
-      query.trim(),
-      +limit,
-    );
+    try {
+      console.log('🔍 [MedicinesController] Searching medicines with query:', query.trim());
+      const medicines = await this.digitalPrescriptionService.searchMedicines(
+        query.trim(),
+        +limit,
+      );
 
-    return {
-      message: 'Medicines retrieved successfully',
-      medicines,
-    };
+      console.log('✅ [MedicinesController] Medicines found:', medicines.length);
+      console.log('✅ [MedicinesController] Sample results:', medicines.slice(0, 3).map(m => ({ genericName: m.genericName, brandNames: m.brandNames })));
+      console.log('🔍 [MedicinesController] ========== MEDICINE SEARCH END ==========');
+
+      return {
+        message: 'Medicines retrieved successfully',
+        medicines,
+      };
+    } catch (error) {
+      console.error('❌ [MedicinesController] Error searching medicines:', error);
+      console.error('❌ [MedicinesController] Error stack:', error.stack);
+      console.log('🔍 [MedicinesController] ========== MEDICINE SEARCH ERROR END ==========');
+      throw error;
+    }
   }
 }
 
@@ -313,22 +332,41 @@ export class DiagnosesController {
     @Query('q') query: string,
     @Query('limit') limit = 20,
   ) {
+    console.log('🔍 [DiagnosesController] ========== DIAGNOSIS SEARCH START ==========');
+    console.log('🔍 [DiagnosesController] GET /diagnoses/search');
+    console.log('🔍 [DiagnosesController] Query:', query);
+    console.log('🔍 [DiagnosesController] Limit:', limit);
+
     if (!query || query.trim().length < 2) {
+      console.log('⚠️ [DiagnosesController] Query too short (< 2 characters)');
+      console.log('🔍 [DiagnosesController] ========== DIAGNOSIS SEARCH END (empty query) ==========');
       return {
         message: 'Search query must be at least 2 characters',
         diagnoses: [],
       };
     }
 
-    const diagnoses = await this.diagnosisService.searchDiagnoses(
-      query.trim(),
-      +limit,
-    );
+    try {
+      console.log('🔍 [DiagnosesController] Searching diagnoses with query:', query.trim());
+      const diagnoses = await this.diagnosisService.searchDiagnoses(
+        query.trim(),
+        +limit,
+      );
 
-    return {
-      message: 'Diagnoses retrieved successfully',
-      diagnoses,
-    };
+      console.log('✅ [DiagnosesController] Diagnoses found:', diagnoses.length);
+      console.log('✅ [DiagnosesController] Sample results:', diagnoses.slice(0, 3).map(d => ({ diagnosisName: d.diagnosisName, icdCode: d.icdCode })));
+      console.log('🔍 [DiagnosesController] ========== DIAGNOSIS SEARCH END ==========');
+
+      return {
+        message: 'Diagnoses retrieved successfully',
+        diagnoses,
+      };
+    } catch (error) {
+      console.error('❌ [DiagnosesController] Error searching diagnoses:', error);
+      console.error('❌ [DiagnosesController] Error stack:', error.stack);
+      console.log('🔍 [DiagnosesController] ========== DIAGNOSIS SEARCH ERROR END ==========');
+      throw error;
+    }
   }
 
   @Get('categories')
@@ -356,22 +394,41 @@ export class SymptomsController {
     @Query('q') query: string,
     @Query('limit') limit = 20,
   ) {
+    console.log('🔍 [SymptomsController] ========== SYMPTOM SEARCH START ==========');
+    console.log('🔍 [SymptomsController] GET /symptoms/search');
+    console.log('🔍 [SymptomsController] Query:', query);
+    console.log('🔍 [SymptomsController] Limit:', limit);
+
     if (!query || query.trim().length < 2) {
+      console.log('⚠️ [SymptomsController] Query too short (< 2 characters)');
+      console.log('🔍 [SymptomsController] ========== SYMPTOM SEARCH END (empty query) ==========');
       return {
         message: 'Search query must be at least 2 characters',
         symptoms: [],
       };
     }
 
-    const symptoms = await this.symptomsService.searchSymptoms(
-      query.trim(),
-      +limit,
-    );
+    try {
+      console.log('🔍 [SymptomsController] Searching symptoms with query:', query.trim());
+      const symptoms = await this.symptomsService.searchSymptoms(
+        query.trim(),
+        +limit,
+      );
 
-    return {
-      message: 'Symptoms retrieved successfully',
-      symptoms,
-    };
+      console.log('✅ [SymptomsController] Symptoms found:', symptoms.length);
+      console.log('✅ [SymptomsController] Sample results:', symptoms.slice(0, 3).map(s => ({ symptomName: s.symptomName, category: s.category })));
+      console.log('🔍 [SymptomsController] ========== SYMPTOM SEARCH END ==========');
+
+      return {
+        message: 'Symptoms retrieved successfully',
+        symptoms,
+      };
+    } catch (error) {
+      console.error('❌ [SymptomsController] Error searching symptoms:', error);
+      console.error('❌ [SymptomsController] Error stack:', error.stack);
+      console.log('🔍 [SymptomsController] ========== SYMPTOM SEARCH ERROR END ==========');
+      throw error;
+    }
   }
 
   @Get('categories')

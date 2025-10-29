@@ -103,6 +103,38 @@ export class LabMemberController {
     };
   }
 
+  @Get('carts/:cartId/vendors')
+  async getCartVendors(@Param('cartId') cartId: string) {
+    console.log('🔍 [LAB-MEMBER] Getting vendors for cart:', cartId);
+
+    // Get cart to access selectedVendorIds and items
+    const cart = await this.cartService.getCartById(cartId);
+
+    if (!cart.selectedVendorIds || cart.selectedVendorIds.length === 0) {
+      return {
+        success: true,
+        message: 'No vendors selected for this cart yet',
+        data: [],
+      };
+    }
+
+    // Extract service IDs from cart items
+    const serviceIds = cart.items.map(item => item.serviceId);
+
+    // Get vendor details with pricing for selected vendors
+    const vendors = await this.vendorService.getSelectedVendorsForCart(
+      cart.selectedVendorIds,
+      serviceIds,
+    );
+
+    console.log('✅ [LAB-MEMBER] Found vendors:', vendors.length);
+
+    return {
+      success: true,
+      data: vendors,
+    };
+  }
+
   @Delete('carts/:cartId')
   async deleteCart(@Param('cartId') cartId: string) {
     await this.cartService.deleteCart(cartId);

@@ -33,56 +33,66 @@ export class PlanConfig {
   // Consolidated Benefits Configuration
   @Prop({ type: Object, default: {} })
   benefits: {
-    consultation?: {
+    'in-clinic-consultation'?: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       visitLimit?: number;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
+    };
+    'online-consultation'?: {
+      enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
+      annualLimit?: number;
+      visitLimit?: number;
+      notes?: string;
     };
     pharmacy?: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       rxRequired?: boolean;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
     };
     diagnostics?: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       rxRequired?: boolean;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
+    };
+    labs?: {
+      enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
+      annualLimit?: number;
+      rxRequired?: boolean;
+      notes?: string;
     };
     dental?: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
     };
     vision?: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
     };
     wellness?: {
       enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
-      onlineEnabled?: boolean;
-      offlineEnabled?: boolean;
-      vasEnabled?: boolean;
     };
   };
 
@@ -119,56 +129,66 @@ export class PlanConfig {
   memberConfigs: {
     [relationshipCode: string]: {
       benefits?: {
-        consultation?: {
+        'in-clinic-consultation'?: {
           enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
           annualLimit?: number;
           visitLimit?: number;
           notes?: string;
-          onlineEnabled?: boolean;
-          offlineEnabled?: boolean;
-          vasEnabled?: boolean;
+        };
+        'online-consultation'?: {
+          enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
+          annualLimit?: number;
+          visitLimit?: number;
+          notes?: string;
         };
         pharmacy?: {
           enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
           annualLimit?: number;
           rxRequired?: boolean;
           notes?: string;
-          onlineEnabled?: boolean;
-          offlineEnabled?: boolean;
-          vasEnabled?: boolean;
         };
         diagnostics?: {
           enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
           annualLimit?: number;
           rxRequired?: boolean;
           notes?: string;
-          onlineEnabled?: boolean;
-          offlineEnabled?: boolean;
-          vasEnabled?: boolean;
+        };
+        labs?: {
+          enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
+          annualLimit?: number;
+          rxRequired?: boolean;
+          notes?: string;
         };
         dental?: {
           enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
-          onlineEnabled?: boolean;
-          offlineEnabled?: boolean;
-          vasEnabled?: boolean;
         };
         vision?: {
           enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
-          onlineEnabled?: boolean;
-          offlineEnabled?: boolean;
-          vasEnabled?: boolean;
         };
         wellness?: {
           enabled: boolean;
+          claimEnabled: boolean;
+          vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
-          onlineEnabled?: boolean;
-          offlineEnabled?: boolean;
-          vasEnabled?: boolean;
         };
       };
       wallet?: {

@@ -146,14 +146,16 @@ export default function BenefitsPage() {
     }
   ]
 
-  // Helper to map benefit component to category ID (would need actual mapping)
+  // Helper to map benefit component to category ID
+  // Updated to match new category structure
   const getCategoryIdForBenefit = (benefitId: string): string => {
     const mapping: Record<string, string> = {
-      'consultation': 'CAT001',
-      'pharmacy': 'CAT002',
-      'diagnostics': 'CAT003',
-      'ahc': 'CAT004',
-      'vaccination': 'CAT005',
+      'consultation': 'CAT001',        // In-Clinic Consultation
+      'in-clinic-consultation': 'CAT001',
+      'online-consultation': 'CAT005', // Online Consultation
+      'pharmacy': 'CAT002',            // Pharmacy
+      'diagnostics': 'CAT003',         // Diagnostics
+      'labs': 'CAT004',                // Labs
       'dental': 'CAT006',
       'vision': 'CAT007',
       'wellness': 'CAT008',

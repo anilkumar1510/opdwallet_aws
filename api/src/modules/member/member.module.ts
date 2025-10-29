@@ -8,6 +8,7 @@ import { Assignment, AssignmentSchema } from '../assignments/schemas/assignment.
 import { AssignmentsModule } from '../assignments/assignments.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PlanConfigModule } from '../plan-config/plan-config.module';
     AssignmentsModule,
     WalletModule,
     PlanConfigModule,
+    UsersModule,
   ],
   controllers: [MemberController],
   providers: [MemberService],

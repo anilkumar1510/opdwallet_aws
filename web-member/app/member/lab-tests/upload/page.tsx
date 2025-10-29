@@ -3,6 +3,24 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeftIcon, CloudArrowUpIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
+import AddAddressModal from '@/components/AddAddressModal'
+
+interface FamilyMember {
+  userId: string
+  name: string
+  relationship: string
+}
+
+interface Address {
+  _id: string
+  addressId: string
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  pincode: string
+  isDefault: boolean
+}
 
 export default function UploadPrescriptionPage() {
   const router = useRouter()
@@ -11,10 +29,18 @@ export default function UploadPrescriptionPage() {
   const [notes, setNotes] = useState('')
   const [uploading, setUploading] = useState(false)
   const [patientName, setPatientName] = useState('')
+  const [patientId, setPatientId] = useState('')
+  const [patientRelationship, setPatientRelationship] = useState('SELF')
+  const [prescriptionDate, setPrescriptionDate] = useState('')
+  const [selectedAddressId, setSelectedAddressId] = useState('')
   const [user, setUser] = useState<any>(null)
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
 
   useEffect(() => {
     fetchUser()
+    fetchAddresses()
   }, [])
 
   const fetchUser = async () => {
@@ -25,12 +51,120 @@ export default function UploadPrescriptionPage() {
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)
-        // Pre-fill patient name with user's name
+
+        // Pre-fill with user's own info
         setPatientName(userData.name?.fullName || '')
+        setPatientId(userData.userId)
+        setPatientRelationship('SELF')
+
+        // Extract family members from user profile
+        const members: FamilyMember[] = [
+          {
+            userId: userData.userId,
+            name: userData.name?.fullName || 'Self',
+            relationship: 'SELF'
+          }
+        ]
+
+        // Add family members if they exist
+        if (userData.profile?.familyMembers && Array.isArray(userData.profile.familyMembers)) {
+          userData.profile.familyMembers.forEach((member: any) => {
+            members.push({
+              userId: member.userId || userData.userId,
+              name: member.name || 'Unknown',
+              relationship: member.relationship || 'OTHER'
+            })
+          })
+        }
+
+        setFamilyMembers(members)
         console.log('[UPLOAD] User data loaded:', userData)
+        console.log('[UPLOAD] Family members:', members)
       }
     } catch (error) {
       console.error('[UPLOAD] Error fetching user:', error)
+    }
+  }
+
+  const fetchAddresses = async () => {
+    console.log('[ADDRESS-UPLOAD] ========== FETCHING ADDRESSES START ==========')
+    try {
+      const apiUrl = '/api/member/addresses'
+      console.log('[ADDRESS-UPLOAD] API URL:', apiUrl)
+      console.log('[ADDRESS-UPLOAD] Request credentials: include')
+
+      console.log('[ADDRESS-UPLOAD] Initiating fetch request...')
+      const response = await fetch(apiUrl, {
+        credentials: 'include',
+      })
+
+      console.log('[ADDRESS-UPLOAD] Response received!')
+      console.log('[ADDRESS-UPLOAD] Response status:', response.status)
+      console.log('[ADDRESS-UPLOAD] Response statusText:', response.statusText)
+      console.log('[ADDRESS-UPLOAD] Response ok:', response.ok)
+      console.log('[ADDRESS-UPLOAD] Response headers:', Object.fromEntries(response.headers.entries()))
+
+      if (response.ok) {
+        console.log('[ADDRESS-UPLOAD] Response OK, parsing JSON...')
+        const data = await response.json()
+        console.log('[ADDRESS-UPLOAD] Parsed response data:', JSON.stringify(data, null, 2))
+
+        console.log('[ADDRESS-UPLOAD] Checking data structure...')
+        console.log('[ADDRESS-UPLOAD] data.success:', data.success)
+        console.log('[ADDRESS-UPLOAD] Array.isArray(data.data):', Array.isArray(data.data))
+
+        if (data.success && Array.isArray(data.data)) {
+          console.log('[ADDRESS-UPLOAD] ✅ Data structure is valid')
+          console.log('[ADDRESS-UPLOAD] Number of addresses:', data.data.length)
+          console.log('[ADDRESS-UPLOAD] Addresses array:', data.data)
+
+          console.log('[ADDRESS-UPLOAD] Setting addresses state...')
+          setAddresses(data.data)
+
+          // Auto-select default address
+          console.log('[ADDRESS-UPLOAD] Looking for default address...')
+          const defaultAddress = data.data.find((addr: Address) => addr.isDefault)
+          console.log('[ADDRESS-UPLOAD] Default address found:', defaultAddress)
+
+          if (defaultAddress) {
+            console.log('[ADDRESS-UPLOAD] Setting default address ID:', defaultAddress._id)
+            setSelectedAddressId(defaultAddress._id)
+          } else {
+            console.log('[ADDRESS-UPLOAD] No default address found')
+          }
+
+          console.log('[ADDRESS-UPLOAD] ✅ Addresses loaded successfully:', data.data.length, 'addresses')
+        } else {
+          console.warn('[ADDRESS-UPLOAD] ⚠️ Unexpected data structure:', {
+            success: data.success,
+            isArray: Array.isArray(data.data),
+            dataType: typeof data.data,
+            data: data
+          })
+        }
+      } else {
+        console.error('[ADDRESS-UPLOAD] ❌ Response not OK')
+        const responseText = await response.text()
+        console.error('[ADDRESS-UPLOAD] Error response body:', responseText)
+      }
+
+      console.log('[ADDRESS-UPLOAD] ========== FETCHING ADDRESSES COMPLETE ==========')
+    } catch (error) {
+      console.error('[ADDRESS-UPLOAD] ❌ EXCEPTION caught while fetching addresses!')
+      console.error('[ADDRESS-UPLOAD] Error type:', error?.constructor?.name)
+      console.error('[ADDRESS-UPLOAD] Error message:', error instanceof Error ? error.message : String(error))
+      console.error('[ADDRESS-UPLOAD] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      console.error('[ADDRESS-UPLOAD] Full error object:', error)
+      console.log('[ADDRESS-UPLOAD] ========== FETCHING ADDRESSES COMPLETE (EXCEPTION) ==========')
+    }
+  }
+
+  const handleFamilyMemberChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedMember = familyMembers.find(m => m.userId === e.target.value)
+    if (selectedMember) {
+      setPatientId(selectedMember.userId)
+      setPatientName(selectedMember.name)
+      setPatientRelationship(selectedMember.relationship)
     }
   }
 
@@ -79,9 +213,28 @@ export default function UploadPrescriptionPage() {
       return
     }
 
+    if (!prescriptionDate) {
+      console.error('[UPLOAD] Prescription date not selected')
+      alert('Please select prescription date')
+      return
+    }
+
+    if (!selectedAddressId) {
+      console.error('[UPLOAD] Address not selected')
+      alert('Please select an address')
+      return
+    }
+
     if (!user?.userId) {
       console.error('[UPLOAD] User ID not available:', user)
       alert('User session error. Please refresh and try again.')
+      return
+    }
+
+    // Get selected address to extract pincode
+    const selectedAddress = addresses.find(addr => addr._id === selectedAddressId)
+    if (!selectedAddress) {
+      alert('Selected address not found')
       return
     }
 
@@ -93,16 +246,24 @@ export default function UploadPrescriptionPage() {
 
       // Required fields as per backend DTO
       formData.append('file', file)
-      formData.append('patientId', user.userId)
+      formData.append('patientId', patientId)
       formData.append('patientName', patientName.trim())
+      formData.append('patientRelationship', patientRelationship)
+      formData.append('prescriptionDate', prescriptionDate)
+      formData.append('addressId', selectedAddressId)
+      formData.append('pincode', selectedAddress.pincode)
       if (notes.trim()) formData.append('notes', notes.trim())
 
       console.log('[UPLOAD] FormData prepared:', {
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
-        patientId: user.userId,
+        patientId,
         patientName: patientName.trim(),
+        patientRelationship,
+        prescriptionDate,
+        addressId: selectedAddressId,
+        pincode: selectedAddress.pincode,
         notes: notes.trim() || '(none)',
       })
 
@@ -236,18 +397,86 @@ export default function UploadPrescriptionPage() {
         {file && (
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Patient Information</h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Patient Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
-                placeholder="Enter patient name"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
+            <div className="space-y-4">
+              {/* Family Member Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Patient <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={patientId}
+                  onChange={handleFamilyMemberChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  required
+                >
+                  {familyMembers.map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.name} {member.relationship !== 'SELF' && `(${member.relationship})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Prescription Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prescription Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={prescriptionDate}
+                  onChange={(e) => setPrescriptionDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              {/* Address Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Address <span className="text-red-500">*</span>
+                </label>
+                {addresses.length === 0 ? (
+                  <div className="p-4 border border-gray-200 rounded-xl bg-gray-50">
+                    <p className="text-sm text-gray-500 mb-3">
+                      No addresses found. Please add an address first.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log('[ADDRESS-UPLOAD] "Add New Address" button clicked')
+                        console.log('[ADDRESS-UPLOAD] Opening address modal...')
+                        setIsAddressModalOpen(true)
+                        console.log('[ADDRESS-UPLOAD] Modal state set to open')
+                      }}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      Add New Address
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedAddressId}
+                    onChange={(e) => setSelectedAddressId(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    required
+                  >
+                    <option value="">Select an address</option>
+                    {addresses.map((address) => (
+                      <option key={address._id} value={address._id}>
+                        {address.addressLine1}, {address.city} - {address.pincode}
+                        {address.isDefault && ' (Default)'}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {selectedAddressId && addresses.find(addr => addr._id === selectedAddressId) && (
+                  <div className="mt-2 p-3 rounded-lg text-sm" style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}>
+                    <strong>Pincode:</strong> {addresses.find(addr => addr._id === selectedAddressId)?.pincode}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -310,6 +539,16 @@ export default function UploadPrescriptionPage() {
           </button>
         )}
       </div>
+
+      {/* Add Address Modal */}
+      {user && (
+        <AddAddressModal
+          isOpen={isAddressModalOpen}
+          onClose={() => setIsAddressModalOpen(false)}
+          onAddressAdded={fetchAddresses}
+          userId={user.userId}
+        />
+      )}
     </div>
   )
 }

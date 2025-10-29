@@ -42,9 +42,16 @@ export class LabCart extends Document {
   @Prop({ required: true })
   patientName: string;
 
+  @Prop({ required: true })
+  pincode: string;
+
   // Cart items
   @Prop({ type: [CartItem], required: true, default: [] })
   items: CartItem[];
+
+  // Vendors selected by operations team
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'LabVendor' }], default: [] })
+  selectedVendorIds: Types.ObjectId[];
 
   // Status
   @Prop({ required: true, enum: CartStatus, default: CartStatus.CREATED })
@@ -67,3 +74,4 @@ export const LabCartSchema = SchemaFactory.createForClass(LabCart);
 LabCartSchema.index({ cartId: 1 }, { unique: true });
 LabCartSchema.index({ userId: 1, status: 1 });
 LabCartSchema.index({ prescriptionId: 1 });
+LabCartSchema.index({ pincode: 1 });

@@ -70,6 +70,9 @@ export class Appointment {
   appointmentType: string;
 
   @Prop({ required: true })
+  categoryCode: string;
+
+  @Prop({ required: true })
   appointmentDate: string;
 
   @Prop({ required: true })
