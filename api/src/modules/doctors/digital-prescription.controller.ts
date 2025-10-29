@@ -449,6 +449,7 @@ export class SymptomsController {
 export class MemberDigitalPrescriptionsController {
   constructor(
     private readonly digitalPrescriptionService: DigitalPrescriptionService,
+    private readonly pdfGenerationService: PdfGenerationService,
   ) {}
 
   @Get()
@@ -524,6 +525,11 @@ export class MemberDigitalPrescriptionsController {
         prescriptionId,
         userId,
       );
+    }
+
+    // Verify PDF path exists after generation
+    if (!prescription.pdfPath) {
+      throw new BadRequestException('PDF generation failed - no file path');
     }
 
     if (!existsSync(prescription.pdfPath)) {
