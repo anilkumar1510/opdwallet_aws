@@ -808,19 +808,23 @@ export class AppointmentsService {
     appointment.cancelledBy = 'OPS';
     await appointment.save();
 
-    // Refund wallet if there was a consultation fee (same as user cancellation)
+    // Refund wallet if there was a wallet debit (same as user cancellation)
     // Use patientId for refund since that's whose wallet was debited
-    if (appointment.consultationFee > 0) {
+    // IMPORTANT: Only refund the walletDebitAmount, NOT the full consultationFee
+    // The copayAmount was paid out of pocket and should not be refunded to wallet
+    if (appointment.walletDebitAmount > 0) {
       try {
-        console.log('🟡 [APPOINTMENTS SERVICE] OPS cancelling - Refunding wallet for cancelled appointment:', {
-          appointmentId,
-          amount: appointment.consultationFee,
-          patientId: appointment.patientId
-        });
+        console.log('💰 [REFUND] ========== OPS CANCELLATION REFUND START ==========');
+        console.log('💰 [REFUND] Appointment ID:', appointmentId);
+        console.log('💰 [REFUND] Patient ID:', appointment.patientId);
+        console.log('💰 [REFUND] Consultation Fee:', appointment.consultationFee);
+        console.log('💰 [REFUND] Wallet Debit Amount (to refund):', appointment.walletDebitAmount);
+        console.log('💰 [REFUND] Copay Amount (NOT refunded to wallet):', appointment.copayAmount);
+        console.log('💰 [REFUND] Category Code:', appointment.categoryCode);
 
         await this.walletService.creditWallet(
           appointment.patientId,
-          appointment.consultationFee,
+          appointment.walletDebitAmount,
           appointment.categoryCode || APPOINTMENT_TYPE_TO_CATEGORY[appointment.appointmentType] || 'CAT001',
           (appointment._id as any).toString(),
           'CONSULTATION_REFUND',
@@ -828,11 +832,15 @@ export class AppointmentsService {
           `Refund for cancelled appointment - ${appointment.doctorName || 'Doctor'} - ${appointment.appointmentType || 'Appointment'}`
         );
 
-        console.log('✅ [APPOINTMENTS SERVICE] Wallet refunded successfully');
+        console.log('✅ [REFUND] Wallet credited with:', appointment.walletDebitAmount);
+        console.log('✅ [REFUND] Copay amount (₹' + appointment.copayAmount + ') remains in orders/transactions only');
+        console.log('💰 [REFUND] ========== OPS CANCELLATION REFUND COMPLETE ==========');
       } catch (walletError) {
-        console.error('❌ [APPOINTMENTS SERVICE] Failed to refund wallet:', walletError);
+        console.error('❌ [REFUND] Failed to refund wallet:', walletError);
         // Continue even if refund fails, appointment is already cancelled
       }
+    } else {
+      console.log('⚠️ [REFUND] No wallet refund needed - walletDebitAmount is 0');
     }
 
     return appointment;
@@ -872,19 +880,23 @@ export class AppointmentsService {
     appointment.cancelledBy = 'USER';
     await appointment.save();
 
-    // Refund wallet if there was a consultation fee
+    // Refund wallet if there was a wallet debit
     // Use patientId for refund since that's whose wallet was debited
-    if (appointment.consultationFee > 0) {
+    // IMPORTANT: Only refund the walletDebitAmount, NOT the full consultationFee
+    // The copayAmount was paid out of pocket and should not be refunded to wallet
+    if (appointment.walletDebitAmount > 0) {
       try {
-        console.log('🟡 [APPOINTMENTS SERVICE] Refunding wallet for cancelled appointment:', {
-          appointmentId,
-          amount: appointment.consultationFee,
-          patientId: appointment.patientId
-        });
+        console.log('💰 [REFUND] ========== USER CANCELLATION REFUND START ==========');
+        console.log('💰 [REFUND] Appointment ID:', appointmentId);
+        console.log('💰 [REFUND] Patient ID:', appointment.patientId);
+        console.log('💰 [REFUND] Consultation Fee:', appointment.consultationFee);
+        console.log('💰 [REFUND] Wallet Debit Amount (to refund):', appointment.walletDebitAmount);
+        console.log('💰 [REFUND] Copay Amount (NOT refunded to wallet):', appointment.copayAmount);
+        console.log('💰 [REFUND] Category Code:', appointment.categoryCode);
 
         await this.walletService.creditWallet(
           appointment.patientId,
-          appointment.consultationFee,
+          appointment.walletDebitAmount,
           appointment.categoryCode || APPOINTMENT_TYPE_TO_CATEGORY[appointment.appointmentType] || 'CAT001',
           (appointment._id as any).toString(),
           'CONSULTATION_REFUND',
@@ -892,11 +904,15 @@ export class AppointmentsService {
           `Refund for cancelled appointment - ${appointment.doctorName || 'Doctor'} - ${appointment.appointmentType || 'Appointment'}`
         );
 
-        console.log('✅ [APPOINTMENTS SERVICE] Wallet refunded successfully');
+        console.log('✅ [REFUND] Wallet credited with:', appointment.walletDebitAmount);
+        console.log('✅ [REFUND] Copay amount (₹' + appointment.copayAmount + ') remains in orders/transactions only');
+        console.log('💰 [REFUND] ========== USER CANCELLATION REFUND COMPLETE ==========');
       } catch (walletError) {
-        console.error('❌ [APPOINTMENTS SERVICE] Failed to refund wallet:', walletError);
+        console.error('❌ [REFUND] Failed to refund wallet:', walletError);
         // Continue even if refund fails, appointment is already cancelled
       }
+    } else {
+      console.log('⚠️ [REFUND] No wallet refund needed - walletDebitAmount is 0');
     }
 
     return appointment;

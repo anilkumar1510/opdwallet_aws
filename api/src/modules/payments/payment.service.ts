@@ -198,8 +198,8 @@ export class PaymentService {
       status: payment.status,
       amount: payment.amount,
       paymentType: payment.paymentType,
-      createdAt: payment.createdAt,
-      paidAt: payment.paidAt,
+      createdAt: (payment as any).createdAt,
+      paidAt: (payment as any).paidAt,
     });
 
     return payment as PaymentDocument;
