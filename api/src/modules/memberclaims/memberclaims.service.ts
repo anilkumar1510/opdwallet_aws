@@ -26,7 +26,7 @@ import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { UserRole } from '@/common/constants/roles.enum';
-import { CATEGORY_CODE_TO_KEY } from '@/common/constants/coverage.constants';
+// No longer need CATEGORY_CODE_TO_KEY - benefit keys are category IDs directly
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
@@ -279,12 +279,12 @@ export class MemberClaimsService {
               console.log('📄 [CLAIMS SERVICE] Resolved copay config:', JSON.stringify(copayConfig, null, 2));
 
               // Check if benefit is enabled and claims are allowed
-              const categoryKey = CATEGORY_CODE_TO_KEY[categoryCode];
-              const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryKey];
+              // Now benefit keys are category IDs directly (CAT001, CAT002, etc.)
+              const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryCode];
               const categoryEnabled = categoryBenefit && categoryBenefit.enabled;
               const claimEnabled = categoryBenefit && categoryBenefit.claimEnabled;
 
-              console.log('📄 [CLAIMS SERVICE] Category key:', categoryKey);
+              console.log('📄 [CLAIMS SERVICE] Category code:', categoryCode);
               console.log('📄 [CLAIMS SERVICE] Category benefit enabled:', categoryEnabled);
               console.log('📄 [CLAIMS SERVICE] Claim enabled:', claimEnabled);
 

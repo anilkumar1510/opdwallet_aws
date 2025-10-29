@@ -1,4 +1,5 @@
-// Category IDs - these are the primary identifiers stored in database.categoryId field
+// Category IDs - these are the primary identifiers used everywhere
+// Used in: database categoryId field, wallets, transactions, claims, plan config benefit keys
 export const CATEGORY_IDS = {
   IN_CLINIC_CONSULTATION: 'CAT001',
   ONLINE_CONSULTATION: 'CAT005',
@@ -9,26 +10,20 @@ export const CATEGORY_IDS = {
 
 export type CategoryKey = keyof typeof CATEGORY_IDS;
 
-// Deprecated: Use CATEGORY_IDS instead
-export const CATEGORY_KEYS = CATEGORY_IDS;
-export const CATEGORY_CODES = CATEGORY_IDS;
-
-// Benefits → Categories mapping (what Benefits tab emits)
-// Now returns category IDs (CAT001) instead of keys (IN_CLINIC_CONSULTATION)
-export const BENEFIT_TO_CATEGORY: Record<string, string[]> = {
-  'in-clinic-consultation': ['CAT001'],
-  'online-consultation': ['CAT005'],
-  pharmacy: ['CAT002'],
-  diagnostics: ['CAT003'],
-  labs: ['CAT004'],
-  // Other benefits (AHC, dental, etc.) map when they gain coverage in future
+// Display names for UI labels
+export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  'CAT001': 'In-Clinic Consultation',
+  'CAT005': 'Online Consultation',
+  'CAT002': 'Pharmacy',
+  'CAT003': 'Diagnostics',
+  'CAT004': 'Labs',
 };
 
-// Service code prefixes for each category
-export const SERVICE_CODE_PREFIXES = {
-  IN_CLINIC_CONSULTATION: 'CON',
-  ONLINE_CONSULTATION: 'CON',
-  PHARMACY: 'PHA',
-  DIAGNOSTICS: 'LAB',
-  LABS: 'LAB',
+// Service code prefixes for each category (by category ID)
+export const SERVICE_CODE_PREFIXES: Record<string, string> = {
+  'CAT001': 'CON',  // IN_CLINIC_CONSULTATION
+  'CAT005': 'CON',  // ONLINE_CONSULTATION
+  'CAT002': 'PHA',  // PHARMACY
+  'CAT003': 'LAB',  // DIAGNOSTICS
+  'CAT004': 'LAB',  // LABS
 } as const;

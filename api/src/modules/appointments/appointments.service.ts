@@ -13,7 +13,7 @@ import { CopayCalculator } from '../plan-config/utils/copay-calculator';
 import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
-import { CATEGORY_CODE_TO_KEY, APPOINTMENT_TYPE_TO_CATEGORY } from '@/common/constants/coverage.constants';
+import { APPOINTMENT_TYPE_TO_CATEGORY } from '@/common/constants/coverage.constants';
 
 @Injectable()
 export class AppointmentsService {
@@ -140,12 +140,11 @@ export class AppointmentsService {
 
           // Determine category based on appointment type
           categoryCode = APPOINTMENT_TYPE_TO_CATEGORY[appointmentType] || 'CAT001';
-          const categoryKey = CATEGORY_CODE_TO_KEY[categoryCode];
-          const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryKey];
+          // Now benefit keys are category IDs directly (CAT001, CAT002, etc.)
+          const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryCode];
 
           console.log('📄 [CATEGORY] Appointment type:', appointmentType);
           console.log('📄 [CATEGORY] Category code:', categoryCode);
-          console.log('📄 [CATEGORY] Category key:', categoryKey);
           console.log('📄 [CATEGORY] Category benefit:', JSON.stringify(categoryBenefit, null, 2));
 
           // Check if category is enabled OR vasEnabled (VAS = show but self-pay only)

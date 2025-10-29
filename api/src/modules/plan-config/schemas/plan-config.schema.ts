@@ -31,9 +31,10 @@ export class PlanConfig {
   isCurrent: boolean;
 
   // Consolidated Benefits Configuration
+  // Keys are category IDs (CAT001, CAT002, etc.)
   @Prop({ type: Object, default: {} })
   benefits: {
-    'in-clinic-consultation'?: {
+    CAT001?: { // In-Clinic Consultation
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
@@ -41,7 +42,7 @@ export class PlanConfig {
       visitLimit?: number;
       notes?: string;
     };
-    'online-consultation'?: {
+    CAT005?: { // Online Consultation
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
@@ -49,7 +50,7 @@ export class PlanConfig {
       visitLimit?: number;
       notes?: string;
     };
-    pharmacy?: {
+    CAT002?: { // Pharmacy
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
@@ -57,7 +58,7 @@ export class PlanConfig {
       rxRequired?: boolean;
       notes?: string;
     };
-    diagnostics?: {
+    CAT003?: { // Diagnostics
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
@@ -65,7 +66,7 @@ export class PlanConfig {
       rxRequired?: boolean;
       notes?: string;
     };
-    labs?: {
+    CAT004?: { // Labs
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
@@ -73,21 +74,21 @@ export class PlanConfig {
       rxRequired?: boolean;
       notes?: string;
     };
-    dental?: {
+    dental?: { // Future: Will be CAT006
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
     };
-    vision?: {
+    vision?: { // Future: Will be CAT007
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
     };
-    wellness?: {
+    wellness?: { // Future: Will be CAT008
       enabled: boolean;
       claimEnabled: boolean;
       vasEnabled: boolean;
@@ -129,7 +130,7 @@ export class PlanConfig {
   memberConfigs: {
     [relationshipCode: string]: {
       benefits?: {
-        'in-clinic-consultation'?: {
+        CAT001?: { // In-Clinic Consultation
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
@@ -137,7 +138,7 @@ export class PlanConfig {
           visitLimit?: number;
           notes?: string;
         };
-        'online-consultation'?: {
+        CAT005?: { // Online Consultation
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
@@ -145,7 +146,7 @@ export class PlanConfig {
           visitLimit?: number;
           notes?: string;
         };
-        pharmacy?: {
+        CAT002?: { // Pharmacy
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
@@ -153,7 +154,7 @@ export class PlanConfig {
           rxRequired?: boolean;
           notes?: string;
         };
-        diagnostics?: {
+        CAT003?: { // Diagnostics
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
@@ -161,7 +162,7 @@ export class PlanConfig {
           rxRequired?: boolean;
           notes?: string;
         };
-        labs?: {
+        CAT004?: { // Labs
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
@@ -169,21 +170,21 @@ export class PlanConfig {
           rxRequired?: boolean;
           notes?: string;
         };
-        dental?: {
+        dental?: { // Future: Will be CAT006
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
         };
-        vision?: {
+        vision?: { // Future: Will be CAT007
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
         };
-        wellness?: {
+        wellness?: { // Future: Will be CAT008
           enabled: boolean;
           claimEnabled: boolean;
           vasEnabled: boolean;

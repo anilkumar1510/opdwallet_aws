@@ -5,7 +5,6 @@ import { UserWallet, UserWalletDocument } from './schemas/user-wallet.schema';
 import { WalletTransaction, WalletTransactionDocument } from './schemas/wallet-transaction.schema';
 import { CategoryMaster, CategoryMasterDocument } from '../masters/schemas/category-master.schema';
 import { CounterService } from '../counters/counter.service';
-import { BENEFIT_KEY_TO_CATEGORY_ID } from '@/common/constants/coverage.constants';
 
 @Injectable()
 export class WalletService {
@@ -176,25 +175,15 @@ export class WalletService {
       // Get total wallet amount from plan config
       const totalAmount = planConfig.wallet?.totalAnnualAmount || 0;
 
-      // Get benefit keys from plan config (e.g., 'in-clinic-consultation', 'pharmacy')
-      const benefitKeys = Object.keys(planConfig.benefits || {});
+      // Get category IDs directly from plan config benefits (keys are already CAT001, CAT002, etc.)
+      const categoryIds = Object.keys(planConfig.benefits || {});
 
-      if (benefitKeys.length === 0) {
+      if (categoryIds.length === 0) {
         console.log('⚠️ [WALLET SERVICE] No benefits found in plan config');
         return null;
       }
 
-      // Convert benefit keys to category IDs using mapping
-      const categoryIds = benefitKeys
-        .map(key => BENEFIT_KEY_TO_CATEGORY_ID[key])
-        .filter(id => id); // Remove undefined values
-
-      if (categoryIds.length === 0) {
-        console.log('⚠️ [WALLET SERVICE] No valid category IDs found from benefit keys');
-        return null;
-      }
-
-      // Fetch category master data for names
+      // Fetch category master data for display names
       const categories = await this.categoryMasterModel.find({
         categoryId: { $in: categoryIds },
         isActive: true
@@ -202,15 +191,14 @@ export class WalletService {
 
       // Build category balances array
       const categoryBalances = [];
-      for (const benefitKey of benefitKeys) {
-        const benefit = planConfig.benefits[benefitKey];
-        const categoryId = BENEFIT_KEY_TO_CATEGORY_ID[benefitKey];
+      for (const categoryId of categoryIds) {
+        const benefit = planConfig.benefits[categoryId];
         const categoryInfo = categories.find(cat => cat.categoryId === categoryId);
 
-        if (benefit?.enabled && categoryInfo && categoryId) {
+        if (benefit?.enabled && categoryInfo) {
           const allocated = benefit.annualLimit || 0;
           categoryBalances.push({
-            categoryCode: categoryId,  // Now stores CAT001, CAT002, etc.
+            categoryCode: categoryId,  // CAT001, CAT002, etc.
             categoryName: categoryInfo.name,
             allocated: allocated,
             current: allocated,  // Start with full allocation
