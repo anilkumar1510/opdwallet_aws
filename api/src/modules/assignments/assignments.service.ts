@@ -104,17 +104,19 @@ export class AssignmentsService {
     console.log('✅ [ASSIGNMENTS SERVICE] Assignment created successfully:', savedAssignment.assignmentId);
 
     // Sync user document with assignment relationship data
-    if (relationshipId && primaryMemberId) {
+    if (relationshipId) {
       try {
         console.log('🔄 [ASSIGNMENTS SERVICE] Syncing user document with assignment data');
+        const updateData: any = { relationship: relationshipId };
+
+        // Only set primaryMemberId if it's provided (for dependents)
+        if (primaryMemberId) {
+          updateData.primaryMemberId = primaryMemberId;
+        }
+
         await this.userModel.updateOne(
           { _id: new Types.ObjectId(userId) },
-          {
-            $set: {
-              relationship: relationshipId,
-              primaryMemberId: primaryMemberId
-            }
-          }
+          { $set: updateData }
         );
         console.log('✅ [ASSIGNMENTS SERVICE] User document synced successfully');
       } catch (syncError) {
