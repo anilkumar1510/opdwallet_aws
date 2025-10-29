@@ -30,6 +30,7 @@ export default function PaymentPage() {
 
   const fetchPaymentDetails = useCallback(async () => {
     try {
+      console.log('🔍 [PaymentPage] Fetching payment details for:', paymentId);
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/payments/${paymentId}`, {
         headers: {
@@ -37,13 +38,23 @@ export default function PaymentPage() {
         },
       });
 
+      console.log('🔍 [PaymentPage] Response status:', response.status);
+
       if (!response.ok) {
         throw new Error('Failed to fetch payment details');
       }
 
       const data = await response.json();
+      console.log('✅ [PaymentPage] Payment data received:', {
+        paymentId: data.paymentId,
+        status: data.status,
+        amount: data.amount,
+        paymentType: data.paymentType,
+        serviceType: data.serviceType,
+      });
       setPayment(data);
     } catch (err: any) {
+      console.error('❌ [PaymentPage] Error fetching payment:', err);
       setError(err.message || 'Failed to load payment details');
     } finally {
       setLoading(false);
@@ -55,9 +66,10 @@ export default function PaymentPage() {
   }, [paymentId, fetchPaymentDetails]);
 
   const handleMarkAsPaid = async () => {
-    console.log('🚀🚀🚀 DEPLOYMENT VERSION: 2025-10-25-V4-CIRCULAR-FIX 🚀🚀🚀');
-    console.log('📍 [DEPLOY_V4] Starting payment process at:', new Date().toISOString());
-    console.log('📍 [DEPLOY_V4] This version includes circular dependency fix with forwardRef');
+    console.log('🚀 [PaymentPage] ========== MARK AS PAID CLICKED ==========');
+    console.log('🚀 [PaymentPage] Payment ID:', paymentId);
+    console.log('🚀 [PaymentPage] Current payment status:', payment?.status);
+    console.log('🚀 [PaymentPage] Timestamp:', new Date().toISOString());
 
     setProcessing(true);
     setError('');
@@ -65,13 +77,15 @@ export default function PaymentPage() {
     try {
       // Check if there's a pending booking in session storage
       const pendingBookingData = sessionStorage.getItem('pendingBooking');
+      console.log('🔍 [PaymentPage] Pending booking data:', pendingBookingData ? 'EXISTS' : 'NOT FOUND');
 
       if (pendingBookingData) {
         const bookingData = JSON.parse(pendingBookingData);
+        console.log('📦 [PaymentPage] Booking data:', JSON.stringify(bookingData, null, 2));
 
         // Complete the appointment creation if pending
         if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
-          console.log('[PaymentPage] Creating appointment with booking data:', bookingData);
+          console.log('📅 [PaymentPage] Creating appointment with booking data...');
 
           // Build appointment payload - only include fields that are in the DTO
           const appointmentPayload: any = {
@@ -222,6 +236,14 @@ export default function PaymentPage() {
   if (!payment) {
     return null;
   }
+
+  console.log('🎨 [PaymentPage] Rendering payment page with:', {
+    paymentId: payment.paymentId,
+    status: payment.status,
+    amount: payment.amount,
+    isDisabled: processing || payment.status === 'COMPLETED',
+    processing,
+  });
 
   const getPaymentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {

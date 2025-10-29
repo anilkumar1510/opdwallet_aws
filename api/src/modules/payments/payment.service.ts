@@ -59,12 +59,21 @@ export class PaymentService {
       isActive: true,
     });
 
+    console.log('🔍 [PAYMENT SERVICE] Payment object before save:', {
+      paymentId,
+      status: payment.status,
+      amount: payment.amount,
+      paymentType: payment.paymentType,
+    });
+
     const saved = await payment.save();
 
-    console.log('✅ [PAYMENT SERVICE] Payment request created:', {
-      paymentId,
-      amount: data.amount,
-      type: data.paymentType,
+    console.log('✅ [PAYMENT SERVICE] Payment request created and saved:', {
+      paymentId: saved.paymentId,
+      status: saved.status,
+      amount: saved.amount,
+      type: saved.paymentType,
+      _id: saved._id,
     });
 
     return saved;
@@ -175,11 +184,23 @@ export class PaymentService {
    * Get payment by ID
    */
   async getPayment(paymentId: string): Promise<PaymentDocument> {
+    console.log('🔍 [PAYMENT SERVICE] Fetching payment:', paymentId);
+
     const payment = await this.paymentModel.findOne({ paymentId }).lean();
 
     if (!payment) {
+      console.log('❌ [PAYMENT SERVICE] Payment not found:', paymentId);
       throw new NotFoundException('Payment not found');
     }
+
+    console.log('✅ [PAYMENT SERVICE] Payment found:', {
+      paymentId: payment.paymentId,
+      status: payment.status,
+      amount: payment.amount,
+      paymentType: payment.paymentType,
+      createdAt: payment.createdAt,
+      paidAt: payment.paidAt,
+    });
 
     return payment as PaymentDocument;
   }
