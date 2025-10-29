@@ -52,6 +52,13 @@ export default function PaymentPage() {
         paymentType: data.paymentType,
         serviceType: data.serviceType,
       });
+
+      // Warn if payment is already completed
+      if (data.status === 'COMPLETED') {
+        console.warn('⚠️ [PaymentPage] Payment is already marked as COMPLETED');
+        console.warn('⚠️ [PaymentPage] This payment cannot be processed again');
+      }
+
       setPayment(data);
     } catch (err: any) {
       console.error('❌ [PaymentPage] Error fetching payment:', err);
@@ -86,6 +93,16 @@ export default function PaymentPage() {
         // Complete the appointment creation if pending
         if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
           console.log('📅 [PaymentPage] Creating appointment with booking data...');
+
+          // Verify we have all required fields
+          if (!bookingData.serviceDetails?.doctorId || !bookingData.serviceDetails?.date || !bookingData.serviceDetails?.time) {
+            console.error('❌ [PaymentPage] Missing required booking details:', {
+              hasDoctorId: !!bookingData.serviceDetails?.doctorId,
+              hasDate: !!bookingData.serviceDetails?.date,
+              hasTime: !!bookingData.serviceDetails?.time,
+            });
+            throw new Error('Missing required appointment details. Please try booking again.');
+          }
 
           // Build appointment payload - only include fields that are in the DTO
           const appointmentPayload: any = {
@@ -140,26 +157,29 @@ export default function PaymentPage() {
               errorBody: errorText
             });
 
-            try {
-              const errorJson = JSON.parse(errorText);
-              console.error('[PaymentPage] Parsed error:', errorJson);
-            } catch (e) {
-              // Error is not JSON
-            }
+            // Don't proceed with payment if appointment creation failed
+            throw new Error(`Failed to create appointment: ${appointmentResponse.status} - ${errorText}`);
           } else {
             const appointmentData = await appointmentResponse.json();
             console.log('[PaymentPage] Appointment created successfully:', appointmentData);
+            console.log('✅ [PaymentPage] Appointment ID:', appointmentData.appointmentId);
           }
         }
 
         // Transaction is created automatically by the appointments service
         // No need to create it manually here
 
-        // Clear pending booking from session
+        // Clear pending booking from session only after successful appointment creation
+        console.log('🧹 [PaymentPage] Clearing pending booking from session storage');
         sessionStorage.removeItem('pendingBooking');
+      } else {
+        console.warn('⚠️ [PaymentPage] No pending booking found in session storage');
+        console.warn('⚠️ [PaymentPage] Payment will be marked as paid without creating appointment');
+        console.warn('⚠️ [PaymentPage] This might cause issues if appointment was not created yet');
       }
 
       // Mark payment as completed
+      console.log('💳 [PaymentPage] Marking payment as completed...');
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/payments/${paymentId}/mark-paid`, {
         method: 'POST',
@@ -169,9 +189,15 @@ export default function PaymentPage() {
         },
       });
 
+      console.log('💳 [PaymentPage] Mark-paid response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [PaymentPage] Failed to mark payment as paid:', errorText);
         throw new Error('Failed to process payment');
       }
+
+      console.log('✅ [PaymentPage] Payment marked as completed successfully');
 
       setSuccess(true);
 
