@@ -308,8 +308,8 @@ export default function OnlineConsultPage() {
                     </div>
                   )}
 
-                  {/* Join Call Button - Only for confirmed online appointments */}
-                  {appointment.status === 'CONFIRMED' && (
+                  {/* Join Call Button - Only for confirmed online appointments without prescription */}
+                  {appointment.status === 'CONFIRMED' && !appointment.hasPrescription && (
                     <div className="mb-3">
                       <button
                         onClick={() => handleJoinAppointment(appointment)}
@@ -351,7 +351,7 @@ export default function OnlineConsultPage() {
                       return appointmentDateObj > now
                     })()
 
-                    const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture
+                    const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture && !appointment.hasPrescription
 
                     return canCancel
                   })() && (
