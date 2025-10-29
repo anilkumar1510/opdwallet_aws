@@ -25,7 +25,7 @@ export default function ViewPrescriptionButton({
 
     try {
       setLoading(true)
-      const response = await fetch(`/api/member/prescriptions/${prescriptionId}/download`, {
+      const response = await fetch(`/api/member/digital-prescriptions/${prescriptionId}/download-pdf`, {
         credentials: 'include'
       })
 
