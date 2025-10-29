@@ -207,16 +207,76 @@ export class PrescriptionsService {
     prescriptionId: string,
     userId: string,
   ): Promise<DoctorPrescriptionDocument> {
-    const prescription = await this.prescriptionModel.findOne({
+    console.log('\n========== GET MEMBER PRESCRIPTION BY ID ==========');
+    console.log('[PRESCRIPTION-SERVICE] Timestamp:', new Date().toISOString());
+    console.log('[PRESCRIPTION-SERVICE] Input prescriptionId:', prescriptionId);
+    console.log('[PRESCRIPTION-SERVICE] Input prescriptionId type:', typeof prescriptionId);
+    console.log('[PRESCRIPTION-SERVICE] Input userId:', userId);
+    console.log('[PRESCRIPTION-SERVICE] Input userId type:', typeof userId);
+
+    const userIdObj = new Types.ObjectId(userId);
+    console.log('[PRESCRIPTION-SERVICE] Converted userId to ObjectId:', userIdObj.toString());
+
+    const query = {
       prescriptionId,
-      userId: new Types.ObjectId(userId),
+      userId: userIdObj,
+      isActive: true,
+    };
+    console.log('[PRESCRIPTION-SERVICE] Query:', JSON.stringify(query, null, 2));
+
+    const prescription = await this.prescriptionModel.findOne(query);
+
+    console.log('[PRESCRIPTION-SERVICE] Query result:', prescription ? 'FOUND' : 'NOT FOUND');
+
+    if (prescription) {
+      console.log('[PRESCRIPTION-SERVICE] ✅ Prescription Details:');
+      console.log('[PRESCRIPTION-SERVICE] - _id:', prescription._id?.toString());
+      console.log('[PRESCRIPTION-SERVICE] - prescriptionId:', prescription.prescriptionId);
+      console.log('[PRESCRIPTION-SERVICE] - appointmentId:', prescription.appointmentId?.toString());
+      console.log('[PRESCRIPTION-SERVICE] - userId:', prescription.userId?.toString());
+      console.log('[PRESCRIPTION-SERVICE] - doctorId:', prescription.doctorId);
+      console.log('[PRESCRIPTION-SERVICE] - doctorName:', prescription.doctorName);
+      console.log('[PRESCRIPTION-SERVICE] - patientName:', prescription.patientName);
+      console.log('[PRESCRIPTION-SERVICE] - fileName:', prescription.fileName);
+      console.log('[PRESCRIPTION-SERVICE] - filePath:', prescription.filePath);
+      console.log('[PRESCRIPTION-SERVICE] - isActive:', prescription.isActive);
+      console.log('[PRESCRIPTION-SERVICE] - uploadDate:', prescription.uploadDate);
+      console.log('========== PRESCRIPTION FOUND ==========\n');
+      return prescription;
+    }
+
+    // If not found, do a broader search to help debug
+    console.log('[PRESCRIPTION-SERVICE] ❌ Prescription not found with query');
+    console.log('[PRESCRIPTION-SERVICE] Attempting broader search for debugging...');
+
+    const allPrescriptionsForUser = await this.prescriptionModel.find({
+      userId: userIdObj,
+      isActive: true,
+    }).limit(10);
+    console.log('[PRESCRIPTION-SERVICE] Total active prescriptions for user:', allPrescriptionsForUser.length);
+
+    if (allPrescriptionsForUser.length > 0) {
+      console.log('[PRESCRIPTION-SERVICE] User has these prescriptionIds:');
+      allPrescriptionsForUser.forEach((p, i) => {
+        console.log(`[PRESCRIPTION-SERVICE]   ${i + 1}. ${p.prescriptionId} (Appointment: ${p.appointmentId?.toString()})`);
+      });
+    }
+
+    const prescriptionByIdOnly = await this.prescriptionModel.findOne({
+      prescriptionId,
       isActive: true,
     });
 
-    if (!prescription) {
-      throw new NotFoundException('Prescription not found');
+    if (prescriptionByIdOnly) {
+      console.log('[PRESCRIPTION-SERVICE] ⚠️  Prescription EXISTS but belongs to different user:');
+      console.log('[PRESCRIPTION-SERVICE] - Expected userId:', userIdObj.toString());
+      console.log('[PRESCRIPTION-SERVICE] - Actual userId:', prescriptionByIdOnly.userId?.toString());
+      console.log('[PRESCRIPTION-SERVICE] - PatientName:', prescriptionByIdOnly.patientName);
+    } else {
+      console.log('[PRESCRIPTION-SERVICE] Prescription does not exist in database at all');
     }
 
-    return prescription;
+    console.log('========== PRESCRIPTION NOT FOUND ==========\n');
+    throw new NotFoundException('Prescription not found');
   }
 }

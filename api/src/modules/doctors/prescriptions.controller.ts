@@ -223,25 +223,71 @@ export class MemberPrescriptionsController {
     @Request() req: AuthRequest,
     @Res() res: Response,
   ) {
+    console.log('\n========== DOWNLOAD PRESCRIPTION REQUEST ==========');
+    console.log('[PRESCRIPTION-CONTROLLER] Timestamp:', new Date().toISOString());
+    console.log('[PRESCRIPTION-CONTROLLER] Endpoint: /api/member/prescriptions/:prescriptionId/download');
+    console.log('[PRESCRIPTION-CONTROLLER] Method: GET');
+    console.log('[PRESCRIPTION-CONTROLLER] Params:', { prescriptionId });
+    console.log('[PRESCRIPTION-CONTROLLER] User from JWT:', {
+      userId: req.user.userId,
+      id: req.user.id,
+      role: req.user.role,
+      doctorId: req.user.doctorId,
+    });
+
     const userId = req.user.userId || req.user.id;
+    console.log('[PRESCRIPTION-CONTROLLER] Resolved userId:', userId);
 
     if (!userId) {
+      console.log('[PRESCRIPTION-CONTROLLER] ❌ ERROR: User ID is missing');
+      console.log('========== DOWNLOAD PRESCRIPTION FAILED ==========\n');
       throw new BadRequestException('User ID is required');
     }
 
-    const prescription = await this.prescriptionsService.getMemberPrescriptionById(
-      prescriptionId,
-      userId,
-    );
+    try {
+      console.log('[PRESCRIPTION-CONTROLLER] Calling prescriptionsService.getMemberPrescriptionById...');
+      const prescription = await this.prescriptionsService.getMemberPrescriptionById(
+        prescriptionId,
+        userId,
+      );
 
-    if (!existsSync(prescription.filePath)) {
-      throw new BadRequestException('File not found');
+      console.log('[PRESCRIPTION-CONTROLLER] ✅ Prescription retrieved from database');
+      console.log('[PRESCRIPTION-CONTROLLER] File path:', prescription.filePath);
+      console.log('[PRESCRIPTION-CONTROLLER] File name:', prescription.fileName);
+
+      const fileExists = existsSync(prescription.filePath);
+      console.log('[PRESCRIPTION-CONTROLLER] File exists on filesystem:', fileExists);
+
+      if (!fileExists) {
+        console.log('[PRESCRIPTION-CONTROLLER] ❌ ERROR: File not found at path:', prescription.filePath);
+        console.log('========== DOWNLOAD PRESCRIPTION FAILED ==========\n');
+        throw new BadRequestException('File not found');
+      }
+
+      console.log('[PRESCRIPTION-CONTROLLER] Setting response headers...');
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${prescription.fileName}"`);
+
+      console.log('[PRESCRIPTION-CONTROLLER] ✅ Streaming file to client...');
+      const fileStream = createReadStream(prescription.filePath);
+
+      fileStream.on('error', (err) => {
+        console.error('[PRESCRIPTION-CONTROLLER] ❌ File stream error:', err);
+      });
+
+      fileStream.on('end', () => {
+        console.log('[PRESCRIPTION-CONTROLLER] ✅ File stream completed successfully');
+        console.log('========== DOWNLOAD PRESCRIPTION SUCCESS ==========\n');
+      });
+
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('[PRESCRIPTION-CONTROLLER] ❌ ERROR in downloadPrescription:');
+      console.error('[PRESCRIPTION-CONTROLLER] Error type:', error?.constructor?.name);
+      console.error('[PRESCRIPTION-CONTROLLER] Error message:', error instanceof Error ? error.message : String(error));
+      console.error('[PRESCRIPTION-CONTROLLER] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.log('========== DOWNLOAD PRESCRIPTION FAILED ==========\n');
+      throw error;
     }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${prescription.fileName}"`);
-
-    const fileStream = createReadStream(prescription.filePath);
-    fileStream.pipe(res);
   }
 }
