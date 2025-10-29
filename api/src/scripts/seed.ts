@@ -86,12 +86,14 @@ async function seed() {
     console.log('✅ Seeded Relationship Master data');
 
     // Seed Category Master data
+    // categoryId is the primary identifier used in wallets, transactions, and plan configs
+    // code is a human-readable code (same as categoryId for simplicity)
     const categories = [
-      { categoryId: 'IN_CLINIC_CONSULTATION', code: 'CAT001', name: 'In-Clinic Consultation', displayOrder: 1, isActive: true },
-      { categoryId: 'PHARMACY', code: 'CAT002', name: 'Pharmacy Services', displayOrder: 2, isActive: true },
-      { categoryId: 'DIAGNOSTICS', code: 'CAT003', name: 'Diagnostic Services', displayOrder: 3, isActive: true },
-      { categoryId: 'LABS', code: 'CAT004', name: 'Laboratory Services', displayOrder: 4, isActive: true },
-      { categoryId: 'ONLINE_CONSULTATION', code: 'CAT005', name: 'Online Consultation', displayOrder: 5, isActive: true },
+      { categoryId: 'CAT001', code: 'CAT001', name: 'In-Clinic Consultation', displayOrder: 1, isActive: true },
+      { categoryId: 'CAT002', code: 'CAT002', name: 'Pharmacy Services', displayOrder: 2, isActive: true },
+      { categoryId: 'CAT003', code: 'CAT003', name: 'Diagnostic Services', displayOrder: 3, isActive: true },
+      { categoryId: 'CAT004', code: 'CAT004', name: 'Laboratory Services', displayOrder: 4, isActive: true },
+      { categoryId: 'CAT005', code: 'CAT005', name: 'Online Consultation', displayOrder: 5, isActive: true },
     ];
 
     await categoryModel.insertMany(categories);

@@ -301,7 +301,7 @@ export class AppointmentsService {
     console.log('🔍 [SLOT VALIDATION] Slot ID:', createAppointmentDto.slotId);
 
     const existingBooking = await this.appointmentModel.findOne({
-      doctorId: new Types.ObjectId(createAppointmentDto.doctorId),
+      doctorId: createAppointmentDto.doctorId,
       appointmentDate: createAppointmentDto.appointmentDate,
       timeSlot: createAppointmentDto.timeSlot,
       slotId: createAppointmentDto.slotId,

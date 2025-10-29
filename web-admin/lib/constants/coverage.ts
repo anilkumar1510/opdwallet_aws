@@ -1,16 +1,5 @@
-// Canonical keys (do not localize these) - used as categoryId in database
-export const CATEGORY_KEYS = {
-  IN_CLINIC_CONSULTATION: 'IN_CLINIC_CONSULTATION',
-  ONLINE_CONSULTATION: 'ONLINE_CONSULTATION',
-  PHARMACY: 'PHARMACY',
-  DIAGNOSTICS: 'DIAGNOSTICS',
-  LABS: 'LABS',
-} as const;
-
-export type CategoryKey = keyof typeof CATEGORY_KEYS;
-
-// Optional human codes (for display/seed only)
-export const CATEGORY_CODES = {
+// Category IDs - these are the primary identifiers stored in database.categoryId field
+export const CATEGORY_IDS = {
   IN_CLINIC_CONSULTATION: 'CAT001',
   ONLINE_CONSULTATION: 'CAT005',
   PHARMACY: 'CAT002',
@@ -18,13 +7,20 @@ export const CATEGORY_CODES = {
   LABS: 'CAT004',
 } as const;
 
+export type CategoryKey = keyof typeof CATEGORY_IDS;
+
+// Deprecated: Use CATEGORY_IDS instead
+export const CATEGORY_KEYS = CATEGORY_IDS;
+export const CATEGORY_CODES = CATEGORY_IDS;
+
 // Benefits → Categories mapping (what Benefits tab emits)
-export const BENEFIT_TO_CATEGORY: Record<string, CategoryKey[]> = {
-  'in-clinic-consultation': ['IN_CLINIC_CONSULTATION'],
-  'online-consultation': ['ONLINE_CONSULTATION'],
-  pharmacy: ['PHARMACY'],
-  diagnostics: ['DIAGNOSTICS'],
-  labs: ['LABS'],
+// Now returns category IDs (CAT001) instead of keys (IN_CLINIC_CONSULTATION)
+export const BENEFIT_TO_CATEGORY: Record<string, string[]> = {
+  'in-clinic-consultation': ['CAT001'],
+  'online-consultation': ['CAT005'],
+  pharmacy: ['CAT002'],
+  diagnostics: ['CAT003'],
+  labs: ['CAT004'],
   // Other benefits (AHC, dental, etc.) map when they gain coverage in future
 };
 
