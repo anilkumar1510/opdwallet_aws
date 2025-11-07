@@ -80,6 +80,7 @@ export class LabPrescription extends Document {
   updatedAt: Date;
 }
 
+export type LabPrescriptionDocument = LabPrescription & Document;
 export const LabPrescriptionSchema = SchemaFactory.createForClass(LabPrescription);
 
 // Indexes

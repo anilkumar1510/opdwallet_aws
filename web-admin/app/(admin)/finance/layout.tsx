@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import {
   BanknotesIcon,
   ClockIcon,
@@ -11,34 +11,17 @@ import {
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
+import { useUser } from '@/lib/providers/user-provider'
+import { handleLogout } from '@/lib/auth-utils'
 
 export default function FinanceLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null)
+  const { user } = useUser()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  useEffect(() => {
-    // Fetch current user
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include',
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error)
-      }
-    }
-    fetchUser()
-  }, [])
 
   const navigationItems = [
     {
@@ -60,20 +43,6 @@ export default function FinanceLayout({
       current: pathname.startsWith('/finance/payments/history'),
     },
   ]
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      if (response.ok) {
-        router.push('/auth/login')
-      }
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

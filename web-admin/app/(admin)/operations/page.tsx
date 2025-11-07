@@ -22,53 +22,13 @@ export default function OperationsDashboard() {
 
   const fetchStats = async () => {
     try {
-      const [doctorsRes, appointmentsRes, prescriptionsRes, ordersRes] = await Promise.all([
-        apiFetch('/api/doctors'),
-        apiFetch('/api/appointments'),
-        apiFetch('/api/ops/lab/prescriptions'),
-        apiFetch('/api/ops/lab/orders'),
-      ])
+      // Use the new combined dashboard stats endpoint
+      const response = await apiFetch('/api/ops/members/dashboard/stats')
 
-      let doctorsData = []
-      let appointmentsData = []
-      let prescriptionsData = []
-      let ordersData = []
-
-      if (doctorsRes.ok) {
-        const docData = await doctorsRes.json()
-        doctorsData = docData.data || []
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
       }
-
-      if (appointmentsRes.ok) {
-        const apptData = await appointmentsRes.json()
-        appointmentsData = apptData.data || []
-      }
-
-      if (prescriptionsRes.ok) {
-        const presData = await prescriptionsRes.json()
-        prescriptionsData = presData.data || []
-      }
-
-      if (ordersRes.ok) {
-        const ordData = await ordersRes.json()
-        ordersData = ordData.data || []
-      }
-
-      const today = new Date().toISOString().split('T')[0]
-      const pending = appointmentsData.filter((apt: any) => apt.status === 'PENDING_CONFIRMATION')
-      const todayAppts = appointmentsData.filter((apt: any) => apt.appointmentDate === today)
-
-      const pendingPrescriptions = prescriptionsData.filter((p: any) => p.status === 'PENDING').length
-      const labOrdersPending = ordersData.filter((o: any) => o.status === 'PLACED').length
-
-      setStats({
-        totalDoctors: doctorsData.length || 0,
-        activeDoctors: doctorsData.filter((d: any) => d.isActive).length || 0,
-        pendingAppointments: pending.length,
-        todayAppointments: todayAppts.length,
-        pendingPrescriptions,
-        labOrdersPending,
-      })
     } catch (error) {
       console.error('Failed to fetch stats:', error)
     } finally {

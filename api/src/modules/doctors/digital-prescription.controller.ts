@@ -504,42 +504,77 @@ export class MemberDigitalPrescriptionsController {
     @Request() req: AuthRequest,
     @Res() res: Response,
   ) {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] === START ===`);
+    console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] Prescription ID:`, prescriptionId);
+    console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] Request user:`, req.user);
+
     const userId = req.user.userId || req.user.id;
+    console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] User ID extracted:`, userId);
 
     if (!userId) {
+      console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] No user ID found`);
       throw new BadRequestException('User ID is required');
     }
 
-    let prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
-      prescriptionId,
-      userId,
-    );
-
-    // Auto-generate PDF if not generated yet
-    if (!prescription.pdfGenerated || !prescription.pdfPath) {
-      console.log('[MemberPrescriptionDownload] PDF not generated, generating now for:', prescriptionId);
-      await this.pdfGenerationService.generatePrescriptionPDF(prescriptionId);
-
-      // Reload prescription to get updated PDF path
-      prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
+    try {
+      console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] Querying prescription from database...`);
+      let prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
         prescriptionId,
         userId,
       );
+      console.log(`[${timestamp}] ✅ [MemberPrescriptionDownload] Prescription found:`, {
+        id: prescription.prescriptionId,
+        userId: prescription.userId,
+        pdfGenerated: prescription.pdfGenerated,
+        pdfPath: prescription.pdfPath,
+        pdfFileName: prescription.pdfFileName
+      });
+
+      // Auto-generate PDF if not generated yet
+      if (!prescription.pdfGenerated || !prescription.pdfPath) {
+        console.log(`[${timestamp}] ⚠️ [MemberPrescriptionDownload] PDF not generated, generating now...`);
+        await this.pdfGenerationService.generatePrescriptionPDF(prescriptionId);
+
+        // Reload prescription to get updated PDF path
+        console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] Reloading prescription after PDF generation...`);
+        prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
+          prescriptionId,
+          userId,
+        );
+        console.log(`[${timestamp}] ✅ [MemberPrescriptionDownload] Prescription reloaded, pdfPath:`, prescription.pdfPath);
+      }
+
+      // Verify PDF path exists after generation
+      if (!prescription.pdfPath) {
+        console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] PDF path is null/undefined`);
+        throw new BadRequestException('PDF generation failed - no file path');
+      }
+
+      console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] Checking if PDF file exists at:`, prescription.pdfPath);
+      const fileExists = existsSync(prescription.pdfPath);
+      console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] File exists:`, fileExists);
+
+      if (!fileExists) {
+        console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] PDF file not found at path:`, prescription.pdfPath);
+        throw new BadRequestException('PDF file not found');
+      }
+
+      console.log(`[${timestamp}] ✅ [MemberPrescriptionDownload] Setting response headers...`);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${prescription.pdfFileName}"`);
+      console.log(`[${timestamp}] ✅ [MemberPrescriptionDownload] Headers set, filename:`, prescription.pdfFileName);
+
+      console.log(`[${timestamp}] 🔵 [MemberPrescriptionDownload] Creating file stream and piping to response...`);
+      const fileStream = createReadStream(prescription.pdfPath);
+      fileStream.pipe(res);
+      console.log(`[${timestamp}] ✅ [MemberPrescriptionDownload] === SUCCESS ===`);
+    } catch (error) {
+      console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] === ERROR ===`);
+      console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] Error:`, error);
+      console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] Error message:`, error.message);
+      console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] Error stack:`, error.stack);
+      throw error;
     }
-
-    // Verify PDF path exists after generation
-    if (!prescription.pdfPath) {
-      throw new BadRequestException('PDF generation failed - no file path');
-    }
-
-    if (!existsSync(prescription.pdfPath)) {
-      throw new BadRequestException('PDF file not found');
-    }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${prescription.pdfFileName}"`);
-
-    const fileStream = createReadStream(prescription.pdfPath);
-    fileStream.pipe(res);
   }
 }

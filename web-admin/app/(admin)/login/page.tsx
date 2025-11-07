@@ -70,37 +70,57 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
+    console.log('🔐 [LOGIN] Starting login attempt...')
+    console.log('🔐 [LOGIN] Email:', email)
+
     try {
+      console.log('🔐 [LOGIN] Calling API at:', '/api/auth/login')
       const response = await apiFetch('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       })
 
+      console.log('🔐 [LOGIN] Response status:', response.status, response.statusText)
+      console.log('🔐 [LOGIN] Response headers:', Object.fromEntries(response.headers.entries()))
+
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ [LOGIN] Login successful! User data:', data)
+        console.log('✅ [LOGIN] User role:', data.role)
+        console.log('✅ [LOGIN] Cookies after login:', document.cookie)
+
         // Store token in cookie is handled by the API
         // Redirect based on role
         // Note: For admin portal with basePath='/admin', use '/' which resolves to '/admin'
         if (data.role === 'SUPER_ADMIN' || data.role === 'ADMIN') {
+          console.log('✅ [LOGIN] Redirecting SUPER_ADMIN/ADMIN to /')
           router.push('/')
         } else if (data.role === 'TPA_ADMIN' || data.role === 'TPA_USER') {
+          console.log('✅ [LOGIN] Redirecting TPA to /tpa')
           router.push('/tpa')
         } else if (data.role === 'FINANCE_USER') {
+          console.log('✅ [LOGIN] Redirecting FINANCE to /finance')
           router.push('/finance')
         } else if (data.role === 'OPS') {
+          console.log('✅ [LOGIN] Redirecting OPS to /operations')
           router.push('/operations')
         } else {
+          console.log('⚠️ [LOGIN] Unknown role, redirecting to /')
           router.push('/')
         }
       } else {
+        console.error('❌ [LOGIN] Login failed with status:', response.status)
         const errorData = await response.json().catch(() => null)
+        console.error('❌ [LOGIN] Error data:', errorData)
         setError(errorData?.message || 'Invalid email or password')
       }
     } catch (err) {
+      console.error('❌ [LOGIN] Exception during login:', err)
       setError('An error occurred. Please try again.')
       console.error('Login error:', err)
     } finally {
       setLoading(false)
+      console.log('🔐 [LOGIN] Login attempt completed')
     }
   }
 

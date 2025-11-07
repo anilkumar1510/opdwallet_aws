@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { apiFetch } from '@/lib/api'
+import { useUser } from '@/lib/providers/user-provider'
+import { handleLogout } from '@/lib/auth-utils'
 
 export default function TPALayout({
   children,
@@ -11,38 +11,7 @@ export default function TPALayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null)
-
-  // Auth check moved to middleware - only fetch user data
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
-    try {
-      const response = await apiFetch('/api/auth/me')
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-      }
-    } catch (error) {
-      console.error('Failed to fetch user data:', error)
-    }
-  }
-
-  const handleLogout = async () => {
-    try {
-      await apiFetch('/api/auth/logout', {
-        method: 'POST',
-      })
-      // Redirect to login page after logout (respects basePath)
-      window.location.href = '/admin/login'
-    } catch (error) {
-      console.error('Logout failed:', error)
-      // Even if logout API fails, redirect to login
-      window.location.href = '/admin/login'
-    }
-  }
+  const { user } = useUser()
 
   const getPageTitle = () => {
     if (pathname === '/tpa') return 'Dashboard'

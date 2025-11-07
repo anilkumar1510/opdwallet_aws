@@ -7,6 +7,7 @@ import {
   UserGroupIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface Member {
   _id: string
@@ -45,9 +46,7 @@ export default function MembersPage() {
         ...(searchQuery && { search: searchQuery }),
       })
 
-      const response = await fetch(`/api/ops/members/search?${params}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/ops/members/search?${params}`)
 
       if (response.ok) {
         const data = await response.json()

@@ -197,6 +197,7 @@ export class LabOrder extends Document {
   updatedAt: Date;
 }
 
+export type LabOrderDocument = LabOrder & Document;
 export const LabOrderSchema = SchemaFactory.createForClass(LabOrder);
 
 // Indexes

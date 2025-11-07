@@ -23,23 +23,55 @@ export default function ViewPrescriptionButton({
   const handleViewPrescription = async () => {
     if (loading) return
 
+    const timestamp = new Date().toISOString()
+    console.log(`[${timestamp}] 🔵 [ViewPrescription] Button clicked`)
+    console.log(`[${timestamp}] 🔵 [ViewPrescription] Prescription ID:`, prescriptionId)
+    console.log(`[${timestamp}] 🔵 [ViewPrescription] Has Prescription:`, hasPrescription)
+
     try {
       setLoading(true)
-      const response = await fetch(`/api/member/digital-prescriptions/${prescriptionId}/download-pdf`, {
+      const apiUrl = `/api/member/digital-prescriptions/${prescriptionId}/download-pdf`
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Calling API:`, apiUrl)
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Cookies:`, document.cookie)
+
+      const response = await fetch(apiUrl, {
         credentials: 'include'
       })
 
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Response status:`, response.status, response.statusText)
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Response headers:`, Object.fromEntries(response.headers.entries()))
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Response OK:`, response.ok)
+
       if (!response.ok) {
-        throw new Error('Failed to load prescription')
+        const errorText = await response.text()
+        console.error(`[${timestamp}] ❌ [ViewPrescription] Error response body:`, errorText)
+        throw new Error(`Failed to load prescription: ${response.status} ${response.statusText}`)
       }
 
+      const contentType = response.headers.get('content-type')
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Content-Type:`, contentType)
+
       const blob = await response.blob()
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Blob size:`, blob.size, 'bytes')
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Blob type:`, blob.type)
+
+      if (blob.size === 0) {
+        console.error(`[${timestamp}] ❌ [ViewPrescription] Received empty blob`)
+        throw new Error('Received empty prescription file')
+      }
+
       const url = window.URL.createObjectURL(blob)
+      console.log(`[${timestamp}] ✅ [ViewPrescription] Created blob URL:`, url)
+      console.log(`[${timestamp}] ✅ [ViewPrescription] Opening PDF in new tab`)
       window.open(url, '_blank')
     } catch (err: any) {
+      console.error(`[${timestamp}] ❌ [ViewPrescription] Exception:`, err)
+      console.error(`[${timestamp}] ❌ [ViewPrescription] Error message:`, err.message)
+      console.error(`[${timestamp}] ❌ [ViewPrescription] Error stack:`, err.stack)
       alert(err.message || 'Failed to view prescription')
     } finally {
       setLoading(false)
+      console.log(`[${timestamp}] 🔵 [ViewPrescription] Loading complete`)
     }
   }
 

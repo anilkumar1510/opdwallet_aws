@@ -42,7 +42,7 @@ export class LabTestItem {
 
 export const LabTestItemSchema = SchemaFactory.createForClass(LabTestItem);
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'digitalprescriptions' })
 export class DigitalPrescription {
   @Prop({ required: true, unique: true })
   prescriptionId: string;

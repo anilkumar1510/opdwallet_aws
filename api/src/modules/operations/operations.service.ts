@@ -2,14 +2,23 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { Doctor, DoctorDocument } from '../doctors/schemas/doctor.schema';
+import { Appointment, AppointmentDocument } from '../appointments/schemas/appointment.schema';
+import { LabPrescription, LabPrescriptionDocument } from '../lab/schemas/lab-prescription.schema';
+import { LabOrder, LabOrderDocument } from '../lab/schemas/lab-order.schema';
 import { WalletService } from '../wallet/wallet.service';
 import { AssignmentsService } from '../assignments/assignments.service';
 import { RelationshipType } from '@/common/constants/status.enum';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 
 @Injectable()
 export class OperationsService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>,
+    @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
+    @InjectModel(LabPrescription.name) private labPrescriptionModel: Model<LabPrescriptionDocument>,
+    @InjectModel(LabOrder.name) private labOrderModel: Model<LabOrderDocument>,
     private walletService: WalletService,
     private assignmentsService: AssignmentsService,
   ) {}
@@ -148,6 +157,43 @@ export class OperationsService {
       transactionId: result.transactionId,
       newBalance: result.newBalance,
       newCategoryBalance: result.newCategoryBalance,
+    };
+  }
+
+  async getDashboardStats(): Promise<DashboardStatsDto> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [
+      totalDoctors,
+      activeDoctors,
+      pendingAppointments,
+      todayAppointments,
+      pendingPrescriptions,
+      labOrdersPending,
+    ] = await Promise.all([
+      this.doctorModel.countDocuments(),
+      this.doctorModel.countDocuments({ isActive: true }),
+      this.appointmentModel.countDocuments({ status: 'PENDING_CONFIRMATION' }),
+      this.appointmentModel.countDocuments({
+        appointmentDate: {
+          $gte: today,
+          $lt: tomorrow,
+        },
+      }),
+      this.labPrescriptionModel.countDocuments({ status: 'PENDING' }),
+      this.labOrderModel.countDocuments({ status: 'PLACED' }),
+    ]);
+
+    return {
+      totalDoctors,
+      activeDoctors,
+      pendingAppointments,
+      todayAppointments,
+      pendingPrescriptions,
+      labOrdersPending,
     };
   }
 }

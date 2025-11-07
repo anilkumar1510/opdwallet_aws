@@ -53,13 +53,29 @@ async function proxyRequest(request: NextRequest, path: string[]) {
       responseHeaders.set(key, value)
     })
 
-    const data = await response.text()
+    // Handle binary responses (PDFs, images, etc.) properly
+    const contentType = response.headers.get('content-type') || ''
+    const isBinary = contentType.includes('application/pdf') ||
+                     contentType.includes('image/') ||
+                     contentType.includes('application/octet-stream')
 
-    return new NextResponse(data, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: responseHeaders,
-    })
+    if (isBinary) {
+      // For binary data, use arrayBuffer to preserve the binary content
+      const data = await response.arrayBuffer()
+      return new NextResponse(data, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      })
+    } else {
+      // For text responses, use text()
+      const data = await response.text()
+      return new NextResponse(data, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      })
+    }
   } catch (error) {
     console.error(`[API Proxy] Error proxying to ${fullUrl}:`, error)
     return NextResponse.json(

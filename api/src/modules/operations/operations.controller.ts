@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, Request, UseGuards } from '@
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { OperationsService } from './operations.service';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
+import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -21,6 +22,13 @@ interface AuthRequest extends Request {
 @Roles(UserRole.OPS, UserRole.SUPER_ADMIN)
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
+
+  @Get('dashboard/stats')
+  @ApiOperation({ summary: 'Get operations dashboard statistics (Operations users only)' })
+  @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully', type: DashboardStatsDto })
+  async getDashboardStats(): Promise<DashboardStatsDto> {
+    return this.operationsService.getDashboardStats();
+  }
 
   @Get('search')
   @ApiOperation({ summary: 'Search members (Operations users only)' })
