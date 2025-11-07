@@ -64,15 +64,16 @@ function AdminLayoutContent({
     },
   ]
 
-  // Check if on operations or TPA routes - hide admin header if so
+  // Check if on operations, TPA, or Finance routes - hide admin header if so
   const isOperationsRoute = pathname.startsWith('/operations') || pathname.startsWith('/admin/operations')
   const isTPARoute = pathname.startsWith('/tpa') || pathname.startsWith('/admin/tpa')
-  const hideAdminNav = isOperationsRoute || isTPARoute
+  const isFinanceRoute = pathname.startsWith('/finance') || pathname.startsWith('/admin/finance')
+  const hideAdminNav = isOperationsRoute || isTPARoute || isFinanceRoute
 
   // Auth is handled by middleware, user data loaded via UserProvider
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header - Hidden on operations and TPA routes */}
+      {/* Navigation Header - Hidden on operations, TPA, and Finance routes */}
       {!hideAdminNav && (
         <nav className="header">
           <div className="page-container">
@@ -134,7 +135,7 @@ function AdminLayoutContent({
       {/* Page Content */}
       <main className={hideAdminNav ? '' : 'content-container'}>
         <div className={hideAdminNav ? '' : 'page-container'}>
-          {/* Page Header - Hidden on operations and TPA routes */}
+          {/* Page Header - Hidden on operations, TPA, and Finance routes */}
           {!hideAdminNav && (
             <div className="section-header">
               <div>
