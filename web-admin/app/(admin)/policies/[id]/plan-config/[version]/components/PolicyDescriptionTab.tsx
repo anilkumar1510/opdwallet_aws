@@ -70,7 +70,7 @@ export function PolicyDescriptionTab({
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="inclusions" className="space-y-4">
-          <TabsList className="bg-gray-100">
+          <TabsList className="bg-white">
             <TabsTrigger
               value="inclusions"
               className="text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:font-semibold"

@@ -14,7 +14,6 @@ import {
   CubeIcon,
   EyeIcon,
   ClipboardDocumentCheckIcon,
-  BanknotesIcon,
   ReceiptPercentIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -607,7 +606,7 @@ export default function DashboardPage() {
 
           {/* Total Available Balance - Highlighted */}
           <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-            <div className="flex items-center justify-between">
+            <div>
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Available Balance</p>
                 <div className="text-2xl font-bold text-gray-900">
@@ -615,7 +614,6 @@ export default function DashboardPage() {
                   <span className="text-sm text-gray-500 font-normal"> / {totalWalletBalance.toLocaleString()}</span>
                 </div>
               </div>
-              <BanknotesIcon className="h-10 w-10 text-blue-600" />
             </div>
             <p className="text-xs text-gray-600 mt-2">Your total usage cannot exceed this amount</p>
           </div>

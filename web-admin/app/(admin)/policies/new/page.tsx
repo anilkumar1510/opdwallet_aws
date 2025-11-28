@@ -13,7 +13,7 @@ export default function NewPolicyPage() {
     status: 'DRAFT',
     effectiveFrom: '',
     effectiveTo: '',
-    ownerPayer: '',
+    ownerPayer: 'CORPORATE',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,9 +23,7 @@ export default function NewPolicyPage() {
     try {
       const payload = {
         ...formData,
-        effectiveFrom: formData.effectiveFrom || undefined,
         effectiveTo: formData.effectiveTo || undefined,
-        ownerPayer: formData.ownerPayer || undefined,
         description: formData.description || undefined,
       }
 
@@ -45,7 +43,10 @@ export default function NewPolicyPage() {
       } else {
         const error = await response.json()
         console.error('Failed to create policy:', error)
-        toast.error(`Failed to create policy: ${error.message || 'Unknown error'}`)
+        console.error('Response status:', response.status)
+        console.error('Request URL:', response.url)
+        console.error('Payload sent:', payload)
+        toast.error(`Failed to create policy: ${error.message || JSON.stringify(error.errors || error)}`)
       }
     } catch (error) {
       console.error('Error creating policy:', error)
@@ -170,7 +171,7 @@ export default function NewPolicyPage() {
                     >
                       <option value="DRAFT">Draft</option>
                       <option value="ACTIVE">Active</option>
-                      <option value="RETIRED">Retired</option>
+                      <option value="INACTIVE">Inactive</option>
                     </select>
                     <p className="mt-1 text-xs text-gray-600">Set initial status for the policy</p>
                   </div>
@@ -178,16 +179,16 @@ export default function NewPolicyPage() {
                   {/* Owner/Payer */}
                   <div>
                     <label htmlFor="ownerPayer" className="block text-sm font-semibold text-gray-800 mb-2">
-                      Owner/Payer
+                      Owner/Payer <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="ownerPayer"
                       name="ownerPayer"
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                       value={formData.ownerPayer}
                       onChange={(e) => setFormData({ ...formData, ownerPayer: e.target.value })}
                     >
-                      <option value="">Select...</option>
                       <option value="CORPORATE">Corporate</option>
                       <option value="INSURER">Insurer</option>
                       <option value="HYBRID">Hybrid</option>
