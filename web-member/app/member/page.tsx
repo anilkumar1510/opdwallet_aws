@@ -601,101 +601,100 @@ export default function DashboardPage() {
             />
           </div>
 
-        {/* Your Wallet Balance Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <SectionHeader title="Your Wallet Balance" showSeeAll={false} />
+          {/* Your Wallet Balance Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <SectionHeader title="Your Wallet Balance" showSeeAll={false} />
 
-          {/* Total Available Balance - Highlighted */}
-          <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-            <div className="flex items-center justify-between">
+            {/* Total Available Balance - Highlighted */}
+            <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Available Balance</p>
-                <div className="text-2xl font-bold text-gray-900">
-                  ₹ {totalAvailableBalance.toLocaleString()}
-                  <span className="text-sm text-gray-500 font-normal"> / {totalWalletBalance.toLocaleString()}</span>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Total Available Balance</p>
+                  <div className="text-2xl font-bold text-gray-900">
+                    ₹ {totalAvailableBalance.toLocaleString()}
+                    <span className="text-sm text-gray-500 font-normal"> / {totalWalletBalance.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
-              <BanknotesIcon className="h-10 w-10 text-blue-600" />
+              <p className="text-xs text-gray-600 mt-2">Your total usage cannot exceed this amount</p>
             </div>
-            <p className="text-xs text-gray-600 mt-2">Your total usage cannot exceed this amount</p>
-          </div>
 
-          {/* Category-wise Wallets */}
-          <div className="space-y-4">
-            {walletCategories.map((category: any, index: number) => (
-              <WalletCategoryCard
-                key={index}
-                category={category}
-                icon={getCategoryIcon(category.categoryCode)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Upcoming Appointment Section - Desktop only (mobile has floating banner) */}
-        {user?._id && (
-          <div className="hidden lg:block">
-            <ActiveAppointmentNudge variant="section" userId={user._id} />
-          </div>
-        )}
-
-        {/* Health Benefits Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <SectionHeader title="Health Benefits" showSeeAll={false} />
-
-          <div className="space-y-3">
-            {healthBenefits.map((benefit: any, index: number) => (
-              <BenefitCard
-                key={index}
-                benefit={benefit}
-                onClick={() => handleBenefitClick(benefit)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* File Claims Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <SectionHeader title="Claims" showSeeAll={false} />
-          <Link
-            href="/member/claims/new"
-            className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-white p-2 rounded-lg">
-                <ClipboardDocumentCheckIcon className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900">File a Claim</div>
-                <div className="text-sm text-gray-600">Submit your medical bills</div>
-              </div>
+            {/* Category-wise Wallets */}
+            <div className="space-y-4">
+              {walletCategories.map((category: any, index: number) => (
+                <WalletCategoryCard
+                  key={index}
+                  category={category}
+                  icon={getCategoryIcon(category.categoryCode)}
+                />
+              ))}
             </div>
-            <ChevronRightIcon className="h-5 w-5 text-gray-400" />
-          </Link>
-        </div>
+          </div>
 
-        {/* Order History Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <SectionHeader title="Order History" showSeeAll={false} />
-          <Link
-            href="/member/orders"
-            className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl hover:from-purple-100 hover:to-blue-100 transition-colors"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-white p-2 rounded-lg">
-                <ReceiptPercentIcon className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900">View Order History</div>
-                <div className="text-sm text-gray-600">Track payments and transactions</div>
-              </div>
+          {/* Upcoming Appointment Section - Desktop only (mobile has floating banner) */}
+          {user?._id && (
+            <div className="hidden lg:block">
+              <ActiveAppointmentNudge variant="section" userId={user._id} />
             </div>
-            <ChevronRightIcon className="h-5 w-5 text-gray-400" />
-          </Link>
-        </div>
+          )}
 
-        {/* Extra padding for mobile to prevent overlap with appointment nudge */}
-        <div className="h-24 lg:hidden" aria-hidden="true"></div>
+          {/* Health Benefits Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <SectionHeader title="Health Benefits" showSeeAll={false} />
+
+            <div className="space-y-3">
+              {healthBenefits.map((benefit: any, index: number) => (
+                <BenefitCard
+                  key={index}
+                  benefit={benefit}
+                  onClick={() => handleBenefitClick(benefit)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* File Claims Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <SectionHeader title="Claims" showSeeAll={false} />
+            <Link
+              href="/member/claims/new"
+              className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-2 rounded-lg">
+                  <ClipboardDocumentCheckIcon className="h-6 w-6 text-gray-700" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">File a Claim</div>
+                  <div className="text-sm text-gray-600">Submit your medical bills</div>
+                </div>
+              </div>
+              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+            </Link>
+          </div>
+
+          {/* Order History Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <SectionHeader title="Order History" showSeeAll={false} />
+            <Link
+              href="/member/orders"
+              className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl hover:from-purple-100 hover:to-blue-100 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-2 rounded-lg">
+                  <ReceiptPercentIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">View Order History</div>
+                  <div className="text-sm text-gray-600">Track payments and transactions</div>
+                </div>
+              </div>
+              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+            </Link>
+          </div>
+
+          {/* Extra padding for mobile to prevent overlap with appointment nudge */}
+          <div className="h-24 lg:hidden" aria-hidden="true"></div>
         </div>
       </div>
     </div>
