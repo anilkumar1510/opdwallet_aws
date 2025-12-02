@@ -60,7 +60,7 @@ export function PolicyDescriptionTab({
   };
 
   return (
-    <Card>
+    <Card className="bg-white">
       <CardHeader>
         <CardTitle>Policy Description</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -85,7 +85,7 @@ export function PolicyDescriptionTab({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="inclusions" className="space-y-4">
+          <TabsContent value="inclusions" className="space-y-4 bg-white">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Add items that are covered under this policy
@@ -96,7 +96,7 @@ export function PolicyDescriptionTab({
                   variant="outline"
                   size="sm"
                   onClick={addInclusion}
-                  className="gap-2"
+                  className="gap-2 bg-white"
                 >
                   <Plus className="h-4 w-4" />
                   Add Inclusion
@@ -112,7 +112,7 @@ export function PolicyDescriptionTab({
 
             <div className="space-y-4">
               {inclusions.map((inclusion, index) => (
-                <Card key={index} className="border-gray-200">
+                <Card key={index} className="border-gray-200 bg-white">
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
@@ -127,7 +127,7 @@ export function PolicyDescriptionTab({
                               onChange={(e) => updateInclusion(index, 'headline', e.target.value)}
                               placeholder="e.g., Doctor Consultations"
                               disabled={isReadOnly}
-                              className="mt-1"
+                              className="mt-1 bg-white"
                             />
                           </div>
                           <div>
@@ -141,7 +141,7 @@ export function PolicyDescriptionTab({
                               placeholder="Describe what is covered in detail..."
                               disabled={isReadOnly}
                               rows={3}
-                              className="mt-1"
+                              className="mt-1 bg-white"
                             />
                           </div>
                         </div>
@@ -164,7 +164,7 @@ export function PolicyDescriptionTab({
             </div>
           </TabsContent>
 
-          <TabsContent value="exclusions" className="space-y-4">
+          <TabsContent value="exclusions" className="space-y-4 bg-white">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Add items that are NOT covered under this policy
@@ -175,7 +175,7 @@ export function PolicyDescriptionTab({
                   variant="outline"
                   size="sm"
                   onClick={addExclusion}
-                  className="gap-2"
+                  className="gap-2 bg-white"
                 >
                   <Plus className="h-4 w-4" />
                   Add Exclusion
@@ -191,7 +191,7 @@ export function PolicyDescriptionTab({
 
             <div className="space-y-4">
               {exclusions.map((exclusion, index) => (
-                <Card key={index} className="border-gray-200">
+                <Card key={index} className="border-gray-200 bg-white">
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
@@ -206,7 +206,7 @@ export function PolicyDescriptionTab({
                               onChange={(e) => updateExclusion(index, 'headline', e.target.value)}
                               placeholder="e.g., Pre-existing Conditions"
                               disabled={isReadOnly}
-                              className="mt-1"
+                              className="mt-1 bg-white"
                             />
                           </div>
                           <div>
@@ -220,7 +220,7 @@ export function PolicyDescriptionTab({
                               placeholder="Describe what is NOT covered in detail..."
                               disabled={isReadOnly}
                               rows={3}
-                              className="mt-1"
+                              className="mt-1 bg-white"
                             />
                           </div>
                         </div>
