@@ -11,6 +11,7 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
+import { useFamily } from '@/contexts/FamilyContext'
 
 interface Appointment {
   _id: string
@@ -33,6 +34,7 @@ interface Appointment {
 
 export default function OnlineConsultPage() {
   const router = useRouter()
+  const { viewingUserId } = useFamily()
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [userId, setUserId] = useState<string>('')
@@ -49,18 +51,22 @@ export default function OnlineConsultPage() {
 
       const data = await response.json()
       console.log('[OnlineConsult] User ID received:', data._id)
-      setUserId(data._id)
-      await fetchAppointments(data._id)
+
+      // PRIVACY: Use viewingUserId to fetch appointments for the active profile
+      const targetUserId = viewingUserId || data._id
+      console.log('[OnlineConsult] Fetching appointments for profile:', { targetUserId, viewingUserId })
+      setUserId(targetUserId)
+      await fetchAppointments(targetUserId)
     } catch (error) {
       console.error('[OnlineConsult] Error fetching user data:', error)
       setLoading(false)
     }
-  }, [])
+  }, [viewingUserId])
 
   useEffect(() => {
     console.log('[OnlineConsult] Fetching user data')
     fetchUserData()
-  }, [fetchUserData])
+  }, [fetchUserData, viewingUserId])
 
   const fetchAppointments = async (userId: string) => {
     try {
@@ -85,8 +91,11 @@ export default function OnlineConsultPage() {
   }
 
   const handleConsultNow = () => {
-    console.log('[OnlineConsult] Consult Now clicked')
-    router.push('/member/online-consult/specialties')
+    console.log('[OnlineConsult] Consult Now clicked', { viewingUserId })
+    const url = viewingUserId
+      ? `/member/online-consult/specialties?defaultPatient=${viewingUserId}`
+      : '/member/online-consult/specialties'
+    router.push(url)
   }
 
   const handleJoinAppointment = (appointment: Appointment) => {

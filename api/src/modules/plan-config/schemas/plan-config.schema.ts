@@ -100,6 +100,7 @@ export class PlanConfig {
   // Consolidated Wallet Configuration
   @Prop({ type: Object, default: {} })
   wallet: {
+    allocationType?: 'INDIVIDUAL' | 'FLOATER'; // Wallet allocation type - INDIVIDUAL (default) or FLOATER (shared)
     totalAnnualAmount?: number;
     perClaimLimit?: number;
     copay?: { mode: 'PERCENT' | 'AMOUNT'; value: number };
@@ -199,8 +200,6 @@ export class PlanConfig {
         partialPaymentEnabled?: boolean;
         carryForward?: { enabled: boolean; percent?: number; months?: number };
         topUpAllowed?: boolean;
-        isFloater?: boolean; // Whether this wallet amount is shared across relationships
-        floaterSharedWith?: string[]; // Array of relationship codes sharing this wallet
       };
       inheritFromPrimary?: boolean; // Whether to inherit benefits from SELF relationship
     };

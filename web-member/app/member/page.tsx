@@ -14,7 +14,8 @@ import {
   CubeIcon,
   EyeIcon,
   ClipboardDocumentCheckIcon,
-  ReceiptPercentIcon
+  ReceiptPercentIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
@@ -497,14 +498,14 @@ export default function DashboardPage() {
       name: 'In Clinic Consult',
       description: 'Book appointments with doctors',
       icon: UserIcon,
-      href: '/member/appointments',
+      href: `/member/appointments${viewingUserId ? `?defaultPatient=${viewingUserId}` : ''}`,
       categoryCode: 'IN_CLINIC_CONSULT'
     },
     {
       name: 'Online Consult',
       description: 'Video consultation with doctors',
       icon: VideoCameraIcon,
-      href: '/member/online-consult',
+      href: `/member/online-consult${viewingUserId ? `?defaultPatient=${viewingUserId}` : ''}`,
       categoryCode: 'ONLINE_CONSULT'
     },
     {
@@ -535,7 +536,7 @@ export default function DashboardPage() {
       href: '/member/health-checkup',
       categoryCode: 'ANNUAL_HEALTH_CHECK'
     }
-  ], [])
+  ], [viewingUserId])
 
   const handleBenefitClick = useCallback((benefit: any) => {
     console.log(`[Dashboard] Navigating to ${benefit.name}`, {
@@ -608,15 +609,60 @@ export default function DashboardPage() {
             <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
               <div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Available Balance</p>
+                  <p className="text-sm text-gray-600 mb-1">
+                    Total Available Balance
+                    {user?.wallet?.isFloater && (
+                      <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-semibold">
+                        FLOATER
+                      </span>
+                    )}
+                  </p>
                   <div className="text-2xl font-bold text-gray-900">
                     ₹ {totalAvailableBalance.toLocaleString()}
                     <span className="text-sm text-gray-500 font-normal"> / {totalWalletBalance.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-600 mt-2">Your total usage cannot exceed this amount</p>
+              <p className="text-xs text-gray-600 mt-2">
+                {user?.wallet?.isFloater
+                  ? 'Shared wallet balance across all family members'
+                  : 'Your total usage cannot exceed this amount'
+                }
+              </p>
             </div>
+
+            {/* Floater Family Consumption Breakdown */}
+            {user?.wallet?.isFloater && user?.wallet?.memberConsumption?.length > 0 && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Family Consumption</h4>
+                <div className="space-y-2">
+                  {user.wallet.memberConsumption.map((member: any, idx: number) => {
+                    // Fetch member details from family members list
+                    const memberDetails = [user, ...(user.dependents || [])].find(
+                      m => (m._id || m.id)?.toString() === member.userId?.toString()
+                    );
+
+                    const memberName = memberDetails
+                      ? `${memberDetails.name?.firstName || ''} ${memberDetails.name?.lastName || ''}`.trim()
+                      : 'Unknown';
+
+                    const isCurrentUser = (user._id || user.id)?.toString() === member.userId?.toString();
+
+                    return (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">
+                          {memberName}
+                          {isCurrentUser && <span className="ml-1 text-blue-600">(You)</span>}
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          ₹ {member.consumed?.toLocaleString() || 0}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Category-wise Wallets */}
             <div className="space-y-4">
@@ -631,9 +677,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Upcoming Appointment Section - Desktop only (mobile has floating banner) */}
-          {user?._id && (
+          {viewingUserId && (
             <div className="hidden lg:block">
-              <ActiveAppointmentNudge variant="section" userId={user._id} />
+              <ActiveAppointmentNudge variant="section" userId={viewingUserId} />
             </div>
           )}
 

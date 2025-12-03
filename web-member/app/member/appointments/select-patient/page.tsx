@@ -7,6 +7,7 @@ import {
   UserIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
+import { useFamily } from '@/contexts/FamilyContext'
 
 interface Patient {
   id: string
@@ -19,6 +20,7 @@ interface Patient {
 function SelectPatientContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { viewingUserId } = useFamily()
 
   const doctorId = searchParams.get('doctorId')
   const doctorName = searchParams.get('doctorName')
@@ -94,16 +96,36 @@ function SelectPatientContent() {
 
       console.log('[SelectPatient] Total patients available:', patientsList.length)
       setPatients(patientsList)
+
+      // PRIVACY: Auto-select patient based on currently viewed profile
+      if (viewingUserId && patientsList.length > 0) {
+        const defaultPatient = patientsList.find(p => p.id === viewingUserId)
+        if (defaultPatient) {
+          setSelectedPatient(defaultPatient)
+          console.log('[SelectPatient] Auto-selected patient from viewingUserId:', {
+            patientId: defaultPatient.id,
+            patientName: defaultPatient.name,
+            viewingUserId
+          })
+        } else {
+          console.log('[SelectPatient] viewingUserId not found in patients list:', viewingUserId)
+        }
+      } else {
+        console.log('[SelectPatient] No auto-selection:', {
+          hasViewingUserId: !!viewingUserId,
+          patientsCount: patientsList.length
+        })
+      }
     } catch (error) {
       console.error('[SelectPatient] Error fetching user data:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [viewingUserId])
 
   useEffect(() => {
     fetchUserData()
-  }, [fetchUserData])
+  }, [fetchUserData, viewingUserId])
 
   const handlePatientSelect = (patient: Patient) => {
     console.log('[SelectPatient] Patient selected:', {

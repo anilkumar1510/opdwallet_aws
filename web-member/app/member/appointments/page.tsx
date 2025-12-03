@@ -12,9 +12,11 @@ import {
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { appointmentsApi, usersApi, type Appointment } from '@/lib/api'
+import { useFamily } from '@/contexts/FamilyContext'
 
 export default function AppointmentsPage() {
   const router = useRouter()
+  const { viewingUserId } = useFamily()
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [user, setUser] = useState<any>(null)
@@ -26,16 +28,19 @@ export default function AppointmentsPage() {
       console.log('[Appointments] User data received:', { userId: data._id, name: data.fullName })
       setUser(data)
 
-      await fetchAppointments(data._id)
+      // PRIVACY: Use viewingUserId to fetch appointments for the active profile
+      const targetUserId = viewingUserId || data._id
+      console.log('[Appointments] Fetching appointments for profile:', { targetUserId, viewingUserId })
+      await fetchAppointments(targetUserId)
     } catch (error) {
       console.error('[Appointments] Error fetching user data:', error)
       setLoading(false)
     }
-  }, [])
+  }, [viewingUserId])
 
   useEffect(() => {
     fetchUserData()
-  }, [fetchUserData])
+  }, [fetchUserData, viewingUserId])
 
   const fetchAppointments = async (userId: string) => {
     try {
@@ -51,8 +56,11 @@ export default function AppointmentsPage() {
   }
 
   const handleBookAppointment = () => {
-    console.log('[Appointments] Book new appointment clicked')
-    router.push('/member/appointments/specialties')
+    console.log('[Appointments] Book new appointment clicked', { viewingUserId })
+    const url = viewingUserId
+      ? `/member/appointments/specialties?defaultPatient=${viewingUserId}`
+      : '/member/appointments/specialties'
+    router.push(url)
   }
 
   const formatDate = (dateStr: string) => {
@@ -104,8 +112,9 @@ export default function AppointmentsPage() {
       console.log('[Appointments] Appointment cancelled successfully')
       alert('Appointment cancelled successfully. Your wallet has been refunded.')
 
-      // Refresh appointments
-      await fetchAppointments(user._id)
+      // PRIVACY: Refresh appointments for the active profile
+      const targetUserId = viewingUserId || user._id
+      await fetchAppointments(targetUserId)
     } catch (error) {
       console.error('[Appointments] Error cancelling appointment:', error)
       alert('Failed to cancel appointment: ' + (error as Error).message)

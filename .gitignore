@@ -72,3 +72,9 @@ logs/
 # Backup files
 *.backup
 *.bak
+
+.sonar_lock
+
+# SonarQube
+.scannerwork/
+**/report-task.txt

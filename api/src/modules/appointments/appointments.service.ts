@@ -662,11 +662,15 @@ export class AppointmentsService {
   }
 
   async getUserAppointments(userId: string, appointmentType?: string): Promise<Appointment[]> {
-    const filter: any = { userId: new Types.ObjectId(userId) };
+    // PRIVACY: Filter by patientId (actual patient) instead of userId (booker)
+    // This ensures each family member sees only their own appointments
+    const filter: any = { patientId: userId };
 
     if (appointmentType) {
       filter.appointmentType = appointmentType;
     }
+
+    console.log('[AppointmentsService] Filtering appointments by patientId:', { userId, filter });
 
     // PERFORMANCE: Add field projection for list views, include prescription fields
     return this.appointmentModel
@@ -680,11 +684,12 @@ export class AppointmentsService {
   async getOngoingAppointments(userId: string): Promise<Appointment[]> {
     // PERFORMANCE: Return only the next active appointment for nudge/widget display
     // Logic: Show PENDING/CONFIRMED upcoming appointments OR recent COMPLETED with prescription
+    // PRIVACY: Filter by patientId (actual patient) instead of userId (booker)
     const today = new Date().toISOString().split('T')[0];
 
     const appointment = await this.appointmentModel
       .findOne({
-        userId: new Types.ObjectId(userId),
+        patientId: userId,
         $or: [
           // Upcoming appointments (not completed or cancelled)
           {

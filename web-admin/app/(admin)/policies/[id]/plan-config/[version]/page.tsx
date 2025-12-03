@@ -42,6 +42,7 @@ interface ExtendedPlanConfig extends Partial<PlanConfig> {
 const getInitialConfig = (): ExtendedPlanConfig => ({
   benefits: {},
   wallet: {
+    allocationType: 'INDIVIDUAL',  // NEW - default value
     totalAnnualAmount: 0,
     perClaimLimit: 0,
     copay: { mode: 'PERCENT', value: 0 },
@@ -342,8 +343,29 @@ export default function PlanConfigEdit() {
     toast.success('Configuration saved successfully');
   };
 
+  // Validation function for floater configuration
+  const validateFloaterConfig = (): { valid: boolean; message?: string } => {
+    if (config.wallet?.allocationType === 'FLOATER') {
+      // Ensure at least one relationship is covered for floater to make sense
+      if (!config.coveredRelationships || config.coveredRelationships.length === 0) {
+        return {
+          valid: false,
+          message: 'Floater wallet requires at least one covered relationship besides primary member'
+        };
+      }
+    }
+    return { valid: true };
+  };
+
   const handleSave = async () => {
     logSaveAttempt();
+
+    // Validate floater configuration
+    const validation = validateFloaterConfig();
+    if (!validation.valid) {
+      toast.error(validation.message);
+      return;
+    }
 
     try {
       console.log('🔵 [EDIT SAVE DEBUG] Setting saving state to true');
@@ -615,6 +637,7 @@ export default function PlanConfigEdit() {
             isReadOnly={isReadOnly}
             selectedRelationship={selectedRelationship}
             relationships={relationships}
+            coveredRelationships={config.coveredRelationships || []}  // NEW
             onUpdateWallet={updateWallet}
             onUpdateCopay={updateCopay}
             onUpdateCarryForward={updateCarryForward}

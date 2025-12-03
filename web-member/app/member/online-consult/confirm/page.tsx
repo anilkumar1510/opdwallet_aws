@@ -17,6 +17,7 @@ import SlotSelectionModal from '@/components/SlotSelectionModal'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
 import PaymentProcessor from '@/components/PaymentProcessor'
 import { createTransaction } from '@/lib/transactions'
+import { useFamily } from '@/contexts/FamilyContext'
 
 // Success screen component
 function BookingSuccessScreen({
@@ -149,6 +150,7 @@ interface FamilyMember {
 function OnlineConfirmContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { viewingUserId } = useFamily()
 
   const doctorId = searchParams.get('doctorId') || ''
   const doctorName = searchParams.get('doctorName') || ''
@@ -198,14 +200,6 @@ function OnlineConfirmContent() {
     }))
   }
 
-  // Helper function to set initial form data from user
-  const setInitialFormData = (userData: any, selfMember: FamilyMember) => {
-    setLoggedInUserId(userData._id)
-    setFamilyMembers(prev => [...prev])
-    setSelectedPatient(selfMember)
-    setContactNumber(userData.phone || userData.mobileNumber || '')
-  }
-
   const fetchRelationships = useCallback(async () => {
     try {
       console.log('[OnlineConfirm] Fetching family members from /api/member/profile')
@@ -231,18 +225,40 @@ function OnlineConfirmContent() {
       console.log('[OnlineConfirm] Total family members:', allMembers.length)
 
       setFamilyMembers(allMembers)
-      setInitialFormData(data.user, selfMember)
+      setLoggedInUserId(data.user._id)
+      setContactNumber(data.user.phone || data.user.mobileNumber || '')
+
+      // PRIVACY: Auto-select patient based on currently viewed profile
+      if (viewingUserId && allMembers.length > 0) {
+        const defaultMember = allMembers.find(m => m.userId === viewingUserId)
+        if (defaultMember) {
+          setSelectedPatient(defaultMember)
+          console.log('[OnlineConfirm] Auto-selected patient from viewingUserId:', {
+            patientId: defaultMember.userId,
+            patientName: defaultMember.name,
+            viewingUserId
+          })
+        } else {
+          // Fallback to self if viewingUserId not found
+          setSelectedPatient(selfMember)
+          console.log('[OnlineConfirm] viewingUserId not found in family members, fallback to self:', viewingUserId)
+        }
+      } else {
+        // Fallback to self if no viewingUserId
+        setSelectedPatient(selfMember)
+        console.log('[OnlineConfirm] No viewingUserId, defaulting to self')
+      }
     } catch (error) {
       console.error('[OnlineConfirm] Error fetching family members:', error)
     } finally {
       setLoadingRelationships(false)
     }
-  }, [])
+  }, [viewingUserId])
 
   useEffect(() => {
     console.log('[OnlineConfirm] Params:', { doctorId, doctorName, specialty, availableInMinutes })
     fetchRelationships()
-  }, [doctorId, doctorName, specialty, availableInMinutes, fetchRelationships])
+  }, [doctorId, doctorName, specialty, availableInMinutes, fetchRelationships, viewingUserId])
 
   // Helper function to validate booking form
   const validateBookingForm = (): boolean => {

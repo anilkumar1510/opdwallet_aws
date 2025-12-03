@@ -131,12 +131,52 @@ export class AssignmentsService {
 
       if (planConfig) {
         console.log('🟡 [ASSIGNMENTS SERVICE] Creating wallet for user:', userId);
+
+        // Determine if this is a primary member or dependent
+        const isPrimaryMember = !savedAssignment.primaryMemberId;
+        const primaryUserIdForFloater = isPrimaryMember ? undefined : savedAssignment.primaryMemberId;
+
+        console.log('🟡 [ASSIGNMENTS SERVICE] Wallet type:', isPrimaryMember ? 'PRIMARY' : 'DEPENDENT');
+        if (!isPrimaryMember) {
+          console.log('🟡 [ASSIGNMENTS SERVICE] Primary member ID:', primaryUserIdForFloater);
+
+          // Validate that primary member exists
+          const primaryMemberUser = await this.userModel.findOne({
+            memberId: primaryUserIdForFloater
+          }).lean().exec();
+
+          if (!primaryMemberUser) {
+            throw new BadRequestException(
+              `Primary member with memberId ${primaryUserIdForFloater} not found. ` +
+              `Cannot create dependent assignment.`
+            );
+          }
+
+          // Check if primary member has active assignment for floater policies
+          if (planConfig.wallet?.allocationType === 'FLOATER') {
+            const primaryAssignment = await this.assignmentModel.findOne({
+              userId: primaryMemberUser._id,
+              policyId: new Types.ObjectId(policyId),
+              isActive: true
+            }).lean().exec();
+
+            if (!primaryAssignment) {
+              console.warn(
+                `⚠️ [ASSIGNMENTS SERVICE] Primary member ${primaryUserIdForFloater} ` +
+                `does not have an active assignment for this policy yet. ` +
+                `Their wallet should be created first for FLOATER policies.`
+              );
+            }
+          }
+        }
+
         await this.walletService.initializeWalletFromPolicy(
           userId.toString(),
           (savedAssignment._id as any).toString(),
           planConfig,
           savedAssignment.effectiveFrom,
-          savedAssignment.effectiveTo
+          savedAssignment.effectiveTo,
+          primaryUserIdForFloater  // NEW parameter for floater wallet linking
         );
       } else {
         console.warn('⚠️ [ASSIGNMENTS SERVICE] No plan config found for policy:', policyId);

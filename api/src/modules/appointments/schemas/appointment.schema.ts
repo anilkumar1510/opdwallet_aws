@@ -146,3 +146,8 @@ AppointmentSchema.index({ appointmentNumber: 1 });
 
 // Index for slot-based queries
 AppointmentSchema.index({ slotId: 1, appointmentDate: 1 });
+
+// PRIVACY: Indexes for patient-based queries (used for profile switching privacy controls)
+// Optimizes queries that filter appointments by patientId (actual patient) instead of userId (booker)
+AppointmentSchema.index({ patientId: 1, appointmentType: 1, status: 1 });
+AppointmentSchema.index({ patientId: 1, appointmentDate: 1 });

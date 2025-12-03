@@ -1,6 +1,0 @@
-projectKey=opdwallet-web-admin
-serverUrl=http://localhost:9000
-serverVersion=25.10.0.114319
-dashboardUrl=http://localhost:9000/dashboard?id=opdwallet-web-admin
-ceTaskId=2c364ef1-335e-4422-922e-5ce12266d9fb
-ceTaskUrl=http://localhost:9000/api/ce/task?id=2c364ef1-335e-4422-922e-5ce12266d9fb

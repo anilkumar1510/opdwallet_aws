@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
-const MONGODB_URI = 'mongodb://admin:admin123@localhost:27017/opd_wallet?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin';
 
 // Helper to generate IDs
 const generateId = (prefix: string, num: number) => `${prefix}-${String(num).padStart(4, '0')}`;
@@ -34,16 +34,16 @@ async function seedDatabase() {
     // 1. Counters
     console.log('   [1/9] Seeding counters...');
     await db.collection('counters').insertMany([
-      { _id: 'userId', seq: 3 },
-      { _id: 'policyNumber', seq: 1 },
-      { _id: 'assignmentId', seq: 2 },
-      { _id: 'appointmentId', seq: 5 },
-      { _id: 'claimId', seq: 1 },
-      { _id: 'labPrescriptionId', seq: 1 },
-      { _id: 'labCartId', seq: 1 },
-      { _id: 'labOrderId', seq: 1 },
-      { _id: 'paymentId', seq: 1 },
-      { _id: 'transactionId', seq: 1 },
+      { _id: 'userId' as any, seq: 3 },
+      { _id: 'policyNumber' as any, seq: 1 },
+      { _id: 'assignmentId' as any, seq: 2 },
+      { _id: 'appointmentId' as any, seq: 5 },
+      { _id: 'claimId' as any, seq: 1 },
+      { _id: 'labPrescriptionId' as any, seq: 1 },
+      { _id: 'labCartId' as any, seq: 1 },
+      { _id: 'labOrderId' as any, seq: 1 },
+      { _id: 'paymentId' as any, seq: 1 },
+      { _id: 'transactionId' as any, seq: 1 },
     ]);
     console.log('   ✅ Counters seeded');
 

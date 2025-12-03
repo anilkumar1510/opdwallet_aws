@@ -1,6 +1,0 @@
-projectKey=opdwallet-web-member
-serverUrl=http://localhost:9000
-serverVersion=25.10.0.114319
-dashboardUrl=http://localhost:9000/dashboard?id=opdwallet-web-member
-ceTaskId=87fe1704-3e71-4865-9880-afaddf5ef571
-ceTaskUrl=http://localhost:9000/api/ce/task?id=87fe1704-3e71-4865-9880-afaddf5ef571

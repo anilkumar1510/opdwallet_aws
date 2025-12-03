@@ -12,6 +12,7 @@ interface WalletConfigTabProps {
   isReadOnly: boolean;
   selectedRelationship: string;
   relationships: any[];
+  coveredRelationships: string[];  // NEW - to show floater members
   onUpdateWallet: (field: string, value: any) => void;
   onUpdateCopay: (field: string, value: any) => void;
   onUpdateCarryForward: (field: string, value: any) => void;
@@ -23,6 +24,7 @@ export function WalletConfigTab({
   isReadOnly,
   selectedRelationship,
   relationships,
+  coveredRelationships,  // NEW
   onUpdateWallet,
   onUpdateCopay,
   onUpdateCarryForward
@@ -50,6 +52,90 @@ export function WalletConfigTab({
         )}
       </CardHeader>
       <CardContent className="bg-white p-0">
+        {/* Allocation Type Section - Only for PRIMARY relationship */}
+        {selectedRelationship === 'PRIMARY' && (
+          <div className="p-6 border-b border-gray-200">
+            <Label className="text-sm font-semibold text-gray-700 mb-3 block">
+              Wallet Allocation Type
+            </Label>
+
+            <div className="flex gap-4">
+              {/* Individual Option */}
+              <div
+                onClick={() => !isDisabled && onUpdateWallet('allocationType', 'INDIVIDUAL')}
+                className={`flex-1 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  (currentWallet?.allocationType || 'INDIVIDUAL') === 'INDIVIDUAL'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    (currentWallet?.allocationType || 'INDIVIDUAL') === 'INDIVIDUAL'
+                      ? 'border-blue-500'
+                      : 'border-gray-300'
+                  }`}>
+                    {(currentWallet?.allocationType || 'INDIVIDUAL') === 'INDIVIDUAL' && (
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Individual</div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      Each family member gets their own separate wallet with dedicated balance
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floater Option */}
+              <div
+                onClick={() => !isDisabled && onUpdateWallet('allocationType', 'FLOATER')}
+                className={`flex-1 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  currentWallet?.allocationType === 'FLOATER'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    currentWallet?.allocationType === 'FLOATER'
+                      ? 'border-blue-500'
+                      : 'border-gray-300'
+                  }`}>
+                    {currentWallet?.allocationType === 'FLOATER' && (
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Floater</div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      All family members share one common wallet pool
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floater Members Display */}
+            {currentWallet?.allocationType === 'FLOATER' && coveredRelationships?.length > 0 && (
+              <div className="mt-3 p-3 bg-white border border-blue-200 rounded">
+                <div className="text-sm text-gray-700">
+                  <strong>Sharing Members:</strong> Primary Member
+                  {coveredRelationships.map(code => {
+                    const rel = relationships.find(r => r.relationshipCode === code);
+                    return rel ? `, ${rel.displayName}` : '';
+                  }).join('')}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              <strong>Note:</strong> Allocation type applies to the entire wallet and cannot be changed mid-year. Choose carefully.
+            </div>
+          </div>
+        )}
+
         {/* Wallet Settings Table */}
         <div className="overflow-x-auto">
           <table className="w-full">

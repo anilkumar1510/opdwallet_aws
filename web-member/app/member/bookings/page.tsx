@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
+import { useFamily } from '@/contexts/FamilyContext'
 
 interface Appointment {
   _id: string
@@ -38,6 +39,7 @@ interface Appointment {
 
 export default function BookingsPage() {
   const router = useRouter()
+  const { viewingUserId } = useFamily()
   const [activeTab, setActiveTab] = useState('doctors')
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -46,7 +48,7 @@ export default function BookingsPage() {
 
   useEffect(() => {
     fetchAppointments()
-  }, [])
+  }, [viewingUserId])
 
   const fetchAppointments = async () => {
     try {
@@ -62,9 +64,13 @@ export default function BookingsPage() {
       const userData = await userResponse.json()
       console.log('[Bookings] User ID:', userData._id)
 
+      // PRIVACY: Use viewingUserId to fetch appointments for the active profile
+      const targetUserId = viewingUserId || userData._id
+      console.log('[Bookings] Fetching all appointments for profile:', { targetUserId, viewingUserId })
+
       // Fetch all appointments (both IN_CLINIC and ONLINE)
       console.log('[Bookings] Fetching all appointments')
-      const response = await fetch(`/api/appointments/user/${userData._id}`, {
+      const response = await fetch(`/api/appointments/user/${targetUserId}`, {
         credentials: 'include',
       })
 

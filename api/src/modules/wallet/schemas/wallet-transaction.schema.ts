@@ -17,6 +17,15 @@ export class WalletTransaction {
   })
   userId: mongoose.Types.ObjectId;
 
+  // For floater wallets, track which member actually consumed
+  // In floater wallets: userId = master wallet owner, consumedByUserId = actual consumer
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    index: true
+  })
+  consumedByUserId?: mongoose.Types.ObjectId;
+
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'UserWallet',
