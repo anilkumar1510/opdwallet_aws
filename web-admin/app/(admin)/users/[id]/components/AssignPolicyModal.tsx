@@ -103,6 +103,37 @@ export function AssignPolicyModal({
     onPrimaryMemberChange(''); // Clear parent state
   }, [selectedPolicyId, onPrimaryMemberChange]);
 
+  // Get covered relationships from the selected plan config
+  const getCoveredRelationships = (): string[] => {
+    if (!planConfigs || planConfigs.length === 0) {
+      return []; // No plan config, show all relationships as available
+    }
+
+    // Get the current/published plan config
+    const currentConfig = planConfigs.find((c: any) => c.isCurrent && c.status === 'PUBLISHED')
+                         || planConfigs.find((c: any) => c.status === 'PUBLISHED')
+                         || planConfigs[0];
+
+    return currentConfig?.coveredRelationships || [];
+  };
+
+  // Check if a relationship is covered in the policy
+  const isRelationshipCovered = (relationshipCode: string): boolean => {
+    const coveredRelationships = getCoveredRelationships();
+
+    // If no plan config, assume all relationships are covered
+    if (coveredRelationships.length === 0) {
+      return true;
+    }
+
+    // SELF and REL001 are equivalent
+    if (relationshipCode === 'SELF' || relationshipCode === 'REL001') {
+      return coveredRelationships.includes('SELF') || coveredRelationships.includes('REL001');
+    }
+
+    return coveredRelationships.includes(relationshipCode);
+  };
+
   // Handler for selecting a primary member from search results
   const selectPrimaryMember = (member: any) => {
     setSelectedPrimaryMember(member);
@@ -161,12 +192,28 @@ export function AssignPolicyModal({
               required
             >
               <option value="">Choose relationship...</option>
-              {relationships.map((rel) => (
-                <option key={rel.relationshipCode} value={rel.relationshipCode}>
-                  {rel.displayName} ({rel.relationshipCode})
-                </option>
-              ))}
+              {relationships.map((rel) => {
+                const isCovered = isRelationshipCovered(rel.relationshipCode);
+                const displayText = isCovered
+                  ? `${rel.displayName} (${rel.relationshipCode})`
+                  : `${rel.displayName} (${rel.relationshipCode}) - Not Covered`;
+
+                return (
+                  <option
+                    key={rel.relationshipCode}
+                    value={rel.relationshipCode}
+                    style={!isCovered ? { color: '#9ca3af' } : undefined}
+                  >
+                    {displayText}
+                  </option>
+                );
+              })}
             </select>
+            {selectedPolicyId && planConfigs.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Only relationships covered by the selected policy configuration are available
+              </p>
+            )}
           </div>
 
           {selectedRelationshipId && selectedRelationshipId !== 'REL001' && (

@@ -233,7 +233,7 @@ export default function UserDetailPage() {
 
   const fetchPlanConfigsForPolicy = async (policyId: string) => {
     try {
-      const response = await apiFetch(`/api/policies/${policyId}/plan-configs`)
+      const response = await apiFetch(`/api/policies/${policyId}/config/all`)
       if (!response.ok) return
 
       const data = await response.json()
