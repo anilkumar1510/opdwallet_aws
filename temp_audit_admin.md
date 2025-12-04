@@ -19,6 +19,7 @@
 3. ✅ Extracted shared auth utilities (`handleLogout`)
 4. ✅ Implemented React Query for future data caching
 5. ✅ Created consolidated dashboard stats endpoint (4 API calls → 1)
+6. ✅ Enhanced AssignPolicyModal with searchable primary member selection (replaced dropdown with debounced autocomplete search)
 
 ---
 

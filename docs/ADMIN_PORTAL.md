@@ -9,7 +9,7 @@
 ### User Management
 - **/admin/users** - List all users with search and filters
 - **/admin/users/new** - Create new admin, operations, TPA, or finance users
-- **/admin/users/[id]** - View and edit user details
+- **/admin/users/[id]** - View and edit user details, assign policies with searchable primary member selection for dependents
 
 ### Policy Management
 - **/admin/policies** - View all insurance policies
@@ -105,7 +105,7 @@
 - **POST /api/assignments** - Assign policy to users with start and end dates
 - **PUT /api/assignments/:id** - Update assignment details like effective dates
 - **GET /api/assignments/my-policy** - Get current user policy configuration with copay details (MEMBER role)
-- **GET /api/assignments/search-primary-members** - Search primary members assigned to a policy
+- **GET /api/assignments/search-primary-members** - Search primary members (SELF/REL001) assigned to a policy by Member ID, Name, Employee ID, or UHID (used in AssignPolicyModal autocomplete)
 - **DELETE /api/assignments/:assignmentId** - Remove assignment (deactivate)
 - **DELETE /api/assignments/user/:userId/policy/:policyId** - Unassign policy from user
 
