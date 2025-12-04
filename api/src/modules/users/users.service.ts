@@ -30,7 +30,6 @@ export class UsersService {
         { phone: createUserDto.phone },
         { uhid: createUserDto.uhid },
         { memberId: createUserDto.memberId },
-        ...(createUserDto.employeeId ? [{ employeeId: createUserDto.employeeId }] : []),
       ],
     }).lean();
 
@@ -47,7 +46,7 @@ export class UsersService {
     if (existingUser.phone === createUserDto.phone) return 'Phone';
     if (existingUser.uhid === createUserDto.uhid) return 'UHID';
     if (existingUser.memberId === createUserDto.memberId) return 'Member ID';
-    return 'Employee ID';
+    return 'Field';
   }
 
   private async validateRelationship(createUserDto: CreateUserDto): Promise<void> {
@@ -236,17 +235,13 @@ export class UsersService {
     if (updateUserDto.memberId && updateUserDto.memberId !== user.memberId) {
       conditions.push({ memberId: updateUserDto.memberId });
     }
-    if (updateUserDto.employeeId && updateUserDto.employeeId !== user.employeeId) {
-      conditions.push({ employeeId: updateUserDto.employeeId });
-    }
 
     return conditions;
   }
 
   private async validateUniqueFieldsForUpdate(id: string, user: any, updateUserDto: UpdateUserDto): Promise<void> {
     const hasUniqueFields = updateUserDto.email || updateUserDto.phone ||
-                            updateUserDto.uhid || updateUserDto.memberId ||
-                            updateUserDto.employeeId;
+                            updateUserDto.uhid || updateUserDto.memberId;
 
     if (!hasUniqueFields) {
       return;

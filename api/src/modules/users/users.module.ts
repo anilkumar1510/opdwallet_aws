@@ -5,6 +5,7 @@ import { UsersService } from './users.service';
 import { AddressService } from './address.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { Address, AddressSchema } from './schemas/address.schema';
+import { CugMaster, CugMasterSchema } from '../masters/schemas/cug-master.schema';
 import { CounterModule } from '../counters/counter.module';
 import { AssignmentsModule } from '../assignments/assignments.module';
 
@@ -13,6 +14,7 @@ import { AssignmentsModule } from '../assignments/assignments.module';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Address.name, schema: AddressSchema },
+      { name: CugMaster.name, schema: CugMasterSchema },
     ]),
     CounterModule,
     AssignmentsModule,

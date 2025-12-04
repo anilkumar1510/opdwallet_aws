@@ -30,6 +30,7 @@ export class CugsService {
       ...createCugDto,
       cugId: createCugDto.cugId.toUpperCase(),
       code: createCugDto.code.toUpperCase(),
+      createdBy,
     });
 
     console.log('[CugsService] Saving new CUG...');
@@ -139,6 +140,9 @@ export class CugsService {
     const updateData: any = { ...updateCugDto };
     if (updateData.code) {
       updateData.code = updateData.code.toUpperCase();
+    }
+    if (updatedBy) {
+      updateData.updatedBy = updatedBy;
     }
 
     const cug = await this.cugModel.findByIdAndUpdate(

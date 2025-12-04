@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { EmployeeCount } from '@/common/constants/status.enum';
 
 export type CugMasterDocument = CugMaster & Document;
 
@@ -29,6 +30,18 @@ export class CugMaster {
   name: string;
 
   @Prop({
+    required: true
+  })
+  companyName: string;
+
+  @Prop({
+    required: true,
+    enum: EmployeeCount,
+    type: String,
+  })
+  employeeCount: EmployeeCount;
+
+  @Prop({
     type: Boolean,
     default: true
   })
@@ -44,6 +57,16 @@ export class CugMaster {
     type: String
   })
   description?: string;
+
+  @Prop({
+    type: String
+  })
+  createdBy?: string;
+
+  @Prop({
+    type: String
+  })
+  updatedBy?: string;
 }
 
 export const CugMasterSchema = SchemaFactory.createForClass(CugMaster);
@@ -52,3 +75,4 @@ export const CugMasterSchema = SchemaFactory.createForClass(CugMaster);
 CugMasterSchema.index({ cugId: 1 }, { unique: true });
 CugMasterSchema.index({ code: 1 }, { unique: true });
 CugMasterSchema.index({ isActive: 1, displayOrder: 1 });
+CugMasterSchema.index({ companyName: 1 });

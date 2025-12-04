@@ -124,7 +124,9 @@ export default function PolicyDetailsPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Corporate Name</span>
-              <span className="font-medium text-gray-900">{policy.corporateName}</span>
+              <span className="font-medium text-gray-900">
+                {policy.corporateName || 'N/A'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Valid Till</span>

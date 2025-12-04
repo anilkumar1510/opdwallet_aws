@@ -5,6 +5,8 @@ import { PoliciesService } from './policies.service';
 import { Policy, PolicySchema } from './schemas/policy.schema';
 import { Assignment, AssignmentSchema } from '../assignments/schemas/assignment.schema';
 import { PlanConfig, PlanConfigSchema } from '../plan-config/schemas/plan-config.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { CugMaster, CugMasterSchema } from '../masters/schemas/cug-master.schema';
 import { CounterModule } from '../counters/counter.module';
 import { AuditModule } from '../audit/audit.module';
 
@@ -13,7 +15,9 @@ import { AuditModule } from '../audit/audit.module';
     MongooseModule.forFeature([
       { name: Policy.name, schema: PolicySchema },
       { name: Assignment.name, schema: AssignmentSchema },
-      { name: PlanConfig.name, schema: PlanConfigSchema }
+      { name: PlanConfig.name, schema: PlanConfigSchema },
+      { name: User.name, schema: UserSchema },
+      { name: CugMaster.name, schema: CugMasterSchema }
     ]),
     CounterModule,
     AuditModule,

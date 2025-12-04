@@ -54,6 +54,8 @@ export interface CugMaster {
   cugId: string;
   code: string;
   name: string;
+  companyName: string;
+  employeeCount: string;
   description?: string;
   isActive: boolean;
   displayOrder: number;
@@ -91,4 +93,54 @@ export async function getActiveCugs(): Promise<CugMaster[]> {
   }
 
   return response.json();
+}
+
+export async function createCug(data: Omit<CugMaster, '_id' | 'createdAt' | 'updatedAt'>): Promise<CugMaster> {
+  const response = await apiFetch('/api/cugs', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || `Failed to create CUG: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function updateCug(id: string, data: Partial<Omit<CugMaster, '_id' | 'cugId' | 'createdAt' | 'updatedAt'>>): Promise<CugMaster> {
+  const response = await apiFetch(`/api/cugs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || `Failed to update CUG: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function toggleCugActive(id: string): Promise<CugMaster> {
+  const response = await apiFetch(`/api/cugs/${id}/toggle-active`, {
+    method: 'PUT',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to toggle CUG status: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function deleteCug(id: string): Promise<void> {
+  const response = await apiFetch(`/api/cugs/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete CUG: ${response.statusText}`);
+  }
 }

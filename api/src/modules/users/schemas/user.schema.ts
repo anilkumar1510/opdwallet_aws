@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { UserRole } from '@/common/constants/roles.enum';
 import { UserStatus, RelationshipType } from '@/common/constants/status.enum';
 
@@ -84,6 +84,13 @@ export class User {
   corporateName?: string;
 
   @Prop({
+    type: Types.ObjectId,
+    ref: 'CugMaster',
+    required: false,
+  })
+  cugId?: Types.ObjectId;
+
+  @Prop({
     type: {
       line1: String,
       line2: String,
@@ -136,10 +143,27 @@ UserSchema.index({ memberId: 1 });
 UserSchema.index({ employeeId: 1 }, { sparse: true });
 UserSchema.index({ userId: 1 });
 UserSchema.index({ primaryMemberId: 1, relationship: 1 });
+UserSchema.index({ cugId: 1 });
 
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', async function(next) {
+  // Auto-generate fullName
   if (this.name) {
     this.name.fullName = `${this.name.firstName} ${this.name.lastName}`;
   }
+
+  // Auto-sync corporateName from CUG
+  if (this.isModified('cugId') && this.cugId) {
+    try {
+      const CugMaster = this.db.model('CugMaster');
+      const cug = await CugMaster.findById(this.cugId);
+      if (cug) {
+        this.corporateName = cug.name;
+      }
+    } catch (error) {
+      console.error('[UserSchema] Error auto-syncing corporateName:', error);
+      // Don't block save if CUG lookup fails
+    }
+  }
+
   next();
 });

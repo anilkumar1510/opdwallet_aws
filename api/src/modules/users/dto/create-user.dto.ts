@@ -7,6 +7,7 @@ import {
   IsDateString,
   ValidateNested,
   MinLength,
+  IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -80,6 +81,14 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   primaryMemberId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Corporate User Group ID (ObjectId reference)',
+    example: '507f1f77bcf86cd799439011'
+  })
+  @IsOptional()
+  @IsMongoId({ message: 'CUG ID must be a valid MongoDB ObjectId' })
+  cugId?: string;
 
   @ApiProperty({ type: NameDto })
   @ValidateNested()

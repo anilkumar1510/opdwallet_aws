@@ -29,3 +29,11 @@ export enum RelationshipType {
   FATHER = 'FATHER',
   OTHER = 'OTHER',
 }
+
+export enum EmployeeCount {
+  ZERO_TO_500 = '0-500',
+  FIVE_HUNDRED_TO_1000 = '500-1000',
+  ONE_THOUSAND_TO_5000 = '1000-5000',
+  FIVE_THOUSAND_TO_10000 = '5000-10000',
+  TEN_THOUSAND_PLUS = '10000+',
+}

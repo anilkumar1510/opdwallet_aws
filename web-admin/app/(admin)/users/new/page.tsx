@@ -8,9 +8,13 @@ export default function NewUserPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
+  const [cugs, setCugs] = useState<any[]>([])
   const [formData, setFormData] = useState({
     uhid: '',
     memberId: '',
+    employeeId: '',
+    cugId: '',
+    corporateName: '',
     email: '',
     phone: '',
     password: '',
@@ -79,7 +83,22 @@ export default function NewUserPage() {
     console.log('  - Online:', navigator.onLine)
     console.log('  - Cookies Enabled:', navigator.cookieEnabled)
     console.groupEnd()
+
+    // Fetch active CUGs
+    fetchActiveCugs()
   }, [])
+
+  const fetchActiveCugs = async () => {
+    try {
+      const response = await apiFetch('/api/cugs/active')
+      if (response.ok) {
+        const data = await response.json()
+        setCugs(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch CUGs:', error)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -169,6 +188,9 @@ export default function NewUserPage() {
     const payload = {
       uhid: formData.uhid,
       memberId: formData.memberId,
+      employeeId: formData.employeeId || undefined,
+      cugId: formData.cugId || undefined,
+      corporateName: formData.corporateName || undefined,
       email: formData.email,
       phone: formData.phone,
       password: formData.password,
@@ -549,6 +571,62 @@ export default function NewUserPage() {
                 placeholder="MEM001"
               />
             </div>
+
+            <div>
+              <label htmlFor="cugId" className="label">
+                Corporate Group
+              </label>
+              <select
+                id="cugId"
+                name="cugId"
+                value={formData.cugId}
+                onChange={(e) => {
+                  const selectedCug = cugs.find(c => c._id === e.target.value)
+                  setFormData({
+                    ...formData,
+                    cugId: e.target.value,
+                    corporateName: selectedCug?.name || ''
+                  })
+                }}
+                className="input"
+              >
+                <option value="">Select Corporate Group...</option>
+                {cugs.map((cug) => (
+                  <option key={cug._id} value={cug._id}>
+                    {cug.name} ({cug.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="employeeId" className="label">
+                Employee ID
+              </label>
+              <input
+                type="text"
+                id="employeeId"
+                name="employeeId"
+                value={formData.employeeId}
+                onChange={handleInputChange}
+                className="input"
+                placeholder="EMP001"
+              />
+            </div>
+
+            {formData.corporateName && (
+              <div>
+                <label className="label">Corporate Name</label>
+                <input
+                  type="text"
+                  value={formData.corporateName}
+                  className="input bg-gray-50"
+                  disabled
+                  readOnly
+                />
+                <p className="text-xs text-gray-500 mt-1">Auto-populated from CUG</p>
+              </div>
+            )}
 
             <div>
               <label htmlFor="role" className="label">

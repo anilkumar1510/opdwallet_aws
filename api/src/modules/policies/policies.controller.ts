@@ -82,9 +82,9 @@ export class PoliciesController {
   @ApiOperation({ summary: 'Get policy with current configuration for members' })
   @ApiResponse({ status: 200, description: 'Policy with current config retrieved' })
   @ApiResponse({ status: 404, description: 'Policy not found' })
-  getPolicyWithCurrentConfig(@Param('id') id: string) {
-    console.log('🔵 [POLICIES CONTROLLER] getPolicyWithCurrentConfig called for id:', id);
-    return this.policiesService.getPolicyWithCurrentConfig(id);
+  getPolicyWithCurrentConfig(@Param('id') id: string, @Request() req: AuthRequest) {
+    console.log('🔵 [POLICIES CONTROLLER] getPolicyWithCurrentConfig called for id:', id, 'userId:', req.user.userId);
+    return this.policiesService.getPolicyWithCurrentConfig(id, req.user.userId);
   }
 
   @Put(':id')

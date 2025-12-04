@@ -14,6 +14,8 @@ import { CounterService } from '../counters/counter.service';
 import { PolicyStatus } from '@/common/constants/status.enum';
 import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
 import { PlanConfig, PlanConfigDocument } from '../plan-config/schemas/plan-config.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { CugMaster, CugMasterDocument } from '../masters/schemas/cug-master.schema';
 
 @Injectable()
 export class PoliciesService {
@@ -21,6 +23,8 @@ export class PoliciesService {
     @InjectModel(Policy.name) private policyModel: Model<PolicyDocument>,
     @InjectModel(Assignment.name) private assignmentModel: Model<AssignmentDocument>,
     @InjectModel(PlanConfig.name) private planConfigModel: Model<PlanConfigDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(CugMaster.name) private cugModel: Model<CugMasterDocument>,
     private counterService: CounterService,
   ) {}
 
@@ -190,8 +194,8 @@ export class PoliciesService {
     };
   }
 
-  async getPolicyWithCurrentConfig(policyId: string) {
-    console.log('🟣 [POLICIES SERVICE] getPolicyWithCurrentConfig called for policyId:', policyId);
+  async getPolicyWithCurrentConfig(policyId: string, userId: string) {
+    console.log('🟣 [POLICIES SERVICE] getPolicyWithCurrentConfig called for policyId:', policyId, 'userId:', userId);
 
     // Fetch the policy
     const policy = await this.policyModel.findById(policyId).lean();
@@ -201,6 +205,20 @@ export class PoliciesService {
     }
 
     console.log('🟣 [POLICIES SERVICE] Policy found:', policy.policyNumber);
+
+    // Fetch user to get CUG assignment
+    const user = await this.userModel.findById(userId).lean();
+    let corporateName = policy.corporateName || '';
+
+    // If user has a CUG assigned, fetch the CUG name
+    if (user?.cugId) {
+      console.log('🟣 [POLICIES SERVICE] User has CUG assigned:', user.cugId);
+      const cug = await this.cugModel.findById(user.cugId).lean();
+      if (cug) {
+        corporateName = cug.name;
+        console.log('✅ [POLICIES SERVICE] Corporate name from CUG:', corporateName);
+      }
+    }
 
     // Get current plan config
     const currentConfig = await this.planConfigModel
@@ -222,7 +240,7 @@ export class PoliciesService {
       return {
         policyNumber: policy.policyNumber,
         policyName: policy.name,
-        corporateName: policy.corporateName,
+        corporateName: corporateName,
         validTill: policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Expiry',
         policyDescription: latestPublished?.policyDescription || { inclusions: [], exclusions: [] }
       };
@@ -233,7 +251,7 @@ export class PoliciesService {
     return {
       policyNumber: policy.policyNumber,
       policyName: policy.name,
-      corporateName: policy.corporateName,
+      corporateName: corporateName,
       validTill: policy.effectiveTo ? new Date(policy.effectiveTo).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Expiry',
       policyDescription: currentConfig.policyDescription || { inclusions: [], exclusions: [] }
     };

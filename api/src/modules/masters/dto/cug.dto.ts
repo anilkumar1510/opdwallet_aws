@@ -6,9 +6,11 @@ import {
   Matches,
   IsNumber,
   Min,
+  IsEnum,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { EmployeeCount } from '@/common/constants/status.enum';
 
 export class CreateCugDto {
   @ApiProperty({
@@ -40,6 +42,23 @@ export class CreateCugDto {
   @IsNotEmpty()
   @IsString()
   name: string;
+
+  @ApiProperty({
+    description: 'Company name (official)',
+    example: 'Google Inc.',
+  })
+  @IsNotEmpty()
+  @IsString()
+  companyName: string;
+
+  @ApiProperty({
+    description: 'Employee count range',
+    enum: EmployeeCount,
+    example: EmployeeCount.ONE_THOUSAND_TO_5000,
+  })
+  @IsNotEmpty()
+  @IsEnum(EmployeeCount)
+  employeeCount: EmployeeCount;
 
   @ApiPropertyOptional({
     description: 'CUG description',
@@ -85,6 +104,22 @@ export class UpdateCugDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Company name (official)',
+    example: 'Google Inc.',
+  })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Employee count range',
+    enum: EmployeeCount,
+  })
+  @IsOptional()
+  @IsEnum(EmployeeCount)
+  employeeCount?: EmployeeCount;
 
   @ApiPropertyOptional({
     description: 'CUG description',

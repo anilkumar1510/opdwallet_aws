@@ -73,7 +73,7 @@ services:
       - ./web-admin:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
+    command: sh -c "npm install && npm run dev"
 
   web-member:
     image: node:20-alpine
