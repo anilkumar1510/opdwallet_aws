@@ -1,5 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
+
 interface AssignPolicyModalProps {
   showModal: boolean;
   policies: any[];
@@ -43,6 +46,79 @@ export function AssignPolicyModal({
   onClose,
   onAssign
 }: AssignPolicyModalProps) {
+  // Primary member search state
+  const [primaryMemberSearch, setPrimaryMemberSearch] = useState('');
+  const [primaryMemberResults, setPrimaryMemberResults] = useState<any[]>([]);
+  const [searchingPrimary, setSearchingPrimary] = useState(false);
+  const [selectedPrimaryMember, setSelectedPrimaryMember] = useState<any>(null);
+
+  // Debounced search (300ms delay)
+  const debouncedSearchTerm = useDebounce(primaryMemberSearch, 300);
+
+  // Search for primary members when search term changes
+  useEffect(() => {
+    const searchPrimaryMembers = async () => {
+      // Clear results if search term is too short
+      if (debouncedSearchTerm.length < 2) {
+        setPrimaryMemberResults([]);
+        setSearchingPrimary(false);
+        return;
+      }
+
+      // Don't search if no policy is selected
+      if (!selectedPolicyId) {
+        setPrimaryMemberResults([]);
+        return;
+      }
+
+      setSearchingPrimary(true);
+      try {
+        const response = await fetch(
+          `/api/assignments/search-primary-members?policyId=${selectedPolicyId}&search=${encodeURIComponent(debouncedSearchTerm)}`,
+          { credentials: 'include' }
+        );
+
+        if (response.ok) {
+          const results = await response.json();
+          setPrimaryMemberResults(results);
+        } else {
+          setPrimaryMemberResults([]);
+        }
+      } catch (error) {
+        console.error('Failed to search primary members:', error);
+        setPrimaryMemberResults([]);
+      } finally {
+        setSearchingPrimary(false);
+      }
+    };
+
+    searchPrimaryMembers();
+  }, [debouncedSearchTerm, selectedPolicyId]);
+
+  // Reset search when policy changes
+  useEffect(() => {
+    setPrimaryMemberSearch('');
+    setPrimaryMemberResults([]);
+    setSelectedPrimaryMember(null);
+    onPrimaryMemberChange(''); // Clear parent state
+  }, [selectedPolicyId, onPrimaryMemberChange]);
+
+  // Handler for selecting a primary member from search results
+  const selectPrimaryMember = (member: any) => {
+    setSelectedPrimaryMember(member);
+    onPrimaryMemberChange(member.memberId);
+
+    // Format display name
+    const memberName = typeof member.name === 'string'
+      ? member.name
+      : member.name?.fullName ||
+        `${member.name?.firstName || ''} ${member.name?.lastName || ''}`.trim() ||
+        'Unknown';
+
+    setPrimaryMemberSearch(`${memberName} (${member.memberId})`);
+    setPrimaryMemberResults([]);
+  };
+
   if (!showModal) {
     return null;
   }
@@ -95,21 +171,83 @@ export function AssignPolicyModal({
 
           {selectedRelationshipId && selectedRelationshipId !== 'REL001' && (
             <div>
-              <label className="label">Primary Member ID *</label>
-              <select
-                className="input"
-                value={selectedPrimaryMemberId}
-                onChange={(e) => onPrimaryMemberChange(e.target.value)}
-                required
-              >
-                <option value="">Choose primary member...</option>
-                {members.filter(m => m.relationship === 'SELF').map((member) => (
-                  <option key={member._id} value={member.memberId}>
-                    {member.memberId} - {member.name?.fullName}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Required for dependents</p>
+              <label htmlFor="primary-member-search" className="block text-sm font-medium text-gray-700 mb-1">
+                Primary Member *
+              </label>
+
+              <div className="relative">
+                {/* Search Input */}
+                <input
+                  id="primary-member-search"
+                  type="text"
+                  placeholder="Search by Member ID, Name, Employee ID, or UHID..."
+                  className="input w-full"
+                  value={primaryMemberSearch}
+                  onChange={(e) => setPrimaryMemberSearch(e.target.value)}
+                  autoComplete="off"
+                  required
+                />
+
+                {/* Loading Spinner */}
+                {searchingPrimary && (
+                  <div className="absolute right-3 top-3">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+                  </div>
+                )}
+
+                {/* Search Results Dropdown */}
+                {Array.isArray(primaryMemberResults) && primaryMemberResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {primaryMemberResults.map((member) => (
+                      <button
+                        key={member._id}
+                        type="button"
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+                        onClick={() => selectPrimaryMember(member)}
+                      >
+                        <div className="font-medium text-gray-900">
+                          {typeof member.name === 'string'
+                            ? member.name
+                            : member.name?.fullName ||
+                              `${member.name?.firstName || ''} ${member.name?.lastName || ''}`.trim() ||
+                              'Unknown'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {member.memberId}
+                          {member.employeeId && ` • ${member.employeeId}`}
+                          {member.uhid && ` • ${member.uhid}`}
+                        </div>
+                        {member.email && (
+                          <div className="text-xs text-gray-400">{member.email}</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* No Results Message */}
+                {debouncedSearchTerm.length >= 2 &&
+                 !searchingPrimary &&
+                 primaryMemberResults.length === 0 &&
+                 !selectedPrimaryMember && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-500">
+                    No primary members found. Try a different search term.
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Member Confirmation */}
+              {selectedPrimaryMember && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                  ✓ Selected: {typeof selectedPrimaryMember.name === 'string'
+                    ? selectedPrimaryMember.name
+                    : selectedPrimaryMember.name?.fullName || 'Unknown'} ({selectedPrimaryMember.memberId})
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 mt-1">
+                Type at least 2 characters to search for primary members assigned to this policy
+              </p>
             </div>
           )}
 
