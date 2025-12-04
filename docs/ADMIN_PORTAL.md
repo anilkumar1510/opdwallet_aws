@@ -22,6 +22,7 @@
 ### Master Data
 - **/admin/categories** - Manage service categories like consultation, pharmacy, diagnostics
 - **/admin/services** - Manage service types and their pricing
+- **/admin/cugs** - Manage Corporate User Groups (CUG) with company details and employee counts
 - **/admin/masters** - Manage master data like relationships and corporate user groups
 
 ### Operations Portal
@@ -86,7 +87,7 @@
 - **GET /api/policies** - Get all insurance policies in the system
 - **POST /api/policies** - Create new insurance policy with corporate details and optional corporateName
 - **GET /api/policies/:id** - Get details of specific policy by ID
-- **GET /api/policies/:id/current** - Get policy with current active configuration for members
+- **GET /api/policies/:id/current** - Get policy with current active configuration for members (now populates corporateName from user's assigned CUG)
 - **PUT /api/policies/:id** - Update policy information including corporateName
 - **DELETE /api/policies/:id** - Delete policy if it's not assigned to any users
 - **POST /api/policies/:id/assign** - Assign policy to one or more users
@@ -196,3 +197,11 @@
 - **PUT /api/specialties/:id** - Update specialty name or details
 - **PUT /api/specialties/:id/toggle** - Activate or deactivate specialty
 - **DELETE /api/specialties/:id** - Delete specialty from system
+
+### Corporate User Groups (CUG)
+- **GET /api/cugs** - Get all Corporate User Groups with search and filters
+- **POST /api/cugs** - Create new CUG with company name, ID, code, and employee count
+- **GET /api/cugs/active** - Get all active CUGs for dropdown selection in user forms
+- **PUT /api/cugs/:id** - Update CUG details including company information
+- **PUT /api/cugs/:id/toggle-active** - Activate or deactivate CUG
+- **DELETE /api/cugs/:id** - Delete CUG from system
