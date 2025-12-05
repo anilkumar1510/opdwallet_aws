@@ -215,7 +215,7 @@ export class PoliciesService {
       console.log('🟣 [POLICIES SERVICE] User has CUG assigned:', user.cugId);
       const cug = await this.cugModel.findById(user.cugId).lean();
       if (cug) {
-        corporateName = cug.name;
+        corporateName = cug.companyName;
         console.log('✅ [POLICIES SERVICE] Corporate name from CUG:', corporateName);
       }
     }
