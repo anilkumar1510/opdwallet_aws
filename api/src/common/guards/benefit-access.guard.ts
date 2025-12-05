@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Assignment, AssignmentDocument } from '../../modules/assignments/schemas/assignment.schema';
 import { PlanConfig, PlanConfigDocument } from '../../modules/plan-config/schemas/plan-config.schema';
 
@@ -44,10 +44,13 @@ export class BenefitAccessGuard implements CanActivate {
     console.log(`[BenefitAccessGuard] Checking access for user ${userId} to category ${requiredCategory}`);
 
     try {
+      // Convert userId to ObjectId for proper MongoDB query
+      const userObjectId = new Types.ObjectId(userId);
+
       // Get user's active policy assignment
       const assignment = await this.assignmentModel
         .findOne({
-          userId,
+          userId: userObjectId,
           isActive: true,
         })
         .lean();
