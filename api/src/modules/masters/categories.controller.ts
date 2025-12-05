@@ -142,4 +142,44 @@ export class CategoriesController {
     console.log('[CategoriesController] PUT /categories/:id/toggle-active - ID:', id);
     return this.categoriesService.toggleActive(id, req.user?.id);
   }
+
+  @Post('seed-predefined')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Seed predefined categories (DEPRECATED - use upsert-predefined)',
+    deprecated: true
+  })
+  @ApiResponse({ status: 200, description: 'Predefined categories seeded successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN role required' })
+  async seedPredefined() {
+    console.log('[CategoriesController] POST /categories/seed-predefined - Seeding predefined categories (DEPRECATED)');
+    console.log('[CategoriesController] WARNING: This endpoint deletes all categories. Use /upsert-predefined for production.');
+    return this.categoriesService.seedPredefinedCategories();
+  }
+
+  @Post('upsert-predefined')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Upsert predefined categories (production-safe)',
+    description: 'Updates existing predefined categories and inserts missing ones. Preserves custom categories and display orders.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Predefined categories upserted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        inserted: { type: 'number' },
+        updated: { type: 'number' },
+        skipped: { type: 'number' },
+        categories: { type: 'array' }
+      }
+    }
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN role required' })
+  async upsertPredefined() {
+    console.log('[CategoriesController] POST /categories/upsert-predefined - Upserting predefined categories');
+    return this.categoriesService.upsertPredefinedCategories();
+  }
 }

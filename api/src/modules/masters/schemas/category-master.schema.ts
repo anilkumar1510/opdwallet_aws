@@ -51,6 +51,12 @@ export class CategoryMaster {
   })
   isAvailableOnline?: boolean;
 
+  @Prop({
+    type: Boolean,
+    default: false
+  })
+  isPredefined?: boolean;
+
 }
 
 export const CategoryMasterSchema = SchemaFactory.createForClass(CategoryMaster);

@@ -11,6 +11,7 @@ interface Category {
   description?: string
   isActive: boolean
   displayOrder: number
+  isPredefined?: boolean
 }
 
 export default function CategoriesPage() {
@@ -131,8 +132,19 @@ export default function CategoriesPage() {
 
     try {
       setSubmitting(true)
-      // Remove categoryId from update as it cannot be changed
-      const { categoryId, ...updateData } = formData
+
+      // For predefined categories, only send description and displayOrder
+      let updateData: any
+      if (currentCategory.isPredefined) {
+        updateData = {
+          description: formData.description,
+          displayOrder: formData.displayOrder,
+        }
+      } else {
+        // For non-predefined categories, send all fields except categoryId
+        const { categoryId, ...rest } = formData
+        updateData = rest
+      }
 
       const response = await apiFetch(`/api/categories/${currentCategory._id}`, {
         method: 'PUT',
@@ -252,12 +264,10 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn-primary"
-        >
-          Add Category
-        </button>
+        <div className="text-sm text-gray-600">
+          <p className="font-medium text-gray-900">Category Management</p>
+          <p className="text-xs">System categories are predefined and only descriptions can be edited</p>
+        </div>
       </div>
 
       {/* Search */}
@@ -289,6 +299,7 @@ export default function CategoriesPage() {
                   <th>Category ID</th>
                   <th>Name</th>
                   <th>Description</th>
+                  <th>Type</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -303,6 +314,17 @@ export default function CategoriesPage() {
                     <td className="font-medium">{category.name}</td>
                     <td className="text-sm text-gray-600">{category.description || '-'}</td>
                     <td>
+                      {category.isPredefined ? (
+                        <span className="badge bg-blue-100 text-blue-800 border-blue-200">
+                          System
+                        </span>
+                      ) : (
+                        <span className="badge bg-gray-100 text-gray-600 border-gray-200">
+                          Custom
+                        </span>
+                      )}
+                    </td>
+                    <td>
                       <button
                         onClick={() => handleToggleActive(category)}
                         className={`badge cursor-pointer ${category.isActive ? 'badge-success' : 'badge-error'}`}
@@ -315,21 +337,23 @@ export default function CategoriesPage() {
                         <button
                           onClick={() => openEditModal(category)}
                           className="btn-ghost text-sm"
-                          title="Edit"
+                          title={category.isPredefined ? "Edit description and display order" : "Edit"}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                        <button
-                          onClick={() => handleDelete(category)}
-                          className="btn-ghost text-sm text-red-600 hover:text-red-700"
-                          title="Delete"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        {!category.isPredefined && (
+                          <button
+                            onClick={() => handleDelete(category)}
+                            className="btn-ghost text-sm text-red-600 hover:text-red-700"
+                            title="Delete"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -362,6 +386,14 @@ export default function CategoriesPage() {
               </div>
 
               <div className="modal-body space-y-4">
+                {showEditModal && currentCategory?.isPredefined && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>System Category:</strong> Only the description and display order can be edited for predefined system categories.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="label">Category ID *</label>
                   <input
@@ -388,8 +420,12 @@ export default function CategoriesPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Dental Services"
+                    disabled={showEditModal && currentCategory?.isPredefined}
                     required
                   />
+                  {showEditModal && currentCategory?.isPredefined && (
+                    <p className="text-xs text-gray-500 mt-1">Name cannot be changed for system categories</p>
+                  )}
                 </div>
 
                 <div>
@@ -421,10 +457,14 @@ export default function CategoriesPage() {
                       className="input"
                       value={formData.isActive.toString()}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
+                      disabled={showEditModal && currentCategory?.isPredefined}
                     >
                       <option value="true">Active</option>
                       <option value="false">Inactive</option>
                     </select>
+                    {showEditModal && currentCategory?.isPredefined && (
+                      <p className="text-xs text-gray-500 mt-1">Status is locked for system categories</p>
+                    )}
                   </div>
                 </div>
 

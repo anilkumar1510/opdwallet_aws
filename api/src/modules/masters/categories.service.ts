@@ -6,6 +6,7 @@ import { Cache } from 'cache-manager';
 import { CategoryMaster, CategoryMasterDocument } from './schemas/category-master.schema';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PREDEFINED_CATEGORIES } from '../../common/constants/predefined-categories.constant';
 
 @Injectable()
 export class CategoriesService {
@@ -109,7 +110,49 @@ export class CategoriesService {
     updateCategoryDto: UpdateCategoryDto,
     updatedBy?: string,
   ): Promise<CategoryMaster> {
-    const category = await this.categoryModel
+    const existingCategory = await this.categoryModel.findById(id);
+
+    if (!existingCategory) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+
+    // For predefined categories, only allow description and displayOrder updates
+    if (existingCategory.isPredefined) {
+      const { description, displayOrder } = updateCategoryDto;
+
+      // Check if trying to update fields other than description and displayOrder
+      const attemptedFields = Object.keys(updateCategoryDto);
+      const allowedFields = ['description', 'displayOrder'];
+      const disallowedFields = attemptedFields.filter(field => !allowedFields.includes(field));
+
+      if (disallowedFields.length > 0) {
+        throw new BadRequestException(
+          `Cannot modify ${disallowedFields.join(', ')} for predefined categories. Only 'description' and 'displayOrder' can be updated.`
+        );
+      }
+
+      // Update only description and displayOrder
+      const updatedCategory = await this.categoryModel
+        .findByIdAndUpdate(
+          id,
+          {
+            description,
+            displayOrder,
+            updatedBy,
+          },
+          { new: true, runValidators: true },
+        )
+        .exec();
+
+      if (!updatedCategory) {
+        throw new NotFoundException(`Category with ID ${id} not found`);
+      }
+
+      return updatedCategory as CategoryMaster;
+    }
+
+    // For non-predefined categories, allow all updates
+    const updatedCategory = await this.categoryModel
       .findByIdAndUpdate(
         id,
         {
@@ -120,11 +163,11 @@ export class CategoriesService {
       )
       .exec();
 
-    if (!category) {
+    if (!updatedCategory) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    return category;
+    return updatedCategory as CategoryMaster;
   }
 
   async remove(id: string): Promise<void> {
@@ -134,7 +177,12 @@ export class CategoriesService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Benefit component check removed - old architecture deleted
+    // Prevent deletion of predefined categories
+    if (category.isPredefined) {
+      throw new BadRequestException(
+        'Cannot delete predefined category. Predefined categories are system-managed and cannot be removed.'
+      );
+    }
 
     await this.categoryModel.findByIdAndDelete(id);
   }
@@ -151,5 +199,105 @@ export class CategoriesService {
   async getAllCategoryIds(): Promise<string[]> {
     const categories = await this.categoryModel.find({ isActive: true }, 'categoryId').exec();
     return categories.map(cat => cat.categoryId);
+  }
+
+  /**
+   * Seed predefined categories - clears existing categories and inserts predefined ones
+   * This is a one-time migration endpoint
+   * @deprecated Use upsertPredefinedCategories() for production deployments
+   */
+  async seedPredefinedCategories(): Promise<{ message: string; categories: CategoryMaster[] }> {
+    console.log('[CategoriesService] Starting seed of predefined categories');
+
+    // Delete all existing categories
+    const deleteResult = await this.categoryModel.deleteMany({});
+    console.log(`[CategoriesService] Deleted ${deleteResult.deletedCount} existing categories`);
+
+    // Insert predefined categories
+    const insertedCategories = await this.categoryModel.insertMany(PREDEFINED_CATEGORIES);
+    console.log(`[CategoriesService] Inserted ${insertedCategories.length} predefined categories`);
+
+    return {
+      message: `Successfully seeded ${insertedCategories.length} predefined categories`,
+      categories: insertedCategories,
+    };
+  }
+
+  /**
+   * Upsert predefined categories - safe for production use
+   * Updates existing predefined categories and inserts missing ones
+   * Preserves: displayOrder, isActive, custom categories
+   * Updates: name, description, code, isAvailableOnline
+   */
+  async upsertPredefinedCategories(): Promise<{
+    message: string;
+    inserted: number;
+    updated: number;
+    skipped: number;
+    categories: CategoryMaster[];
+  }> {
+    console.log('[CategoriesService] Starting upsert of predefined categories');
+
+    const results = {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+    };
+    const processedCategories: CategoryMaster[] = [];
+
+    for (const predefinedCat of PREDEFINED_CATEGORIES) {
+      try {
+        // Check if category exists by categoryId
+        const existing = await this.categoryModel.findOne({
+          categoryId: predefinedCat.categoryId,
+        });
+
+        if (existing) {
+          // Update existing category - preserve displayOrder and isActive
+          console.log(`[CategoriesService] Updating existing category: ${predefinedCat.categoryId}`);
+
+          const updated = await this.categoryModel.findByIdAndUpdate(
+            existing._id,
+            {
+              name: predefinedCat.name,
+              description: predefinedCat.description,
+              code: predefinedCat.code,
+              isAvailableOnline: predefinedCat.isAvailableOnline,
+              isPredefined: true,
+              // Preserve displayOrder and isActive from existing category
+            },
+            { new: true, runValidators: true },
+          ).exec();
+
+          if (updated) {
+            processedCategories.push(updated as CategoryMaster);
+            results.updated++;
+            console.log(`[CategoriesService] Updated category: ${predefinedCat.categoryId}`);
+          }
+        } else {
+          // Insert new predefined category
+          console.log(`[CategoriesService] Inserting new category: ${predefinedCat.categoryId}`);
+
+          const inserted = await this.categoryModel.create(predefinedCat);
+          processedCategories.push(inserted as CategoryMaster);
+          results.inserted++;
+          console.log(`[CategoriesService] Inserted category: ${predefinedCat.categoryId}`);
+        }
+      } catch (error) {
+        console.error(`[CategoriesService] Error processing category ${predefinedCat.categoryId}:`, error);
+        results.skipped++;
+      }
+    }
+
+    const message = `Upsert completed: ${results.inserted} inserted, ${results.updated} updated, ${results.skipped} skipped`;
+    console.log(`[CategoriesService] ${message}`);
+
+    return {
+      message,
+      inserted: results.inserted,
+      updated: results.updated,
+      skipped: results.skipped,
+      categories: processedCategories,
+    };
   }
 }
