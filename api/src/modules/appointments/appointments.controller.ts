@@ -3,14 +3,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { BenefitAccessGuard } from '@/common/guards/benefit-access.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
+import { RequiresBenefit } from '@/common/decorators/requires-benefit.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Controller('appointments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, BenefitAccessGuard)
 export class AppointmentsController {
   constructor(
     private readonly appointmentsService: AppointmentsService,
@@ -58,6 +60,7 @@ export class AppointmentsController {
   }
 
   @Post()
+  @RequiresBenefit('CAT001')
   async create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req: any) {
     try {
       const userId = req.user.userId;
@@ -94,6 +97,7 @@ export class AppointmentsController {
   }
 
   @Get('user/:userId')
+  @RequiresBenefit('CAT001')
   async getUserAppointments(
     @Param('userId') userId: string,
     @Request() req: any,
@@ -109,11 +113,13 @@ export class AppointmentsController {
   }
 
   @Get('user/:userId/ongoing')
+  @RequiresBenefit('CAT001')
   async getOngoingAppointments(@Param('userId') userId: string) {
     return this.appointmentsService.getOngoingAppointments(userId);
   }
 
   @Get(':appointmentId')
+  @RequiresBenefit('CAT001')
   async findOne(@Param('appointmentId') appointmentId: string) {
     return this.appointmentsService.findOne(appointmentId);
   }
@@ -133,6 +139,7 @@ export class AppointmentsController {
   }
 
   @Patch(':appointmentId/user-cancel')
+  @RequiresBenefit('CAT001')
   async userCancel(@Param('appointmentId') appointmentId: string, @Request() req: any) {
     const userId = req.user.userId;
     console.log('[AppointmentsController] User cancelling appointment:', { appointmentId, userId });

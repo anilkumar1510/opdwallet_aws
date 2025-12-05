@@ -493,43 +493,61 @@ export default function DashboardPage() {
     return 'No Expiry'
   }, [getUserPolicyForMember])
 
-  const healthBenefits = useMemo(() => [
-    {
-      name: 'In Clinic Consult',
-      description: 'Book appointments with doctors',
+  // Map category codes from API to UI configuration
+  const benefitUIConfig: Record<string, { icon: any; href: string; description?: string }> = useMemo(() => ({
+    'CAT001': {
       icon: UserIcon,
       href: `/member/appointments${viewingUserId ? `?defaultPatient=${viewingUserId}` : ''}`,
-      categoryCode: 'IN_CLINIC_CONSULT'
+      description: 'Book appointments with doctors'
     },
-    {
-      name: 'Online Consult',
-      description: 'Video consultation with doctors',
+    'CAT005': {
       icon: VideoCameraIcon,
       href: `/member/online-consult${viewingUserId ? `?defaultPatient=${viewingUserId}` : ''}`,
-      categoryCode: 'ONLINE_CONSULT'
+      description: 'Video consultation with doctors'
     },
-    {
-      name: 'Pharmacy',
-      description: 'Order medicines online',
+    'CAT002': {
       icon: CubeIcon,
       href: '/member/pharmacy',
-      categoryCode: 'PHARMACY'
+      description: 'Order medicines online'
     },
-    {
-      name: 'Lab',
-      description: 'Book lab tests',
+    'CAT004': {
       icon: BeakerIcon,
       href: '/member/lab-tests',
-      categoryCode: 'LAB'
+      description: 'Book lab tests'
     },
-    {
-      name: 'Annual Health Check',
-      description: 'Schedule health checkup',
+    'CAT003': {
+      icon: BeakerIcon,
+      href: '/member/diagnostics',
+      description: 'Diagnostic services'
+    },
+    'wellness': {
       icon: ClipboardDocumentCheckIcon,
       href: '/member/health-checkup',
-      categoryCode: 'ANNUAL_HEALTH_CHECK'
+      description: 'Schedule health checkup'
     }
-  ], [viewingUserId])
+  }), [viewingUserId])
+
+  // Use API-filtered benefits merged with UI config
+  const healthBenefits = useMemo(() => {
+    if (!user?.healthBenefits) return []
+
+    return user.healthBenefits
+      .map((benefit: any) => {
+        const uiConfig = benefitUIConfig[benefit.categoryCode]
+        if (!uiConfig) {
+          console.warn(`[Dashboard] No UI config found for category: ${benefit.categoryCode}`)
+          return null
+        }
+
+        return {
+          ...benefit,
+          icon: uiConfig.icon,
+          href: uiConfig.href,
+          description: uiConfig.description || benefit.description
+        }
+      })
+      .filter(Boolean) // Remove null entries
+  }, [user?.healthBenefits, benefitUIConfig])
 
   const handleBenefitClick = useCallback((benefit: any) => {
     console.log(`[Dashboard] Navigating to ${benefit.name}`, {
