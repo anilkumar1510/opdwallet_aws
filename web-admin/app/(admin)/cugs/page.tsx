@@ -7,8 +7,7 @@ import { toast } from 'sonner'
 interface CUG {
   _id: string
   cugId: string
-  code: string
-  name: string
+  shortCode?: string
   companyName: string
   employeeCount: string
   description?: string
@@ -19,9 +18,7 @@ interface CUG {
 }
 
 interface FormData {
-  cugId: string
-  code: string
-  name: string
+  shortCode: string
   companyName: string
   employeeCount: string
   description: string
@@ -38,9 +35,7 @@ const EMPLOYEE_COUNT_OPTIONS = [
 ]
 
 const initialFormData: FormData = {
-  cugId: '',
-  code: '',
-  name: '',
+  shortCode: '',
   companyName: '',
   employeeCount: '0-500',
   description: '',
@@ -82,8 +77,7 @@ export default function CugsPage() {
     const search = searchTerm.toLowerCase()
     return (
       cug.cugId.toLowerCase().includes(search) ||
-      cug.code.toLowerCase().includes(search) ||
-      cug.name.toLowerCase().includes(search) ||
+      (cug.shortCode?.toLowerCase() || '').includes(search) ||
       cug.companyName.toLowerCase().includes(search) ||
       (cug.description?.toLowerCase() || '').includes(search)
     )
@@ -108,9 +102,7 @@ export default function CugsPage() {
 
   const openEditModal = (cug: CUG) => {
     setFormData({
-      cugId: cug.cugId,
-      code: cug.code,
-      name: cug.name,
+      shortCode: cug.shortCode || '',
       companyName: cug.companyName,
       employeeCount: cug.employeeCount,
       description: cug.description || '',
@@ -130,17 +122,16 @@ export default function CugsPage() {
       const url = isEditMode ? `/api/cugs/${editingId}` : '/api/cugs'
       const method = isEditMode ? 'PUT' : 'POST'
 
-      const payload = isEditMode
-        ? {
-            code: formData.code,
-            name: formData.name,
-            companyName: formData.companyName,
-            employeeCount: formData.employeeCount,
-            description: formData.description,
-            isActive: formData.isActive,
-            displayOrder: formData.displayOrder,
-          }
-        : formData
+      // For both create and update, send the same payload structure
+      // cugId is auto-generated on the backend for new CUGs
+      const payload = {
+        shortCode: formData.shortCode || undefined, // Optional field
+        companyName: formData.companyName,
+        employeeCount: formData.employeeCount,
+        description: formData.description || undefined,
+        isActive: formData.isActive,
+        displayOrder: formData.displayOrder,
+      }
 
       const response = await fetch(url, {
         method,
@@ -212,7 +203,7 @@ export default function CugsPage() {
         <div className="flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Search by CUG ID, code, name, or company..."
+            placeholder="Search by CUG ID, short code, or company name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -250,10 +241,7 @@ export default function CugsPage() {
                   CUG ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Code
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+                  Short Code
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Company Name
@@ -278,11 +266,8 @@ export default function CugsPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {cug.cugId}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {cug.code}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {cug.name}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {cug.shortCode || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {cug.companyName}
@@ -339,65 +324,8 @@ export default function CugsPage() {
 
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-4">
-                  {/* CUG ID */}
-                  <div>
-                    <label htmlFor="cugId" className="block text-sm font-medium text-gray-700 mb-1">
-                      CUG ID *
-                    </label>
-                    <input
-                      type="text"
-                      id="cugId"
-                      name="cugId"
-                      required
-                      disabled={isEditMode}
-                      value={formData.cugId}
-                      onChange={handleInputChange}
-                      placeholder="CUG001"
-                      pattern="^[A-Z]{3}\d{3}$"
-                      title="Format: 3 uppercase letters followed by 3 digits (e.g., CUG001)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Format: 3 letters + 3 digits (e.g., CUG001)
-                    </p>
-                  </div>
-
-                  {/* Code */}
-                  <div>
-                    <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
-                      Code *
-                    </label>
-                    <input
-                      type="text"
-                      id="code"
-                      name="code"
-                      required
-                      value={formData.code}
-                      onChange={handleInputChange}
-                      placeholder="GOOGLE"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
-                    />
-                  </div>
-
-                  {/* Name */}
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Google Inc."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
                   {/* Company Name */}
-                  <div>
+                  <div className="col-span-2">
                     <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
                       Company Name *
                     </label>
@@ -411,6 +339,28 @@ export default function CugsPage() {
                       placeholder="Google Inc."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      CUG ID will be auto-generated by the system
+                    </p>
+                  </div>
+
+                  {/* Short Code */}
+                  <div>
+                    <label htmlFor="shortCode" className="block text-sm font-medium text-gray-700 mb-1">
+                      Short Code (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      id="shortCode"
+                      name="shortCode"
+                      value={formData.shortCode}
+                      onChange={handleInputChange}
+                      placeholder="GOOGLE"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Optional identifier for quick reference
+                    </p>
                   </div>
 
                   {/* Employee Count */}

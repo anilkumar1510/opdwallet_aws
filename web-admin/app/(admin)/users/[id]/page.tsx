@@ -225,7 +225,7 @@ export default function UserDetailPage() {
   useEffect(() => {
     if (!user || cugs.length === 0 || !user.corporateName) return
 
-    const matchingCug = cugs.find(cug => cug.name === user.corporateName)
+    const matchingCug = cugs.find(cug => cug.companyName === user.corporateName)
     if (matchingCug) {
       setSelectedCugId(matchingCug._id)
     }

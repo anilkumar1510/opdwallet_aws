@@ -123,14 +123,14 @@ export function UserEditForm({
                 value={selectedCugId || ''}
                 onChange={(e) => {
                   const selectedCug = cugs.find(cug => cug._id === e.target.value);
-                  onCugChange(e.target.value, selectedCug ? selectedCug.name : '');
+                  onCugChange(e.target.value, selectedCug ? selectedCug.companyName : '');
                 }}
                 className="input"
               >
                 <option value="">Select Corporate Group</option>
                 {cugs.map((cug) => (
                   <option key={cug._id} value={cug._id}>
-                    {cug.name} ({cug.code})
+                    {cug.companyName}{cug.shortCode ? ` (${cug.shortCode})` : ''}
                   </option>
                 ))}
               </select>
