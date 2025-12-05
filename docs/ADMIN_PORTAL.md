@@ -21,7 +21,7 @@
 
 ### Master Data
 - **/admin/categories** - Manage service categories like consultation, pharmacy, diagnostics
-- **/admin/services** - Configure category-specialty mappings (which medical specialties are available for each service category like Online/In-clinic consultations)
+- **/admin/services** - Configure category-specialty mappings and lab service assignments (manage which specialties are available for consultation categories and which lab services are available for laboratory category)
 - **/admin/cugs** - Manage Corporate User Groups (CUG) with company details and employee counts
 - **/admin/masters** - Manage master data like relationships and corporate user groups
 
@@ -189,6 +189,8 @@
 - **PUT /api/categories/:id** - Update category name or details
 - **GET /api/categories/:categoryId/specialties** - Get all specialties with mapping status for a category (CAT001 or CAT005)
 - **PUT /api/categories/:categoryId/specialties/:specialtyId/toggle** - Toggle specialty mapping for a category (enable/disable specialty for that category)
+- **GET /api/categories/:categoryId/lab-services** - Get all lab services with mapping status for a category (CAT004)
+- **PUT /api/categories/:categoryId/lab-services/:labServiceId/toggle** - Toggle lab service mapping for a category (enable/disable lab service for that category)
 - **GET /api/services** - Get all service types
 - **POST /api/services** - Create new service type under a category
 - **PUT /api/services/:id** - Update service type details

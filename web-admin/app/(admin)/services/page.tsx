@@ -3,6 +3,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PREDEFINED_CATEGORIES } from '@/lib/constants/categories'
 import { SpecialtyMappingTab } from './components/SpecialtyMappingTab'
+import { LabServiceMappingTab } from './components/LabServiceMappingTab'
 import { EmptyStateTab } from './components/EmptyStateTab'
 
 export default function ServicesPage() {
@@ -12,7 +13,7 @@ export default function ServicesPage() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Service Management</h2>
         <p className="text-sm text-gray-600 mt-1">
-          Manage services and specialty assignments by category
+          Manage specialty assignments and lab service configurations by category
         </p>
       </div>
 
@@ -34,6 +35,11 @@ export default function ServicesPage() {
           <TabsContent key={cat.id} value={cat.id} className="mt-6">
             {cat.hasSpecialties ? (
               <SpecialtyMappingTab
+                categoryId={cat.id}
+                categoryName={cat.fullName}
+              />
+            ) : cat.hasLabServices ? (
+              <LabServiceMappingTab
                 categoryId={cat.id}
                 categoryName={cat.fullName}
               />
