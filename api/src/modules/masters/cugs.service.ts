@@ -12,31 +12,56 @@ export class CugsService {
     private cugModel: Model<CugMasterDocument>,
   ) {}
 
+  /**
+   * Generate the next CUG ID automatically
+   * Format: CUG001, CUG002, CUG003, etc.
+   */
+  async generateNextCugId(): Promise<string> {
+    const lastCug = await this.cugModel
+      .findOne({})
+      .sort({ cugId: -1 })
+      .select('cugId')
+      .lean();
+
+    if (!lastCug) {
+      return 'CUG001';
+    }
+
+    // Extract the numeric part and increment
+    const lastNum = parseInt(lastCug.cugId.replace('CUG', ''), 10);
+    const nextNum = lastNum + 1;
+    return `CUG${String(nextNum).padStart(3, '0')}`;
+  }
+
   async create(createCugDto: CreateCugDto, createdBy?: string): Promise<CugMaster> {
     console.log('[CugsService] Creating CUG:', JSON.stringify(createCugDto, null, 2));
     console.log('[CugsService] Created by:', createdBy);
 
-    // Check if CUG with same ID already exists
-    const existing = await this.cugModel.findOne({
-      cugId: createCugDto.cugId.toUpperCase()
-    });
+    // Auto-generate CUG ID
+    const cugId = await this.generateNextCugId();
+    console.log('[CugsService] Auto-generated CUG ID:', cugId);
 
-    if (existing) {
-      console.log('[CugsService] CUG already exists:', existing.cugId);
-      throw new ConflictException(`CUG with ID ${createCugDto.cugId} already exists`);
+    // Check if shortCode already exists (if provided)
+    if (createCugDto.shortCode) {
+      const existingWithCode = await this.cugModel.findOne({
+        shortCode: createCugDto.shortCode.toUpperCase()
+      });
+      if (existingWithCode) {
+        throw new ConflictException(`CUG with short code ${createCugDto.shortCode} already exists`);
+      }
     }
 
     const cug = new this.cugModel({
       ...createCugDto,
-      cugId: createCugDto.cugId.toUpperCase(),
-      code: createCugDto.code.toUpperCase(),
+      cugId,
+      shortCode: createCugDto.shortCode?.toUpperCase(),
       createdBy,
     });
 
     console.log('[CugsService] Saving new CUG...');
     try {
       const saved = await cug.save();
-      console.log('[CugsService] CUG saved successfully:', saved._id);
+      console.log('[CugsService] CUG saved successfully:', saved._id, 'with ID:', cugId);
 
       // Verify it was actually saved
       const verification = await this.cugModel.findById(saved._id);
@@ -76,8 +101,8 @@ export class CugsService {
     if (search) {
       filter.$or = [
         { cugId: { $regex: search, $options: 'i' } },
-        { code: { $regex: search, $options: 'i' } },
-        { name: { $regex: search, $options: 'i' } },
+        { shortCode: { $regex: search, $options: 'i' } },
+        { companyName: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
     }
@@ -95,7 +120,7 @@ export class CugsService {
     // Execute query with pagination
     const data = await this.cugModel
       .find(filter)
-      .sort({ displayOrder: 1, name: 1 })
+      .sort({ displayOrder: 1, companyName: 1 })
       .skip(skip)
       .limit(limit)
       .exec();
@@ -116,7 +141,7 @@ export class CugsService {
     console.log('[CugsService] Finding all active CUGs');
     const cugs = await this.cugModel
       .find({ isActive: true })
-      .sort({ displayOrder: 1, name: 1 })
+      .sort({ displayOrder: 1, companyName: 1 })
       .exec();
 
     console.log('[CugsService] Found active CUGs:', cugs.length);
@@ -138,8 +163,17 @@ export class CugsService {
     console.log('[CugsService] Updating CUG:', id, JSON.stringify(updateCugDto, null, 2));
 
     const updateData: any = { ...updateCugDto };
-    if (updateData.code) {
-      updateData.code = updateData.code.toUpperCase();
+    if (updateData.shortCode) {
+      updateData.shortCode = updateData.shortCode.toUpperCase();
+
+      // Check if shortCode is already used by another CUG
+      const existingWithCode = await this.cugModel.findOne({
+        shortCode: updateData.shortCode,
+        _id: { $ne: id }
+      });
+      if (existingWithCode) {
+        throw new ConflictException(`CUG with short code ${updateData.shortCode} already exists`);
+      }
     }
     if (updatedBy) {
       updateData.updatedBy = updatedBy;
@@ -195,64 +229,72 @@ export class CugsService {
     const defaultCugs = [
       {
         cugId: 'CUG001',
-        code: 'GOOGLE',
-        name: 'Google Inc.',
+        shortCode: 'GOOGLE',
+        companyName: 'Google Inc.',
+        employeeCount: '10000+',
         description: 'Google corporate group',
         isActive: true,
         displayOrder: 1,
       },
       {
         cugId: 'CUG002',
-        code: 'MICROSOFT',
-        name: 'Microsoft Corporation',
+        shortCode: 'MICROSOFT',
+        companyName: 'Microsoft Corporation',
+        employeeCount: '10000+',
         description: 'Microsoft corporate group',
         isActive: true,
         displayOrder: 2,
       },
       {
         cugId: 'CUG003',
-        code: 'AMAZON',
-        name: 'Amazon Inc.',
+        shortCode: 'AMAZON',
+        companyName: 'Amazon Inc.',
+        employeeCount: '10000+',
         description: 'Amazon corporate group',
         isActive: true,
         displayOrder: 3,
       },
       {
         cugId: 'CUG004',
-        code: 'APPLE',
-        name: 'Apple Inc.',
+        shortCode: 'APPLE',
+        companyName: 'Apple Inc.',
+        employeeCount: '10000+',
         description: 'Apple corporate group',
         isActive: true,
         displayOrder: 4,
       },
       {
         cugId: 'CUG005',
-        code: 'META',
-        name: 'Meta Platforms Inc.',
+        shortCode: 'META',
+        companyName: 'Meta Platforms Inc.',
+        employeeCount: '10000+',
         description: 'Meta corporate group',
         isActive: true,
         displayOrder: 5,
       },
       {
         cugId: 'CUG006',
-        code: 'NETFLIX',
-        name: 'Netflix Inc.',
+        shortCode: 'NETFLIX',
+        companyName: 'Netflix Inc.',
+        employeeCount: '5000-10000',
         description: 'Netflix corporate group',
         isActive: true,
         displayOrder: 6,
       },
       {
         cugId: 'CUG007',
-        code: 'TESLA',
-        name: 'Tesla Inc.',
+        shortCode: 'TESLA',
+        companyName: 'Tesla Inc.',
+        employeeCount: '10000+',
         description: 'Tesla corporate group',
         isActive: true,
         displayOrder: 7,
       },
       {
         cugId: 'CUG008',
-        code: 'IBM',
-        name: 'IBM Corporation',
+        shortCode: 'IBM',
+        companyName: 'IBM Corporation',
+        employeeCount: '10000+',
         description: 'IBM corporate group',
         isActive: true,
         displayOrder: 8,
@@ -265,12 +307,12 @@ export class CugsService {
         if (!existing) {
           const cug = new this.cugModel(cugData);
           await cug.save();
-          console.log(`✓ Seeded CUG: ${cugData.name}`);
+          console.log(`✓ Seeded CUG: ${cugData.companyName}`);
         } else {
-          console.log(`- CUG already exists: ${cugData.name}`);
+          console.log(`- CUG already exists: ${cugData.companyName}`);
         }
       } catch (error) {
-        console.log(`✗ Error seeding CUG ${cugData.name}:`, error.message);
+        console.log(`✗ Error seeding CUG ${cugData.companyName}:`, error.message);
       }
     }
 

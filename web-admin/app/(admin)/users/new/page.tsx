@@ -585,7 +585,7 @@ export default function NewUserPage() {
                   setFormData({
                     ...formData,
                     cugId: e.target.value,
-                    corporateName: selectedCug?.name || ''
+                    corporateName: selectedCug?.companyName || ''
                   })
                 }}
                 className="input"
@@ -593,7 +593,7 @@ export default function NewUserPage() {
                 <option value="">Select Corporate Group...</option>
                 {cugs.map((cug) => (
                   <option key={cug._id} value={cug._id}>
-                    {cug.name} ({cug.code})
+                    {cug.companyName}{cug.shortCode ? ` (${cug.shortCode})` : ''}
                   </option>
                 ))}
               </select>

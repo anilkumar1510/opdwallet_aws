@@ -52,8 +52,7 @@ export async function apiFetch(path: string, options?: RequestInit) {
 export interface CugMaster {
   _id: string;
   cugId: string;
-  code: string;
-  name: string;
+  shortCode?: string;
   companyName: string;
   employeeCount: string;
   description?: string;

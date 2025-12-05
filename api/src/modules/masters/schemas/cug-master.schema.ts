@@ -15,24 +15,19 @@ export class CugMaster {
     index: true,
     uppercase: true
   })
-  cugId: string;
+  cugId: string; // Auto-generated: CUG001, CUG002, etc.
 
   @Prop({
-    required: true,
-    unique: true,
-    uppercase: true
+    type: String,
+    uppercase: true,
+    sparse: true // Allow null/undefined, but unique when provided
   })
-  code: string;
-
-  @Prop({
-    required: true
-  })
-  name: string;
+  shortCode?: string; // Optional short identifier (e.g., GOOGLE, TCS)
 
   @Prop({
     required: true
   })
-  companyName: string;
+  companyName: string; // Official company name
 
   @Prop({
     required: true,
@@ -49,7 +44,7 @@ export class CugMaster {
 
   @Prop({
     type: Number,
-    required: true
+    default: 0
   })
   displayOrder: number;
 
@@ -73,6 +68,6 @@ export const CugMasterSchema = SchemaFactory.createForClass(CugMaster);
 
 // Indexes
 CugMasterSchema.index({ cugId: 1 }, { unique: true });
-CugMasterSchema.index({ code: 1 }, { unique: true });
+CugMasterSchema.index({ shortCode: 1 }, { unique: true, sparse: true });
 CugMasterSchema.index({ isActive: 1, displayOrder: 1 });
 CugMasterSchema.index({ companyName: 1 });
