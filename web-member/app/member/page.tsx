@@ -509,13 +509,6 @@ export default function DashboardPage() {
       categoryCode: 'ONLINE_CONSULT'
     },
     {
-      name: 'Health Records',
-      description: 'View prescriptions and medical records',
-      icon: DocumentTextIcon,
-      href: '/member/health-records',
-      categoryCode: 'HEALTH_RECORDS'
-    },
-    {
       name: 'Pharmacy',
       description: 'Order medicines online',
       icon: CubeIcon,
@@ -696,6 +689,26 @@ export default function DashboardPage() {
                 />
               ))}
             </div>
+          </div>
+
+          {/* Health Records Section */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <SectionHeader title="Health Records" showSeeAll={false} />
+            <Link
+              href="/member/health-records"
+              className="flex items-center justify-between p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-2 rounded-lg">
+                  <DocumentTextIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">View Health Records</div>
+                  <div className="text-sm text-gray-600">Access prescriptions and medical documents</div>
+                </div>
+              </div>
+              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+            </Link>
           </div>
 
           {/* File Claims Section */}
