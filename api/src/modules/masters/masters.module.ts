@@ -5,6 +5,8 @@ import { CategoryMaster, CategoryMasterSchema } from './schemas/category-master.
 import { ServiceMaster, ServiceMasterSchema } from './schemas/service-master.schema';
 import { RelationshipMaster, RelationshipMasterSchema } from './schemas/relationship-master.schema';
 import { CugMaster, CugMasterSchema } from './schemas/cug-master.schema';
+import { CategorySpecialtyMapping, CategorySpecialtyMappingSchema } from './schemas/category-specialty-mapping.schema';
+import { Specialty, SpecialtySchema } from '../specialties/schemas/specialty.schema';
 import { CategoriesController } from './categories.controller';
 import { CategoriesService } from './categories.service';
 import { ServicesController } from './services.controller';
@@ -14,6 +16,8 @@ import { RelationshipsController } from './relationships.controller';
 import { RelationshipsService } from './relationships.service';
 import { CugsController } from './cugs.controller';
 import { CugsService } from './cugs.service';
+import { CategorySpecialtyMappingController } from './category-specialty-mapping.controller';
+import { CategorySpecialtyMappingService } from './category-specialty-mapping.service';
 
 @Module({
   imports: [
@@ -22,14 +26,36 @@ import { CugsService } from './cugs.service';
       { name: ServiceMaster.name, schema: ServiceMasterSchema },
       { name: RelationshipMaster.name, schema: RelationshipMasterSchema },
       { name: CugMaster.name, schema: CugMasterSchema },
+      { name: CategorySpecialtyMapping.name, schema: CategorySpecialtyMappingSchema },
+      { name: Specialty.name, schema: SpecialtySchema },
     ]),
     CacheModule.register({
       ttl: 60, // seconds
       max: 100, // maximum number of items in cache
     }),
   ],
-  controllers: [CategoriesController, ServicesController, ServicesMigrationController, RelationshipsController, CugsController],
-  providers: [CategoriesService, ServicesService, RelationshipsService, CugsService],
-  exports: [MongooseModule, CategoriesService, ServicesService, RelationshipsService, CugsService],
+  controllers: [
+    CategoriesController,
+    ServicesController,
+    ServicesMigrationController,
+    RelationshipsController,
+    CugsController,
+    CategorySpecialtyMappingController,
+  ],
+  providers: [
+    CategoriesService,
+    ServicesService,
+    RelationshipsService,
+    CugsService,
+    CategorySpecialtyMappingService,
+  ],
+  exports: [
+    MongooseModule,
+    CategoriesService,
+    ServicesService,
+    RelationshipsService,
+    CugsService,
+    CategorySpecialtyMappingService,
+  ],
 })
 export class MastersModule {}
