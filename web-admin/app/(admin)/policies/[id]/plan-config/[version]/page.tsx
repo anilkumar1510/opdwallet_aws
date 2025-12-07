@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Save, ArrowLeft } from 'lucide-react';
 import { planConfigApi, PlanConfig } from '@/lib/api/plan-config';
 import { categoriesApi, Category } from '@/lib/api/categories';
+import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
 import { RelationshipSelector } from './components/RelationshipSelector';
 import { BenefitsConfigTab } from './components/BenefitsConfigTab';
@@ -245,7 +246,7 @@ export default function PlanConfigEdit() {
   const loadRelationships = useCallback(async () => {
     try {
       setRelationshipsLoading(true);
-      const response = await fetch('/api/relationships');
+      const response = await apiFetch('/api/relationships');
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 [DEBUG] Loaded relationships from API:', data);

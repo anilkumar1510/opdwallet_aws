@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 export default function NewPolicyPage() {
   const router = useRouter()
@@ -27,12 +28,8 @@ export default function NewPolicyPage() {
         description: formData.description || undefined,
       }
 
-      const response = await fetch('/api/policies', {
+      const response = await apiFetch('/api/policies', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify(payload),
       })
 
@@ -61,9 +58,8 @@ export default function NewPolicyPage() {
   }
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', {
+    await apiFetch('/api/auth/logout', {
       method: 'POST',
-      credentials: 'include',
     })
     router.push('/')
   }

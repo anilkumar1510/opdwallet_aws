@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 interface CUG {
   _id: string
@@ -57,7 +58,7 @@ export default function CugsPage() {
   const fetchCugs = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/cugs?limit=100')
+      const response = await apiFetch('/api/cugs?limit=100')
       if (!response.ok) throw new Error('Failed to fetch CUGs')
       const result = await response.json()
       setCugs(result.data || [])
@@ -133,9 +134,8 @@ export default function CugsPage() {
         displayOrder: formData.displayOrder,
       }
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
@@ -157,7 +157,7 @@ export default function CugsPage() {
 
   const handleToggleActive = async (id: string) => {
     try {
-      const response = await fetch(`/api/cugs/${id}/toggle-active`, {
+      const response = await apiFetch(`/api/cugs/${id}/toggle-active`, {
         method: 'PUT',
       })
 
@@ -175,7 +175,7 @@ export default function CugsPage() {
     if (!confirm(`Are you sure you want to delete CUG ${cugId}?`)) return
 
     try {
-      const response = await fetch(`/api/cugs/${id}`, {
+      const response = await apiFetch(`/api/cugs/${id}`, {
         method: 'DELETE',
       })
 

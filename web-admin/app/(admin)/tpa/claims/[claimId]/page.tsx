@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { apiFetch } from '@/lib/api'
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -121,9 +122,7 @@ export default function ClaimDetailPage() {
   const fetchClaim = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/tpa/claims/${claimId}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/tpa/claims/${claimId}`)
       if (response.ok) {
         const data = await response.json()
         setClaim(data.claim)
@@ -139,9 +138,7 @@ export default function ClaimDetailPage() {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-      })
+      const response = await apiFetch('/api/auth/me')
       if (response.ok) {
         const userData = await response.json()
         setCurrentUser(userData)
