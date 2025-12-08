@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
+import { SpecialtyIcon } from '@/components/ui/specialty-icon'
 
 interface SpecialtyWithMapping {
   _id: string
@@ -144,11 +145,12 @@ export function SpecialtyMappingTab({ categoryId, categoryName }: SpecialtyMappi
             className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
           >
             <div className="flex items-center gap-3 flex-1">
-              {specialty.icon && (
-                <span className="text-2xl" aria-label={`${specialty.name} icon`}>
-                  {specialty.icon}
-                </span>
-              )}
+              <SpecialtyIcon
+                icon={specialty.icon}
+                name={specialty.name}
+                size="md"
+                className="text-blue-600"
+              />
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-gray-900 truncate">
                   {specialty.name}
