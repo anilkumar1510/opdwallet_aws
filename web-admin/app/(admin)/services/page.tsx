@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PREDEFINED_CATEGORIES } from '@/lib/constants/categories'
 import { SpecialtyMappingTab } from './components/SpecialtyMappingTab'
 import { LabServiceMappingTab } from './components/LabServiceMappingTab'
+import { ServiceManagementTab } from './components/ServiceManagementTab'
 import { EmptyStateTab } from './components/EmptyStateTab'
 
 export default function ServicesPage() {
@@ -43,6 +44,11 @@ export default function ServicesPage() {
                 categoryId={cat.id}
                 categoryName={cat.fullName}
                 allowedCategories={'labServiceCategories' in cat ? cat.labServiceCategories : undefined}
+              />
+            ) : 'hasServiceManagement' in cat && cat.hasServiceManagement ? (
+              <ServiceManagementTab
+                categoryId={cat.id}
+                categoryName={cat.fullName}
               />
             ) : (
               <EmptyStateTab categoryName={cat.fullName} categoryId={cat.id} />

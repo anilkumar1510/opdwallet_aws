@@ -21,7 +21,14 @@
 
 ### Master Data
 - **/admin/categories** - Manage service categories like consultation, pharmacy, diagnostics
-- **/admin/services** - Configure category-specialty mappings and lab service assignments by category (specialties for In-Clinic/Online, RADIOLOGY/ENDOSCOPY for Diagnostic, PATHOLOGY/CARDIOLOGY/OTHER for Laboratory)
+- **/admin/services** - Configure category-specialty mappings, lab service assignments, and service management by category:
+  - In-Clinic/Online: Specialty mappings
+  - Diagnostic: RADIOLOGY/ENDOSCOPY lab services
+  - Laboratory: PATHOLOGY/CARDIOLOGY/OTHER lab services
+  - Dental: Service management with coverage, copay, waiting periods
+  - Vision: Service management with coverage, copay, annual limits
+  - Wellness: Service management with coverage and annual limits
+  - Pharmacy: Coming soon
 - **/admin/cugs** - Manage Corporate User Groups (CUG) with company details and employee counts
 - **/admin/masters** - Manage master data like relationships and corporate user groups
 
@@ -191,9 +198,13 @@
 - **PUT /api/categories/:categoryId/specialties/:specialtyId/toggle** - Toggle specialty mapping for a category (enable/disable specialty for that category)
 - **GET /api/categories/:categoryId/lab-services?categories=RADIOLOGY,ENDOSCOPY** - Get lab services with mapping status for a category (CAT003 for Diagnostic, CAT004 for Laboratory). Optional query param 'categories' filters by lab service categories (comma-separated)
 - **PUT /api/categories/:categoryId/lab-services/:labServiceId/toggle** - Toggle lab service mapping for a category (enable/disable lab service for that category)
-- **GET /api/services** - Get all service types
-- **POST /api/services** - Create new service type under a category
-- **PUT /api/services/:id** - Update service type details
+- **GET /api/services/types?category=CAT006&isActive=true** - Get all service types with filters (category, search, isActive, pagination)
+- **POST /api/services/types** - Create new service type (Dental, Vision, Wellness) with code, name, coverage, copay, limits
+- **GET /api/services/types/:id** - Get service type by ID
+- **PUT /api/services/types/:id** - Update service type details (coverage, copay, price range, annual limit, waiting period)
+- **DELETE /api/services/types/:id** - Delete service type (Super Admin only)
+- **PUT /api/services/types/:id/toggle-active** - Toggle service type active status
+- **GET /api/services/categories/:category** - Get services by category code (e.g., CAT006 for Dental)
 
 ### Specialties
 - **GET /api/specialties** - Get all medical specialties

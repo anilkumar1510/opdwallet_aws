@@ -5,6 +5,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'In-Clinic Consultation',
     hasSpecialties: true,
     hasLabServices: false,
+    hasServiceManagement: false,
   },
   {
     id: 'CAT002',
@@ -12,6 +13,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Pharmacy',
     hasSpecialties: false,
     hasLabServices: false,
+    hasServiceManagement: false,
   },
   {
     id: 'CAT003',
@@ -20,6 +22,7 @@ export const PREDEFINED_CATEGORIES = [
     hasSpecialties: false,
     hasLabServices: true,
     labServiceCategories: ['RADIOLOGY', 'ENDOSCOPY'],
+    hasServiceManagement: false,
   },
   {
     id: 'CAT004',
@@ -28,6 +31,7 @@ export const PREDEFINED_CATEGORIES = [
     hasSpecialties: false,
     hasLabServices: true,
     labServiceCategories: ['PATHOLOGY', 'CARDIOLOGY', 'OTHER'],
+    hasServiceManagement: false,
   },
   {
     id: 'CAT005',
@@ -35,6 +39,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Online Consultation',
     hasSpecialties: true,
     hasLabServices: false,
+    hasServiceManagement: false,
   },
   {
     id: 'CAT006',
@@ -42,6 +47,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Dental Services',
     hasSpecialties: false,
     hasLabServices: false,
+    hasServiceManagement: true,
   },
   {
     id: 'CAT007',
@@ -49,6 +55,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Vision Care',
     hasSpecialties: false,
     hasLabServices: false,
+    hasServiceManagement: true,
   },
   {
     id: 'CAT008',
@@ -56,6 +63,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Wellness Programs',
     hasSpecialties: false,
     hasLabServices: false,
+    hasServiceManagement: true,
   },
 ] as const;
 
