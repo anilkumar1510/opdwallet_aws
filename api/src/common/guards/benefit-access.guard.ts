@@ -64,17 +64,49 @@ export class BenefitAccessGuard implements CanActivate {
 
       console.log(`[BenefitAccessGuard] Found assignment for policy ${assignment.policyId}`);
 
-      // Get current published plan configuration
+      // Get current published plan configuration (handle both ObjectId and string)
+      const policyIdString = assignment.policyId.toString();
+      console.log(`[BenefitAccessGuard] Querying plan config with:`, {
+        policyId: assignment.policyId,
+        policyIdString: policyIdString,
+        policyIdType: typeof assignment.policyId,
+        isCurrent: true,
+        status: 'PUBLISHED',
+      });
+
       const planConfig = await this.planConfigModel
         .findOne({
-          policyId: assignment.policyId,
+          $or: [
+            { policyId: assignment.policyId },
+            { policyId: policyIdString }
+          ],
           isCurrent: true,
           status: 'PUBLISHED',
         })
         .lean();
 
+      console.log(`[BenefitAccessGuard] Query result:`, planConfig ? {
+        _id: planConfig._id,
+        version: planConfig.version,
+        status: planConfig.status,
+        isCurrent: planConfig.isCurrent,
+        policyId: planConfig.policyId,
+      } : 'null');
+
       if (!planConfig) {
-        console.log(`[BenefitAccessGuard] No published plan config found for policy ${assignment.policyId}`);
+        // Check if there's ANY plan config for this policy
+        const anyConfig = await this.planConfigModel
+          .findOne({
+            $or: [
+              { policyId: assignment.policyId },
+              { policyId: policyIdString }
+            ]
+          })
+          .select('version status isCurrent policyId')
+          .lean();
+
+        console.log(`[BenefitAccessGuard] Any plan config for this policy:`, anyConfig);
+
         throw new ForbiddenException(
           'Policy configuration not found. Please contact your administrator.',
         );

@@ -6,6 +6,7 @@ import {
   ChevronLeftIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline'
+import { apiClient } from '@/lib/api/client'
 
 interface Specialty {
   _id: string
@@ -42,20 +43,18 @@ export default function OnlineSpecialtiesPage() {
 
   const fetchSpecialties = async () => {
     try {
-      const response = await fetch('/api/specialties', {
-        credentials: 'include',
-      })
+      console.log('[OnlineSpecialties] Fetching policy-filtered specialties from API')
+      const response = await apiClient.get('/member/benefits/CAT005/specialties')
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch specialties')
-      }
-
-      const data = await response.json()
-      console.log('[OnlineSpecialties] Specialties received:', data.length)
+      const result = response.data
+      const data = result.services || []
+      console.log('[OnlineSpecialties] Policy-filtered specialties received:', data.length)
       setSpecialties(data)
       setFilteredSpecialties(data)
     } catch (error) {
       console.error('[OnlineSpecialties] Error fetching specialties:', error)
+      setSpecialties([])
+      setFilteredSpecialties([])
     } finally {
       setLoading(false)
     }
@@ -111,8 +110,15 @@ export default function OnlineSpecialtiesPage() {
       <div className="p-4 max-w-2xl mx-auto">
         {filteredSpecialties.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No specialties found</h3>
-            <p className="text-gray-600">Try adjusting your search term</p>
+            <div className="text-5xl mb-4">💻</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery.trim() === '' ? 'No Specialties Available' : 'No specialties found'}
+            </h3>
+            <p className="text-gray-600">
+              {searchQuery.trim() === ''
+                ? 'Online consultation is not configured in your policy. Please contact your HR administrator.'
+                : 'Try adjusting your search term'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">

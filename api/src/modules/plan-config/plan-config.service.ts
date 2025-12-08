@@ -110,10 +110,30 @@ export class PlanConfigService {
       throw new NotFoundException('Configuration not found or already published');
     }
 
+    console.log(`[PlanConfigService] Publishing config version ${version} for policy ${policyId}`);
+
+    // Set status to PUBLISHED
     config.status = 'PUBLISHED';
     config.publishedAt = new Date();
     config.publishedBy = userId;
-    return config.save();
+    await config.save();
+
+    console.log(`[PlanConfigService] Config published, now setting as current`);
+
+    // Automatically set this config as current
+    // Remove current flag from all other configs for this policy
+    await this.planConfigModel.updateMany(
+      { policyId, _id: { $ne: config._id } },
+      { $set: { isCurrent: false } }
+    );
+
+    // Set this config as current
+    config.isCurrent = true;
+    const result = await config.save();
+
+    console.log(`[PlanConfigService] Config set as current (isCurrent: ${result.isCurrent})`);
+
+    return result;
   }
 
   async setCurrentConfig(policyId: string, version: number) {

@@ -41,6 +41,7 @@ export class PlanConfig {
       annualLimit?: number;
       visitLimit?: number;
       notes?: string;
+      allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering: which specialties are covered
     };
     CAT005?: { // Online Consultation
       enabled: boolean;
@@ -49,6 +50,7 @@ export class PlanConfig {
       annualLimit?: number;
       visitLimit?: number;
       notes?: string;
+      allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering: which specialties are covered
     };
     CAT002?: { // Pharmacy
       enabled: boolean;
@@ -65,6 +67,7 @@ export class PlanConfig {
       annualLimit?: number;
       rxRequired?: boolean;
       notes?: string;
+      allowedLabServiceCategories?: string[]; // Service-level filtering: which lab categories (RADIOLOGY, ENDOSCOPY)
     };
     CAT004?: { // Labs
       enabled: boolean;
@@ -73,6 +76,7 @@ export class PlanConfig {
       annualLimit?: number;
       rxRequired?: boolean;
       notes?: string;
+      allowedLabServiceCategories?: string[]; // Service-level filtering: which lab categories (PATHOLOGY, CARDIOLOGY, OTHER)
     };
     dental?: { // Future: Will be CAT006
       enabled: boolean;
@@ -80,6 +84,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
+      allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
     vision?: { // Future: Will be CAT007
       enabled: boolean;
@@ -87,6 +92,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
+      allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
     wellness?: { // Future: Will be CAT008
       enabled: boolean;
@@ -94,6 +100,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       notes?: string;
+      allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
   };
 
@@ -138,6 +145,7 @@ export class PlanConfig {
           annualLimit?: number;
           visitLimit?: number;
           notes?: string;
+          allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering
         };
         CAT005?: { // Online Consultation
           enabled: boolean;
@@ -146,6 +154,7 @@ export class PlanConfig {
           annualLimit?: number;
           visitLimit?: number;
           notes?: string;
+          allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering
         };
         CAT002?: { // Pharmacy
           enabled: boolean;
@@ -162,6 +171,7 @@ export class PlanConfig {
           annualLimit?: number;
           rxRequired?: boolean;
           notes?: string;
+          allowedLabServiceCategories?: string[]; // Service-level filtering
         };
         CAT004?: { // Labs
           enabled: boolean;
@@ -170,6 +180,7 @@ export class PlanConfig {
           annualLimit?: number;
           rxRequired?: boolean;
           notes?: string;
+          allowedLabServiceCategories?: string[]; // Service-level filtering
         };
         dental?: { // Future: Will be CAT006
           enabled: boolean;
@@ -177,6 +188,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
+          allowedServiceCodes?: string[]; // Service-level filtering
         };
         vision?: { // Future: Will be CAT007
           enabled: boolean;
@@ -184,6 +196,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
+          allowedServiceCodes?: string[]; // Service-level filtering
         };
         wellness?: { // Future: Will be CAT008
           enabled: boolean;
@@ -191,6 +204,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           notes?: string;
+          allowedServiceCodes?: string[]; // Service-level filtering
         };
       };
       wallet?: {

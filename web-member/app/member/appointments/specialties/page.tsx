@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
+import { apiClient } from '@/lib/api/client'
 
 interface Specialty {
   _id: string
@@ -46,21 +47,18 @@ export default function SpecialtiesPage() {
 
   const fetchSpecialties = async () => {
     try {
-      console.log('[Specialties] Fetching specialties from API')
-      const response = await fetch('/api/specialties', {
-        credentials: 'include',
-      })
+      console.log('[Specialties] Fetching policy-filtered specialties from API')
+      const response = await apiClient.get('/member/benefits/CAT001/specialties')
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch specialties')
-      }
-
-      const data = await response.json()
-      console.log('[Specialties] Specialties received:', { count: data.length })
+      const result = response.data
+      const data = result.services || []
+      console.log('[Specialties] Policy-filtered specialties received:', { count: data.length })
       setSpecialties(data)
       setFilteredSpecialties(data)
     } catch (error) {
       console.error('[Specialties] Error fetching specialties:', error)
+      setSpecialties([])
+      setFilteredSpecialties([])
     } finally {
       setLoading(false)
     }
@@ -116,8 +114,15 @@ export default function SpecialtiesPage() {
       <div className="p-4 max-w-2xl mx-auto">
         {filteredSpecialties.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No specialties found</h3>
-            <p className="text-gray-600">Try a different search term</p>
+            <div className="text-5xl mb-4">🏥</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery.trim() === '' ? 'No Specialties Available' : 'No specialties found'}
+            </h3>
+            <p className="text-gray-600">
+              {searchQuery.trim() === ''
+                ? 'In-clinic consultation is not configured in your policy. Please contact your HR administrator.'
+                : 'Try a different search term'}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">

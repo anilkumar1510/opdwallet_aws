@@ -627,6 +627,9 @@ export default function PlanConfigEdit() {
             isReadOnly={isReadOnly}
             selectedRelationship={selectedRelationship}
             relationships={relationships}
+            policyId={policyId}
+            version={isNew ? 1 : parseInt(version)}
+            isNew={isNew}
             onUpdateBenefit={updateBenefit}
           />
         </TabsContent>

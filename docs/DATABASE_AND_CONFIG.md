@@ -53,7 +53,7 @@ All services communicate through an internal Docker network. Only Nginx is expos
 ### Core Collections
 - **users** - All users including members, admins, doctors, TPA users, and finance users with authentication details
 - **policies** - Insurance policies for corporate clients with coverage details
-- **plan_configs** - Plan configurations that define wallet categories, limits, and copay percentages for each policy
+- **plan_configs** - Plan configurations that define wallet categories, limits, and copay percentages for each policy. Also includes service-level configurations (allowedSpecialties, allowedLabServiceCategories, allowedServiceCodes) to control which specific services are available per benefit category
 - **userPolicyAssignments** - Links users to their policies with effective start and end dates
 
 ### Wallet & Financial
