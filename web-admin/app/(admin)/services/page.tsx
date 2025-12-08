@@ -42,6 +42,7 @@ export default function ServicesPage() {
               <LabServiceMappingTab
                 categoryId={cat.id}
                 categoryName={cat.fullName}
+                allowedCategories={'labServiceCategories' in cat ? cat.labServiceCategories : undefined}
               />
             ) : (
               <EmptyStateTab categoryName={cat.fullName} categoryId={cat.id} />

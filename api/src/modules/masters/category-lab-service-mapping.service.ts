@@ -11,7 +11,7 @@ import { LabServiceWithMappingDto } from './dto/category-lab-service-mapping.dto
 
 @Injectable()
 export class CategoryLabServiceMappingService {
-  private readonly SUPPORTED_CATEGORIES = ['CAT004']; // Laboratory category only
+  private readonly SUPPORTED_CATEGORIES = ['CAT003', 'CAT004']; // Diagnostic and Laboratory categories
 
   constructor(
     @InjectModel(CategoryLabServiceMapping.name)
@@ -27,15 +27,25 @@ export class CategoryLabServiceMappingService {
    */
   async getLabServicesForCategory(
     categoryId: string,
+    labServiceCategories?: string[],
   ): Promise<LabServiceWithMappingDto[]> {
     console.log(`[CategoryLabServiceMappingService] Getting lab services for category: ${categoryId}`);
 
     // Validate category exists and is supported
     await this.validateCategory(categoryId);
 
-    // Fetch all active lab services sorted by category and name
+    // Build query for lab services
+    const query: any = { isActive: true };
+
+    // Filter by lab service categories if provided
+    if (labServiceCategories && labServiceCategories.length > 0) {
+      query.category = { $in: labServiceCategories };
+      console.log(`[CategoryLabServiceMappingService] Filtering by categories: ${labServiceCategories.join(', ')}`);
+    }
+
+    // Fetch lab services sorted by category and name
     const labServices = await this.labServiceModel
-      .find({ isActive: true })
+      .find(query)
       .sort({ category: 1, displayOrder: 1, name: 1 })
       .exec();
 

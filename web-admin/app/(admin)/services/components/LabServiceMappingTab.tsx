@@ -22,9 +22,10 @@ interface LabServiceWithMapping {
 interface LabServiceMappingTabProps {
   categoryId: string
   categoryName: string
+  allowedCategories?: string[]
 }
 
-export function LabServiceMappingTab({ categoryId, categoryName }: LabServiceMappingTabProps) {
+export function LabServiceMappingTab({ categoryId, categoryName, allowedCategories }: LabServiceMappingTabProps) {
   const [labServices, setLabServices] = useState<LabServiceWithMapping[]>([])
   const [loading, setLoading] = useState(true)
   const [toggleLoading, setToggleLoading] = useState<string | null>(null)
@@ -37,7 +38,18 @@ export function LabServiceMappingTab({ categoryId, categoryName }: LabServiceMap
   const fetchLabServices = async () => {
     try {
       setLoading(true)
-      const response = await apiFetch(`/api/categories/${categoryId}/lab-services`)
+
+      // Build query parameters
+      const params = new URLSearchParams()
+      if (allowedCategories && allowedCategories.length > 0) {
+        params.append('categories', allowedCategories.join(','))
+      }
+
+      const url = `/api/categories/${categoryId}/lab-services${
+        params.toString() ? `?${params.toString()}` : ''
+      }`
+
+      const response = await apiFetch(url)
       if (response.ok) {
         const data = await response.json()
         setLabServices(data)
@@ -134,7 +146,9 @@ export function LabServiceMappingTab({ categoryId, categoryName }: LabServiceMap
   }
 
   // Filter services by category
-  const categories = ['ALL', 'PATHOLOGY', 'RADIOLOGY', 'CARDIOLOGY', 'ENDOSCOPY', 'OTHER']
+  const categories = allowedCategories && allowedCategories.length > 0
+    ? ['ALL', ...allowedCategories]
+    : ['ALL', 'PATHOLOGY', 'RADIOLOGY', 'CARDIOLOGY', 'ENDOSCOPY', 'OTHER']
   const filteredServices = selectedCategory === 'ALL'
     ? labServices
     : labServices.filter(s => s.category === selectedCategory)

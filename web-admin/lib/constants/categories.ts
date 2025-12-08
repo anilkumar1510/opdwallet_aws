@@ -18,7 +18,8 @@ export const PREDEFINED_CATEGORIES = [
     name: 'Diagnostic',
     fullName: 'Diagnostic Services',
     hasSpecialties: false,
-    hasLabServices: false,
+    hasLabServices: true,
+    labServiceCategories: ['RADIOLOGY', 'ENDOSCOPY'],
   },
   {
     id: 'CAT004',
@@ -26,6 +27,7 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Laboratory Services',
     hasSpecialties: false,
     hasLabServices: true,
+    labServiceCategories: ['PATHOLOGY', 'CARDIOLOGY', 'OTHER'],
   },
   {
     id: 'CAT005',

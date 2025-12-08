@@ -8,6 +8,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+import { apiFetch } from '@/lib/api'
 
 interface LabService {
   _id: string
@@ -43,9 +44,7 @@ export default function LabServicesPage() {
       const params = new URLSearchParams()
       if (categoryFilter) params.append('category', categoryFilter)
 
-      const response = await fetch(`/api/admin/lab/services?${params}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/admin/lab/services?${params}`)
 
       if (!response.ok) throw new Error('Failed to fetch services')
 
@@ -73,10 +72,8 @@ export default function LabServicesPage() {
 
       const method = editingService ? 'PATCH' : 'POST'
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(formData),
       })
 
@@ -110,9 +107,8 @@ export default function LabServicesPage() {
     if (!confirm('Are you sure you want to deactivate this service?')) return
 
     try {
-      const response = await fetch(`/api/admin/lab/services/${serviceId}`, {
+      const response = await apiFetch(`/api/admin/lab/services/${serviceId}`, {
         method: 'DELETE',
-        credentials: 'include',
       })
 
       if (!response.ok) throw new Error('Failed to delete service')

@@ -6,6 +6,7 @@ import {
   Body,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { CategoryLabServiceMappingService } from './category-lab-service-mapping.service';
 import { LabServiceWithMappingDto } from './dto/category-lab-service-mapping.dto';
@@ -20,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('categories')
@@ -34,7 +36,13 @@ export class CategoryLabServiceMappingController {
   @Get(':categoryId/lab-services')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all lab services with mapping status for a category' })
-  @ApiParam({ name: 'categoryId', description: 'Category ID (CAT004)', example: 'CAT004' })
+  @ApiParam({ name: 'categoryId', description: 'Category ID (e.g., CAT003, CAT004)', example: 'CAT004' })
+  @ApiQuery({
+    name: 'categories',
+    required: false,
+    description: 'Comma-separated lab service categories to filter (e.g., RADIOLOGY,ENDOSCOPY)',
+    example: 'RADIOLOGY,ENDOSCOPY',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lab services retrieved successfully',
@@ -46,9 +54,16 @@ export class CategoryLabServiceMappingController {
   @ApiResponse({ status: 404, description: 'Category not found' })
   async getLabServicesForCategory(
     @Param('categoryId') categoryId: string,
+    @Query('categories') categories?: string,
   ): Promise<LabServiceWithMappingDto[]> {
-    console.log(`[CategoryLabServiceMappingController] GET /categories/${categoryId}/lab-services`);
-    return this.mappingService.getLabServicesForCategory(categoryId);
+    console.log(`[CategoryLabServiceMappingController] GET /categories/${categoryId}/lab-services${categories ? `?categories=${categories}` : ''}`);
+
+    // Parse comma-separated categories
+    const labServiceCategories = categories
+      ? categories.split(',').map(c => c.trim().toUpperCase())
+      : undefined;
+
+    return this.mappingService.getLabServicesForCategory(categoryId, labServiceCategories);
   }
 
   @Put(':categoryId/lab-services/:labServiceId/toggle')
