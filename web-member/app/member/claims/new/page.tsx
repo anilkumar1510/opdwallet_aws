@@ -48,42 +48,75 @@ interface DocumentPreview {
   type: 'image' | 'pdf'
 }
 
-const CLAIM_CATEGORIES = [
-  {
-    id: 'consultation',
-    name: 'Consult',
-    description: 'Doctor visits & consultations',
+// Comprehensive category code mapping for all benefit types
+const CATEGORY_CODE_MAP: Record<string, {
+  name: string
+  description: string
+  icon: any
+  color: string
+}> = {
+  'CAT001': {
+    name: 'In-Clinic Consultation',
+    description: 'Doctor visits at clinic',
     icon: DocumentTextIcon,
-    color: 'bg-blue-600',
-    categoryCode: 'CAT001',
-    isActive: true
+    color: 'bg-blue-600'
   },
-  {
-    id: 'diagnostics',
-    name: 'Lab',
-    description: 'Tests, scans & reports',
-    icon: HeartIcon,
-    color: 'bg-red-600',
-    categoryCode: 'CAT002',
-    isActive: false // Dummy for now
+  'CAT005': {
+    name: 'Online Consultation',
+    description: 'Virtual doctor consultations',
+    icon: DocumentTextIcon,
+    color: 'bg-indigo-600'
   },
-  {
-    id: 'pharmacy',
+  'CAT002': {
     name: 'Pharmacy',
     description: 'Medicines & prescriptions',
     icon: BeakerIcon,
-    color: 'bg-green-600',
-    categoryCode: 'CAT003',
-    isActive: false // Dummy for now
+    color: 'bg-green-600'
+  },
+  'CAT003': {
+    name: 'Diagnostics',
+    description: 'Diagnostic tests & scans',
+    icon: HeartIcon,
+    color: 'bg-red-600'
+  },
+  'CAT004': {
+    name: 'Labs',
+    description: 'Laboratory tests',
+    icon: HeartIcon,
+    color: 'bg-pink-600'
+  },
+  'dental': {
+    name: 'Dental',
+    description: 'Dental care services',
+    icon: SparklesIcon,
+    color: 'bg-purple-600'
+  },
+  'vision': {
+    name: 'Vision',
+    description: 'Eye care & vision services',
+    icon: EyeCareIcon,
+    color: 'bg-yellow-600'
+  },
+  'wellness': {
+    name: 'Wellness',
+    description: 'Wellness & preventive care',
+    icon: SparklesIcon,
+    color: 'bg-teal-600'
   }
-]
+}
 
 export default function NewClaimPage() {
   const { activeMember } = useFamily()
   const [currentStep, setCurrentStep] = useState(1)
   const [walletData, setWalletData] = useState<any>(null)
   const [walletRules, setWalletRules] = useState<any>(null)
-  const [enabledCategories, setEnabledCategories] = useState<string[]>([])
+  const [availableCategories, setAvailableCategories] = useState<Array<{
+    code: string
+    name: string
+    description: string
+    icon: any
+    color: string
+  }>>([])
   const [familyMembers, setFamilyMembers] = useState<any[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
@@ -158,15 +191,9 @@ export default function NewClaimPage() {
       return 0
     }
 
-    const categoryMap: Record<string, string> = {
-      'consultation': 'CAT001',
-      'diagnostics': 'CAT002',
-      'pharmacy': 'CAT003'
-    }
-
-    const mappedCategory = categoryMap[formData.category]
+    // formData.category now contains the category code directly (e.g., CAT001, CAT005)
     const categoryBalance = walletData.categories?.find(
-      (b: any) => b.categoryCode === mappedCategory
+      (b: any) => b.categoryCode === formData.category
     )
 
     return categoryBalance?.available || 0
@@ -199,25 +226,41 @@ export default function NewClaimPage() {
           const data = await response.json()
           setWalletData(data)
 
-          // Extract enabled categories from wallet config
+          // Extract enabled benefit categories from wallet config
           if (data.config?.benefits) {
-            const categoryMap: Record<string, string> = {
-              'CAT001': 'consultation',
-              'CAT002': 'diagnostics',
-              'CAT003': 'pharmacy'
-            }
+            const categories: Array<{
+              code: string
+              name: string
+              description: string
+              icon: any
+              color: string
+            }> = []
 
-            const enabled: string[] = []
-            Object.keys(data.config.benefits).forEach((catCode) => {
-              const benefit = data.config.benefits[catCode]
+            // Iterate through all benefits and build category list
+            Object.keys(data.config.benefits).forEach((categoryCode) => {
+              const benefit = data.config.benefits[categoryCode]
+
+              // Only include if both enabled AND claimEnabled are true
               if (benefit?.enabled && benefit?.claimEnabled) {
-                const mappedId = categoryMap[catCode]
-                if (mappedId) {
-                  enabled.push(mappedId)
+                const categoryInfo = CATEGORY_CODE_MAP[categoryCode]
+
+                if (categoryInfo) {
+                  categories.push({
+                    code: categoryCode,
+                    name: categoryInfo.name,
+                    description: categoryInfo.description,
+                    icon: categoryInfo.icon,
+                    color: categoryInfo.color
+                  })
                 }
               }
             })
-            setEnabledCategories(enabled)
+
+            console.log('📋 [CLAIMS] Available categories from policy:', categories)
+            setAvailableCategories(categories)
+          } else {
+            console.warn('⚠️ [CLAIMS] No benefits configuration found')
+            setAvailableCategories([])
           }
 
           // Set wallet rules for per-claim limit warnings
@@ -475,11 +518,16 @@ export default function NewClaimPage() {
 
     setIsSubmitting(true)
     try {
-      // Map frontend category to backend ClaimCategory enum
-      const categoryMap: Record<string, string> = {
-        'consultation': 'CONSULTATION',
-        'diagnostics': 'DIAGNOSTICS',
-        'pharmacy': 'PHARMACY'
+      // Map category codes to backend ClaimCategory enum
+      const categoryCodeToEnum: Record<string, string> = {
+        'CAT001': 'CONSULTATION', // In-Clinic Consultation
+        'CAT005': 'CONSULTATION', // Online Consultation (same enum value)
+        'CAT002': 'PHARMACY',
+        'CAT003': 'DIAGNOSTICS',
+        'CAT004': 'DIAGNOSTICS', // Labs (maps to DIAGNOSTICS)
+        'dental': 'DENTAL',
+        'vision': 'VISION',
+        'wellness': 'WELLNESS'
       }
 
       // Prepare form data for multipart upload
@@ -490,7 +538,7 @@ export default function NewClaimPage() {
 
       // Add claim fields
       formDataToSend.append('claimType', 'REIMBURSEMENT')
-      formDataToSend.append('category', categoryMap[formData.category] || 'CONSULTATION')
+      formDataToSend.append('category', categoryCodeToEnum[formData.category] || 'CONSULTATION')
       formDataToSend.append('treatmentDate', formData.treatmentDate)
       formDataToSend.append('providerName', 'Self Service')
       formDataToSend.append('billAmount', formData.billAmount)
@@ -630,10 +678,17 @@ export default function NewClaimPage() {
             "w-full h-touch px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent appearance-none bg-white",
             errors.category ? "border-danger" : "border-surface-border"
           )}
+          disabled={!selectedUserId || availableCategories.length === 0}
         >
-          <option value="">Select a category</option>
-          {CLAIM_CATEGORIES.filter(cat => enabledCategories.length === 0 || enabledCategories.includes(cat.id)).map((category) => (
-            <option key={category.id} value={category.id}>
+          <option value="">
+            {!selectedUserId
+              ? 'Please select a family member first'
+              : availableCategories.length === 0
+                ? 'No claim categories available'
+                : 'Select a category'}
+          </option>
+          {availableCategories.map((category) => (
+            <option key={category.code} value={category.code}>
               {category.name}
             </option>
           ))}
