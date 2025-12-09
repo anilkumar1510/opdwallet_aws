@@ -3,6 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { WalletService } from './wallet.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
+import { PlanConfig, PlanConfigDocument } from '../plan-config/schemas/plan-config.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -23,6 +25,8 @@ export class WalletController {
   constructor(
     private readonly walletService: WalletService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Assignment.name) private assignmentModel: Model<AssignmentDocument>,
+    @InjectModel(PlanConfig.name) private planConfigModel: Model<PlanConfigDocument>,
   ) {}
 
   @Get('transactions')
@@ -66,7 +70,51 @@ export class WalletController {
     await this.verifyFamilyAccess(req.user.userId, targetUserId);
 
     const wallet = await this.walletService.getUserWallet(targetUserId);
-    const formattedWallet = this.walletService.formatWalletForFrontend(wallet as any);
+
+    // Fetch plan config for this user
+    let planConfig = null;
+    if (wallet && wallet.policyAssignmentId) {
+      // Get assignment to find policyId
+      const assignment = await this.assignmentModel
+        .findById(wallet.policyAssignmentId)
+        .select('policyId')
+        .lean()
+        .exec();
+
+      if (assignment) {
+        // Get current plan config for this policy
+        planConfig = await this.planConfigModel
+          .findOne({
+            policyId: assignment.policyId,
+            isCurrent: true,
+          })
+          .select('benefits wallet memberConfigs')
+          .lean()
+          .exec();
+
+        // If user is a dependent, get their member-specific config
+        if (planConfig && planConfig.memberConfigs) {
+          const user = await this.userModel
+            .findById(targetUserId)
+            .select('relationship')
+            .lean()
+            .exec();
+
+          if (user && user.relationship && user.relationship !== 'REL001' && user.relationship !== 'SELF') {
+            const memberConfig = planConfig.memberConfigs[user.relationship as string];
+            if (memberConfig && !memberConfig.inheritFromPrimary) {
+              // Use member-specific config
+              planConfig = {
+                benefits: memberConfig.benefits || planConfig.benefits,
+                wallet: memberConfig.wallet || planConfig.wallet,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    const formattedWallet = this.walletService.formatWalletForFrontend(wallet as any, planConfig);
 
     return formattedWallet;
   }

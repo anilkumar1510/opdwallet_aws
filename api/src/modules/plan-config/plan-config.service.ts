@@ -264,4 +264,135 @@ export class PlanConfigService {
       message: 'Spouse coverage migration completed successfully'
     };
   }
+
+  /**
+   * Migrate per-claim limits from wallet to benefits (per category)
+   * Applies wallet.perClaimLimit to all enabled categories where claimEnabled=true
+   */
+  async migratePerClaimLimitToBenefits() {
+    console.log('🔄 [MIGRATION] Starting per-claim limit migration from wallet to benefits');
+
+    const results: {
+      totalConfigs: number;
+      migratedPrimary: number;
+      migratedMemberConfigs: number;
+      skipped: number;
+      errors: Array<{
+        configId: string;
+        policyId: any;
+        version: number;
+        error: string;
+      }>;
+    } = {
+      totalConfigs: 0,
+      migratedPrimary: 0,
+      migratedMemberConfigs: 0,
+      skipped: 0,
+      errors: [],
+    };
+
+    try {
+      // Find all plan configs with wallet.perClaimLimit set
+      const configs = await this.planConfigModel.find({
+        'wallet.perClaimLimit': { $exists: true, $ne: null },
+      }).exec();
+
+      results.totalConfigs = configs.length;
+      console.log(`📊 Found ${results.totalConfigs} configs with wallet.perClaimLimit`);
+
+      for (const config of configs) {
+        try {
+          let modified = false;
+
+          // STEP 1: Migrate primary benefits
+          if (config.wallet?.perClaimLimit) {
+            const limit = config.wallet.perClaimLimit;
+            console.log(`\n🔍 Processing policy ${config.policyId}, version ${config.version}`);
+            console.log(`   Wallet per-claim limit: ₹${limit}`);
+
+            const categories = ['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT005', 'dental', 'vision', 'wellness'];
+
+            for (const categoryKey of categories) {
+              const benefit = (config.benefits as any)?.[categoryKey];
+
+              if (benefit?.enabled && benefit?.claimEnabled) {
+                // Only set if not already present
+                if (!benefit.perClaimLimit) {
+                  benefit.perClaimLimit = limit;
+                  modified = true;
+                  console.log(`   ✅ Applied to ${categoryKey}: ₹${limit}`);
+                } else {
+                  console.log(`   ⏭️  ${categoryKey} already has limit: ₹${benefit.perClaimLimit}`);
+                }
+              }
+            }
+
+            if (modified) {
+              results.migratedPrimary++;
+            }
+          }
+
+          // STEP 2: Migrate memberConfigs
+          if (config.memberConfigs) {
+            for (const [relCode, memberConfig] of Object.entries(config.memberConfigs)) {
+              if (memberConfig.wallet?.perClaimLimit && memberConfig.benefits) {
+                const limit = memberConfig.wallet.perClaimLimit;
+                console.log(`   📋 Processing relationship ${relCode}, limit: ₹${limit}`);
+
+                const categories = ['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT005', 'dental', 'vision', 'wellness'];
+
+                for (const categoryKey of categories) {
+                  const benefit = (memberConfig.benefits as any)?.[categoryKey];
+
+                  if (benefit?.enabled && benefit?.claimEnabled && !benefit.perClaimLimit) {
+                    benefit.perClaimLimit = limit;
+                    modified = true;
+                    console.log(`      ✅ Applied to ${relCode}.${categoryKey}: ₹${limit}`);
+                  }
+                }
+
+                if (modified) {
+                  results.migratedMemberConfigs++;
+                }
+              }
+            }
+          }
+
+          // STEP 3: Save if modified
+          if (modified) {
+            await config.save();
+            console.log(`   💾 Saved changes for policy ${config.policyId}, version ${config.version}`);
+          } else {
+            results.skipped++;
+            console.log(`   ⏭️  No changes needed for policy ${config.policyId}, version ${config.version}`);
+          }
+
+        } catch (error) {
+          console.error(`❌ Error processing config ${config._id}:`, error.message);
+          results.errors.push({
+            configId: String(config._id),
+            policyId: config.policyId,
+            version: config.version,
+            error: error.message,
+          });
+        }
+      }
+
+      console.log('\n🎉 [MIGRATION] Per-claim limit migration completed!');
+      console.log(`   📊 Total configs: ${results.totalConfigs}`);
+      console.log(`   ✅ Migrated primary: ${results.migratedPrimary}`);
+      console.log(`   ✅ Migrated memberConfigs: ${results.migratedMemberConfigs}`);
+      console.log(`   ⏭️  Skipped: ${results.skipped}`);
+      console.log(`   ❌ Errors: ${results.errors.length}`);
+
+      return {
+        success: results.errors.length === 0,
+        ...results,
+      };
+
+    } catch (error) {
+      console.error('❌ [MIGRATION] Fatal error during migration:', error);
+      throw error;
+    }
+  }
 }

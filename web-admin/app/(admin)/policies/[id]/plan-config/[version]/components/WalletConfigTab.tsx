@@ -169,25 +169,28 @@ export function WalletConfigTab({
                   )}
                 </td>
               </tr>
-              <tr className="bg-gray-50/50">
-                <td className="px-4 py-3 text-sm font-semibold text-gray-700 w-1/3">Per Claim Limit</td>
+              {/* DEPRECATED: Per-claim limits now configured in Benefits tab */}
+              <tr className="bg-gray-50/50 opacity-50">
+                <td className="px-4 py-3 text-sm font-semibold text-gray-700 w-1/3">
+                  <div>Per Claim Limit</div>
+                  <div className="text-xs text-amber-600 font-normal">
+                    Deprecated: Configure per-category in Benefits tab
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">₹</span>
                     <Input
                       type="number"
                       value={currentWallet?.perClaimLimit || ''}
-                      onChange={(e) => onUpdateWallet('perClaimLimit', parseInt(e.target.value) || 0)}
-                      disabled={isDisabled}
-                      className="w-32 bg-white text-sm"
+                      disabled={true}
+                      className="w-32 bg-gray-100 text-sm cursor-not-allowed"
                       placeholder="0"
                     />
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {selectedRelationship !== 'PRIMARY' && isInheriting && (
-                    <span className="text-green-600">✓ Inherited</span>
-                  )}
+                <td className="px-4 py-3 text-xs text-amber-600">
+                  Moved to Benefits tab
                 </td>
               </tr>
 

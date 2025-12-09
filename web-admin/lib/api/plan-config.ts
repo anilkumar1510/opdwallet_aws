@@ -12,6 +12,7 @@ export interface PlanConfig {
       claimEnabled: boolean;
       vasEnabled: boolean;
       annualLimit?: number;
+      perClaimLimit?: number;
       notes?: string;
     };
   };

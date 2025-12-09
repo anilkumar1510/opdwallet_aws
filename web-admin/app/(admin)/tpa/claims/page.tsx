@@ -11,6 +11,7 @@ import {
   EyeIcon,
   UserPlusIcon,
 } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface Claim {
   _id: string
@@ -25,6 +26,9 @@ interface Claim {
   treatmentDate: string
   providerName: string
   billAmount: number
+  cappedAmount?: number
+  wasAutoCapped?: boolean
+  perClaimLimitApplied?: number
   status: string
   assignedTo?: {
     name: { fullName: string }
@@ -79,9 +83,7 @@ export default function TPAClaimsPage() {
         params.append('assignedTo', assignedToFilter)
       }
 
-      const response = await fetch(`/api/tpa/claims?${params.toString()}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/tpa/claims?${params.toString()}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -275,6 +277,9 @@ export default function TPAClaimsPage() {
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount Submitted for Approval
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -320,6 +325,22 @@ export default function TPAClaimsPage() {
                       <div className="text-sm font-medium text-gray-900">
                         ₹{claim.billAmount?.toLocaleString() || 0}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {claim.wasAutoCapped ? (
+                        <div>
+                          <div className="text-sm font-semibold text-green-700">
+                            ₹{claim.cappedAmount?.toLocaleString() || 0}
+                          </div>
+                          <div className="text-xs text-amber-600">
+                            (Capped from ₹{claim.billAmount?.toLocaleString() || 0})
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-medium text-gray-900">
+                          ₹{claim.billAmount?.toLocaleString() || 0}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

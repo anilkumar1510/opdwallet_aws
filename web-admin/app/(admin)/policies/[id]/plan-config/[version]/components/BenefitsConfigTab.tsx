@@ -162,6 +162,7 @@ export function BenefitsConfigTab({
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Enabled</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Annual Limit (₹)</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Per Claim Limit (₹)</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Claims</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">VAS</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Notes</th>
@@ -234,6 +235,24 @@ export function BenefitsConfigTab({
                             placeholder="0"
                             className="w-full text-sm"
                           />
+                        </td>
+                        {/* Per Claim Limit */}
+                        <td className="px-4 py-3">
+                          <Input
+                            id={`${category.categoryId}-per-claim-limit`}
+                            type="number"
+                            value={benefit?.enabled && benefit?.claimEnabled ? (benefit.perClaimLimit || '') : ''}
+                            onChange={(e) => onUpdateBenefit(category.categoryId, 'perClaimLimit', parseInt(e.target.value) || 0)}
+                            disabled={isDisabled || !benefit?.enabled || !benefit?.claimEnabled}
+                            placeholder="Optional"
+                            className="w-full text-sm"
+                            title="Maximum amount per claim. Leave blank for no limit."
+                          />
+                          {benefit?.enabled && benefit?.claimEnabled && benefit?.perClaimLimit && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Max ₹{benefit.perClaimLimit.toLocaleString()}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Switch

@@ -32,8 +32,6 @@ interface FormData {
   claimType: 'reimbursement' | 'cashless-preauth' | ''
   category: string
   treatmentDate: string
-  providerName: string
-  providerLocation: string
   billAmount: string
   billNumber: string
   treatmentDescription: string
@@ -85,14 +83,13 @@ export default function NewClaimPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [walletData, setWalletData] = useState<any>(null)
   const [walletRules, setWalletRules] = useState<any>(null)
+  const [enabledCategories, setEnabledCategories] = useState<string[]>([])
   const [familyMembers, setFamilyMembers] = useState<any[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
     claimType: 'reimbursement',
     category: '',
     treatmentDate: '',
-    providerName: '',
-    providerLocation: '',
     billAmount: '',
     billNumber: '',
     treatmentDescription: '',
@@ -201,6 +198,38 @@ export default function NewClaimPage() {
         if (response.ok) {
           const data = await response.json()
           setWalletData(data)
+
+          // Extract enabled categories from wallet config
+          if (data.config?.benefits) {
+            const categoryMap: Record<string, string> = {
+              'CAT001': 'consultation',
+              'CAT002': 'diagnostics',
+              'CAT003': 'pharmacy'
+            }
+
+            const enabled: string[] = []
+            Object.keys(data.config.benefits).forEach((catCode) => {
+              const benefit = data.config.benefits[catCode]
+              if (benefit?.enabled && benefit?.claimEnabled) {
+                const mappedId = categoryMap[catCode]
+                if (mappedId) {
+                  enabled.push(mappedId)
+                }
+              }
+            })
+            setEnabledCategories(enabled)
+          }
+
+          // Set wallet rules for per-claim limit warnings
+          if (data.config) {
+            setWalletRules({
+              totalAnnualAmount: data.config.wallet?.totalAnnualAmount,
+              perClaimLimit: data.config.wallet?.perClaimLimit,
+              copay: data.config.wallet?.copay,
+              partialPaymentEnabled: data.config.wallet?.partialPaymentEnabled,
+              categoryLimits: data.config.benefits || {}
+            })
+          }
         }
       } catch (error) {
         console.error('Failed to fetch wallet data:', error)
@@ -283,13 +312,6 @@ export default function NewClaimPage() {
     }
   }
 
-  // Helper function to validate provider name
-  const validateProviderName = (errors: Record<string, string>) => {
-    if (!formData.providerName.trim()) {
-      errors.providerName = 'Provider name is required'
-    }
-  }
-
   // Helper function to validate bill amount
   const validateBillAmount = (errors: Record<string, string>) => {
     if (!formData.billAmount || parseFloat(formData.billAmount) <= 0) {
@@ -312,7 +334,6 @@ export default function NewClaimPage() {
     validateUserSelection(errors)
     validateCategory(errors)
     validateTreatmentDate(errors)
-    validateProviderName(errors)
     validateBillAmount(errors)
   }
 
@@ -471,12 +492,8 @@ export default function NewClaimPage() {
       formDataToSend.append('claimType', 'REIMBURSEMENT')
       formDataToSend.append('category', categoryMap[formData.category] || 'CONSULTATION')
       formDataToSend.append('treatmentDate', formData.treatmentDate)
-      formDataToSend.append('providerName', formData.providerName)
+      formDataToSend.append('providerName', 'Self Service')
       formDataToSend.append('billAmount', formData.billAmount)
-
-      if (formData.providerLocation) {
-        formDataToSend.append('providerLocation', formData.providerLocation)
-      }
       if (formData.billNumber) {
         formDataToSend.append('billNumber', formData.billNumber)
       }
@@ -547,7 +564,17 @@ export default function NewClaimPage() {
       // Clear draft after successful submission
       localStorage.removeItem('claimDraft')
 
-      // Redirect to claims list or show success message
+      // Show success message with cap info if applicable
+      if (submitResult.wasCapped) {
+        alert(
+          `Claim submitted successfully!\n\n` +
+          `Note: Your bill amount of ₹${submitResult.originalBillAmount.toLocaleString()} ` +
+          `was capped to ₹${submitResult.cappedAmount.toLocaleString()} ` +
+          `as it exceeded the per-claim limit of ₹${submitResult.perClaimLimitApplied.toLocaleString()}.`
+        )
+      }
+
+      // Redirect to claims list
       window.location.href = '/member/claims'
 
     } catch (error: any) {
@@ -594,7 +621,7 @@ export default function NewClaimPage() {
       {/* Category Selection */}
       <div>
         <label className="block text-sm font-medium text-ink-900 mb-2">
-          Treatment Category *
+          Claim Category *
         </label>
         <select
           value={formData.category}
@@ -605,7 +632,7 @@ export default function NewClaimPage() {
           )}
         >
           <option value="">Select a category</option>
-          {CLAIM_CATEGORIES.map((category) => (
+          {CLAIM_CATEGORIES.filter(cat => enabledCategories.length === 0 || enabledCategories.includes(cat.id)).map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
             </option>
@@ -631,10 +658,10 @@ export default function NewClaimPage() {
         )}
       </div>
 
-      {/* Treatment Date */}
+      {/* Billing Date */}
       <div>
         <label className="block text-sm font-medium text-ink-900 mb-2">
-          Treatment Date *
+          Billing Date *
         </label>
         <input
           type="date"
@@ -652,44 +679,6 @@ export default function NewClaimPage() {
             {errors.treatmentDate}
           </p>
         )}
-      </div>
-
-      {/* Provider Details */}
-      <div className="grid grid-cols-1 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-ink-900 mb-2">
-            Provider Name *
-          </label>
-          <input
-            type="text"
-            value={formData.providerName}
-            onChange={(e) => setFormData(prev => ({ ...prev, providerName: e.target.value }))}
-            placeholder="Hospital/Clinic name"
-            className={cn(
-              "w-full h-touch px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent",
-              errors.providerName ? "border-danger" : "border-surface-border"
-            )}
-          />
-          {errors.providerName && (
-            <p className="text-danger text-sm mt-1 flex items-center">
-              <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-              {errors.providerName}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink-900 mb-2">
-            Location
-          </label>
-          <input
-            type="text"
-            value={formData.providerLocation}
-            onChange={(e) => setFormData(prev => ({ ...prev, providerLocation: e.target.value }))}
-            placeholder="City, State"
-            className="w-full h-touch px-4 py-3 border border-surface-border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent"
-          />
-        </div>
       </div>
 
       {/* Amount and Bill Number */}
@@ -729,6 +718,64 @@ export default function NewClaimPage() {
           />
         </div>
       </div>
+
+      {/* Per-Claim Limit Warning and Amount Submitted for Approval */}
+      {formData.billAmount && walletRules?.categoryLimits && (() => {
+        const categoryMap: Record<string, string> = {
+          'consultation': 'CAT001',
+          'diagnostics': 'CAT003',
+          'pharmacy': 'CAT002',
+          'dental': 'CAT006',
+          'vision': 'CAT007',
+          'wellness': 'CAT008'
+        };
+        const categoryCode = categoryMap[formData.category];
+        const categoryLimit = walletRules.categoryLimits[categoryCode]?.perClaimLimit;
+        const billAmount = parseFloat(formData.billAmount);
+
+        if (categoryLimit && billAmount > categoryLimit) {
+          const approvedAmount = Math.min(billAmount, categoryLimit);
+
+          return (
+            <>
+              {/* Warning */}
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+                <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-semibold text-amber-900 mb-1">Amount will be capped</p>
+                  <p className="text-amber-700">
+                    Your bill amount (₹{billAmount.toLocaleString()})
+                    exceeds the per-claim limit of ₹{categoryLimit.toLocaleString()}.
+                    The claim will be automatically capped to ₹{categoryLimit.toLocaleString()}.
+                  </p>
+                </div>
+              </div>
+
+              {/* Amount Submitted for Approval Field */}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-ink-900 mb-2">
+                  Amount Submitted for Approval (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={`₹${approvedAmount.toLocaleString()}`}
+                    readOnly
+                    className="w-full h-touch px-4 py-3 border-2 border-green-500 bg-green-50 rounded-xl font-semibold text-green-700 cursor-not-allowed"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-xs text-green-700 mt-1">
+                  This is the maximum amount that will be processed for this claim.
+                </p>
+              </div>
+            </>
+          );
+        }
+        return null;
+      })()}
 
       {/* Treatment Description */}
       <div>
@@ -1126,19 +1173,9 @@ export default function NewClaimPage() {
           </div>
 
           <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Treatment Date</span>
+            <span className="text-sm text-ink-500">Billing Date</span>
             <span className="text-sm font-medium text-ink-900">
               {new Date(formData.treatmentDate).toLocaleDateString()}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Provider</span>
-            <span className="text-sm font-medium text-ink-900 text-right">
-              {formData.providerName}
-              {formData.providerLocation && (
-                <div className="text-xs text-ink-500">{formData.providerLocation}</div>
-              )}
             </span>
           </div>
 

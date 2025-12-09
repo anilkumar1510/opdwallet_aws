@@ -40,6 +40,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       visitLimit?: number;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering: which specialties are covered
     };
@@ -49,6 +50,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       visitLimit?: number;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering: which specialties are covered
     };
@@ -58,6 +60,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       rxRequired?: boolean;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
     };
     CAT003?: { // Diagnostics
@@ -66,6 +69,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       rxRequired?: boolean;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedLabServiceCategories?: string[]; // Service-level filtering: which lab categories (RADIOLOGY, ENDOSCOPY)
     };
@@ -75,6 +79,7 @@ export class PlanConfig {
       vasEnabled: boolean;
       annualLimit?: number;
       rxRequired?: boolean;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedLabServiceCategories?: string[]; // Service-level filtering: which lab categories (PATHOLOGY, CARDIOLOGY, OTHER)
     };
@@ -83,6 +88,7 @@ export class PlanConfig {
       claimEnabled: boolean;
       vasEnabled: boolean;
       annualLimit?: number;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
@@ -91,6 +97,7 @@ export class PlanConfig {
       claimEnabled: boolean;
       vasEnabled: boolean;
       annualLimit?: number;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
@@ -99,6 +106,7 @@ export class PlanConfig {
       claimEnabled: boolean;
       vasEnabled: boolean;
       annualLimit?: number;
+      perClaimLimit?: number; // Per-claim limit for this category
       notes?: string;
       allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
@@ -144,6 +152,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           visitLimit?: number;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering
         };
@@ -153,6 +162,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           visitLimit?: number;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedSpecialties?: mongoose.Types.ObjectId[]; // Service-level filtering
         };
@@ -162,6 +172,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           rxRequired?: boolean;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
         };
         CAT003?: { // Diagnostics
@@ -170,6 +181,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           rxRequired?: boolean;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedLabServiceCategories?: string[]; // Service-level filtering
         };
@@ -179,6 +191,7 @@ export class PlanConfig {
           vasEnabled: boolean;
           annualLimit?: number;
           rxRequired?: boolean;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedLabServiceCategories?: string[]; // Service-level filtering
         };
@@ -187,6 +200,7 @@ export class PlanConfig {
           claimEnabled: boolean;
           vasEnabled: boolean;
           annualLimit?: number;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedServiceCodes?: string[]; // Service-level filtering
         };
@@ -195,6 +209,7 @@ export class PlanConfig {
           claimEnabled: boolean;
           vasEnabled: boolean;
           annualLimit?: number;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedServiceCodes?: string[]; // Service-level filtering
         };
@@ -203,6 +218,7 @@ export class PlanConfig {
           claimEnabled: boolean;
           vasEnabled: boolean;
           annualLimit?: number;
+          perClaimLimit?: number; // Per-claim limit for this category
           notes?: string;
           allowedServiceCodes?: string[]; // Service-level filtering
         };

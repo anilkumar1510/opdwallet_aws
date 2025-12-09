@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { apiFetch } from '@/lib/api'
 
 interface ApprovalModalProps {
   claimId: string
@@ -44,9 +45,8 @@ export default function ApprovalModal({
     setSubmitting(true)
 
     try {
-      const response = await fetch(`/api/tpa/claims/${claimId}/approve`, {
+      const response = await apiFetch(`/api/tpa/claims/${claimId}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           approvedAmount: approvalType === 'full' ? billAmount : approvedAmount,

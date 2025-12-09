@@ -15,6 +15,7 @@ import {
   ClaimCategory,
 } from './schemas/memberclaim.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { UpdateClaimDto } from './dto/update-claim.dto';
 import { WalletService } from '../wallet/wallet.service';
@@ -23,6 +24,7 @@ import { PaymentService } from '../payments/payment.service';
 import { TransactionSummaryService } from '../transactions/transaction-summary.service';
 import { CopayCalculator } from '../plan-config/utils/copay-calculator';
 import { CopayResolver } from '../plan-config/utils/copay-resolver';
+import { BenefitResolver } from '../plan-config/utils/benefit-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { UserRole } from '@/common/constants/roles.enum';
@@ -46,6 +48,8 @@ export class MemberClaimsService {
     private memberClaimModel: Model<MemberClaimDocument>,
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
+    @InjectModel(Assignment.name)
+    private assignmentModel: Model<AssignmentDocument>,
     private readonly walletService: WalletService,
     private readonly planConfigService: PlanConfigService,
     private readonly paymentService: PaymentService,
@@ -242,21 +246,52 @@ export class MemberClaimsService {
     let policyId = null;
     let userRelationship: string | null = null;
 
+    // Per-claim limit cap tracking
+    let cappedAmount: number | null = null;
+    let wasCapped = false;
+    let perClaimLimitApplied: number | null = null;
+    const originalBillAmount = claim.billAmount;
+
     try {
       // Fetch user's assignment to get policyId and relationship
       const user = await this.userModel.findById(claimUserId).lean() as { memberId?: string; relationship?: string } | null;
       if (user) {
         userRelationship = user.relationship || null;
         console.log('🔍 [CLAIMS SERVICE] User relationship:', userRelationship || 'NOT PROVIDED');
+        console.log('🔍 [CLAIMS SERVICE] User memberId:', user.memberId);
 
-        if (user.memberId) {
-          const assignment = await (this.walletService as any)['assignmentModel']
-            .findOne({ memberId: user.memberId })
-            .populate('policyId')
+        // Use userId (ObjectId) to lookup assignment, not memberId (string)
+        console.log('🔍 [CLAIMS SERVICE] Looking up assignment for userId:', claimUserId);
+
+        // Convert string to ObjectId and query for active assignments only
+        const assignment = await this.assignmentModel
+          .findOne({
+            userId: new Types.ObjectId(claimUserId),
+            isActive: true
+          })
+          .populate('policyId')
+          .lean()
+          .exec();
+
+        console.log('🔍 [CLAIMS SERVICE] Assignment found:', !!assignment);
+        if (assignment) {
+          console.log('🔍 [CLAIMS SERVICE] Assignment has policyId:', !!assignment.policyId);
+          console.log('🔍 [CLAIMS SERVICE] Full assignment object:', JSON.stringify(assignment, null, 2));
+        } else {
+          console.log('❌ [CLAIMS SERVICE] No active assignment found for userId:', claimUserId);
+          // Try to find any assignment (including inactive) for debugging
+          const anyAssignment = await this.assignmentModel
+            .findOne({ userId: new Types.ObjectId(claimUserId) })
             .lean()
             .exec();
+          if (anyAssignment) {
+            console.log('⚠️ [CLAIMS SERVICE] Found inactive assignment:', JSON.stringify(anyAssignment, null, 2));
+          } else {
+            console.log('❌ [CLAIMS SERVICE] No assignment exists at all for this userId');
+          }
+        }
 
-          if (assignment && assignment.policyId) {
+        if (assignment && assignment.policyId) {
             policyId = assignment.policyId._id || assignment.policyId;
             console.log('💰 [CLAIMS SERVICE] Found policyId:', policyId);
 
@@ -280,11 +315,21 @@ export class MemberClaimsService {
 
               // Check if benefit is enabled and claims are allowed
               // Now benefit keys are category IDs directly (CAT001, CAT002, etc.)
-              const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryCode];
+              console.log('📄 [CLAIMS SERVICE] Full benefits object from plan config:', JSON.stringify(planConfig.benefits, null, 2));
+
+              // ✅ FIX: Use BenefitResolver to get benefit config from correct location (member-specific or global)
+              console.log('💰 [CLAIMS SERVICE FIX] Using BenefitResolver to resolve benefit config...');
+              const categoryBenefit = BenefitResolver.resolve(planConfig, categoryCode, userRelationship);
+              const benefitSource = BenefitResolver.getSource(planConfig, categoryCode, userRelationship);
+
+              console.log('📄 [CLAIMS SERVICE] Benefit source:', benefitSource);
+              console.log('📄 [CLAIMS SERVICE] Resolved category benefit:', JSON.stringify(categoryBenefit, null, 2));
+
               const categoryEnabled = categoryBenefit && categoryBenefit.enabled;
               const claimEnabled = categoryBenefit && categoryBenefit.claimEnabled;
 
               console.log('📄 [CLAIMS SERVICE] Category code:', categoryCode);
+              console.log('📄 [CLAIMS SERVICE] Full category benefit object:', JSON.stringify(categoryBenefit, null, 2));
               console.log('📄 [CLAIMS SERVICE] Category benefit enabled:', categoryEnabled);
               console.log('📄 [CLAIMS SERVICE] Claim enabled:', claimEnabled);
 
@@ -300,26 +345,56 @@ export class MemberClaimsService {
                 );
               }
 
+              // Check per-claim limit and auto-cap if needed
+              const categoryPerClaimLimit = categoryBenefit?.perClaimLimit;
+              console.log(`🔍 [CLAIMS SERVICE] Category benefit perClaimLimit:`, categoryPerClaimLimit);
+
+              if (categoryPerClaimLimit && categoryPerClaimLimit > 0) {
+                perClaimLimitApplied = categoryPerClaimLimit;
+                console.log(`💰 [CLAIMS SERVICE] Per-claim limit for ${categoryCode}: ₹${categoryPerClaimLimit}`);
+
+                if (claim.billAmount > categoryPerClaimLimit) {
+                  cappedAmount = categoryPerClaimLimit;
+                  wasCapped = true;
+                  console.log(`⚠️ [CLAIMS SERVICE] Bill amount (₹${claim.billAmount}) exceeds limit. Capping to ₹${cappedAmount}`);
+                  console.log(`🔍 [CLAIMS SERVICE] Variables after capping: wasCapped=${wasCapped}, cappedAmount=${cappedAmount}, perClaimLimitApplied=${perClaimLimitApplied}`);
+                } else {
+                  console.log(`✅ [CLAIMS SERVICE] Bill amount (₹${claim.billAmount}) within limit`);
+                }
+              } else {
+                console.log(`📄 [CLAIMS SERVICE] No per-claim limit set for ${categoryCode}. Category benefit:`, JSON.stringify(categoryBenefit, null, 2));
+              }
+
+              // Calculate copay on the final amount (capped or original)
+              const amountForCopay = wasCapped && cappedAmount !== null ? cappedAmount : claim.billAmount;
+
               if (copayConfig && categoryEnabled) {
-                console.log('💰 [CLAIMS SERVICE] Calculating copay for amount:', claim.billAmount);
-                copayCalculation = CopayCalculator.calculate(claim.billAmount, copayConfig);
+                console.log('💰 [CLAIMS SERVICE] Calculating copay for amount:', amountForCopay);
+                copayCalculation = CopayCalculator.calculate(amountForCopay, copayConfig);
                 console.log('✅ [CLAIMS SERVICE] Copay calculation result:', JSON.stringify(copayCalculation, null, 2));
               }
             }
           }
         }
-      }
     } catch (error) {
       console.warn('⚠️ [CLAIMS SERVICE] Could not fetch policy/copay config:', error.message);
       // Continue without copay if config fetch fails
     }
 
     // Step 2: Determine payment breakdown
+    // Use capped amount if applicable, otherwise use original bill amount
+    const finalAmount = wasCapped && cappedAmount !== null ? cappedAmount : claim.billAmount;
     const copayAmount = copayCalculation ? copayCalculation.copayAmount : 0;
-    const walletDebitAmount = copayCalculation ? copayCalculation.walletDebitAmount : claim.billAmount;
+    const walletDebitAmount = copayCalculation ? copayCalculation.walletDebitAmount : finalAmount;
 
     console.log('💰 [CLAIMS SERVICE] Payment breakdown:');
-    console.log('  - Total bill: ₹' + claim.billAmount);
+    if (wasCapped) {
+      console.log('  - Original bill: ₹' + claim.billAmount);
+      console.log('  - Per-claim limit: ₹' + perClaimLimitApplied);
+      console.log('  - Capped amount: ₹' + cappedAmount + ' ⚠️ AUTO-CAPPED');
+    } else {
+      console.log('  - Total bill: ₹' + claim.billAmount);
+    }
     console.log('  - Wallet debit: ₹' + walletDebitAmount);
     console.log('  - Copay (member pays): ₹' + copayAmount);
 
@@ -404,7 +479,7 @@ export class MemberClaimsService {
           serviceReferenceId: claimId,
           serviceName: `${claim.category} Claim - ${claim.providerName || 'Provider'}`,
           serviceDate: claim.treatmentDate || new Date(),
-          totalAmount: claim.billAmount,
+          totalAmount: finalAmount, // Use finalAmount (capped if applicable) instead of claim.billAmount
           walletAmount: walletDebitAmount,
           selfPaidAmount: copayAmount,
           copayAmount: copayAmount,
@@ -448,7 +523,7 @@ export class MemberClaimsService {
           serviceReferenceId: claimId,
           serviceName: `${claim.category} Claim - ${claim.providerName || 'Provider'}`,
           serviceDate: claim.treatmentDate || new Date(),
-          totalAmount: claim.billAmount,
+          totalAmount: finalAmount, // Use finalAmount (capped if applicable) instead of claim.billAmount
           walletAmount: walletDebitAmount,
           selfPaidAmount: 0,
           copayAmount: 0,
@@ -471,6 +546,30 @@ export class MemberClaimsService {
     claim.submittedAt = new Date();
     claim.updatedBy = userId;
 
+    // Save auto-cap information
+    console.log('🔍 [CLAIMS SERVICE] Checking auto-cap conditions:', {
+      wasCapped,
+      cappedAmount,
+      perClaimLimitApplied,
+      originalBillAmount,
+      currentBillAmount: claim.billAmount
+    });
+
+    if (wasCapped && cappedAmount !== null && perClaimLimitApplied !== null) {
+      claim.originalBillAmount = originalBillAmount;
+      claim.billAmount = cappedAmount; // Update billAmount to capped amount
+      claim.cappedAmount = cappedAmount;
+      claim.wasAutoCapped = true;
+      claim.perClaimLimitApplied = perClaimLimitApplied;
+      console.log('💾 [CLAIMS SERVICE] Saving cap info: original=₹' + originalBillAmount + ', capped=₹' + cappedAmount + ', updated billAmount to capped amount');
+    } else {
+      console.log('⚠️ [CLAIMS SERVICE] Auto-cap NOT applied. Conditions not met:', {
+        wasCapped,
+        cappedAmount,
+        perClaimLimitApplied
+      });
+    }
+
     const savedClaim = await claim.save();
 
     console.log('✅ [CLAIMS SERVICE] Claim submitted successfully');
@@ -483,6 +582,11 @@ export class MemberClaimsService {
       transactionId,
       copayAmount,
       walletDebitAmount,
+      // Auto-cap information
+      wasCapped,
+      originalBillAmount,
+      cappedAmount: wasCapped ? cappedAmount : null,
+      perClaimLimitApplied,
     };
   }
 
@@ -513,7 +617,7 @@ export class MemberClaimsService {
     const total = await this.memberClaimModel.countDocuments(query);
     const claims = await this.memberClaimModel
       .find(query)
-      .select('claimId userId memberName claimType category treatmentDate providerName billAmount billNumber status paymentStatus approvedAmount submittedAt createdAt isUrgent requiresPreAuth documents')
+      .select('claimId userId memberName claimType category treatmentDate providerName billAmount originalBillAmount cappedAmount wasAutoCapped perClaimLimitApplied billNumber status paymentStatus approvedAmount submittedAt createdAt isUrgent requiresPreAuth documents')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

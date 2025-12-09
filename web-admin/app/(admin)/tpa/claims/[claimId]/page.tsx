@@ -40,6 +40,9 @@ interface Claim {
   providerName: string
   providerAddress: string
   billAmount: number
+  cappedAmount?: number
+  wasAutoCapped?: boolean
+  perClaimLimitApplied?: number
   amountApproved?: number
   amountRejected?: number
   status: string
@@ -278,6 +281,27 @@ export default function ClaimDetailPage() {
                     ₹{claim.billAmount?.toLocaleString()}
                   </p>
                 </div>
+                {claim.wasAutoCapped && claim.cappedAmount && (
+                  <div>
+                    <p className="text-sm text-gray-500">Amount Submitted for Approval</p>
+                    <div className="mt-1">
+                      <p className="text-lg font-bold text-green-700">
+                        ₹{claim.cappedAmount?.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-amber-600 mt-1">
+                        Capped from ₹{claim.billAmount?.toLocaleString()} (Limit: ₹{claim.perClaimLimitApplied?.toLocaleString()})
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {!claim.wasAutoCapped && (
+                  <div>
+                    <p className="text-sm text-gray-500">Amount Submitted for Approval</p>
+                    <p className="text-lg font-bold text-gray-900 mt-1">
+                      ₹{claim.billAmount?.toLocaleString()}
+                    </p>
+                  </div>
+                )}
                 {claim.amountApproved !== undefined && (
                   <div>
                     <p className="text-sm text-gray-500">Amount Approved</p>
@@ -595,7 +619,7 @@ export default function ClaimDetailPage() {
       {showApprovalModal && (
         <ApprovalModal
           claimId={claimId}
-          billAmount={claim.billAmount}
+          billAmount={claim.wasAutoCapped && claim.cappedAmount ? claim.cappedAmount : claim.billAmount}
           onClose={() => setShowApprovalModal(false)}
           onSuccess={fetchClaim}
         />
@@ -604,7 +628,7 @@ export default function ClaimDetailPage() {
       {showRejectionModal && (
         <RejectionModal
           claimId={claimId}
-          billAmount={claim.billAmount}
+          billAmount={claim.wasAutoCapped && claim.cappedAmount ? claim.cappedAmount : claim.billAmount}
           onClose={() => setShowRejectionModal(false)}
           onSuccess={fetchClaim}
         />

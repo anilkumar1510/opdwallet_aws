@@ -33,6 +33,10 @@ interface Claim {
   type: string
   provider: string
   amount: number
+  originalBillAmount?: number
+  cappedAmount?: number
+  wasAutoCapped?: boolean
+  perClaimLimitApplied?: number
   status: ClaimStatus
   description: string
   category: string
@@ -114,6 +118,10 @@ export default function ClaimsPage() {
           type: formatCategory(claim.category),
           provider: claim.providerName || 'N/A',
           amount: claim.billAmount,
+          originalBillAmount: claim.originalBillAmount,
+          cappedAmount: claim.cappedAmount,
+          wasAutoCapped: claim.wasAutoCapped,
+          perClaimLimitApplied: claim.perClaimLimitApplied,
           status: mapStatus(claim.status),
           description: claim.treatmentDescription || claim.category,
           category: claim.category.toLowerCase(),
@@ -521,7 +529,8 @@ export default function ClaimsPage() {
                     { key: 'claimNumber', label: 'Claim #', sortable: false },
                     { key: 'type', label: 'Type', sortable: true },
                     { key: 'provider', label: 'Provider', sortable: false },
-                    { key: 'amount', label: 'Amount', sortable: true },
+                    { key: 'amount', label: 'Bill Amount', sortable: true },
+                    { key: 'approvalAmount', label: 'Amount for Approval', sortable: false },
                     { key: 'status', label: 'Status', sortable: true },
                     { key: 'actions', label: 'Actions', sortable: false }
                   ].map((column) => {
@@ -575,7 +584,20 @@ export default function ClaimsPage() {
                         </div>
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
-                        <p className="font-semibold text-ink-900">₹{claim.amount.toLocaleString()}</p>
+                        {claim.wasAutoCapped && claim.originalBillAmount ? (
+                          <div>
+                            <p className="font-semibold text-ink-900">₹{claim.originalBillAmount.toLocaleString()}</p>
+                            <p className="text-xs text-amber-600">Auto-capped to ₹{claim.amount.toLocaleString()}</p>
+                          </div>
+                        ) : (
+                          <p className="font-semibold text-ink-900">₹{claim.amount.toLocaleString()}</p>
+                        )}
+                      </td>
+                      <td className={`px-6 ${cellPadding} text-sm`}>
+                        <p className="font-semibold text-green-700">₹{claim.amount.toLocaleString()}</p>
+                        {claim.perClaimLimitApplied && (
+                          <p className="text-xs text-green-600">Limit: ₹{claim.perClaimLimitApplied.toLocaleString()}</p>
+                        )}
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>

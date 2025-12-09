@@ -170,13 +170,14 @@ export class WalletService {
   }
 
   // Helper method to format wallet categories for frontend
-  formatWalletForFrontend(wallet: any) {
+  formatWalletForFrontend(wallet: any, planConfig?: any) {
     if (!wallet) {
       return {
         totalBalance: { allocated: 0, current: 0, consumed: 0 },
         categories: [],
         isFloater: false,
-        memberConsumption: []
+        memberConsumption: [],
+        config: null
       };
     }
 
@@ -201,6 +202,14 @@ export class WalletService {
         consumed: mc.consumed,
         categoryBreakdown: mc.categoryBreakdown || []
       }));
+    }
+
+    // Include plan config if provided
+    if (planConfig) {
+      result.config = {
+        benefits: planConfig.benefits || {},
+        wallet: planConfig.wallet || {}
+      };
     }
 
     return result;

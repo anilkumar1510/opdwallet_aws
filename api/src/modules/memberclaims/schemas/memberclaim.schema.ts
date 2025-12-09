@@ -127,6 +127,19 @@ export class MemberClaim {
   @Prop({ type: Number })
   walletDebitAmount: number;
 
+  // Per-claim limit auto-cap tracking
+  @Prop({ type: Number })
+  originalBillAmount: number;
+
+  @Prop({ type: Number })
+  cappedAmount: number;
+
+  @Prop({ type: Boolean, default: false })
+  wasAutoCapped: boolean;
+
+  @Prop({ type: Number })
+  perClaimLimitApplied: number;
+
   @Prop()
   paymentId: string;
 

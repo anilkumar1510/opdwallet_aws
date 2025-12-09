@@ -42,6 +42,10 @@ interface Claim {
   providerName: string
   providerLocation?: string
   billAmount: number
+  originalBillAmount?: number
+  cappedAmount?: number
+  wasAutoCapped?: boolean
+  perClaimLimitApplied?: number
   billNumber?: string
   treatmentDescription?: string
   approvedAmount?: number
@@ -367,7 +371,33 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
                   <label className="block text-xs font-medium text-gray-500 mb-1">
                     Bill Amount
                   </label>
-                  <p className="text-lg font-bold text-gray-900">{formatCurrency(claim.billAmount)}</p>
+                  {claim.wasAutoCapped && claim.originalBillAmount ? (
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">{formatCurrency(claim.originalBillAmount)}</p>
+                      <p className="text-xs text-amber-600 mt-1 flex items-center">
+                        <ExclamationCircleIcon className="h-3 w-3 mr-1" />
+                        Auto-capped to {formatCurrency(claim.billAmount)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-bold text-gray-900">{formatCurrency(claim.billAmount)}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Amount Submitted for Approval
+                  </label>
+                  {claim.wasAutoCapped && claim.perClaimLimitApplied ? (
+                    <div>
+                      <p className="text-lg font-bold text-green-700">{formatCurrency(claim.billAmount)}</p>
+                      <p className="text-xs text-green-600 mt-1 flex items-center">
+                        <CheckCircleIcon className="h-3 w-3 mr-1" />
+                        Per-claim limit: ₹{claim.perClaimLimitApplied.toLocaleString()}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-bold text-gray-900">{formatCurrency(claim.billAmount)}</p>
+                  )}
                 </div>
                 {claim.approvedAmount !== undefined && claim.approvedAmount > 0 && (
                   <div>

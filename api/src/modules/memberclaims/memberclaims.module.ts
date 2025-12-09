@@ -5,6 +5,7 @@ import { MemberClaimsService } from './memberclaims.service';
 import { MemberClaim, MemberClaimSchema } from './schemas/memberclaim.schema';
 import { WalletModule } from '../wallet/wallet.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { Assignment, AssignmentSchema } from '../assignments/schemas/assignment.schema';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { PaymentModule } from '../payments/payment.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
@@ -14,6 +15,7 @@ import { TransactionSummaryModule } from '../transactions/transaction-summary.mo
     MongooseModule.forFeature([
       { name: MemberClaim.name, schema: MemberClaimSchema },
       { name: User.name, schema: UserSchema },
+      { name: Assignment.name, schema: AssignmentSchema },
     ]),
     WalletModule,
     PlanConfigModule,
