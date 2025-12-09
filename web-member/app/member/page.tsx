@@ -13,6 +13,7 @@ import {
   BeakerIcon,
   CubeIcon,
   EyeIcon,
+  SparklesIcon,
   ClipboardDocumentCheckIcon,
   ReceiptPercentIcon,
   BanknotesIcon
@@ -520,10 +521,35 @@ export default function DashboardPage() {
       href: '/member/diagnostics',
       description: 'Diagnostic services'
     },
+    'CAT006': {
+      icon: SparklesIcon,
+      href: '/member/dental',
+      description: 'Dental care services'
+    },
+    'CAT007': {
+      icon: EyeIcon,
+      href: '/member/vision',
+      description: 'Eye care & vision services'
+    },
+    'CAT008': {
+      icon: ClipboardDocumentCheckIcon,
+      href: '/member/wellness',
+      description: 'Wellness & preventive care'
+    },
+    'dental': {
+      icon: SparklesIcon,
+      href: '/member/dental',
+      description: 'Dental care services'
+    },
+    'vision': {
+      icon: EyeIcon,
+      href: '/member/vision',
+      description: 'Eye care & vision services'
+    },
     'wellness': {
       icon: ClipboardDocumentCheckIcon,
-      href: '/member/health-checkup',
-      description: 'Schedule health checkup'
+      href: '/member/wellness',
+      description: 'Wellness & preventive care'
     }
   }), [viewingUserId])
 

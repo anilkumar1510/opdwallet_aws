@@ -120,21 +120,60 @@ export class MemberService {
   private mapHealthBenefits(categoryIds: string[], benefits: any, categories: any[], walletData: any): any[] {
     const healthBenefits: any[] = [];
 
+    // Default names for categories without CategoryMaster entries
+    const defaultCategoryNames: Record<string, string> = {
+      'dental': 'Dental',
+      'vision': 'Vision',
+      'wellness': 'Wellness',
+      'CAT006': 'Dental Services',
+      'CAT007': 'Vision Services',
+      'CAT008': 'Wellness Services'
+    };
+
+    console.log('[MEMBER SERVICE] mapHealthBenefits - categoryIds:', categoryIds);
+    console.log('[MEMBER SERVICE] mapHealthBenefits - benefits keys:', Object.keys(benefits));
+
     categoryIds.forEach(catId => {
       const benefit = benefits[catId];
-      const categoryInfo = categories.find(cat => cat.categoryId === catId);
+      console.log(`[MEMBER SERVICE] Processing category ${catId}:`, {
+        enabled: benefit?.enabled,
+        hasBenefit: !!benefit,
+        isInCategoryMaster: !!categories.find(cat => cat.categoryId === catId),
+        hasDefaultName: !!defaultCategoryNames[catId]
+      });
 
-      if (benefit?.enabled && categoryInfo) {
+      if (!benefit?.enabled) {
+        console.log(`[MEMBER SERVICE] Skipping ${catId} - not enabled`);
+        return; // Skip disabled benefits
+      }
+
+      let categoryInfo = categories.find(cat => cat.categoryId === catId);
+
+      // If category not in CategoryMaster, use default name
+      if (!categoryInfo && defaultCategoryNames[catId]) {
+        console.log(`[MEMBER SERVICE] Using default name for ${catId}`);
+        categoryInfo = {
+          name: defaultCategoryNames[catId],
+          categoryId: catId
+        };
+      }
+
+      if (categoryInfo) {
         const categoryWallet = walletData.categories.find((c: any) => c.categoryCode === catId);
         const amount = benefit.annualLimit || categoryWallet?.total || 0;
-        healthBenefits.push({
+        const healthBenefit = {
           name: categoryInfo.name,
           description: `${categoryInfo.name} upto Rs ${amount}`,
           categoryCode: catId
-        });
+        };
+        console.log(`[MEMBER SERVICE] Adding health benefit:`, healthBenefit);
+        healthBenefits.push(healthBenefit);
+      } else {
+        console.log(`[MEMBER SERVICE] No categoryInfo found for ${catId}, skipping`);
       }
     });
 
+    console.log('[MEMBER SERVICE] Final healthBenefits count:', healthBenefits.length);
     return healthBenefits;
   }
 
