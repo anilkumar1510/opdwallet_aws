@@ -158,16 +158,19 @@ export default function CugsPage() {
   const handleToggleActive = async (id: string) => {
     try {
       const response = await apiFetch(`/api/cugs/${id}/toggle-active`, {
-        method: 'PUT',
+        method: 'PATCH',
       })
 
-      if (!response.ok) throw new Error('Failed to toggle status')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to toggle status')
+      }
 
       toast.success('CUG status updated')
       fetchCugs()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling status:', error)
-      toast.error('Failed to update status')
+      toast.error(error.message || 'Failed to update status')
     }
   }
 
@@ -179,13 +182,16 @@ export default function CugsPage() {
         method: 'DELETE',
       })
 
-      if (!response.ok) throw new Error('Failed to delete CUG')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to delete CUG')
+      }
 
       toast.success('CUG deleted successfully')
       fetchCugs()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting CUG:', error)
-      toast.error('Failed to delete CUG')
+      toast.error(error.message || 'Failed to delete CUG')
     }
   }
 

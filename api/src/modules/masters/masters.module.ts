@@ -9,6 +9,7 @@ import { CategorySpecialtyMapping, CategorySpecialtyMappingSchema } from './sche
 import { CategoryLabServiceMapping, CategoryLabServiceMappingSchema } from './schemas/category-lab-service-mapping.schema';
 import { Specialty, SpecialtySchema } from '../specialties/schemas/specialty.schema';
 import { LabService, LabServiceSchema } from '../lab/schemas/lab-service.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { CategoriesController } from './categories.controller';
 import { CategoriesService } from './categories.service';
 import { ServicesController } from './services.controller';
@@ -34,6 +35,7 @@ import { CategoryLabServiceMappingService } from './category-lab-service-mapping
       { name: CategoryLabServiceMapping.name, schema: CategoryLabServiceMappingSchema },
       { name: Specialty.name, schema: SpecialtySchema },
       { name: LabService.name, schema: LabServiceSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     CacheModule.register({
       ttl: 60, // seconds

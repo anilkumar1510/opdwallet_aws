@@ -4,12 +4,15 @@ import { Model } from 'mongoose';
 import { CugMaster, CugMasterDocument } from './schemas/cug-master.schema';
 import { CreateCugDto, UpdateCugDto } from './dto/cug.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class CugsService {
   constructor(
     @InjectModel(CugMaster.name)
     private cugModel: Model<CugMasterDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   /**
@@ -148,6 +151,32 @@ export class CugsService {
     return cugs;
   }
 
+  /**
+   * Count active members assigned to a CUG
+   * Note: Users don't have isActive field, so we count all users with this cugId
+   */
+  private async getActiveMemberCount(cugId: string): Promise<number> {
+    console.log('[CugsService] Counting members for CUG ID:', cugId);
+
+    const count = await this.userModel.countDocuments({
+      cugId: cugId,
+    });
+    console.log('[CugsService] Member count for CUG:', count);
+    return count;
+  }
+
+  /**
+   * Count all members (active and inactive) assigned to a CUG
+   */
+  private async getTotalMemberCount(cugId: string): Promise<number> {
+    console.log('[CugsService] Counting total members for CUG ID:', cugId);
+    const count = await this.userModel.countDocuments({
+      cugId: cugId,
+    });
+    console.log('[CugsService] Total member count:', count);
+    return count;
+  }
+
   async findOne(id: string): Promise<CugMaster> {
     console.log('[CugsService] Finding CUG by ID:', id);
     const cug = await this.cugModel.findById(id);
@@ -203,6 +232,19 @@ export class CugsService {
       throw new NotFoundException(`CUG with ID ${id} not found`);
     }
 
+    // Only validate when trying to deactivate (isActive: true -> false)
+    if (cug.isActive) {
+      console.log('[CugsService] Checking for active members before deactivation');
+      const activeMemberCount = await this.getActiveMemberCount(id);
+
+      if (activeMemberCount > 0) {
+        console.log('[CugsService] Cannot deactivate CUG with active members:', activeMemberCount);
+        throw new ConflictException(
+          `Cannot deactivate CUG "${cug.companyName}". It has ${activeMemberCount} active member(s) assigned. Please unassign all members before deactivating this CUG.`
+        );
+      }
+    }
+
     cug.isActive = !cug.isActive;
     await cug.save();
 
@@ -213,12 +255,25 @@ export class CugsService {
   async remove(id: string): Promise<void> {
     console.log('[CugsService] Removing CUG:', id);
 
-    const result = await this.cugModel.deleteOne({ _id: id });
-    if (result.deletedCount === 0) {
+    // Find the CUG first to get details for error message
+    const cug = await this.cugModel.findById(id);
+    if (!cug) {
       console.log('[CugsService] CUG not found for deletion');
       throw new NotFoundException(`CUG with ID ${id} not found`);
     }
 
+    // Check for ANY members (active or inactive) before deletion
+    console.log('[CugsService] Checking for members before deletion');
+    const totalMemberCount = await this.getTotalMemberCount(id);
+
+    if (totalMemberCount > 0) {
+      console.log('[CugsService] Cannot delete CUG with members:', totalMemberCount);
+      throw new ConflictException(
+        `Cannot delete CUG "${cug.companyName}". It has ${totalMemberCount} member(s) assigned. Please unassign all members before deleting this CUG.`
+      );
+    }
+
+    await this.cugModel.deleteOne({ _id: id });
     console.log('[CugsService] CUG removed successfully');
   }
 

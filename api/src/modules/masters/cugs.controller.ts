@@ -128,6 +128,7 @@ export class CugsController {
   @ApiOperation({ summary: 'Toggle CUG active status' })
   @ApiResponse({ status: 200, description: 'CUG status toggled successfully' })
   @ApiResponse({ status: 404, description: 'CUG not found' })
+  @ApiResponse({ status: 409, description: 'CUG has active members and cannot be deactivated' })
   async toggleActive(@Param('id') id: string) {
     console.log('[CugsController] PATCH /cugs/:id/toggle-active - Toggling CUG status:', id);
     const result = await this.cugsService.toggleActive(id);
@@ -140,6 +141,7 @@ export class CugsController {
   @ApiOperation({ summary: 'Delete CUG' })
   @ApiResponse({ status: 200, description: 'CUG deleted successfully' })
   @ApiResponse({ status: 404, description: 'CUG not found' })
+  @ApiResponse({ status: 409, description: 'CUG has members and cannot be deleted' })
   async remove(@Param('id') id: string) {
     console.log('[CugsController] DELETE /cugs/:id - Deleting CUG:', id);
     await this.cugsService.remove(id);
