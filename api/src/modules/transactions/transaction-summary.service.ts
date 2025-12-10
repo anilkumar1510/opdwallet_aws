@@ -45,7 +45,22 @@ export class TransactionSummaryService {
       totalAmount: data.totalAmount,
       walletAmount: data.walletAmount,
       selfPaidAmount: data.selfPaidAmount,
+      paymentId: data.paymentId,
     });
+
+    // Validate paymentId if provided
+    let paymentObjectId: Types.ObjectId | undefined;
+    if (data.paymentId) {
+      if (!Types.ObjectId.isValid(data.paymentId)) {
+        console.error('❌ [TRANSACTION SERVICE] Invalid paymentId provided:', {
+          paymentId: data.paymentId,
+          type: typeof data.paymentId,
+        });
+        throw new Error(`Invalid paymentId: must be a valid MongoDB ObjectId, got: ${data.paymentId}`);
+      }
+      paymentObjectId = new Types.ObjectId(data.paymentId);
+      console.log('✅ [TRANSACTION SERVICE] Payment ObjectId validated:', paymentObjectId.toString());
+    }
 
     const transactionId =
       await this.counterService.generateTransactionId();
@@ -63,9 +78,7 @@ export class TransactionSummaryService {
       selfPaidAmount: data.selfPaidAmount,
       copayAmount: data.copayAmount,
       paymentMethod: data.paymentMethod,
-      paymentId: data.paymentId
-        ? new Types.ObjectId(data.paymentId)
-        : undefined,
+      paymentId: paymentObjectId,
       categoryCode: data.categoryCode,
       categoryName: data.categoryName,
       description: data.description,

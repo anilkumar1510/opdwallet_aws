@@ -579,7 +579,10 @@ export class MemberClaimsService {
         claim.copayAmount = copayAmount;
         claim.walletDebitAmount = walletDebitAmount;
 
+        console.log('🔍 [CLAIMS SERVICE] Payment created with _id:', (copayPayment._id as any)?.toString());
+
         // Create transaction summary
+        // IMPORTANT: Pass payment._id (ObjectId), not paymentId (string like "PAY-123")
         const transaction = await this.transactionService.createTransaction({
           userId: claimUserId,
           serviceType: TransactionServiceType.CLAIM,
@@ -592,7 +595,7 @@ export class MemberClaimsService {
           selfPaidAmount: copayAmount,
           copayAmount: copayAmount,
           paymentMethod: PaymentMethod.COPAY,
-          paymentId: paymentId,
+          paymentId: (copayPayment._id as any)?.toString(), // Use MongoDB _id, not paymentId string
           status: TransactionStatus.PENDING_PAYMENT,
         });
 
