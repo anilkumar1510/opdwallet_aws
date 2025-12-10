@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { SpecialtyIcon } from '@/components/ui/specialty-icon';
 
 interface Specialty {
   _id: string;
@@ -264,15 +265,18 @@ export function SpecialtySelector({
               onClick={() => !disabled && handleToggleSpecialty(specialty._id, !isSelected)}
             >
               <div className="flex items-center flex-1">
-                {specialty.icon && (
-                  <span className="text-2xl mr-3">{specialty.icon}</span>
-                )}
+                <SpecialtyIcon
+                  icon={specialty.icon || ''}
+                  name={specialty.name}
+                  size="md"
+                  className="mr-3"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900 truncate">
                     {specialty.name}
                   </div>
                   {specialty.description && (
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className="text-xs text-gray-500 line-clamp-2 w-full overflow-hidden">
                       {specialty.description}
                     </div>
                   )}
