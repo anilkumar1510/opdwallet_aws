@@ -9,12 +9,24 @@ export enum ClaimType {
 }
 
 export enum ClaimCategory {
-  CONSULTATION = 'CONSULTATION',
-  DIAGNOSTICS = 'DIAGNOSTICS',
-  PHARMACY = 'PHARMACY',
-  DENTAL = 'DENTAL',
-  VISION = 'VISION',
-  WELLNESS = 'WELLNESS',
+  // Granular categories mapped to policy benefits (CAT001-CAT008)
+  IN_CLINIC_CONSULTATION = 'IN_CLINIC_CONSULTATION',     // CAT001
+  PHARMACY = 'PHARMACY',                                  // CAT002
+  DIAGNOSTIC_SERVICES = 'DIAGNOSTIC_SERVICES',           // CAT003
+  LABORATORY_SERVICES = 'LABORATORY_SERVICES',           // CAT004
+  ONLINE_CONSULTATION = 'ONLINE_CONSULTATION',           // CAT005
+  DENTAL_SERVICES = 'DENTAL_SERVICES',                   // CAT006
+  VISION_CARE = 'VISION_CARE',                           // CAT007
+  WELLNESS_PROGRAMS = 'WELLNESS_PROGRAMS',               // CAT008
+
+  // Legacy categories (deprecated - maintained for backward compatibility)
+  CONSULTATION = 'CONSULTATION',  // Deprecated - use IN_CLINIC_CONSULTATION
+  DIAGNOSTICS = 'DIAGNOSTICS',    // Deprecated - use DIAGNOSTIC_SERVICES
+  DENTAL = 'DENTAL',              // Deprecated - use DENTAL_SERVICES
+  VISION = 'VISION',              // Deprecated - use VISION_CARE
+  WELLNESS = 'WELLNESS',          // Deprecated - use WELLNESS_PROGRAMS
+
+  // Hospital categories
   IPD = 'IPD',
   OPD = 'OPD',
 }

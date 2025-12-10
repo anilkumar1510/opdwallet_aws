@@ -85,6 +85,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | /member/claims/available-categories | Get available claim categories based on member's policy |
 | POST | /member/claims | Create new claim with documents |
 | POST | /member/claims/:claimId/submit | Submit claim |
 | GET | /member/claims | Get claims with pagination |
@@ -201,4 +202,4 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 ---
 
-**Total Endpoints: ~65**
+**Total Endpoints: ~66**

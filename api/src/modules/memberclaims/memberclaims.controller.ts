@@ -119,6 +119,18 @@ export class MemberClaimsController {
     };
   }
 
+  @Get('available-categories')
+  @Roles(UserRole.MEMBER)
+  async getAvailableClaimCategories(@Request() req: AuthRequest) {
+    const userId = req.user.userId || req.user.id;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    return this.memberClaimsService.getAvailableClaimCategories(userId);
+  }
+
   @Get()
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS)
   async findAll(

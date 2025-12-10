@@ -28,17 +28,29 @@ import { BenefitResolver } from '../plan-config/utils/benefit-resolver';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { UserRole } from '@/common/constants/roles.enum';
+import { PREDEFINED_CATEGORIES } from '@/common/constants/predefined-categories.constant';
 // No longer need CATEGORY_CODE_TO_KEY - benefit keys are category IDs directly
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
-// Category code mapping for wallet debit
-// Note: CONSULTATION maps to IN_CLINIC by default (CAT001)
-// For ONLINE consultations, the appointment metadata should specify CAT005
+// Category code mapping for wallet debit - Maps ClaimCategory enum to Policy Benefit Category IDs
 const CATEGORY_CODE_MAP: Record<string, string> = {
-  [ClaimCategory.CONSULTATION]: 'CAT001', // In-Clinic Consultation
-  [ClaimCategory.PHARMACY]: 'CAT002',     // Pharmacy
-  [ClaimCategory.DIAGNOSTICS]: 'CAT003',  // Diagnostics/Labs
+  // Primary mappings for all 8 policy benefit categories
+  [ClaimCategory.IN_CLINIC_CONSULTATION]: 'CAT001',
+  [ClaimCategory.PHARMACY]: 'CAT002',
+  [ClaimCategory.DIAGNOSTIC_SERVICES]: 'CAT003',
+  [ClaimCategory.LABORATORY_SERVICES]: 'CAT004',
+  [ClaimCategory.ONLINE_CONSULTATION]: 'CAT005',
+  [ClaimCategory.DENTAL_SERVICES]: 'CAT006',
+  [ClaimCategory.VISION_CARE]: 'CAT007',
+  [ClaimCategory.WELLNESS_PROGRAMS]: 'CAT008',
+
+  // Backward compatibility mappings for legacy claim categories
+  [ClaimCategory.CONSULTATION]: 'CAT001',  // Legacy - defaults to In-Clinic
+  [ClaimCategory.DIAGNOSTICS]: 'CAT003',   // Legacy - defaults to Diagnostic Services
+  [ClaimCategory.DENTAL]: 'CAT006',        // Legacy
+  [ClaimCategory.VISION]: 'CAT007',        // Legacy
+  [ClaimCategory.WELLNESS]: 'CAT008',      // Legacy
 };
 
 @Injectable()
@@ -107,6 +119,89 @@ export class MemberClaimsService {
     });
 
     return userIds;
+  }
+
+  /**
+   * Get available claim categories based on member's policy configuration
+   * Returns only categories that are both enabled and claim-enabled in the policy
+   */
+  async getAvailableClaimCategories(userId: string) {
+    console.log('🔍 [GET AVAILABLE CATEGORIES] userId:', userId);
+
+    // Get user's active assignment
+    const assignment = await this.assignmentModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        isActive: true
+      })
+      .lean();
+
+    console.log('🔍 [GET AVAILABLE CATEGORIES] assignment found:', !!assignment);
+
+    if (!assignment) {
+      console.error('❌ [GET AVAILABLE CATEGORIES] No active policy assignment found');
+      throw new NotFoundException('No active policy assignment found for user');
+    }
+
+    // Get plan config
+    const planConfig = await this.planConfigService.getConfig(
+      assignment.policyId.toString(),
+      assignment.planVersionOverride
+    );
+
+    console.log('🔍 [GET AVAILABLE CATEGORIES] planConfig found:', !!planConfig);
+    console.log('🔍 [GET AVAILABLE CATEGORIES] benefits found:', !!planConfig?.benefits);
+
+    if (!planConfig || !planConfig.benefits) {
+      console.log('⚠️ [GET AVAILABLE CATEGORIES] No benefits configured, returning empty array');
+      return []; // No benefits configured
+    }
+
+    // Create reverse mapping from category codes to claim categories
+    const REVERSE_CATEGORY_MAP: Record<string, ClaimCategory> = {
+      'CAT001': ClaimCategory.IN_CLINIC_CONSULTATION,
+      'CAT002': ClaimCategory.PHARMACY,
+      'CAT003': ClaimCategory.DIAGNOSTIC_SERVICES,
+      'CAT004': ClaimCategory.LABORATORY_SERVICES,
+      'CAT005': ClaimCategory.ONLINE_CONSULTATION,
+      'CAT006': ClaimCategory.DENTAL_SERVICES,
+      'CAT007': ClaimCategory.VISION_CARE,
+      'CAT008': ClaimCategory.WELLNESS_PROGRAMS,
+    };
+
+    // Filter and enrich categories
+    const benefits = planConfig.benefits as any; // Type assertion to allow dynamic indexing
+    const availableCategories = PREDEFINED_CATEGORIES
+      .filter(category => {
+        const benefitKey = category.categoryId;
+        const benefit = benefits[benefitKey];
+
+        // Include only if both enabled and claimEnabled are true
+        return benefit && benefit.enabled === true && benefit.claimEnabled === true;
+      })
+      .map(category => {
+        const benefitKey = category.categoryId;
+        const benefit = benefits[benefitKey];
+
+        return {
+          categoryId: category.categoryId,
+          categoryCode: category.code,
+          name: category.name,
+          description: category.description,
+          claimCategory: REVERSE_CATEGORY_MAP[category.categoryId],
+          annualLimit: benefit.annualLimit || null,
+          perClaimLimit: benefit.perClaimLimit || null,
+          enabled: benefit.enabled,
+          claimEnabled: benefit.claimEnabled,
+          displayOrder: category.displayOrder,
+        };
+      })
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+
+    console.log('✅ [GET AVAILABLE CATEGORIES] Returning', availableCategories.length, 'categories');
+    console.log('✅ [GET AVAILABLE CATEGORIES] Categories:', availableCategories.map(c => c.name).join(', '));
+
+    return availableCategories;
   }
 
   async create(

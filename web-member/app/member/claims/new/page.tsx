@@ -48,42 +48,36 @@ interface DocumentPreview {
   type: 'image' | 'pdf'
 }
 
-const CLAIM_CATEGORIES = [
-  {
-    id: 'consultation',
-    name: 'Consult',
-    description: 'Doctor visits & consultations',
-    icon: DocumentTextIcon,
-    color: 'bg-blue-600',
-    categoryCode: 'CAT001',
-    isActive: true
-  },
-  {
-    id: 'diagnostics',
-    name: 'Lab',
-    description: 'Tests, scans & reports',
-    icon: HeartIcon,
-    color: 'bg-red-600',
-    categoryCode: 'CAT002',
-    isActive: false // Dummy for now
-  },
-  {
-    id: 'pharmacy',
-    name: 'Pharmacy',
-    description: 'Medicines & prescriptions',
-    icon: BeakerIcon,
-    color: 'bg-green-600',
-    categoryCode: 'CAT003',
-    isActive: false // Dummy for now
-  }
-]
+// Icon mapping for category codes
+const CATEGORY_ICON_MAP: Record<string, any> = {
+  'CAT001': { icon: DocumentTextIcon, color: 'bg-blue-600' },      // In-Clinic Consultation
+  'CAT002': { icon: BeakerIcon, color: 'bg-green-600' },           // Pharmacy
+  'CAT003': { icon: HeartIcon, color: 'bg-red-600' },              // Diagnostic Services
+  'CAT004': { icon: BuildingOfficeIcon, color: 'bg-purple-600' },  // Laboratory Services
+  'CAT005': { icon: DocumentTextIcon, color: 'bg-indigo-600' },    // Online Consultation
+  'CAT006': { icon: SparklesIcon, color: 'bg-pink-600' },          // Dental Services
+  'CAT007': { icon: EyeCareIcon, color: 'bg-yellow-600' },         // Vision Care
+  'CAT008': { icon: ShieldCheckIcon, color: 'bg-teal-600' },       // Wellness Programs
+}
+
+// Claim category mapping for form submission
+const CLAIM_CATEGORY_MAP: Record<string, string> = {
+  'CAT001': 'IN_CLINIC_CONSULTATION',
+  'CAT002': 'PHARMACY',
+  'CAT003': 'DIAGNOSTIC_SERVICES',
+  'CAT004': 'LABORATORY_SERVICES',
+  'CAT005': 'ONLINE_CONSULTATION',
+  'CAT006': 'DENTAL_SERVICES',
+  'CAT007': 'VISION_CARE',
+  'CAT008': 'WELLNESS_PROGRAMS'
+}
 
 export default function NewClaimPage() {
   const { activeMember } = useFamily()
   const [currentStep, setCurrentStep] = useState(1)
   const [walletData, setWalletData] = useState<any>(null)
   const [walletRules, setWalletRules] = useState<any>(null)
-  const [enabledCategories, setEnabledCategories] = useState<string[]>([])
+  const [availableCategories, setAvailableCategories] = useState<any[]>([])
   const [familyMembers, setFamilyMembers] = useState<any[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [formData, setFormData] = useState<FormData>({
@@ -158,15 +152,9 @@ export default function NewClaimPage() {
       return 0
     }
 
-    const categoryMap: Record<string, string> = {
-      'consultation': 'CAT001',
-      'diagnostics': 'CAT002',
-      'pharmacy': 'CAT003'
-    }
-
-    const mappedCategory = categoryMap[formData.category]
+    // formData.category now directly contains the category code (CAT001, CAT002, etc.)
     const categoryBalance = walletData.categories?.find(
-      (b: any) => b.categoryCode === mappedCategory
+      (b: any) => b.categoryCode === formData.category
     )
 
     return categoryBalance?.available || 0
@@ -185,40 +173,20 @@ export default function NewClaimPage() {
     }
   }
 
-  // Fetch wallet data when user is selected
+  // Fetch wallet data and available categories when user is selected
   useEffect(() => {
     if (!selectedUserId) return
 
-    const fetchWalletData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/wallet/balance?userId=${selectedUserId}`, {
+        // Fetch wallet balance
+        const walletResponse = await fetch(`/api/wallet/balance?userId=${selectedUserId}`, {
           credentials: 'include',
         })
 
-        if (response.ok) {
-          const data = await response.json()
+        if (walletResponse.ok) {
+          const data = await walletResponse.json()
           setWalletData(data)
-
-          // Extract enabled categories from wallet config
-          if (data.config?.benefits) {
-            const categoryMap: Record<string, string> = {
-              'CAT001': 'consultation',
-              'CAT002': 'diagnostics',
-              'CAT003': 'pharmacy'
-            }
-
-            const enabled: string[] = []
-            Object.keys(data.config.benefits).forEach((catCode) => {
-              const benefit = data.config.benefits[catCode]
-              if (benefit?.enabled && benefit?.claimEnabled) {
-                const mappedId = categoryMap[catCode]
-                if (mappedId) {
-                  enabled.push(mappedId)
-                }
-              }
-            })
-            setEnabledCategories(enabled)
-          }
 
           // Set wallet rules for per-claim limit warnings
           if (data.config) {
@@ -231,11 +199,48 @@ export default function NewClaimPage() {
             })
           }
         }
+
+        // Fetch available claim categories from new endpoint
+        const categoriesResponse = await fetch('/api/member/claims/available-categories', {
+          credentials: 'include',
+        })
+
+        if (categoriesResponse.ok) {
+          const categories = await categoriesResponse.json()
+
+          // Enrich categories with icons
+          const enrichedCategories = categories.map((cat: any) => {
+            const iconConfig = CATEGORY_ICON_MAP[cat.categoryId] || {
+              icon: DocumentTextIcon,
+              color: 'bg-gray-600'
+            }
+
+            return {
+              id: cat.claimCategory,
+              name: cat.name,
+              description: cat.description,
+              icon: iconConfig.icon,
+              color: iconConfig.color,
+              categoryCode: cat.categoryId,
+              categoryId: cat.categoryId,
+              claimCategory: cat.claimCategory,
+              annualLimit: cat.annualLimit,
+              perClaimLimit: cat.perClaimLimit,
+              isActive: true
+            }
+          })
+
+          setAvailableCategories(enrichedCategories)
+        } else {
+          console.error('Failed to fetch categories:', categoriesResponse.status, categoriesResponse.statusText)
+          const errorText = await categoriesResponse.text()
+          console.error('Error response:', errorText)
+        }
       } catch (error) {
-        console.error('Failed to fetch wallet data:', error)
+        console.error('Failed to fetch data:', error)
       }
     }
-    fetchWalletData()
+    fetchData()
   }, [selectedUserId])
 
   // Auto-save draft
@@ -356,7 +361,7 @@ export default function NewClaimPage() {
 
   // Helper function to validate step 2 documents
   const validateStep2 = (errors: Record<string, string>) => {
-    const isConsult = formData.category === 'consultation'
+    const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005'
     if (isConsult) {
       validateConsultDocuments(errors)
     } else {
@@ -475,12 +480,9 @@ export default function NewClaimPage() {
 
     setIsSubmitting(true)
     try {
-      // Map frontend category to backend ClaimCategory enum
-      const categoryMap: Record<string, string> = {
-        'consultation': 'CONSULTATION',
-        'diagnostics': 'DIAGNOSTICS',
-        'pharmacy': 'PHARMACY'
-      }
+      // Get the claim category from the selected category
+      const selectedCategory = availableCategories.find(cat => cat.categoryId === formData.category)
+      const claimCategory = selectedCategory?.claimCategory || CLAIM_CATEGORY_MAP[formData.category]
 
       // Prepare form data for multipart upload
       const formDataToSend = new FormData()
@@ -490,7 +492,7 @@ export default function NewClaimPage() {
 
       // Add claim fields
       formDataToSend.append('claimType', 'REIMBURSEMENT')
-      formDataToSend.append('category', categoryMap[formData.category] || 'CONSULTATION')
+      formDataToSend.append('category', claimCategory || 'IN_CLINIC_CONSULTATION')
       formDataToSend.append('treatmentDate', formData.treatmentDate)
       formDataToSend.append('providerName', 'Self Service')
       formDataToSend.append('billAmount', formData.billAmount)
@@ -509,7 +511,8 @@ export default function NewClaimPage() {
       }
 
       // Add files based on category with explicit document types
-      const isConsult = formData.category === 'consultation'
+      // Both in-clinic and online consultations need prescription + bill files
+      const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005'
       if (isConsult) {
         // For Consult: Add prescription and bill files with specific field names
         prescriptionFiles.forEach((doc) => {
@@ -632,8 +635,8 @@ export default function NewClaimPage() {
           )}
         >
           <option value="">Select a category</option>
-          {CLAIM_CATEGORIES.filter(cat => enabledCategories.length === 0 || enabledCategories.includes(cat.id)).map((category) => (
-            <option key={category.id} value={category.id}>
+          {availableCategories.map((category) => (
+            <option key={category.id} value={category.categoryId}>
               {category.name}
             </option>
           ))}
@@ -721,16 +724,8 @@ export default function NewClaimPage() {
 
       {/* Per-Claim Limit Warning and Amount Submitted for Approval */}
       {formData.billAmount && walletRules?.categoryLimits && (() => {
-        const categoryMap: Record<string, string> = {
-          'consultation': 'CAT001',
-          'diagnostics': 'CAT003',
-          'pharmacy': 'CAT002',
-          'dental': 'CAT006',
-          'vision': 'CAT007',
-          'wellness': 'CAT008'
-        };
-        const categoryCode = categoryMap[formData.category];
-        const categoryLimit = walletRules.categoryLimits[categoryCode]?.perClaimLimit;
+        // formData.category now directly contains the category code (CAT001, CAT002, etc.)
+        const categoryLimit = walletRules.categoryLimits[formData.category]?.perClaimLimit;
         const billAmount = parseFloat(formData.billAmount);
 
         if (categoryLimit && billAmount > categoryLimit) {
@@ -829,7 +824,7 @@ export default function NewClaimPage() {
   }
 
   const renderStep3 = () => {
-    const isConsult = formData.category === 'consultation'
+    const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005'
 
     return (
       <div className="space-y-6">
@@ -1108,7 +1103,7 @@ export default function NewClaimPage() {
   }
 
   const renderStep4 = () => {
-    const isConsult = formData.category === 'consultation'
+    const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005'
     const totalDocuments = isConsult
       ? prescriptionFiles.length + billFiles.length
       : documentPreviews.length
@@ -1168,7 +1163,7 @@ export default function NewClaimPage() {
           <div className="flex justify-between items-start">
             <span className="text-sm text-ink-500">Category</span>
             <span className="text-sm font-medium text-ink-900">
-              {CLAIM_CATEGORIES.find(c => c.id === formData.category)?.name}
+              {availableCategories.find(c => c.categoryId === formData.category)?.name || 'Not selected'}
             </span>
           </div>
 
