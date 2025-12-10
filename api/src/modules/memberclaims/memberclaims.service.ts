@@ -310,6 +310,19 @@ export class MemberClaimsService {
       throw new NotFoundException(`Claim with ID ${claimId} not found`);
     }
 
+    // Validate claim has a valid MongoDB _id
+    if (!claim._id || !Types.ObjectId.isValid(claim._id.toString())) {
+      console.error('❌ [CLAIMS SERVICE] Claim has invalid _id:', {
+        claimId,
+        _id: claim._id,
+        _idType: typeof claim._id
+      });
+      throw new BadRequestException('Invalid claim document ID. Please contact support.');
+    }
+
+    const claimObjectId = claim._id.toString();
+    console.log('✅ [CLAIMS SERVICE] Claim MongoDB _id validated:', claimObjectId);
+
     // Check if user can manage this claim (own claim or dependent's claim)
     const canSubmit = await this.canManageClaim(claim.userId.toString(), userId);
     if (!canSubmit) {
@@ -542,7 +555,7 @@ export class MemberClaimsService {
           claimUserId,
           walletDebitAmount,
           categoryCode,
-          (claim._id as any).toString(),
+          claimObjectId,
           'CLAIM',
           claim.providerName || 'Provider',
           `Claim ${claimId} (wallet portion) - ${claim.category} - ${claim.providerName || 'Provider'}`
@@ -556,7 +569,7 @@ export class MemberClaimsService {
           amount: copayAmount,
           paymentType: PaymentType.COPAY,
           serviceType: PaymentServiceType.CLAIM,
-          serviceId: (claim._id as any).toString(),
+          serviceId: claimObjectId,
           serviceReferenceId: claimId,
           description: `Copay for claim ${claimId} - ${claim.category}`,
         });
@@ -570,7 +583,7 @@ export class MemberClaimsService {
         const transaction = await this.transactionService.createTransaction({
           userId: claimUserId,
           serviceType: TransactionServiceType.CLAIM,
-          serviceId: (claim._id as any).toString(),
+          serviceId: claimObjectId,
           serviceReferenceId: claimId,
           serviceName: `${claim.category} Claim - ${claim.providerName || 'Provider'}`,
           serviceDate: claim.treatmentDate || new Date(),
@@ -600,7 +613,7 @@ export class MemberClaimsService {
           claimUserId,
           walletDebitAmount,
           categoryCode,
-          (claim._id as any).toString(),
+          claimObjectId,
           'CLAIM',
           claim.providerName || 'Provider',
           `Claim ${claimId} - ${claim.category} - ${claim.providerName || 'Provider'}`
@@ -614,7 +627,7 @@ export class MemberClaimsService {
         const transaction = await this.transactionService.createTransaction({
           userId: claimUserId,
           serviceType: TransactionServiceType.CLAIM,
-          serviceId: (claim._id as any).toString(),
+          serviceId: claimObjectId,
           serviceReferenceId: claimId,
           serviceName: `${claim.category} Claim - ${claim.providerName || 'Provider'}`,
           serviceDate: claim.treatmentDate || new Date(),
