@@ -114,6 +114,19 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 ---
 
+## Diagnostic Services
+
+| Path | Description |
+|------|-------------|
+| /member/diagnostics | View diagnostic test prescriptions and orders (identical to lab-tests) |
+| /member/diagnostics/upload | Upload diagnostic test prescription |
+| /member/diagnostics/cart/[id] | View and edit diagnostic test cart |
+| /member/diagnostics/cart/[id]/vendor/[vendorId] | Select diagnostic center/vendor |
+| /member/diagnostics/orders | View all diagnostic test orders |
+| /member/diagnostics/orders/[orderId] | View diagnostic test order details |
+
+---
+
 ## Health & Wellness
 
 | Path | Description |
@@ -144,4 +157,4 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 ---
 
-**Total Pages: ~42**
+**Total Pages: ~48**
