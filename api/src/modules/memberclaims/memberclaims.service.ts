@@ -1236,32 +1236,39 @@ export class MemberClaimsService {
 
     // Refund wallet if it was debited for this claim
     const categoryCode = CATEGORY_CODE_MAP[claim.category];
-    if (categoryCode && claim.billAmount > 0) {
-      try {
-        console.log('🟡 [CLAIMS SERVICE] Refunding wallet for cancelled claim:', {
-          claimId,
-          category: claim.category,
-          categoryCode,
-          amount: claim.billAmount
-        });
+    if (categoryCode && claim.walletDebitAmount && claim.walletDebitAmount > 0) {
+      console.log('💰 [CANCEL CLAIM] Refunding wallet:', {
+        claimId,
+        categoryCode,
+        walletDebitAmount: claim.walletDebitAmount,
+        billAmount: claim.billAmount,
+        copayAmount: claim.copayAmount,
+      });
 
-        // Credit the wallet back - use claim owner's userId, not logged-in user
+      try {
+        const claimObjectId = (claim._id as any).toString();
         await this.walletService.creditWallet(
           claim.userId.toString(),
-          claim.billAmount,
+          claim.walletDebitAmount,  // Use actual debited amount, not billAmount
           categoryCode,
-          (claim._id as any).toString(),
+          claimObjectId,
           'CLAIM_REFUND',
           claim.providerName || 'Provider',
           `Refund for cancelled claim ${claimId} - ${claim.category}`
         );
 
-        console.log('✅ [CLAIMS SERVICE] Wallet refunded successfully');
-      } catch (walletError) {
-        console.error('❌ [CLAIMS SERVICE] Wallet refund failed:', walletError);
-        // Log the error but don't fail the cancellation
-        console.warn('⚠️ [CLAIMS SERVICE] Continuing with claim cancellation despite wallet refund failure');
+        console.log('✅ [CANCEL CLAIM] Wallet refunded successfully:', claim.walletDebitAmount);
+      } catch (error) {
+        console.error('❌ [CANCEL CLAIM] Wallet refund failed:', error);
+        throw new BadRequestException('Failed to refund wallet: ' + error.message);
       }
+    } else {
+      console.log('ℹ️ [CANCEL CLAIM] No wallet refund needed:', {
+        claimId,
+        categoryCode,
+        walletDebitAmount: claim.walletDebitAmount,
+        reason: !categoryCode ? 'No category code' : 'No wallet debit amount'
+      });
     }
 
     // Update claim status to CANCELLED
