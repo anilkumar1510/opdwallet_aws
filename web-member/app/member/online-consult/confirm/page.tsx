@@ -175,6 +175,8 @@ function OnlineConfirmContent() {
   const [showPaymentStep, setShowPaymentStep] = useState(false)
   const [paymentProcessed, setPaymentProcessed] = useState(false)
   const [transactionId, setTransactionId] = useState('')
+  const [validationResult, setValidationResult] = useState<any>(null)
+  const [validating, setValidating] = useState(false)
 
   // Helper function to build self member
   const buildSelfMember = (userData: any): FamilyMember => ({
@@ -259,6 +261,47 @@ function OnlineConfirmContent() {
     console.log('[OnlineConfirm] Params:', { doctorId, doctorName, specialty, availableInMinutes })
     fetchRelationships()
   }, [doctorId, doctorName, specialty, availableInMinutes, fetchRelationships, viewingUserId])
+
+  // Validate booking and get payment breakdown with service limits
+  React.useEffect(() => {
+    const validateBooking = async () => {
+      if (!loggedInUserId || !selectedPatient || !consultationFee || !specialty) {
+        return
+      }
+
+      setValidating(true)
+      try {
+        const response = await fetch('/api/appointments/validate-booking', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            patientId: selectedPatient.userId,
+            specialty,
+            doctorId,
+            consultationFee: parseFloat(consultationFee),
+            appointmentType: 'ONLINE'
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('[OnlineConfirm] Validation result:', data)
+          setValidationResult(data)
+        } else {
+          console.error('[OnlineConfirm] Validation failed:', response.status)
+        }
+      } catch (error) {
+        console.error('[OnlineConfirm] Error validating booking:', error)
+      } finally {
+        setValidating(false)
+      }
+    }
+
+    validateBooking()
+  }, [loggedInUserId, selectedPatient, specialty, consultationFee, doctorId])
 
   // Helper function to validate booking form
   const validateBookingForm = (): boolean => {
@@ -540,6 +583,13 @@ function OnlineConfirmContent() {
               contactNumber: contactNumber,
               callPreference: callPreference
             }}
+            serviceLimit={validationResult?.breakdown?.wasServiceLimitApplied ? {
+              serviceTransactionLimit: validationResult.breakdown.serviceTransactionLimit,
+              insuranceEligibleAmount: validationResult.breakdown.insuranceEligibleAmount,
+              insurancePayment: validationResult.breakdown.insurancePayment,
+              excessAmount: validationResult.breakdown.excessAmount,
+              wasLimitApplied: validationResult.breakdown.wasServiceLimitApplied
+            } : undefined}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentFailure={handlePaymentFailure}
           />
