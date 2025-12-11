@@ -330,15 +330,27 @@ export default function TPAClaimsPage() {
                       {claim.wasAutoCapped ? (
                         <div>
                           <div className="text-sm font-semibold text-green-700">
-                            ₹{claim.cappedAmount?.toLocaleString() || 0}
+                            ₹{claim.walletDebitAmount?.toLocaleString() || 0}
                           </div>
                           <div className="text-xs text-amber-600">
-                            (Capped from ₹{claim.billAmount?.toLocaleString() || 0})
+                            (Capped from ₹{claim.originalBillAmount?.toLocaleString() || 0})
                           </div>
+                          {claim.copayAmount > 0 && (
+                            <div className="text-xs text-gray-500">
+                              (Copay: ₹{claim.copayAmount?.toLocaleString() || 0})
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <div className="text-sm font-medium text-gray-900">
-                          ₹{claim.billAmount?.toLocaleString() || 0}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            ₹{claim.walletDebitAmount?.toLocaleString() || 0}
+                          </div>
+                          {claim.copayAmount > 0 && (
+                            <div className="text-xs text-gray-500">
+                              (Copay: ₹{claim.copayAmount?.toLocaleString() || 0})
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>

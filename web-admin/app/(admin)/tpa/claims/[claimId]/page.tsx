@@ -281,27 +281,24 @@ export default function ClaimDetailPage() {
                     ₹{claim.billAmount?.toLocaleString()}
                   </p>
                 </div>
-                {claim.wasAutoCapped && claim.cappedAmount && (
-                  <div>
-                    <p className="text-sm text-gray-500">Amount Submitted for Approval</p>
-                    <div className="mt-1">
-                      <p className="text-lg font-bold text-green-700">
-                        ₹{claim.cappedAmount?.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-amber-600 mt-1">
-                        Capped from ₹{claim.billAmount?.toLocaleString()} (Limit: ₹{claim.perClaimLimitApplied?.toLocaleString()})
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {!claim.wasAutoCapped && (
-                  <div>
-                    <p className="text-sm text-gray-500">Amount Submitted for Approval</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">
-                      ₹{claim.billAmount?.toLocaleString()}
+                <div>
+                  <p className="text-sm text-gray-500">Amount Submitted for Approval</p>
+                  <div className="mt-1">
+                    <p className="text-lg font-bold text-green-700">
+                      ₹{claim.walletDebitAmount?.toLocaleString()}
                     </p>
+                    {claim.wasAutoCapped && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Capped from ₹{claim.originalBillAmount?.toLocaleString()} (Limit: ₹{claim.perClaimLimitApplied?.toLocaleString()})
+                      </p>
+                    )}
+                    {claim.copayAmount > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Member copay: ₹{claim.copayAmount?.toLocaleString()}
+                      </p>
+                    )}
                   </div>
-                )}
+                </div>
                 {claim.amountApproved !== undefined && (
                   <div>
                     <p className="text-sm text-gray-500">Amount Approved</p>
