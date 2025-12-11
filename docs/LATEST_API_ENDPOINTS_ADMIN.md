@@ -354,8 +354,9 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /migration/spouse-coverage | Migrate plan configs for spouse coverage |
+| POST | /migration/service-transaction-limits | Migrate plan configs to add serviceTransactionLimits field |
 | POST | /admin/migrate-invalid-services | Migrate invalid service categories |
 
 ---
 
-**Total Endpoints: ~145**
+**Total Endpoints: ~146**

@@ -129,6 +129,22 @@ export class Appointment {
 
   @Prop()
   transactionId: string;
+
+  // Service transaction limit tracking
+  @Prop()
+  serviceId?: string; // Specialty ID for this appointment
+
+  @Prop()
+  serviceName?: string; // Specialty name
+
+  @Prop()
+  serviceTransactionLimit?: number; // Configured limit that was applied
+
+  @Prop({ default: false })
+  wasServiceLimitApplied: boolean; // Whether limit was actually applied
+
+  @Prop({ default: 0 })
+  excessAmount: number; // Amount member pays beyond copay due to service limit
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

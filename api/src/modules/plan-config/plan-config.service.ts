@@ -395,4 +395,117 @@ export class PlanConfigService {
       throw error;
     }
   }
+
+  /**
+   * Migration: Add empty serviceTransactionLimits to all benefit configurations
+   * This migration ensures all existing plan configs have the serviceTransactionLimits field
+   * initialized as an empty object, preparing them for the new per-service transaction limit feature.
+   */
+  async migrateServiceTransactionLimits() {
+    console.log('🔄 [MIGRATION] Starting service transaction limits migration...');
+
+    try {
+      const planConfigs = await this.planConfigModel.find({}).exec();
+      console.log(`📊 [MIGRATION] Found ${planConfigs.length} plan configurations to migrate`);
+
+      const results = {
+        totalConfigs: planConfigs.length,
+        migratedPrimary: 0,
+        migratedMemberConfigs: 0,
+        skipped: 0,
+        errors: [] as Array<{ policyId: string; version: number; error: string }>,
+      };
+
+      for (const planConfig of planConfigs) {
+        try {
+          let hasChanges = false;
+          const updates: any = {};
+
+          // Migrate primary benefits (global benefits)
+          if (planConfig.benefits) {
+            const updatedBenefits = { ...planConfig.benefits } as any;
+            const categoryIds = Object.keys(updatedBenefits);
+
+            for (const categoryId of categoryIds) {
+              const benefit = updatedBenefits[categoryId];
+              if (benefit && !benefit.serviceTransactionLimits) {
+                benefit.serviceTransactionLimits = {};
+                hasChanges = true;
+                results.migratedPrimary++;
+                console.log(`✅ [MIGRATION] Added serviceTransactionLimits to ${categoryId} in policy ${planConfig.policyId}, version ${planConfig.version}`);
+              }
+            }
+
+            if (hasChanges) {
+              updates.benefits = updatedBenefits;
+            }
+          }
+
+          // Migrate member-specific configurations
+          if (planConfig.memberConfigs) {
+            const updatedMemberConfigs = { ...planConfig.memberConfigs } as any;
+            const relationships = Object.keys(updatedMemberConfigs);
+
+            for (const relationship of relationships) {
+              const memberConfig = updatedMemberConfigs[relationship];
+              if (memberConfig?.benefits) {
+                const benefits = memberConfig.benefits as any;
+                const categoryIds = Object.keys(benefits);
+
+                for (const categoryId of categoryIds) {
+                  const benefit = benefits[categoryId];
+                  if (benefit && !benefit.serviceTransactionLimits) {
+                    benefit.serviceTransactionLimits = {};
+                    hasChanges = true;
+                    results.migratedMemberConfigs++;
+                    console.log(`✅ [MIGRATION] Added serviceTransactionLimits to ${categoryId} for ${relationship} in policy ${planConfig.policyId}, version ${planConfig.version}`);
+                  }
+                }
+              }
+            }
+
+            if (hasChanges) {
+              updates.memberConfigs = updatedMemberConfigs;
+            }
+          }
+
+          // Apply updates if there are any changes
+          if (hasChanges) {
+            await this.planConfigModel.updateOne(
+              { _id: planConfig._id },
+              { $set: updates }
+            ).exec();
+            console.log(`💾 [MIGRATION] Saved changes for policy ${planConfig.policyId}, version ${planConfig.version}`);
+          } else {
+            results.skipped++;
+            console.log(`⏭️  [MIGRATION] No changes needed for policy ${planConfig.policyId}, version ${planConfig.version}`);
+          }
+
+        } catch (error) {
+          console.error(`❌ [MIGRATION] Error migrating policy ${planConfig.policyId}, version ${planConfig.version}:`, error);
+          results.errors.push({
+            policyId: planConfig.policyId.toString(),
+            version: planConfig.version,
+            error: error.message,
+          });
+        }
+      }
+
+      console.log('\n🎉 [MIGRATION] Service transaction limits migration completed!');
+      console.log(`   📊 Total configs: ${results.totalConfigs}`);
+      console.log(`   ✅ Migrated primary benefits: ${results.migratedPrimary}`);
+      console.log(`   ✅ Migrated member-specific benefits: ${results.migratedMemberConfigs}`);
+      console.log(`   ⏭️  Skipped (already migrated): ${results.skipped}`);
+      console.log(`   ❌ Errors: ${results.errors.length}`);
+
+      return {
+        success: results.errors.length === 0,
+        ...results,
+      };
+
+    } catch (error) {
+      console.error('❌ [MIGRATION] Fatal error during service transaction limits migration:', error);
+      throw error;
+    }
+  }
 }

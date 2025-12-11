@@ -20,4 +20,12 @@ export class MigrationController {
   async migrateSpouseCoverage() {
     return this.planConfigService.migrateSpouseCoverage();
   }
+
+  @Post('service-transaction-limits')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Migrate all plan configs to add serviceTransactionLimits field' })
+  @ApiResponse({ status: 200, description: 'Migration completed successfully' })
+  async migrateServiceTransactionLimits() {
+    return this.planConfigService.migrateServiceTransactionLimits();
+  }
 }

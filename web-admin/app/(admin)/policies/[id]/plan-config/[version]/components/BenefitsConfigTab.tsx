@@ -9,6 +9,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { SpecialtySelector } from './SpecialtySelector';
 import { LabCategorySelector } from './LabCategorySelector';
 import { ServiceTypeSelector } from './ServiceTypeSelector';
+import { ServiceTransactionLimitsEditor } from './ServiceTransactionLimitsEditor';
 
 interface BenefitsConfigTabProps {
   categories: Category[];
@@ -78,6 +79,18 @@ export function BenefitsConfigTab({
     } else if (type === 'service') {
       onUpdateBenefit(categoryId, 'allowedServiceCodes', selection);
     }
+  };
+
+  const getSelectedServiceIds = (categoryId: string, benefit: any): string[] => {
+    const type = getCategoryType(categoryId);
+    if (type === 'specialty') {
+      return benefit?.allowedSpecialties || [];
+    } else if (type === 'lab') {
+      return benefit?.allowedLabServiceCategories || [];
+    } else if (type === 'service') {
+      return benefit?.allowedServiceCodes || [];
+    }
+    return [];
   };
 
   const renderServiceSelector = (categoryId: string, categoryName: string, benefit: any) => {
@@ -285,8 +298,23 @@ export function BenefitsConfigTab({
                       {/* Expandable Service Selector Row */}
                       {isExpanded && hasServiceConfig && benefit?.enabled && (
                         <tr key={`${category.categoryId}-expanded`} className="bg-gray-100">
-                          <td colSpan={7} className="px-4 py-4">
+                          <td colSpan={8} className="px-4 py-4">
                             {renderServiceSelector(category.categoryId, category.name, benefit)}
+
+                            {/* Service Transaction Limits Editor */}
+                            <ServiceTransactionLimitsEditor
+                              categoryId={category.categoryId}
+                              categoryType={getCategoryType(category.categoryId)}
+                              selectedServiceIds={getSelectedServiceIds(category.categoryId, benefit)}
+                              currentLimits={benefit?.serviceTransactionLimits || {}}
+                              onLimitsChange={(limits) =>
+                                onUpdateBenefit(category.categoryId, 'serviceTransactionLimits', limits)
+                              }
+                              disabled={isDisabled}
+                              policyId={policyId}
+                              version={version}
+                              isNew={isNew}
+                            />
                           </td>
                         </tr>
                       )}

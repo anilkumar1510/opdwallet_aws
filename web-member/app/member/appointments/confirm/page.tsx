@@ -35,6 +35,8 @@ function ConfirmAppointmentContent() {
   const [appointmentId, setAppointmentId] = useState('')
   const [userId, setUserId] = useState('')
   const [loadingUser, setLoadingUser] = useState(true)
+  const [validationResult, setValidationResult] = useState<any>(null)
+  const [validating, setValidating] = useState(false)
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -65,6 +67,47 @@ function ConfirmAppointmentContent() {
 
     fetchUserData()
   }, [])
+
+  // Validate booking and get payment breakdown with service limits
+  React.useEffect(() => {
+    const validateBooking = async () => {
+      if (!userId || !patientId || !consultationFee) {
+        return
+      }
+
+      setValidating(true)
+      try {
+        const response = await fetch('/api/appointments/validate-booking', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            patientId,
+            specialty,
+            doctorId,
+            consultationFee: parseFloat(consultationFee),
+            appointmentType: 'IN_CLINIC'
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('[ConfirmAppointment] Validation result:', data)
+          setValidationResult(data)
+        } else {
+          console.error('[ConfirmAppointment] Validation failed:', response.status)
+        }
+      } catch (error) {
+        console.error('[ConfirmAppointment] Error validating booking:', error)
+      } finally {
+        setValidating(false)
+      }
+    }
+
+    validateBooking()
+  }, [userId, patientId, specialty, consultationFee])
 
   const handlePaymentSuccess = async (transaction: any) => {
     console.log('[InClinicConfirm] Payment successful, creating appointment')
@@ -283,6 +326,13 @@ function ConfirmAppointmentContent() {
               time: timeSlot || '',
               clinicName: clinicName || ''
             }}
+            serviceLimit={validationResult?.breakdown?.wasServiceLimitApplied ? {
+              serviceTransactionLimit: validationResult.breakdown.serviceTransactionLimit,
+              insuranceEligibleAmount: validationResult.breakdown.insuranceEligibleAmount,
+              insurancePayment: validationResult.breakdown.insurancePayment,
+              excessAmount: validationResult.breakdown.excessAmount,
+              wasLimitApplied: validationResult.breakdown.wasServiceLimitApplied
+            } : undefined}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentFailure={handlePaymentFailure}
           />

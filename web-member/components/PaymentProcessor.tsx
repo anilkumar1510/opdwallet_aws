@@ -38,6 +38,14 @@ interface PaymentProcessorProps {
   onPaymentSuccess?: (transaction: any) => void;
   onPaymentFailure?: (error: string) => void;
   children?: (props: PaymentRenderProps) => React.ReactNode;
+  // Service transaction limit information (optional)
+  serviceLimit?: {
+    serviceTransactionLimit: number;
+    insuranceEligibleAmount: number;
+    insurancePayment: number;
+    excessAmount: number;
+    wasLimitApplied: boolean;
+  };
 }
 
 interface PaymentRenderProps {
@@ -62,7 +70,8 @@ export default function PaymentProcessor({
   serviceDetails,
   onPaymentSuccess,
   onPaymentFailure,
-  children
+  children,
+  serviceLimit
 }: PaymentProcessorProps) {
   const router = useRouter();
   const [validationResult, setValidationResult] = useState<PaymentValidationResult | null>(null);
@@ -106,6 +115,11 @@ export default function PaymentProcessor({
         ? `In-clinic consultation with ${serviceDetails.doctorName}`
         : `Online consultation with ${serviceDetails.doctorName}`;
 
+      // Calculate actual user payment amount (includes excess amount if service limit applied)
+      const actualUserPayment = serviceLimit && serviceLimit.wasLimitApplied
+        ? (validationResult.copayAmount + serviceLimit.excessAmount)
+        : validationResult.userPayment;
+
       // Case 1: Fully covered by wallet/insurance
       if (validationResult.paymentMethod === 'WALLET_ONLY') {
         // Process wallet payment
@@ -146,10 +160,10 @@ export default function PaymentProcessor({
           validationResult.walletBalance >= validationResult.walletCoverage) {
 
         // Check if user needs to pay copay externally
-        if (validationResult.userPayment > 0) {
+        if (actualUserPayment > 0) {
           // Create pending payment for copay
           const payment = await createPendingPayment({
-            amount: validationResult.userPayment,
+            amount: actualUserPayment,
             paymentType: 'COPAY',
             serviceType,
             serviceReferenceId: serviceDetails.appointmentId,
@@ -194,7 +208,7 @@ export default function PaymentProcessor({
 
         // Create pending payment for the full user payment amount
         const payment = await createPendingPayment({
-          amount: validationResult.userPayment,
+          amount: actualUserPayment,
           paymentType: validationResult.paymentMethod as any,
           serviceType,
           serviceReferenceId: serviceDetails.appointmentId,
@@ -309,22 +323,52 @@ export default function PaymentProcessor({
 
           {validationResult.copayPercentage > 0 && (
             <>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Insurance Coverage ({100 - validationResult.copayPercentage}%)</span>
-                <span className="font-medium text-green-600">₹{validationResult.walletCoverage}</span>
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Your Copay ({validationResult.copayPercentage}%)</span>
+                <span className="font-medium">- ₹{validationResult.copayAmount}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Your Copay ({validationResult.copayPercentage}%)</span>
-                <span className="font-medium text-blue-600">₹{validationResult.copayAmount}</span>
+              <div className="flex justify-between text-sm border-t pt-2">
+                <span className="text-gray-600">Insurance Eligible Amount</span>
+                <span className="font-medium text-gray-900">₹{consultationFee - validationResult.copayAmount}</span>
               </div>
             </>
           )}
 
+          {/* Service Transaction Limit Section */}
+          {serviceLimit && serviceLimit.wasLimitApplied && (
+            <>
+              <div className="flex items-start justify-between text-sm bg-orange-50 -mx-2 px-2 py-1.5 rounded">
+                <div className="flex items-start">
+                  <AlertCircle className="h-4 w-4 mr-1 mt-0.5 text-orange-600 flex-shrink-0" />
+                  <span className="text-orange-800">Service Transaction Limit Applied</span>
+                </div>
+                <span className="font-medium text-orange-800">Max ₹{serviceLimit.serviceTransactionLimit}</span>
+              </div>
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Additional Out-of-Pocket</span>
+                <span className="font-medium">- ₹{serviceLimit.excessAmount}</span>
+              </div>
+            </>
+          )}
+
+          {validationResult.copayPercentage > 0 && (
+            <div className="border-t pt-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-green-700 font-medium">Insurance Pays</span>
+                <span className="font-medium text-green-600">
+                  ₹{serviceLimit ? serviceLimit.insurancePayment : validationResult.walletCoverage}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="border-t pt-2 mt-2">
             <div className="flex justify-between">
-              <span className="font-semibold text-gray-900">You Pay</span>
-              <span className="font-bold text-lg text-blue-600">
-                ₹{validationResult.userPayment}
+              <span className="font-semibold text-gray-900">You Pay Total</span>
+              <span className="font-bold text-lg text-red-600">
+                ₹{serviceLimit && serviceLimit.wasLimitApplied
+                  ? (validationResult.copayAmount + serviceLimit.excessAmount)
+                  : validationResult.userPayment}
               </span>
             </div>
           </div>
@@ -337,6 +381,17 @@ export default function PaymentProcessor({
             {getPaymentMethodDisplay(validationResult.paymentMethod)}
           </span>
         </div>
+
+        {/* Service Limit Info Box */}
+        {serviceLimit && serviceLimit.wasLimitApplied && (
+          <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-800">
+              <strong>Note:</strong> This service has a transaction limit of ₹{serviceLimit.serviceTransactionLimit}.
+              After applying your {validationResult.copayPercentage}% copay, insurance can pay a maximum of ₹{serviceLimit.insurancePayment}.
+              You pay the remaining ₹{serviceLimit.excessAmount} out-of-pocket.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Error Message */}
@@ -356,7 +411,7 @@ export default function PaymentProcessor({
         className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
           isProcessing || !validationResult.canProceed
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : validationResult.userPayment > 0
+            : (serviceLimit && serviceLimit.wasLimitApplied ? (validationResult.copayAmount + serviceLimit.excessAmount) : validationResult.userPayment) > 0
             ? 'bg-blue-600 hover:bg-blue-700 text-white'
             : 'bg-green-600 hover:bg-green-700 text-white'
         }`}
@@ -366,10 +421,12 @@ export default function PaymentProcessor({
             <Loader2 className="w-5 h-5 animate-spin" />
             <span>Processing...</span>
           </>
-        ) : validationResult.userPayment > 0 ? (
+        ) : (serviceLimit && serviceLimit.wasLimitApplied ? (validationResult.copayAmount + serviceLimit.excessAmount) : validationResult.userPayment) > 0 ? (
           <>
             <CreditCard className="w-5 h-5" />
-            <span>Pay ₹{validationResult.userPayment} & Confirm</span>
+            <span>Pay ₹{serviceLimit && serviceLimit.wasLimitApplied
+              ? (validationResult.copayAmount + serviceLimit.excessAmount)
+              : validationResult.userPayment} & Confirm</span>
           </>
         ) : (
           <>

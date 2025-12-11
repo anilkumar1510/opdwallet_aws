@@ -11,6 +11,7 @@ import { TransactionSummaryService } from '../transactions/transaction-summary.s
 import { AssignmentsService } from '../assignments/assignments.service';
 import { CopayCalculator } from '../plan-config/utils/copay-calculator';
 import { CopayResolver } from '../plan-config/utils/copay-resolver';
+import { ServiceTransactionLimitCalculator } from '../plan-config/utils/service-transaction-limit-calculator';
 import { PaymentType, ServiceType as PaymentServiceType } from '../payments/schemas/payment.schema';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../transactions/schemas/transaction-summary.schema';
 import { APPOINTMENT_TYPE_TO_CATEGORY } from '@/common/constants/coverage.constants';
@@ -69,6 +70,7 @@ export class AppointmentsService {
     // Step 1: Get policy config and copay settings
     console.log('📋 [STEP 1] Fetching policy config and copay settings...');
     let copayCalculation = null;
+    let serviceTransactionLimitResult = null;
     let policyId = null;
     let userRelationship = null;
     let categoryCode = APPOINTMENT_TYPE_TO_CATEGORY[appointmentType] || 'CAT001';
@@ -181,6 +183,89 @@ export class AppointmentsService {
               console.log('⚠️ [COPAY] Category not enabled (VAS mode or disabled)');
             }
           }
+
+          // Step 1.5: Apply service transaction limit (if configured)
+          // Need to get specialty MongoDB ObjectId (not the specialty name)
+          if (copayCalculation && categoryEnabled) {
+            console.log('🔒 [SERVICE LIMIT] Checking for service transaction limit...');
+
+            let specialtyObjectId: string | null = null;
+
+            // Get specialty ObjectId from doctor document
+            if (createAppointmentDto.doctorId) {
+              try {
+                const doctorModel = this.appointmentModel.db.model('Doctor');
+                const doctorDoc = await doctorModel.findOne({ doctorId: createAppointmentDto.doctorId }).select('specialtyId specialty').lean() as { specialtyId?: string; specialty?: string } | null;
+
+                if (doctorDoc && doctorDoc.specialtyId) {
+                  console.log('✅ [CREATE - DOCTOR] Found specialtyId from doctor:', doctorDoc.specialtyId);
+
+                  // Lookup specialty document to get MongoDB _id (ObjectId)
+                  const specialtyModel = this.appointmentModel.db.model('Specialty');
+                  const specialtyDoc = await specialtyModel.findOne({ specialtyId: doctorDoc.specialtyId }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+
+                  if (specialtyDoc && specialtyDoc._id) {
+                    specialtyObjectId = specialtyDoc._id.toString();
+                    console.log('✅ [CREATE - SPECIALTY] Found specialty MongoDB ObjectId:', specialtyObjectId, '(for specialtyId:', specialtyDoc.specialtyId, 'name:', specialtyDoc.name, ')');
+                  } else {
+                    console.log('⚠️ [CREATE - SPECIALTY] Could not find specialty document for specialtyId:', doctorDoc.specialtyId);
+                  }
+                } else if (doctorDoc && doctorDoc.specialty) {
+                  console.log('⚠️ [CREATE - DOCTOR] Using specialty name as fallback:', doctorDoc.specialty);
+                  const specialtyModel = this.appointmentModel.db.model('Specialty');
+                  const specialtyDoc = await specialtyModel.findOne({ name: doctorDoc.specialty }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+                  if (specialtyDoc && specialtyDoc._id) {
+                    specialtyObjectId = specialtyDoc._id.toString();
+                    console.log('✅ [CREATE - SPECIALTY] Found specialty MongoDB ObjectId by name:', specialtyObjectId);
+                  }
+                }
+              } catch (doctorError) {
+                console.error('❌ [CREATE - DOCTOR ERROR] Failed to fetch doctor specialty:', doctorError.message);
+              }
+            }
+
+            // Fallback: if no specialtyObjectId from doctor, try to lookup by specialty parameter
+            if (!specialtyObjectId && createAppointmentDto.specialty) {
+              try {
+                const specialtyModel = this.appointmentModel.db.model('Specialty');
+                let specialtyDoc = await specialtyModel.findOne({ name: createAppointmentDto.specialty }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+                if (!specialtyDoc) {
+                  specialtyDoc = await specialtyModel.findOne({ specialtyId: createAppointmentDto.specialty }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+                }
+                if (specialtyDoc && specialtyDoc._id) {
+                  specialtyObjectId = specialtyDoc._id.toString();
+                  console.log('⚠️ [CREATE - SPECIALTY] Using specialty parameter fallback, found ObjectId:', specialtyObjectId);
+                }
+              } catch (error) {
+                console.error('❌ [CREATE - SPECIALTY ERROR] Failed to lookup specialty:', error.message);
+              }
+            }
+
+            console.log('🔍 [CREATE - SPECIALTY OBJECTID] Final specialty ObjectId for limit lookup:', specialtyObjectId);
+
+            if (specialtyObjectId) {
+              const serviceLimit = ServiceTransactionLimitCalculator.getServiceLimit(
+                planConfig,
+                categoryCode,
+                specialtyObjectId,
+                userRelationship
+              );
+
+              if (serviceLimit) {
+                console.log('🔒 [SERVICE LIMIT] Transaction limit found for specialty:', serviceLimit);
+                serviceTransactionLimitResult = ServiceTransactionLimitCalculator.calculate(
+                  consultationFee,
+                  copayCalculation.copayAmount,
+                  serviceLimit
+                );
+                console.log('✅ [SERVICE LIMIT] Result:', JSON.stringify(serviceTransactionLimitResult, null, 2));
+              } else {
+                console.log('⚠️ [SERVICE LIMIT] No transaction limit configured for this specialty');
+              }
+            } else {
+              console.log('⚠️ [SERVICE LIMIT] Could not determine specialty ObjectId, skipping service limit check');
+            }
+          }
         } else {
           console.log('⚠️ [POLICY] Plan config is null');
         }
@@ -196,15 +281,30 @@ export class AppointmentsService {
       // Continue without copay if config fetch fails
     }
 
-    // Step 2: Determine payment breakdown
+    // Step 2: Determine payment breakdown (with service transaction limit)
     console.log('📋 [STEP 2] Determining payment breakdown...');
-    const copayAmount = copayCalculation ? copayCalculation.copayAmount : 0;
-    const walletDebitAmount = copayCalculation ? copayCalculation.walletDebitAmount : consultationFee;
+    let copayAmount = copayCalculation ? copayCalculation.copayAmount : 0;
+    let walletDebitAmount = copayCalculation ? copayCalculation.walletDebitAmount : consultationFee;
+    let excessAmount = 0;
+    let totalMemberPayment = copayAmount;
+
+    // Apply service transaction limit if calculated
+    if (serviceTransactionLimitResult) {
+      walletDebitAmount = serviceTransactionLimitResult.insurancePayment;
+      excessAmount = serviceTransactionLimitResult.excessAmount;
+      totalMemberPayment = serviceTransactionLimitResult.totalMemberPayment;
+      copayAmount = serviceTransactionLimitResult.copayAmount; // Use from service limit result for consistency
+    }
 
     console.log('💰 [PAYMENT BREAKDOWN] ================');
     console.log('💰 [PAYMENT] Total consultation fee: ₹' + consultationFee);
-    console.log('💰 [PAYMENT] Wallet debit amount: ₹' + walletDebitAmount);
-    console.log('💰 [PAYMENT] Copay amount (member pays): ₹' + copayAmount);
+    console.log('💰 [PAYMENT] Copay amount: ₹' + copayAmount);
+    if (serviceTransactionLimitResult && serviceTransactionLimitResult.wasLimitApplied) {
+      console.log('🔒 [PAYMENT] Service transaction limit: ₹' + serviceTransactionLimitResult.serviceTransactionLimit);
+      console.log('💰 [PAYMENT] Excess amount (beyond limit): ₹' + excessAmount);
+    }
+    console.log('💰 [PAYMENT] Wallet debit amount (insurance pays): ₹' + walletDebitAmount);
+    console.log('💰 [PAYMENT] Total member payment: ₹' + totalMemberPayment);
     console.log('💰 [PAYMENT BREAKDOWN] ================');
 
     // Step 3: Check wallet balance
@@ -288,6 +388,12 @@ export class AppointmentsService {
       copayAmount: copayAmount,
       walletDebitAmount: walletDebitAmount,
       paymentId: null, // Will be set after payment creation
+      // Service transaction limit tracking
+      serviceId: createAppointmentDto.specialty?.toString() || null,
+      serviceName: createAppointmentDto.specialty || null,
+      serviceTransactionLimit: serviceTransactionLimitResult?.serviceTransactionLimit || null,
+      wasServiceLimitApplied: serviceTransactionLimitResult?.wasLimitApplied || false,
+      excessAmount: excessAmount,
     };
 
     console.log('📝 [APPOINTMENT] Appointment data prepared:', JSON.stringify(appointmentData, null, 2));
@@ -340,7 +446,7 @@ export class AppointmentsService {
     if (!hasSufficientBalance && walletDebitAmount > 0) {
       console.log('💳 [PAYMENT] Creating payment request for insufficient balance scenario...');
       const shortfall = walletDebitAmount - availableBalance;
-      const paymentAmount = shortfall + copayAmount;
+      const paymentAmount = shortfall + copayAmount + excessAmount;
 
       console.log('💳 [PAYMENT] Payment calculation:');
       console.log('  - Shortfall: ₹' + shortfall);
@@ -433,13 +539,13 @@ export class AppointmentsService {
           serviceDate: new Date(createAppointmentDto.appointmentDate),
           totalAmount: consultationFee,
           walletAmount: walletAmountToUse, // ✅ What was actually used
-          selfPaidAmount: shortfall + copayAmount, // ✅ What user needs to pay
+          selfPaidAmount: shortfall + copayAmount + excessAmount, // ✅ What user needs to pay (copay + excess + shortfall)
           copayAmount: copayAmount,
-          paymentMethod: (shortfall + copayAmount) > 0
+          paymentMethod: (shortfall + copayAmount + excessAmount) > 0
             ? (copayAmount > 0 ? PaymentMethod.COPAY : PaymentMethod.PARTIAL)
             : PaymentMethod.WALLET_ONLY,
           paymentId: paymentMongoId || undefined,
-          status: (shortfall + copayAmount) > 0
+          status: (shortfall + copayAmount + excessAmount) > 0
             ? TransactionStatus.PENDING_PAYMENT
             : TransactionStatus.COMPLETED,
         };
@@ -488,11 +594,11 @@ export class AppointmentsService {
 
         console.log('✅ [WALLET DEBIT] Wallet debited successfully: ₹' + walletDebitAmount);
 
-        // Create copay payment request
+        // Create copay payment request (includes excess amount from service limits)
         console.log('💳 [COPAY PAYMENT] Creating copay payment request...');
         const copayPayment = await this.paymentService.createPaymentRequest({
           userId: walletUserId,
-          amount: copayAmount,
+          amount: copayAmount + excessAmount,
           paymentType: PaymentType.COPAY,
           serviceType: PaymentServiceType.APPOINTMENT,
           serviceId: (saved._id as Types.ObjectId).toString(),
@@ -520,7 +626,7 @@ export class AppointmentsService {
           serviceDate: new Date(createAppointmentDto.appointmentDate),
           totalAmount: consultationFee,
           walletAmount: walletDebitAmount,
-          selfPaidAmount: copayAmount,
+          selfPaidAmount: copayAmount + excessAmount, // ✅ What user needs to pay (copay + excess)
           copayAmount: copayAmount,
           paymentMethod: PaymentMethod.COPAY,
           paymentId: paymentMongoId, // Use MongoDB _id, not string paymentId
@@ -971,5 +1077,301 @@ export class AppointmentsService {
 
     console.log('✅ [APPOINTMENTS SERVICE] Appointment confirmed after payment successfully');
     return appointment;
+  }
+
+  /**
+   * Validate booking and calculate payment breakdown including service limits
+   * This method pre-calculates what the user will need to pay BEFORE booking
+   */
+  async validateBooking(validateDto: any): Promise<any> {
+    console.log('🔍 [VALIDATE BOOKING] ========== VALIDATION START ==========');
+    console.log('📥 [INPUT] Validation DTO:', JSON.stringify(validateDto, null, 2));
+
+    const { userId, patientId, specialty, doctorId, consultationFee, appointmentType } = validateDto;
+
+    // Step 1: Determine category code from appointment type
+    const categoryCode = APPOINTMENT_TYPE_TO_CATEGORY[appointmentType];
+    if (!categoryCode) {
+      throw new BadRequestException(`Invalid appointment type: ${appointmentType}`);
+    }
+    console.log('📋 [CATEGORY] Mapped category code:', categoryCode);
+
+    // Step 1.5: Get specialty MongoDB ObjectId from doctor document if doctorId is provided
+    // IMPORTANT: Service transaction limits use specialty's MongoDB _id (ObjectId), not specialtyId field
+    let specialtyObjectId: string | null = null;
+    if (doctorId) {
+      try {
+        const doctorModel = this.appointmentModel.db.model('Doctor');
+        const doctorDoc = await doctorModel.findOne({ doctorId }).select('specialtyId specialty').lean() as { specialtyId?: string; specialty?: string } | null;
+
+        if (doctorDoc && doctorDoc.specialtyId) {
+          console.log('✅ [DOCTOR] Found specialtyId from doctor:', doctorDoc.specialtyId);
+
+          // Now lookup the specialty document to get its MongoDB _id (ObjectId)
+          const specialtyModel = this.appointmentModel.db.model('Specialty');
+          const specialtyDoc = await specialtyModel.findOne({ specialtyId: doctorDoc.specialtyId }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+
+          if (specialtyDoc && specialtyDoc._id) {
+            specialtyObjectId = specialtyDoc._id.toString();
+            console.log('✅ [SPECIALTY] Found specialty MongoDB ObjectId:', specialtyObjectId, '(for specialtyId:', specialtyDoc.specialtyId, 'name:', specialtyDoc.name, ')');
+          } else {
+            console.log('⚠️ [SPECIALTY] Could not find specialty document for specialtyId:', doctorDoc.specialtyId);
+          }
+        } else if (doctorDoc && doctorDoc.specialty) {
+          console.log('⚠️ [DOCTOR] Using specialty name as fallback:', doctorDoc.specialty);
+          // Try to lookup specialty by name
+          const specialtyModel = this.appointmentModel.db.model('Specialty');
+          const specialtyDoc = await specialtyModel.findOne({ name: doctorDoc.specialty }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+          if (specialtyDoc && specialtyDoc._id) {
+            specialtyObjectId = specialtyDoc._id.toString();
+            console.log('✅ [SPECIALTY] Found specialty MongoDB ObjectId by name:', specialtyObjectId);
+          }
+        } else {
+          console.log('⚠️ [DOCTOR] No specialty found for doctor');
+        }
+      } catch (doctorError) {
+        console.error('❌ [DOCTOR ERROR] Failed to fetch doctor specialty:', doctorError.message);
+      }
+    }
+
+    // Fallback: if no specialtyObjectId from doctor, try to lookup by specialty parameter
+    if (!specialtyObjectId && specialty) {
+      try {
+        const specialtyModel = this.appointmentModel.db.model('Specialty');
+        // Try by name first
+        let specialtyDoc = await specialtyModel.findOne({ name: specialty }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+        // If not found, try by specialtyId
+        if (!specialtyDoc) {
+          specialtyDoc = await specialtyModel.findOne({ specialtyId: specialty }).select('_id specialtyId name').lean() as { _id?: any; specialtyId?: string; name?: string } | null;
+        }
+        if (specialtyDoc && specialtyDoc._id) {
+          specialtyObjectId = specialtyDoc._id.toString();
+          console.log('⚠️ [SPECIALTY] Using specialty parameter fallback, found ObjectId:', specialtyObjectId);
+        }
+      } catch (error) {
+        console.error('❌ [SPECIALTY ERROR] Failed to lookup specialty:', error.message);
+      }
+    }
+
+    console.log('🔍 [SPECIALTY OBJECTID] Final specialty ObjectId that will be used for limit lookup:', specialtyObjectId);
+
+    // Step 2: Use patientId as walletUserId (matching create logic)
+    const walletUserId = patientId;
+    console.log('👤 [WALLET USER] Using wallet from userId:', walletUserId);
+
+    // Step 3: Get wallet balance
+    const balanceCheck = await this.walletService.checkSufficientBalance(
+      walletUserId,
+      consultationFee,
+      categoryCode
+    );
+    const walletBalance = balanceCheck.categoryBalance;
+    console.log('💰 [WALLET] Current balance:', walletBalance);
+
+    // Step 4: Get active policy assignment
+    const assignments = await this.assignmentsService.getUserAssignments(patientId);
+    console.log('📄 [POLICY] Assignments found:', assignments ? assignments.length : 0);
+
+    const activeAssignment = assignments && assignments.length > 0 ? assignments[0] : null;
+
+    if (!activeAssignment) {
+      console.log('⚠️ [VALIDATION] No active policy - user pays full amount');
+      return {
+        isAllowed: true,
+        breakdown: {
+          billAmount: consultationFee,
+          copayAmount: 0,
+          copayPercentage: 0,
+          insuranceEligibleAmount: consultationFee,
+          serviceTransactionLimit: null,
+          insurancePayment: 0,
+          excessAmount: 0,
+          totalMemberPayment: consultationFee,
+          walletBalance: 0,
+          walletDebitAmount: 0,
+          needsPayment: true,
+          wasServiceLimitApplied: false,
+        },
+        warnings: ['No active insurance policy - full payment required'],
+      };
+    }
+
+    // Step 5: Extract policyId
+    let policyId: string;
+    if (typeof activeAssignment.policyId === 'object' && activeAssignment.policyId._id) {
+      policyId = activeAssignment.policyId._id.toString();
+    } else if (typeof activeAssignment.policyId === 'string') {
+      policyId = activeAssignment.policyId;
+    } else {
+      policyId = activeAssignment.policyId.toString();
+    }
+    console.log('✅ [POLICY] Found policyId:', policyId);
+
+    // Step 6: Get user relationship (for limit lookups)
+    let userRelationship = null;
+    try {
+      const userModel = this.appointmentModel.db.model('User');
+      const userDoc = await userModel.findById(patientId).select('relationship').lean() as { relationship?: string } | null;
+      if (userDoc && userDoc.relationship) {
+        userRelationship = userDoc.relationship;
+        console.log('✅ [USER] Found user relationship:', userRelationship);
+      } else {
+        console.log('⚠️ [USER] No relationship found for user, will use global config');
+      }
+    } catch (userError) {
+      console.error('❌ [USER ERROR] Failed to fetch user relationship:', userError.message);
+    }
+
+    // Step 7: Get plan configuration
+    const planConfig = await this.planConfigService.getConfig(policyId);
+    if (!planConfig) {
+      throw new BadRequestException('No active plan configuration found for policy');
+    }
+    console.log('📄 [POLICY] Plan config retrieved');
+
+    // Step 8: Check if category is enabled in plan
+    const categoryBenefit = planConfig.benefits && (planConfig.benefits as any)[categoryCode];
+    const categoryEnabled = !!categoryBenefit;
+    console.log('✅ [CATEGORY CHECK] Category enabled:', categoryEnabled);
+
+    // DEBUG: Log category benefit structure
+    if (categoryBenefit) {
+      console.log('🔍 [DEBUG] Category benefit structure:', JSON.stringify(categoryBenefit, null, 2));
+      if (categoryBenefit.serviceTransactionLimits) {
+        console.log('🔍 [DEBUG] ServiceTransactionLimits keys:', Object.keys(categoryBenefit.serviceTransactionLimits));
+        console.log('🔍 [DEBUG] ServiceTransactionLimits values:', JSON.stringify(categoryBenefit.serviceTransactionLimits, null, 2));
+      }
+    }
+
+    if (!categoryEnabled) {
+      console.log('⚠️ [VALIDATION] Category not covered - user pays full amount');
+      return {
+        isAllowed: true,
+        breakdown: {
+          billAmount: consultationFee,
+          copayAmount: 0,
+          copayPercentage: 0,
+          insuranceEligibleAmount: consultationFee,
+          serviceTransactionLimit: null,
+          insurancePayment: 0,
+          excessAmount: 0,
+          totalMemberPayment: consultationFee,
+          walletBalance,
+          walletDebitAmount: 0,
+          needsPayment: true,
+          wasServiceLimitApplied: false,
+        },
+        warnings: ['This service is not covered by your policy - full payment required'],
+      };
+    }
+
+    // Step 9: Calculate copay
+    let copayCalculation = null;
+    let copayAmount = 0;
+    let copayPercentage = 0;
+    let walletDebitAmount = consultationFee;
+
+    try {
+      const copayConfig = CopayResolver.resolve(planConfig, userRelationship);
+      console.log('💰 [COPAY] Resolved copay config');
+
+      copayCalculation = CopayCalculator.calculate(
+        consultationFee,
+        copayConfig || undefined
+      );
+      copayAmount = copayCalculation.copayAmount;
+      // Calculate percentage based on copay config
+      if (copayCalculation.copayConfig?.mode === 'PERCENT') {
+        copayPercentage = copayCalculation.copayConfig.value;
+      } else {
+        copayPercentage = 0;
+      }
+      walletDebitAmount = copayCalculation.walletDebitAmount;
+      console.log('💳 [COPAY] Calculation:', copayCalculation);
+    } catch (error) {
+      console.log('⚠️ [COPAY] Calculation failed:', error.message);
+      // If copay calculation fails, assume full coverage
+      copayAmount = 0;
+      copayPercentage = 0;
+      walletDebitAmount = consultationFee;
+    }
+
+    // Step 10: Apply service transaction limit (if specialtyObjectId available and configured)
+    let serviceTransactionLimitResult = null;
+    let excessAmount = 0;
+    let totalMemberPayment = copayAmount;
+    let insuranceEligibleAmount = consultationFee - copayAmount;
+    let insurancePayment = insuranceEligibleAmount;
+
+    if (specialtyObjectId && categoryEnabled) {
+      console.log('🔍 [SERVICE LIMIT] Checking for specialty ObjectId:', specialtyObjectId);
+      const serviceLimit = ServiceTransactionLimitCalculator.getServiceLimit(
+        planConfig,
+        categoryCode,
+        specialtyObjectId,
+        userRelationship
+      );
+
+      if (serviceLimit) {
+        console.log('🔢 [SERVICE LIMIT] Configured limit:', serviceLimit);
+        serviceTransactionLimitResult = ServiceTransactionLimitCalculator.calculate(
+          consultationFee,
+          copayAmount,
+          serviceLimit
+        );
+
+        excessAmount = serviceTransactionLimitResult.excessAmount;
+        totalMemberPayment = serviceTransactionLimitResult.totalMemberPayment;
+        insurancePayment = serviceTransactionLimitResult.insurancePayment;
+        walletDebitAmount = insurancePayment;
+
+        console.log('📊 [SERVICE LIMIT] Result:', serviceTransactionLimitResult);
+      } else {
+        console.log('⚠️ [SERVICE LIMIT] No limit configured for this specialty');
+      }
+    } else {
+      console.log('⚠️ [SERVICE LIMIT] Skipping - specialtyObjectId not available or category not enabled');
+    }
+
+    // Step 11: Determine if payment is needed
+    const needsPayment = totalMemberPayment > 0;
+    const wasServiceLimitApplied = excessAmount > 0;
+
+    // Step 12: Build response
+    const breakdown = {
+      billAmount: consultationFee,
+      copayAmount,
+      copayPercentage,
+      insuranceEligibleAmount,
+      serviceTransactionLimit: serviceTransactionLimitResult?.serviceTransactionLimit || null,
+      insurancePayment,
+      excessAmount,
+      totalMemberPayment,
+      walletBalance,
+      walletDebitAmount,
+      needsPayment,
+      wasServiceLimitApplied,
+    };
+
+    const warnings = [];
+    if (wasServiceLimitApplied && serviceTransactionLimitResult) {
+      warnings.push(
+        `Service transaction limit of ₹${serviceTransactionLimitResult.serviceTransactionLimit} applied. You need to pay ₹${excessAmount} additional out-of-pocket.`
+      );
+    }
+    if (walletBalance < walletDebitAmount) {
+      warnings.push(
+        `Insufficient wallet balance. Required: ₹${walletDebitAmount}, Available: ₹${walletBalance}`
+      );
+    }
+
+    console.log('✅ [VALIDATE BOOKING] ========== VALIDATION COMPLETE ==========');
+    console.log('📊 [BREAKDOWN] Result:', breakdown);
+
+    return {
+      isAllowed: true,
+      breakdown,
+      warnings,
+    };
   }
 }

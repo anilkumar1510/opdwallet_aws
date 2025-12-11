@@ -9,6 +9,7 @@ import { RequiresBenefit } from '@/common/decorators/requires-benefit.decorator'
 import { UserRole } from '@/common/constants/roles.enum';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { ValidateBookingDto } from './dto/validate-booking.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Controller('appointments')
@@ -85,6 +86,28 @@ export class AppointmentsController {
       console.error('❌ [AppointmentsController] Request body:', JSON.stringify(createAppointmentDto, null, 2));
 
       // Re-throw with more context
+      throw error;
+    }
+  }
+
+  @Post('validate-booking')
+  @RequiresBenefit('CAT001')
+  async validateBooking(@Body() validateDto: ValidateBookingDto, @Request() req: any) {
+    try {
+      const userId = req.user.userId;
+      console.log('🔍 [AppointmentsController] ========== VALIDATE BOOKING START ==========');
+      console.log('👤 [AppointmentsController] User ID from JWT:', userId);
+      console.log('📥 [AppointmentsController] Validation request:', JSON.stringify(validateDto, null, 2));
+
+      const result = await this.appointmentsService.validateBooking({ ...validateDto, userId });
+
+      console.log('✅ [AppointmentsController] Validation completed');
+      console.log('📤 [AppointmentsController] Response:', JSON.stringify(result, null, 2));
+
+      return result;
+    } catch (error) {
+      console.error('❌ [AppointmentsController] ========== ERROR IN VALIDATE BOOKING ==========');
+      console.error('❌ [AppointmentsController] Error:', error.message);
       throw error;
     }
   }

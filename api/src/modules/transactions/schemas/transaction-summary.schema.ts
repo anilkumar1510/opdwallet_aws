@@ -126,6 +126,22 @@ export class TransactionSummary {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  // Service transaction limit tracking
+  @Prop()
+  specificServiceId?: string; // ID of the specific service (specialty/lab test)
+
+  @Prop()
+  specificServiceName?: string; // Name of the specific service
+
+  @Prop()
+  serviceTransactionLimit?: number; // Configured limit that was applied
+
+  @Prop({ default: false })
+  wasServiceLimitApplied: boolean; // Whether limit was actually applied
+
+  @Prop({ default: 0 })
+  excessAmount: number; // Amount member pays beyond copay due to service limit
 }
 
 export const TransactionSummarySchema =

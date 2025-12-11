@@ -53,6 +53,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /appointments | Create new appointment |
+| POST | /appointments/validate-booking | Validate booking and get payment breakdown with service limits |
 | GET | /appointments/user/:userId | Get appointments for specific user |
 | GET | /appointments/user/:userId/ongoing | Get ongoing appointments for user |
 | GET | /appointments/:appointmentId | Get appointment details |
@@ -202,4 +203,4 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 ---
 
-**Total Endpoints: ~66**
+**Total Endpoints: ~67**
