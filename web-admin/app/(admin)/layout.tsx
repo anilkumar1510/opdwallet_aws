@@ -71,11 +71,14 @@ function AdminLayoutContent({
     },
   ]
 
-  // Check if on operations, TPA, or Finance routes - hide admin header if so
+  // Check if on operations, TPA, Finance, or Auth routes - hide admin header if so
   const isOperationsRoute = pathname.startsWith('/operations') || pathname.startsWith('/admin/operations')
   const isTPARoute = pathname.startsWith('/tpa') || pathname.startsWith('/admin/tpa')
   const isFinanceRoute = pathname.startsWith('/finance') || pathname.startsWith('/admin/finance')
-  const hideAdminNav = isOperationsRoute || isTPARoute || isFinanceRoute
+  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/admin/login') ||
+                      pathname.startsWith('/forgot-password') || pathname.startsWith('/admin/forgot-password') ||
+                      pathname.startsWith('/reset-password') || pathname.startsWith('/admin/reset-password')
+  const hideAdminNav = isOperationsRoute || isTPARoute || isFinanceRoute || isAuthRoute
 
   // Auth is handled by middleware, user data loaded via UserProvider
   return (
@@ -113,6 +116,13 @@ function AdminLayoutContent({
                 <button
                   onClick={handleLogout}
                   className="btn-ghost-dark text-sm"
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontWeight: '600'
+                  }}
                 >
                   Logout
                 </button>

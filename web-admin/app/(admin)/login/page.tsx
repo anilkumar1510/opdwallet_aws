@@ -127,27 +127,31 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Section - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-6 py-12">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="mb-8">
-            <div className="w-24 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 font-semibold">
-              OPD Wallet
-            </div>
-          </div>
+      <div className="w-full lg:w-1/2 flex flex-col bg-gray-50">
+        {/* Blue Header Strip with Logo */}
+        <div style={{ backgroundColor: '#1E4A8D' }} className="w-full py-4 px-6">
+          <img
+            src="/admin/logos/habit-logo-white.png"
+            alt="Habit Health - Powered by HCL Healthcare"
+            className="h-12 w-auto"
+          />
+        </div>
 
-          {/* Form Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome Back
-            </h1>
-            <p className="text-gray-600">
-              Sign in to access your admin dashboard
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              v1.0.2 - All Configurations Verified ✓
-            </p>
-          </div>
+        {/* Form Content - Centered */}
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md">
+            {/* Form Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome Back
+              </h1>
+              <p className="text-gray-600">
+                Sign in to access your admin dashboard
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                v1.0.2 - All Configurations Verified ✓
+              </p>
+            </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -163,7 +167,16 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-colors"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 transition-colors"
+                style={{ borderColor: '#d1d5db' }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#1E4A8D';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(30, 74, 141, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
 
@@ -180,7 +193,16 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-100 transition-colors pr-12"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 transition-colors pr-12"
+                  style={{ borderColor: '#d1d5db' }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#1E4A8D';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(30, 74, 141, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
                 <button
                   type="button"
@@ -218,7 +240,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={fillSuperAdminCredentials}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+                className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+                style={{ backgroundColor: '#1E4A8D' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563A8'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1E4A8D'}
               >
                 Quick Fill Admin
               </button>
@@ -235,7 +260,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#1E4A8D' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563A8'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1E4A8D'}
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -259,43 +287,120 @@ export default function LoginPage() {
             </div>
 
             {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-900 font-medium">Demo Credentials:</p>
-              <p className="text-sm text-blue-700 mt-1">
+            <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(30, 74, 141, 0.1)' }}>
+              <p className="text-sm font-medium" style={{ color: '#1E4A8D' }}>Demo Credentials:</p>
+              <p className="text-sm mt-1" style={{ color: '#2563A8' }}>
                 Email: admin@opdwallet.com<br />
                 Password: Admin@123
               </p>
             </div>
           </form>
+          </div>
         </div>
       </div>
 
       {/* Right Section - Gradient Background */}
-      <div className="hidden lg:block lg:w-1/2 bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-400">
-        <div className="h-full flex items-center justify-center p-12">
-          <div className="text-white max-w-md">
-            <h2 className="text-4xl font-bold mb-6">OPD Wallet Platform</h2>
-            <p className="text-xl mb-8 text-yellow-50">
-              Comprehensive healthcare benefits management system for seamless outpatient services.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <svg className="w-6 h-6 text-yellow-200 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <p className="text-yellow-50">Manage insurance policies and member benefits</p>
+      <div className="hidden lg:block lg:w-1/2" style={{ background: 'linear-gradient(to bottom right, #1E4A8D, #2563A8, #1E4A8D)' }}>
+        <div className="h-full flex items-center justify-center py-8 px-10">
+          <div className="text-white max-w-lg w-full">
+            {/* Admin Illustration - Better Size */}
+            <div className="mb-6 flex justify-center">
+              <img
+                src="/admin/logos/admin-illustration.png"
+                alt="Admin Dashboard Illustration"
+                className="w-full max-w-sm rounded-xl shadow-2xl"
+                style={{ opacity: 0.95 }}
+              />
+            </div>
+
+            {/* Heading with Gradient Text Effect */}
+            <div className="text-center mb-6">
+              <h2
+                className="text-4xl font-black mb-3 tracking-tight leading-tight"
+                style={{
+                  background: 'linear-gradient(135deg, #FFFFFF 0%, #C7D2FE 50%, #FFFFFF 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.4))'
+                }}
+              >
+                OPD Wallet Admin Portal
+              </h2>
+              <p className="text-lg text-white opacity-95 leading-relaxed px-2">
+                Comprehensive healthcare management platform
+              </p>
+            </div>
+
+            {/* Feature Cards with Radiant Gradient */}
+            <div className="space-y-3 mt-6">
+              <div
+                className="p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(199,210,254,0.25) 50%, rgba(255,255,255,0.15) 100%)',
+                  boxShadow: '0 10px 40px 0 rgba(199, 210, 254, 0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
+                }}
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(199,210,254,0.3) 100%)' }}
+                  >
+                    <svg className="w-6 h-6 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-base drop-shadow-sm">Policy & Benefits Management</h3>
+                    <p className="text-white/90 text-sm mt-0.5">Oversee insurance policies and member benefits</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <svg className="w-6 h-6 text-yellow-200 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <p className="text-yellow-50">Process claims and track healthcare services</p>
+
+              <div
+                className="p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(199,210,254,0.25) 50%, rgba(255,255,255,0.15) 100%)',
+                  boxShadow: '0 10px 40px 0 rgba(199, 210, 254, 0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
+                }}
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(199,210,254,0.3) 100%)' }}
+                  >
+                    <svg className="w-6 h-6 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-base drop-shadow-sm">Member Management & Analytics</h3>
+                    <p className="text-white/90 text-sm mt-0.5">Manage member profiles and analyze user data</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <svg className="w-6 h-6 text-yellow-200 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <p className="text-yellow-50">Real-time analytics and reporting</p>
+
+              <div
+                className="p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(199,210,254,0.25) 50%, rgba(255,255,255,0.15) 100%)',
+                  boxShadow: '0 10px 40px 0 rgba(199, 210, 254, 0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
+                }}
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(199,210,254,0.3) 100%)' }}
+                  >
+                    <svg className="w-6 h-6 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-base drop-shadow-sm">Analytics & Reporting</h3>
+                    <p className="text-white/90 text-sm mt-0.5">Real-time insights and data analytics</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
