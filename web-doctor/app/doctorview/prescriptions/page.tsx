@@ -57,7 +57,7 @@ export default function PrescriptionsPage() {
       // Fetch both types of prescriptions in parallel
       const [uploadedResponse, digitalResponse] = await Promise.all([
         getDoctorPrescriptions(currentPage, 20).catch(() => ({ prescriptions: [], total: 0, totalPages: 0 })),
-        fetch(`/api/doctor/digital-prescriptions?page=${currentPage}&limit=20`, {
+        fetch(`/doctor/api/doctor/digital-prescriptions?page=${currentPage}&limit=20`, {
           credentials: 'include',
         }).then(res => res.ok ? res.json() : { prescriptions: [], total: 0, totalPages: 0 })
       ])
@@ -274,7 +274,7 @@ export default function PrescriptionsPage() {
                       <>
                         {prescription.pdfGenerated && (
                           <a
-                            href={`/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
+                            href={`/doctor/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
                             className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
                             title="Download PDF"
                           >

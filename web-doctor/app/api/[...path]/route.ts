@@ -60,7 +60,8 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
   console.log('[API Proxy] Path segments:', pathSegments);
 
   const path = pathSegments.join('/');
-  const url = `${API_URL}/${path}`;
+  // Prepend 'api' to the path since the catch-all route is under /api/[...path]
+  const url = `${API_URL}/api/${path}`;
 
   console.log('[API Proxy] Target URL:', url);
   console.log('[API Proxy] Original URL:', request.url);

@@ -25,7 +25,7 @@ export async function loginDoctor(credentials: DoctorLoginDto): Promise<LoginRes
     hasPassword: !!credentials.password
   });
 
-  const apiUrl = '/api/auth/doctor/login'
+  const apiUrl = '/doctor/api/auth/doctor/login'
   console.log('🌐 [REQUEST] Target API URL:', apiUrl);
   console.log('🌐 [REQUEST] Full window location:', window.location.href);
   console.log('🌐 [REQUEST] Current origin:', window.location.origin);
@@ -170,7 +170,7 @@ export async function loginDoctor(credentials: DoctorLoginDto): Promise<LoginRes
 export async function logoutDoctor(): Promise<void> {
   // Call backend logout endpoint - backend will clear HttpOnly cookies
   try {
-    const response = await fetch('/api/auth/doctor/logout', {
+    const response = await fetch('/doctor/api/auth/doctor/logout', {
       method: 'POST',
       credentials: 'include',
     });
@@ -188,7 +188,7 @@ export async function getDoctorProfile(): Promise<Doctor> {
   console.log('🌐 Window location:', window.location.href)
   console.log('🍪 Document cookies:', document.cookie || 'NONE')
 
-  const url = '/api/auth/doctor/profile'
+  const url = '/doctor/api/auth/doctor/profile'
   console.log('🎯 Target URL:', url)
   console.log('🎯 Full URL will be:', window.location.origin + url)
 

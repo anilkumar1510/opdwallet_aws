@@ -17,6 +17,7 @@ import {
   ChevronDownIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
+import { Logo } from '@/components/ui/Logo'
 
 const navigation = [
   { name: 'Dashboard', href: '/member', icon: HomeIcon },
@@ -65,10 +66,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
       <div className="flex flex-col flex-grow bg-surface border-r border-surface-border">
         {/* Logo */}
         <div className="flex items-center h-16 px-6 border-b border-surface-border">
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-brand-600 to-brand-700"></div>
-            <span className="ml-3 text-xl font-bold text-ink-900">OPD Wallet</span>
-          </div>
+          <Logo variant="blue" size="md" />
         </div>
 
         {/* User info */}

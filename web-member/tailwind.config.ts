@@ -17,19 +17,33 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // Brand colors - Based on #255a53
+        // Brand colors - Habit Healthcare
         brand: {
-          DEFAULT: '#255a53',
-          50: '#e8f0ef',   // Lightest shade
-          100: '#c5d9d7',   // Very light
-          200: '#9ebfbb',   // Light
-          300: '#77a59f',   // Light-medium
-          400: '#4e8b84',   // Medium-light
-          500: '#255a53',   // Base color
-          600: '#1e4b45',   // Darker
-          700: '#173c37',   // Darker still
-          800: '#102d29',   // Very dark
-          900: '#0a1e1b',   // Darkest
+          DEFAULT: '#1E3A8C',
+          50: '#EEF2F9',
+          100: '#D4E1F5',
+          200: '#A9C2EB',
+          300: '#7EA4E1',
+          400: '#5385D7',
+          500: '#2867CD',
+          600: '#1E3A8C',
+          700: '#172B6A',
+          800: '#101C47',
+          900: '#0A0E25',
+        },
+        // Accent colors - Orange
+        accent: {
+          DEFAULT: '#F7931E',
+          50: '#FEF5E7',
+          100: '#FEEAC8',
+          200: '#FDD591',
+          300: '#FCC05A',
+          400: '#FBAB23',
+          500: '#F7931E',
+          600: '#E8890B',
+          700: '#D97706',
+          800: '#B45309',
+          900: '#8F3E08',
         },
         ink: {
           900: '#0F172A',
@@ -65,7 +79,8 @@ const config: Config = {
         '3xl': '24px'
       },
       fontFamily: {
-        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'Plus Jakarta Sans', 'sans-serif'],
       },
       fontSize: {
         'xs': ['12px', '16px'],
@@ -87,8 +102,8 @@ const config: Config = {
         'nav': '64px',   // Navigation height
       },
       boxShadow: {
-        'soft': '0 4px 24px rgba(2, 6, 23, 0.06)',
-        'medium': '0 10px 40px rgba(2, 6, 23, 0.08)',
+        'soft': '0 4px 24px rgba(30, 58, 140, 0.06)',
+        'medium': '0 10px 40px rgba(30, 58, 140, 0.08)',
       },
       keyframes: {
         "slide-up": {

@@ -5,6 +5,7 @@ import { SpecialtiesProvider } from '@/lib/providers/specialties-provider'
 import { UserProvider, useUser } from '@/lib/providers/user-provider'
 import { QueryProvider } from '@/lib/providers/query-provider'
 import { handleLogout } from '@/lib/auth-utils'
+import { Logo } from '@/components/ui/Logo'
 
 function AdminLayoutContent({
   children,
@@ -81,39 +82,37 @@ function AdminLayoutContent({
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Header - Hidden on operations, TPA, and Finance routes */}
       {!hideAdminNav && (
-        <nav className="header">
+        <nav className="header-dark">
           <div className="page-container">
-            <div className="flex items-center justify-between h-16">
-              {/* Logo and Brand */}
-              <div className="flex items-center space-x-8">
-                <div className="flex items-center">
-                  <h1 className="text-xl font-bold text-gray-900">OPD Wallet Admin</h1>
-                </div>
+            <div className="flex items-center h-16 gap-8">
+              {/* Logo */}
+              <div className="flex-shrink-0" style={{ width: '20rem' }}>
+                <Logo variant="white" size="full" href="/admin" />
+              </div>
 
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex space-x-1">
-                  {navigationItems.map((item) => (
-                    <button
-                      key={item.name}
-                      onClick={() => router.push(item.path)}
-                      className={item.current ? 'nav-item nav-item-active' : 'nav-item'}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
-                </div>
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center gap-2 flex-1">
+                {navigationItems.map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => router.push(item.path)}
+                    className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
+                  >
+                    {item.name}
+                  </button>
+                ))}
               </div>
 
               {/* User Menu */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-4 flex-shrink-0">
                 <div className="hidden sm:block">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-white/90 font-medium">
                     {user?.name?.fullName || user?.email}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="btn-ghost text-sm"
+                  className="btn-ghost-dark text-sm"
                 >
                   Logout
                 </button>
@@ -121,13 +120,13 @@ function AdminLayoutContent({
             </div>
 
             {/* Mobile Navigation */}
-            <div className="md:hidden border-t border-gray-200 pt-4 pb-2">
+            <div className="md:hidden border-t border-white/10 pt-4 pb-2">
               <div className="flex space-x-1 overflow-x-auto">
                 {navigationItems.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
-                    className={`${item.current ? 'nav-item nav-item-active' : 'nav-item'} whitespace-nowrap flex-shrink-0`}
+                    className={`${item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'} whitespace-nowrap flex-shrink-0`}
                   >
                     {item.name}
                   </button>

@@ -14,9 +14,11 @@ import SwitchProfileModal from './SwitchProfileModal'
 
 interface ProfileDropdownProps {
   user?: any
+  theme?: 'light' | 'dark'
 }
 
-export default function ProfileDropdown({ user }: ProfileDropdownProps) {
+export default function ProfileDropdown({ user, theme = 'light' }: ProfileDropdownProps) {
+  const isDark = theme === 'dark'
   const [showDropdown, setShowDropdown] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -110,7 +112,7 @@ export default function ProfileDropdown({ user }: ProfileDropdownProps) {
       {/* Avatar Button */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="p-1 rounded-full hover:bg-gray-100 transition-all duration-200"
+        className={`p-1 rounded-full transition-all duration-200 ${isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
         aria-label="User menu"
       >
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-xl shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200" style={{ backgroundColor: '#0a529f' }}>

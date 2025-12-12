@@ -23,28 +23,41 @@ const config: Config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: '#1E3A8C',
+          50: '#EEF2F9',
+          100: '#D4E1F5',
+          200: '#A9C2EB',
+          300: '#7EA4E1',
+          400: '#5385D7',
+          500: '#2867CD',
+          600: '#1E3A8C',
+          700: '#172B6A',
+          800: '#101C47',
+          900: '#0A0E25',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: '#F7931E',
+          500: '#F7931E',
+          600: '#E8890B',
+          700: '#D97706',
+        },
+        accent: {
+          DEFAULT: '#F7931E',
+          50: '#FEF5E7',
+          100: '#FEEAC8',
+          500: '#F7931E',
+          600: '#E8890B',
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: '#EF4444',
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: '#FFFFFF',
+          foreground: '#111827',
         },
         card: {
           DEFAULT: "hsl(var(--card))",
@@ -55,6 +68,14 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'Plus Jakarta Sans', 'sans-serif'],
+      },
+      boxShadow: {
+        'soft': '0 4px 24px rgba(30, 58, 140, 0.06)',
+        'medium': '0 10px 40px rgba(30, 58, 140, 0.08)',
       },
       keyframes: {
         "accordion-down": {

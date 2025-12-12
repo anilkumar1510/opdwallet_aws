@@ -4,7 +4,8 @@ const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http:
 
 async function proxyRequest(request: NextRequest, path: string[]) {
   const apiPath = path.join('/')
-  const url = `${API_URL}/${apiPath}`
+  // Prepend 'api' to the path since the catch-all route is under /api/[...path]
+  const url = `${API_URL}/api/${apiPath}`
 
   // Forward query parameters
   const { searchParams } = new URL(request.url)

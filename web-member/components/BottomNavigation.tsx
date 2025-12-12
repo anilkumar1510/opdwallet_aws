@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/solid'
 import NotificationBell from '@/components/NotificationBell'
 import ProfileDropdown from '@/components/ProfileDropdown'
+import { Logo } from '@/components/ui/Logo'
 
 interface NavItem {
   name: string
@@ -109,12 +110,15 @@ export default function BottomNavigation() {
   return (
     <>
       {/* Top Navigation for Desktop */}
-      <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+      <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Profile Dropdown */}
-            <div className="flex items-center">
-              <ProfileDropdown user={user} />
+            {/* Profile and Logo */}
+            <div className="flex items-center space-x-6">
+              <ProfileDropdown user={user} theme="dark" />
+              <div style={{ width: '20rem' }}>
+                <Logo variant="white" size="full" />
+              </div>
             </div>
 
             {/* Navigation Items */}
@@ -131,15 +135,15 @@ export default function BottomNavigation() {
                       flex items-center px-4 py-2 rounded-lg
                       transition-all duration-200
                       ${active
-                        ? 'bg-brand-50 text-brand-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-white/15 text-white'
+                        : 'text-white/80 hover:bg-white/8 hover:text-white'
                       }
                     `}
                   >
                     <Icon
                       className={`
                         h-5 w-5 mr-2
-                        ${active ? 'text-brand-600' : 'text-gray-400'}
+                        ${active ? 'text-white' : 'text-white/70'}
                       `}
                     />
                     <span className="font-medium">
@@ -152,14 +156,14 @@ export default function BottomNavigation() {
 
             {/* Right side - notifications */}
             <div className="flex items-center space-x-2">
-              <NotificationBell />
+              <NotificationBell theme="dark" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Navigation for Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 lg:hidden bottom-nav-shadow">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#2B4D8C] border-t border-white/10 lg:hidden bottom-nav-shadow">
         <div className="grid grid-cols-4 h-16 safe-area-pb">
           {bottomNavItems.map((item) => {
             const active = isActive(item.href)
@@ -173,15 +177,15 @@ export default function BottomNavigation() {
                   flex flex-col items-center justify-center py-2 px-1
                   transition-colors duration-200
                   ${active
-                    ? 'text-brand-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'text-white bg-white/15'
+                    : 'text-white/70 hover:text-white'
                   }
                 `}
               >
                 <Icon
                   className={`
                     h-6 w-6 mb-0.5
-                    ${active ? 'text-brand-600' : 'text-gray-400'}
+                    ${active ? 'text-white' : 'text-white/70'}
                   `}
                 />
                 <span className="text-xs font-medium">
@@ -193,7 +197,7 @@ export default function BottomNavigation() {
         </div>
 
         {/* Safe area for devices with home indicator (iPhone X+) */}
-        <div className="h-safe-area-bottom bg-white" />
+        <div className="h-safe-area-bottom bg-[#2B4D8C]" />
       </div>
     </>
   )

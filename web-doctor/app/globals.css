@@ -3,8 +3,31 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Brand Colors - Habit Healthcare */
+    --color-primary: 30 58 140; /* #1E3A8C */
+    --color-primary-dark: 23 43 106; /* #172B6A */
+    --color-accent: 247 147 30; /* #F7931E */
+    --background: 249 250 251;
+    --foreground: 17 24 39;
+    --card: 255 255 255;
+    --border: 229 231 235;
+    --ring: 30 58 140;
+    --radius: 1.25rem;
+  }
+
   body {
-    @apply bg-gray-50;
+    @apply text-gray-900;
+    background: linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%);
+    background-attachment: fixed;
+    font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-gray-900;
+    font-family: var(--font-heading), var(--font-body), sans-serif;
   }
 }
 
@@ -22,6 +45,64 @@
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-[20px] border border-gray-200 p-6;
+    box-shadow: 0 4px 24px rgba(30, 58, 140, 0.06);
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 cursor-pointer;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 10px 40px rgba(30, 58, 140, 0.08);
+  }
+
+  .card-accent {
+    @apply card relative;
+  }
+
+  .card-accent::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #1E3A8C 0%, #F7931E 100%);
+    border-radius: 20px 20px 0 0;
+  }
+
+  /* Dark Navigation Theme */
+  .header-dark {
+    @apply sticky top-0 z-40 border-b;
+    background-color: #2B4D8C;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-item-dark {
+    @apply flex items-center px-4 py-3 text-sm font-medium rounded-xl
+           transition-all duration-200;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .nav-item-dark:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
+  }
+
+  .nav-item-dark-active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+  }
+
+  .btn-ghost-dark {
+    @apply px-4 py-2.5 rounded-xl font-medium transition-all duration-200
+           inline-flex items-center justify-center text-sm;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .btn-ghost-dark:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
   }
 }

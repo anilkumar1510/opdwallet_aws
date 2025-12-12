@@ -5,11 +5,11 @@
 
 @layer base {
   :root {
-    /* Brand Colors - Based on #255a53 */
-    --color-primary: 37 90 83; /* #255a53 */
-    --color-primary-dark: 30 75 69; /* #1e4b45 */
-    --color-secondary: 78 139 132; /* #4e8b84 */
-    --color-accent: 119 165 159; /* #77a59f */
+    /* Brand Colors - Habit Healthcare */
+    --color-primary: 30 58 140; /* #1E3A8C */
+    --color-primary-dark: 23 43 106; /* #172B6A */
+    --color-secondary: 40 103 205; /* #2867CD */
+    --color-accent: 247 147 30; /* #F7931E */
 
     /* Neutral Colors */
     --background: 249 250 251;
@@ -20,10 +20,10 @@
     --muted-foreground: 156 163 175;
     --border: 229 231 235;
     --input: 243 244 246;
-    --ring: 37 90 83;
+    --ring: 30 58 140;
 
     /* Radius */
-    --radius: 0.75rem;
+    --radius: 1.25rem;
   }
 }
 
@@ -33,8 +33,10 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Inter', sans-serif;
+    @apply text-gray-900;
+    background: linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%);
+    background-attachment: fixed;
+    font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-weight: 400;
@@ -43,6 +45,7 @@
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold text-gray-900;
+    font-family: var(--font-heading), var(--font-body), sans-serif;
     letter-spacing: -0.02em;
   }
 }
@@ -50,11 +53,31 @@
 @layer components {
   /* Card Component */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6;
+    @apply bg-white rounded-[20px] border border-gray-100 p-4 sm:p-6;
+    box-shadow: 0 4px 24px rgba(30, 58, 140, 0.06);
   }
 
   .card-hover {
-    @apply card hover:shadow-md transition-all duration-200 cursor-pointer;
+    @apply card transition-all duration-200 cursor-pointer;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 10px 40px rgba(30, 58, 140, 0.08);
+  }
+
+  .card-accent {
+    @apply card relative;
+  }
+
+  .card-accent::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #1E3A8C 0%, #F7931E 100%);
+    border-radius: 20px 20px 0 0;
   }
 
   /* Button Components */
@@ -304,6 +327,40 @@
 
   .empty-state-description {
     @apply mt-2 text-sm text-gray-500;
+  }
+
+  /* Dark Navigation Theme */
+  .header-dark {
+    @apply sticky top-0 z-40 border-b;
+    background-color: #2B4D8C;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-item-dark {
+    @apply flex items-center px-4 py-3 text-sm font-medium rounded-xl
+           transition-all duration-200;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .nav-item-dark:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
+  }
+
+  .nav-item-dark-active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+  }
+
+  .btn-ghost-dark {
+    @apply px-4 py-2.5 rounded-xl font-medium transition-all duration-200
+           inline-flex items-center justify-center text-sm;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .btn-ghost-dark:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
   }
 }
 

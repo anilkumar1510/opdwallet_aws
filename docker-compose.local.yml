@@ -82,7 +82,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "3003:3003"
+      - "3003:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4000/api
       API_URL: http://opd-api-dev:4000

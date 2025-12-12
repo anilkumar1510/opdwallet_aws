@@ -24,7 +24,7 @@ export async function startVideoConsultation(appointmentId: string): Promise<Vid
   const timeoutId = setTimeout(() => controller.abort(), 10000)
 
   try {
-    const response = await fetch('/api/video-consultations/start', {
+    const response = await fetch('/doctor/api/video-consultations/start', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ export async function endVideoConsultation(consultationId: string, endData: { en
   const timeoutId = setTimeout(() => controller.abort(), 10000)
 
   try {
-    const response = await fetch(`/api/video-consultations/${consultationId}/end`, {
+    const response = await fetch(`/doctor/api/video-consultations/${consultationId}/end`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export async function getConsultationStatus(consultationId: string): Promise<Con
   const timeoutId = setTimeout(() => controller.abort(), 10000)
 
   try {
-    const response = await fetch(`/api/video-consultations/${consultationId}/status`, {
+    const response = await fetch(`/doctor/api/video-consultations/${consultationId}/status`, {
       method: 'GET',
       credentials: 'include',
       signal: controller.signal,

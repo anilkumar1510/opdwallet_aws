@@ -90,7 +90,7 @@ export default function PrescriptionDetailsPage() {
       setLoading(true)
 
       // Try digital prescription first
-      const digitalResponse = await fetch(`/api/doctor/digital-prescriptions/${prescriptionId}`, {
+      const digitalResponse = await fetch(`/doctor/api/doctor/digital-prescriptions/${prescriptionId}`, {
         credentials: 'include',
       })
 
@@ -104,7 +104,7 @@ export default function PrescriptionDetailsPage() {
       }
 
       // If not found, try uploaded prescription
-      const uploadedResponse = await fetch(`/api/doctor/prescriptions/${prescriptionId}`, {
+      const uploadedResponse = await fetch(`/doctor/api/doctor/prescriptions/${prescriptionId}`, {
         credentials: 'include',
       })
 
@@ -196,7 +196,7 @@ export default function PrescriptionDetailsPage() {
             </div>
             {data.pdfGenerated && (
               <a
-                href={`/api/doctor/digital-prescriptions/${data.prescriptionId}/download-pdf`}
+                href={`/doctor/api/doctor/digital-prescriptions/${data.prescriptionId}/download-pdf`}
                 className="btn-primary inline-flex items-center"
                 download
               >
@@ -445,7 +445,7 @@ export default function PrescriptionDetailsPage() {
             <p className="text-sm text-gray-600">ID: {data.prescriptionId}</p>
           </div>
           <a
-            href={`/api/doctor/prescriptions/${data.prescriptionId}/download`}
+            href={`/doctor/api/doctor/prescriptions/${data.prescriptionId}/download`}
             className="btn-primary inline-flex items-center"
             download
           >
@@ -518,7 +518,7 @@ export default function PrescriptionDetailsPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Prescription Document</h2>
         <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '800px' }}>
           <iframe
-            src={`/api/doctor/prescriptions/${data.prescriptionId}/download`}
+            src={`/doctor/api/doctor/prescriptions/${data.prescriptionId}/download`}
             className="w-full h-full"
             title="Prescription PDF"
           />

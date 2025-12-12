@@ -16,7 +16,12 @@ interface Notification {
   actionUrl?: string
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  theme?: 'light' | 'dark'
+}
+
+export default function NotificationBell({ theme = 'light' }: NotificationBellProps) {
+  const isDark = theme === 'dark'
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -129,11 +134,15 @@ export default function NotificationBell() {
       {/* Bell Icon with Badge */}
       <button
         onClick={handleBellClick}
-        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full bg-white shadow-sm hover:shadow-md transition-all"
+        className={`relative p-2 rounded-full transition-all ${
+          isDark
+            ? 'text-white/80 hover:text-white hover:bg-white/10'
+            : 'text-gray-600 hover:text-gray-900 bg-white shadow-sm hover:shadow-md'
+        }`}
         aria-label="Notifications"
       >
         {unreadCount > 0 ? (
-          <BellSolidIcon className="h-6 w-6 text-blue-600" />
+          <BellSolidIcon className={`h-6 w-6 ${isDark ? 'text-white' : 'text-blue-600'}`} />
         ) : (
           <BellIcon className="h-6 w-6" />
         )}

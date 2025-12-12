@@ -14,6 +14,7 @@ import {
   DocumentTextIcon as DocumentTextIconSolid,
 } from '@heroicons/react/24/solid'
 import { logoutDoctor } from '@/lib/api/auth'
+import { Logo } from '@/components/ui/Logo'
 
 interface NavItem {
   name: string
@@ -64,17 +65,12 @@ export default function DoctorNavigation() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] border-b border-white/10 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 mr-3 flex items-center justify-center">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Doctor Portal</span>
+          <div className="flex items-center" style={{ width: '20rem' }}>
+            <Logo variant="white" size="full" />
           </div>
 
           {/* Navigation Items */}
@@ -91,15 +87,15 @@ export default function DoctorNavigation() {
                     flex items-center px-4 py-2 rounded-lg
                     transition-all duration-200
                     ${active
-                      ? 'bg-brand-50 text-brand-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/80 hover:bg-white/8 hover:text-white'
                     }
                   `}
                 >
                   <Icon
                     className={`
                       h-5 w-5 mr-2
-                      ${active ? 'text-brand-600' : 'text-gray-400'}
+                      ${active ? 'text-white' : 'text-white/70'}
                     `}
                   />
                   <span className="font-medium">
@@ -114,7 +110,7 @@ export default function DoctorNavigation() {
           <div className="flex items-center">
             <button
               onClick={handleLogout}
-              className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+              className="relative p-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors"
               aria-label="Sign Out"
             >
               <ArrowRightOnRectangleIcon className="h-6 w-6" />
@@ -124,7 +120,7 @@ export default function DoctorNavigation() {
       </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-gray-200">
+      <div className="md:hidden border-t border-white/10">
         <div className="grid grid-cols-3">
           {navItems.map((item) => {
             const active = isActive(item.href)
@@ -138,8 +134,8 @@ export default function DoctorNavigation() {
                   flex flex-col items-center justify-center py-3
                   transition-colors duration-200
                   ${active
-                    ? 'text-brand-600 bg-brand-50'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'text-white bg-white/15'
+                    : 'text-white/70 hover:text-white'
                   }
                 `}
               >

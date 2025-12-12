@@ -608,7 +608,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="px-4 lg:px-8 max-w-md mx-auto lg:max-w-6xl">
+      <div className="px-4 lg:px-8 max-w-md mx-auto lg:max-w-6xl pt-6 lg:pt-8">
         {/* Unified Layout for Mobile and Desktop */}
         <div className="space-y-4">
           {/* OPD Cards Section */}
