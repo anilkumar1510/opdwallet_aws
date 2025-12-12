@@ -114,6 +114,14 @@ export class CreateServiceDto {
 
 export class UpdateServiceDto {
   @ApiProperty({
+    description: 'Service code',
+    required: false
+  })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @ApiProperty({
     description: 'Service name',
     required: false
   })
