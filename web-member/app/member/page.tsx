@@ -225,7 +225,7 @@ const WalletCategoryCard = memo(({
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-gray-900 truncate">{category.name}</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">{category.name}</p>
             {typeof category.total === 'number' && category.total > 0 && (
               <div className="mt-1 w-full bg-gray-200/50 rounded-full h-1 overflow-hidden">
                 <div
@@ -237,7 +237,7 @@ const WalletCategoryCard = memo(({
           </div>
         </div>
         <div className="text-right ml-2">
-          <div className="text-sm font-bold text-gray-900 whitespace-nowrap">
+          <div className="text-base font-bold text-gray-900 whitespace-nowrap">
             ₹{typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
           </div>
           {typeof category.total === 'number' && (
@@ -278,10 +278,10 @@ const DesktopWalletCategoryCard = memo(({
                 {React.createElement(icon, { className: "h-5 w-5 text-blue-600" })}
               </div>
             </div>
-            <span className="font-semibold text-sm text-gray-900">{category.name}</span>
+            <span className="font-semibold text-base text-gray-900">{category.name}</span>
           </div>
           <div className="text-right">
-            <div className="text-lg font-bold text-gray-900">
+            <div className="text-xl font-bold text-gray-900">
               ₹{typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
             </div>
             {typeof category.total === 'number' && (
