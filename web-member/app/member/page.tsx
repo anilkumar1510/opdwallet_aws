@@ -206,21 +206,51 @@ const WalletCategoryCard = memo(({
   category: any
   icon: any
 }) => {
+  const percentageUsed = typeof category.total === 'number' && category.total > 0
+    ? ((category.total - category.available) / category.total) * 100
+    : 0
+
   return (
-    <div className="border border-blue-100 rounded-xl p-3 bg-blue-50 hover:bg-blue-100 transition-colors">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          {React.createElement(icon, { className: "h-5 w-5 text-blue-600" })}
-          <span className="text-sm font-medium text-gray-900">{category.name}</span>
-        </div>
-        <div className="text-right">
-          <div className="font-semibold text-gray-900">
-            ₹ {typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
-            {typeof category.total === 'number' && (
-              <span className="text-sm text-gray-500 font-normal"> / {category.total.toLocaleString()}</span>
-            )}
+    <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 border border-white/20 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+      {/* Subtle background bubble */}
+      <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-cyan-300/15 to-blue-400/10 rounded-full blur-2xl"></div>
+      <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-gradient-to-tr from-indigo-300/12 to-purple-400/8 rounded-full blur-xl"></div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-400/20 rounded-lg blur-md"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm p-2.5 rounded-lg shadow-md">
+                {React.createElement(icon, { className: "h-5 w-5 text-blue-600" })}
+              </div>
+            </div>
+            <span className="text-sm font-semibold text-gray-900">{category.name}</span>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">Remaining / Allocated</p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-gray-600 font-medium">Available</span>
+            <div className="text-right">
+              <div className="text-lg font-bold text-gray-900">
+                ₹{typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
+              </div>
+              {typeof category.total === 'number' && (
+                <p className="text-xs text-gray-500">of ₹{category.total.toLocaleString()}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          {typeof category.total === 'number' && category.total > 0 && (
+            <div className="w-full bg-gray-200/50 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500"
+                style={{ width: `${100 - percentageUsed}%` }}
+              ></div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -237,24 +267,53 @@ const DesktopWalletCategoryCard = memo(({
   category: any
   icon: any
 }) => {
+  const percentageUsed = typeof category.total === 'number' && category.total > 0
+    ? ((category.total - category.available) / category.total) * 100
+    : 0
+
   return (
-    <div className="border border-gray-200 rounded-xl p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="bg-blue-50 p-3 rounded-lg">
-            {React.createElement(icon, { className: "h-6 w-6 text-blue-600" })}
+    <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 border border-white/20 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all duration-300">
+      {/* Subtle background bubbles */}
+      <div className="absolute -top-8 -right-8 w-32 h-32 bg-gradient-to-br from-cyan-300/15 to-blue-400/10 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-gradient-to-tr from-indigo-300/12 to-purple-400/8 rounded-full blur-2xl"></div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-400/20 rounded-xl blur-lg"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm p-3.5 rounded-xl shadow-lg">
+                {React.createElement(icon, { className: "h-6 w-6 text-blue-600" })}
+              </div>
+            </div>
+            <span className="font-semibold text-base text-gray-900">{category.name}</span>
           </div>
-          <span className="font-medium text-gray-900">{category.name}</span>
-        </div>
-        <div className="text-right">
-          <div className="font-semibold text-lg text-gray-900">
-            ₹ {typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
+          <div className="text-right">
+            <div className="text-2xl font-bold text-gray-900">
+              ₹{typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
+            </div>
             {typeof category.total === 'number' && (
-              <span className="text-sm text-gray-500 font-normal"> / {category.total.toLocaleString()}</span>
+              <p className="text-sm text-gray-500 mt-0.5">of ₹{category.total.toLocaleString()}</p>
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-1">Remaining / Allocated</p>
         </div>
+
+        {/* Progress bar */}
+        {typeof category.total === 'number' && category.total > 0 && (
+          <div className="mt-4 w-full bg-gray-200/50 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-green-400 via-green-500 to-emerald-500 rounded-full shadow-sm transition-all duration-500"
+              style={{ width: `${100 - percentageUsed}%` }}
+            ></div>
+          </div>
+        )}
+
+        {typeof category.total === 'number' && category.total > 0 && (
+          <div className="mt-2 flex justify-between text-xs">
+            <span className="text-gray-600 font-medium">{(100 - percentageUsed).toFixed(0)}% Available</span>
+            <span className="text-gray-500">Used: ₹{(category.total - category.available).toLocaleString()}</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -327,6 +386,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { activeMember, viewingUserId } = useFamily()
+  // Enhanced wallet cards with modern design
 
   useEffect(() => {
     if (viewingUserId) {
