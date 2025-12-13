@@ -12,6 +12,7 @@ interface Service {
   specialtyId?: string;
   serviceId?: string;
   code: string;
+  category?: string;
   name: string;
   description?: string;
   icon?: string;
@@ -63,10 +64,11 @@ export function ServiceTransactionLimitsEditor({
       if (response.ok) {
         const data = await response.json();
         // Filter to only show selected services
-        // Handle both IDs (for specialties) and codes (for service types)
+        // Handle IDs (for specialties), codes (for service types), and categories (for lab services)
         const filtered = data.filter((service: Service) =>
           selectedServiceIds.includes(service._id) ||
-          selectedServiceIds.includes(service.code)
+          selectedServiceIds.includes(service.code) ||
+          (service.category && selectedServiceIds.includes(service.category))
         );
         setServices(filtered);
       } else {
@@ -81,8 +83,10 @@ export function ServiceTransactionLimitsEditor({
   };
 
   const getServiceKey = (service: Service): string => {
-    // For service type categories, use code; for specialties, use _id
-    return categoryType === 'service' ? service.code : service._id;
+    // For service type categories, use code; for lab categories, use category; for specialties, use _id
+    if (categoryType === 'service') return service.code;
+    if (categoryType === 'lab') return service.category || service._id;
+    return service._id;
   };
 
   const handleLimitChange = (serviceKey: string, value: string) => {
