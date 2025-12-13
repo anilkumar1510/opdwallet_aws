@@ -53,22 +53,22 @@ export default function MemberLoginPage() {
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* Top/Left Section - Brand & Info (visible on mobile first) */}
         <div className="w-full lg:w-1/2 order-1 lg:order-2" style={{ background: 'linear-gradient(to bottom right, #1E4A8D, #2563A8, #1E4A8D)' }}>
-          <div className="h-full flex items-center justify-center py-6 px-4 sm:py-8 sm:px-6 lg:px-10">
+          <div className="h-full flex items-center justify-center py-3 px-4 sm:py-8 sm:px-6 lg:px-10">
             <div className="text-white w-full max-w-lg">
               {/* Member Illustration */}
-              <div className="flex justify-center mb-4 sm:mb-6">
+              <div className="flex justify-center mb-2 sm:mb-6">
                 <img
                   src="/logos/Member.png"
                   alt="Member Illustration"
-                  className="w-48 sm:w-64 lg:w-full lg:max-w-sm h-auto object-contain"
+                  className="w-32 sm:w-64 lg:w-full lg:max-w-sm h-auto object-contain"
                   style={{ filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.3))' }}
                 />
               </div>
 
               {/* Heading with Gradient Text Effect */}
-              <div className="text-center mb-4 sm:mb-6">
+              <div className="text-center mb-2 sm:mb-6">
                 <h2
-                  className="text-2xl sm:text-3xl lg:text-4xl font-black mb-2 sm:mb-3 tracking-tight leading-tight"
+                  className="text-xl sm:text-3xl lg:text-4xl font-black mb-1 sm:mb-3 tracking-tight leading-tight"
                   style={{
                     background: 'linear-gradient(135deg, #FFFFFF 0%, #C7D2FE 50%, #FFFFFF 100%)',
                     WebkitBackgroundClip: 'text',
@@ -79,13 +79,13 @@ export default function MemberLoginPage() {
                 >
                   Member Portal
                 </h2>
-                <p className="text-sm sm:text-base lg:text-lg text-white opacity-95 leading-relaxed px-2">
+                <p className="hidden sm:block text-sm sm:text-base lg:text-lg text-white opacity-95 leading-relaxed px-2">
                   Your complete healthcare benefits platform
                 </p>
               </div>
 
               {/* Feature Cards with Radiant Gradient */}
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-1.5 sm:space-y-3">
                 <div
                   className="p-3 sm:p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
                   style={{
@@ -109,8 +109,9 @@ export default function MemberLoginPage() {
                   </div>
                 </div>
 
+                {/* Hidden on mobile, visible on tablet and above */}
                 <div
-                  className="p-3 sm:p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
+                  className="hidden sm:block p-3 sm:p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
                   style={{
                     background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(199,210,254,0.25) 50%, rgba(255,255,255,0.15) 100%)',
                     boxShadow: '0 10px 40px 0 rgba(199, 210, 254, 0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
@@ -132,8 +133,9 @@ export default function MemberLoginPage() {
                   </div>
                 </div>
 
+                {/* Hidden on mobile, visible on tablet and above */}
                 <div
-                  className="p-3 sm:p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
+                  className="hidden sm:block p-3 sm:p-4 rounded-xl backdrop-blur-lg border border-white/40 shadow-xl transform transition-all hover:scale-105 hover:shadow-2xl"
                   style={{
                     background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(199,210,254,0.25) 50%, rgba(255,255,255,0.15) 100%)',
                     boxShadow: '0 10px 40px 0 rgba(199, 210, 254, 0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
@@ -160,23 +162,20 @@ export default function MemberLoginPage() {
         </div>
 
         {/* Bottom/Right Section - Login Form */}
-        <div className="w-full lg:w-1/2 order-2 lg:order-1 flex items-center justify-center bg-gray-50 px-4 py-6 sm:px-6 sm:py-8 lg:py-12">
+        <div className="w-full lg:w-1/2 order-2 lg:order-1 flex items-center justify-center bg-gray-50 px-4 py-3 sm:px-6 sm:py-8 lg:py-12">
           <div className="w-full max-w-md">
             {/* Form Header */}
-            <div className="mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-3 sm:mb-8">
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 Welcome Member
               </h1>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="hidden sm:block text-sm sm:text-base text-gray-600">
                 Sign in to access your benefits portal
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                v1.0 - Secure Portal ✓
               </p>
             </div>
 
             {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6">
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -278,8 +277,8 @@ export default function MemberLoginPage() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
 
-              {/* Links */}
-              <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
+              {/* Links - Hidden on mobile */}
+              <div className="hidden sm:block space-y-3 sm:space-y-4 pt-3 sm:pt-4">
                 <div className="text-center">
                   <p className="text-xs sm:text-sm text-gray-600">
                     Need help?{' '}
@@ -290,8 +289,8 @@ export default function MemberLoginPage() {
                 </div>
               </div>
 
-              {/* Demo Credentials */}
-              <div className="mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'rgba(30, 74, 141, 0.1)' }}>
+              {/* Demo Credentials - Hidden on mobile */}
+              <div className="hidden sm:block mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'rgba(30, 74, 141, 0.1)' }}>
                 <p className="text-xs sm:text-sm font-medium" style={{ color: '#1E4A8D' }}>Demo Credentials:</p>
                 <p className="text-xs sm:text-sm mt-1" style={{ color: '#2563A8' }}>
                   Email: john.doe@company.com<br />
