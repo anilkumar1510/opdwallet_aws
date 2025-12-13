@@ -46,8 +46,8 @@ export default function MemberLayout({
   return (
     <FamilyProvider>
       <div className="min-h-screen bg-gray-50">
-        {/* Top padding for desktop navigation */}
-        <div className="hidden lg:block h-16"></div>
+        {/* Top padding for mobile header and desktop navigation */}
+        <div className="h-14 lg:h-16"></div>
 
         {/* Main content - increased mobile bottom padding for nudge + bottom nav */}
         <main className="overflow-y-auto pb-32 lg:pb-0 lg:pt-0" role="main">
