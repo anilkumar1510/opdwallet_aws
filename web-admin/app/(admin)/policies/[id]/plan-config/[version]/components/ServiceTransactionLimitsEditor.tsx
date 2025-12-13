@@ -63,8 +63,10 @@ export function ServiceTransactionLimitsEditor({
       if (response.ok) {
         const data = await response.json();
         // Filter to only show selected services
+        // Handle both IDs (for specialties) and codes (for service types)
         const filtered = data.filter((service: Service) =>
-          selectedServiceIds.includes(service._id)
+          selectedServiceIds.includes(service._id) ||
+          selectedServiceIds.includes(service.code)
         );
         setServices(filtered);
       } else {
@@ -78,15 +80,20 @@ export function ServiceTransactionLimitsEditor({
     }
   };
 
-  const handleLimitChange = (serviceId: string, value: string) => {
+  const getServiceKey = (service: Service): string => {
+    // For service type categories, use code; for specialties, use _id
+    return categoryType === 'service' ? service.code : service._id;
+  };
+
+  const handleLimitChange = (serviceKey: string, value: string) => {
     const numValue = parseInt(value) || 0;
     const newLimits = { ...currentLimits };
 
     if (numValue > 0) {
-      newLimits[serviceId] = numValue;
+      newLimits[serviceKey] = numValue;
     } else {
       // Remove limit if value is 0 or empty
-      delete newLimits[serviceId];
+      delete newLimits[serviceKey];
     }
 
     onLimitsChange(newLimits);
@@ -102,8 +109,10 @@ export function ServiceTransactionLimitsEditor({
     }
 
     const newLimits = { ...currentLimits };
-    selectedServiceIds.forEach((serviceId) => {
-      newLimits[serviceId] = numValue;
+    // For service types, use codes; for specialties/lab, use IDs
+    services.forEach((service) => {
+      const key = getServiceKey(service);
+      newLimits[key] = numValue;
     });
 
     onLimitsChange(newLimits);
@@ -116,8 +125,9 @@ export function ServiceTransactionLimitsEditor({
 
     // Remove all limits for selected services
     const newLimits = { ...currentLimits };
-    selectedServiceIds.forEach((serviceId) => {
-      delete newLimits[serviceId];
+    services.forEach((service) => {
+      const key = getServiceKey(service);
+      delete newLimits[key];
     });
 
     onLimitsChange(newLimits);
@@ -125,7 +135,10 @@ export function ServiceTransactionLimitsEditor({
   };
 
   const getLimitsCount = () => {
-    return selectedServiceIds.filter((id) => currentLimits[id] && currentLimits[id] > 0).length;
+    return services.filter((service) => {
+      const key = getServiceKey(service);
+      return currentLimits[key] && currentLimits[key] > 0;
+    }).length;
   };
 
   if (selectedServiceIds.length === 0) {
@@ -233,12 +246,13 @@ export function ServiceTransactionLimitsEditor({
           </thead>
           <tbody className="divide-y divide-gray-200">
             {services.map((service, index) => {
-              const currentLimit = currentLimits[service._id] || '';
+              const serviceKey = getServiceKey(service);
+              const currentLimit = currentLimits[serviceKey] || '';
               const hasLimit = currentLimit && parseInt(currentLimit.toString()) > 0;
 
               return (
                 <tr
-                  key={service._id}
+                  key={serviceKey}
                   className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
                 >
                   <td className="px-4 py-3">
@@ -270,7 +284,7 @@ export function ServiceTransactionLimitsEditor({
                     <Input
                       type="number"
                       value={currentLimit}
-                      onChange={(e) => handleLimitChange(service._id, e.target.value)}
+                      onChange={(e) => handleLimitChange(serviceKey, e.target.value)}
                       disabled={disabled}
                       placeholder="No limit"
                       className="w-full text-sm"
@@ -284,7 +298,7 @@ export function ServiceTransactionLimitsEditor({
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
-                      onClick={() => handleLimitChange(service._id, '0')}
+                      onClick={() => handleLimitChange(serviceKey, '0')}
                       disabled={disabled || !hasLimit}
                       className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
