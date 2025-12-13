@@ -109,11 +109,24 @@ export default function BottomNavigation() {
 
   return (
     <>
-      {/* Top Header for Mobile - Logo only */}
+      {/* Top Header for Mobile - Logo, Profile, and Notifications */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md">
-        <div className="flex items-center justify-center h-14 px-4">
-          <div style={{ width: '12rem' }}>
-            <Logo variant="white" size="full" />
+        <div className="flex items-center justify-between h-14 px-3">
+          {/* Left: Profile Dropdown */}
+          <div className="flex-shrink-0">
+            <ProfileDropdown user={user} theme="dark" />
+          </div>
+
+          {/* Center: Logo */}
+          <div className="flex-1 flex justify-center px-2">
+            <div style={{ width: '10rem' }}>
+              <Logo variant="white" size="full" />
+            </div>
+          </div>
+
+          {/* Right: Notification Bell */}
+          <div className="flex-shrink-0">
+            <NotificationBell theme="dark" />
           </div>
         </div>
       </div>
