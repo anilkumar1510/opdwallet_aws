@@ -599,8 +599,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="px-3 py-3 lg:hidden">
+      {/* Mobile Header - Now handled by fixed top header in BottomNavigation */}
+      <div className="hidden">
         <div className="flex items-center justify-between">
           <ProfileDropdown />
           <NotificationBell />
