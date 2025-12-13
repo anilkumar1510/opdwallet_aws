@@ -1,6 +1,11 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
+// Use relative path in production to avoid CORS issues when accessing via www vs non-www
+// Next.js rewrites will handle proxying to the actual API server
+const isProduction = process.env.NODE_ENV === 'production'
+const API_BASE_URL = isProduction
+  ? '/api'  // Use relative path in production (Next.js rewrites handle the proxy)
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api')
 
 /**
  * Base API client with axios
