@@ -27,26 +27,17 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useFamily } from '@/contexts/FamilyContext'
-
-interface FormData {
-  claimType: 'reimbursement' | 'cashless-preauth' | ''
-  category: string
-  treatmentDate: string
-  billAmount: string
-  billNumber: string
-  treatmentDescription: string
-  documents: File[]
-  patientName: string
-  relationToMember: string
-  memberCardNumber: string
-}
-
-interface DocumentPreview {
-  file: File
-  id: string
-  preview?: string
-  type: 'image' | 'pdf'
-}
+import {
+  ClaimFormData as FormData,
+  DocumentPreview,
+  validateStep1,
+  validateStep2,
+  validateFileSize,
+  getFileSizeErrorMessage
+} from '@/lib/utils/claimValidation'
+import { DocumentUploadSection } from '@/components/claims/DocumentUploadSection'
+import { TreatmentDetailsSection } from '@/components/claims/TreatmentDetailsSection'
+import { ClaimReviewSection } from '@/components/claims/ClaimReviewSection'
 
 // Icon mapping for category codes
 const CATEGORY_ICON_MAP: Record<string, any> = {
@@ -296,86 +287,16 @@ export default function NewClaimPage() {
     touchStartY.current = 0
   }
 
-  // Helper function to validate user selection
-  const validateUserSelection = (errors: Record<string, string>) => {
-    if (!selectedUserId) {
-      errors.category = 'Please select a family member'
-    }
-  }
-
-  // Helper function to validate category selection
-  const validateCategory = (errors: Record<string, string>) => {
-    if (!formData.category) {
-      errors.category = 'Please select a category'
-    }
-  }
-
-  // Helper function to validate treatment date
-  const validateTreatmentDate = (errors: Record<string, string>) => {
-    if (!formData.treatmentDate) {
-      errors.treatmentDate = 'Treatment date is required'
-    }
-  }
-
-  // Helper function to validate bill amount
-  const validateBillAmount = (errors: Record<string, string>) => {
-    if (!formData.billAmount || parseFloat(formData.billAmount) <= 0) {
-      errors.billAmount = 'Valid bill amount is required'
-      return
-    }
-
-    // Check wallet balance for all categories
-    if (formData.category) {
-      const amount = parseFloat(formData.billAmount)
-      const availableBalance = getAvailableBalance()
-      if (amount > availableBalance) {
-        errors.billAmount = `Amount exceeds available balance ₹${availableBalance.toLocaleString()}`
-      }
-    }
-  }
-
-  // Helper function to validate step 1 fields
-  const validateStep1 = (errors: Record<string, string>) => {
-    validateUserSelection(errors)
-    validateCategory(errors)
-    validateTreatmentDate(errors)
-    validateBillAmount(errors)
-  }
-
-  // Helper function to validate consultation documents
-  const validateConsultDocuments = (errors: Record<string, string>) => {
-    if (prescriptionFiles.length === 0) {
-      errors.documents = 'Please upload at least one prescription document'
-    }
-    if (billFiles.length === 0) {
-      errors.documents = 'Please upload at least one bill document'
-    }
-  }
-
-  // Helper function to validate generic documents
-  const validateGenericDocuments = (errors: Record<string, string>) => {
-    if (documentPreviews.length === 0) {
-      errors.documents = 'Please upload at least one document'
-    }
-  }
-
-  // Helper function to validate step 2 documents
-  const validateStep2 = (errors: Record<string, string>) => {
-    const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005'
-    if (isConsult) {
-      validateConsultDocuments(errors)
-    } else {
-      validateGenericDocuments(errors)
-    }
-  }
+  // Validation functions now imported from lib/utils/claimValidation.ts
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {}
 
     if (step === 1) {
-      validateStep1(newErrors)
+      const availableBalance = getAvailableBalance()
+      validateStep1(formData, selectedUserId, availableBalance, newErrors)
     } else if (step === 2) {
-      validateStep2(newErrors)
+      validateStep2(formData, documentPreviews, prescriptionFiles, billFiles, newErrors)
     }
 
     setErrors(newErrors)
@@ -396,8 +317,8 @@ export default function NewClaimPage() {
     if (!files) return
 
     Array.from(files).forEach((file) => {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        setErrors(prev => ({...prev, documents: 'File size must be less than 5MB'}))
+      if (!validateFileSize(file, 5)) {
+        setErrors(prev => ({...prev, documents: getFileSizeErrorMessage(5)}))
         return
       }
 
@@ -591,202 +512,23 @@ export default function NewClaimPage() {
   const progressPercentage = (currentStep / 3) * 100
 
 
+  const handleFormDataChange = (updates: Partial<FormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }))
+  }
+
   const renderStep2 = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-bold text-ink-900 mb-2">Treatment Details</h2>
-        <p className="text-sm text-ink-500">Provide information about your treatment</p>
-      </div>
-
-      {/* Family Member Selection */}
-      {familyMembers.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <label className="block text-sm font-semibold text-ink-900 mb-2">
-            Select Family Member *
-          </label>
-          <select
-            value={selectedUserId}
-            onChange={(e) => handleUserChange(e.target.value)}
-            className="w-full h-touch px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            {familyMembers.map((member) => (
-              <option key={member.userId} value={member.userId}>
-                {member.name} {member.isPrimary ? '(Self)' : `(${member.relationship})`}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-blue-600 mt-1">
-            Select who the treatment is for
-          </p>
-        </div>
-      )}
-
-      {/* Category Selection */}
-      <div>
-        <label className="block text-sm font-medium text-ink-900 mb-2">
-          Claim Category *
-        </label>
-        <select
-          value={formData.category}
-          onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-          className={cn(
-            "w-full h-touch px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent appearance-none bg-white",
-            errors.category ? "border-danger" : "border-surface-border"
-          )}
-        >
-          <option value="">Select a category</option>
-          {availableCategories.map((category) => (
-            <option key={category.id} value={category.categoryId}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-        {errors.category && (
-          <p className="text-danger text-sm mt-1 flex items-center">
-            <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-            {errors.category}
-          </p>
-        )}
-
-        {/* Show available balance for selected category */}
-        {formData.category && walletData && (
-          <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-blue-700">Available Balance:</span>
-              <span className="text-lg font-bold text-blue-600">
-                ₹{getAvailableBalance().toLocaleString()}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Billing Date */}
-      <div>
-        <label className="block text-sm font-medium text-ink-900 mb-2">
-          Billing Date *
-        </label>
-        <input
-          type="date"
-          value={formData.treatmentDate}
-          onChange={(e) => setFormData(prev => ({ ...prev, treatmentDate: e.target.value }))}
-          className={cn(
-            "w-full h-touch px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent",
-            errors.treatmentDate ? "border-danger" : "border-surface-border"
-          )}
-          max={new Date().toISOString().split('T')[0]}
-        />
-        {errors.treatmentDate && (
-          <p className="text-danger text-sm mt-1 flex items-center">
-            <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-            {errors.treatmentDate}
-          </p>
-        )}
-      </div>
-
-      {/* Amount and Bill Number */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-ink-900 mb-2">
-            Bill Amount (₹) *
-          </label>
-          <input
-            type="number"
-            value={formData.billAmount}
-            onChange={(e) => setFormData(prev => ({ ...prev, billAmount: e.target.value }))}
-            placeholder="0"
-            className={cn(
-              "w-full h-touch px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent",
-              errors.billAmount ? "border-danger" : "border-surface-border"
-            )}
-          />
-          {errors.billAmount && (
-            <p className="text-danger text-sm mt-1 flex items-center">
-              <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-              {errors.billAmount}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink-900 mb-2">
-            Bill Number
-          </label>
-          <input
-            type="text"
-            value={formData.billNumber}
-            onChange={(e) => setFormData(prev => ({ ...prev, billNumber: e.target.value }))}
-            placeholder="Invoice #"
-            className="w-full h-touch px-4 py-3 border border-surface-border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Per-Claim Limit Warning and Amount Submitted for Approval */}
-      {formData.billAmount && walletRules?.categoryLimits && (() => {
-        // formData.category now directly contains the category code (CAT001, CAT002, etc.)
-        const categoryLimit = walletRules.categoryLimits[formData.category]?.perClaimLimit;
-        const billAmount = parseFloat(formData.billAmount);
-
-        if (categoryLimit && billAmount > categoryLimit) {
-          const approvedAmount = Math.min(billAmount, categoryLimit);
-
-          return (
-            <>
-              {/* Warning */}
-              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-                <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-semibold text-amber-900 mb-1">Amount will be capped</p>
-                  <p className="text-amber-700">
-                    Your bill amount (₹{billAmount.toLocaleString()})
-                    exceeds the per-claim limit of ₹{categoryLimit.toLocaleString()}.
-                    The claim will be automatically capped to ₹{categoryLimit.toLocaleString()}.
-                  </p>
-                </div>
-              </div>
-
-              {/* Amount Submitted for Approval Field */}
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-ink-900 mb-2">
-                  Amount Submitted for Approval (₹)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={`₹${approvedAmount.toLocaleString()}`}
-                    readOnly
-                    className="w-full h-touch px-4 py-3 border-2 border-green-500 bg-green-50 rounded-xl font-semibold text-green-700 cursor-not-allowed"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                  </div>
-                </div>
-                <p className="text-xs text-green-700 mt-1">
-                  This is the maximum amount that will be processed for this claim.
-                </p>
-              </div>
-            </>
-          );
-        }
-        return null;
-      })()}
-
-      {/* Treatment Description */}
-      <div>
-        <label className="block text-sm font-medium text-ink-900 mb-2">
-          Treatment Description
-        </label>
-        <textarea
-          value={formData.treatmentDescription}
-          onChange={(e) => setFormData(prev => ({ ...prev, treatmentDescription: e.target.value }))}
-          placeholder="Brief description of treatment received"
-          rows={3}
-          className="w-full px-4 py-3 border border-surface-border rounded-xl focus:ring-2 focus:ring-brand-600 focus:border-transparent resize-none"
-        />
-      </div>
-
-    </div>
+    <TreatmentDetailsSection
+      formData={formData}
+      familyMembers={familyMembers}
+      selectedUserId={selectedUserId}
+      availableCategories={availableCategories}
+      walletData={walletData}
+      walletRules={walletRules}
+      errors={errors}
+      onFormDataChange={handleFormDataChange}
+      onUserChange={handleUserChange}
+      getAvailableBalance={getAvailableBalance}
+    />
   )
 
   const handlePrescriptionUpload = (files: FileList | null) => {
@@ -835,394 +577,34 @@ export default function NewClaimPage() {
           </p>
         </div>
 
-        {isConsult ? (
-          <>
-            {/* Prescription Upload Section */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-ink-900 mb-3">Prescription Documents *</h3>
-              <div className="border-2 border-dashed border-blue-300 rounded-xl p-6 text-center bg-white">
-                <DocumentPlusIcon className="h-10 w-10 text-blue-400 mx-auto mb-3" />
-                <p className="text-xs text-ink-600 mb-3">Upload prescription from doctor</p>
-
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.multiple = true
-                      input.accept = 'image/*,application/pdf'
-                      input.onchange = (e) => {
-                        const target = e.target as HTMLInputElement
-                        handlePrescriptionUpload(target.files)
-                      }
-                      input.click()
-                    }}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    Choose Files
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.accept = 'image/*'
-                      input.capture = 'environment'
-                      input.onchange = (e) => {
-                        const target = e.target as HTMLInputElement
-                        handlePrescriptionUpload(target.files)
-                      }
-                      input.click()
-                    }}
-                    className="px-3 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center text-sm"
-                  >
-                    <CameraIcon className="h-4 w-4 mr-1" />
-                    Camera
-                  </button>
-                </div>
-
-                <p className="text-xs text-ink-400 mt-2">PDF, JPG, PNG up to 5MB</p>
-              </div>
-
-              {/* Prescription Previews */}
-              {prescriptionFiles.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {prescriptionFiles.map((doc) => (
-                    <div key={doc.id} className="flex items-center p-2 bg-white rounded-lg border border-blue-200">
-                      <div className="flex-shrink-0 mr-2">
-                        {doc.type === 'image' && doc.preview ? (
-                          <img src={doc.preview} alt="Preview" className="h-10 w-10 rounded object-cover" />
-                        ) : (
-                          <div className="h-10 w-10 bg-red-100 rounded flex items-center justify-center">
-                            <DocumentTextIcon className="h-5 w-5 text-red-600" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-ink-900 truncate">{doc.file.name}</p>
-                        <p className="text-xs text-ink-500">{(doc.file.size / 1024).toFixed(1)} KB</p>
-                      </div>
-                      <button
-                        onClick={() => removePrescriptionFile(doc.id)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Bills Upload Section */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-              <h3 className="text-sm font-semibold text-ink-900 mb-3">Bill Documents *</h3>
-              <div className="border-2 border-dashed border-green-300 rounded-xl p-6 text-center bg-white">
-                <DocumentPlusIcon className="h-10 w-10 text-green-400 mx-auto mb-3" />
-                <p className="text-xs text-ink-600 mb-3">Upload consultation bills</p>
-
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.multiple = true
-                      input.accept = 'image/*,application/pdf'
-                      input.onchange = (e) => {
-                        const target = e.target as HTMLInputElement
-                        handleBillUpload(target.files)
-                      }
-                      input.click()
-                    }}
-                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  >
-                    Choose Files
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.accept = 'image/*'
-                      input.capture = 'environment'
-                      input.onchange = (e) => {
-                        const target = e.target as HTMLInputElement
-                        handleBillUpload(target.files)
-                      }
-                      input.click()
-                    }}
-                    className="px-3 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center text-sm"
-                  >
-                    <CameraIcon className="h-4 w-4 mr-1" />
-                    Camera
-                  </button>
-                </div>
-
-                <p className="text-xs text-ink-400 mt-2">PDF, JPG, PNG up to 5MB</p>
-              </div>
-
-              {/* Bill Previews */}
-              {billFiles.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {billFiles.map((doc) => (
-                    <div key={doc.id} className="flex items-center p-2 bg-white rounded-lg border border-green-200">
-                      <div className="flex-shrink-0 mr-2">
-                        {doc.type === 'image' && doc.preview ? (
-                          <img src={doc.preview} alt="Preview" className="h-10 w-10 rounded object-cover" />
-                        ) : (
-                          <div className="h-10 w-10 bg-red-100 rounded flex items-center justify-center">
-                            <DocumentTextIcon className="h-5 w-5 text-red-600" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-ink-900 truncate">{doc.file.name}</p>
-                        <p className="text-xs text-ink-500">{(doc.file.size / 1024).toFixed(1)} KB</p>
-                      </div>
-                      <button
-                        onClick={() => removeBillFile(doc.id)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Generic Upload Area for Lab/Pharmacy */}
-            <div className="border-2 border-dashed border-surface-border rounded-2xl p-8 text-center">
-              <DocumentPlusIcon className="h-12 w-12 text-ink-300 mx-auto mb-4" />
-              <p className="text-sm text-ink-600 mb-4">
-                Drag and drop files here or tap to browse
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => {
-                    const input = document.createElement('input')
-                    input.type = 'file'
-                    input.multiple = true
-                    input.accept = 'image/*,application/pdf'
-                    input.onchange = (e) => {
-                      const target = e.target as HTMLInputElement
-                      handleFileUpload(target.files)
-                    }
-                    input.click()
-                  }}
-                  className="px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors"
-                >
-                  Choose Files
-                </button>
-
-                <button
-                  onClick={captureFromCamera}
-                  className="px-4 py-2 border border-brand-600 text-brand-600 rounded-xl hover:bg-brand-50 transition-colors flex items-center justify-center"
-                >
-                  <CameraIcon className="h-4 w-4 mr-2" />
-                  Camera
-                </button>
-              </div>
-
-              <p className="text-xs text-ink-400 mt-3">
-                Supports PDF, JPG, PNG up to 5MB each
-              </p>
-            </div>
-
-            {/* Document Previews */}
-            {documentPreviews.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-ink-900">Uploaded Documents</h3>
-                <div className="grid grid-cols-1 gap-3">
-                  {documentPreviews.map((doc) => (
-                    <div key={doc.id} className="flex items-center p-3 bg-surface-alt rounded-xl border border-surface-border">
-                      <div className="flex-shrink-0 mr-3">
-                        {doc.type === 'image' && doc.preview ? (
-                          <img
-                            src={doc.preview}
-                            alt="Document preview"
-                            className="h-12 w-12 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <DocumentTextIcon className="h-6 w-6 text-red-600" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink-900 truncate">
-                          {doc.file.name}
-                        </p>
-                        <p className="text-xs text-ink-500">
-                          {(doc.file.size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-
-                      <div className="flex items-center space-x-2 ml-2">
-                        {doc.type === 'image' && (
-                          <button
-                            onClick={() => {
-                              // Open preview modal
-                              const modal = document.createElement('div')
-                              modal.className = 'fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4'
-                              modal.innerHTML = `
-                                <div class="relative max-w-full max-h-full">
-                                  <img src="${doc.preview}" class="max-w-full max-h-full rounded-lg" />
-                                  <button class="absolute top-2 right-2 p-2 bg-black bg-opacity-50 text-white rounded-full">×</button>
-                                </div>
-                              `
-                              modal.onclick = () => document.body.removeChild(modal)
-                              document.body.appendChild(modal)
-                            }}
-                            className="p-2 text-ink-400 hover:text-brand-600"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => removeDocument(doc.id)}
-                          className="p-2 text-ink-400 hover:text-danger"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        <DocumentUploadSection
+          isConsultation={isConsult}
+          prescriptionFiles={prescriptionFiles}
+          billFiles={billFiles}
+          documentPreviews={documentPreviews}
+          onPrescriptionUpload={handlePrescriptionUpload}
+          onBillUpload={handleBillUpload}
+          onFileUpload={handleFileUpload}
+          onRemovePrescription={removePrescriptionFile}
+          onRemoveBill={removeBillFile}
+          onRemoveDocument={removeDocument}
+          onCameraCapture={captureFromCamera}
+        />
       </div>
     )
   }
 
-  const renderStep4 = () => {
-    const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005'
-    const totalDocuments = isConsult
-      ? prescriptionFiles.length + billFiles.length
-      : documentPreviews.length
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-ink-900 mb-2">Review & Submit</h2>
-          <p className="text-sm text-ink-500">Please verify all details before submitting</p>
-        </div>
-
-      {/* Wallet Rules Display */}
-      {walletRules && (
-        <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100 p-4">
-          <h3 className="text-sm font-semibold text-ink-900 mb-3">Your OPD Wallet Details</h3>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-ink-500">Annual Limit</p>
-              <p className="font-bold text-indigo-700">₹{walletRules.totalAnnualAmount?.toLocaleString() || '0'}</p>
-            </div>
-            {walletRules.copay && (
-              <div>
-                <p className="text-ink-500">Your Co-pay</p>
-                <p className="font-bold text-purple-700">
-                  {walletRules.copay.mode === 'PERCENT'
-                    ? `${walletRules.copay.value}%`
-                    : `₹${walletRules.copay.value}`}
-                </p>
-              </div>
-            )}
-            {walletRules.perClaimLimit && (
-              <div>
-                <p className="text-ink-500">Per Claim Cap</p>
-                <p className="font-bold text-blue-700">₹{walletRules.perClaimLimit.toLocaleString()}</p>
-              </div>
-            )}
-            {walletRules.partialPaymentEnabled && (
-              <div>
-                <p className="text-ink-500">Partial Payment</p>
-                <p className="font-bold text-green-700">Allowed</p>
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Claim Summary */}
-      <Card className="p-0">
-        <div className="p-6 space-y-4">
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Claim Type</span>
-            <span className="text-sm font-medium text-ink-900 capitalize">
-              {formData.claimType.replace('-', ' ')}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Category</span>
-            <span className="text-sm font-medium text-ink-900">
-              {availableCategories.find(c => c.categoryId === formData.category)?.name || 'Not selected'}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Billing Date</span>
-            <span className="text-sm font-medium text-ink-900">
-              {new Date(formData.treatmentDate).toLocaleDateString()}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Bill Amount</span>
-            <span className="text-lg font-bold text-ink-900">
-              ₹{parseFloat(formData.billAmount || '0').toLocaleString()}
-            </span>
-          </div>
-
-          {estimatedReimbursement > 0 && (
-            <div className="flex justify-between items-start pt-2 border-t border-surface-border">
-              <span className="text-sm text-brand-600">Estimated Reimbursement</span>
-              <span className="text-lg font-bold text-brand-600">
-                ₹{estimatedReimbursement.toLocaleString()}
-              </span>
-            </div>
-          )}
-
-          <div className="flex justify-between items-start">
-            <span className="text-sm text-ink-500">Documents</span>
-            <span className="text-sm font-medium text-ink-900">
-              {totalDocuments} file{totalDocuments !== 1 ? 's' : ''} uploaded
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Terms Agreement */}
-      <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
-        <div className="flex items-start space-x-3">
-          <ShieldCheckIcon className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-brand-700">
-            <p className="font-medium mb-1">Verification & Terms</p>
-            <p>
-              By submitting this claim, you confirm that all information provided is
-              accurate and complete. False claims may result in policy termination.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Expected Processing Time */}
-      <div className="flex items-center space-x-3 p-4 bg-surface-alt rounded-xl">
-        <ClockIcon className="h-5 w-5 text-ink-400" />
-        <div className="text-sm text-ink-600">
-          <span className="font-medium">Expected processing time:</span> 3-5 business days
-        </div>
-      </div>
-    </div>
-    )
-  }
+  const renderStep4 = () => (
+    <ClaimReviewSection
+      formData={formData}
+      availableCategories={availableCategories}
+      walletRules={walletRules}
+      estimatedReimbursement={estimatedReimbursement}
+      prescriptionFiles={prescriptionFiles}
+      billFiles={billFiles}
+      documentPreviews={documentPreviews}
+    />
+  )
 
   const steps = [
     { number: 1, title: 'Details', completed: currentStep > 1 },
