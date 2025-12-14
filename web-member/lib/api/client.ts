@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
+import { logger } from '@/lib/logger'
 
 // Use relative path in production to avoid CORS issues when accessing via www vs non-www
 // Next.js rewrites will handle proxying to the actual API server
@@ -45,13 +46,13 @@ apiClient.interceptors.response.use(
       }
     } else if (error.response?.status === 403) {
       // Forbidden - access denied
-      console.error('[API] Access denied:', error.response.data)
+      logger.error('API', 'Access denied:', error.response.data)
     } else if (error.response?.status >= 500) {
       // Server error
-      console.error('[API] Server error:', error.response.data)
+      logger.error('API', 'Server error:', error.response.data)
     } else if (error.code === 'ECONNABORTED') {
       // Timeout
-      console.error('[API] Request timeout')
+      logger.error('API', 'Request timeout')
     }
 
     return Promise.reject(error)

@@ -1,6 +1,8 @@
 // Payment Validation Library for OPD Wallet
 // Handles payment calculations, copay determination, and wallet balance validation
 
+import { logger } from './logger'
+
 export interface PaymentValidationInput {
   userId: string;
   patientId: string;
@@ -43,7 +45,7 @@ export async function getWalletBalance(patientId: string): Promise<WalletBalance
     });
 
     if (!response.ok) {
-      console.error('Failed to fetch wallet balance');
+      logger.error('PaymentValidator', 'Failed to fetch wallet balance');
       return { balance: 0, allocated: 0, consumed: 0 };
     }
 
@@ -54,17 +56,17 @@ export async function getWalletBalance(patientId: string): Promise<WalletBalance
       consumed: data.totalBalance?.consumed || 0
     };
   } catch (error) {
-    console.error('Error fetching wallet balance:', error);
+    logger.error('PaymentValidator', 'Error fetching wallet balance:', error);
     return { balance: 0, allocated: 0, consumed: 0 };
   }
 }
 
 // Get user's policy details for copay calculation
 export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
-  console.log('[PaymentValidator] Starting getUserPolicy for userId:', userId);
+  logger.info('PaymentValidator', 'Starting getUserPolicy for userId:', userId);
 
   try {
-    console.log('[PaymentValidator] Fetching from /api/assignments/my-policy...');
+    logger.info('PaymentValidator', 'Fetching from /api/assignments/my-policy');
     const response = await fetch('/api/assignments/my-policy', {
       credentials: 'include',
       headers: {
@@ -72,17 +74,17 @@ export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
       }
     });
 
-    console.log('[PaymentValidator] Response status:', response.status, response.statusText);
+    logger.info('PaymentValidator', 'Response status:', response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌❌ [PaymentValidator] Failed to fetch user policy:', {
+      logger.error('PaymentValidator', 'Failed to fetch user policy:', {
         status: response.status,
         statusText: response.statusText,
         errorBody: errorText
       });
-      console.error('❌❌ [PaymentValidator] This likely means NO POLICY is assigned to the user!');
-      console.error('❌❌ [PaymentValidator] Returning NO COPAY (0%) - Admin needs to assign policy');
+      logger.error('PaymentValidator', 'This likely means NO POLICY is assigned to the user');
+      logger.error('PaymentValidator', 'Returning NO COPAY (0%) - Admin needs to assign policy');
       // Return NO copay if API fails (likely no assignment)
       return {
         copay: {
@@ -95,13 +97,13 @@ export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
     }
 
     const data = await response.json();
-    console.log('[PaymentValidator] Raw API response:', JSON.stringify(data, null, 2));
+    logger.info('PaymentValidator', 'Raw API response:', data);
 
     // Extract copay configuration from the response
     const copay = data.copay || data.planConfig?.copay;
     const copayPercentage = copay?.percentage || copay?.value || 0; // Changed from 20 to 0
 
-    console.log('[PaymentValidator] Extracted copay details:', {
+    logger.info('PaymentValidator', 'Extracted copay details:', {
       rawCopay: copay,
       copayPercentage,
       copayMode: copay?.mode || 'PERCENT',
@@ -118,11 +120,11 @@ export async function getUserPolicy(userId: string): Promise<PolicyDetails> {
       walletEnabled: data.walletEnabled !== false
     };
 
-    console.log('[PaymentValidator] Returning policy details:', result);
+    logger.info('PaymentValidator', 'Returning policy details:', result);
     return result;
   } catch (error) {
-    console.error('❌❌ [PaymentValidator] Exception in getUserPolicy:', error);
-    console.error('❌❌ [PaymentValidator] Returning NO COPAY (0%) due to exception');
+    logger.error('PaymentValidator', 'Exception in getUserPolicy:', error);
+    logger.error('PaymentValidator', 'Returning NO COPAY (0%) due to exception');
     // Return NO copay fallback in case of error
     return {
       copay: {

@@ -303,6 +303,86 @@ export interface Payment {
 }
 
 // ============================================================================
+// MEMBER & PROFILE TYPES
+// ============================================================================
+
+export interface MemberName {
+  firstName: string
+  lastName: string
+}
+
+export interface MemberProfile {
+  _id: string
+  id?: string
+  userId: string
+  name: MemberName
+  memberId: string
+  uhid?: string
+  email?: string
+  phone?: string
+  dob?: string
+  gender?: 'MALE' | 'FEMALE' | 'OTHER'
+  relationship: string
+  corporateName?: string
+  isPrimary?: boolean
+}
+
+export interface DependentProfile extends MemberProfile {
+  isPrimary: false
+}
+
+export interface PolicyAssignment {
+  _id: string
+  userId: string
+  policyId: {
+    _id: string
+    id?: string
+    policyNumber: string
+    effectiveTo?: string
+  }
+  effectiveTo?: string
+  assignment?: PolicyAssignment
+}
+
+export interface WalletCategory {
+  categoryCode: string
+  name: string
+  available: number
+  total?: number
+}
+
+export interface MemberConsumption {
+  userId: string
+  consumed: number
+}
+
+export interface MemberWallet {
+  isFloater?: boolean
+  totalBalance: {
+    allocated: number
+    current: number
+    consumed: number
+  }
+  categories?: WalletCategory[]
+  memberConsumption?: MemberConsumption[]
+}
+
+export interface HealthBenefit {
+  categoryCode: string
+  name: string
+  description?: string
+}
+
+export interface MemberProfileResponse extends MemberProfile {
+  dependents: DependentProfile[]
+  familyMembers?: MemberProfile[]
+  assignments: PolicyAssignment[]
+  wallet: MemberWallet
+  walletCategories: WalletCategory[]
+  healthBenefits: HealthBenefit[]
+}
+
+// ============================================================================
 // GENERIC API RESPONSE TYPES
 // ============================================================================
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Modal, ModalFooter } from './ui/Modal'
+import { logger } from '@/lib/logger'
 
 interface AddAddressModalProps {
   isOpen: boolean
@@ -28,12 +29,11 @@ export default function AddAddressModal({
   const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('[ADDRESS-MODAL] ========== FORM SUBMISSION START ==========')
+    logger.info('AddressModal', 'Form submission started')
     e.preventDefault()
     setError('')
 
-    // Log all form field values
-    console.log('[ADDRESS-MODAL] Form field values:', {
+    logger.info('AddressModal', 'Form field values:', {
       userId,
       addressType,
       addressLine1,
@@ -46,20 +46,20 @@ export default function AddAddressModal({
     })
 
     // Validate pincode
-    console.log('[ADDRESS-MODAL] Validating pincode:', pincode)
+    logger.info('AddressModal', 'Validating pincode:', pincode)
     const pincodeRegex = /^[0-9]{6}$/
     const isPincodeValid = pincodeRegex.test(pincode)
-    console.log('[ADDRESS-MODAL] Pincode validation result:', isPincodeValid)
+    logger.info('AddressModal', 'Pincode validation result:', isPincodeValid)
 
     if (!isPincodeValid) {
-      console.error('[ADDRESS-MODAL] Pincode validation FAILED')
+      logger.error('AddressModal', 'Pincode validation failed')
       setError('Pincode must be exactly 6 digits')
       return
     }
-    console.log('[ADDRESS-MODAL] Pincode validation PASSED')
+    logger.info('AddressModal', 'Pincode validation passed')
 
     setSubmitting(true)
-    console.log('[ADDRESS-MODAL] Submitting state set to true')
+    logger.info('AddressModal', 'Submitting state set to true')
 
     try {
       // Prepare request payload
@@ -73,18 +73,13 @@ export default function AddAddressModal({
         landmark: landmark || undefined,
         isDefault,
       }
-      console.log('[ADDRESS-MODAL] Request payload prepared:', JSON.stringify(requestPayload, null, 2))
+      logger.info('AddressModal', 'Request payload prepared:', requestPayload)
 
       const apiUrl = `/api/member/addresses`
-      console.log('[ADDRESS-MODAL] API URL:', apiUrl)
-      console.log('[ADDRESS-MODAL] Note: Using member endpoint (userId from JWT token)')
-      console.log('[ADDRESS-MODAL] Request method: POST')
-      console.log('[ADDRESS-MODAL] Request headers:', {
-        'Content-Type': 'application/json',
-        credentials: 'include'
-      })
+      logger.info('AddressModal', 'API URL:', apiUrl)
+      logger.info('AddressModal', 'Request method: POST')
 
-      console.log('[ADDRESS-MODAL] Initiating fetch request...')
+      logger.info('AddressModal', 'Initiating fetch request...')
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -94,30 +89,26 @@ export default function AddAddressModal({
         body: JSON.stringify(requestPayload),
       })
 
-      console.log('[ADDRESS-MODAL] Response received!')
-      console.log('[ADDRESS-MODAL] Response status:', response.status)
-      console.log('[ADDRESS-MODAL] Response statusText:', response.statusText)
-      console.log('[ADDRESS-MODAL] Response ok:', response.ok)
-      console.log('[ADDRESS-MODAL] Response headers:', Object.fromEntries(response.headers.entries()))
+      logger.info('AddressModal', 'Response received - status:', response.status, 'ok:', response.ok)
 
       // Clone response to read it twice (once for logging, once for processing)
       const responseClone = response.clone()
       const responseText = await responseClone.text()
-      console.log('[ADDRESS-MODAL] Raw response body:', responseText)
+      logger.info('AddressModal', 'Raw response body:', responseText)
 
       if (response.ok) {
-        console.log('[ADDRESS-MODAL] ✅ SUCCESS - Address created successfully!')
+        logger.info('AddressModal', 'Address created successfully')
 
         let parsedData
         try {
           parsedData = JSON.parse(responseText)
-          console.log('[ADDRESS-MODAL] Parsed response data:', parsedData)
+          logger.info('AddressModal', 'Parsed response data:', parsedData)
         } catch (parseError) {
-          console.warn('[ADDRESS-MODAL] Could not parse response as JSON:', parseError)
+          logger.warn('AddressModal', 'Could not parse response as JSON:', parseError)
         }
 
         // Reset form
-        console.log('[ADDRESS-MODAL] Resetting form fields...')
+        logger.info('AddressModal', 'Resetting form fields')
         setAddressLine1('')
         setAddressLine2('')
         setCity('')
@@ -126,42 +117,36 @@ export default function AddAddressModal({
         setLandmark('')
         setIsDefault(false)
         setAddressType('HOME')
-        console.log('[ADDRESS-MODAL] Form reset complete')
+        logger.info('AddressModal', 'Form reset complete')
 
-        console.log('[ADDRESS-MODAL] Calling onAddressAdded callback...')
+        logger.info('AddressModal', 'Calling callbacks')
         onAddressAdded()
-        console.log('[ADDRESS-MODAL] Calling onClose callback...')
         onClose()
-        console.log('[ADDRESS-MODAL] ========== FORM SUBMISSION COMPLETE (SUCCESS) ==========')
+        logger.info('AddressModal', 'Form submission complete (success)')
       } else {
-        console.error('[ADDRESS-MODAL] ❌ ERROR - Request failed with status:', response.status)
+        logger.error('AddressModal', 'Request failed with status:', response.status)
 
         let data
         try {
           data = JSON.parse(responseText)
-          console.error('[ADDRESS-MODAL] Error response data:', data)
+          logger.error('AddressModal', 'Error response data:', data)
         } catch (parseError) {
-          console.error('[ADDRESS-MODAL] Could not parse error response as JSON:', parseError)
+          logger.error('AddressModal', 'Could not parse error response as JSON:', parseError)
           data = { message: responseText || 'Failed to add address' }
         }
 
         const errorMessage = data.message || 'Failed to add address'
-        console.error('[ADDRESS-MODAL] Setting error message:', errorMessage)
+        logger.error('AddressModal', 'Setting error message:', errorMessage)
         setError(errorMessage)
-        console.log('[ADDRESS-MODAL] ========== FORM SUBMISSION COMPLETE (FAILED) ==========')
+        logger.info('AddressModal', 'Form submission complete (failed)')
       }
     } catch (error) {
-      console.error('[ADDRESS-MODAL] ❌ EXCEPTION caught during address creation!')
-      console.error('[ADDRESS-MODAL] Error type:', error?.constructor?.name)
-      console.error('[ADDRESS-MODAL] Error message:', error instanceof Error ? error.message : String(error))
-      console.error('[ADDRESS-MODAL] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-      console.error('[ADDRESS-MODAL] Full error object:', error)
-
+      logger.error('AddressModal', 'Exception caught during address creation:', error)
       setError('Failed to add address. Please try again.')
-      console.log('[ADDRESS-MODAL] ========== FORM SUBMISSION COMPLETE (EXCEPTION) ==========')
+      logger.info('AddressModal', 'Form submission complete (exception)')
     } finally {
       setSubmitting(false)
-      console.log('[ADDRESS-MODAL] Submitting state set to false')
+      logger.info('AddressModal', 'Submitting state set to false')
     }
   }
 

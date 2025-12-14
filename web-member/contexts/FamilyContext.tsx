@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { logger } from '@/lib/logger'
 
 export interface FamilyMember {
   _id: string
@@ -49,21 +50,21 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
 
-      console.log('[FamilyContext] Loading family data...')
+      logger.info('FamilyContext', 'Loading family data')
 
       // Fetch profile data which includes family members
       const response = await fetch('/api/member/profile', {
         credentials: 'include',
       })
 
-      console.log('[FamilyContext] Profile response status:', response.status)
+      logger.info('FamilyContext', 'Profile response status:', response.status)
 
       if (!response.ok) {
         throw new Error('Failed to load family data')
       }
 
       const data = await response.json()
-      console.log('[FamilyContext] Profile data:', {
+      logger.info('FamilyContext', 'Profile data:', {
         userId: data.user._id,
         userName: `${data.user.name?.firstName} ${data.user.name?.lastName}`,
         dependentsCount: data.dependents?.length || 0
@@ -132,14 +133,14 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       setActiveMember(initialMember)
       setViewingUserId(initialMember._id)
 
-      console.log('[FamilyContext] Active member set:', {
+      logger.info('FamilyContext', 'Active member set:', {
         memberId: initialMember._id,
         memberName: `${initialMember.name?.firstName} ${initialMember.name?.lastName}`,
         isPrimary: initialMember.isPrimary
       })
 
     } catch (err) {
-      console.error('[FamilyContext] Error loading family data:', err)
+      logger.error('FamilyContext', 'Error loading family data:', err)
       setError('Failed to load family data')
     } finally {
       setIsLoading(false)
@@ -147,7 +148,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   }
 
   const handleSetActiveMember = (member: FamilyMember) => {
-    console.log('[FamilyContext] Switching active member to:', {
+    logger.info('FamilyContext', 'Switching active member to:', {
       memberId: member._id,
       memberName: `${member.name?.firstName} ${member.name?.lastName}`
     })
@@ -158,7 +159,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     // Store in sessionStorage for session persistence
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('viewingUserId', member._id)
-      console.log('[FamilyContext] Stored viewingUserId in sessionStorage:', member._id)
+      logger.info('FamilyContext', 'Stored viewingUserId in sessionStorage:', member._id)
     }
   }
 

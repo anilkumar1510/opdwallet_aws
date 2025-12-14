@@ -25,55 +25,10 @@ import SectionHeader from '@/components/SectionHeader'
 import OPDCardCarousel from '@/components/OPDCardCarousel'
 import ActiveAppointmentNudge from '@/components/ActiveAppointmentNudge'
 import { useFamily } from '@/contexts/FamilyContext'
-
-// Helper function to calculate age from DOB
-const calculateAge = (dob: string) => {
-  if (!dob) return 'N/A'
-  const today = new Date()
-  const birthDate = new Date(dob)
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDiff = today.getMonth() - birthDate.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--
-  }
-  return age
-}
-
-// Helper function to format date for "Valid Till"
-const formatValidTillDate = (dateStr: string) => {
-  if (!dateStr) return 'No Expiry'
-  const date = new Date(dateStr)
-  const day = date.getDate()
-  const month = date.toLocaleString('en-US', { month: 'short' })
-  const year = date.getFullYear()
-  return `${day}-${month}-${year}`
-}
-
-// Helper function to get readable relationship label
-const getRelationshipLabel = (relationshipCode: string) => {
-  const relationshipMap: { [key: string]: string } = {
-    'REL001': 'Primary Member',
-    'REL002': 'Spouse',
-    'REL003': 'Child',
-    'REL004': 'Parent',
-    'REL005': 'Other'
-  }
-  return relationshipMap[relationshipCode] || relationshipCode
-}
-
-// Icon mapping for categories
-const getCategoryIcon = (categoryCode: string) => {
-  switch (categoryCode) {
-    case 'CONSULTATION': return UserIcon
-    case 'PHARMACY': return CubeIcon
-    case 'DIAGNOSTICS': return BeakerIcon
-    case 'DENTAL':
-    case 'VISION':
-    case 'DENTAL_VISION': return EyeIcon
-    case 'WELLNESS': return ClipboardDocumentCheckIcon
-    default: return BanknotesIcon
-  }
-}
+import { logger } from '@/lib/logger'
+import { calculateAge, formatValidTillDate } from '@/lib/utils/formatters'
+import { getRelationshipLabel, getCategoryIcon } from '@/lib/utils/mappers'
+import type { MemberProfile, MemberProfileResponse, WalletCategory, HealthBenefit, PolicyAssignment } from '@/lib/api/types'
 
 // Memoized MemberCard component
 const MemberCard = memo(({
@@ -83,7 +38,7 @@ const MemberCard = memo(({
   validTill,
   corporateName
 }: {
-  member: any
+  member: MemberProfile
   isPrimary: boolean
   policyNumber: string
   validTill: string
@@ -151,7 +106,7 @@ const DesktopMemberCard = memo(({
   validTill,
   corporateName
 }: {
-  member: any
+  member: MemberProfile
   isPrimary: boolean
   policyNumber: string
   validTill: string
@@ -203,8 +158,8 @@ const WalletCategoryCard = memo(({
   category,
   icon
 }: {
-  category: any
-  icon: any
+  category: WalletCategory
+  icon: React.ComponentType<{ className?: string }>
 }) => {
   const percentageUsed = typeof category.total === 'number' && category.total > 0
     ? ((category.total - category.available) / category.total) * 100
@@ -256,8 +211,8 @@ const DesktopWalletCategoryCard = memo(({
   category,
   icon
 }: {
-  category: any
-  icon: any
+  category: WalletCategory
+  icon: React.ComponentType<{ className?: string }>
 }) => {
   const percentageUsed = typeof category.total === 'number' && category.total > 0
     ? ((category.total - category.available) / category.total) * 100
@@ -318,7 +273,7 @@ const DesktopBenefitCard = memo(({
   benefit,
   onClick
 }: {
-  benefit: any
+  benefit: HealthBenefit & { icon: React.ComponentType<{ className?: string}>; href: string }
   onClick: () => void
 }) => {
   return (
@@ -348,7 +303,7 @@ const BenefitCard = memo(({
   benefit,
   onClick
 }: {
-  benefit: any
+  benefit: HealthBenefit & { icon: React.ComponentType<{ className?: string }>; href: string }
   onClick: () => void
 }) => {
   return (
@@ -375,7 +330,7 @@ BenefitCard.displayName = 'BenefitCard'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<MemberProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const { activeMember, viewingUserId } = useFamily()
   // Compact wallet cards with modern design
@@ -388,17 +343,17 @@ export default function DashboardPage() {
 
   const fetchUserData = async (userId: string) => {
     try {
-      console.log('[Dashboard] Starting fetchUserData for userId:', userId)
+      logger.info('Dashboard', 'Starting fetchUserData for userId:', userId)
 
       // Fetch profile data
       const profileResponse = await fetch('/api/member/profile', {
         credentials: 'include',
       })
 
-      console.log('[Dashboard] Profile response status:', profileResponse.status)
+      logger.info('Dashboard', 'Profile response status:', profileResponse.status)
 
       if (!profileResponse.ok) {
-        console.error('[Dashboard] Profile fetch failed')
+        logger.error('Dashboard', 'Profile fetch failed')
         const authResponse = await fetch('/api/auth/me', {
           credentials: 'include',
         })
@@ -411,7 +366,7 @@ export default function DashboardPage() {
       }
 
       const profileData = await profileResponse.json()
-      console.log('[Dashboard] Profile data received:', {
+      logger.info('Dashboard', 'Profile data received:', {
         hasUser: !!profileData.user,
         hasDependents: !!profileData.dependents,
         hasWallet: !!profileData.wallet,
@@ -420,20 +375,20 @@ export default function DashboardPage() {
 
       // Fetch wallet data for the viewing user
       const walletUrl = `/api/wallet/balance?userId=${userId}`
-      console.log('[Dashboard] Fetching wallet from:', walletUrl)
+      logger.info('Dashboard', 'Fetching wallet from:', walletUrl)
 
       const walletResponse = await fetch(walletUrl, {
         credentials: 'include',
       })
 
-      console.log('[Dashboard] Wallet response status:', walletResponse.status)
+      logger.info('Dashboard', 'Wallet response status:', walletResponse.status)
 
       let walletData = { totalBalance: { allocated: 0, current: 0, consumed: 0 }, categories: [] }
       let walletCategories = []
 
       if (walletResponse.ok) {
         const walletResult = await walletResponse.json()
-        console.log('[Dashboard] Wallet result structure:', {
+        logger.info('Dashboard', 'Wallet result structure:', {
           keys: Object.keys(walletResult),
           hasTotalBalance: !!walletResult.totalBalance,
           hasCategories: !!walletResult.categories,
@@ -445,7 +400,7 @@ export default function DashboardPage() {
         // Map categories to walletCategories format
         walletCategories = walletResult.categories || []
 
-        console.log('[Dashboard] Processed wallet data:', {
+        logger.info('Dashboard', 'Processed wallet data:', {
           walletData,
           walletCategories,
           totalBalanceCurrent: walletData?.totalBalance?.current,
@@ -454,7 +409,7 @@ export default function DashboardPage() {
         })
       } else {
         const errorText = await walletResponse.text()
-        console.error('[Dashboard] Wallet fetch failed:', errorText)
+        logger.error('Dashboard', 'Wallet fetch failed:', errorText)
       }
 
       // Combine data - use active member as primary user
@@ -468,7 +423,7 @@ export default function DashboardPage() {
         healthBenefits: profileData.healthBenefits || []
       }
 
-      console.log('[Dashboard] Final user object:', {
+      logger.info('Dashboard', 'Final user object:', {
         hasWallet: !!userWithAssignments.wallet,
         walletTotalCurrent: userWithAssignments.wallet?.totalBalance?.current,
         walletTotalAllocated: userWithAssignments.wallet?.totalBalance?.allocated,
@@ -477,7 +432,7 @@ export default function DashboardPage() {
 
       setUser(userWithAssignments)
     } catch (error) {
-      console.error('[Dashboard] Error fetching user data:', error)
+      logger.error('Dashboard', 'Error fetching user data:', error)
     } finally {
       setLoading(false)
     }
@@ -492,7 +447,7 @@ export default function DashboardPage() {
   const getUserPolicy = useCallback(() => {
     if (!user?.assignments) return null
     const userIdStr = user._id?.toString() || user.id?.toString()
-    const assignment = user.assignments.find((a: any) => {
+    const assignment = user.assignments.find((a: PolicyAssignment) => {
       const assignmentUserIdStr = a.userId?.toString()
       return assignmentUserIdStr === userIdStr
     })
@@ -521,7 +476,7 @@ export default function DashboardPage() {
   const getUserPolicyForMember = useCallback((userId: string) => {
     if (!user?.assignments) return null
     const userIdStr = userId?.toString()
-    const assignment = user.assignments.find((a: any) => {
+    const assignment = user.assignments.find((a: PolicyAssignment) => {
       const assignmentUserIdStr = a.userId?.toString()
       return assignmentUserIdStr === userIdStr
     })
@@ -547,7 +502,7 @@ export default function DashboardPage() {
   }, [getUserPolicyForMember])
 
   // Map category codes from API to UI configuration
-  const benefitUIConfig: Record<string, { icon: any; href: string; description?: string }> = useMemo(() => ({
+  const benefitUIConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; href: string; description?: string }> = useMemo(() => ({
     'CAT001': {
       icon: UserIcon,
       href: `/member/appointments${viewingUserId ? `?defaultPatient=${viewingUserId}` : ''}`,
@@ -610,10 +565,10 @@ export default function DashboardPage() {
     if (!user?.healthBenefits) return []
 
     return user.healthBenefits
-      .map((benefit: any) => {
+      .map((benefit: HealthBenefit) => {
         const uiConfig = benefitUIConfig[benefit.categoryCode]
         if (!uiConfig) {
-          console.warn(`[Dashboard] No UI config found for category: ${benefit.categoryCode}`)
+          logger.warn('Dashboard', `No UI config found for category: ${benefit.categoryCode}`)
           return null
         }
 
@@ -624,11 +579,11 @@ export default function DashboardPage() {
           description: uiConfig.description || benefit.description
         }
       })
-      .filter(Boolean) // Remove null entries
+      .filter((b): b is HealthBenefit & { icon: React.ComponentType<{ className?: string }>; href: string } => b !== null)
   }, [user?.healthBenefits, benefitUIConfig])
 
-  const handleBenefitClick = useCallback((benefit: any) => {
-    console.log(`[Dashboard] Navigating to ${benefit.name}`, {
+  const handleBenefitClick = useCallback((benefit: HealthBenefit & { icon: React.ComponentType<{ className?: string }>; href: string }) => {
+    logger.info('Dashboard', `Navigating to ${benefit.name}`, {
       categoryCode: benefit.categoryCode,
       href: benefit.href,
       userId: user?._id

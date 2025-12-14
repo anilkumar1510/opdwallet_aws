@@ -1,5 +1,6 @@
 import apiClient from './client'
 import { Appointment, CreateAppointmentDto, ApiResponse } from './types'
+import { logger } from '../logger'
 
 /**
  * Appointments API
@@ -66,7 +67,7 @@ export const appointmentsApi = {
       const appointment = await this.getById(appointmentId)
       return appointment.hasPrescription || false
     } catch (error) {
-      console.error('Failed to check prescription:', error)
+      logger.error('AppointmentsAPI', 'Failed to check prescription:', error)
       return false
     }
   },

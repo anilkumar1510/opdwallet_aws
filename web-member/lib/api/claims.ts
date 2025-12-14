@@ -1,5 +1,6 @@
 import apiClient from './client'
 import { Claim, CreateClaimDto, ClaimDocument } from './types'
+import { logger } from '../logger'
 
 /**
  * Additional types specific to claims API
@@ -70,9 +71,7 @@ export const claimsApi = {
     claimData: CreateClaimDto,
     files?: File[]
   ): Promise<Claim> => {
-    console.log('=== createClaim API CALLED ===')
-    console.log('Claim Data:', claimData)
-    console.log('Files Count:', files?.length || 0)
+    logger.info('ClaimsAPI', 'Creating claim', { claimData, filesCount: files?.length || 0 })
 
     const formData = new FormData()
 
@@ -86,10 +85,10 @@ export const claimsApi = {
 
     // Add files
     if (files && files.length > 0) {
-      console.log('Adding files to FormData:')
+      logger.info('ClaimsAPI', 'Adding files to FormData')
       files.forEach((file, index) => {
         formData.append('documents', file)
-        console.log(`File ${index + 1}: ${file.name} (${file.size} bytes)`)
+        logger.info('ClaimsAPI', `File ${index + 1}: ${file.name} (${file.size} bytes)`)
       })
     }
 
@@ -105,13 +104,13 @@ export const claimsApi = {
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             )
-            console.log(`Upload Progress: ${percentCompleted}%`)
+            logger.info('ClaimsAPI', `Upload Progress: ${percentCompleted}%`)
           }
         },
       }
     )
 
-    console.log('Claim created successfully:', data)
+    logger.info('ClaimsAPI', 'Claim created successfully:', data.claim.claimId)
     return data.claim
   },
 
@@ -119,11 +118,11 @@ export const claimsApi = {
    * Submit a draft claim
    */
   submit: async (claimId: string): Promise<Claim> => {
-    console.log('=== submitClaim API CALLED ===', claimId)
-    const { data } = await apiClient.post<{ message: string; claim: Claim }>(
+    logger.info('ClaimsAPI', 'Submitting claim:', claimId)
+    const { data} = await apiClient.post<{ message: string; claim: Claim }>(
       `/member/claims/${claimId}/submit`
     )
-    console.log('Claim submitted successfully:', data)
+    logger.info('ClaimsAPI', 'Claim submitted successfully:', data.claim.claimId)
     return data.claim
   },
 

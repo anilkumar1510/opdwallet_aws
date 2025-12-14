@@ -1,6 +1,8 @@
 // Transaction Management Library for OPD Wallet
 // Handles creation and tracking of payment transactions
 
+import { logger } from './logger'
+
 export interface TransactionData {
   userId: string;
   patientId?: string;
@@ -70,16 +72,16 @@ export async function createTransaction(data: TransactionData): Promise<Transact
     });
 
     if (!response.ok) {
-      console.error('Failed to create transaction:', await response.text());
+      logger.error('Transactions', 'Failed to create transaction:', await response.text());
       throw new Error('Failed to create transaction');
     }
 
     const savedTransaction = await response.json();
-    console.log('Transaction created successfully:', savedTransaction.transactionId);
+    logger.info('Transactions', 'Transaction created successfully:', savedTransaction.transactionId);
 
     return savedTransaction;
   } catch (error) {
-    console.error('Error creating transaction:', error);
+    logger.error('Transactions', 'Error creating transaction:', error);
     // Still return the transaction even if API fails
     // This ensures the booking process continues
     return transaction;
@@ -97,7 +99,7 @@ export async function createPendingPayment(data: {
   patientId?: string;
   metadata?: Record<string, any>;
 }): Promise<PendingPayment> {
-  console.log('[Transactions] Creating pending payment with data:', JSON.stringify(data, null, 2));
+  logger.info('Transactions', 'Creating pending payment with data:', data);
 
   const payment: PendingPayment = {
     paymentId: generatePaymentId(),
@@ -105,10 +107,10 @@ export async function createPendingPayment(data: {
     status: 'PENDING'
   };
 
-  console.log('[Transactions] Generated payment object:', JSON.stringify(payment, null, 2));
+  logger.info('Transactions', 'Generated payment object:', payment);
 
   try {
-    console.log('[Transactions] Sending POST request to /api/payments...');
+    logger.info('Transactions', 'Sending POST request to /api/payments');
 
     const response = await fetch('/api/payments', {
       method: 'POST',
@@ -119,11 +121,11 @@ export async function createPendingPayment(data: {
       body: JSON.stringify(payment)
     });
 
-    console.log('[Transactions] Response status:', response.status, response.statusText);
+    logger.info('Transactions', 'Response status:', response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Transactions] Failed to create pending payment:', {
+      logger.error('Transactions', 'Failed to create pending payment:', {
         status: response.status,
         statusText: response.statusText,
         errorBody: errorText,
@@ -133,15 +135,14 @@ export async function createPendingPayment(data: {
       // Try to parse error as JSON if possible
       try {
         const errorJson = JSON.parse(errorText);
-        console.error('[Transactions] Parsed error:', errorJson);
+        logger.error('Transactions', 'Parsed error:', errorJson);
       } catch (e) {
         // Error is not JSON
       }
     }
 
     const savedPayment = await response.json();
-    console.log('[Transactions] Pending payment created successfully:', savedPayment);
-    console.log('[Transactions] Payment ID:', savedPayment.paymentId);
+    logger.info('Transactions', 'Pending payment created successfully:', savedPayment.paymentId);
 
     // Store in session for later completion
     sessionStorage.setItem(`payment_${savedPayment.paymentId}`, JSON.stringify({
@@ -151,8 +152,8 @@ export async function createPendingPayment(data: {
 
     return savedPayment;
   } catch (error) {
-    console.error('[Transactions] Exception creating pending payment:', error);
-    console.log('[Transactions] Falling back to local payment object');
+    logger.error('Transactions', 'Exception creating pending payment:', error);
+    logger.info('Transactions', 'Falling back to local payment object');
     // Return the payment object even if API fails
     sessionStorage.setItem(`payment_${payment.paymentId}`, JSON.stringify({
       ...payment,
@@ -188,14 +189,14 @@ export async function processWalletPayment(data: {
     });
 
     if (!response.ok) {
-      console.error('Failed to process wallet payment:', await response.text());
+      logger.error('Transactions', 'Failed to process wallet payment:', await response.text());
       return false;
     }
 
-    console.log('Wallet payment processed successfully');
+    logger.info('Transactions', 'Wallet payment processed successfully');
     return true;
   } catch (error) {
-    console.error('Error processing wallet payment:', error);
+    logger.error('Transactions', 'Error processing wallet payment:', error);
     return false;
   }
 }
@@ -217,13 +218,13 @@ export async function updateWalletBalance(userId: string, amount: number): Promi
     });
 
     if (!response.ok) {
-      console.error('Failed to update wallet balance');
+      logger.error('Transactions', 'Failed to update wallet balance');
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error updating wallet balance:', error);
+    logger.error('Transactions', 'Error updating wallet balance:', error);
     return false;
   }
 }
@@ -247,7 +248,7 @@ export async function completePendingPayment(
     });
 
     if (!response.ok) {
-      console.error('Failed to complete pending payment');
+      logger.error('Transactions', 'Failed to complete pending payment');
       return false;
     }
 
@@ -256,7 +257,7 @@ export async function completePendingPayment(
 
     return true;
   } catch (error) {
-    console.error('Error completing pending payment:', error);
+    logger.error('Transactions', 'Error completing pending payment:', error);
     return false;
   }
 }
@@ -274,7 +275,7 @@ export async function getTransaction(transactionId: string): Promise<Transaction
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching transaction:', error);
+    logger.error('Transactions', 'Error fetching transaction:', error);
     return null;
   }
 }
@@ -296,7 +297,7 @@ export async function getUserTransactions(
     const data = await response.json();
     return data.transactions || [];
   } catch (error) {
-    console.error('Error fetching user transactions:', error);
+    logger.error('Transactions', 'Error fetching user transactions:', error);
     return [];
   }
 }
