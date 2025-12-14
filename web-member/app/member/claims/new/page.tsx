@@ -28,7 +28,7 @@ import {
 import Link from 'next/link'
 import { useFamily } from '@/contexts/FamilyContext'
 import {
-  ClaimFormData as FormData,
+  ClaimFormData,
   DocumentPreview,
   validateStep1,
   validateStep2,
@@ -71,7 +71,7 @@ export default function NewClaimPage() {
   const [availableCategories, setAvailableCategories] = useState<any[]>([])
   const [familyMembers, setFamilyMembers] = useState<any[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>('')
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<ClaimFormData>({
     claimType: 'reimbursement',
     category: '',
     treatmentDate: '',
@@ -512,7 +512,7 @@ export default function NewClaimPage() {
   const progressPercentage = (currentStep / 3) * 100
 
 
-  const handleFormDataChange = (updates: Partial<FormData>) => {
+  const handleFormDataChange = (updates: Partial<ClaimFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }))
   }
 
