@@ -614,15 +614,17 @@ export default function UserDetailPage() {
         />
       )}
 
-      {/* Policy Assignments */}
-      <PolicyAssignmentsTable
-        assignments={assignments}
-        onAssignPolicy={() => setShowAssignModal(true)}
-        onUnassignPolicy={handleUnassignPolicy}
-      />
+      {/* Policy Assignments - Only show for members, not internal users */}
+      {userType === 'member' && (
+        <>
+          <PolicyAssignmentsTable
+            assignments={assignments}
+            onAssignPolicy={() => setShowAssignModal(true)}
+            onUnassignPolicy={handleUnassignPolicy}
+          />
 
-      {/* Assign Policy Modal */}
-      <AssignPolicyModal
+          {/* Assign Policy Modal */}
+          <AssignPolicyModal
         showModal={showAssignModal}
         policies={policies}
         relationships={relationships}
@@ -648,6 +650,8 @@ export default function UserDetailPage() {
         onClose={resetAssignmentForm}
         onAssign={handleAssignPolicy}
       />
+        </>
+      )}
     </div>
   )
 }
