@@ -26,8 +26,12 @@ jobs:
             # Ensure we're in the right directory
             if [ -d ~/opdwallet_aws ]; then
               cd ~/opdwallet_aws
-              echo "📥 Pulling latest code..."
-              git pull origin main || git reset --hard origin/main
+              echo "📥 Fetching latest code from remote..."
+              git fetch origin
+              echo "🔄 Force-resetting to remote main (discarding any local changes)..."
+              git reset --hard origin/main
+              echo "🧹 Cleaning untracked files..."
+              git clean -fd
             else
               echo "📁 Cloning repository..."
               cd ~
