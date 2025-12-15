@@ -20,6 +20,7 @@ export default function OperationsLayout({
     if (pathname.startsWith('/operations/doctors')) return 'Doctors'
     if (pathname.startsWith('/operations/clinics')) return 'Clinics'
     if (pathname.startsWith('/operations/appointments')) return 'Appointments'
+    if (pathname.startsWith('/operations/dental-services')) return 'Dental Services'
     if (pathname.startsWith('/operations/lab/prescriptions')) return 'Lab Prescriptions'
     if (pathname.startsWith('/operations/lab/orders')) return 'Lab Orders'
     if (pathname.startsWith('/operations/lab')) return 'Lab Diagnostics'
@@ -51,6 +52,11 @@ export default function OperationsLayout({
       name: 'Appointments',
       path: '/operations/appointments',
       current: pathname.startsWith('/operations/appointments')
+    },
+    {
+      name: 'Dental Services',
+      path: '/operations/dental-services',
+      current: pathname.startsWith('/operations/dental-services')
     },
     {
       name: 'Prescriptions',

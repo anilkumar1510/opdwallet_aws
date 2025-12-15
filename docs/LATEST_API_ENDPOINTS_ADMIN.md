@@ -168,6 +168,31 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
+## Operations - Dental Services
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /ops/dental-services/clinics | Get all clinics with dental service status |
+| PUT | /ops/dental-services/clinics/:clinicId/toggle | Toggle dental services enabled/disabled at clinic level |
+| GET | /ops/dental-services/clinics/:clinicId/services | Get all dental services for a clinic with pricing |
+| PUT | /ops/dental-services/clinics/:clinicId/services/:serviceCode/toggle | Toggle service enabled/disabled for a clinic |
+| PATCH | /ops/dental-services/clinics/:clinicId/services/:serviceCode/price | Update price for a service at a clinic |
+| PUT | /ops/dental-services/clinics/:clinicId/services/bulk | Bulk update services (enable/disable and set prices) |
+| GET | /ops/dental-services/clinics/:clinicId/services/:serviceCode/pricing | Get pricing details for a specific service at a clinic |
+| DELETE | /ops/dental-services/clinics/:clinicId/services/:serviceCode | Delete pricing record (disables service and removes pricing) |
+
+**Notes:**
+- All endpoints require authentication (JWT token via cookie)
+- Access restricted to SUPER_ADMIN, ADMIN, and OPS roles
+- **Clinic-level toggle must be enabled before individual services can be enabled**
+- Disabling clinic-level toggle automatically disables all individual services
+- Service codes are automatically converted to uppercase
+- Prices must be positive numbers (>= 0)
+- Services must be enabled before setting prices
+- Category CAT006 (Dental Services) is hardcoded for all operations
+
+---
+
 ## Specialties
 
 | Method | Endpoint | Description |
