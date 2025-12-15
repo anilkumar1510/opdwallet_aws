@@ -41,10 +41,25 @@ export default function NewClinicPage() {
     setLoading(true)
 
     try {
+      // Transform operating hours to match backend schema
+      const transformedOperatingHours: Record<string, any> = {}
+      Object.entries(formData.operatingHours).forEach(([day, hours]: [string, any]) => {
+        transformedOperatingHours[day] = {
+          isOpen: !hours.closed,
+          openTime: hours.open,
+          closeTime: hours.close,
+        }
+      })
+
+      const payload = {
+        ...formData,
+        operatingHours: transformedOperatingHours,
+      }
+
       const response = await apiFetch('/api/clinics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
