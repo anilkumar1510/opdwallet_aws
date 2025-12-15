@@ -28,10 +28,14 @@ jobs:
               cd ~/opdwallet_aws
               echo "📥 Fetching latest code from remote..."
               git fetch origin
+
+              echo "🧹 Cleaning uploaded files that may have permission issues..."
+              sudo rm -rf api/uploads/* 2>/dev/null || true
+
               echo "🔄 Force-resetting to remote main (discarding any local changes)..."
-              git reset --hard origin/main
+              sudo git reset --hard origin/main
               echo "🧹 Cleaning untracked files..."
-              git clean -fd
+              sudo git clean -fd
             else
               echo "📁 Cloning repository..."
               cd ~
