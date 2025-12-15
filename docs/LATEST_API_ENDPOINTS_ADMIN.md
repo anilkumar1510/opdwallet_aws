@@ -180,6 +180,9 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 | PUT | /ops/dental-services/clinics/:clinicId/services/bulk | Bulk update services (enable/disable and set prices) |
 | GET | /ops/dental-services/clinics/:clinicId/services/:serviceCode/pricing | Get pricing details for a specific service at a clinic |
 | DELETE | /ops/dental-services/clinics/:clinicId/services/:serviceCode | Delete pricing record (disables service and removes pricing) |
+| POST | /ops/dental-services/clinics/:clinicId/slots | Create time slots for dental services at a clinic |
+| GET | /ops/dental-services/clinics/:clinicId/slots | Get all time slots for a clinic |
+| DELETE | /ops/dental-services/slots/:slotId | Delete a specific time slot |
 
 **Notes:**
 - All endpoints require authentication (JWT token via cookie)
@@ -190,6 +193,11 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 - Prices must be positive numbers (>= 0)
 - Services must be enabled before setting prices
 - Category CAT006 (Dental Services) is hardcoded for all operations
+- **Dental service slots can only be created for clinics with dental services enabled**
+- Slot creation supports multiple dates in a single request
+- Past dates are not allowed for slot creation
+- Slot duration options: 15, 30, 45, 60 minutes (default: 30 minutes)
+- Default max appointments per slot: 10
 
 ---
 

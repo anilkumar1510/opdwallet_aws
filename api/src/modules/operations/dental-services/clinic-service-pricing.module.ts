@@ -11,6 +11,10 @@ import {
   ServiceMaster,
   ServiceMasterSchema,
 } from '../../masters/schemas/service-master.schema';
+import {
+  DentalServiceSlot,
+  DentalServiceSlotSchema,
+} from './schemas/dental-service-slot.schema';
 
 @Module({
   imports: [
@@ -18,6 +22,7 @@ import {
       { name: ClinicServicePricing.name, schema: ClinicServicePricingSchema },
       { name: Clinic.name, schema: ClinicSchema },
       { name: ServiceMaster.name, schema: ServiceMasterSchema },
+      { name: DentalServiceSlot.name, schema: DentalServiceSlotSchema },
     ]),
   ],
   controllers: [ClinicServicePricingController],

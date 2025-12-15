@@ -13,7 +13,12 @@ import {
   ServiceMaster,
   ServiceMasterDocument,
 } from '../../masters/schemas/service-master.schema';
+import {
+  DentalServiceSlot,
+  DentalServiceSlotDocument,
+} from './schemas/dental-service-slot.schema';
 import { UpdatePriceDto, BulkUpdateServicesDto } from './dto/clinic-service-pricing.dto';
+import { CreateDentalSlotDto } from './dto/dental-slot.dto';
 
 const DENTAL_CATEGORY = 'CAT006';
 const CLINIC_LEVEL_SERVICE_CODE = 'DENTAL_SERVICES_ENABLED';
@@ -27,6 +32,8 @@ export class ClinicServicePricingService {
     private clinicModel: Model<ClinicDocument>,
     @InjectModel(ServiceMaster.name)
     private serviceMasterModel: Model<ServiceMasterDocument>,
+    @InjectModel(DentalServiceSlot.name)
+    private dentalSlotModel: Model<DentalServiceSlotDocument>,
   ) {}
 
   /**
@@ -455,6 +462,132 @@ export class ClinicServicePricingService {
       success: true,
       message: `Dental services ${isEnabled ? 'enabled' : 'disabled'} for clinic successfully`,
       data: updated,
+    };
+  }
+
+  /**
+   * Create dental service slots for a clinic
+   */
+  async createDentalSlots(
+    clinicId: string,
+    createDto: CreateDentalSlotDto,
+    userId?: string,
+  ) {
+    console.log(`[DentalSlots] Creating slots for clinic ${clinicId}`, createDto);
+
+    // Verify clinic exists
+    const clinic = await this.clinicModel.findOne({ clinicId }).lean();
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    // Verify dental services are enabled at clinic level
+    const clinicLevelToggle = await this.pricingModel.findOne({
+      clinicId,
+      serviceCode: CLINIC_LEVEL_SERVICE_CODE,
+    });
+
+    if (!clinicLevelToggle || !clinicLevelToggle.isEnabled) {
+      throw new BadRequestException(
+        'Dental services must be enabled at clinic level before creating slots',
+      );
+    }
+
+    // Validate dates are in the future
+    const today = new Date().toISOString().split('T')[0];
+    const invalidDates = createDto.dates.filter((date) => date < today);
+    if (invalidDates.length > 0) {
+      throw new BadRequestException(
+        `Cannot create slots for past dates: ${invalidDates.join(', ')}`,
+      );
+    }
+
+    // Create slots for each date
+    const createdSlots = [];
+    for (const date of createDto.dates) {
+      // Check if slot already exists for this clinic and date
+      const existingSlot = await this.dentalSlotModel.findOne({
+        clinicId,
+        date,
+      });
+
+      if (existingSlot) {
+        console.log(`[DentalSlots] Slot already exists for ${clinicId} on ${date}, skipping`);
+        continue;
+      }
+
+      // Generate unique slot ID
+      const slotId = `DSLOT${Date.now()}${Math.random().toString(36).substring(2, 7)}`;
+
+      const slotData = {
+        slotId,
+        clinicId,
+        date,
+        startTime: createDto.startTime,
+        endTime: createDto.endTime,
+        slotDuration: createDto.slotDuration || 30,
+        maxAppointments: createDto.maxAppointments || 10,
+        isActive: true,
+        createdBy: userId,
+      };
+
+      const slot = await this.dentalSlotModel.create(slotData);
+      createdSlots.push(slot);
+      console.log(`[DentalSlots] Created slot ${slotId} for ${clinicId} on ${date}`);
+    }
+
+    return {
+      success: true,
+      message: `Created ${createdSlots.length} slot(s) successfully`,
+      data: createdSlots,
+    };
+  }
+
+  /**
+   * Get all dental service slots for a clinic
+   */
+  async getClinicSlots(clinicId: string) {
+    console.log(`[DentalSlots] Fetching slots for clinic ${clinicId}`);
+
+    // Verify clinic exists
+    const clinic = await this.clinicModel.findOne({ clinicId }).lean();
+    if (!clinic) {
+      throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    // Get all slots for the clinic, sorted by date
+    const slots = await this.dentalSlotModel
+      .find({ clinicId })
+      .sort({ date: 1, startTime: 1 })
+      .lean();
+
+    console.log(`[DentalSlots] Found ${slots.length} slots for clinic ${clinicId}`);
+
+    return {
+      success: true,
+      count: slots.length,
+      data: slots,
+    };
+  }
+
+  /**
+   * Delete a dental service slot
+   */
+  async deleteSlot(slotId: string) {
+    console.log(`[DentalSlots] Deleting slot ${slotId}`);
+
+    const slot = await this.dentalSlotModel.findOneAndDelete({ slotId });
+
+    if (!slot) {
+      throw new NotFoundException(`Slot with ID ${slotId} not found`);
+    }
+
+    console.log(`[DentalSlots] Deleted slot ${slotId}`);
+
+    return {
+      success: true,
+      message: 'Slot deleted successfully',
+      data: slot,
     };
   }
 }

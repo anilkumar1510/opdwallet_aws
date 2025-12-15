@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Patch,
   Delete,
@@ -23,6 +24,7 @@ import {
   UpdatePriceDto,
   BulkUpdateServicesDto,
 } from './dto/clinic-service-pricing.dto';
+import { CreateDentalSlotDto } from './dto/dental-slot.dto';
 
 @ApiTags('Operations - Dental Services')
 @Controller('ops/dental-services')
@@ -274,5 +276,85 @@ export class ClinicServicePricingController {
     @Param('serviceCode') serviceCode: string,
   ) {
     return this.clinicServicePricingService.deletePricing(clinicId, serviceCode);
+  }
+
+  @Post('clinics/:clinicId/slots')
+  @ApiOperation({
+    summary: 'Create dental service slots for a clinic',
+    description:
+      'Create time slots for dental services at a specific clinic. Supports creating slots for multiple dates at once.',
+  })
+  @ApiParam({
+    name: 'clinicId',
+    description: 'Clinic ID (e.g., CLN001)',
+    example: 'CLN001',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Slots created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dental services not enabled at clinic level or invalid dates',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Clinic not found',
+  })
+  async createDentalSlots(
+    @Param('clinicId') clinicId: string,
+    @Body() createDto: CreateDentalSlotDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.clinicServicePricingService.createDentalSlots(
+      clinicId,
+      createDto,
+      req.user?.userId,
+    );
+  }
+
+  @Get('clinics/:clinicId/slots')
+  @ApiOperation({
+    summary: 'Get all dental service slots for a clinic',
+    description: 'Returns all time slots configured for dental services at a specific clinic',
+  })
+  @ApiParam({
+    name: 'clinicId',
+    description: 'Clinic ID (e.g., CLN001)',
+    example: 'CLN001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of dental service slots',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Clinic not found',
+  })
+  async getClinicSlots(@Param('clinicId') clinicId: string) {
+    return this.clinicServicePricingService.getClinicSlots(clinicId);
+  }
+
+  @Delete('slots/:slotId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a dental service slot',
+    description: 'Remove a specific time slot for dental services',
+  })
+  @ApiParam({
+    name: 'slotId',
+    description: 'Slot ID (e.g., DSLOT1702648800001)',
+    example: 'DSLOT1702648800001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Slot deleted successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Slot not found',
+  })
+  async deleteSlot(@Param('slotId') slotId: string) {
+    return this.clinicServicePricingService.deleteSlot(slotId);
   }
 }
