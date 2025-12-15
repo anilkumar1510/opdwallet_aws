@@ -8,8 +8,10 @@ import { toast } from 'sonner'
 export default function NewDoctorPage() {
   const router = useRouter()
   const [specialties, setSpecialties] = useState<any[]>([])
+  const [clinics, setClinics] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [loadingClinics, setLoadingClinics] = useState(true)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,16 +25,13 @@ export default function NewDoctorPage() {
     consultationFee: 0,
     availableOnline: true,
     availableOffline: true,
-    // Clinic information
-    clinicName: '',
-    clinicAddress: '',
-    clinicCity: '',
-    clinicState: '',
-    clinicPincode: '',
+    // Clinic selection from Clinic Master
+    selectedClinicId: '',
   })
 
   useEffect(() => {
     fetchSpecialties()
+    fetchClinics()
   }, [])
 
   const fetchSpecialties = async () => {
@@ -47,23 +46,62 @@ export default function NewDoctorPage() {
     }
   }
 
+  const fetchClinics = async () => {
+    try {
+      console.log('[FetchClinics] Fetching clinics from Clinic Master')
+      setLoadingClinics(true)
+      const response = await apiFetch('/api/clinics?isActive=true')
+      if (response.ok) {
+        const result = await response.json()
+        const clinicsList = result.data || []
+        console.log('[FetchClinics] Fetched clinics:', clinicsList.length, 'active clinics')
+        setClinics(clinicsList)
+      } else {
+        console.error('[FetchClinics] Failed to fetch clinics: HTTP', response.status)
+        toast.error('Failed to load clinics. Please refresh the page.')
+      }
+    } catch (error) {
+      console.error('[FetchClinics] Error fetching clinics:', error)
+      toast.error('Failed to load clinics. Please check your connection.')
+    } finally {
+      setLoadingClinics(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validation
     if (!formData.name || !formData.email || !formData.qualifications || !formData.specialtyId) {
       setError('Please fill in all required fields')
+      toast.error('Please fill in all required fields')
       return
     }
 
-    if (!formData.clinicName || !formData.clinicAddress) {
-      setError('Please provide at least one clinic location')
+    if (!formData.selectedClinicId) {
+      setError('Please select a primary clinic location')
+      toast.error('Please select a primary clinic location')
       return
     }
 
     try {
       setSaving(true)
       setError('')
+
+      // Find selected clinic from clinics list
+      const selectedClinic = clinics.find(c => c.clinicId === formData.selectedClinicId)
+      if (!selectedClinic) {
+        setError('Selected clinic not found')
+        toast.error('Selected clinic not found')
+        setSaving(false)
+        return
+      }
+
+      console.log('[CreateDoctor] Creating doctor with clinic:', {
+        clinicId: selectedClinic.clinicId,
+        clinicName: selectedClinic.name,
+        doctorName: formData.name
+      })
 
       // Create doctor payload according to CreateDoctorDto
       const payload = {
@@ -77,12 +115,12 @@ export default function NewDoctorPage() {
         experienceYears: formData.experienceYears,
         clinics: [
           {
-            clinicId: `CLI${Date.now()}`, // Temporary ID
-            name: formData.clinicName,
-            address: formData.clinicAddress,
-            city: formData.clinicCity,
-            state: formData.clinicState,
-            pincode: formData.clinicPincode,
+            clinicId: selectedClinic.clinicId,
+            name: selectedClinic.name,
+            address: selectedClinic.address?.street || selectedClinic.address?.line1 || '',
+            city: selectedClinic.address?.city || '',
+            state: selectedClinic.address?.state || '',
+            pincode: selectedClinic.address?.pincode || selectedClinic.address?.zipCode || '',
             consultationFee: formData.consultationFee,
           }
         ],
@@ -90,6 +128,8 @@ export default function NewDoctorPage() {
         availableOnline: formData.availableOnline,
         availableOffline: formData.availableOffline,
       }
+
+      console.log('[CreateDoctor] Payload:', JSON.stringify(payload, null, 2))
 
       const response = await apiFetch('/api/doctors', {
         method: 'POST',
@@ -245,64 +285,75 @@ export default function NewDoctorPage() {
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Primary Clinic Location *</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Add at least one clinic location. You can add more clinics after creating the doctor.
+            Select a clinic from the Clinic Master. The doctor will be automatically mapped to this clinic.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="label">Clinic Name *</label>
-              <input
-                type="text"
-                value={formData.clinicName}
-                onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
+          {loadingClinics ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent"></div>
+              <span className="ml-3 text-gray-600">Loading clinics...</span>
+            </div>
+          ) : clinics.length === 0 ? (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <p className="text-sm text-yellow-800 mb-2">
+                No active clinics found in the system. Please add a clinic first.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/operations/clinics/new')}
+                className="btn-primary text-sm mt-2"
+              >
+                Add New Clinic
+              </button>
+            </div>
+          ) : (
+            <div>
+              <label className="label">Select Clinic *</label>
+              <select
+                value={formData.selectedClinicId}
+                onChange={(e) => {
+                  console.log('[ClinicSelection] Selected clinic ID:', e.target.value)
+                  const selectedClinic = clinics.find(c => c.clinicId === e.target.value)
+                  if (selectedClinic) {
+                    console.log('[ClinicSelection] Selected clinic details:', {
+                      id: selectedClinic.clinicId,
+                      name: selectedClinic.name,
+                      city: selectedClinic.address?.city
+                    })
+                  }
+                  setFormData({ ...formData, selectedClinicId: e.target.value })
+                }}
                 className="input"
-                placeholder="City Hospital"
                 required
-              />
-            </div>
+              >
+                <option value="">-- Select a Clinic --</option>
+                {clinics.map((clinic) => (
+                  <option key={clinic.clinicId} value={clinic.clinicId}>
+                    {clinic.name} - {clinic.address?.city || 'N/A'}, {clinic.address?.state || 'N/A'}
+                  </option>
+                ))}
+              </select>
 
-            <div className="md:col-span-2">
-              <label className="label">Address *</label>
-              <input
-                type="text"
-                value={formData.clinicAddress}
-                onChange={(e) => setFormData({ ...formData, clinicAddress: e.target.value })}
-                className="input"
-                placeholder="123 Main Street"
-                required
-              />
+              {formData.selectedClinicId && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <h4 className="text-sm font-semibold text-green-900 mb-2">Selected Clinic Details</h4>
+                  {(() => {
+                    const selectedClinic = clinics.find(c => c.clinicId === formData.selectedClinicId)
+                    return selectedClinic ? (
+                      <div className="text-sm text-green-800 space-y-1">
+                        <p><span className="font-medium">Name:</span> {selectedClinic.name}</p>
+                        <p><span className="font-medium">Address:</span> {selectedClinic.address?.street || selectedClinic.address?.line1 || 'N/A'}</p>
+                        <p><span className="font-medium">City:</span> {selectedClinic.address?.city || 'N/A'}</p>
+                        <p><span className="font-medium">State:</span> {selectedClinic.address?.state || 'N/A'}</p>
+                        <p><span className="font-medium">Pincode:</span> {selectedClinic.address?.pincode || selectedClinic.address?.zipCode || 'N/A'}</p>
+                        <p><span className="font-medium">Contact:</span> {selectedClinic.contactNumber || 'N/A'}</p>
+                      </div>
+                    ) : null
+                  })()}
+                </div>
+              )}
             </div>
-
-            <div>
-              <label className="label">City</label>
-              <input
-                type="text"
-                value={formData.clinicCity}
-                onChange={(e) => setFormData({ ...formData, clinicCity: e.target.value })}
-                className="input"
-              />
-            </div>
-
-            <div>
-              <label className="label">State</label>
-              <input
-                type="text"
-                value={formData.clinicState}
-                onChange={(e) => setFormData({ ...formData, clinicState: e.target.value })}
-                className="input"
-              />
-            </div>
-
-            <div>
-              <label className="label">Pincode</label>
-              <input
-                type="text"
-                value={formData.clinicPincode}
-                onChange={(e) => setFormData({ ...formData, clinicPincode: e.target.value })}
-                className="input"
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="card">
