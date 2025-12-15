@@ -391,7 +391,8 @@ export default function EditDoctorPage() {
         </div>
       </div>
 
-      <div className="card">
+      {/* Schedules Section - Moved to doctor list page */}
+      {/* <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Schedules</h3>
         <p className="text-sm text-gray-600 mb-4">
           Configure doctor schedules by clinic and day of week.
@@ -402,7 +403,7 @@ export default function EditDoctorPage() {
         >
           Manage Schedules
         </button>
-      </div>
+      </div> */}
 
       <div className="card">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Authentication & Security</h3>

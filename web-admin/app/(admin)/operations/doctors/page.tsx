@@ -175,6 +175,15 @@ export default function DoctorsPage() {
                     Edit
                   </button>
                   <button
+                    onClick={() => {
+                      console.log('[ManageSchedules] Navigating to schedules for doctor:', doctor.doctorId)
+                      router.push(`/operations/doctors/${doctor.doctorId}/schedules`)
+                    }}
+                    className="btn-secondary text-sm"
+                  >
+                    Manage Schedules
+                  </button>
+                  <button
                     onClick={() => toggleDoctorStatus(doctor.doctorId, doctor.isActive)}
                     className={doctor.isActive ? 'btn-secondary text-sm' : 'btn-primary text-sm'}
                   >
