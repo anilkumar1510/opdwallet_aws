@@ -130,13 +130,23 @@ export default function UserDetailPage() {
   const [unassigningId, setUnassigningId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [userType, setUserType] = useState<'member' | 'internal' | null>(null)
 
   const fetchUserWithDependents = useCallback(async () => {
     try {
-      const [userRes, dependentsRes] = await Promise.all([
-        apiFetch(`/api/users/${params.id}`),
-        apiFetch(`/api/users/${params.id}/dependents`)
-      ])
+      // Try fetching from members endpoint first
+      let userRes = await apiFetch(`/api/members/${params.id}`)
+      let isMember = userRes.ok
+
+      // If not found in members, try internal users
+      if (!userRes.ok) {
+        userRes = await apiFetch(`/api/internal-users/${params.id}`)
+        if (userRes.ok) {
+          setUserType('internal')
+        }
+      } else {
+        setUserType('member')
+      }
 
       if (userRes.ok) {
         const userData = await userRes.json()
@@ -144,9 +154,13 @@ export default function UserDetailPage() {
         setEditedUser(userData)
       }
 
-      if (dependentsRes.ok) {
-        const depsData = await dependentsRes.json()
-        setDependents(depsData.dependents || [])
+      // Only fetch dependents for members (not internal users)
+      if (isMember) {
+        const dependentsRes = await apiFetch(`/api/members/${params.id}/dependents`)
+        if (dependentsRes.ok) {
+          const depsData = await dependentsRes.json()
+          setDependents(depsData.dependents || [])
+        }
       }
     } catch (error) {
       console.error('Failed to fetch user details')
@@ -155,8 +169,11 @@ export default function UserDetailPage() {
   }, [params.id])
 
   const fetchAssignments = useCallback(async () => {
+    // Only fetch assignments for members (not internal users)
+    if (userType === 'internal') return
+
     try {
-      const response = await apiFetch(`/api/users/${params.id}/assignments`)
+      const response = await apiFetch(`/api/members/${params.id}/assignments`)
       if (!response.ok) return
 
       const data = await response.json()
@@ -164,7 +181,7 @@ export default function UserDetailPage() {
     } catch (error) {
       console.error('Failed to fetch assignments')
     }
-  }, [params.id])
+  }, [params.id, userType])
 
   const fetchPolicies = useCallback(async () => {
     try {
@@ -215,12 +232,18 @@ export default function UserDetailPage() {
     if (!params.id) return
 
     fetchUserWithDependents()
-    fetchAssignments()
     fetchPolicies()
     fetchCugs()
     fetchRelationships()
     fetchAllMembers()
-  }, [params.id, fetchUserWithDependents, fetchAssignments, fetchPolicies, fetchCugs, fetchRelationships, fetchAllMembers])
+  }, [params.id, fetchUserWithDependents, fetchPolicies, fetchCugs, fetchRelationships, fetchAllMembers])
+
+  // Fetch assignments only after user type is determined and only for members
+  useEffect(() => {
+    if (userType === 'member') {
+      fetchAssignments()
+    }
+  }, [userType, fetchAssignments])
 
   useEffect(() => {
     if (!user || cugs.length === 0 || !user.corporateName) return
@@ -338,7 +361,11 @@ export default function UserDetailPage() {
       return
     }
 
-    await apiFetch(`/api/users/${params.id}/set-password`, {
+    const endpoint = userType === 'member'
+      ? `/api/members/${params.id}/set-password`
+      : `/api/internal-users/${params.id}/set-password`
+
+    await apiFetch(endpoint, {
       method: 'POST',
       body: JSON.stringify({ password: newPassword }),
     })
@@ -355,7 +382,11 @@ export default function UserDetailPage() {
     try {
       const updateData = buildUserUpdateData(editedUser)
 
-      const response = await apiFetch(`/api/users/${params.id}`, {
+      const endpoint = userType === 'member'
+        ? `/api/members/${params.id}`
+        : `/api/internal-users/${params.id}`
+
+      const response = await apiFetch(endpoint, {
         method: 'PUT',
         body: JSON.stringify(updateData),
       })
@@ -442,7 +473,11 @@ export default function UserDetailPage() {
 
     setDeleting(true)
     try {
-      const response = await apiFetch(`/api/users/${params.id}`, {
+      const endpoint = userType === 'member'
+        ? `/api/members/${params.id}`
+        : `/api/internal-users/${params.id}`
+
+      const response = await apiFetch(endpoint, {
         method: 'DELETE',
       })
 

@@ -85,12 +85,22 @@ export function UserEditForm({
           {isEditing ? (
             <input
               type="tel"
-              value={editedUser.phone || ''}
+              value={
+                typeof editedUser.phone === 'object' && editedUser.phone
+                  ? `${editedUser.phone.countryCode || '+91'} ${editedUser.phone.number || ''}`
+                  : editedUser.phone || ''
+              }
               onChange={(e) => onFieldChange('phone', e.target.value)}
               className="input"
+              placeholder="+91 1234567890"
             />
           ) : (
-            <p className="text-gray-900">{user.phone}</p>
+            <p className="text-gray-900">
+              {typeof user.phone === 'object' && user.phone
+                ? `${user.phone.countryCode || '+91'} ${user.phone.number || ''}`
+                : user.phone || '-'
+              }
+            </p>
           )}
         </div>
         <div>
