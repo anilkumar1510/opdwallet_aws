@@ -2,6 +2,120 @@
 
 All notable changes to the OPD Wallet project will be documented in this file.
 
+## [1.1.0] - 2025-12-15
+
+### Added - User Segregation Migration
+
+- **Separate Collections for Internal and External Users**
+  - Created new `internal_users` collection for staff (SUPER_ADMIN, ADMIN, TPA, FINANCE_USER, OPS, etc.)
+  - Existing `users` collection now contains only members (MEMBER role) and doctors (DOCTOR role)
+  - Improved data organization and security separation
+
+- **New API Endpoints**
+  - `POST /api/members` - Create new member (external user)
+  - `GET /api/members` - List all members with pagination
+  - `GET /api/members/:id` - Get member details
+  - `PUT /api/members/:id` - Update member
+  - `DELETE /api/members/:id` - Delete member
+  - `GET /api/members/:id/dependents` - Get family members
+  - `POST /api/members/:id/reset-password` - Reset member password
+  - `POST /api/members/:id/set-password` - Set member password
+  - `POST /api/internal-users` - Create new internal user (staff)
+  - `GET /api/internal-users` - List all internal users
+  - `GET /api/internal-users/:id` - Get internal user details
+  - `PUT /api/internal-users/:id` - Update internal user
+  - `POST /api/internal-users/:id/reset-password` - Reset internal user password
+  - `POST /api/internal-users/:id/set-password` - Set internal user password
+
+- **Backend Services**
+  - `MembersService` - Handles member (external user) operations
+  - `InternalUsersService` - Handles internal user (staff) operations
+  - `UnifiedUserService` - Provides backward compatibility for resolving users from both collections
+  - `CommonUserService` - Shared utilities for user operations
+
+- **Admin Portal Enhancements**
+  - Tab-contextual user creation forms
+  - External Users tab shows member-specific fields (UHID, Member ID, Corporate Group, etc.)
+  - Internal Users tab shows staff-specific fields (Employee ID, Role dropdown, Department, etc.)
+  - Role field automatically locked to "Member" for external users
+  - Role dropdown with internal roles for internal users
+  - Conditional field validation based on user type
+
+### Changed
+
+- **Authentication Service**
+  - Updated to check both `users` and `internal_users` collections during login
+  - JWT payload enhanced with `userType` field
+  - Maintains backward compatibility with existing sessions
+
+- **User Schema**
+  - `users` collection now validates that role must be MEMBER or DOCTOR only
+  - Added `userType: 'member'` discriminator
+
+- **Internal User Schema** (new)
+  - Required fields: `employeeId`, `role`, `email`, `phone`, `name`
+  - Internal-specific fields: `department`, `designation`, `reportingTo`
+  - Enhanced security fields: `mfaEnabled`, `allowedIPs`
+  - Excludes member-specific fields: `uhid`, `memberId`, `relationship`, etc.
+
+- **Admin Portal - User Creation**
+  - Form now conditionally renders fields based on user type (external vs internal)
+  - Phone number automatically formatted as object `{ countryCode, number }`
+  - Validation rules updated to check different required fields based on user type
+
+### Fixed
+
+- **Validation Logic**
+  - External users (members) now require: UHID, Member ID (NOT Employee ID)
+  - Internal users (staff) now require: Employee ID, Role (NOT UHID, Member ID)
+  - Phone field now properly formatted as object instead of string
+
+- **Duplicate Role Dropdown**
+  - Removed duplicate role field in user creation form
+  - Only conditional role field remains (locked for external, dropdown for internal)
+
+### Database Schema Changes
+
+- **New Collection: `internal_users`**
+  - Fields: `userId`, `employeeId`, `email`, `phone`, `name`, `role`, `passwordHash`, `status`
+  - Internal-specific: `department`, `designation`, `reportingTo`, `mfaEnabled`, `allowedIPs`
+  - Indexes: Unique on `userId`, `employeeId`, `email`, `phone`
+
+- **Updated Collection: `users`**
+  - Now contains only MEMBER and DOCTOR roles
+  - Internal users (SUPER_ADMIN, ADMIN, TPA, etc.) migrated to `internal_users`
+  - Added validation: role must be 'MEMBER' or 'DOCTOR'
+
+### Migration
+
+- **Data Migration Script** (`api/src/scripts/migrate-users-segregation.ts`)
+  - Automatically migrated all internal users from `users` to `internal_users` collection
+  - Preserved ObjectIds for reference integrity
+  - Created backup collection: `users_backup_pre_segregation`
+
+- **Cleanup Script** (`api/src/scripts/cleanup-migrated-users.ts`)
+  - Removes migrated internal users from `users` collection
+  - Requires explicit confirmation via environment variable
+
+- **Rollback Script** (`api/src/scripts/rollback-user-segregation.ts`)
+  - Restores internal users back to `users` collection if needed
+
+### Security
+
+- **Role-Based Access Control**
+  - Internal user endpoints restricted to SUPER_ADMIN and ADMIN roles
+  - Member endpoints accessible by SUPER_ADMIN, ADMIN, TPA, and OPS roles
+  - Enhanced separation between internal and external user data
+
+### Documentation
+
+- Updated `PROJECT_OVERVIEW.md` with new architecture
+- Updated `LATEST_API_ENDPOINTS_ADMIN.md` with new endpoints
+- Updated `DATABASE_AND_CONFIG.md` with new collections
+- Created migration testing guides
+
+---
+
 ## [Unreleased] - 2025-12-09
 
 ### Added

@@ -355,7 +355,10 @@ OPD Wallet consists of **6 integrated platforms** (3 active + 3 planned), each d
 - ✅ **User Authentication & Security**
   - Secure login system with encrypted passwords
   - JWT token-based authentication
-  - Role-based access control (Member, Doctor, Admin, Super Admin)
+  - Role-based access control with segregated user types:
+    - **External Users** (stored in `users` collection): Members (MEMBER), Doctors (DOCTOR)
+    - **Internal Users** (stored in `internal_users` collection): Staff (SUPER_ADMIN, ADMIN, TPA, TPA_ADMIN, TPA_USER, FINANCE_USER, OPS)
+  - Separate API endpoints for member management (`/api/members`) and internal user management (`/api/internal-users`)
   - Session management across devices
 
 - ✅ **Wallet Management**

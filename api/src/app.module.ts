@@ -7,6 +7,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { MembersModule } from './modules/members/members.module';
+import { InternalUsersModule } from './modules/internal-users/internal-users.module';
 import { PoliciesModule } from './modules/policies/policies.module';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { HealthModule } from './health/health.module';
@@ -76,6 +78,8 @@ import configuration from './config/configuration';
     HealthModule,
     AuthModule,
     UsersModule,
+    MembersModule,
+    InternalUsersModule,
     PoliciesModule,
     AssignmentsModule,
     MastersModule,

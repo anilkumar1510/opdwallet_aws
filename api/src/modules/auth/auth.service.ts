@@ -5,12 +5,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { InternalUser, InternalUserDocument } from '../internal-users/schemas/internal-user.schema';
 import { UserStatus } from '@/common/constants/status.enum';
+import { UserRole } from '@/common/constants/roles.enum';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(InternalUser.name) private internalUserModel: Model<InternalUserDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -19,27 +22,42 @@ export class AuthService {
     console.log('[AUTH DEBUG] Login attempt for email:', email);
     console.log('[AUTH DEBUG] Looking for user with email:', email.toLowerCase());
 
-    const user = await this.userModel.findOne({
+    // Try members/doctors collection first (most common)
+    let user = await this.userModel.findOne({
       email: email.toLowerCase(),
       status: UserStatus.ACTIVE,
     });
 
+    let userType: 'member' | 'internal' | 'doctor' = 'member';
+    let source: 'users' | 'internal_users' = 'users';
+
+    // If not found in users, try internal_users collection
     if (!user) {
-      console.log('[AUTH DEBUG] User not found or not active');
-      console.log('[AUTH DEBUG] Checking if user exists with any status...');
-      const anyUser = await this.userModel.findOne({ email: email.toLowerCase() });
-      if (anyUser) {
-        console.log('[AUTH DEBUG] User exists but status is:', anyUser.status);
-        console.log('[AUTH DEBUG] User details:', {
-          id: anyUser._id,
-          email: anyUser.email,
-          name: anyUser.name,
-          role: anyUser.role,
-          status: anyUser.status,
-        });
-      } else {
-        console.log('[AUTH DEBUG] No user found with this email at all');
+      console.log('[AUTH DEBUG] Not found in users collection, checking internal_users...');
+      user = await this.internalUserModel.findOne({
+        email: email.toLowerCase(),
+        status: UserStatus.ACTIVE,
+      }) as any;
+
+      if (user) {
+        userType = 'internal';
+        source = 'internal_users';
+        console.log('[AUTH DEBUG] Found in internal_users collection');
       }
+    } else {
+      // Determine user type based on role
+      if (user.role === UserRole.MEMBER) {
+        userType = 'member';
+      } else if (user.role === UserRole.DOCTOR) {
+        userType = 'doctor';
+      } else {
+        userType = 'internal';
+      }
+      console.log('[AUTH DEBUG] Found in users collection');
+    }
+
+    if (!user) {
+      console.log('[AUTH DEBUG] User not found in any collection or not active');
       return null;
     }
 
@@ -49,6 +67,8 @@ export class AuthService {
       name: user.name,
       role: user.role,
       status: user.status,
+      userType,
+      source,
       hasPassword: !!user.passwordHash,
     });
 
@@ -62,7 +82,11 @@ export class AuthService {
 
     console.log('[AUTH DEBUG] Authentication successful for user:', user.email);
     const { passwordHash, ...result } = user.toObject();
-    return result;
+    return {
+      ...result,
+      userType,
+      source,
+    };
   }
 
   async login(user: any) {
@@ -71,6 +95,7 @@ export class AuthService {
       sub: user._id.toString(),
       role: user.role,
       memberId: user.memberId,
+      userType: user.userType || (user.role === UserRole.MEMBER || user.role === UserRole.DOCTOR ? 'member' : 'internal'),
     };
 
     const token = this.jwtService.sign(payload);

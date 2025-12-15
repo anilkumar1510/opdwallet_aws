@@ -5,6 +5,11 @@ import { UserStatus, RelationshipType } from '@/common/constants/status.enum';
 
 export type UserDocument = User & Document;
 
+/**
+ * User Schema
+ * For external users only: MEMBER and DOCTOR
+ * Internal staff (SUPER_ADMIN, ADMIN, TPA, etc.) use InternalUser collection
+ */
 @Schema({
   timestamps: true,
   collection: 'users',
@@ -109,7 +114,7 @@ export class User {
 
   @Prop({
     required: true,
-    enum: UserRole,
+    enum: [UserRole.MEMBER, UserRole.DOCTOR],
     default: UserRole.MEMBER,
   })
   role!: UserRole;
@@ -146,6 +151,13 @@ UserSchema.index({ primaryMemberId: 1, relationship: 1 });
 UserSchema.index({ cugId: 1 });
 
 UserSchema.pre('save', async function(next) {
+  // Validate that role is only MEMBER or DOCTOR
+  if (this.role !== UserRole.MEMBER && this.role !== UserRole.DOCTOR) {
+    throw new Error(
+      'Users collection only allows MEMBER and DOCTOR roles. Use InternalUser collection for internal staff.',
+    );
+  }
+
   // Auto-generate fullName
   if (this.name) {
     this.name.fullName = `${this.name.firstName} ${this.name.lastName}`;

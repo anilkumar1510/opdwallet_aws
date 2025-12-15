@@ -51,7 +51,12 @@ All services communicate through an internal Docker network. Only Nginx is expos
 ## MongoDB Collections
 
 ### Core Collections
-- **users** - All users including members, admins, doctors, TPA users, and finance users with authentication details
+
+#### User Management (Segregated as of v1.1.0)
+- **users** - External users: members (MEMBER role) and doctors (DOCTOR role) with authentication details, health information, and family relationships
+- **internal_users** - Internal users: staff members (SUPER_ADMIN, ADMIN, TPA, TPA_ADMIN, TPA_USER, FINANCE_USER, OPS roles) with employee details and department information
+
+#### Policies & Assignments
 - **policies** - Insurance policies for corporate clients with coverage details
 - **plan_configs** - Plan configurations that define wallet categories, limits, and copay percentages for each policy. Also includes service-level configurations (allowedSpecialties, allowedLabServiceCategories, allowedServiceCodes) to control which specific services are available per benefit category
 - **userPolicyAssignments** - Links users to their policies with effective start and end dates
@@ -105,7 +110,10 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **auditLogs** - Audit trail of all admin actions for compliance
 - **counters** - Auto-increment counters for generating sequential IDs
 
-**Total Collections**: 35
+### Migration & Backup
+- **users_backup_pre_segregation** - Backup of users collection before user segregation migration (contains original 12 users including both members and internal users)
+
+**Total Collections**: 36 (plus 1 backup collection)
 
 ---
 

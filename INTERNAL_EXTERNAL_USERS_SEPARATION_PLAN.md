@@ -1,5 +1,11 @@
 # Internal vs External Users Separation Plan
 
+**Status:** ✅ **COMPLETED** - December 15, 2025
+**Version:** 1.1.0
+**Migration:** Successfully executed and tested locally
+
+---
+
 ## Executive Summary
 
 **Problem:** All users (internal staff and external members) are currently stored in the same `users` collection, differentiated only by the `role` field.

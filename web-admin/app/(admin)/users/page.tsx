@@ -7,7 +7,8 @@ import { apiFetch } from '@/lib/api'
 
 export default function UsersPage() {
   const router = useRouter()
-  const [users, setUsers] = useState<any[]>([])
+  const [externalUsers, setExternalUsers] = useState<any[]>([])
+  const [internalUsers, setInternalUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'external' | 'internal'>('external')
@@ -23,23 +24,41 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await apiFetch('/api/users?limit=100')
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.data || [])
+      // Fetch external users (members) from /api/members
+      console.log('[Users Page] Fetching external users from /api/members')
+      const membersResponse = await apiFetch('/api/members?limit=100')
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json()
+        setExternalUsers(membersData.data || [])
+        console.log('[Users Page] External users fetched:', membersData.data?.length || 0)
+      }
+
+      // Fetch internal users (staff) from /api/internal-users
+      console.log('[Users Page] Fetching internal users from /api/internal-users')
+      const internalResponse = await apiFetch('/api/internal-users?limit=100')
+      if (internalResponse.ok) {
+        const internalData = await internalResponse.json()
+        setInternalUsers(internalData.data || [])
+        console.log('[Users Page] Internal users fetched:', internalData.data?.length || 0)
       }
     } catch (error) {
-      console.error('Failed to fetch users')
+      console.error('[Users Page] Failed to fetch users:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleResetPassword = async (userId: string) => {
+  const handleResetPassword = async (userId: string, userType: 'external' | 'internal') => {
     if (confirm('Reset password for this user? A temporary password will be generated.')) {
       setResettingPasswordId(userId)
       try {
-        const response = await apiFetch(`/api/users/${userId}/reset-password`, {
+        // Use correct endpoint based on user type
+        const endpoint = userType === 'external'
+          ? `/api/members/${userId}/reset-password`
+          : `/api/internal-users/${userId}/reset-password`
+        console.log(`[Users Page] Resetting password via ${endpoint}`)
+
+        const response = await apiFetch(endpoint, {
           method: 'POST',
         })
         if (response.ok) {
@@ -63,7 +82,13 @@ export default function UsersPage() {
 
     setSettingPassword(true)
     try {
-      const response = await apiFetch(`/api/users/${selectedUser._id}/set-password`, {
+      // Determine user type based on current tab
+      const endpoint = activeTab === 'external'
+        ? `/api/members/${selectedUser._id}/set-password`
+        : `/api/internal-users/${selectedUser._id}/set-password`
+      console.log(`[Users Page] Setting password via ${endpoint}`)
+
+      const response = await apiFetch(endpoint, {
         method: 'POST',
         body: JSON.stringify({ password: newPassword }),
       })
@@ -83,11 +108,6 @@ export default function UsersPage() {
       setSettingPassword(false)
     }
   }
-
-  // Separate users by type
-  const internalRoles = ['SUPER_ADMIN', 'ADMIN', 'TPA', 'OPS']
-  const internalUsers = users.filter(user => internalRoles.includes(user.role))
-  const externalUsers = users.filter(user => user.role === 'MEMBER')
 
   const currentUsers = activeTab === 'internal' ? internalUsers : externalUsers
 
@@ -144,7 +164,7 @@ export default function UsersPage() {
           />
         </div>
         <button
-          onClick={() => router.push('/users/new')}
+          onClick={() => router.push(`/users/new?type=${activeTab === 'external' ? 'external' : 'internal'}`)}
           className="btn-primary"
         >
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,7 +189,7 @@ export default function UsersPage() {
             </p>
             {!search && (
               <button
-                onClick={() => router.push('/users/new')}
+                onClick={() => router.push(`/users/new?type=${activeTab === 'external' ? 'external' : 'internal'}`)}
                 className="btn-primary mt-4"
               >
                 Add User
@@ -240,7 +260,11 @@ export default function UsersPage() {
                     </td>
                     <td className="hidden md:table-cell">
                       <div className="text-gray-900">{user.email}</div>
-                      <div className="text-xs text-gray-500">{user.phone}</div>
+                      <div className="text-xs text-gray-500">
+                        {typeof user.phone === 'object' && user.phone
+                          ? `${user.phone.countryCode || ''} ${user.phone.number || ''}`.trim()
+                          : user.phone || 'N/A'}
+                      </div>
                     </td>
                     {activeTab === 'internal' && (
                       <td className="hidden lg:table-cell">
@@ -273,7 +297,7 @@ export default function UsersPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleResetPassword(user._id)
+                            handleResetPassword(user._id, activeTab)
                           }}
                           className="btn-ghost p-1 text-xs"
                           title="Reset Password"

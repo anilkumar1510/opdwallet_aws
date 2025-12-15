@@ -16,21 +16,41 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ## Users Management
 
+### Members (External Users)
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /users | Create new user |
-| GET | /users | Get all users with pagination/filters |
-| GET | /users/:id | Get user by ID |
-| PUT | /users/:id | Update user |
-| POST | /users/:id/reset-password | Reset user password |
-| POST | /users/:id/set-password | Set user password |
-| GET | /users/:id/dependents | Get user dependents |
-| GET | /users/:id/assignments | Get user assignments |
-| DELETE | /users/:id | Delete user |
-| GET | /users/:id/addresses | Get user addresses |
-| POST | /users/:id/addresses | Create user address |
-| PATCH | /users/:id/addresses/:addressId/default | Set default address |
-| DELETE | /users/:id/addresses/:addressId | Delete address |
+| POST | /members | Create new member (external user) |
+| GET | /members | Get all members with pagination/filters |
+| GET | /members/:id | Get member by ID |
+| PUT | /members/:id | Update member |
+| DELETE | /members/:id | Delete member |
+| POST | /members/:id/reset-password | Reset member password |
+| POST | /members/:id/set-password | Set member password |
+| GET | /members/:id/dependents | Get member dependents (family members) |
+| GET | /members/:id/assignments | Get member policy assignments |
+| GET | /members/:id/addresses | Get member addresses |
+| POST | /members/:id/addresses | Create member address |
+| PATCH | /members/:id/addresses/:addressId/default | Set default address |
+| DELETE | /members/:id/addresses/:addressId | Delete address |
+
+### Internal Users (Staff)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /internal-users | Create new internal user (staff) |
+| GET | /internal-users | Get all internal users with pagination/filters |
+| GET | /internal-users/:id | Get internal user by ID |
+| PUT | /internal-users/:id | Update internal user |
+| POST | /internal-users/:id/reset-password | Reset internal user password |
+| POST | /internal-users/:id/set-password | Set internal user password |
+
+### Unified Users (Deprecated - for backward compatibility)
+
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | /users | Get all users (checks both collections) | ⚠️ Deprecated - use /members or /internal-users |
+| GET | /users/:id | Get user by ID (checks both collections) | ⚠️ Deprecated - use /members/:id or /internal-users/:id |
 
 ---
 

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 
-export default function NewUserPage() {
+function NewUserForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const userType = searchParams.get('type') || 'external' // Default to external if not specified
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
   const [cugs, setCugs] = useState<any[]>([])
@@ -26,6 +28,8 @@ export default function NewUserPage() {
     dateOfBirth: '',
     gender: 'MALE',
     bloodGroup: '',
+    department: '',
+    designation: '',
     address: {
       line1: '',
       line2: '',
@@ -76,6 +80,7 @@ export default function NewUserPage() {
     console.group('📄 [USER CREATION] Page Loaded')
     console.log('⏰ Page Load Time:', new Date().toISOString())
     console.log('📍 Current URL:', window.location.href)
+    console.log('👤 User Type from URL:', userType)
     console.log('🔧 Environment:')
     console.log('  - User Agent:', navigator.userAgent)
     console.log('  - Platform:', navigator.platform)
@@ -84,9 +89,18 @@ export default function NewUserPage() {
     console.log('  - Cookies Enabled:', navigator.cookieEnabled)
     console.groupEnd()
 
+    // Set default role based on userType from URL
+    if (userType === 'external') {
+      console.log('🔒 [USER CREATION] Locking role to MEMBER (from External Users tab)')
+      setFormData(prev => ({ ...prev, role: 'MEMBER' }))
+    } else {
+      console.log('🔓 [USER CREATION] Internal user - role must be selected from dropdown')
+      setFormData(prev => ({ ...prev, role: '' }))
+    }
+
     // Fetch active CUGs
     fetchActiveCugs()
-  }, [])
+  }, [userType])
 
   const fetchActiveCugs = async () => {
     try {
@@ -135,15 +149,31 @@ export default function NewUserPage() {
       return false
     }
 
-    // Check required fields
-    const requiredFields = {
+    // Determine if this is an internal user or member
+    const isInternalUser = formData.role !== 'MEMBER'
+    console.log('User Type:', isInternalUser ? 'INTERNAL USER' : 'MEMBER (EXTERNAL)')
+    console.log('Role:', formData.role)
+
+    // Common required fields for all users
+    const requiredFields: { [key: string]: string } = {
       email: formData.email,
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
       phone: formData.phone,
-      uhid: formData.uhid,
-      memberId: formData.memberId,
+    }
+
+    // Add role-specific required fields
+    if (isInternalUser) {
+      // Internal users require employeeId and role
+      requiredFields.employeeId = formData.employeeId
+      requiredFields.role = formData.role
+      console.log('Internal User - Requiring: email, password, firstName, lastName, phone, employeeId, role')
+    } else {
+      // Members (external users) require uhid and memberId
+      requiredFields.uhid = formData.uhid
+      requiredFields.memberId = formData.memberId
+      console.log('External User (Member) - Requiring: email, password, firstName, lastName, phone, uhid, memberId')
     }
 
     console.log('Checking required fields:')
@@ -160,7 +190,12 @@ export default function NewUserPage() {
     if (missingFields.length > 0) {
       console.error('❌ Missing required fields:', missingFields)
       console.groupEnd()
-      setErrors(['Please fill in all required fields (Email, Password, First Name, Last Name, Phone, UHID, Member ID)'])
+
+      const errorMessage = isInternalUser
+        ? 'Please fill in all required fields: Email, Password, First Name, Last Name, Phone, Employee ID, and Role'
+        : 'Please fill in all required fields: Email, Password, First Name, Last Name, Phone, UHID, and Member ID'
+
+      setErrors([errorMessage])
       return false
     }
 
@@ -185,25 +220,69 @@ export default function NewUserPage() {
       })
     }
 
-    const payload = {
-      uhid: formData.uhid,
-      memberId: formData.memberId,
-      employeeId: formData.employeeId || undefined,
-      cugId: formData.cugId || undefined,
-      corporateName: formData.corporateName || undefined,
+    // Determine if this is an internal user or member
+    const isInternalUser = ['SUPER_ADMIN', 'ADMIN', 'TPA', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_USER', 'OPS'].includes(formData.role)
+
+    console.log('User Type:', isInternalUser ? 'INTERNAL' : 'EXTERNAL (MEMBER)')
+
+    // Parse phone number - API expects object format { countryCode, number }
+    let phoneObject: any
+    if (formData.phone) {
+      // If phone starts with +, split into country code and number
+      if (formData.phone.startsWith('+')) {
+        const match = formData.phone.match(/^(\+\d{1,3})(.+)$/)
+        if (match) {
+          phoneObject = {
+            countryCode: match[1],
+            number: match[2].trim(),
+          }
+        } else {
+          phoneObject = {
+            countryCode: '+91', // Default to India
+            number: formData.phone,
+          }
+        }
+      } else {
+        // No country code, default to +91 (India)
+        phoneObject = {
+          countryCode: '+91',
+          number: formData.phone,
+        }
+      }
+    }
+
+    console.log('Phone Input:', formData.phone)
+    console.log('Phone Object:', phoneObject)
+
+    // Build payload based on user type
+    const payload: any = {
       email: formData.email,
-      phone: formData.phone,
+      phone: phoneObject,
       password: formData.password,
-      role: formData.role,
       status: formData.status,
       name: {
         firstName: formData.firstName,
         lastName: formData.lastName,
       },
-      dob: formData.dateOfBirth || undefined,
-      gender: formData.gender,
-      bloodGroup: formData.bloodGroup || undefined,
-      address: hasAddress ? formData.address : undefined,
+    }
+
+    // Add fields specific to internal users
+    if (isInternalUser) {
+      payload.employeeId = formData.employeeId
+      payload.role = formData.role
+      payload.department = formData.department || undefined
+      payload.designation = formData.designation || undefined
+    } else {
+      // Add fields specific to members (external users)
+      payload.uhid = formData.uhid
+      payload.memberId = formData.memberId
+      payload.cugId = formData.cugId || undefined
+      payload.corporateName = formData.corporateName || undefined
+      payload.dob = formData.dateOfBirth || undefined
+      payload.gender = formData.gender
+      payload.bloodGroup = formData.bloodGroup || undefined
+      payload.address = hasAddress ? formData.address : undefined
+      // Note: role is NOT sent for members - it's automatically set to MEMBER by the API
     }
 
     console.log('Built Payload Structure:')
@@ -278,10 +357,15 @@ export default function NewUserPage() {
       console.log('Payload Size:', new Blob([JSON.stringify(payload)]).size, 'bytes')
       console.groupEnd()
 
+      // Determine endpoint based on role
+      const isInternalUser = ['SUPER_ADMIN', 'ADMIN', 'TPA', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_USER', 'OPS'].includes(payload.role)
+      const endpoint = isInternalUser ? '/api/internal-users' : '/api/members'
+
       console.group('🌐 [USER CREATION] API Request')
       console.log('Method: POST')
-      console.log('URL: /api/users')
-      console.log('Full URL:', window.location.origin + '/api/users')
+      console.log('User Type:', isInternalUser ? 'INTERNAL' : 'EXTERNAL (MEMBER)')
+      console.log('URL:', endpoint)
+      console.log('Full URL:', window.location.origin + endpoint)
       console.log('Headers:', { 'Content-Type': 'application/json' })
       console.log('Credentials: include')
       console.log('Body:', JSON.stringify(payload))
@@ -289,7 +373,7 @@ export default function NewUserPage() {
 
       const requestStartTime = performance.now()
 
-      const response = await apiFetch('/api/users', {
+      const response = await apiFetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(payload),
       })
@@ -480,59 +564,64 @@ export default function NewUserPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="dateOfBirth" className="label">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                id="dateOfBirth"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleInputChange}
-                className="input"
-              />
-            </div>
+            {/* Member-specific personal details */}
+            {formData.role === 'MEMBER' && (
+              <>
+                <div>
+                  <label htmlFor="dateOfBirth" className="label">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    className="input"
+                  />
+                </div>
 
-            <div>
-              <label htmlFor="gender" className="label">
-                Gender
-              </label>
-              <select
-                id="gender"
-                name="gender"
-                value={formData.gender}
-                onChange={handleInputChange}
-                className="input"
-              >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
+                <div>
+                  <label htmlFor="gender" className="label">
+                    Gender
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className="input"
+                  >
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
 
-            <div>
-              <label htmlFor="bloodGroup" className="label">
-                Blood Group
-              </label>
-              <select
-                id="bloodGroup"
-                name="bloodGroup"
-                value={formData.bloodGroup}
-                onChange={handleInputChange}
-                className="input"
-              >
-                <option value="">Select blood group</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
-              </select>
-            </div>
+                <div>
+                  <label htmlFor="bloodGroup" className="label">
+                    Blood Group
+                  </label>
+                  <select
+                    id="bloodGroup"
+                    name="bloodGroup"
+                    value={formData.bloodGroup}
+                    onChange={handleInputChange}
+                    className="input"
+                  >
+                    <option value="">Select blood group</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                  </select>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -540,79 +629,155 @@ export default function NewUserPage() {
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="uhid" className="label">
-                UHID *
+            {/* Role Selection - Based on tab context */}
+            <div className="col-span-2">
+              <label htmlFor="role" className="label">
+                User Type *
               </label>
-              <input
-                type="text"
-                id="uhid"
-                name="uhid"
-                required
-                value={formData.uhid}
-                onChange={handleInputChange}
-                className="input"
-                placeholder="Unique Health ID"
-              />
+              {userType === 'external' ? (
+                // External user - role is locked to MEMBER
+                <div className="input bg-gray-50 cursor-not-allowed flex items-center justify-between">
+                  <span>Member (External User)</span>
+                  <span className="text-xs text-gray-500">
+                    From External Users tab
+                  </span>
+                </div>
+              ) : (
+                // Internal user - show role dropdown
+                <select
+                  id="role"
+                  name="role"
+                  required
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="input"
+                >
+                  <option value="">Select Role...</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="TPA">TPA</option>
+                  <option value="TPA_ADMIN">TPA Admin</option>
+                  <option value="TPA_USER">TPA User</option>
+                  <option value="FINANCE_USER">Finance User</option>
+                  <option value="OPS">Operations</option>
+                </select>
+              )}
             </div>
 
-            <div>
-              <label htmlFor="memberId" className="label">
-                Member ID *
-              </label>
-              <input
-                type="text"
-                id="memberId"
-                name="memberId"
-                required
-                value={formData.memberId}
-                onChange={handleInputChange}
-                className="input"
-                placeholder="MEM001"
-              />
-            </div>
+            {/* Member-specific fields (External Users) */}
+            {formData.role === 'MEMBER' && (
+              <>
+                <div>
+                  <label htmlFor="uhid" className="label">
+                    UHID *
+                  </label>
+                  <input
+                    type="text"
+                    id="uhid"
+                    name="uhid"
+                    required
+                    value={formData.uhid}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="Unique Health ID"
+                  />
+                </div>
 
-            <div>
-              <label htmlFor="cugId" className="label">
-                Corporate Group
-              </label>
-              <select
-                id="cugId"
-                name="cugId"
-                value={formData.cugId}
-                onChange={(e) => {
-                  const selectedCug = cugs.find(c => c._id === e.target.value)
-                  setFormData({
-                    ...formData,
-                    cugId: e.target.value,
-                    corporateName: selectedCug?.companyName || ''
-                  })
-                }}
-                className="input"
-              >
-                <option value="">Select Corporate Group...</option>
-                {cugs.map((cug) => (
-                  <option key={cug._id} value={cug._id}>
-                    {cug.companyName}{cug.shortCode ? ` (${cug.shortCode})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div>
+                  <label htmlFor="memberId" className="label">
+                    Member ID *
+                  </label>
+                  <input
+                    type="text"
+                    id="memberId"
+                    name="memberId"
+                    required
+                    value={formData.memberId}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="MEM001"
+                  />
+                </div>
 
-            <div>
-              <label htmlFor="employeeId" className="label">
-                Employee ID
-              </label>
-              <input
-                type="text"
-                id="employeeId"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={handleInputChange}
-                className="input"
-                placeholder="EMP001"
-              />
-            </div>
+                <div>
+                  <label htmlFor="cugId" className="label">
+                    Corporate Group
+                  </label>
+                  <select
+                    id="cugId"
+                    name="cugId"
+                    value={formData.cugId}
+                    onChange={(e) => {
+                      const selectedCug = cugs.find(c => c._id === e.target.value)
+                      setFormData({
+                        ...formData,
+                        cugId: e.target.value,
+                        corporateName: selectedCug?.companyName || ''
+                      })
+                    }}
+                    className="input"
+                  >
+                    <option value="">Select Corporate Group...</option>
+                    {cugs.map((cug) => (
+                      <option key={cug._id} value={cug._id}>
+                        {cug.companyName}{cug.shortCode ? ` (${cug.shortCode})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* Internal user-specific fields */}
+            {formData.role !== 'MEMBER' && (
+              <>
+                <div>
+                  <label htmlFor="employeeId" className="label">
+                    Employee ID *
+                  </label>
+                  <input
+                    type="text"
+                    id="employeeId"
+                    name="employeeId"
+                    required
+                    value={formData.employeeId}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="EMP001"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="department" className="label">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    id="department"
+                    name="department"
+                    value={formData.department || ''}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="e.g., IT, Finance, Operations"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="designation" className="label">
+                    Designation
+                  </label>
+                  <input
+                    type="text"
+                    id="designation"
+                    name="designation"
+                    value={formData.designation || ''}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="e.g., Manager, Executive"
+                  />
+                </div>
+              </>
+            )}
 
             {formData.corporateName && (
               <div>
@@ -627,24 +792,6 @@ export default function NewUserPage() {
                 <p className="text-xs text-gray-500 mt-1">Auto-populated from CUG</p>
               </div>
             )}
-
-            <div>
-              <label htmlFor="role" className="label">
-                Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="input"
-              >
-                <option value="MEMBER">Member</option>
-                <option value="OPS">Operations</option>
-                <option value="ADMIN">Admin</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-              </select>
-            </div>
 
             <div>
               <label htmlFor="status" className="label">
@@ -803,5 +950,12 @@ export default function NewUserPage() {
         </div>
       </form>
     </div>
+  )
+}
+export default function NewUserPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Loading...</div>}>
+      <NewUserForm />
+    </Suspense>
   )
 }
