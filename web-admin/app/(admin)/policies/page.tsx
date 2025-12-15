@@ -51,12 +51,14 @@ function PoliciesContent() {
         console.log('[DEBUG PoliciesPage] User authorized, setting currentUser')
         setCurrentUser(userData)
       } else {
-        console.error('[DEBUG PoliciesPage] Auth failed, redirecting to /')
-        router.push('/')
+        console.error('[DEBUG PoliciesPage] Auth failed - user will be redirected by middleware')
+        // Don't redirect here - let middleware handle it
+        setError('Authentication required')
       }
     } catch (error) {
       console.error('[DEBUG PoliciesPage] Auth error:', error)
-      router.push('/')
+      // Don't redirect here - let middleware handle it
+      setError('Failed to verify authentication')
     }
   }, [router])
 

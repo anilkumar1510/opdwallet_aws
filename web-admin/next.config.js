@@ -24,6 +24,8 @@ const nextConfig = {
 
     // With basePath: '/admin', all routes are automatically prefixed
     // So /api/:path* will match requests to /admin/api/:path* from the frontend
+    // IMPORTANT: We have custom API routes for auth endpoints that handle cookies properly
+    // Those routes take precedence over rewrites automatically in Next.js
     return [
       {
         source: '/api/:path*',

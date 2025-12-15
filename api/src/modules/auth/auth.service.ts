@@ -115,7 +115,14 @@ export class AuthService {
   }
 
   async getCurrentUser(userId: string) {
-    const user = await this.userModel.findById(userId).select('-passwordHash');
+    // Try members/doctors collection first
+    let user = await this.userModel.findById(userId).select('-passwordHash');
+
+    // If not found, try internal_users collection
+    if (!user) {
+      user = await this.internalUserModel.findById(userId).select('-passwordHash') as any;
+    }
+
     if (!user) {
       throw new UnauthorizedException();
     }
