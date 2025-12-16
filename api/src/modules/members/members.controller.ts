@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { AssignmentsService } from '../assignments/assignments.service';
 
 /**
  * Members Controller
@@ -30,7 +31,10 @@ import { UserRole } from '@/common/constants/roles.enum';
 @Controller('members')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MembersController {
-  constructor(private readonly membersService: MembersService) {}
+  constructor(
+    private readonly membersService: MembersService,
+    private readonly assignmentsService: AssignmentsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
@@ -89,6 +93,22 @@ export class MembersController {
     // First get the member to get their memberId
     const member = await this.membersService.findOne(id);
     return this.membersService.findDependents((member as any).memberId);
+  }
+
+  @Get(':id/assignments')
+  @Roles(
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.TPA,
+    UserRole.TPA_ADMIN,
+    UserRole.TPA_USER,
+    UserRole.OPS,
+  )
+  @ApiOperation({ summary: 'Get policy assignments for a member' })
+  @ApiResponse({ status: 200, description: 'Assignments retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid userId format' })
+  async getMemberAssignments(@Param('id') userId: string) {
+    return this.assignmentsService.getUserAssignments(userId);
   }
 
   @Put(':id')

@@ -6,6 +6,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { InternalUser, InternalUserSchema } from '../internal-users/schemas/internal-user.schema';
 import { CounterModule } from '../counters/counter.module';
 import { CommonUserService } from '../users/common-user.service';
+import { AssignmentsModule } from '../assignments/assignments.module';
 
 /**
  * Members Module
@@ -18,6 +19,7 @@ import { CommonUserService } from '../users/common-user.service';
       { name: InternalUser.name, schema: InternalUserSchema },
     ]),
     CounterModule,
+    AssignmentsModule,
   ],
   controllers: [MembersController],
   providers: [MembersService, CommonUserService],

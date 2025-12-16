@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { SpecialtiesProvider } from '@/lib/providers/specialties-provider'
 import { UserProvider, useUser } from '@/lib/providers/user-provider'
@@ -79,6 +80,18 @@ function AdminLayoutContent({
                       pathname.startsWith('/forgot-password') || pathname.startsWith('/admin/forgot-password') ||
                       pathname.startsWith('/reset-password') || pathname.startsWith('/admin/reset-password')
   const hideAdminNav = isOperationsRoute || isTPARoute || isFinanceRoute || isAuthRoute
+
+  // Check if user has admin role - redirect non-admins to login
+  React.useEffect(() => {
+    if (!isAuthRoute && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'OPS') {
+      handleLogout()
+    }
+  }, [user, isAuthRoute])
+
+  // Show nothing while redirecting non-admin users
+  if (!isAuthRoute && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'OPS') {
+    return null
+  }
 
   // Auth is handled by middleware, user data loaded via UserProvider
   return (
