@@ -203,4 +203,23 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 ---
 
-**Total Endpoints: ~67**
+## Dental Services (Member)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /dental/member/services | Get available dental services for member |
+| GET | /dental/clinics-near | Get clinics near location offering dental services |
+| GET | /dental/slots/:clinicId/available | Get available dental appointment slots for clinic |
+| GET | /dental/payment-preview | Get payment preview/breakdown for dental appointment |
+| POST | /dental/appointments | Book dental appointment |
+| GET | /dental/member/appointments | Get member's dental appointments |
+| GET | /dental/appointments/:appointmentId/invoice | Get dental appointment invoice |
+
+**Notes:**
+- Dental services availability depends on member's policy coverage
+- Payment calculation includes policy copay and service transaction limits
+- Appointments require available slot and sufficient wallet balance
+
+---
+
+**Total Endpoints: ~74**

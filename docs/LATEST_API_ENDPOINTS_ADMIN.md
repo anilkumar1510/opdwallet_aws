@@ -201,6 +201,25 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
+## Operations - Dental Appointments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /dental/admin/appointments | Get all dental appointments with filters |
+| PATCH | /dental/admin/appointments/:appointmentId/confirm | Confirm dental appointment |
+| PATCH | /dental/admin/appointments/:appointmentId/cancel | Cancel dental appointment |
+| PATCH | /dental/admin/appointments/:appointmentId/reschedule | Reschedule dental appointment |
+| PATCH | /dental/admin/appointments/:appointmentId/mark-completed | Mark dental appointment as completed |
+| PATCH | /dental/admin/appointments/:appointmentId/mark-no-show | Mark dental appointment as no-show |
+
+**Notes:**
+- All endpoints require authentication (JWT token via cookie)
+- Access restricted to SUPER_ADMIN, ADMIN, and OPS roles
+- Cancellation triggers wallet refund to member
+- Appointment status workflow: PENDING → CONFIRMED → COMPLETED/CANCELLED/NO_SHOW
+
+---
+
 ## Specialties
 
 | Method | Endpoint | Description |
@@ -412,4 +431,4 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
-**Total Endpoints: ~146**
+**Total Endpoints: ~152**
