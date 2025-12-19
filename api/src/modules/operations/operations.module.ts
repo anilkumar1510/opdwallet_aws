@@ -10,6 +10,7 @@ import { LabOrder, LabOrderSchema } from '../lab/schemas/lab-order.schema';
 import { WalletModule } from '../wallet/wallet.module';
 import { AssignmentsModule } from '../assignments/assignments.module';
 import { ClinicServicePricingModule } from './dental-services/clinic-service-pricing.module';
+import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ClinicServicePricingModule } from './dental-services/clinic-service-pri
     WalletModule,
     AssignmentsModule,
     ClinicServicePricingModule,
+    DentalBookingsModule,
   ],
   controllers: [OperationsController],
   providers: [OperationsService],

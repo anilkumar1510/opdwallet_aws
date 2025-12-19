@@ -590,4 +590,51 @@ export class ClinicServicePricingService {
       data: slot,
     };
   }
+
+  /**
+   * Get all clinics that have a specific service enabled
+   * Used by dental bookings module for clinic search
+   */
+  async getClinicsWithServiceEnabled(serviceCode: string) {
+    console.log(`[ClinicServicePricing] Getting clinics with service ${serviceCode} enabled`);
+
+    // Find all pricing records where this service is enabled
+    const enabledPricings = await this.pricingModel
+      .find({
+        serviceCode: serviceCode.toUpperCase(),
+        isEnabled: true,
+        category: DENTAL_CATEGORY,
+      })
+      .lean();
+
+    console.log(`[ClinicServicePricing] Found ${enabledPricings.length} clinics with service enabled`);
+
+    // Get clinic details for each enabled pricing
+    const clinicsWithService = await Promise.all(
+      enabledPricings.map(async (pricing) => {
+        const clinic = await this.clinicModel
+          .findOne({
+            clinicId: pricing.clinicId,
+            isActive: true,
+          })
+          .lean();
+
+        if (!clinic) {
+          return null;
+        }
+
+        return {
+          clinicId: clinic.clinicId,
+          name: clinic.name,
+          address: clinic.address,
+          contactNumber: clinic.contactNumber,
+          servicePrice: pricing.price || 0,
+          currency: pricing.currency || 'INR',
+        };
+      }),
+    );
+
+    // Filter out null values (clinics that don't exist or are inactive)
+    return clinicsWithService.filter((clinic) => clinic !== null);
+  }
 }

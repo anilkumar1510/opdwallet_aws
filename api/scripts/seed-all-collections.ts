@@ -62,12 +62,12 @@ async function seedDatabase() {
     // 3. Relationship Master
     console.log('   [3/9] Seeding relationship_masters...');
     await db.collection('relationship_masters').insertMany([
-      { relationshipCode: 'SELF', relationshipName: 'Self', displayName: 'Self', isActive: true, sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
-      { relationshipCode: 'SPOUSE', relationshipName: 'Spouse', displayName: 'Spouse', isActive: true, sortOrder: 2, createdAt: new Date(), updatedAt: new Date() },
+      { relationshipCode: 'REL001', relationshipName: 'Self', displayName: 'Self', isActive: true, sortOrder: 1, createdAt: new Date(), updatedAt: new Date() },
+      { relationshipCode: 'REL002', relationshipName: 'Spouse', displayName: 'Spouse', isActive: true, sortOrder: 2, createdAt: new Date(), updatedAt: new Date() },
       { relationshipCode: 'SON', relationshipName: 'Son', displayName: 'Son', isActive: true, sortOrder: 3, createdAt: new Date(), updatedAt: new Date() },
       { relationshipCode: 'DAUGHTER', relationshipName: 'Daughter', displayName: 'Daughter', isActive: true, sortOrder: 4, createdAt: new Date(), updatedAt: new Date() },
-      { relationshipCode: 'FATHER', relationshipName: 'Father', displayName: 'Father', isActive: true, sortOrder: 5, createdAt: new Date(), updatedAt: new Date() },
-      { relationshipCode: 'MOTHER', relationshipName: 'Mother', displayName: 'Mother', isActive: true, sortOrder: 6, createdAt: new Date(), updatedAt: new Date() },
+      { relationshipCode: 'REL004', relationshipName: 'Father', displayName: 'Father', isActive: true, sortOrder: 5, createdAt: new Date(), updatedAt: new Date() },
+      { relationshipCode: 'REL005', relationshipName: 'Mother', displayName: 'Mother', isActive: true, sortOrder: 6, createdAt: new Date(), updatedAt: new Date() },
     ]);
     console.log('   ✅ Relationship masters seeded');
 

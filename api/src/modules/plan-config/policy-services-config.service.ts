@@ -465,9 +465,9 @@ export class PolicyServicesConfigService {
       CAT003: 'CAT003',
       CAT004: 'CAT004',
       CAT005: 'CAT005',
-      CAT006: 'dental',
-      CAT007: 'vision',
-      CAT008: 'wellness',
+      CAT006: 'CAT006',
+      CAT007: 'CAT007',
+      CAT008: 'CAT008',
     };
 
     return (keyMap as any)[categoryId] || categoryId;

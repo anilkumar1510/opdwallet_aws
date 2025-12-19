@@ -8,6 +8,7 @@ export enum TransactionServiceType {
   CLAIM = 'CLAIM',
   LAB_ORDER = 'LAB_ORDER',
   PHARMACY = 'PHARMACY',
+  DENTAL = 'DENTAL',
 }
 
 export enum TransactionStatus {

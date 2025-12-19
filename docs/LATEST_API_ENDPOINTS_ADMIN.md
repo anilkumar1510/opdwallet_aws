@@ -201,22 +201,49 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
-## Operations - Dental Appointments
+## Operations - Dental Bookings
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /dental/admin/appointments | Get all dental appointments with filters |
-| PATCH | /dental/admin/appointments/:appointmentId/confirm | Confirm dental appointment |
-| PATCH | /dental/admin/appointments/:appointmentId/cancel | Cancel dental appointment |
-| PATCH | /dental/admin/appointments/:appointmentId/reschedule | Reschedule dental appointment |
-| PATCH | /dental/admin/appointments/:appointmentId/mark-completed | Mark dental appointment as completed |
-| PATCH | /dental/admin/appointments/:appointmentId/mark-no-show | Mark dental appointment as no-show |
+| GET | /admin/dental-bookings | List all dental bookings with filters (status, clinic, service, date range, search) |
+| PATCH | /admin/dental-bookings/:bookingId/confirm | Confirm pending dental booking |
+| PATCH | /admin/dental-bookings/:bookingId/admin-cancel | Cancel booking with refund (admin action) |
+| PATCH | /admin/dental-bookings/:bookingId/reschedule | Reschedule booking to different slot |
+| PATCH | /admin/dental-bookings/:bookingId/no-show | Mark booking as no-show (appointment time must have passed) |
+| PATCH | /admin/dental-bookings/:bookingId/complete | Mark booking as completed and generate invoice |
+| GET | /admin/dental-bookings/:bookingId/invoice | Download invoice PDF for completed booking |
+
+**Query Parameters for GET /admin/dental-bookings:**
+- `status`: Filter by booking status (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW)
+- `clinicId`: Filter by clinic
+- `serviceCode`: Filter by dental service code
+- `dateFrom`: Filter bookings from date (YYYY-MM-DD)
+- `dateTo`: Filter bookings to date (YYYY-MM-DD)
+- `searchTerm`: Search by patient name or booking ID
+- `page`: Page number (default: 1)
+- `limit`: Results per page (default: 20)
+
+**Reschedule Body:**
+```json
+{
+  "slotId": "slot-configuration-id",
+  "appointmentDate": "YYYY-MM-DD",
+  "appointmentTime": "HH:mm",
+  "reason": "Reason for rescheduling"
+}
+```
 
 **Notes:**
 - All endpoints require authentication (JWT token via cookie)
 - Access restricted to SUPER_ADMIN, ADMIN, and OPS roles
-- Cancellation triggers wallet refund to member
-- Appointment status workflow: PENDING → CONFIRMED → COMPLETED/CANCELLED/NO_SHOW
+- Booking status workflow: PENDING_CONFIRMATION → CONFIRMED → COMPLETED/CANCELLED/NO_SHOW
+- Admin cancellation automatically processes wallet refund
+- Rescheduling validates new slot availability before updating
+- No-show requires appointment time to have passed (validates in IST timezone)
+- Completing booking automatically generates PDF invoice
+- Bookings are linked to dental service slots (prevents double booking)
+- Payment breakdown includes copay calculation and service transaction limits
+- All bookings create transaction summary records for audit trail
 
 ---
 
@@ -431,4 +458,4 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
-**Total Endpoints: ~152**
+**Total Endpoints: ~158**

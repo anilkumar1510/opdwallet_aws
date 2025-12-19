@@ -203,23 +203,71 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 ---
 
-## Dental Services (Member)
+## Dental Bookings (Member)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /dental/member/services | Get available dental services for member |
-| GET | /dental/clinics-near | Get clinics near location offering dental services |
-| GET | /dental/slots/:clinicId/available | Get available dental appointment slots for clinic |
-| GET | /dental/payment-preview | Get payment preview/breakdown for dental appointment |
-| POST | /dental/appointments | Book dental appointment |
-| GET | /dental/member/appointments | Get member's dental appointments |
-| GET | /dental/appointments/:appointmentId/invoice | Get dental appointment invoice |
+| GET | /member/benefits/CAT006/services | Get dental services assigned to member based on policy |
+| GET | /dental-bookings/clinics?serviceCode=:code&pincode=:pincode | Get clinics offering specific dental service by pincode/city |
+| GET | /dental-bookings/slots?clinicId=:id&date=:date | Get available time slots for clinic on specific date |
+| POST | /dental-bookings/validate | Pre-validate booking and return payment breakdown |
+| POST | /dental-bookings | Create dental booking with payment processing |
+| GET | /dental-bookings/user/:userId | Get all dental bookings for user |
+| GET | /dental-bookings/:bookingId | Get single dental booking details |
+| PUT | /dental-bookings/:bookingId/cancel | Cancel dental booking and process refund (24 hours before appointment) |
+| GET | /dental-bookings/:bookingId/invoice | Download invoice PDF for completed booking |
+
+**Dental Booking Flow:**
+1. Get assigned dental services from policy (CAT006 category)
+2. Search clinics by pincode offering selected service
+3. Select patient (self or family member)
+4. View available slots and select date/time
+5. Validate booking to get payment breakdown
+6. Confirm booking with payment processing
+7. View bookings in member portal
+8. Download invoice after booking completion
+
+**Payment Scenarios:**
+- **Wallet Only**: Sufficient balance, no copay → Debit wallet immediately, status: CONFIRMED
+- **Wallet + Copay**: Sufficient balance, copay required → Debit wallet for insurance portion, create payment request for copay, status: PENDING_PAYMENT
+- **Insufficient Balance**: Create payment request for shortfall + copay, status: PENDING_PAYMENT
+
+**Validate Booking Request:**
+```json
+{
+  "patientId": "member-or-family-member-id",
+  "serviceCode": "DEN001",
+  "clinicId": "CLN-001",
+  "appointmentDate": "2025-12-20",
+  "appointmentTime": "09:00",
+  "slotId": "slot-configuration-id"
+}
+```
+
+**Validate Booking Response:**
+```json
+{
+  "billAmount": 5000,
+  "insuranceEligibleAmount": 5000,
+  "insurancePayment": 4000,
+  "excessAmount": 1000,
+  "copayAmount": 500,
+  "totalMemberPayment": 1500,
+  "walletDebitAmount": 4000,
+  "breakdown": { "detailed payment calculation" }
+}
+```
 
 **Notes:**
-- Dental services availability depends on member's policy coverage
-- Payment calculation includes policy copay and service transaction limits
-- Appointments require available slot and sufficient wallet balance
+- Dental services availability depends on member's policy coverage (CAT006)
+- Payment calculation includes copay based on relationship and service transaction limits
+- Wallet deductions tracked with categoryCode: 'CAT006'
+- Bookings require available slot capacity (prevents double booking)
+- Cancellation allowed up to 24 hours before appointment, processes refund to wallet
+- Invoice generated automatically when booking is completed by operations
+- All bookings create transaction summary records for audit trail
+- Invoice includes payment breakdown, service details, and clinic information
 
 ---
 
-**Total Endpoints: ~74**
+**Total Endpoints: ~76**

@@ -5,12 +5,14 @@ import { PaymentService } from './payment.service';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
 import { CounterModule } from '../counters/counter.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
+import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
     CounterModule,
     forwardRef(() => AppointmentsModule),
+    forwardRef(() => DentalBookingsModule),
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

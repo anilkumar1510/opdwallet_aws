@@ -90,8 +90,66 @@ export default function PaymentPage() {
         const bookingData = JSON.parse(pendingBookingData);
         console.log('📦 [PaymentPage] Booking data:', JSON.stringify(bookingData, null, 2));
 
+        // Complete the dental booking creation if pending
+        if (bookingData.serviceType === 'DENTAL') {
+          console.log('🦷 [PaymentPage] Creating dental booking with booking data...');
+
+          // Verify we have all required fields for dental booking
+          if (!bookingData.serviceDetails?.clinicId || !bookingData.serviceDetails?.serviceCode || !bookingData.serviceDetails?.slotId || !bookingData.serviceDetails?.date || !bookingData.serviceDetails?.time) {
+            console.error('❌ [PaymentPage] Missing required dental booking details:', {
+              hasClinicId: !!bookingData.serviceDetails?.clinicId,
+              hasServiceCode: !!bookingData.serviceDetails?.serviceCode,
+              hasSlotId: !!bookingData.serviceDetails?.slotId,
+              hasDate: !!bookingData.serviceDetails?.date,
+              hasTime: !!bookingData.serviceDetails?.time,
+            });
+            throw new Error('Missing required dental booking details. Please try booking again.');
+          }
+
+          // Build dental booking payload
+          const dentalBookingPayload = {
+            patientId: bookingData.patientId,
+            clinicId: bookingData.serviceDetails.clinicId,
+            serviceCode: bookingData.serviceDetails.serviceCode,
+            serviceName: bookingData.serviceDetails.serviceName || '',
+            slotId: bookingData.serviceDetails.slotId,
+            price: bookingData.consultationFee,
+            appointmentDate: bookingData.serviceDetails.date,
+            appointmentTime: bookingData.serviceDetails.time,
+            paymentAlreadyProcessed: true  // Payment was already handled by PaymentProcessor
+          };
+
+          console.log('[PaymentPage] Dental booking payload:', JSON.stringify(dentalBookingPayload, null, 2));
+
+          // Create the dental booking
+          const dentalBookingResponse = await fetch('/api/dental-bookings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(dentalBookingPayload)
+          });
+
+          console.log('[PaymentPage] Dental booking response status:', dentalBookingResponse.status);
+
+          if (!dentalBookingResponse.ok) {
+            const errorText = await dentalBookingResponse.text();
+            console.error('[PaymentPage] Failed to create dental booking:', {
+              status: dentalBookingResponse.status,
+              statusText: dentalBookingResponse.statusText,
+              errorBody: errorText
+            });
+
+            throw new Error(`Failed to create dental booking: ${dentalBookingResponse.status} - ${errorText}`);
+          } else {
+            const dentalBookingData = await dentalBookingResponse.json();
+            console.log('[PaymentPage] Dental booking created successfully:', dentalBookingData);
+            console.log('✅ [PaymentPage] Booking ID:', dentalBookingData.bookingId);
+          }
+        }
         // Complete the appointment creation if pending
-        if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
+        else if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
           console.log('📅 [PaymentPage] Creating appointment with booking data...');
 
           // Verify we have all required fields

@@ -393,4 +393,31 @@
   .desktop-only {
     @apply hidden sm:block;
   }
+
+  /* Custom tab styles for Appointments/Dental Bookings tabs */
+  .appointments-tabs [role="tablist"] {
+    border-bottom: 1px solid #E5E7EB;
+    padding: 0;
+    background: transparent;
+  }
+
+  .appointments-tabs [role="tab"] {
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s;
+    background: transparent;
+    color: #6B7280;
+  }
+
+  .appointments-tabs [role="tab"]:hover {
+    color: #374151;
+    background: transparent;
+  }
+
+  .appointments-tabs [role="tab"][data-state="active"] {
+    border-bottom-color: #1E3A8C;
+    color: #1E3A8C;
+    background: transparent;
+  }
 }

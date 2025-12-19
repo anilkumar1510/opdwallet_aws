@@ -16,6 +16,7 @@ import {
 } from './schemas/payment.schema';
 import { CounterService } from '../counters/counter.service';
 import { AppointmentsService } from '../appointments/appointments.service';
+import { DentalBookingsService } from '../dental-bookings/dental-bookings.service';
 
 @Injectable()
 export class PaymentService {
@@ -25,6 +26,8 @@ export class PaymentService {
     private readonly counterService: CounterService,
     @Inject(forwardRef(() => AppointmentsService))
     private readonly appointmentsService: AppointmentsService,
+    @Inject(forwardRef(() => DentalBookingsService))
+    private readonly dentalBookingsService: DentalBookingsService,
   ) {}
 
   /**
@@ -138,6 +141,19 @@ export class PaymentService {
         console.log('✅ [PAYMENT SERVICE] Appointment confirmed successfully');
       } catch (error) {
         console.error('❌ [PAYMENT SERVICE] Failed to confirm appointment:', error);
+        // Don't throw error - payment is already marked as paid
+        // Log the error and continue
+      }
+    }
+
+    // If this is a dental booking payment, confirm the booking
+    if (payment.serviceType === ServiceType.DENTAL && payment._id) {
+      console.log('🦷 [PAYMENT SERVICE] Triggering dental booking confirmation for payment:', payment._id.toString());
+      try {
+        await this.dentalBookingsService.handlePaymentComplete(payment._id.toString());
+        console.log('✅ [PAYMENT SERVICE] Dental booking confirmed successfully');
+      } catch (error) {
+        console.error('❌ [PAYMENT SERVICE] Failed to confirm dental booking:', error);
         // Don't throw error - payment is already marked as paid
         // Log the error and continue
       }

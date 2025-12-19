@@ -26,7 +26,7 @@ interface PaymentProcessorProps {
   userId: string;
   patientId: string;
   patientName: string;
-  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION';
+  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL';
   serviceDetails: {
     doctorName: string;
     doctorId?: string;
@@ -34,6 +34,10 @@ interface PaymentProcessorProps {
     date?: string;
     time?: string;
     clinicName?: string;
+    clinicId?: string;
+    serviceCode?: string;
+    serviceName?: string;
+    slotId?: string;
   };
   onPaymentSuccess?: (transaction: any) => void;
   onPaymentFailure?: (error: string) => void;
@@ -195,6 +199,8 @@ export default function PaymentProcessor({
           // Redirect to payment gateway
           const redirectUrl = serviceType === 'APPOINTMENT'
             ? '/member/appointments'
+            : serviceType === 'DENTAL'
+            ? '/member/bookings'
             : '/member/online-consult';
 
           router.push(`/member/payments/${payment.paymentId}?redirect=${redirectUrl}`);
@@ -242,6 +248,8 @@ export default function PaymentProcessor({
         // Redirect to payment gateway
         const redirectUrl = serviceType === 'APPOINTMENT'
           ? '/member/appointments'
+          : serviceType === 'DENTAL'
+          ? '/member/bookings'
           : '/member/online-consult';
 
         router.push(`/member/payments/${payment.paymentId}?redirect=${redirectUrl}`);

@@ -60,6 +60,89 @@ export const operationsApi = {
     const response = await apiFetch(`/api/ops/lab/orders?${searchParams}`)
     return response.json()
   },
+
+  // Dental Bookings Operations
+  getDentalBookings: async (params?: {
+    status?: string
+    clinicId?: string
+    serviceCode?: string
+    dateFrom?: string
+    dateTo?: string
+    searchTerm?: string
+    page?: number
+    limit?: number
+  }) => {
+    console.log('[OperationsAPI] getDentalBookings - Params:', params)
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.clinicId) searchParams.set('clinicId', params.clinicId)
+    if (params?.serviceCode) searchParams.set('serviceCode', params.serviceCode)
+    if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom)
+    if (params?.dateTo) searchParams.set('dateTo', params.dateTo)
+    if (params?.searchTerm) searchParams.set('searchTerm', params.searchTerm)
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+
+    const response = await apiFetch(`/api/admin/dental-bookings?${searchParams}`)
+    const result = await response.json()
+    console.log('[OperationsAPI] getDentalBookings - Results:', result.data?.length, 'bookings')
+    return result
+  },
+
+  confirmDentalBooking: async (bookingId: string) => {
+    console.log('[OperationsAPI] Confirming dental booking:', bookingId)
+    const response = await apiFetch(`/api/admin/dental-bookings/${bookingId}/confirm`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking confirmed:', bookingId)
+    return result
+  },
+
+  cancelDentalBooking: async (bookingId: string, reason: string) => {
+    console.log('[OperationsAPI] Cancelling dental booking:', bookingId, 'Reason:', reason)
+    const response = await apiFetch(`/api/admin/dental-bookings/${bookingId}/admin-cancel`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking cancelled:', bookingId)
+    return result
+  },
+
+  rescheduleDentalBooking: async (
+    bookingId: string,
+    data: { slotId: string; appointmentDate: string; appointmentTime: string; reason: string }
+  ) => {
+    console.log('[OperationsAPI] Rescheduling dental booking:', bookingId, data)
+    const response = await apiFetch(`/api/admin/dental-bookings/${bookingId}/reschedule`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking rescheduled:', bookingId)
+    return result
+  },
+
+  markDentalBookingCompleted: async (bookingId: string) => {
+    console.log('[OperationsAPI] Marking dental booking completed:', bookingId)
+    const response = await apiFetch(`/api/admin/dental-bookings/${bookingId}/complete`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking marked completed:', bookingId)
+    return result
+  },
+
+  markDentalBookingNoShow: async (bookingId: string) => {
+    console.log('[OperationsAPI] Marking dental booking no-show:', bookingId)
+    const response = await apiFetch(`/api/admin/dental-bookings/${bookingId}/no-show`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking marked no-show:', bookingId)
+    return result
+  },
 }
 
 export default operationsApi
