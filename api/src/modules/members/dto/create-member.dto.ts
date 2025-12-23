@@ -102,10 +102,12 @@ export class CreateMemberDto {
   @IsNotEmpty()
   email!: string;
 
-  @ApiProperty({ example: '+919876543210' })
-  @IsString()
+  @ApiProperty({
+    example: '+919876543210',
+    description: 'Phone number as string or object with countryCode and number',
+  })
   @IsNotEmpty()
-  phone!: string;
+  phone!: string | { countryCode: string; number: string };
 
   @ApiPropertyOptional({ description: 'Date of Birth', example: '1990-01-01' })
   @IsDateString()

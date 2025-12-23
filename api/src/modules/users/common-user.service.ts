@@ -137,8 +137,20 @@ export class CommonUserService {
     phone: string | { countryCode: string; number: string },
     excludeId?: string,
   ): Promise<void> {
-    // Normalize phone to string
-    const phoneStr = typeof phone === 'string' ? phone : phone.number;
+    // Normalize phone to string - handle both object and string cases
+    let phoneStr: string;
+
+    if (typeof phone === 'string') {
+      phoneStr = phone;
+    } else if (phone && typeof phone === 'object' && 'number' in phone) {
+      phoneStr = phone.number;
+    } else {
+      // Handle case where phone is somehow converted to [object Object]
+      console.error('[CommonUserService] Invalid phone format received:', phone);
+      throw new ConflictException('Invalid phone number format');
+    }
+
+    console.log('[CommonUserService] Validating phone uniqueness for:', phoneStr);
 
     // Check in users collection
     const existsInUsers = await this.checkFieldExists(

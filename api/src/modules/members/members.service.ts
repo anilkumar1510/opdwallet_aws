@@ -74,8 +74,18 @@ export class MembersService {
     // Check email uniqueness (across both collections)
     await this.validateUniqueEmail(createMemberDto.email);
 
+    // Extract phone number from object if needed before validation
+    let phoneToValidate: string;
+    if (typeof createMemberDto.phone === 'string') {
+      phoneToValidate = createMemberDto.phone;
+    } else if (createMemberDto.phone && typeof createMemberDto.phone === 'object' && 'number' in createMemberDto.phone) {
+      phoneToValidate = createMemberDto.phone.number;
+    } else {
+      throw new ConflictException('Invalid phone number format');
+    }
+
     // Check phone uniqueness (across both collections)
-    await this.validateUniquePhone(createMemberDto.phone);
+    await this.validateUniquePhone(phoneToValidate);
   }
 
   /**
@@ -149,6 +159,18 @@ export class MembersService {
     const passwordHash = await this.commonUserService.hashPassword(password);
     const email = this.commonUserService.normalizeEmail(createMemberDto.email);
 
+    // Extract phone number from object if needed
+    let phone: string;
+    if (typeof createMemberDto.phone === 'string') {
+      phone = createMemberDto.phone;
+    } else if (createMemberDto.phone && typeof createMemberDto.phone === 'object' && 'number' in createMemberDto.phone) {
+      phone = (createMemberDto.phone as any).number;
+      console.log('🔍 [MEMBER-CREATION] Extracted phone number from object:', phone);
+    } else {
+      console.error('❌ [MEMBER-CREATION] Invalid phone format:', createMemberDto.phone);
+      throw new BadRequestException('Invalid phone number format');
+    }
+
     console.log('✅ [MEMBER-CREATION] Member data prepared. Generated userId:', userId);
 
     // Step 4: Create member document
@@ -157,6 +179,7 @@ export class MembersService {
       ...createMemberDto,
       userId,
       email,
+      phone, // Use extracted phone string instead of object
       role: UserRole.MEMBER, // Force role to MEMBER
       passwordHash,
       mustChangePassword: !createMemberDto.password,
@@ -289,17 +312,37 @@ export class MembersService {
       throw new NotFoundException('Member not found');
     }
 
+    // Extract phone number from object if needed
+    let phoneToUpdate: string | undefined;
+    if (updateMemberDto.phone) {
+      if (typeof updateMemberDto.phone === 'string') {
+        phoneToUpdate = updateMemberDto.phone;
+      } else if (updateMemberDto.phone && typeof updateMemberDto.phone === 'object' && 'number' in updateMemberDto.phone) {
+        phoneToUpdate = (updateMemberDto.phone as any).number;
+        console.log('🔍 [MEMBER-UPDATE] Extracted phone number from object:', phoneToUpdate);
+      } else {
+        console.error('❌ [MEMBER-UPDATE] Invalid phone format:', updateMemberDto.phone);
+        throw new BadRequestException('Invalid phone number format');
+      }
+    }
+
     // Validate unique fields if being updated
     if (updateMemberDto.email && updateMemberDto.email !== member.email) {
       await this.validateUniqueEmail(updateMemberDto.email, id);
     }
 
-    if (updateMemberDto.phone && updateMemberDto.phone !== member.phone) {
-      await this.validateUniquePhone(updateMemberDto.phone, id);
+    if (phoneToUpdate && phoneToUpdate !== member.phone) {
+      await this.validateUniquePhone(phoneToUpdate, id);
     }
 
-    // Update member
-    Object.assign(member, updateMemberDto, { updatedBy });
+    // Update member with extracted phone
+    const updateData = {
+      ...updateMemberDto,
+      ...(phoneToUpdate && { phone: phoneToUpdate }),
+      updatedBy,
+    };
+
+    Object.assign(member, updateData);
     const updated = await member.save();
 
     const { passwordHash: _, ...result } = updated.toObject();
