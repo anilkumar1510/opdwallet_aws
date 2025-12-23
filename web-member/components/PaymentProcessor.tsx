@@ -26,7 +26,8 @@ interface PaymentProcessorProps {
   userId: string;
   patientId: string;
   patientName: string;
-  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL';
+  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL' | 'VISION';
+  bookingId?: string; // Optional booking ID for VISION and DENTAL service types
   serviceDetails: {
     doctorName: string;
     doctorId?: string;
@@ -71,6 +72,7 @@ export default function PaymentProcessor({
   patientId,
   patientName,
   serviceType,
+  bookingId,
   serviceDetails,
   onPaymentSuccess,
   onPaymentFailure,
@@ -170,7 +172,7 @@ export default function PaymentProcessor({
             amount: actualUserPayment,
             paymentType: 'COPAY',
             serviceType,
-            serviceReferenceId: serviceDetails.appointmentId,
+            serviceReferenceId: bookingId || serviceDetails.appointmentId,
             description: `Copay for ${serviceName}`,
             userId,
             patientId,
@@ -217,7 +219,7 @@ export default function PaymentProcessor({
           amount: actualUserPayment,
           paymentType: validationResult.paymentMethod as any,
           serviceType,
-          serviceReferenceId: serviceDetails.appointmentId,
+          serviceReferenceId: bookingId || serviceDetails.appointmentId,
           description: serviceName,
           userId,
           patientId,

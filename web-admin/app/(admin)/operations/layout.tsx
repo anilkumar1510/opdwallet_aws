@@ -21,6 +21,7 @@ export default function OperationsLayout({
     if (pathname.startsWith('/operations/clinics')) return 'Clinics'
     if (pathname.startsWith('/operations/appointments')) return 'Appointments'
     if (pathname.startsWith('/operations/dental-services')) return 'Dental Services'
+    if (pathname.startsWith('/operations/vision-services')) return 'Vision Services'
     if (pathname.startsWith('/operations/lab/prescriptions')) return 'Lab Prescriptions'
     if (pathname.startsWith('/operations/lab/orders')) return 'Lab Orders'
     if (pathname.startsWith('/operations/lab')) return 'Lab Diagnostics'
@@ -59,6 +60,11 @@ export default function OperationsLayout({
       current: pathname.startsWith('/operations/dental-services')
     },
     {
+      name: 'Vision Services',
+      path: '/operations/vision-services',
+      current: pathname.startsWith('/operations/vision-services')
+    },
+    {
       name: 'Prescriptions',
       path: '/operations/lab/prescriptions',
       current: pathname.startsWith('/operations/lab/prescriptions')
@@ -82,7 +88,7 @@ export default function OperationsLayout({
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-2 flex-1">
+            <div className="hidden md:flex items-start gap-2 flex-1 flex-wrap">
               {navigationItems.map((item) => (
                 <button
                   key={item.name}

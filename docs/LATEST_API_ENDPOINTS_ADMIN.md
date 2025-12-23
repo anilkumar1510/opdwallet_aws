@@ -201,6 +201,41 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
+## Operations - Vision Services
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /ops/vision-services/clinics | Get all clinics with vision service status |
+| PUT | /ops/vision-services/clinics/:clinicId/toggle | Toggle vision services enabled/disabled at clinic level |
+| GET | /ops/vision-services/clinics/:clinicId/services | Get all vision services for a clinic (no pricing) |
+| PUT | /ops/vision-services/clinics/:clinicId/services/:serviceCode/toggle | Toggle service enabled/disabled for a clinic |
+| POST | /ops/vision-services/clinics/:clinicId/slots | Create time slots for vision services at a clinic |
+| GET | /ops/vision-services/clinics/:clinicId/slots | Get all time slots for a clinic |
+| DELETE | /ops/vision-services/slots/:slotId | Delete a specific time slot |
+
+**Key Differences from Dental Services:**
+- Category: CAT007 (Vision Care)
+- Marker service code: `VISION_SERVICES_ENABLED`
+- **No pricing functionality**: No price fields or pricing endpoints
+- **Operations-only**: No member booking module
+- Slot ID prefix: `VSLOT` instead of `DSLOT`
+
+**Notes:**
+- All endpoints require authentication (JWT token via cookie)
+- Access restricted to SUPER_ADMIN, ADMIN, and OPS roles
+- **Clinic-level toggle must be enabled before individual services can be enabled**
+- Disabling clinic-level toggle automatically disables all individual services
+- Service codes are automatically converted to uppercase
+- Category CAT007 (Vision Services) is hardcoded for all operations
+- **Vision service slots can only be created for clinics with vision services enabled**
+- Slot creation supports multiple dates in a single request
+- Past dates are not allowed for slot creation
+- Slot duration options: 15, 30, 45, 60 minutes (default: 30 minutes)
+- Default max appointments per slot: 10
+- Uses existing vision services from service_master collection (VIS001, VIS002, etc.)
+
+---
+
 ## Operations - Dental Bookings
 
 | Method | Endpoint | Description |
@@ -244,6 +279,47 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 - Bookings are linked to dental service slots (prevents double booking)
 - Payment breakdown includes copay calculation and service transaction limits
 - All bookings create transaction summary records for audit trail
+
+---
+
+## Operations - Vision Bookings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /admin/vision-bookings | List all vision bookings with filters (status, clinic, service, date range, search) |
+| PATCH | /admin/vision-bookings/:bookingId/confirm | Confirm pending vision booking |
+| PATCH | /admin/vision-bookings/:bookingId/generate-bill | Generate bill for confirmed booking (admin sets service price) |
+| PATCH | /admin/vision-bookings/:bookingId/admin-cancel | Cancel booking with reason (admin action) |
+| PATCH | /admin/vision-bookings/:bookingId/no-show | Mark booking as no-show (appointment time must have passed) |
+| PATCH | /admin/vision-bookings/:bookingId/complete | Mark booking as completed |
+
+**Query Parameters for GET /admin/vision-bookings:**
+- `status`: Filter by booking status (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW)
+- `clinicId`: Filter by clinic
+- `serviceCode`: Filter by vision service code
+- `dateFrom`: Filter bookings from date (YYYY-MM-DD)
+- `dateTo`: Filter bookings to date (YYYY-MM-DD)
+- `searchTerm`: Search by patient name or booking ID
+- `page`: Page number (default: 1)
+- `limit`: Results per page (default: 20)
+
+**Bill Generation Workflow:**
+1. Member books vision appointment → Status: PENDING_CONFIRMATION, paymentStatus: PENDING
+2. Admin confirms booking → Status: CONFIRMED
+3. Admin generates bill with manual service cost entry → billGenerated: true
+4. Member views and pays bill → paymentStatus: COMPLETED
+5. System auto-generates invoice → invoiceGenerated: true
+
+**Notes:**
+- All endpoints require authentication (JWT token via cookie)
+- Access restricted to SUPER_ADMIN, ADMIN, and OPS roles
+- Booking status workflow: PENDING_CONFIRMATION → CONFIRMED → COMPLETED/CANCELLED/NO_SHOW
+- Bill generation is a separate step after confirmation (admin manually sets service price)
+- Bill must be generated before member can make payment
+- Admin cancellation updates status only (no refund processing if no payment was taken)
+- No-show requires appointment time to have passed
+- Bookings are linked to vision service slots (prevents double booking)
+- Category: CAT007 (Vision Care)
 
 ---
 
@@ -458,4 +534,4 @@ This document lists all API endpoints used by the Admin Portal (web-admin), incl
 
 ---
 
-**Total Endpoints: ~158**
+**Total Endpoints: ~170**

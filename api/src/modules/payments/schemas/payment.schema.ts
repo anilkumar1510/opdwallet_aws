@@ -24,6 +24,7 @@ export enum ServiceType {
   LAB_ORDER = 'LAB_ORDER',
   PHARMACY = 'PHARMACY',
   DENTAL = 'DENTAL',
+  VISION = 'VISION',
   WALLET_TOPUP = 'WALLET_TOPUP',
 }
 

@@ -11,6 +11,8 @@ import { WalletModule } from '../wallet/wallet.module';
 import { AssignmentsModule } from '../assignments/assignments.module';
 import { ClinicServicePricingModule } from './dental-services/clinic-service-pricing.module';
 import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module';
+import { VisionServicesModule } from './vision-services/vision-services.module';
+import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module'
     AssignmentsModule,
     ClinicServicePricingModule,
     DentalBookingsModule,
+    VisionServicesModule,
+    VisionBookingsModule,
   ],
   controllers: [OperationsController],
   providers: [OperationsService],

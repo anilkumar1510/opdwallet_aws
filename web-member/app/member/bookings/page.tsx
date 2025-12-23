@@ -11,6 +11,7 @@ import {
   BeakerIcon,
   BuildingStorefrontIcon,
   SparklesIcon,
+  EyeIcon,
   DocumentArrowDownIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
@@ -77,6 +78,45 @@ interface DentalBooking {
   invoiceFileName?: string
 }
 
+interface VisionBooking {
+  _id: string
+  bookingId: string
+  patientName: string
+  patientId: string
+  serviceCode: string
+  serviceName: string
+  clinicId: string
+  clinicName: string
+  clinicAddress: {
+    street?: string
+    line1?: string
+    city: string
+    state: string
+    pincode: string
+  }
+  clinicContact: string
+  appointmentDate: string
+  appointmentTime: string
+  servicePrice: number
+  billAmount: number
+  copayAmount: number
+  insurancePayment: number
+  excessAmount: number
+  walletDebitAmount: number
+  totalMemberPayment: number
+  paymentMethod: string
+  paymentStatus: string
+  status: string
+  bookedAt: string
+  createdAt: string
+  billGenerated?: boolean
+  billGeneratedAt?: string
+  invoiceGenerated?: boolean
+  invoiceId?: string
+  invoicePath?: string
+  invoiceFileName?: string
+}
+
 export default function BookingsPage() {
   const router = useRouter()
   const { viewingUserId } = useFamily()
@@ -88,12 +128,16 @@ export default function BookingsPage() {
   const [dentalBookings, setDentalBookings] = useState<DentalBooking[]>([])
   const [upcomingDentalBookings, setUpcomingDentalBookings] = useState<DentalBooking[]>([])
   const [pastDentalBookings, setPastDentalBookings] = useState<DentalBooking[]>([])
+  const [visionBookings, setVisionBookings] = useState<VisionBooking[]>([])
+  const [upcomingVisionBookings, setUpcomingVisionBookings] = useState<VisionBooking[]>([])
+  const [pastVisionBookings, setPastVisionBookings] = useState<VisionBooking[]>([])
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<DentalBooking | null>(null)
 
   useEffect(() => {
     fetchAppointments()
     fetchDentalBookings()
+    fetchVisionBookings()
   }, [viewingUserId])
 
   const fetchAppointments = async () => {
@@ -251,6 +295,78 @@ export default function BookingsPage() {
     }
   }
 
+  const fetchVisionBookings = async () => {
+    try {
+      console.log('[VisionBookings] Fetching user data')
+      const userResponse = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const userData = await userResponse.json()
+      console.log('[VisionBookings] User ID:', userData._id)
+
+      const targetUserId = viewingUserId || userData._id
+      console.log('[VisionBookings] Fetching vision bookings for profile:', { targetUserId, viewingUserId })
+
+      const response = await fetch(`/api/vision-bookings/user/${targetUserId}`, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[VisionBookings] No vision bookings found or error fetching')
+        setVisionBookings([])
+        setUpcomingVisionBookings([])
+        setPastVisionBookings([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[VisionBookings] Vision bookings received:', data.length)
+
+      const sortedBookings = data.sort((a: VisionBooking, b: VisionBooking) => {
+        const dateA = new Date(a.appointmentDate)
+        const dateB = new Date(b.appointmentDate)
+        return dateB.getTime() - dateA.getTime()
+      })
+
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const upcoming: VisionBooking[] = []
+      const past: VisionBooking[] = []
+
+      sortedBookings.forEach((booking: VisionBooking) => {
+        const bookingDate = new Date(booking.appointmentDate)
+        bookingDate.setHours(0, 0, 0, 0)
+
+        if (bookingDate >= today) {
+          upcoming.push(booking)
+        } else {
+          past.push(booking)
+        }
+      })
+
+      upcoming.sort((a, b) => {
+        const dateA = new Date(a.appointmentDate)
+        const dateB = new Date(b.appointmentDate)
+        return dateA.getTime() - dateB.getTime()
+      })
+
+      setVisionBookings(sortedBookings)
+      setUpcomingVisionBookings(upcoming)
+      setPastVisionBookings(past)
+    } catch (error) {
+      console.error('[VisionBookings] Error fetching vision bookings:', error)
+      setVisionBookings([])
+      setUpcomingVisionBookings([])
+      setPastVisionBookings([])
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const day = date.getDate()
@@ -382,10 +498,67 @@ export default function BookingsPage() {
     }
   }
 
-  const handleViewInvoice = (booking: DentalBooking) => {
-    console.log('[DentalBookings] Opening invoice modal for:', booking.bookingId)
-    setSelectedBooking(booking)
-    setInvoiceModalOpen(true)
+  const handleViewInvoice = async (booking: DentalBooking | VisionBooking) => {
+    try {
+      console.log('[Bookings] Downloading invoice for:', booking.bookingId)
+
+      // Determine booking type
+      const isVision = booking.bookingId.startsWith('VIS-BOOK')
+      const endpoint = isVision
+        ? `/api/vision-bookings/${booking.bookingId}/invoice`
+        : `/api/dental-bookings/${booking.bookingId}/invoice`
+
+      const response = await fetch(endpoint, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to download invoice')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `invoice-${booking.bookingId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      console.log('[Bookings] Invoice downloaded successfully')
+    } catch (error) {
+      console.error('[Bookings] Error downloading invoice:', error)
+      alert('Failed to download invoice')
+    }
+  }
+
+  const handleCancelVisionBooking = async (bookingId: string, serviceName: string) => {
+    if (!confirm(`Are you sure you want to cancel your ${serviceName} vision appointment?`)) {
+      return
+    }
+
+    try {
+      console.log('[VisionBookings] Cancelling booking:', bookingId)
+      const response = await fetch(`/api/vision-bookings/${bookingId}/cancel`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Cancelled by member' }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to cancel booking')
+      }
+
+      console.log('[VisionBookings] Booking cancelled successfully')
+      alert('Vision appointment cancelled successfully.')
+      await fetchVisionBookings()
+    } catch (error) {
+      console.error('[VisionBookings] Error cancelling booking:', error)
+      alert('Failed to cancel booking: ' + (error as Error).message)
+    }
   }
 
   if (loading) {
@@ -469,6 +642,20 @@ export default function BookingsPage() {
             <div className="flex items-center space-x-2">
               <SparklesIcon className="h-5 w-5" />
               <span>Dental</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('vision')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'vision'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            style={activeTab === 'vision' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+          >
+            <div className="flex items-center space-x-2">
+              <EyeIcon className="h-5 w-5" />
+              <span>Vision</span>
             </div>
           </button>
         </nav>
@@ -965,6 +1152,214 @@ export default function BookingsPage() {
                             })
                             return booking.status === 'COMPLETED' && booking.invoiceGenerated
                           })() && (
+                            <button
+                              onClick={() => handleViewInvoice(booking)}
+                              className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                              <DocumentArrowDownIcon className="h-4 w-4" />
+                              View Invoice
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Vision Tab */}
+        {activeTab === 'vision' && (
+          <div className="space-y-4">
+            {visionBookings.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center">
+                <div className="mb-4">
+                  <EyeIcon className="h-16 w-16 text-gray-300 mx-auto" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No vision bookings yet</h3>
+                <p className="text-gray-600 mb-4">Book your first vision service to get started</p>
+                <button
+                  onClick={() => router.push('/member/vision')}
+                  className="px-6 py-2 text-white rounded-lg"
+                  style={{ backgroundColor: '#0a529f' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                >
+                  Browse Vision Services
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Upcoming Vision Bookings */}
+                {upcomingVisionBookings.length > 0 && (
+                  <>
+                    {upcomingVisionBookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
+                              <EyeIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{booking.serviceName}</div>
+                              <div className="text-sm text-gray-600">{booking.clinicName}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end space-y-1">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                              {getStatusText(booking.status)}
+                            </span>
+                            {booking.paymentStatus && (
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                                {getPaymentStatusText(booking.paymentStatus)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <UserIcon className="h-4 w-4" />
+                            <span>Patient: {booking.patientName}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{formatDate(booking.appointmentDate)}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <ClockIcon className="h-4 w-4" />
+                            <span>{booking.appointmentTime}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <MapPinIcon className="h-4 w-4" />
+                            <span className="line-clamp-1">
+                              {booking.clinicAddress.city}, {booking.clinicAddress.state}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm text-gray-600">
+                              ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-600">
+                              ₹{booking.billAmount || booking.servicePrice}
+                            </div>
+                          </div>
+
+                          {/* Bill generated but payment pending - show View and Pay Bill */}
+                          {booking.billGenerated && booking.paymentStatus === 'PENDING' && (
+                            <button
+                              onClick={() => router.push(`/member/vision/payment/${booking.bookingId}`)}
+                              className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              View and Pay Bill
+                            </button>
+                          )}
+
+                          {/* Payment completed - show View Invoice */}
+                          {booking.paymentStatus === 'COMPLETED' && booking.invoiceGenerated && (
+                            <button
+                              onClick={() => handleViewInvoice(booking)}
+                              className="w-full py-2 px-3 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                              <DocumentArrowDownIcon className="h-4 w-4" />
+                              View/Download Invoice
+                            </button>
+                          )}
+
+                          {/* Can cancel if pending confirmation or confirmed but no bill yet */}
+                          {(booking.status === 'PENDING_CONFIRMATION' || (booking.status === 'CONFIRMED' && !booking.billGenerated)) && (
+                            <button
+                              onClick={() => handleCancelVisionBooking(booking.bookingId, booking.serviceName)}
+                              className="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Cancel Booking
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Past Vision Bookings */}
+                {pastVisionBookings.length > 0 && (
+                  <>
+                    {upcomingVisionBookings.length === 0 && (
+                      <div className="text-sm font-medium text-gray-500 mb-3">Past Bookings</div>
+                    )}
+                    {pastVisionBookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow opacity-75"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-gray-100 p-2 rounded-full">
+                              <EyeIcon className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{booking.serviceName}</div>
+                              <div className="text-sm text-gray-600">{booking.clinicName}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end space-y-1">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                              {getStatusText(booking.status)}
+                            </span>
+                            {booking.paymentStatus && (
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                                {getPaymentStatusText(booking.paymentStatus)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <UserIcon className="h-4 w-4" />
+                            <span>Patient: {booking.patientName}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{formatDate(booking.appointmentDate)}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <ClockIcon className="h-4 w-4" />
+                            <span>{booking.appointmentTime}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <MapPinIcon className="h-4 w-4" />
+                            <span className="line-clamp-1">
+                              {booking.clinicAddress.city}, {booking.clinicAddress.state}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm text-gray-600">
+                              ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-600">
+                              ₹{booking.servicePrice || booking.billAmount}
+                            </div>
+                          </div>
+
+                          {booking.status === 'COMPLETED' && booking.invoiceGenerated && (
                             <button
                               onClick={() => handleViewInvoice(booking)}
                               className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"

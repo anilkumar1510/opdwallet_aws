@@ -148,6 +148,13 @@ export default function PaymentPage() {
             console.log('✅ [PaymentPage] Booking ID:', dentalBookingData.bookingId);
           }
         }
+        // Vision bookings are already created, payment will be processed on backend
+        else if (bookingData.serviceType === 'VISION') {
+          console.log('👁️ [PaymentPage] Vision booking already exists, payment will be processed on backend');
+          // Vision bookings are already created - backend will handle payment completion
+          // The payment service will call visionBookingsService.handlePaymentComplete()
+          // which updates booking status, generates invoice, etc.
+        }
         // Complete the appointment creation if pending
         else if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
           console.log('📅 [PaymentPage] Creating appointment with booking data...');

@@ -270,4 +270,101 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 ---
 
-**Total Endpoints: ~76**
+## Vision Bookings (Member)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /member/benefits/CAT007/services | Get vision services assigned to member based on policy |
+| GET | /vision-bookings/clinics?serviceCode=:code&pincode=:pincode | Get clinics offering specific vision service by pincode/city |
+| GET | /vision-bookings/slots?clinicId=:id&date=:date | Get available time slots for clinic on specific date |
+| POST | /vision-bookings | Create vision booking (no payment processing at booking time) |
+| POST | /vision-bookings/validate | Validate booking and get payment breakdown (used before payment) |
+| POST | /vision-bookings/:bookingId/process-payment | Process payment for booking with generated bill |
+| GET | /vision-bookings/user/:userId | Get all vision bookings for user |
+| GET | /vision-bookings/:bookingId | Get single vision booking details |
+| GET | /vision-bookings/:bookingId/invoice | Download invoice for completed booking |
+| PUT | /vision-bookings/:bookingId/cancel | Cancel vision booking |
+
+**Vision Booking Flow:**
+1. Get assigned vision services from policy (CAT007 category)
+2. Search clinics by pincode offering selected service
+3. Select patient (self or family member)
+4. View available slots and select date/time
+5. Confirm booking (NO payment processing at this stage)
+6. View bookings in member portal
+7. Operations team confirms booking
+8. **Operations team generates bill** with manually entered service cost
+9. Member views and pays bill using wallet + copay
+10. System auto-generates invoice after payment completion
+11. Member downloads invoice
+
+**Key Differences from Dental Bookings:**
+- **Two-step payment**: Booking created without payment, bill generated later by operations
+- **Manual pricing**: Operations admin manually enters service cost when generating bill
+- **Delayed payment**: Member pays only after operations generates the bill
+- **Same payment breakdown**: Uses wallet debit + copay calculation like dental bookings
+
+**Booking Status Flow:**
+```
+PENDING_CONFIRMATION (created by member, paymentStatus='PENDING')
+  ↓ (ops confirms)
+CONFIRMED (billGenerated=false)
+  ↓ (ops generates bill with service cost)
+CONFIRMED (billGenerated=true, paymentStatus='PENDING')
+  ↓ (member pays bill)
+CONFIRMED (paymentStatus='COMPLETED', invoiceGenerated=true)
+  ↓ (appointment completed)
+COMPLETED
+
+OR cancellation:
+PENDING_CONFIRMATION/CONFIRMED (no bill) → CANCELLED (no refund needed)
+CONFIRMED (bill generated, paid) → CANCELLED (refund processed)
+
+OR no show:
+CONFIRMED → NO_SHOW
+```
+
+**Create Booking Request:**
+```json
+{
+  "patientId": "member-or-family-member-id",
+  "clinicId": "CLN-001",
+  "serviceCode": "VIS001",
+  "serviceName": "Eye Consultation",
+  "slotId": "slot-configuration-id",
+  "price": 500,
+  "appointmentDate": "2025-12-20",
+  "appointmentTime": "10:00"
+}
+```
+
+**Create Booking Response:**
+```json
+{
+  "bookingId": "VIS-BOOK-1734567890-abc123",
+  "status": "PENDING_CONFIRMATION",
+  "paymentStatus": "PENDING",
+  "appointmentDate": "2025-12-20",
+  "appointmentTime": "10:00",
+  "message": "Booking created successfully. Our operations team will confirm your appointment shortly."
+}
+```
+
+**Notes:**
+- Vision services availability depends on member's policy coverage (CAT007)
+- Bookings require available slot capacity (prevents double booking)
+- Cancellation allowed before appointment date (refund if payment completed)
+- All bookings visible in member portal under "Vision" tab
+- Category: CAT007 (Vision Care)
+- Uses vision service slots created in operations portal
+- **Payment processing**: Two-step process
+  1. Operations confirms booking and generates bill with manual service cost
+  2. Member pays using wallet + copay (similar to dental bookings)
+  3. Invoice auto-generated after payment completion
+- **Bill generation**: Operations admin manually enters actual service cost
+- Member can view and pay bill from bookings page once bill is generated
+- Invoice download available after payment completion
+
+---
+
+**Total Endpoints: ~83**

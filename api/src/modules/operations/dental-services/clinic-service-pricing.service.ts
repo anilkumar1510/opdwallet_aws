@@ -593,17 +593,17 @@ export class ClinicServicePricingService {
 
   /**
    * Get all clinics that have a specific service enabled
-   * Used by dental bookings module for clinic search
+   * Used by dental and vision bookings modules for clinic search
    */
-  async getClinicsWithServiceEnabled(serviceCode: string) {
-    console.log(`[ClinicServicePricing] Getting clinics with service ${serviceCode} enabled`);
+  async getClinicsWithServiceEnabled(serviceCode: string, category: string = DENTAL_CATEGORY) {
+    console.log(`[ClinicServicePricing] Getting clinics with service ${serviceCode} enabled for category ${category}`);
 
     // Find all pricing records where this service is enabled
     const enabledPricings = await this.pricingModel
       .find({
         serviceCode: serviceCode.toUpperCase(),
         isEnabled: true,
-        category: DENTAL_CATEGORY,
+        category: category,
       })
       .lean();
 

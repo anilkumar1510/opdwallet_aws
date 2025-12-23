@@ -6,6 +6,7 @@ import { Payment, PaymentSchema } from './schemas/payment.schema';
 import { CounterModule } from '../counters/counter.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
 import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module';
+import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module'
     CounterModule,
     forwardRef(() => AppointmentsModule),
     forwardRef(() => DentalBookingsModule),
+    forwardRef(() => VisionBookingsModule),
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

@@ -143,6 +143,90 @@ export const operationsApi = {
     console.log('[OperationsAPI] Booking marked no-show:', bookingId)
     return result
   },
+
+  // Vision Bookings Operations
+  getVisionBookings: async (params?: {
+    status?: string
+    clinicId?: string
+    serviceCode?: string
+    dateFrom?: string
+    dateTo?: string
+    searchTerm?: string
+    page?: number
+    limit?: number
+  }) => {
+    console.log('[OperationsAPI] getVisionBookings - Params:', params)
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.clinicId) searchParams.set('clinicId', params.clinicId)
+    if (params?.serviceCode) searchParams.set('serviceCode', params.serviceCode)
+    if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom)
+    if (params?.dateTo) searchParams.set('dateTo', params.dateTo)
+    if (params?.searchTerm) searchParams.set('searchTerm', params.searchTerm)
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+
+    const response = await apiFetch(`/api/admin/vision-bookings?${searchParams}`)
+    const result = await response.json()
+    console.log('[OperationsAPI] getVisionBookings - Results:', result.data?.length, 'bookings')
+    return result
+  },
+
+  confirmVisionBooking: async (bookingId: string) => {
+    console.log('[OperationsAPI] Confirming vision booking:', bookingId)
+    const response = await apiFetch(`/api/admin/vision-bookings/${bookingId}/confirm`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking confirmed:', bookingId)
+    return result
+  },
+
+  generateVisionBill: async (bookingId: string, servicePrice: number) => {
+    console.log('[OperationsAPI] Generating vision bill:', bookingId, 'Price:', servicePrice)
+    const response = await apiFetch(`/api/admin/vision-bookings/${bookingId}/generate-bill`, {
+      method: 'PATCH',
+      body: JSON.stringify({ servicePrice }),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Bill generated:', bookingId)
+    return result
+  },
+
+  rescheduleVisionBooking: async (
+    bookingId: string,
+    data: { slotId: string; appointmentDate: string; appointmentTime: string; reason: string }
+  ) => {
+    console.log('[OperationsAPI] Rescheduling vision booking:', bookingId, data)
+    const response = await apiFetch(`/api/admin/vision-bookings/${bookingId}/reschedule`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking rescheduled:', bookingId)
+    return result
+  },
+
+  cancelVisionBooking: async (bookingId: string, reason: string) => {
+    console.log('[OperationsAPI] Cancelling vision booking:', bookingId, 'Reason:', reason)
+    const response = await apiFetch(`/api/admin/vision-bookings/${bookingId}/admin-cancel`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking cancelled:', bookingId)
+    return result
+  },
+
+  markVisionBookingNoShow: async (bookingId: string) => {
+    console.log('[OperationsAPI] Marking vision booking no-show:', bookingId)
+    const response = await apiFetch(`/api/admin/vision-bookings/${bookingId}/no-show`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking marked no-show:', bookingId)
+    return result
+  },
 }
 
 export default operationsApi
