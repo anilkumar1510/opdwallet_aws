@@ -13,6 +13,9 @@ services:
       - web-admin
       - web-member
       - web-doctor
+      - web-tpa
+      - web-operations
+      - web-finance
     networks:
       - opd-network
 
@@ -73,7 +76,7 @@ services:
       - ./web-admin:/app
     networks:
       - opd-network
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
 
   web-member:
     image: node:20-alpine
@@ -111,6 +114,60 @@ services:
       - api
     volumes:
       - ./web-doctor:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
+
+  web-tpa:
+    image: node:20-alpine
+    container_name: opd-web-tpa-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3004:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+    depends_on:
+      - api
+    volumes:
+      - ./web-tpa:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
+
+  web-operations:
+    image: node:20-alpine
+    container_name: opd-web-operations-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3005:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+    depends_on:
+      - api
+    volumes:
+      - ./web-operations:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run build && NODE_ENV=production npm start"
+
+  web-finance:
+    image: node:20-alpine
+    container_name: opd-web-finance-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3006:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+    depends_on:
+      - api
+    volumes:
+      - ./web-finance:/app
     networks:
       - opd-network
     command: sh -c "npm install && npm run build && NODE_ENV=production npm start"

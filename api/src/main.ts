@@ -92,6 +92,9 @@ async function bootstrap() {
         'http://localhost:3001',
         'http://localhost:3002',
         'http://localhost:3003',
+        'http://localhost:3004',  // TPA portal
+        'http://localhost:3005',  // Operations portal
+        'http://localhost:3006',  // Finance portal
         'http://13.60.210.156',
         'https://13.60.210.156',
       ];

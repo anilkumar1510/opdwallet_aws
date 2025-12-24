@@ -18,6 +18,9 @@ services:
       - web-admin
       - web-member
       - web-doctor
+      - web-tpa
+      - web-operations
+      - web-finance
     networks:
       - opd-network-prod
 
@@ -108,6 +111,69 @@ services:
     container_name: opd-web-doctor-prod
     restart: always
     # No external port - accessed only through nginx at /doctor
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-prod:4000/api
+    depends_on:
+      - api
+    networks:
+      - opd-network-prod
+
+  web-tpa:
+    build:
+      context: ./web-tpa
+      dockerfile: Dockerfile.production
+      args:
+        # Browser calls go through nginx (relative path works with any domain)
+        NEXT_PUBLIC_API_URL: /api
+    container_name: opd-web-tpa-prod
+    restart: always
+    # No external port - accessed only through nginx at /tpa
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-prod:4000/api
+    depends_on:
+      - api
+    networks:
+      - opd-network-prod
+
+  web-operations:
+    build:
+      context: ./web-operations
+      dockerfile: Dockerfile.production
+      args:
+        # Browser calls go through nginx (relative path works with any domain)
+        NEXT_PUBLIC_API_URL: /api
+    container_name: opd-web-operations-prod
+    restart: always
+    # No external port - accessed only through nginx at /operations
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      # Server-side calls go direct to API
+      API_URL: http://opd-api-prod:4000/api
+    depends_on:
+      - api
+    networks:
+      - opd-network-prod
+
+  web-finance:
+    build:
+      context: ./web-finance
+      dockerfile: Dockerfile.production
+      args:
+        # Browser calls go through nginx (relative path works with any domain)
+        NEXT_PUBLIC_API_URL: /api
+    container_name: opd-web-finance-prod
+    restart: always
+    # No external port - accessed only through nginx at /finance
     expose:
       - "3000"
     environment:

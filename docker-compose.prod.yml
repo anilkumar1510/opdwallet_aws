@@ -16,6 +16,9 @@ services:
       - web-admin
       - web-member
       - web-doctor
+      - web-tpa
+      - web-operations
+      - web-finance
     restart: unless-stopped
     networks:
       - opd-network
@@ -111,6 +114,60 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: opd-web-doctor-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000/api
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - api
+    networks:
+      - opd-network
+
+  # TPA Portal (Next.js)
+  web-tpa:
+    build:
+      context: ./web-tpa
+      dockerfile: Dockerfile.production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: opd-web-tpa-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000/api
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - api
+    networks:
+      - opd-network
+
+  # Operations Portal (Next.js)
+  web-operations:
+    build:
+      context: ./web-operations
+      dockerfile: Dockerfile.production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: opd-web-operations-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000/api
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - api
+    networks:
+      - opd-network
+
+  # Finance Portal (Next.js)
+  web-finance:
+    build:
+      context: ./web-finance
+      dockerfile: Dockerfile.production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: opd-web-finance-prod
     restart: unless-stopped
     environment:
       NODE_ENV: production

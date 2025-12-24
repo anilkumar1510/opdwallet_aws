@@ -56,8 +56,8 @@ jobs:
             docker rm $(docker ps -aq --filter name="opd-") 2>/dev/null || true
 
             # Detect port conflicts before deployment
-            echo "🔍 Checking for port conflicts on 4000, 3001, 3002..."
-            CONFLICTS=$(netstat -tuln 2>/dev/null | grep -E ":(4000|3001|3002|80|443) " || true)
+            echo "🔍 Checking for port conflicts on 4000, 3001, 3002, 3004, 3005, 3006..."
+            CONFLICTS=$(netstat -tuln 2>/dev/null | grep -E ":(4000|3001|3002|3004|3005|3006|80|443) " || true)
             if [ ! -z "$CONFLICTS" ]; then
               echo "⚠️ Warning: Found services using deployment ports:"
               echo "$CONFLICTS"
@@ -67,6 +67,9 @@ jobs:
               sudo fuser -k 4000/tcp 2>/dev/null || true
               sudo fuser -k 3001/tcp 2>/dev/null || true
               sudo fuser -k 3002/tcp 2>/dev/null || true
+              sudo fuser -k 3004/tcp 2>/dev/null || true
+              sudo fuser -k 3005/tcp 2>/dev/null || true
+              sudo fuser -k 3006/tcp 2>/dev/null || true
               sudo fuser -k 80/tcp 2>/dev/null || true
               sudo fuser -k 443/tcp 2>/dev/null || true
 
@@ -75,8 +78,8 @@ jobs:
               echo "✅ No port conflicts detected"
             fi
 
-            # Clean up Docker to free memory
-            docker system prune -af --volumes 2>/dev/null || true
+            # Clean up Docker to free memory (preserves volumes including mongo-data-prod)
+            docker system prune -af 2>/dev/null || true
 
             # Ensure we're in the project directory
             cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }

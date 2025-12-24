@@ -72,31 +72,28 @@ function AdminLayoutContent({
     },
   ]
 
-  // Check if on operations, TPA, Finance, or Auth routes - hide admin header if so
-  const isOperationsRoute = pathname.startsWith('/operations') || pathname.startsWith('/admin/operations')
-  const isTPARoute = pathname.startsWith('/tpa') || pathname.startsWith('/admin/tpa')
-  const isFinanceRoute = pathname.startsWith('/finance') || pathname.startsWith('/admin/finance')
+  // Check if on Auth routes - hide admin header if so
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/admin/login') ||
                       pathname.startsWith('/forgot-password') || pathname.startsWith('/admin/forgot-password') ||
                       pathname.startsWith('/reset-password') || pathname.startsWith('/admin/reset-password')
-  const hideAdminNav = isOperationsRoute || isTPARoute || isFinanceRoute || isAuthRoute
+  const hideAdminNav = isAuthRoute
 
   // Check if user has admin role - redirect non-admins to login
   React.useEffect(() => {
-    if (!isAuthRoute && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'OPS') {
+    if (!isAuthRoute && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
       handleLogout()
     }
   }, [user, isAuthRoute])
 
   // Show nothing while redirecting non-admin users
-  if (!isAuthRoute && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.role !== 'OPS') {
+  if (!isAuthRoute && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
     return null
   }
 
   // Auth is handled by middleware, user data loaded via UserProvider
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header - Hidden on operations, TPA, and Finance routes */}
+      {/* Navigation Header - Hidden on auth routes */}
       {!hideAdminNav && (
         <nav className="header-dark">
           <div className="page-container">
@@ -163,7 +160,7 @@ function AdminLayoutContent({
       {/* Page Content */}
       <main className={hideAdminNav ? '' : 'content-container'}>
         <div className={hideAdminNav ? '' : 'page-container'}>
-          {/* Page Header - Hidden on operations, TPA, and Finance routes */}
+          {/* Page Header - Hidden on auth routes */}
           {!hideAdminNav && (
             <div className="section-header">
               <div>

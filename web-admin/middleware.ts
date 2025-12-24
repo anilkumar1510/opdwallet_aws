@@ -17,9 +17,6 @@ const protectedRoutes = [
   '/services',
   '/lab',
   '/masters',
-  '/tpa',
-  '/finance',
-  '/operations',
   '/reports',
   '/settings',
 ]
