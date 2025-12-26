@@ -36,22 +36,24 @@ export class QueryInternalUserDto {
     enum: [
       UserRole.SUPER_ADMIN,
       UserRole.ADMIN,
-      UserRole.TPA,
       UserRole.TPA_ADMIN,
       UserRole.TPA_USER,
+      UserRole.FINANCE_ADMIN,
       UserRole.FINANCE_USER,
-      UserRole.OPS,
+      UserRole.OPS_ADMIN,
+      UserRole.OPS_USER,
     ],
   })
   @IsOptional()
   @IsEnum([
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
-    UserRole.TPA,
     UserRole.TPA_ADMIN,
     UserRole.TPA_USER,
+    UserRole.FINANCE_ADMIN,
     UserRole.FINANCE_USER,
-    UserRole.OPS,
+    UserRole.OPS_ADMIN,
+    UserRole.OPS_USER,
   ])
   role?: UserRole;
 

@@ -221,7 +221,7 @@ function NewUserForm() {
     }
 
     // Determine if this is an internal user or member
-    const isInternalUser = ['SUPER_ADMIN', 'ADMIN', 'TPA', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_USER', 'OPS'].includes(formData.role)
+    const isInternalUser = ['SUPER_ADMIN', 'ADMIN', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_ADMIN', 'FINANCE_USER', 'OPS_ADMIN', 'OPS_USER'].includes(formData.role)
 
     console.log('User Type:', isInternalUser ? 'INTERNAL' : 'EXTERNAL (MEMBER)')
 
@@ -358,7 +358,7 @@ function NewUserForm() {
       console.groupEnd()
 
       // Determine endpoint based on role
-      const isInternalUser = ['SUPER_ADMIN', 'ADMIN', 'TPA', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_USER', 'OPS'].includes(payload.role)
+      const isInternalUser = ['SUPER_ADMIN', 'ADMIN', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_ADMIN', 'FINANCE_USER', 'OPS_ADMIN', 'OPS_USER'].includes(payload.role)
       const endpoint = isInternalUser ? '/api/internal-users' : '/api/members'
 
       console.group('🌐 [USER CREATION] API Request')
@@ -655,11 +655,12 @@ function NewUserForm() {
                   <option value="">Select Role...</option>
                   <option value="SUPER_ADMIN">Super Admin</option>
                   <option value="ADMIN">Admin</option>
-                  <option value="TPA">TPA</option>
                   <option value="TPA_ADMIN">TPA Admin</option>
                   <option value="TPA_USER">TPA User</option>
+                  <option value="FINANCE_ADMIN">Finance Admin</option>
                   <option value="FINANCE_USER">Finance User</option>
-                  <option value="OPS">Operations</option>
+                  <option value="OPS_ADMIN">Operations Admin</option>
+                  <option value="OPS_USER">Operations User</option>
                 </select>
               )}
             </div>

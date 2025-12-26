@@ -7,7 +7,7 @@ export type InternalUserDocument = InternalUser & Document;
 
 /**
  * Internal User Schema
- * For internal staff only: SUPER_ADMIN, ADMIN, TPA, TPA_ADMIN, TPA_USER, FINANCE_USER, OPS
+ * For internal staff only: SUPER_ADMIN, ADMIN, TPA_ADMIN, TPA_USER, FINANCE_ADMIN, FINANCE_USER, OPS_ADMIN, OPS_USER
  * Excludes MEMBER and DOCTOR roles
  */
 @Schema({
@@ -65,11 +65,12 @@ export class InternalUser {
     enum: [
       UserRole.SUPER_ADMIN,
       UserRole.ADMIN,
-      UserRole.TPA,
       UserRole.TPA_ADMIN,
       UserRole.TPA_USER,
+      UserRole.FINANCE_ADMIN,
       UserRole.FINANCE_USER,
-      UserRole.OPS,
+      UserRole.OPS_ADMIN,
+      UserRole.OPS_USER,
     ],
   })
   role!: UserRole;

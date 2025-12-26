@@ -40,14 +40,14 @@ export class DoctorsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async create(@Body() createDoctorDto: CreateDoctorDto) {
     return this.doctorsService.create(createDoctorDto);
   }
 
   @Post(':doctorId/photo')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @UseInterceptors(FileInterceptor('photo', doctorPhotoMulterConfig))
   async uploadPhoto(
     @Param('doctorId') doctorId: string,
@@ -58,7 +58,7 @@ export class DoctorsController {
 
   @Put(':doctorId')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async update(
     @Param('doctorId') doctorId: string,
     @Body() updateDoctorDto: UpdateDoctorDto,
@@ -68,21 +68,21 @@ export class DoctorsController {
 
   @Patch(':doctorId/activate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async activate(@Param('doctorId') doctorId: string) {
     return this.doctorsService.activate(doctorId);
   }
 
   @Patch(':doctorId/deactivate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async deactivate(@Param('doctorId') doctorId: string) {
     return this.doctorsService.deactivate(doctorId);
   }
 
   @Post(':doctorId/set-password')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async setPassword(
     @Param('doctorId') doctorId: string,
     @Body() body: { password: string },

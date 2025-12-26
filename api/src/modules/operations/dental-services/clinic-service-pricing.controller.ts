@@ -29,7 +29,7 @@ import { CreateDentalSlotDto } from './dto/dental-slot.dto';
 @ApiTags('Operations - Dental Services')
 @Controller('ops/dental-services')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPS)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPS_ADMIN, UserRole.OPS_USER)
 export class ClinicServicePricingController {
   constructor(
     private readonly clinicServicePricingService: ClinicServicePricingService,

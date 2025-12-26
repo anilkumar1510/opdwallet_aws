@@ -132,7 +132,7 @@ export class MemberClaimsController {
   }
 
   @Get()
-  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS)
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.OPS_ADMIN, UserRole.OPS_USER)
   async findAll(
     @Request() req: AuthRequest,
     @Query('status') status?: ClaimStatus,
@@ -188,7 +188,7 @@ export class MemberClaimsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS)
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.OPS_ADMIN, UserRole.OPS_USER)
   async findOne(@Param('id') id: string, @Request() req: AuthRequest) {
     const userId = req.user.role === UserRole.MEMBER
       ? (req.user.userId || req.user.id)
@@ -203,7 +203,7 @@ export class MemberClaimsController {
   }
 
   @Get('claim/:claimId')
-  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS)
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.OPS_ADMIN, UserRole.OPS_USER)
   async findByClaimId(@Param('claimId') claimId: string) {
     const claim = await this.memberClaimsService.findByClaimId(claimId);
 
@@ -303,7 +303,7 @@ export class MemberClaimsController {
   }
 
   @Get('files/:userId/:filename')
-  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA, UserRole.OPS, UserRole.TPA_USER, UserRole.TPA_ADMIN)
+  @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.TPA_USER, UserRole.TPA_ADMIN)
   async getFile(
     @Param('userId') userId: string,
     @Param('filename') filename: string,

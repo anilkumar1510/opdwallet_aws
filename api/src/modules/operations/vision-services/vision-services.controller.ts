@@ -24,7 +24,7 @@ import { CreateVisionSlotDto } from './dto/vision-slot.dto';
 @ApiTags('Operations - Vision Services')
 @Controller('ops/vision-services')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPS)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPS_ADMIN, UserRole.OPS_USER)
 export class VisionServicesController {
   constructor(
     private readonly visionServicesService: VisionServicesService,

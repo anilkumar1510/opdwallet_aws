@@ -51,10 +51,10 @@ export class MembersController {
   @Roles(
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
-    UserRole.TPA,
     UserRole.TPA_ADMIN,
     UserRole.TPA_USER,
-    UserRole.OPS,
+    UserRole.OPS_ADMIN,
+    UserRole.OPS_USER,
   )
   @ApiOperation({ summary: 'Get all members with pagination and filtering' })
   @ApiResponse({ status: 200, description: 'Members retrieved successfully' })
@@ -66,10 +66,10 @@ export class MembersController {
   @Roles(
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
-    UserRole.TPA,
     UserRole.TPA_ADMIN,
     UserRole.TPA_USER,
-    UserRole.OPS,
+    UserRole.OPS_ADMIN,
+    UserRole.OPS_USER,
   )
   @ApiOperation({ summary: 'Get a member by ID' })
   @ApiResponse({ status: 200, description: 'Member retrieved successfully' })
@@ -82,10 +82,10 @@ export class MembersController {
   @Roles(
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
-    UserRole.TPA,
     UserRole.TPA_ADMIN,
     UserRole.TPA_USER,
-    UserRole.OPS,
+    UserRole.OPS_ADMIN,
+    UserRole.OPS_USER,
   )
   @ApiOperation({ summary: 'Get all dependents of a primary member' })
   @ApiResponse({ status: 200, description: 'Dependents retrieved successfully' })
@@ -99,10 +99,10 @@ export class MembersController {
   @Roles(
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
-    UserRole.TPA,
     UserRole.TPA_ADMIN,
     UserRole.TPA_USER,
-    UserRole.OPS,
+    UserRole.OPS_ADMIN,
+    UserRole.OPS_USER,
   )
   @ApiOperation({ summary: 'Get policy assignments for a member' })
   @ApiResponse({ status: 200, description: 'Assignments retrieved successfully' })

@@ -26,8 +26,8 @@ export default function FinanceLoginPage() {
       if (response.ok) {
         const data = await response.json()
 
-        // Only allow FINANCE_USER role
-        if (data.role === 'FINANCE_USER') {
+        // Only allow FINANCE_ADMIN and FINANCE_USER roles
+        if (data.role === 'FINANCE_ADMIN' || data.role === 'FINANCE_USER') {
           router.push('/')
         } else {
           setError('Access denied. This portal is for Finance users only.')

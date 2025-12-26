@@ -26,7 +26,7 @@ export class RelationshipsController {
   constructor(private readonly relationshipsService: RelationshipsService) {}
 
   @Get()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPS)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPS_ADMIN, UserRole.OPS_USER)
   @ApiOperation({ summary: 'Get all active relationships' })
   @ApiResponse({ status: 200, description: 'Relationships retrieved successfully' })
   async findAll() {

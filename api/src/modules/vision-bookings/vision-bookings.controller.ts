@@ -182,7 +182,7 @@ export class VisionBookingsController {
    */
   @Get('admin/vision-bookings')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async findAllBookings(@Query() query: AdminQueryBookingsDto) {
     console.log('[VisionBookingsAdmin] GET /api/admin/vision-bookings -', query);
     return this.visionBookingsService.findAllBookings(query);
@@ -194,7 +194,7 @@ export class VisionBookingsController {
    */
   @Patch('admin/vision-bookings/:bookingId/confirm')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async confirmBooking(@Param('bookingId') bookingId: string) {
     console.log('[VisionBookingsAdmin] PATCH /api/admin/vision-bookings/:bookingId/confirm -', bookingId);
     return this.visionBookingsService.confirmBooking(bookingId);
@@ -206,7 +206,7 @@ export class VisionBookingsController {
    */
   @Patch('admin/vision-bookings/:bookingId/admin-cancel')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async adminCancelBooking(
     @Param('bookingId') bookingId: string,
     @Body() cancelDto: AdminCancelBookingDto,
@@ -221,7 +221,7 @@ export class VisionBookingsController {
    */
   @Patch('admin/vision-bookings/:bookingId/reschedule')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async rescheduleBooking(
     @Param('bookingId') bookingId: string,
     @Body() rescheduleDto: RescheduleBookingDto,
@@ -236,7 +236,7 @@ export class VisionBookingsController {
    */
   @Patch('admin/vision-bookings/:bookingId/no-show')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async markNoShow(@Param('bookingId') bookingId: string) {
     console.log('[VisionBookingsAdmin] PATCH /api/admin/vision-bookings/:bookingId/no-show -', bookingId);
     return this.visionBookingsService.markNoShow(bookingId);
@@ -248,7 +248,7 @@ export class VisionBookingsController {
    */
   @Patch('admin/vision-bookings/:bookingId/complete')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async completeBooking(@Param('bookingId') bookingId: string) {
     console.log('[VisionBookingsAdmin] PATCH /api/admin/vision-bookings/:bookingId/complete -', bookingId);
     return this.visionBookingsService.completeBooking(bookingId);
@@ -260,7 +260,7 @@ export class VisionBookingsController {
    */
   @Patch('admin/vision-bookings/:bookingId/generate-bill')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async generateBill(
     @Param('bookingId') bookingId: string,
     @Request() req: any,
@@ -319,7 +319,7 @@ export class VisionBookingsController {
    */
   @Get('admin/vision-bookings/:bookingId/invoice')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async downloadInvoice(
     @Param('bookingId') bookingId: string,
     @Response() res: any,

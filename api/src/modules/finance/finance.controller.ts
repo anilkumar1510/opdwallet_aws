@@ -26,7 +26,7 @@ export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
   @Get('claims/pending')
-  @Roles(UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.FINANCE_ADMIN, UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get pending payments (approved claims awaiting payment)' })
   @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
   @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
@@ -45,7 +45,7 @@ export class FinanceController {
   }
 
   @Get('claims/:claimId')
-  @Roles(UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.FINANCE_ADMIN, UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get claim details for payment processing' })
   @ApiResponse({ status: 200, description: 'Claim retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Claim not found' })
@@ -55,7 +55,7 @@ export class FinanceController {
   }
 
   @Post('claims/:claimId/complete-payment')
-  @Roles(UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.FINANCE_ADMIN, UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Complete payment for approved claim' })
   @ApiResponse({ status: 200, description: 'Payment completed successfully' })
@@ -76,7 +76,7 @@ export class FinanceController {
   }
 
   @Get('payments/history')
-  @Roles(UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.FINANCE_ADMIN, UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get payment history' })
   @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
   @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
@@ -101,7 +101,7 @@ export class FinanceController {
   }
 
   @Get('analytics/summary')
-  @Roles(UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.FINANCE_ADMIN, UserRole.FINANCE_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get finance analytics summary' })
   @ApiQuery({ name: 'fromDate', type: Date, required: false })
   @ApiQuery({ name: 'toDate', type: Date, required: false })

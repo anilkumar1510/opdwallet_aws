@@ -208,11 +208,12 @@ export class UnifiedUserService {
     return (
       user?.role === UserRole.SUPER_ADMIN ||
       user?.role === UserRole.ADMIN ||
-      user?.role === UserRole.TPA ||
       user?.role === UserRole.TPA_ADMIN ||
       user?.role === UserRole.TPA_USER ||
+      user?.role === UserRole.FINANCE_ADMIN ||
       user?.role === UserRole.FINANCE_USER ||
-      user?.role === UserRole.OPS
+      user?.role === UserRole.OPS_ADMIN ||
+      user?.role === UserRole.OPS_USER
     );
   }
 

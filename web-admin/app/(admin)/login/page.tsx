@@ -89,24 +89,14 @@ export default function LoginPage() {
         console.log('✅ [LOGIN] User role:', data.role)
         console.log('✅ [LOGIN] Cookies after login:', document.cookie)
 
-        // Store token in cookie is handled by the API
-        // Redirect based on role
-        // Note: For admin portal with basePath='/admin', use '/' which resolves to '/admin'
+        // Only allow SUPER_ADMIN and ADMIN roles
         if (data.role === 'SUPER_ADMIN' || data.role === 'ADMIN') {
           console.log('✅ [LOGIN] Redirecting SUPER_ADMIN/ADMIN to /')
           router.push('/')
-        } else if (data.role === 'TPA_ADMIN' || data.role === 'TPA_USER') {
-          console.log('✅ [LOGIN] Redirecting TPA to /tpa')
-          router.push('/tpa')
-        } else if (data.role === 'FINANCE_USER') {
-          console.log('✅ [LOGIN] Redirecting FINANCE to /finance')
-          router.push('/finance')
-        } else if (data.role === 'OPS') {
-          console.log('✅ [LOGIN] Redirecting OPS to /operations')
-          router.push('/operations')
         } else {
-          console.log('⚠️ [LOGIN] Unknown role, redirecting to /')
-          router.push('/')
+          console.log('⚠️ [LOGIN] Access denied for role:', data.role)
+          setError('Access denied. This portal is for Admin users only.')
+          await apiFetch('/api/auth/logout', { method: 'POST' })
         }
       } else {
         console.error('❌ [LOGIN] Login failed with status:', response.status)

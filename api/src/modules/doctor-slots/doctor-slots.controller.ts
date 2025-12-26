@@ -16,7 +16,7 @@ export class DoctorSlotsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new slot configuration' })
   async create(@Body() createSlotDto: CreateSlotConfigDto) {
     return this.slotsService.create(createSlotDto);
@@ -55,7 +55,7 @@ export class DoctorSlotsController {
 
   @Put(':slotId')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update a slot configuration' })
   async update(
     @Param('slotId') slotId: string,
@@ -66,7 +66,7 @@ export class DoctorSlotsController {
 
   @Patch(':slotId/activate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Activate a slot configuration' })
   async activate(@Param('slotId') slotId: string) {
     return this.slotsService.activate(slotId);
@@ -74,7 +74,7 @@ export class DoctorSlotsController {
 
   @Patch(':slotId/deactivate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Deactivate a slot configuration' })
   async deactivate(@Param('slotId') slotId: string) {
     return this.slotsService.deactivate(slotId);
@@ -82,7 +82,7 @@ export class DoctorSlotsController {
 
   @Patch(':slotId/block-date')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Block a specific date for a slot configuration' })
   async blockDate(
     @Param('slotId') slotId: string,
@@ -93,7 +93,7 @@ export class DoctorSlotsController {
 
   @Patch(':slotId/unblock-date')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Unblock a specific date for a slot configuration' })
   async unblockDate(
     @Param('slotId') slotId: string,

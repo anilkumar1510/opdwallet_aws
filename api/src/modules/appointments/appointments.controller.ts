@@ -114,7 +114,7 @@ export class AppointmentsController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async findAll(@Query() query: any) {
     return this.appointmentsService.findAll(query);
   }
@@ -149,14 +149,14 @@ export class AppointmentsController {
 
   @Patch(':appointmentId/confirm')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async confirm(@Param('appointmentId') appointmentId: string) {
     return this.appointmentsService.confirmAppointment(appointmentId);
   }
 
   @Patch(':appointmentId/cancel')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async cancel(@Param('appointmentId') appointmentId: string) {
     return this.appointmentsService.cancelAppointment(appointmentId);
   }

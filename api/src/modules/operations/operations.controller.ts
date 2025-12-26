@@ -19,7 +19,7 @@ interface AuthRequest extends Request {
 @ApiTags('operations')
 @Controller('ops/members')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.OPS, UserRole.SUPER_ADMIN)
+@Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.SUPER_ADMIN)
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
 

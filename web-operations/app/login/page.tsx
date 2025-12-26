@@ -26,8 +26,8 @@ export default function OperationsLoginPage() {
       if (response.ok) {
         const data = await response.json()
 
-        // Only allow OPS role
-        if (data.role === 'OPS') {
+        // Only allow OPS_ADMIN and OPS_USER roles
+        if (data.role === 'OPS_ADMIN' || data.role === 'OPS_USER') {
           router.push('/')
         } else {
           setError('Access denied. This portal is for Operations users only.')

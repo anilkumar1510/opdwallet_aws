@@ -27,7 +27,7 @@ import { OrderStatus } from '../schemas/lab-order.schema';
 
 @Controller('ops/lab')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
 export class LabOpsController {
   constructor(
     private readonly prescriptionService: LabPrescriptionService,

@@ -104,7 +104,7 @@ export class UsersController {
   }
 
   @Get(':id/dependents')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.TPA, UserRole.OPS)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.OPS_ADMIN, UserRole.OPS_USER)
   @ApiOperation({ summary: 'Get user dependents' })
   @ApiResponse({ status: 200, description: 'Dependents fetched successfully' })
   getDependents(@Param('id') id: string) {

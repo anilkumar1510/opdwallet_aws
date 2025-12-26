@@ -67,26 +67,28 @@ export class CreateInternalUserDto {
   phone!: PhoneDto;
 
   @ApiProperty({
-    description: 'Internal user role (SUPER_ADMIN, ADMIN, TPA, TPA_ADMIN, TPA_USER, FINANCE_USER, OPS)',
+    description: 'Internal user role (SUPER_ADMIN, ADMIN, TPA_ADMIN, TPA_USER, FINANCE_ADMIN, FINANCE_USER, OPS_ADMIN, OPS_USER)',
     enum: [
       UserRole.SUPER_ADMIN,
       UserRole.ADMIN,
-      UserRole.TPA,
       UserRole.TPA_ADMIN,
       UserRole.TPA_USER,
+      UserRole.FINANCE_ADMIN,
       UserRole.FINANCE_USER,
-      UserRole.OPS,
+      UserRole.OPS_ADMIN,
+      UserRole.OPS_USER,
     ],
     example: UserRole.ADMIN,
   })
   @IsEnum([
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
-    UserRole.TPA,
     UserRole.TPA_ADMIN,
     UserRole.TPA_USER,
+    UserRole.FINANCE_ADMIN,
     UserRole.FINANCE_USER,
-    UserRole.OPS,
+    UserRole.OPS_ADMIN,
+    UserRole.OPS_USER,
   ])
   @IsNotEmpty()
   role!: UserRole;

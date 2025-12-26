@@ -182,7 +182,7 @@ export class DentalBookingsController {
    */
   @Get('admin/dental-bookings')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async findAllBookings(@Query() query: AdminQueryBookingsDto) {
     console.log('[DentalBookingsAdmin] GET /api/admin/dental-bookings -', query);
     return this.dentalBookingsService.findAllBookings(query);
@@ -194,7 +194,7 @@ export class DentalBookingsController {
    */
   @Patch('admin/dental-bookings/:bookingId/confirm')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async confirmBooking(@Param('bookingId') bookingId: string) {
     console.log('[DentalBookingsAdmin] PATCH /api/admin/dental-bookings/:bookingId/confirm -', bookingId);
     return this.dentalBookingsService.confirmBooking(bookingId);
@@ -206,7 +206,7 @@ export class DentalBookingsController {
    */
   @Patch('admin/dental-bookings/:bookingId/admin-cancel')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async adminCancelBooking(
     @Param('bookingId') bookingId: string,
     @Body() cancelDto: AdminCancelBookingDto,
@@ -221,7 +221,7 @@ export class DentalBookingsController {
    */
   @Patch('admin/dental-bookings/:bookingId/reschedule')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async rescheduleBooking(
     @Param('bookingId') bookingId: string,
     @Body() rescheduleDto: RescheduleBookingDto,
@@ -236,7 +236,7 @@ export class DentalBookingsController {
    */
   @Patch('admin/dental-bookings/:bookingId/no-show')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async markNoShow(@Param('bookingId') bookingId: string) {
     console.log('[DentalBookingsAdmin] PATCH /api/admin/dental-bookings/:bookingId/no-show -', bookingId);
     return this.dentalBookingsService.markNoShow(bookingId);
@@ -248,7 +248,7 @@ export class DentalBookingsController {
    */
   @Patch('admin/dental-bookings/:bookingId/complete')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async completeBooking(@Param('bookingId') bookingId: string) {
     console.log('[DentalBookingsAdmin] PATCH /api/admin/dental-bookings/:bookingId/complete -', bookingId);
     return this.dentalBookingsService.completeBooking(bookingId);
@@ -260,7 +260,7 @@ export class DentalBookingsController {
    */
   @Get('admin/dental-bookings/:bookingId/invoice')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async downloadInvoice(
     @Param('bookingId') bookingId: string,
     @Response() res: any,

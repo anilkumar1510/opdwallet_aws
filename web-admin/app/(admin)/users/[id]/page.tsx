@@ -38,7 +38,7 @@ function validatePolicyAssignment(
 }
 
 function isInternalUserRole(role: string): boolean {
-  return ['SUPER_ADMIN', 'ADMIN', 'TPA', 'OPS'].includes(role)
+  return ['SUPER_ADMIN', 'ADMIN', 'TPA_ADMIN', 'TPA_USER', 'FINANCE_ADMIN', 'FINANCE_USER', 'OPS_ADMIN', 'OPS_USER'].includes(role)
 }
 
 function buildAssignmentPayload(
@@ -442,11 +442,14 @@ export default function UserDetailPage() {
       >
         {isInternal ? (
           <>
-            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="TPA">TPA</option>
-            <option value="OPS">OPS</option>
-            <option value="MEMBER">MEMBER</option>
+            <option value="SUPER_ADMIN">Super Admin</option>
+            <option value="ADMIN">Admin</option>
+            <option value="TPA_ADMIN">TPA Admin</option>
+            <option value="TPA_USER">TPA User</option>
+            <option value="FINANCE_ADMIN">Finance Admin</option>
+            <option value="FINANCE_USER">Finance User</option>
+            <option value="OPS_ADMIN">Operations Admin</option>
+            <option value="OPS_USER">Operations User</option>
           </>
         ) : (
           <>
