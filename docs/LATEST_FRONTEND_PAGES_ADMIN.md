@@ -72,16 +72,33 @@ This document lists all frontend pages/routes in the Admin Portal (web-admin) fo
 | /admin/lab/vendors | Manage lab partner vendors |
 | /admin/lab/vendors/[vendorId]/pricing | Manage vendor-specific lab service pricing |
 | /admin/lab/vendors/[vendorId]/slots | Manage booking slots for vendor |
+| /admin/lab/vendors/[vendorId]/aliases | Manage vendor-specific test name aliases for standardization |
+| /admin/lab/master-tests | Manage master test parameters catalog for test standardization |
 
 ---
 
-**Total Pages: 15**
+## Diagnostics Administration
+
+| Path | Description |
+|------|-------------|
+| /admin/diagnostics | Diagnostics dashboard with service and vendor statistics |
+| /admin/diagnostics/services | Manage diagnostic test services catalog |
+| /admin/diagnostics/vendors | Manage diagnostic center partners |
+| /admin/diagnostics/vendors/[vendorId]/pricing | Manage vendor-specific diagnostic service pricing |
+| /admin/diagnostics/vendors/[vendorId]/slots | Manage booking slots for diagnostic vendor |
+| /admin/diagnostics/master-tests | Manage master diagnostic test catalog for standardization |
+
+---
+
+**Total Pages: 23**
 
 **Key Features:**
 - Core administrative functions: users, policies, masters
 - Policy configuration and assignment management
 - Lab service and vendor administration
+- Diagnostics service and vendor administration
 - Category and CUG management
+- Master test catalogs for both lab and diagnostics
 - Comprehensive admin dashboard
 - Independent authentication with `/admin` cookie path
 - Restricted to SUPER_ADMIN and ADMIN roles only

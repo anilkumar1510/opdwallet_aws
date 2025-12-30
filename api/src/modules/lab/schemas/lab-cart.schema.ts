@@ -8,6 +8,11 @@ export enum CartStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum ServiceType {
+  LAB = 'LAB',
+  DIAGNOSTIC = 'DIAGNOSTIC',
+}
+
 export class CartItem {
   @Prop({ required: true, type: Types.ObjectId, ref: 'LabService' })
   serviceId: Types.ObjectId;
@@ -45,6 +50,14 @@ export class LabCart extends Document {
   @Prop({ required: true })
   pincode: string;
 
+  // Service type
+  @Prop({ required: true, enum: ServiceType, default: ServiceType.LAB })
+  serviceType: ServiceType;
+
+  // Display tracking
+  @Prop()
+  displayedToMemberAt?: Date;
+
   // Cart items
   @Prop({ type: [CartItem], required: true, default: [] })
   items: CartItem[];
@@ -75,3 +88,4 @@ LabCartSchema.index({ cartId: 1 }, { unique: true });
 LabCartSchema.index({ userId: 1, status: 1 });
 LabCartSchema.index({ prescriptionId: 1 });
 LabCartSchema.index({ pincode: 1 });
+LabCartSchema.index({ serviceType: 1, status: 1 });

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEnum, IsOptional, IsNumber, ValidateNested, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsOptional, IsNumber, ValidateNested, Min, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CollectionType } from '../schemas/lab-order.schema';
 
@@ -32,6 +32,33 @@ export class CollectionAddressDto {
   state: string;
 }
 
+export class PaymentBreakdownDto {
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  totalAmount: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  copay: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  serviceLimitDeduction: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  walletDeduction: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  finalPayable: number;
+}
+
 export class CreateOrderDto {
   @IsNotEmpty()
   @IsString()
@@ -52,6 +79,24 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsString()
+  appointmentDate?: string;
+
+  @IsOptional()
+  @IsString()
+  timeSlot?: string;
+
+  @IsOptional()
+  @IsString()
+  slotId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaymentBreakdownDto)
+  paymentBreakdown?: PaymentBreakdownDto;
+
+  // Legacy fields for backward compatibility
+  @IsOptional()
+  @IsString()
   collectionDate?: string;
 
   @IsOptional()
@@ -59,13 +104,9 @@ export class CreateOrderDto {
   collectionTime?: string;
 
   @IsOptional()
-  @IsString()
-  slotId?: string;
-
-  @IsNotEmpty()
   @IsNumber()
   @Min(0)
-  subtotal: number;
+  subtotal?: number;
 
   @IsOptional()
   @IsNumber()
@@ -77,12 +118,15 @@ export class CreateOrderDto {
   @Min(0)
   discount?: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  totalAmount: number;
+  totalAmount?: number;
 
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  paymentAlreadyProcessed?: boolean;
 }

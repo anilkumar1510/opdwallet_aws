@@ -21,7 +21,6 @@ export const PREDEFINED_CATEGORIES = [
     fullName: 'Diagnostic Services',
     hasSpecialties: false,
     hasLabServices: true,
-    labServiceCategories: ['RADIOLOGY', 'ENDOSCOPY'],
     hasServiceManagement: false,
   },
   {

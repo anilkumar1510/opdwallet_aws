@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   console.log('=== PRESCRIPTION UPLOAD PROXY START ===');
   console.log('[Upload Proxy] Handling prescription upload');
 
-  const url = `${API_URL}/doctor/prescriptions/upload`;
+  const url = `${API_URL}/api/doctor/prescriptions/upload`;
   console.log('[Upload Proxy] Target URL:', url);
 
   // Get cookies from request

@@ -115,6 +115,9 @@ export function LabServiceMappingTab({ categoryId, categoryName, allowedCategori
     )
   }
 
+  // Filter services by category - determine if this is diagnostic or lab based on categoryId
+  const isDiagnostic = categoryId === 'CAT003'
+
   if (labServices.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow">
@@ -135,19 +138,20 @@ export function LabServiceMappingTab({ categoryId, categoryName, allowedCategori
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No Lab Services Available
+            No {isDiagnostic ? 'Diagnostic' : 'Lab'} Services Available
           </h3>
           <p className="text-sm text-gray-600 text-center max-w-md">
-            Please add lab services in the Lab Services section first before assigning them to categories.
+            Please add {isDiagnostic ? 'diagnostic' : 'lab'} services in the {isDiagnostic ? 'Diagnostics' : 'Lab'} section first before assigning them to categories.
           </p>
         </div>
       </div>
     )
   }
 
-  // Filter services by category
   const categories = allowedCategories && allowedCategories.length > 0
     ? ['ALL', ...allowedCategories]
+    : isDiagnostic
+    ? ['ALL', 'CT_SCAN', 'MRI', 'X_RAY', 'ULTRASOUND', 'ECG', 'MAMMOGRAPHY', 'PET_SCAN', 'BONE_DENSITY', 'ENDOSCOPY', 'OTHER']
     : ['ALL', 'PATHOLOGY', 'RADIOLOGY', 'CARDIOLOGY', 'ENDOSCOPY', 'OTHER']
   const filteredServices = selectedCategory === 'ALL'
     ? labServices
@@ -159,10 +163,10 @@ export function LabServiceMappingTab({ categoryId, categoryName, allowedCategori
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">
-          Lab Service Configuration
+          {isDiagnostic ? 'Diagnostic' : 'Lab'} Service Configuration
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          Toggle lab services to assign them to {categoryName}
+          Toggle {isDiagnostic ? 'diagnostic' : 'lab'} services to assign them to {categoryName}
         </p>
 
         {/* Category Filter */}

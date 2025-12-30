@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   CalendarIcon,
   ClockIcon,
@@ -119,8 +119,9 @@ interface VisionBooking {
 
 export default function BookingsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { viewingUserId } = useFamily()
-  const [activeTab, setActiveTab] = useState('doctors')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'doctors')
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
@@ -131,13 +132,25 @@ export default function BookingsPage() {
   const [visionBookings, setVisionBookings] = useState<VisionBooking[]>([])
   const [upcomingVisionBookings, setUpcomingVisionBookings] = useState<VisionBooking[]>([])
   const [pastVisionBookings, setPastVisionBookings] = useState<VisionBooking[]>([])
+  const [labCarts, setLabCarts] = useState<any[]>([])
+  const [labOrders, setLabOrders] = useState<any[]>([])
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<DentalBooking | null>(null)
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetchAppointments()
     fetchDentalBookings()
     fetchVisionBookings()
+    fetchLabCarts()
+    fetchLabOrders()
   }, [viewingUserId])
 
   const fetchAppointments = async () => {
@@ -364,6 +377,50 @@ export default function BookingsPage() {
       setVisionBookings([])
       setUpcomingVisionBookings([])
       setPastVisionBookings([])
+    }
+  }
+
+  const fetchLabCarts = async () => {
+    try {
+      console.log('[LabCarts] Fetching lab carts')
+      const response = await fetch('/api/member/lab/carts', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[LabCarts] No lab carts found or error fetching')
+        setLabCarts([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[LabCarts] Lab carts received:', data)
+      setLabCarts(data.data || [])
+    } catch (error) {
+      console.error('[LabCarts] Error fetching lab carts:', error)
+      setLabCarts([])
+    }
+  }
+
+  const fetchLabOrders = async () => {
+    try {
+      console.log('[LabOrders] Fetching lab orders')
+      const response = await fetch('/api/member/lab/orders', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[LabOrders] No lab orders found or error fetching')
+        setLabOrders([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[LabOrders] Lab orders received:', data)
+      setLabOrders(data.data || [])
+    } catch (error) {
+      console.error('[LabOrders] Error fetching lab orders:', error)
+      setLabOrders([])
     }
   }
 
@@ -898,12 +955,186 @@ export default function BookingsPage() {
         )}
 
         {activeTab === 'lab' && (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <div className="mb-4">
-              <BeakerIcon className="h-16 w-16 text-gray-300 mx-auto" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lab Tests</h3>
-            <p className="text-gray-600">Lab test bookings will appear here</p>
+          <div className="space-y-4">
+            {labCarts.length === 0 && labOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center">
+                <div className="mb-4">
+                  <BeakerIcon className="h-16 w-16 text-gray-300 mx-auto" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No lab tests yet</h3>
+                <p className="text-gray-600 mb-4">Upload a prescription and create a cart to get started</p>
+                <button
+                  onClick={() => router.push('/member/lab-tests')}
+                  className="px-6 py-2 text-white rounded-lg"
+                  style={{ backgroundColor: '#0a529f' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                >
+                  Go to Lab Tests
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Lab Orders (Paid) */}
+                {labOrders.map((order) => (
+                  <div
+                    key={order._id}
+                    className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
+                          <BeakerIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Lab Test Order</div>
+                          <div className="text-sm text-gray-600">{order.items?.length || 0} test(s)</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Paid
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <UserIcon className="h-4 w-4" />
+                        <span>Vendor: {order.vendorName}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>{formatDate(order.collectionDate)}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <ClockIcon className="h-4 w-4" />
+                        <span>{order.collectionTime}</span>
+                      </div>
+
+                      {order.items && order.items.length > 0 && (
+                        <div className="text-sm text-gray-600">
+                          <div className="font-medium mb-1">Tests:</div>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {order.items.slice(0, 3).map((item: any, idx: number) => (
+                              <li key={idx}>{item.serviceName}</li>
+                            ))}
+                            {order.items.length > 3 && (
+                              <li className="text-gray-500">+{order.items.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          Order ID: <span className="font-medium text-gray-900">{order.orderId}</span>
+                        </div>
+                        <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
+                          ₹{order.finalAmount}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Lab Carts (Payment Pending or Active) */}
+                {labCarts.map((cart) => {
+                  const hasVendorsAssigned = cart.selectedVendorIds && cart.selectedVendorIds.length > 0
+                  const displayStatus = hasVendorsAssigned ? 'Payment Pending' : cart.status
+                  const statusColor = hasVendorsAssigned
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : cart.status === 'ACTIVE'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-800'
+
+                  return (
+                    <div
+                      key={cart._id}
+                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/member/lab-tests?cartId=${cart.cartId}`)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
+                            <BeakerIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">Lab Test Cart</div>
+                            <div className="text-sm text-gray-600">{cart.items?.length || 0} test(s)</div>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
+                          {displayStatus}
+                        </span>
+                      </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <UserIcon className="h-4 w-4" />
+                        <span>Patient: {cart.patientName}</span>
+                      </div>
+
+                      {cart.items && cart.items.length > 0 && (
+                        <div className="text-sm text-gray-600">
+                          <div className="font-medium mb-1">Tests:</div>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {cart.items.slice(0, 3).map((item: any, idx: number) => (
+                              <li key={idx}>{item.serviceName}</li>
+                            ))}
+                            {cart.items.length > 3 && (
+                              <li className="text-gray-500">+{cart.items.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm text-gray-600">
+                          Cart ID: <span className="font-medium text-gray-900">{cart.cartId}</span>
+                        </div>
+                      </div>
+
+                      {cart.selectedVendorIds && cart.selectedVendorIds.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs text-green-600 mb-2">
+                            ✓ Vendors assigned by operations team
+                          </div>
+                          <button
+                            className="w-full py-2 px-4 text-white rounded-lg font-medium"
+                            style={{ backgroundColor: '#0a529f' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/member/lab-tests/booking/${cart.cartId}`)
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                          >
+                            Select Vendor & Book
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-sm font-medium"
+                          style={{ color: '#0a529f' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/member/lab-tests?cartId=${cart.cartId}`)
+                          }}
+                        >
+                          View Details →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+                })}
+              </>
+            )}
           </div>
         )}
 

@@ -69,6 +69,14 @@ export default function LabDashboardPage() {
       stats: `${stats.services} services`,
     },
     {
+      name: 'Master Tests',
+      description: 'Manage master test catalog and parameters',
+      icon: ClipboardDocumentListIcon,
+      path: '/lab/master-tests',
+      color: 'bg-green-50 hover:bg-green-100 border-green-200',
+      stats: 'Test catalog',
+    },
+    {
       name: 'Lab Vendors',
       description: 'Manage lab vendors, pricing, and slots',
       icon: BuildingStorefrontIcon,
@@ -154,7 +162,7 @@ export default function LabDashboardPage() {
       {/* Quick Actions */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Lab Management</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {quickActions.map((action) => {
             const Icon = action.icon
             return (

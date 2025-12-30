@@ -90,7 +90,17 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 ---
 
-**Total Pages: 18**
+## Diagnostics Management
+
+| Path | Description |
+|------|-------------|
+| /operations/diagnostics/prescriptions | Browse diagnostic prescriptions for digitization |
+| /operations/diagnostics/prescriptions/[id]/digitize | Digitize diagnostic prescription and create cart |
+| /operations/diagnostics/orders | Manage diagnostic orders and track status through workflow |
+
+---
+
+**Total Pages: 21**
 
 **Key Features:**
 - Independent authentication with `/operations` cookie path
@@ -100,5 +110,6 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 - Dental service pricing configuration per clinic
 - Vision service management (operations-only booking)
 - Lab prescription digitization and order tracking
+- Diagnostics prescription digitization and order tracking
 - Appointment confirmation and cancellation workflows
 - Real-time booking status updates

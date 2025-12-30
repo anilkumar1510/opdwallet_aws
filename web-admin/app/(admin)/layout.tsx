@@ -24,6 +24,7 @@ function AdminLayoutContent({
     if (pathname.startsWith('/categories') || pathname.startsWith('/admin/categories')) return 'Categories'
     if (pathname.startsWith('/services') || pathname.startsWith('/admin/services')) return 'Service Types'
     if (pathname.startsWith('/lab') || pathname.startsWith('/admin/lab')) return 'Lab Diagnostics'
+    if (pathname.startsWith('/diagnostics') || pathname.startsWith('/admin/diagnostics')) return 'Diagnostics'
     if (pathname.startsWith('/cugs') || pathname.startsWith('/admin/cugs')) return 'CUG Management'
     if (pathname.startsWith('/masters') || pathname.startsWith('/admin/masters')) return 'Masters'
     return 'Admin'
@@ -59,6 +60,11 @@ function AdminLayoutContent({
       name: 'Lab',
       path: '/lab',
       current: pathname.startsWith('/lab') || pathname.startsWith('/admin/lab')
+    },
+    {
+      name: 'Diagnostics',
+      path: '/diagnostics',
+      current: pathname.startsWith('/diagnostics') || pathname.startsWith('/admin/diagnostics')
     },
     {
       name: 'CUGs',

@@ -195,8 +195,28 @@ export class PrescriptionsService {
       this.prescriptionModel.countDocuments({ userId: new Types.ObjectId(userId), isActive: true }),
     ]);
 
+    // Filter out prescriptions that already have lab_prescriptions created
+    const labPrescriptionModel = this.prescriptionModel.db.model('LabPrescription');
+    const usedPrescriptions = await labPrescriptionModel
+      .find({
+        userId: new Types.ObjectId(userId),
+        source: 'HEALTH_RECORD',
+        healthRecordId: { $exists: true },
+      })
+      .select('healthRecordId')
+      .lean();
+
+    const usedHealthRecordIds = new Set(
+      usedPrescriptions.map((p: any) => p.healthRecordId.toString()),
+    );
+
+    // Filter out already-used prescriptions
+    const availablePrescriptions = prescriptions.filter(
+      (p) => !usedHealthRecordIds.has((p._id as Types.ObjectId).toString()),
+    );
+
     return {
-      prescriptions,
+      prescriptions: availablePrescriptions,
       total,
       page,
       totalPages: Math.ceil(total / limit),

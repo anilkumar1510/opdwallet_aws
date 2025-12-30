@@ -12,7 +12,8 @@ export enum OrderStatus {
 
 export enum CollectionType {
   HOME_COLLECTION = 'HOME_COLLECTION',
-  CENTER_VISIT = 'CENTER_VISIT',
+  IN_CLINIC = 'IN_CLINIC',
+  CENTER_VISIT = 'CENTER_VISIT', // Backward compatibility
 }
 
 export enum PaymentStatus {
@@ -20,6 +21,16 @@ export enum PaymentStatus {
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
   REFUNDED = 'REFUNDED',
+}
+
+export enum ServiceType {
+  LAB = 'LAB',
+  DIAGNOSTIC = 'DIAGNOSTIC',
+}
+
+export enum CancelledBy {
+  MEMBER = 'MEMBER',
+  OPERATIONS = 'OPERATIONS',
 }
 
 export class OrderItem {
@@ -99,6 +110,10 @@ export class LabOrder extends Document {
   @Prop({ required: true })
   vendorName: string;
 
+  // Service type
+  @Prop({ required: true, enum: ServiceType, default: ServiceType.LAB })
+  serviceType: ServiceType;
+
   @Prop({ type: [OrderItem], required: true })
   items: OrderItem[];
 
@@ -132,6 +147,19 @@ export class LabOrder extends Document {
   @Prop({ required: true })
   finalAmount: number;
 
+  // Payment breakdown fields
+  @Prop()
+  copayAmount?: number;
+
+  @Prop()
+  serviceLimitDeduction?: number;
+
+  @Prop()
+  walletDeduction?: number;
+
+  @Prop()
+  finalPayable?: number;
+
   @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDING })
   paymentStatus: PaymentStatus;
 
@@ -140,6 +168,9 @@ export class LabOrder extends Document {
 
   @Prop()
   paymentDate?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'TransactionSummary' })
+  transactionId?: Types.ObjectId;
 
   // Legacy fields for backward compatibility
   @Prop()
@@ -187,6 +218,9 @@ export class LabOrder extends Document {
   @Prop()
   cancelledAt?: Date;
 
+  @Prop({ enum: CancelledBy })
+  cancelledBy?: CancelledBy;
+
   @Prop()
   cancellationReason?: string;
 
@@ -207,3 +241,4 @@ LabOrderSchema.index({ vendorId: 1, status: 1 });
 LabOrderSchema.index({ status: 1, createdAt: -1 });
 LabOrderSchema.index({ prescriptionId: 1 });
 LabOrderSchema.index({ cartId: 1 });
+LabOrderSchema.index({ serviceType: 1, status: 1 });

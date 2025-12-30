@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   DocumentPlusIcon,
+  FolderOpenIcon,
   ShoppingCartIcon,
   ClockIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
+import ServiceDescriptionCard from '@/components/ServiceDescriptionCard'
+import PrescriptionSelectorModal from '@/components/PrescriptionSelectorModal'
+import PrescriptionConfirmationModal from '@/components/PrescriptionConfirmationModal'
 
 interface Prescription {
   prescriptionId: string
@@ -26,11 +30,20 @@ interface Cart {
   createdAt: string
 }
 
+interface SelectedPrescription {
+  _id: string
+  prescriptionId: string
+  type: 'digital' | 'pdf'
+}
+
 export default function DiagnosticsPage() {
   const router = useRouter()
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
   const [carts, setCarts] = useState<Cart[]>([])
   const [loading, setLoading] = useState(true)
+  const [showSelectorModal, setShowSelectorModal] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [submittingPrescription, setSubmittingPrescription] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -41,7 +54,7 @@ export default function DiagnosticsPage() {
       setLoading(true)
 
       // Fetch prescriptions
-      const prescriptionsRes = await fetch('/api/member/lab/prescriptions', {
+      const prescriptionsRes = await fetch('/api/member/diagnostics/prescriptions', {
         credentials: 'include',
       })
       if (prescriptionsRes.ok) {
@@ -50,7 +63,7 @@ export default function DiagnosticsPage() {
       }
 
       // Fetch active carts
-      const cartsRes = await fetch('/api/member/lab/carts/active', {
+      const cartsRes = await fetch('/api/member/diagnostics/carts', {
         credentials: 'include',
       })
       if (cartsRes.ok) {
@@ -61,6 +74,42 @@ export default function DiagnosticsPage() {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePrescriptionSelect = async (prescription: SelectedPrescription) => {
+    setShowSelectorModal(false)
+    setSubmittingPrescription(true)
+    setShowConfirmationModal(true)
+
+    try {
+      // Submit the existing prescription for diagnostic services
+      const response = await fetch('/api/member/diagnostics/prescriptions/submit-existing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          healthRecordId: prescription._id,
+          patientId: 'current', // Will be determined by backend
+          patientName: 'Current Member', // Will be determined by backend
+          patientRelationship: 'Self',
+          pincode: '', // Will be determined by backend
+          prescriptionDate: new Date().toISOString(),
+        }),
+      })
+
+      if (response.ok) {
+        // Refresh the prescriptions list
+        await fetchData()
+      } else {
+        console.error('Failed to submit prescription')
+      }
+    } catch (error) {
+      console.error('Error submitting prescription:', error)
+    } finally {
+      setSubmittingPrescription(false)
     }
   }
 
@@ -103,33 +152,59 @@ export default function DiagnosticsPage() {
       <div className="bg-white shadow-sm">
         <div className="px-4 py-4">
           <h1 className="text-xl font-semibold text-gray-900">Diagnostic Services</h1>
-          <p className="text-sm text-gray-600 mt-1">Book diagnostic tests & diagnostic services</p>
+          <p className="text-sm text-gray-600 mt-1">Book diagnostic imaging & tests</p>
         </div>
       </div>
 
       <div className="p-4 space-y-4 max-w-4xl mx-auto">
-        {/* Upload Prescription Card */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => router.push('/member/diagnostics/upload')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              router.push('/member/diagnostics/upload')
-            }
-          }}
-          className="rounded-2xl p-6 text-white cursor-pointer hover:shadow-lg transition-shadow"
-          style={{ backgroundImage: 'linear-gradient(to right, #0a529f, #084080)' }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Upload Prescription</h2>
+        {/* Service Description */}
+        <ServiceDescriptionCard type="diagnostic" />
+
+        {/* Prescription Options */}
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <h3 className="font-semibold text-gray-900 mb-4">Get Started</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Upload New Prescription */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => router.push('/member/diagnostics/upload')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  router.push('/member/diagnostics/upload')
+                }
+              }}
+              className="rounded-xl p-5 text-white cursor-pointer hover:shadow-lg transition-all"
+              style={{ backgroundImage: 'linear-gradient(to right, #0a529f, #084080)' }}
+            >
+              <DocumentPlusIcon className="h-8 w-8 mb-3" />
+              <h4 className="font-semibold mb-1">Upload New Prescription</h4>
               <p className="text-sm" style={{ color: '#d4e5f5' }}>
-                Upload your prescription and we&apos;ll create a quote for you
+                Upload a new prescription from your device
               </p>
             </div>
-            <DocumentPlusIcon className="h-12 w-12" />
+
+            {/* Use Existing Prescription */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowSelectorModal(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setShowSelectorModal(true)
+                }
+              }}
+              className="rounded-xl p-5 border-2 cursor-pointer hover:shadow-lg transition-all"
+              style={{ borderColor: '#0a529f' }}
+            >
+              <FolderOpenIcon className="h-8 w-8 mb-3" style={{ color: '#0a529f' }} />
+              <h4 className="font-semibold mb-1 text-gray-900">Use Existing Prescription</h4>
+              <p className="text-sm text-gray-600">
+                Select from your health records
+              </p>
+            </div>
           </div>
         </div>
 
@@ -149,11 +224,11 @@ export default function DiagnosticsPage() {
                   key={cart.cartId}
                   role="button"
                   tabIndex={0}
-                  onClick={() => router.push(`/member/diagnostics/cart/${cart.cartId}`)}
+                  onClick={() => router.push(`/member/bookings?tab=diagnostic`)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      router.push(`/member/diagnostics/cart/${cart.cartId}`)
+                      router.push(`/member/bookings?tab=diagnostic`)
                     }
                   }}
                   className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -222,7 +297,7 @@ export default function DiagnosticsPage() {
                   </div>
                   {prescription.status === 'DIGITIZED' && prescription.cartId && (
                     <button
-                      onClick={() => router.push(`/member/diagnostics/cart/${prescription.cartId}`)}
+                      onClick={() => router.push(`/member/bookings?tab=diagnostic`)}
                       className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium transition-colors"
                       style={{ backgroundColor: '#0a529f' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
@@ -237,14 +312,29 @@ export default function DiagnosticsPage() {
           </div>
         )}
 
-        {/* Orders Link */}
+        {/* View Orders Link */}
         <button
-          onClick={() => router.push('/member/diagnostics/orders')}
+          onClick={() => router.push('/member/bookings?tab=diagnostic')}
           className="w-full py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
         >
-          View My Orders
+          View Diagnostic Bookings
         </button>
       </div>
+
+      {/* Modals */}
+      <PrescriptionSelectorModal
+        isOpen={showSelectorModal}
+        onClose={() => setShowSelectorModal(false)}
+        onSelect={handlePrescriptionSelect}
+        serviceType="diagnostic"
+      />
+
+      <PrescriptionConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        serviceType="diagnostic"
+        loading={submittingPrescription}
+      />
     </div>
   )
 }

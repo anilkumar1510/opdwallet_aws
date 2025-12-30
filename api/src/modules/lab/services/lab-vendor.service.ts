@@ -292,6 +292,10 @@ export class LabVendorService {
       .exec();
   }
 
+  async getSlotById(slotId: string): Promise<LabVendorSlot | null> {
+    return this.slotModel.findOne({ slotId }).exec();
+  }
+
   async bookSlot(slotId: string): Promise<LabVendorSlot> {
     const slot = await this.slotModel.findOne({ slotId });
 

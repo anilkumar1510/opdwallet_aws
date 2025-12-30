@@ -17,6 +17,7 @@ interface Prescription {
   fileName: string
   filePath: string
   status: string
+  serviceType: 'LAB' | 'DIAGNOSTIC'
   uploadedAt: string
   cartId?: string
 }
@@ -26,6 +27,7 @@ export default function OpsLabPrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
+  const [serviceTypeFilter, setServiceTypeFilter] = useState('')
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
 
@@ -34,6 +36,7 @@ export default function OpsLabPrescriptionsPage() {
       setLoading(true)
       const params = new URLSearchParams()
       if (statusFilter) params.append('status', statusFilter)
+      if (serviceTypeFilter) params.append('serviceType', serviceTypeFilter)
 
       const response = await apiFetch(`/api/ops/lab/prescriptions/queue?${params}`)
 
@@ -47,11 +50,11 @@ export default function OpsLabPrescriptionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter])
+  }, [statusFilter, serviceTypeFilter])
 
   useEffect(() => {
     fetchPrescriptions()
-  }, [statusFilter, fetchPrescriptions])
+  }, [fetchPrescriptions])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -63,6 +66,17 @@ export default function OpsLabPrescriptionsPage() {
         return 'bg-green-100 text-green-800'
       case 'DELAYED':
         return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getServiceTypeColor = (serviceType: string) => {
+    switch (serviceType) {
+      case 'LAB':
+        return 'bg-purple-100 text-purple-800'
+      case 'DIAGNOSTIC':
+        return 'bg-cyan-100 text-cyan-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -82,20 +96,31 @@ export default function OpsLabPrescriptionsPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Lab Prescriptions Queue</h1>
-          <p className="text-sm text-gray-600 mt-1">Digitize uploaded prescriptions</p>
+          <h1 className="text-2xl font-bold text-gray-900">Prescriptions Queue</h1>
+          <p className="text-sm text-gray-600 mt-1">Digitize uploaded prescriptions for Lab & Diagnostic services</p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">All Status</option>
-          <option value="UPLOADED">Uploaded</option>
-          <option value="DIGITIZING">Digitizing</option>
-          <option value="DIGITIZED">Digitized</option>
-          <option value="DELAYED">Delayed</option>
-        </select>
+        <div className="flex space-x-3">
+          <select
+            value={serviceTypeFilter}
+            onChange={(e) => setServiceTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Services</option>
+            <option value="LAB">Lab Tests</option>
+            <option value="DIAGNOSTIC">Diagnostic</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Status</option>
+            <option value="UPLOADED">Uploaded</option>
+            <option value="DIGITIZING">Digitizing</option>
+            <option value="DIGITIZED">Digitized</option>
+            <option value="DELAYED">Delayed</option>
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -120,6 +145,9 @@ export default function OpsLabPrescriptionsPage() {
                     Patient
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Service Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Uploaded At
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -141,6 +169,11 @@ export default function OpsLabPrescriptionsPage() {
                         <p className="font-medium">{prescription.patientName}</p>
                         <p className="text-gray-500 text-xs">{prescription.userId?.phone || 'N/A'}</p>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getServiceTypeColor(prescription.serviceType)}`}>
+                        {prescription.serviceType}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {formatDate(prescription.uploadedAt)}

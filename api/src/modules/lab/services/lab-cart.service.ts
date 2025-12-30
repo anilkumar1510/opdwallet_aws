@@ -120,7 +120,7 @@ export class LabCartService {
 
   async getUserCarts(userId: Types.ObjectId): Promise<LabCart[]> {
     return this.cartModel
-      .find({ userId })
+      .find({ userId, status: { $ne: CartStatus.ORDERED } })
       .populate('items.serviceId', 'name code category')
       .sort({ createdAt: -1 })
       .exec();

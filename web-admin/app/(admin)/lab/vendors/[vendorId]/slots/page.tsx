@@ -24,7 +24,7 @@ interface Vendor {
   vendorId: string
   name: string
   code: string
-  servicePincodes: string[]
+  serviceablePincodes: string[]
 }
 
 interface TimeSlotDefinition {
@@ -74,8 +74,8 @@ export default function VendorSlotsPage() {
         setVendor(foundVendor)
 
         // Set default pincode and date for viewing
-        if (foundVendor?.servicePincodes?.length > 0) {
-          setFilterPincode(foundVendor.servicePincodes[0])
+        if (foundVendor?.serviceablePincodes?.length > 0) {
+          setFilterPincode(foundVendor.serviceablePincodes[0])
         }
         setFilterDate(getTodayDate())
       }
@@ -119,7 +119,7 @@ export default function VendorSlotsPage() {
 
   const handleOpenModal = () => {
     setFormData({
-      pincode: vendor?.servicePincodes?.[0] || '',
+      pincode: vendor?.serviceablePincodes?.[0] || '',
       startDate: getTodayDate(),
       endDate: '',
       selectedSlots: [],
@@ -293,7 +293,7 @@ export default function VendorSlotsPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select Pincode</option>
-                {vendor?.servicePincodes?.map((pincode) => (
+                {vendor?.serviceablePincodes?.map((pincode) => (
                   <option key={pincode} value={pincode}>
                     {pincode}
                   </option>
@@ -411,7 +411,7 @@ export default function VendorSlotsPage() {
                   required
                 >
                   <option value="">Select Pincode</option>
-                  {vendor?.servicePincodes?.map((pincode) => (
+                  {vendor?.serviceablePincodes?.map((pincode) => (
                     <option key={pincode} value={pincode}>
                       {pincode}
                     </option>

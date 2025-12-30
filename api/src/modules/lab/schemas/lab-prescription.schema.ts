@@ -8,6 +8,16 @@ export enum PrescriptionStatus {
   DELAYED = 'DELAYED',
 }
 
+export enum ServiceType {
+  LAB = 'LAB',
+  DIAGNOSTIC = 'DIAGNOSTIC',
+}
+
+export enum PrescriptionSource {
+  UPLOAD = 'UPLOAD',
+  HEALTH_RECORD = 'HEALTH_RECORD',
+}
+
 @Schema({ timestamps: true, collection: 'lab_prescriptions' })
 export class LabPrescription extends Document {
   @Prop({ required: true, unique: true })
@@ -33,6 +43,16 @@ export class LabPrescription extends Document {
 
   @Prop({ required: true })
   pincode: string;
+
+  // Service type and source
+  @Prop({ required: true, enum: ServiceType, default: ServiceType.LAB })
+  serviceType: ServiceType;
+
+  @Prop({ required: true, enum: PrescriptionSource, default: PrescriptionSource.UPLOAD })
+  source: PrescriptionSource;
+
+  @Prop({ type: Types.ObjectId })
+  healthRecordId?: Types.ObjectId; // If source is HEALTH_RECORD, link to the prescription/digital prescription
 
   // File info
   @Prop({ required: true })
@@ -88,3 +108,4 @@ LabPrescriptionSchema.index({ prescriptionId: 1 }, { unique: true });
 LabPrescriptionSchema.index({ userId: 1, status: 1 });
 LabPrescriptionSchema.index({ status: 1, uploadedAt: 1 });
 LabPrescriptionSchema.index({ pincode: 1, status: 1 });
+LabPrescriptionSchema.index({ serviceType: 1, status: 1 });

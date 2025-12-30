@@ -155,6 +155,64 @@ export default function PaymentPage() {
           // The payment service will call visionBookingsService.handlePaymentComplete()
           // which updates booking status, generates invoice, etc.
         }
+        // Complete the lab order creation if pending
+        else if (bookingData.serviceType === 'LAB') {
+          console.log('🧪 [PaymentPage] Creating lab order with booking data...');
+
+          // Verify we have all required fields for lab order
+          if (!bookingData.serviceDetails?.clinicId || !bookingData.serviceDetails?.slotId || !bookingData.serviceDetails?.date || !bookingData.serviceDetails?.time) {
+            console.error('❌ [PaymentPage] Missing required lab order details:', {
+              hasVendorId: !!bookingData.serviceDetails?.clinicId,
+              hasSlotId: !!bookingData.serviceDetails?.slotId,
+              hasDate: !!bookingData.serviceDetails?.date,
+              hasTime: !!bookingData.serviceDetails?.time,
+            });
+            throw new Error('Missing required lab order details. Please try booking again.');
+          }
+
+          // Decode cartId and collectionType from serviceCode field
+          const [cartId, collectionType] = (bookingData.serviceDetails?.serviceCode || '|IN_CLINIC').split('|');
+
+          // Build lab order payload matching CreateOrderDto
+          const labOrderPayload = {
+            cartId: cartId,
+            vendorId: bookingData.serviceDetails.clinicId,  // clinicId stores vendorId
+            slotId: bookingData.serviceDetails.slotId,
+            collectionType: collectionType || 'IN_CLINIC',
+            appointmentDate: bookingData.serviceDetails.date,
+            timeSlot: bookingData.serviceDetails.time,
+            paymentAlreadyProcessed: true  // Payment was already handled by PaymentProcessor
+          };
+
+          console.log('[PaymentPage] Lab order payload:', JSON.stringify(labOrderPayload, null, 2));
+
+          // Create the lab order
+          const labOrderResponse = await fetch('/api/member/lab/orders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(labOrderPayload)
+          });
+
+          console.log('[PaymentPage] Lab order response status:', labOrderResponse.status);
+
+          if (!labOrderResponse.ok) {
+            const errorText = await labOrderResponse.text();
+            console.error('[PaymentPage] Failed to create lab order:', {
+              status: labOrderResponse.status,
+              statusText: labOrderResponse.statusText,
+              errorBody: errorText
+            });
+
+            throw new Error(`Failed to create lab order: ${labOrderResponse.status} - ${errorText}`);
+          } else {
+            const labOrderData = await labOrderResponse.json();
+            console.log('[PaymentPage] Lab order created successfully:', labOrderData);
+            console.log('✅ [PaymentPage] Order ID:', labOrderData.data?.orderId);
+          }
+        }
         // Complete the appointment creation if pending
         else if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
           console.log('📅 [PaymentPage] Creating appointment with booking data...');

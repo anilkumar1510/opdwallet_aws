@@ -22,6 +22,7 @@ import { LabVendorService } from '../services/lab-vendor.service';
 import { LabOrderService } from '../services/lab-order.service';
 import { UploadPrescriptionDto } from '../dto/upload-prescription.dto';
 import { CreateOrderDto } from '../dto/create-order.dto';
+import { ValidateLabOrderDto } from '../dto/validate-lab-order.dto';
 import { Types } from 'mongoose';
 
 @Controller('member/lab')
@@ -59,6 +60,37 @@ export class LabMemberController {
     };
   }
 
+  @Post('prescriptions/submit-existing')
+  async submitExistingPrescription(
+    @Request() req: any,
+    @Body() body: {
+      healthRecordId: string;
+      patientId: string;
+      patientName: string;
+      patientRelationship: string;
+      pincode: string;
+      prescriptionDate: string;
+    },
+  ) {
+    const userId = new Types.ObjectId(req.user.userId);
+
+    const prescription = await this.prescriptionService.submitExistingPrescription(
+      userId,
+      body.healthRecordId,
+      body.patientId,
+      body.patientName,
+      body.patientRelationship,
+      body.pincode,
+      new Date(body.prescriptionDate),
+    );
+
+    return {
+      success: true,
+      message: 'Prescription submitted for digitization',
+      data: prescription,
+    };
+  }
+
   @Get('prescriptions')
   async getPrescriptions(@Request() req: any, @Query('status') status?: string) {
     const userId = new Types.ObjectId(req.user.userId);
@@ -81,6 +113,17 @@ export class LabMemberController {
   }
 
   // ============ CART APIS ============
+
+  @Get('carts')
+  async getCarts(@Request() req: any) {
+    const userId = new Types.ObjectId(req.user.userId);
+    const carts = await this.cartService.getUserCarts(userId);
+
+    return {
+      success: true,
+      data: carts,
+    };
+  }
 
   @Get('carts/active')
   async getActiveCarts(@Request() req: any) {
@@ -182,6 +225,13 @@ export class LabMemberController {
   }
 
   // ============ ORDER APIS ============
+
+  @Post('orders/validate')
+  async validateOrder(@Request() req: any, @Body() validateDto: ValidateLabOrderDto) {
+    const userId = req.user.userId;
+    console.log('[LabMemberController] POST /api/member/lab/orders/validate - User:', userId);
+    return this.orderService.validateOrder(userId, validateDto);
+  }
 
   @Post('orders')
   async createOrder(@Request() req: any, @Body() createOrderDto: CreateOrderDto) {

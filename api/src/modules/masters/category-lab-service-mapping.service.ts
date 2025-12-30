@@ -7,6 +7,7 @@ import {
 } from './schemas/category-lab-service-mapping.schema';
 import { CategoryMaster, CategoryMasterDocument } from './schemas/category-master.schema';
 import { LabService } from '../lab/schemas/lab-service.schema';
+import { DiagnosticService } from '../diagnostics/schemas/diagnostic-service.schema';
 import { LabServiceWithMappingDto } from './dto/category-lab-service-mapping.dto';
 
 @Injectable()
@@ -20,6 +21,8 @@ export class CategoryLabServiceMappingService {
     private categoryModel: Model<CategoryMasterDocument>,
     @InjectModel(LabService.name)
     private labServiceModel: Model<LabService>,
+    @InjectModel(DiagnosticService.name)
+    private diagnosticServiceModel: Model<DiagnosticService>,
   ) {}
 
   /**
@@ -34,6 +37,8 @@ export class CategoryLabServiceMappingService {
     // Validate category exists and is supported
     await this.validateCategory(categoryId);
 
+    const isDiagnostic = categoryId.toUpperCase() === 'CAT003';
+
     // Build query for lab services
     const query: any = { isActive: true };
 
@@ -43,13 +48,18 @@ export class CategoryLabServiceMappingService {
       console.log(`[CategoryLabServiceMappingService] Filtering by categories: ${labServiceCategories.join(', ')}`);
     }
 
-    // Fetch lab services sorted by category and name
-    const labServices = await this.labServiceModel
-      .find(query)
-      .sort({ category: 1, displayOrder: 1, name: 1 })
-      .exec();
+    // Fetch services sorted by category and name (use diagnostic or lab based on category)
+    const services = isDiagnostic
+      ? await this.diagnosticServiceModel
+          .find(query)
+          .sort({ category: 1, displayOrder: 1, name: 1 })
+          .exec()
+      : await this.labServiceModel
+          .find(query)
+          .sort({ category: 1, displayOrder: 1, name: 1 })
+          .exec();
 
-    console.log(`[CategoryLabServiceMappingService] Found ${labServices.length} active lab services`);
+    console.log(`[CategoryLabServiceMappingService] Found ${services.length} active ${isDiagnostic ? 'diagnostic' : 'lab'} services`);
 
     // Fetch mappings for this category
     const mappings = await this.mappingModel
@@ -63,22 +73,22 @@ export class CategoryLabServiceMappingService {
       mappings.map((m) => [m.labServiceId.toString(), m.isEnabled]),
     );
 
-    // Merge lab service data with mapping status
-    const result = labServices.map((service) => ({
+    // Merge service data with mapping status
+    const result = services.map((service) => ({
       _id: String(service._id),
       serviceId: service.serviceId,
       code: service.code,
       name: service.name,
       description: service.description,
       category: service.category,
-      sampleType: service.sampleType,
-      preparationInstructions: service.preparationInstructions,
+      sampleType: isDiagnostic ? undefined : (service as any).sampleType,
+      preparationInstructions: isDiagnostic ? undefined : (service as any).preparationInstructions,
       isActive: service.isActive,
       displayOrder: service.displayOrder,
       isEnabledForCategory: mappingMap.get(String(service._id)) || false,
     }));
 
-    console.log(`[CategoryLabServiceMappingService] Returning ${result.length} lab services with mapping status`);
+    console.log(`[CategoryLabServiceMappingService] Returning ${result.length} ${isDiagnostic ? 'diagnostic' : 'lab'} services with mapping status`);
     return result;
   }
 
@@ -95,14 +105,15 @@ export class CategoryLabServiceMappingService {
 
     // Validate inputs
     await this.validateCategory(categoryId);
-    const labService = await this.validateLabService(labServiceId);
+    const isDiagnostic = categoryId.toUpperCase() === 'CAT003';
+    const service = await this.validateService(labServiceId, isDiagnostic);
 
     const upperCategoryId = categoryId.toUpperCase();
 
     // Find existing mapping
     const existingMapping = await this.mappingModel.findOne({
       categoryId: upperCategoryId,
-      labServiceId: labService._id,
+      labServiceId: service._id,
     });
 
     if (existingMapping) {
@@ -116,24 +127,24 @@ export class CategoryLabServiceMappingService {
       console.log(`[CategoryLabServiceMappingService] Creating new mapping`);
       await this.mappingModel.create({
         categoryId: upperCategoryId,
-        labServiceId: labService._id,
+        labServiceId: service._id,
         isEnabled,
         createdBy: userId,
       });
     }
 
-    // Return lab service with updated mapping status
+    // Return service with updated mapping status
     return {
-      _id: String(labService._id),
-      serviceId: labService.serviceId,
-      code: labService.code,
-      name: labService.name,
-      description: labService.description,
-      category: labService.category,
-      sampleType: labService.sampleType,
-      preparationInstructions: labService.preparationInstructions,
-      isActive: labService.isActive,
-      displayOrder: labService.displayOrder,
+      _id: String(service._id),
+      serviceId: service.serviceId,
+      code: service.code,
+      name: service.name,
+      description: service.description,
+      category: service.category,
+      sampleType: isDiagnostic ? undefined : (service as any).sampleType,
+      preparationInstructions: isDiagnostic ? undefined : (service as any).preparationInstructions,
+      isActive: service.isActive,
+      displayOrder: service.displayOrder,
       isEnabledForCategory: isEnabled,
     };
   }
@@ -160,19 +171,28 @@ export class CategoryLabServiceMappingService {
   }
 
   /**
-   * Validate lab service exists
+   * Validate service exists (lab or diagnostic)
+   */
+  private async validateService(serviceId: string, isDiagnostic: boolean): Promise<any> {
+    if (!Types.ObjectId.isValid(serviceId)) {
+      throw new BadRequestException(`Invalid service ID format: ${serviceId}`);
+    }
+
+    const service = isDiagnostic
+      ? await this.diagnosticServiceModel.findById(serviceId)
+      : await this.labServiceModel.findById(serviceId);
+
+    if (!service) {
+      throw new NotFoundException(`${isDiagnostic ? 'Diagnostic' : 'Lab'} service with ID ${serviceId} not found`);
+    }
+
+    return service;
+  }
+
+  /**
+   * Validate lab service exists (deprecated - kept for backward compatibility)
    */
   private async validateLabService(labServiceId: string): Promise<any> {
-    if (!Types.ObjectId.isValid(labServiceId)) {
-      throw new BadRequestException(`Invalid lab service ID format: ${labServiceId}`);
-    }
-
-    const labService = await this.labServiceModel.findById(labServiceId);
-
-    if (!labService) {
-      throw new NotFoundException(`Lab service with ID ${labServiceId} not found`);
-    }
-
-    return labService;
+    return this.validateService(labServiceId, false);
   }
 }

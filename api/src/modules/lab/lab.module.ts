@@ -10,14 +10,23 @@ import { LabVendor, LabVendorSchema } from './schemas/lab-vendor.schema';
 import { LabVendorPricing, LabVendorPricingSchema } from './schemas/lab-vendor-pricing.schema';
 import { LabVendorSlot, LabVendorSlotSchema } from './schemas/lab-vendor-slot.schema';
 import { LabOrder, LabOrderSchema } from './schemas/lab-order.schema';
+import { MasterTestParameter, MasterTestParameterSchema } from './schemas/master-test-parameter.schema';
+import { TestNameAlias, TestNameAliasSchema } from './schemas/test-name-alias.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { LabPrescriptionService } from './services/lab-prescription.service';
 import { LabCartService } from './services/lab-cart.service';
 import { LabServiceService } from './services/lab-service.service';
 import { LabVendorService } from './services/lab-vendor.service';
 import { LabOrderService } from './services/lab-order.service';
+import { MasterTestParameterService } from './services/master-test-parameter.service';
+import { TestNameAliasService } from './services/test-name-alias.service';
 import { LabMemberController } from './controllers/lab-member.controller';
 import { LabAdminController } from './controllers/lab-admin.controller';
 import { LabOpsController } from './controllers/lab-ops.controller';
+import { AssignmentsModule } from '../assignments/assignments.module';
+import { PlanConfigModule } from '../plan-config/plan-config.module';
+import { WalletModule } from '../wallet/wallet.module';
+import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 
 @Module({
   imports: [
@@ -29,7 +38,14 @@ import { LabOpsController } from './controllers/lab-ops.controller';
       { name: LabVendorPricing.name, schema: LabVendorPricingSchema },
       { name: LabVendorSlot.name, schema: LabVendorSlotSchema },
       { name: LabOrder.name, schema: LabOrderSchema },
+      { name: MasterTestParameter.name, schema: MasterTestParameterSchema },
+      { name: TestNameAlias.name, schema: TestNameAliasSchema },
+      { name: User.name, schema: UserSchema },
     ]),
+    AssignmentsModule,
+    PlanConfigModule,
+    WalletModule,
+    TransactionSummaryModule,
     MulterModule.register({
       storage: diskStorage({
         destination: (req, file, cb) => {
@@ -74,6 +90,8 @@ import { LabOpsController } from './controllers/lab-ops.controller';
     LabServiceService,
     LabVendorService,
     LabOrderService,
+    MasterTestParameterService,
+    TestNameAliasService,
   ],
   exports: [
     LabPrescriptionService,
@@ -81,6 +99,8 @@ import { LabOpsController } from './controllers/lab-ops.controller';
     LabServiceService,
     LabVendorService,
     LabOrderService,
+    MasterTestParameterService,
+    TestNameAliasService,
   ],
 })
 export class LabModule {}

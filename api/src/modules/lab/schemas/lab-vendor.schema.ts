@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export class VendorContactInfo {
   @Prop({ required: true })
@@ -42,6 +42,16 @@ export class LabVendor extends Document {
 
   @Prop()
   description?: string;
+
+  // Service type support
+  @Prop({ default: true })
+  offersLabServices: boolean;
+
+  @Prop({ default: false })
+  offersDiagnosticServices: boolean;
+
+  @Prop({ type: Types.ObjectId })
+  diagnosticVendorId?: Types.ObjectId; // Link to diagnostic vendor if same entity offers both
 
   @Prop({ default: true })
   isActive: boolean;

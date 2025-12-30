@@ -110,18 +110,39 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /member/lab/prescriptions/upload | Upload prescription |
-| GET | /member/lab/prescriptions | Get user prescriptions |
+| GET | /member/lab/prescriptions | Get user prescriptions with order status and lab tests (enhanced: includes hasOrder, orderCount, labTests from source prescription) |
 | GET | /member/lab/prescriptions/:id | Get prescription details |
-| GET | /member/lab/carts/active | Get active carts for user |
+| POST | /member/lab/prescriptions/submit-existing | Submit existing health record prescription for lab services |
+| GET | /member/lab/carts | Get active carts for user |
 | GET | /member/lab/carts/:cartId | Get cart by ID |
 | GET | /member/lab/carts/:cartId/vendors | Get vendors for cart |
 | DELETE | /member/lab/carts/:cartId | Delete cart |
 | GET | /member/lab/vendors/available | Get available vendors by pincode |
 | GET | /member/lab/vendors/:vendorId/pricing | Get vendor pricing |
 | GET | /member/lab/vendors/:vendorId/slots | Get available slots |
-| POST | /member/lab/orders | Create order |
+| POST | /member/lab/orders | Create order with payment processing (supports wallet debit and transaction creation) |
 | GET | /member/lab/orders | Get user orders |
 | GET | /member/lab/orders/:orderId | Get order details |
+
+---
+
+## Diagnostics (Member)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /member/diagnostics/prescriptions/upload | Upload diagnostic prescription |
+| POST | /member/diagnostics/prescriptions/submit-existing | Submit existing health record prescription for diagnostics |
+| GET | /member/diagnostics/prescriptions | Get user diagnostic prescriptions |
+| GET | /member/diagnostics/prescriptions/:id | Get diagnostic prescription details |
+| GET | /member/diagnostics/carts | Get diagnostic carts for user |
+| GET | /member/diagnostics/carts/:cartId | Get diagnostic cart by ID |
+| GET | /member/diagnostics/carts/:cartId/vendors/:vendorId/pricing | Get vendor pricing for cart items |
+| GET | /member/diagnostics/vendors/:vendorId/slots | Get available slots for diagnostic vendor |
+| POST | /member/diagnostics/orders | Create diagnostic order |
+| GET | /member/diagnostics/orders | Get user diagnostic orders |
+| GET | /member/diagnostics/orders/:id | Get diagnostic order details |
+| POST | /member/diagnostics/orders/:id/cancel | Cancel diagnostic order |
+| GET | /member/diagnostics/orders/:id/reports | Get diagnostic order reports |
 
 ---
 
@@ -129,7 +150,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /member/prescriptions | Get member's prescriptions |
+| GET | /member/prescriptions | Get member's PDF prescriptions (filters out prescriptions already used for lab bookings) |
 | GET | /member/prescriptions/:prescriptionId | Get prescription details |
 | GET | /member/prescriptions/:prescriptionId/download | Download prescription |
 
@@ -139,7 +160,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /member/digital-prescriptions | Get member's digital prescriptions |
+| GET | /member/digital-prescriptions | Get member's digital prescriptions (filters out prescriptions already used for lab bookings) |
 | GET | /member/digital-prescriptions/:prescriptionId | Get digital prescription details |
 | GET | /member/digital-prescriptions/:prescriptionId/download-pdf | Download prescription PDF |
 
@@ -367,4 +388,4 @@ CONFIRMED → NO_SHOW
 
 ---
 
-**Total Endpoints: ~83**
+**Total Endpoints: ~97**

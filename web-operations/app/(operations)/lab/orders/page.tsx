@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircleIcon, TruckIcon, DocumentArrowUpIcon, EyeIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon, TruckIcon, DocumentArrowUpIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 
@@ -34,6 +34,9 @@ export default function OpsLabOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -101,6 +104,36 @@ export default function OpsLabOrdersPage() {
     router.push(`/lab/orders/${orderId}/upload-report`)
   }
 
+  const handleCancelOrder = async () => {
+    if (!selectedOrder || !cancelReason.trim()) {
+      toast.error('Please enter a cancellation reason')
+      return
+    }
+
+    setCancelling(true)
+
+    try {
+      const response = await apiFetch(`/api/ops/lab/orders/${selectedOrder.orderId}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: cancelReason }),
+      })
+
+      if (!response.ok) throw new Error('Failed to cancel order')
+
+      const data = await response.json()
+      toast.success(data.message || 'Order cancelled successfully')
+      setShowCancelModal(false)
+      setCancelReason('')
+      setSelectedOrder(null)
+      fetchOrders()
+    } catch (error) {
+      console.error('Error cancelling order:', error)
+      toast.error('Failed to cancel order')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PLACED':
@@ -148,6 +181,7 @@ export default function OpsLabOrdersPage() {
           <option value="SAMPLE_COLLECTED">Sample Collected</option>
           <option value="PROCESSING">Processing</option>
           <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
         </select>
       </div>
 
@@ -255,6 +289,19 @@ export default function OpsLabOrdersPage() {
                           <DocumentArrowUpIcon className="h-4 w-4" />
                         </button>
                       )}
+
+                      {['PLACED', 'CONFIRMED'].includes(order.status) && (
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setShowCancelModal(true)
+                          }}
+                          className="inline-flex items-center px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                          title="Cancel order"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -318,6 +365,74 @@ export default function OpsLabOrdersPage() {
                 {selectedOrder.collectionTime && (
                   <p className="text-sm">Time: {selectedOrder.collectionTime}</p>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Cancel Order</h3>
+                  <p className="text-sm text-gray-600 mt-1 font-mono">{selectedOrder.orderId}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false)
+                    setSelectedOrder(null)
+                    setCancelReason('')
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  disabled={cancelling}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-700 mb-4">
+                Are you sure you want to cancel this order? This action cannot be undone.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cancellation Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Enter reason for cancellation..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  disabled={cancelling}
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false)
+                    setSelectedOrder(null)
+                    setCancelReason('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={cancelling}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={cancelling || !cancelReason.trim()}
+                >
+                  {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                </button>
               </div>
             </div>
           </div>

@@ -15,9 +15,12 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
 import { LabServiceService, CreateLabServiceDto } from '../services/lab-service.service';
 import { LabVendorService } from '../services/lab-vendor.service';
+import { MasterTestParameterService, CreateMasterTestParameterDto } from '../services/master-test-parameter.service';
+import { TestNameAliasService, CreateTestNameAliasDto, BulkCreateTestNameAliasDto } from '../services/test-name-alias.service';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { CreatePricingDto } from '../dto/create-pricing.dto';
 import { LabServiceCategory } from '../schemas/lab-service.schema';
+import { MasterTestCategory } from '../schemas/master-test-parameter.schema';
 
 @Controller('admin/lab')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,6 +29,8 @@ export class LabAdminController {
   constructor(
     private readonly serviceService: LabServiceService,
     private readonly vendorService: LabVendorService,
+    private readonly masterTestParameterService: MasterTestParameterService,
+    private readonly testNameAliasService: TestNameAliasService,
   ) {}
 
   // ============ SERVICE MANAGEMENT ============
@@ -253,6 +258,154 @@ export class LabAdminController {
     return {
       success: true,
       data: slots,
+    };
+  }
+
+  // ============ MASTER TEST PARAMETER MANAGEMENT ============
+
+  @Post('master-tests')
+  async createMasterTest(@Body() createDto: CreateMasterTestParameterDto) {
+    const parameter = await this.masterTestParameterService.create(createDto);
+
+    return {
+      success: true,
+      message: 'Master test parameter created successfully',
+      data: parameter,
+    };
+  }
+
+  @Get('master-tests')
+  async getMasterTests(
+    @Query('category') category?: MasterTestCategory,
+    @Query('search') search?: string,
+  ) {
+    let parameters;
+
+    if (search) {
+      parameters = await this.masterTestParameterService.search(search);
+    } else {
+      parameters = await this.masterTestParameterService.getAll(category);
+    }
+
+    return {
+      success: true,
+      data: parameters,
+    };
+  }
+
+  @Get('master-tests/search')
+  async searchMasterTests(@Query('q') query: string) {
+    const parameters = await this.masterTestParameterService.search(query);
+
+    return {
+      success: true,
+      data: parameters,
+    };
+  }
+
+  @Get('master-tests/:id')
+  async getMasterTestById(@Param('id') id: string) {
+    const parameter = await this.masterTestParameterService.getById(id);
+
+    return {
+      success: true,
+      data: parameter,
+    };
+  }
+
+  @Patch('master-tests/:id')
+  async updateMasterTest(
+    @Param('id') id: string,
+    @Body() updateDto: Partial<CreateMasterTestParameterDto>,
+  ) {
+    const parameter = await this.masterTestParameterService.update(id, updateDto);
+
+    return {
+      success: true,
+      message: 'Master test parameter updated successfully',
+      data: parameter,
+    };
+  }
+
+  @Delete('master-tests/:id')
+  async deactivateMasterTest(@Param('id') id: string) {
+    const parameter = await this.masterTestParameterService.deactivate(id);
+
+    return {
+      success: true,
+      message: 'Master test parameter deactivated successfully',
+      data: parameter,
+    };
+  }
+
+  // ============ TEST NAME ALIAS MANAGEMENT ============
+
+  @Post('test-aliases')
+  async createTestAlias(@Body() createDto: CreateTestNameAliasDto) {
+    const alias = await this.testNameAliasService.create(createDto);
+
+    return {
+      success: true,
+      message: 'Test name alias created successfully',
+      data: alias,
+    };
+  }
+
+  @Post('test-aliases/bulk')
+  async bulkCreateTestAliases(@Body() bulkDto: BulkCreateTestNameAliasDto) {
+    const aliases = await this.testNameAliasService.bulkCreate(bulkDto);
+
+    return {
+      success: true,
+      message: `${aliases.length} test name aliases created successfully`,
+      data: aliases,
+    };
+  }
+
+  @Get('test-aliases/vendor/:vendorId')
+  async getVendorTestAliases(@Param('vendorId') vendorId: string) {
+    const aliases = await this.testNameAliasService.getVendorAliases(vendorId);
+
+    return {
+      success: true,
+      data: aliases,
+    };
+  }
+
+  @Get('test-aliases/vendor/:vendorId/search')
+  async searchVendorTestAliases(
+    @Param('vendorId') vendorId: string,
+    @Query('q') query: string,
+  ) {
+    const aliases = await this.testNameAliasService.searchByVendor(vendorId, query);
+
+    return {
+      success: true,
+      data: aliases,
+    };
+  }
+
+  @Patch('test-aliases/:aliasId')
+  async updateTestAlias(
+    @Param('aliasId') aliasId: string,
+    @Body() updateDto: Partial<CreateTestNameAliasDto>,
+  ) {
+    const alias = await this.testNameAliasService.update(aliasId, updateDto);
+
+    return {
+      success: true,
+      message: 'Test name alias updated successfully',
+      data: alias,
+    };
+  }
+
+  @Delete('test-aliases/:aliasId')
+  async deleteTestAlias(@Param('aliasId') aliasId: string) {
+    await this.testNameAliasService.delete(aliasId);
+
+    return {
+      success: true,
+      message: 'Test name alias deleted successfully',
     };
   }
 }

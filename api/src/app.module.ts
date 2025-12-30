@@ -27,6 +27,7 @@ import { MemberClaimsModule } from './modules/memberclaims/memberclaims.module';
 import { TpaModule } from './modules/tpa/tpa.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { LabModule } from './modules/lab/lab.module';
+import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PrescriptionsModule } from './modules/doctors/prescriptions.module';
 import { LocationModule } from './modules/location/location.module';
@@ -97,6 +98,7 @@ import configuration from './config/configuration';
     TpaModule,
     FinanceModule,
     LabModule,
+    DiagnosticsModule,
     NotificationsModule,
     PrescriptionsModule,
     LocationModule,

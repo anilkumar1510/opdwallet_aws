@@ -264,6 +264,24 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
+## Diagnostics Operations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /ops/diagnostics/prescriptions/queue | Get diagnostic prescription queue (filtered by status) |
+| GET | /ops/diagnostics/prescriptions/:id | Get diagnostic prescription by ID |
+| PATCH | /ops/diagnostics/prescriptions/:id/status | Update diagnostic prescription status |
+| POST | /ops/diagnostics/prescriptions/:id/delay | Mark diagnostic prescription as delayed with reason |
+| POST | /ops/diagnostics/prescriptions/:id/digitize | Digitize diagnostic prescription and create cart |
+| PATCH | /ops/diagnostics/carts/:cartId/display | Display cart to member for review |
+| GET | /ops/diagnostics/orders | Get all diagnostic orders with filters |
+| GET | /ops/diagnostics/orders/:id | Get diagnostic order by ID |
+| PATCH | /ops/diagnostics/orders/:id/status | Update diagnostic order status |
+| POST | /ops/diagnostics/orders/:id/cancel | Cancel diagnostic order |
+| POST | /ops/diagnostics/orders/:id/report | Upload diagnostic test report |
+
+---
+
 ## Health Check
 
 | Method | Endpoint | Description |
@@ -272,7 +290,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
-**Total Endpoints: 93**
+**Total Endpoints: ~104**
 
 **Access Control:**
 - Login page validates OPS role only

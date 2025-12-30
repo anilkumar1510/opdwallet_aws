@@ -121,22 +121,109 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 
 ## Lab Admin
 
+### Lab Services
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /admin/lab/services | Create lab service |
-| GET | /admin/lab/services | Get all lab services with filters |
+| GET | /admin/lab/services | Get all lab services with filters (supports ?category and ?search) |
 | GET | /admin/lab/services/:id | Get lab service by ID |
 | PATCH | /admin/lab/services/:id | Update lab service |
 | DELETE | /admin/lab/services/:id | Deactivate lab service |
+
+### Lab Vendors
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | /admin/lab/vendors | Create lab vendor |
 | GET | /admin/lab/vendors | Get all vendors |
 | GET | /admin/lab/vendors/:id | Get vendor by ID |
 | PATCH | /admin/lab/vendors/:id | Update vendor |
+
+### Vendor Pricing
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | /admin/lab/vendors/:vendorId/pricing | Create vendor pricing |
 | GET | /admin/lab/vendors/:vendorId/pricing | Get vendor pricing |
 | PATCH | /admin/lab/vendors/:vendorId/pricing/:serviceId | Update vendor pricing |
+
+### Vendor Slots
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | /admin/lab/vendors/:vendorId/slots | Create vendor slots |
-| GET | /admin/lab/vendors/:vendorId/slots | Get available slots |
+| GET | /admin/lab/vendors/:vendorId/slots | Get available slots (supports ?pincode and ?date) |
+
+### Master Test Parameters
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/lab/master-tests | Create master test parameter |
+| GET | /admin/lab/master-tests | Get all master test parameters (supports ?category and ?search) |
+| GET | /admin/lab/master-tests/search | Search master test parameters by query (?q) |
+| GET | /admin/lab/master-tests/:id | Get master test parameter by ID |
+| PATCH | /admin/lab/master-tests/:id | Update master test parameter |
+| DELETE | /admin/lab/master-tests/:id | Deactivate master test parameter |
+
+### Test Name Aliases
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/lab/test-aliases | Create test name alias |
+| POST | /admin/lab/test-aliases/bulk | Bulk create test name aliases |
+| GET | /admin/lab/test-aliases/vendor/:vendorId | Get all test aliases for vendor |
+| GET | /admin/lab/test-aliases/vendor/:vendorId/search | Search test aliases by vendor and query (?q) |
+| PATCH | /admin/lab/test-aliases/:aliasId | Update test name alias |
+| DELETE | /admin/lab/test-aliases/:aliasId | Delete test name alias |
+
+---
+
+## Diagnostics Admin
+
+### Diagnostic Services
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/diagnostics/services | Create diagnostic service |
+| GET | /admin/diagnostics/services | Get all diagnostic services with filters (supports ?category and ?search) |
+| GET | /admin/diagnostics/services/:id | Get diagnostic service by ID |
+| PATCH | /admin/diagnostics/services/:id | Update diagnostic service |
+| DELETE | /admin/diagnostics/services/:id | Deactivate diagnostic service |
+
+### Diagnostic Vendors
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/diagnostics/vendors | Create diagnostic vendor |
+| GET | /admin/diagnostics/vendors | Get all diagnostic vendors |
+| GET | /admin/diagnostics/vendors/:id | Get diagnostic vendor by ID |
+| PATCH | /admin/diagnostics/vendors/:id | Update diagnostic vendor |
+
+### Diagnostic Vendor Pricing
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/diagnostics/vendors/:vendorId/pricing | Create vendor pricing |
+| GET | /admin/diagnostics/vendors/:vendorId/pricing | Get vendor pricing |
+| PATCH | /admin/diagnostics/vendors/:vendorId/pricing/:serviceId | Update vendor pricing |
+
+### Diagnostic Vendor Slots
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/diagnostics/vendors/:vendorId/slots | Create vendor slots |
+| GET | /admin/diagnostics/vendors/:vendorId/slots | Get available slots (supports ?pincode and ?date) |
+
+### Diagnostic Master Tests
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/diagnostics/master-tests | Create diagnostic master test |
+| GET | /admin/diagnostics/master-tests | Get all diagnostic master tests (supports ?category and ?search) |
+| GET | /admin/diagnostics/master-tests/:id | Get diagnostic master test by ID |
+| PATCH | /admin/diagnostics/master-tests/:id | Update diagnostic master test |
+| PATCH | /admin/diagnostics/master-tests/:id/status | Update diagnostic master test status (activate/deactivate) |
 
 ---
 
@@ -266,7 +353,7 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 
 ---
 
-**Total Endpoints: ~77**
+**Total Endpoints: ~110**
 
 **Notes:**
 - All endpoints require authentication (JWT token via cookie with path `/admin`)
