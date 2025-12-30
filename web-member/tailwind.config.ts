@@ -15,6 +15,14 @@ const config: Config = {
         "2xl": "1400px",
       },
     },
+    screens: {
+      'xs': '375px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1200px',
+    },
     extend: {
       colors: {
         // Brand colors - Habit Healthcare
@@ -44,6 +52,16 @@ const config: Config = {
           700: '#D97706',
           800: '#B45309',
           900: '#8F3E08',
+        },
+        // Policy card gradient colors (desktop reference)
+        policyGradient: {
+          light: '#D4E4F7',
+          DEFAULT: '#B8D4F1'
+        },
+        // Quick link colors (desktop reference)
+        quickLink: {
+          blue: '#86ACD8',
+          border: '#6B93C0'
         },
         ink: {
           900: '#0F172A',

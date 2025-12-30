@@ -16,7 +16,9 @@ import {
   SparklesIcon,
   ClipboardDocumentCheckIcon,
   ReceiptPercentIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  HeartIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
@@ -33,6 +35,12 @@ import MemberCard from '@/components/member/MemberCard'
 import DesktopMemberCard from '@/components/member/DesktopMemberCard'
 import WalletCategoryCard from '@/components/member/WalletCategoryCard'
 import DesktopWalletCategoryCard from '@/components/member/DesktopWalletCategoryCard'
+import UserGreeting from '@/components/member/UserGreeting'
+import WalletBalanceCard from '@/components/member/WalletBalanceCard'
+import QuickLinks from '@/components/member/QuickLinks'
+import BenefitCardEnhanced from '@/components/member/BenefitCardEnhanced'
+import MoreServices from '@/components/member/MoreServices'
+import PolicyCarousel from '@/components/member/PolicyCarousel'
 
 // Memoized Desktop BenefitCard component
 const DesktopBenefitCard = memo(({
@@ -94,12 +102,45 @@ const BenefitCard = memo(({
 
 BenefitCard.displayName = 'BenefitCard'
 
+// Define moreServices outside component to avoid re-creating on every render
+const MORE_SERVICES = [
+  {
+    id: 'helpline',
+    label: '24/7 Helpline',
+    icon: <PhoneIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    href: '/member/helpline'
+  },
+  {
+    id: 'wellness',
+    label: 'Wellness Programs',
+    icon: <HeartIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    href: '/member/wellness'
+  },
+  {
+    id: 'health-records',
+    label: 'Health Records',
+    icon: <DocumentTextIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    href: '/member/health-records'
+  },
+  {
+    id: 'claims',
+    label: 'File Claims',
+    icon: <ClipboardDocumentCheckIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    href: '/member/claims/new'
+  }
+]
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<MemberProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc') // desc = highest balance first
   const { activeMember, viewingUserId } = useFamily()
   // Compact wallet cards with modern design
+
+  const handleSort = useCallback(() => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+  }, [])
 
   useEffect(() => {
     if (viewingUserId) {
@@ -205,7 +246,16 @@ export default function DashboardPage() {
   }
 
   // Memoized computed values
-  const walletCategories = useMemo(() => user?.walletCategories || [], [user?.walletCategories])
+  const walletCategories = useMemo(() => {
+    const categories = user?.walletCategories || []
+    // Sort by available balance
+    return [...categories].sort((a, b) => {
+      const aBalance = Number(a.available) || 0
+      const bBalance = Number(b.available) || 0
+      return sortOrder === 'desc' ? bBalance - aBalance : aBalance - bBalance
+    })
+  }, [user?.walletCategories, sortOrder])
+
   const totalAvailableBalance = useMemo(() => user?.wallet?.totalBalance?.current || 0, [user?.wallet?.totalBalance])
   const totalWalletBalance = useMemo(() => user?.wallet?.totalBalance?.allocated || 0, [user?.wallet?.totalBalance])
 
@@ -368,209 +418,147 @@ export default function DashboardPage() {
   }
 
   // Prepare all members array for carousel
-  const allMembers = [user, ...(user?.dependents || [])]
+  const allMembers = user ? [user, ...(user.dependents || [])] : []
+
+  // Prepare family members for UserGreeting (primary user + dependents)
+  const familyMembers = user ? [
+    // Primary user first
+    {
+      id: user._id,
+      _id: user._id,
+      name: `${user.name?.firstName || ''} ${user.name?.lastName || ''}`.trim(),
+      avatar: user.avatar,
+      initials: `${user.name?.firstName?.[0] || ''}${user.name?.lastName?.[0] || ''}`.toUpperCase()
+    },
+    // Then dependents
+    ...(user?.dependents || []).map((dep: any) => ({
+      id: dep._id || dep.id,
+      _id: dep._id || dep.id,
+      name: `${dep.name?.firstName || ''} ${dep.name?.lastName || ''}`.trim(),
+      avatar: dep.avatar,
+      initials: `${dep.name?.firstName?.[0] || ''}${dep.name?.lastName?.[0] || ''}`.toUpperCase()
+    }))
+  ] : []
+
+  // Prepare policies for PolicyCarousel
+  const preparePolicies = () => {
+    if (!user || !user.assignments) return []
+
+    const members = [user, ...(user.dependents || [])]
+    const allPolicies = members.map((member: any) => {
+      const memberId = member?._id || member?.id
+
+      // Find policy assignment for this member
+      const userIdStr = memberId?.toString()
+      const assignment = user.assignments.find((a: PolicyAssignment) => {
+        const assignmentUserIdStr = a.userId?.toString()
+        return assignmentUserIdStr === userIdStr
+      })
+      const policy = assignment?.assignment || null
+
+      // Calculate age from dateOfBirth
+      const calculateAge = (dob: string | Date) => {
+        if (!dob) return undefined
+        const birthDate = new Date(dob)
+        const today = new Date()
+        let age = today.getFullYear() - birthDate.getFullYear()
+        const monthDiff = today.getMonth() - birthDate.getMonth()
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--
+        }
+        return age
+      }
+
+      return {
+        policyId: policy?.policyId?._id || policy?.policyId?.id || memberId,
+        policyNumber: policy?.policyId?.policyNumber || 'N/A',
+        policyHolder: `${member?.name?.firstName || ''} ${member?.name?.lastName || ''}`.trim(),
+        policyHolderId: memberId,
+        age: calculateAge(member?.dateOfBirth),
+        corporate: policy?.policyId?.companyName || policy?.policyId?.company || 'Individual',
+        coverageAmount: user.wallet?.totalBalance?.allocated || 0,
+        expiryDate: policy?.effectiveTo || policy?.policyId?.effectiveTo || new Date()
+      }
+    })
+
+    // Filter policies based on active member
+    // Primary member sees all policies, dependents only see their own
+    const isPrimaryMember = viewingUserId === user._id
+
+    if (isPrimaryMember) {
+      // Primary member sees all policies
+      return allPolicies
+    } else {
+      // Dependent sees only their own policy
+      return allPolicies.filter(policy => policy.policyHolderId === viewingUserId)
+    }
+  }
+
+  const policies = preparePolicies()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Now handled by fixed top header in BottomNavigation */}
-      <div className="hidden">
-        <div className="flex items-center justify-between">
-          <ProfileDropdown />
-          <NotificationBell />
-        </div>
-      </div>
+      {/* User Greeting Section */}
+      <UserGreeting
+        userName={`${activeMember?.name?.firstName || ''} ${activeMember?.name?.lastName || ''}`.trim()}
+        familyMembers={familyMembers}
+      />
 
       {/* Main Content */}
-      <div className="px-4 lg:px-8 max-w-md mx-auto lg:max-w-6xl pt-6 lg:pt-8">
-        {/* Unified Layout for Mobile and Desktop */}
-        <div className="space-y-4">
-          {/* OPD Cards Section */}
-          <div>
-            <OPDCardCarousel
-              members={allMembers}
-              getPolicyNumber={(userId) => {
-                if (userId === (user?._id || user?.id)) {
-                  return userPolicy?.policyId?.policyNumber || 'N/A'
-                }
-                return getUserPolicyForMember(userId)?.policyId?.policyNumber || 'N/A'
-              }}
-              getValidTill={(userId) => {
-                if (userId === (user?._id || user?.id)) {
-                  return getPolicyExpiryDate()
-                }
-                return getPolicyExpiryForMember(userId)
-              }}
-              getCorporateName={(member) => member?.corporateName || user?.corporateName || 'N/A'}
-              getPolicyId={(userId) => {
-                if (userId === (user?._id || user?.id)) {
-                  return userPolicy?.policyId?._id || userPolicy?.policyId?.id || 'N/A'
-                }
-                const policy = getUserPolicyForMember(userId)
-                return policy?.policyId?._id || policy?.policyId?.id || 'N/A'
-              }}
-            />
-          </div>
+      <div className="max-w-[480px] mx-auto lg:max-w-full">
+        {/* Policy Carousel Section */}
+        <PolicyCarousel policies={policies} />
 
-          {/* Your Wallet Balance Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <SectionHeader title="Your Wallet Balance" showSeeAll={false} />
+        {/* Wallet Balance Card Section */}
+        <WalletBalanceCard
+          currentBalance={totalAvailableBalance}
+          totalLimit={totalWalletBalance}
+        />
 
-            {/* Total Available Balance - Highlighted */}
-            <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-              <div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    Total Available Balance
-                    {user?.wallet?.isFloater && (
-                      <span className="ml-2 text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-semibold">
-                        FLOATER
-                      </span>
-                    )}
-                  </p>
-                  <div className="text-2xl font-bold text-gray-900">
-                    ₹ {totalAvailableBalance.toLocaleString()}
-                    <span className="text-sm text-gray-500 font-normal"> / {totalWalletBalance.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-600 mt-2">
-                {user?.wallet?.isFloater
-                  ? 'Shared wallet balance across all family members'
-                  : 'Your total usage cannot exceed this amount'
-                }
-              </p>
-            </div>
+        {/* Quick Links Section */}
+        <QuickLinks />
 
-            {/* Floater Family Consumption Breakdown */}
-            {user?.wallet?.isFloater && user?.wallet?.memberConsumption?.length > 0 && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Family Consumption</h4>
-                <div className="space-y-2">
-                  {user.wallet.memberConsumption.map((member: any, idx: number) => {
-                    // Fetch member details from family members list
-                    const memberDetails = [user, ...(user.dependents || [])].find(
-                      m => (m._id || m.id)?.toString() === member.userId?.toString()
-                    );
-
-                    const memberName = memberDetails
-                      ? `${memberDetails.name?.firstName || ''} ${memberDetails.name?.lastName || ''}`.trim()
-                      : 'Unknown';
-
-                    const isCurrentUser = (user._id || user.id)?.toString() === member.userId?.toString();
-
-                    return (
-                      <div key={idx} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">
-                          {memberName}
-                          {isCurrentUser && <span className="ml-1 text-blue-600">(You)</span>}
-                        </span>
-                        <span className="font-semibold text-gray-900">
-                          ₹ {member.consumed?.toLocaleString() || 0}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Category-wise Wallets */}
-            <div className="space-y-2.5">
-              {walletCategories.map((category: any, index: number) => (
-                <WalletCategoryCard
-                  key={index}
-                  category={category}
-                  icon={getCategoryIcon(category.categoryCode)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Upcoming Appointment Section - Desktop only (mobile has floating banner) */}
-          {viewingUserId && (
-            <div className="hidden lg:block">
-              <ActiveAppointmentNudge variant="section" userId={viewingUserId} />
-            </div>
-          )}
-
-          {/* Health Benefits Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <SectionHeader title="Health Benefits" showSeeAll={false} />
-
-            <div className="space-y-3">
-              {healthBenefits.map((benefit: any, index: number) => (
-                <BenefitCard
-                  key={index}
-                  benefit={benefit}
-                  onClick={() => handleBenefitClick(benefit)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Health Records Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <SectionHeader title="Health Records" showSeeAll={false} />
-            <Link
-              href="/member/health-records"
-              className="flex items-center justify-between p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors"
+        {/* Health Benefits Section */}
+        <section className="px-4 lg:px-6 py-6 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
+          {/* Header with Sort Button */}
+          <div className="flex items-center justify-between mb-4 lg:mb-6">
+            <h2 className="text-lg lg:text-xl font-bold text-black">Health Benefits</h2>
+            <button
+              onClick={handleSort}
+              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl hover:border-gray-300 transition-colors active:scale-95"
             >
-              <div className="flex items-center space-x-3">
-                <div className="bg-white p-2 rounded-lg">
-                  <DocumentTextIcon className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">View Health Records</div>
-                  <div className="text-sm text-gray-600">Access prescriptions and medical documents</div>
-                </div>
-              </div>
-              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
-            </Link>
+              <svg
+                className={`w-5 h-5 text-gray-600 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+              <span className="text-base font-medium text-gray-600">Sort</span>
+            </button>
           </div>
 
-          {/* File Claims Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <SectionHeader title="Claims" showSeeAll={false} />
-            <Link
-              href="/member/claims/new"
-              className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="bg-white p-2 rounded-lg">
-                  <ClipboardDocumentCheckIcon className="h-6 w-6 text-gray-700" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">File a Claim</div>
-                  <div className="text-sm text-gray-600">Submit your medical bills</div>
-                </div>
-              </div>
-              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
-            </Link>
+          <div className="grid grid-cols-2 gap-3 lg:gap-4">
+            {walletCategories.map((category: any) => (
+              <BenefitCardEnhanced
+                key={category.categoryCode}
+                benefitId={category.categoryCode}
+                title={category.name}
+                currentAmount={category.available}
+                totalAmount={category.total}
+                href={benefitUIConfig[category.categoryCode]?.href || '/member/benefits'}
+                icon={getCategoryIcon(category.categoryCode)}
+              />
+            ))}
           </div>
+        </section>
 
-          {/* Order History Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <SectionHeader title="Order History" showSeeAll={false} />
-            <Link
-              href="/member/orders"
-              className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl hover:from-purple-100 hover:to-blue-100 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="bg-white p-2 rounded-lg">
-                  <ReceiptPercentIcon className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">View Order History</div>
-                  <div className="text-sm text-gray-600">Track payments and transactions</div>
-                </div>
-              </div>
-              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
-            </Link>
-          </div>
+        {/* More Services Section */}
+        <MoreServices services={MORE_SERVICES} />
 
-          {/* Extra padding for mobile to prevent overlap with appointment nudge */}
-          <div className="h-24 lg:hidden" aria-hidden="true"></div>
-        </div>
+        {/* Extra padding for mobile to prevent overlap with bottom nav */}
+        <div className="h-2 lg:hidden" aria-hidden="true" />
       </div>
     </div>
   )
