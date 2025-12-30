@@ -20,17 +20,32 @@ export function FocusTrap({
   const containerRef = useRef<HTMLDivElement>(null)
   const previousActiveElement = useRef<HTMLElement | null>(null)
 
+  // Handle initial focus separately from keyboard events
   useEffect(() => {
     if (!enabled) return
 
     // Store the currently focused element
     previousActiveElement.current = document.activeElement as HTMLElement
 
-    // Focus the initial element or the container
+    // Focus the initial element or the container (only when first enabled)
     const focusElement = initialFocus?.current || containerRef.current
     if (focusElement) {
       focusElement.focus()
     }
+
+    return () => {
+      // Restore focus to the previous element
+      if (restoreFocus && previousActiveElement.current) {
+        previousActiveElement.current.focus()
+      }
+    }
+    // Only run when enabled state changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled])
+
+  // Handle keyboard events separately
+  useEffect(() => {
+    if (!enabled) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && onEscape) {
@@ -67,13 +82,8 @@ export function FocusTrap({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-
-      // Restore focus to the previous element
-      if (restoreFocus && previousActiveElement.current) {
-        previousActiveElement.current.focus()
-      }
     }
-  }, [enabled, onEscape, initialFocus, restoreFocus])
+  }, [enabled, onEscape])
 
   return (
     <div

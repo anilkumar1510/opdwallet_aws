@@ -77,6 +77,16 @@ export function Modal({
             style={{ animation: 'fade-in 0.3s ease-out forwards' }}
             onClick={handleOverlayClick}
             onKeyDown={(e) => {
+              // Don't handle keyboard events if they're from input elements
+              const target = e.target as HTMLElement
+              const isInputElement =
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.tagName === 'SELECT' ||
+                target.isContentEditable
+
+              if (isInputElement) return
+
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
                 handleOverlayClick(e as unknown as React.MouseEvent)

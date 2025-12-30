@@ -63,6 +63,25 @@ export default function DigitizePrescriptionPage() {
   console.log('🔍 [COMPONENT] Params:', params)
   console.log('🔍 [COMPONENT] Prescription ID:', prescriptionId)
 
+  // Helper function to convert API filePath to absolute URL
+  const getAbsoluteFilePath = (filePath: string) => {
+    if (!filePath) return ''
+    // If filePath starts with 'uploads/', convert to '/operations/lab/uploads/' to match rewrite rule
+    if (filePath.startsWith('uploads/')) {
+      return `/operations/lab/${filePath}`
+    }
+    // If it already starts with '/operations/', return as is
+    if (filePath.startsWith('/operations/')) {
+      return filePath
+    }
+    // If it starts with '/', prepend basePath
+    if (filePath.startsWith('/')) {
+      return `/operations${filePath}`
+    }
+    // Otherwise, prepend '/operations/lab/'
+    return `/operations/lab/${filePath}`
+  }
+
   const [prescription, setPrescription] = useState<Prescription | null>(null)
   const [services, setServices] = useState<LabService[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -336,14 +355,22 @@ export default function DigitizePrescriptionPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h3 className="font-semibold mb-4">Prescription Image</h3>
           <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <img
-              src={prescription?.filePath}
-              alt="Prescription"
-              className="w-full h-auto"
-              onError={(e) => {
-                e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EPrescription Image%3C/text%3E%3C/svg%3E'
-              }}
-            />
+            {prescription?.fileName?.toLowerCase().endsWith('.pdf') ? (
+              <iframe
+                src={getAbsoluteFilePath(prescription?.filePath || '')}
+                className="w-full h-[80vh] border-0"
+                title="Prescription PDF"
+              />
+            ) : (
+              <img
+                src={getAbsoluteFilePath(prescription?.filePath || '')}
+                alt="Prescription"
+                className="w-full h-auto"
+                onError={(e) => {
+                  e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EPrescription Image%3C/text%3E%3C/svg%3E'
+                }}
+              />
+            )}
           </div>
         </div>
 

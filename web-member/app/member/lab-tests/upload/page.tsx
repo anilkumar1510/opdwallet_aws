@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeftIcon, CloudArrowUpIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 import AddAddressModal from '@/components/AddAddressModal'
@@ -86,7 +86,7 @@ export default function UploadPrescriptionPage() {
     }
   }
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = useCallback(async () => {
     console.log('[ADDRESS-UPLOAD] ========== FETCHING ADDRESSES START ==========')
     try {
       const apiUrl = '/api/member/addresses'
@@ -157,7 +157,11 @@ export default function UploadPrescriptionPage() {
       console.error('[ADDRESS-UPLOAD] Full error object:', error)
       console.log('[ADDRESS-UPLOAD] ========== FETCHING ADDRESSES COMPLETE (EXCEPTION) ==========')
     }
-  }
+  }, [])
+
+  const handleCloseAddressModal = useCallback(() => {
+    setIsAddressModalOpen(false)
+  }, [])
 
   const handleFamilyMemberChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedMember = familyMembers.find(m => m.userId === e.target.value)
@@ -541,14 +545,12 @@ export default function UploadPrescriptionPage() {
       </div>
 
       {/* Add Address Modal */}
-      {user && (
-        <AddAddressModal
-          isOpen={isAddressModalOpen}
-          onClose={() => setIsAddressModalOpen(false)}
-          onAddressAdded={fetchAddresses}
-          userId={user.userId}
-        />
-      )}
+      <AddAddressModal
+        isOpen={isAddressModalOpen}
+        onClose={handleCloseAddressModal}
+        onAddressAdded={fetchAddresses}
+        userId={user?.userId || ''}
+      />
     </div>
   )
 }

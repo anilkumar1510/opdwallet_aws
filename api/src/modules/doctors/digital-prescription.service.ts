@@ -229,6 +229,7 @@ export class DigitalPrescriptionService {
     userId: string,
     page = 1,
     limit = 20,
+    filterUsed = false,
   ): Promise<{ prescriptions: DigitalPrescriptionDocument[]; total: number; page: number; totalPages: number }> {
     const skip = (page - 1) * limit;
 
@@ -246,28 +247,39 @@ export class DigitalPrescriptionService {
       this.digitalPrescriptionModel.countDocuments({ userId: new Types.ObjectId(userId), isActive: true }),
     ]);
 
-    // Filter out prescriptions that already have lab_prescriptions created
-    const labPrescriptionModel = this.digitalPrescriptionModel.db.model('LabPrescription');
-    const usedPrescriptions = await labPrescriptionModel
-      .find({
-        userId: new Types.ObjectId(userId),
-        source: 'HEALTH_RECORD',
-        healthRecordId: { $exists: true },
-      })
-      .select('healthRecordId')
-      .lean();
+    // Only filter if requested (for lab booking prescription selector)
+    if (filterUsed) {
+      // Filter out prescriptions that already have lab_prescriptions created
+      const labPrescriptionModel = this.digitalPrescriptionModel.db.model('LabPrescription');
+      const usedPrescriptions = await labPrescriptionModel
+        .find({
+          userId: new Types.ObjectId(userId),
+          source: 'HEALTH_RECORD',
+          healthRecordId: { $exists: true },
+        })
+        .select('healthRecordId')
+        .lean();
 
-    const usedHealthRecordIds = new Set(
-      usedPrescriptions.map((p: any) => p.healthRecordId.toString()),
-    );
+      const usedHealthRecordIds = new Set(
+        usedPrescriptions.map((p: any) => p.healthRecordId.toString()),
+      );
 
-    // Filter out already-used prescriptions
-    const availablePrescriptions = prescriptions.filter(
-      (p) => !usedHealthRecordIds.has((p._id as Types.ObjectId).toString()),
-    );
+      // Filter out already-used prescriptions
+      const availablePrescriptions = prescriptions.filter(
+        (p) => !usedHealthRecordIds.has((p._id as Types.ObjectId).toString()),
+      );
 
+      return {
+        prescriptions: availablePrescriptions,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    // Return all prescriptions without filtering
     return {
-      prescriptions: availablePrescriptions,
+      prescriptions,
       total,
       page,
       totalPages: Math.ceil(total / limit),

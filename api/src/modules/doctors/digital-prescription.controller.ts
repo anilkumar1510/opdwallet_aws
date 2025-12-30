@@ -457,6 +457,7 @@ export class MemberDigitalPrescriptionsController {
     @Request() req: AuthRequest,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
+    @Query('filterUsed') filterUsed?: string,
   ) {
     const userId = req.user.userId || req.user.id;
 
@@ -468,6 +469,7 @@ export class MemberDigitalPrescriptionsController {
       userId,
       +page,
       +limit,
+      filterUsed === 'true',
     );
 
     return {

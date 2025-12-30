@@ -29,9 +29,6 @@ jobs:
               echo "📥 Fetching latest code from remote..."
               git fetch origin
 
-              echo "🧹 Cleaning uploaded files that may have permission issues..."
-              sudo rm -rf api/uploads/* 2>/dev/null || true
-
               echo "🔄 Force-resetting to remote main (discarding any local changes)..."
               sudo git reset --hard origin/main
               echo "🧹 Cleaning untracked files..."
@@ -93,6 +90,22 @@ jobs:
               echo "❌ ERROR: .env.production file not found"
               exit 1
             fi
+
+            # Setup uploads directories with proper permissions
+            echo "📁 Setting up upload directories with proper permissions..."
+            mkdir -p api/uploads/claims
+            mkdir -p api/uploads/lab-prescriptions
+            mkdir -p api/uploads/lab-reports
+            mkdir -p api/uploads/doctors
+            mkdir -p api/uploads/prescriptions
+            mkdir -p api/uploads/prescriptions/generated
+            mkdir -p api/uploads/diagnostic-prescriptions
+            mkdir -p api/uploads/diagnostic-reports
+
+            # Set permissions so Docker container can write
+            # Using 777 to ensure the container user (regardless of UID) can write
+            chmod -R 777 api/uploads
+            echo "✅ Upload directories created with write permissions"
 
             # Pre-pull critical images to avoid Docker Hub 503 errors during compose
             echo "📦 Pre-pulling critical Docker images..."

@@ -41,13 +41,13 @@ export default function PrescriptionSelectorModal({
     try {
       setLoading(true)
 
-      // Fetch digital prescriptions
-      const digitalRes = await fetch('/api/member/digital-prescriptions', {
+      // Fetch digital prescriptions (filter out already used for lab bookings)
+      const digitalRes = await fetch('/api/member/digital-prescriptions?filterUsed=true', {
         credentials: 'include',
       })
 
-      // Fetch PDF prescriptions
-      const pdfRes = await fetch('/api/member/prescriptions', {
+      // Fetch PDF prescriptions (filter out already used for lab bookings)
+      const pdfRes = await fetch('/api/member/prescriptions?filterUsed=true', {
         credentials: 'include',
       })
 
