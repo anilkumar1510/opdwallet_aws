@@ -135,6 +135,12 @@ export default function TransactionsPage() {
     return { debits, credits, net: credits - debits }
   }, [filteredTransactions])
 
+  // Helper function to get category name
+  const getCategoryName = (categoryCode: string): string => {
+    const category = walletBalance?.categories.find(c => c.categoryCode === categoryCode)
+    return category?.name || categoryCode
+  }
+
   // Prepare chart data
   const chartData = useMemo(() => {
     // 1. Transaction Volume by Type
@@ -221,11 +227,6 @@ export default function TransactionsPage() {
       minute: '2-digit',
       hour12: true
     })
-  }
-
-  const getCategoryName = (categoryCode: string): string => {
-    const category = walletBalance?.categories.find(c => c.categoryCode === categoryCode)
-    return category?.name || categoryCode
   }
 
   if (loading) {
