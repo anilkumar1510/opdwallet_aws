@@ -155,19 +155,22 @@ export default function TransactionsPage() {
         name: 'Credits',
         count: filteredTransactions.filter(t => t.type === 'CREDIT').length,
         amount: totals.credits,
-        fill: '#06C270'
+        fill: '#E8FFF5',
+        stroke: '#046D40'
       },
       {
         name: 'Debits',
         count: filteredTransactions.filter(t => t.type === 'DEBIT').length,
         amount: totals.debits,
-        fill: '#F5821E'
+        fill: '#FFF2E7',
+        stroke: '#CD6D19'
       },
       {
         name: 'Refunds',
         count: filteredTransactions.filter(t => t.type === 'REFUND').length,
         amount: filteredTransactions.filter(t => t.type === 'REFUND').reduce((sum, t) => sum + t.amount, 0),
-        fill: '#8C2CE2'
+        fill: '#F5EAFF',
+        stroke: '#4A147B'
       }
     ]
 
@@ -215,7 +218,14 @@ export default function TransactionsPage() {
     return { typeData, categoryData, dailyData, balanceTrend }
   }, [filteredTransactions, totals, walletBalance])
 
-  const COLORS = ['#FFCA9D', '#FFF2BE', '#FFE681', '#06C270', '#8C2CE2', '#8A4910', '#F5821E', '#FFCC00']
+  const COLORS = [
+    { fill: '#FFF2E7', stroke: '#CD6D19' },
+    { fill: '#FFFAE7', stroke: '#AF8C02' },
+    { fill: '#E8FFF5', stroke: '#046D40' },
+    { fill: '#F5EAFF', stroke: '#4A147B' },
+    { fill: '#EBEBEB', stroke: '#444444' },
+    { fill: '#F4F9FF', stroke: '#013978' }
+  ]
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -367,9 +377,9 @@ export default function TransactionsPage() {
                       contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', fontSize: '12px', backgroundColor: 'white' }}
                       formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     />
-                    <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                    <Bar dataKey="amount" radius={[8, 8, 0, 0]} strokeWidth={2}>
                       {chartData.typeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                        <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.stroke} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -391,8 +401,8 @@ export default function TransactionsPage() {
                       contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', fontSize: '12px', backgroundColor: 'white' }}
                       formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     />
-                    <Bar dataKey="credits" fill="#06C270" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="debits" fill="#F5821E" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="credits" fill="#E8FFF5" stroke="#046D40" strokeWidth={2} radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="debits" fill="#FFF2E7" stroke="#CD6D19" strokeWidth={2} radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -413,9 +423,14 @@ export default function TransactionsPage() {
                       outerRadius={60}
                       paddingAngle={3}
                       dataKey="value"
+                      strokeWidth={2}
                     >
                       {chartData.categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length].fill}
+                          stroke={COLORS[index % COLORS.length].stroke}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
@@ -444,10 +459,10 @@ export default function TransactionsPage() {
                     <Line
                       type="monotone"
                       dataKey="balance"
-                      stroke="#8C2CE2"
+                      stroke="#4A147B"
                       strokeWidth={2}
-                      dot={{ fill: '#8C2CE2', r: 3 }}
-                      activeDot={{ r: 5 }}
+                      dot={{ fill: '#F5EAFF', stroke: '#4A147B', strokeWidth: 2, r: 4 }}
+                      activeDot={{ fill: '#F5EAFF', stroke: '#4A147B', strokeWidth: 2, r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -472,9 +487,9 @@ export default function TransactionsPage() {
                     contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', backgroundColor: 'white' }}
                     formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                   />
-                  <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                  <Bar dataKey="amount" radius={[8, 8, 0, 0]} strokeWidth={2}>
                     {chartData.typeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.stroke} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -496,8 +511,8 @@ export default function TransactionsPage() {
                     contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', backgroundColor: 'white' }}
                     formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                   />
-                  <Bar dataKey="credits" fill="#06C270" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="debits" fill="#F5821E" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="credits" fill="#E8FFF5" stroke="#046D40" strokeWidth={2} radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="debits" fill="#FFF2E7" stroke="#CD6D19" strokeWidth={2} radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -518,9 +533,14 @@ export default function TransactionsPage() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
+                    strokeWidth={2}
                   >
                     {chartData.categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length].fill}
+                        stroke={COLORS[index % COLORS.length].stroke}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
@@ -549,10 +569,10 @@ export default function TransactionsPage() {
                   <Line
                     type="monotone"
                     dataKey="balance"
-                    stroke="#8C2CE2"
+                    stroke="#4A147B"
                     strokeWidth={3}
-                    dot={{ fill: '#8C2CE2', r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ fill: '#F5EAFF', stroke: '#4A147B', strokeWidth: 2, r: 5 }}
+                    activeDot={{ fill: '#F5EAFF', stroke: '#4A147B', strokeWidth: 2, r: 7 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
