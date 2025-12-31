@@ -498,4 +498,9 @@
   .animate-iconBounce {
     animation: iconBounce 0.5s ease-in-out;
   }
+
+  /* Fade in animation for claims pages */
+  .animate-fadeIn {
+    animation: fade-in 0.5s ease-out forwards;
+  }
 }
