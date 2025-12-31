@@ -1,87 +1,120 @@
+'use client'
+
 import React from 'react'
+import Link from 'next/link'
+import { ChevronLeftIcon, BeakerIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
 export default function PharmacyPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="max-w-2xl w-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 text-center transform hover:scale-105 transition-transform duration-300">
-          {/* Icon */}
-          <div className="mb-8">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <svg
-                className="w-12 h-12 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                />
-              </svg>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/member">
+              <button className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+                <ChevronLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+              </button>
+            </Link>
+            <div className="flex-1">
+              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>Pharmacy Services</h1>
+              <p className="text-xs lg:text-sm text-gray-600">Order medicines and manage prescriptions</p>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Title */}
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Pharmacy Services
-          </h1>
+      {/* Main Content */}
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-8 lg:py-12">
+        {/* Coming Soon Card */}
+        <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md mb-6" style={{
+          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          borderColor: '#F7DCAF'
+        }}>
+          {/* Icon */}
+          <div
+            className="w-20 h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-6"
+            style={{
+              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+              border: '1px solid #A4BFFE7A',
+              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+            }}
+          >
+            <BeakerIcon className="w-10 h-10 lg:w-12 lg:h-12" style={{ color: '#0F5FDC' }} />
+          </div>
 
           {/* Coming Soon Badge */}
-          <div className="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-2 rounded-full text-sm font-semibold mb-6 shadow-md">
+          <div className="inline-block px-6 py-2 rounded-full text-sm font-semibold mb-6 shadow-md text-white" style={{
+            background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)'
+          }}>
             Coming Soon!
           </div>
 
+          {/* Title */}
+          <h2 className="text-2xl lg:text-3xl font-bold mb-4" style={{ color: '#0E51A2' }}>
+            Pharmacy Services
+          </h2>
+
           {/* Description */}
-          <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-            We're working hard to bring you convenient pharmacy services.
-            Soon you'll be able to order medicines, manage prescriptions,
-            and get doorstep delivery right from this platform.
+          <p className="text-base lg:text-lg text-gray-700 mb-8 max-w-md mx-auto leading-relaxed">
+            We're working hard to bring you convenient pharmacy services. Soon you'll be able to order medicines, manage prescriptions, and get doorstep delivery.
           </p>
 
-          {/* Features List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 text-left">
-            <div className="flex items-start space-x-3">
-              <svg className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">Medicine ordering</span>
-            </div>
-            <div className="flex items-start space-x-3">
-              <svg className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">Prescription upload</span>
-            </div>
-            <div className="flex items-start space-x-3">
-              <svg className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">Home delivery</span>
-            </div>
-            <div className="flex items-start space-x-3">
-              <svg className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">Insurance coverage</span>
+          {/* Features */}
+          <div
+            className="rounded-xl p-6 lg:p-8 max-w-md mx-auto border-2 mb-8"
+            style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}
+          >
+            <p className="text-sm lg:text-base font-bold mb-4" style={{ color: '#0E51A2' }}>What to expect:</p>
+            <div className="space-y-3 text-left">
+              <div className="flex items-start gap-3">
+                <CheckCircleIcon className="w-5 h-5 lg:w-6 lg:h-6 flex-shrink-0 mt-0.5" style={{ color: '#5FA171' }} />
+                <span className="text-sm lg:text-base text-gray-900">Medicine ordering and tracking</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircleIcon className="w-5 h-5 lg:w-6 lg:h-6 flex-shrink-0 mt-0.5" style={{ color: '#5FA171' }} />
+                <span className="text-sm lg:text-base text-gray-900">Easy prescription upload</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircleIcon className="w-5 h-5 lg:w-6 lg:h-6 flex-shrink-0 mt-0.5" style={{ color: '#5FA171' }} />
+                <span className="text-sm lg:text-base text-gray-900">Fast home delivery service</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircleIcon className="w-5 h-5 lg:w-6 lg:h-6 flex-shrink-0 mt-0.5" style={{ color: '#5FA171' }} />
+                <span className="text-sm lg:text-base text-gray-900">Insurance coverage support</span>
+              </div>
             </div>
           </div>
 
           {/* Back Button */}
-          <a
-            href="/member"
-            className="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            Back to Dashboard
-          </a>
+          <Link href="/member">
+            <button
+              className="px-8 py-3 lg:px-10 lg:py-4 text-white rounded-xl font-semibold transition-all hover:shadow-lg active:scale-95"
+              style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+            >
+              Back to Dashboard
+            </button>
+          </Link>
         </div>
 
         {/* Additional Info */}
-        <p className="text-center text-gray-600 mt-8 text-sm">
-          Have questions? Contact our support team for more information.
-        </p>
+        <div
+          className="rounded-xl p-5 lg:p-6 border-2 shadow-sm text-center"
+          style={{
+            background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+            borderColor: '#86ACD8'
+          }}
+        >
+          <p className="text-sm lg:text-base text-gray-700">
+            Have questions? Contact our support team at{' '}
+            <a href="mailto:support@opdwallet.com" className="font-semibold hover:underline" style={{ color: '#0F5FDC' }}>
+              support@opdwallet.com
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   )
