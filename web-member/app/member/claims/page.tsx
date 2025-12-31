@@ -270,29 +270,36 @@ export default function ClaimsPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header - Professional Style */}
-      <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 lg:py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold">Claims History</h1>
-              <p className="text-white/90 mt-1 text-sm lg:text-base">Track and manage your medical claims</p>
-            </div>
-            <div className="mt-4 sm:mt-0">
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/member">
+              <button className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+                <ChevronLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+              </button>
+            </Link>
+            <div className="flex-1 flex items-center justify-between">
+              <div>
+                <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>Claims History</h1>
+                <p className="text-xs lg:text-sm text-gray-600">Track and manage your medical claims</p>
+              </div>
               <Link
                 href="/member/claims/new"
-                className="inline-flex items-center gap-2 px-5 lg:px-6 py-2.5 lg:py-3 bg-white text-brand-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-md"
+                className="inline-flex items-center gap-2 px-4 lg:px-5 py-2 lg:py-2.5 text-white rounded-xl font-semibold transition-all hover:shadow-lg text-sm lg:text-base"
+                style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
               >
-                <DocumentTextIcon className="h-5 w-5" />
-                New Claim
+                <DocumentTextIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+                <span className="hidden sm:inline">New Claim</span>
+                <span className="sm:hidden">New</span>
               </Link>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 lg:py-8">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
 
       {/* Quick Stats - Professional Style */}
       {loading ? (
@@ -311,10 +318,23 @@ export default function ClaimsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div
+            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}
+          >
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircleIcon className="h-6 w-6 lg:h-7 lg:w-7 text-green-600" />
+              <div
+                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A',
+                  boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                }}
+              >
+                <CheckCircleIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
               </div>
               <div>
                 <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.approved}</p>
@@ -323,10 +343,23 @@ export default function ClaimsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div
+            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}
+          >
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ClockIcon className="h-6 w-6 lg:h-7 lg:w-7 text-blue-600" />
+              <div
+                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A',
+                  boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                }}
+              >
+                <ClockIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
               </div>
               <div>
                 <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.processing}</p>
@@ -335,10 +368,23 @@ export default function ClaimsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div
+            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}
+          >
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-amber-100 rounded-lg flex items-center justify-center">
-                <ExclamationCircleIcon className="h-6 w-6 lg:h-7 lg:w-7 text-amber-600" />
+              <div
+                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A',
+                  boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                }}
+              >
+                <ExclamationCircleIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
               </div>
               <div>
                 <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.underReview}</p>
@@ -347,10 +393,23 @@ export default function ClaimsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div
+            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}
+          >
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-brand-100 rounded-lg flex items-center justify-center">
-                <DocumentTextIcon className="h-6 w-6 lg:h-7 lg:w-7 text-brand-600" />
+              <div
+                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A',
+                  boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                }}
+              >
+                <DocumentTextIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
               </div>
               <div>
                 <p className="text-2xl lg:text-3xl font-bold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
@@ -511,9 +570,12 @@ export default function ClaimsPage() {
       {/* Content */}
       {loading ? (
         // Loading State
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 lg:p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading claims...</p>
+        <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          borderColor: '#86ACD8'
+        }}>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent mx-auto mb-4" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
+          <p className="text-gray-900 font-semibold">Loading claims...</p>
         </div>
       ) : viewMode === 'table' ? (
         // Desktop Table View
@@ -619,7 +681,14 @@ export default function ClaimsPage() {
         // Mobile Card View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
           {paginatedClaims.map((claim) => (
-            <div key={claim.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer">
+            <div
+              key={claim.id}
+              className="rounded-2xl border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+              style={{
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                borderColor: '#86ACD8'
+              }}
+            >
               <div className="p-5 lg:p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -702,14 +771,22 @@ export default function ClaimsPage() {
 
       {/* Empty State */}
       {!loading && filteredAndSortedClaims.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 text-center py-12 lg:py-16">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gray-100 rounded-full flex items-center justify-center">
-              <DocumentTextIcon className="h-8 w-8 lg:h-10 lg:w-10 text-gray-400" />
-            </div>
+        <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          borderColor: '#86ACD8'
+        }}>
+          <div
+            className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+            style={{
+              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+              border: '1px solid #A4BFFE7A',
+              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+            }}
+          >
+            <DocumentTextIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
           </div>
-          <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">No claims found</h3>
-          <p className="text-gray-600 mb-6 lg:mb-8 max-w-md mx-auto">
+          <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No claims found</h3>
+          <p className="text-gray-600 mb-6 lg:mb-8 max-w-md mx-auto text-sm lg:text-base">
             {claims.length === 0
               ? 'You have not submitted any claims yet. Create your first claim to get started.'
               : 'Try adjusting your search or filters to find claims.'
@@ -717,7 +794,8 @@ export default function ClaimsPage() {
           </p>
           <Link
             href="/member/claims/new"
-            className="inline-flex items-center gap-2 px-6 lg:px-8 py-3 lg:py-4 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors shadow-md"
+            className="inline-flex items-center gap-2 px-6 lg:px-8 py-3 lg:py-4 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+            style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
           >
             <DocumentTextIcon className="h-5 w-5" />
             {claims.length === 0 ? 'Create First Claim' : 'New Claim'}
