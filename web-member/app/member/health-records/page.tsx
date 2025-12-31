@@ -209,7 +209,7 @@ export default function HealthRecordsPage() {
   const totalPrescriptions = filteredPrescriptions.length + filteredDigitalPrescriptions.length
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b">
         <div className="p-4 sm:p-6">

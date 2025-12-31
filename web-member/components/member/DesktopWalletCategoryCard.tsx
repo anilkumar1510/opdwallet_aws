@@ -29,10 +29,10 @@ const DesktopWalletCategoryCard = memo(({
                 <Icon className="h-5 w-5 text-blue-600" />
               </div>
             </div>
-            <span className="font-medium text-gray-900">{category.name}</span>
+            <span className="font-medium" style={{ color: '#0E51A2' }}>{category.name}</span>
           </div>
           <div className="text-right">
-            <div className="text-lg font-bold text-gray-900">
+            <div className="text-lg font-bold" style={{ color: '#303030' }}>
               ₹{typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
             </div>
             {typeof category.total === 'number' && (
@@ -53,8 +53,8 @@ const DesktopWalletCategoryCard = memo(({
 
         {typeof category.total === 'number' && category.total > 0 && (
           <div className="mt-1.5 flex justify-between text-xs">
-            <span className="text-gray-600 font-medium">{(100 - percentageUsed).toFixed(0)}% Available</span>
-            <span className="text-gray-500">Used: ₹{(category.total - category.available).toLocaleString()}</span>
+            <span className="font-medium" style={{ color: '#303030' }}>{(100 - percentageUsed).toFixed(0)}% Available</span>
+            <span style={{ color: '#303030' }}>Used: ₹{(category.total - category.available).toLocaleString()}</span>
           </div>
         )}
       </div>

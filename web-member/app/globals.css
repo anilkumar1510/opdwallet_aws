@@ -34,8 +34,7 @@
 
   body {
     @apply text-gray-900;
-    background: linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%);
-    background-attachment: fixed;
+    background: #EFF4FF;
     font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

@@ -172,7 +172,7 @@ function ConfirmAppointmentContent() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
           <div className="mb-6">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -239,7 +239,7 @@ function ConfirmAppointmentContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="bg-white shadow-sm">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">

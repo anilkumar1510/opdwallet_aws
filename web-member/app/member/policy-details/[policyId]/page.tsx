@@ -59,7 +59,7 @@ export default function PolicyDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
       </div>
     )
@@ -67,7 +67,7 @@ export default function PolicyDetailsPage() {
 
   if (error || !policy) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen p-4">
         <div className="max-w-2xl mx-auto">
           <Card className="p-6 text-center">
             <XCircleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -93,7 +93,7 @@ export default function PolicyDetailsPage() {
   const hasExclusions = policy.policyDescription?.exclusions && policy.policyDescription.exclusions.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">

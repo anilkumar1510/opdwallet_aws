@@ -270,7 +270,7 @@ export default function ClaimsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       {/* Header - Professional Style */}
       <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-white">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 lg:py-8">

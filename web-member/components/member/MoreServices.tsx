@@ -26,12 +26,12 @@ export default function MoreServices({ services }: MoreServicesProps) {
           <Link
             key={service.id}
             href={service.href}
-            className="bg-quickLink-blue border-2 border-quickLink-border rounded-xl lg:rounded-2xl p-4 lg:p-5 flex flex-col items-center justify-center gap-3 lg:gap-4 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+            className="bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl p-4 lg:p-5 flex flex-col items-center justify-center gap-3 lg:gap-4 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
           >
             <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
               {service.icon}
             </div>
-            <span className="text-xs lg:text-sm font-semibold text-white text-center leading-tight">
+            <span className="text-xs lg:text-sm font-semibold text-gray-700 text-center leading-tight">
               {service.label}
             </span>
           </Link>

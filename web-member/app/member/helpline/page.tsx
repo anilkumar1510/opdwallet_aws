@@ -8,7 +8,7 @@ export default function HelplinePage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-white px-4 py-4 lg:px-6 lg:py-6">
         <div className="max-w-[480px] mx-auto lg:max-w-full">

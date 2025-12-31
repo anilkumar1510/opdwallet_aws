@@ -2,7 +2,7 @@ import React from 'react'
 
 export default function PharmacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="max-w-2xl w-full">
         <div className="bg-white rounded-2xl shadow-2xl p-12 text-center transform hover:scale-105 transition-transform duration-300">
           {/* Icon */}

@@ -108,16 +108,16 @@ export default function QuickLinks() {
 
   const renderQuickLinkItem = (link: QuickLink, isMobile: boolean) => {
     const baseClasses = isMobile
-      ? "flex-shrink-0 w-[90px] h-[100px] bg-quickLink-blue border-2 border-quickLink-border rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
-      : "flex-1 h-[130px] bg-quickLink-blue border-2 border-quickLink-border rounded-2xl p-5 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95";
+      ? "flex-shrink-0 w-[90px] h-[100px] bg-white border-2 border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+      : "flex-1 h-[130px] bg-white border-2 border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95";
 
     const iconClasses = isMobile
       ? "w-11 h-11"
       : "w-14 h-14";
 
     const labelClasses = isMobile
-      ? "text-white text-[11px] text-center leading-tight line-clamp-2 font-medium"
-      : "text-white text-sm text-center leading-tight font-semibold";
+      ? "text-gray-700 text-[11px] text-center leading-tight line-clamp-2 font-medium"
+      : "text-gray-700 text-sm text-center leading-tight font-semibold";
 
     const content = (
       <>

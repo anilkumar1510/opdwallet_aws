@@ -228,7 +228,7 @@ export default function LabBookingPage() {
 
   if (!cart) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Cart not found</p>
           <button
@@ -244,7 +244,7 @@ export default function LabBookingPage() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-sm max-w-md w-full p-8 text-center">
           <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: '#e8f5e9' }}>
             <CheckCircleIcon className="h-10 w-10" style={{ color: '#4caf50' }} />
@@ -265,7 +265,7 @@ export default function LabBookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="px-4 py-4 flex items-center">

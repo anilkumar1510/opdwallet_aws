@@ -161,7 +161,7 @@ function ConfirmDentalBookingContent() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <div className="p-8 text-center">
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
@@ -183,7 +183,7 @@ function ConfirmDentalBookingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="bg-white shadow-sm">
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -317,7 +317,7 @@ const formatDate = (dateStr: string) => {
 
 export default function ConfirmDentalBookingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div></div>}>
       <ConfirmDentalBookingContent />
     </Suspense>
   )

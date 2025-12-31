@@ -206,7 +206,7 @@ export default function ServicesPage() {
   }, {} as Record<string, Service[]>)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white border-b">
         <div className="p-4 sm:p-6">

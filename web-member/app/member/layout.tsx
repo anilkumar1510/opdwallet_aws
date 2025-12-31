@@ -45,7 +45,7 @@ export default function MemberLayout({
 
   return (
     <FamilyProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         {/* Top padding for mobile header and desktop navigation */}
         <div className="h-14 lg:h-16"></div>
 

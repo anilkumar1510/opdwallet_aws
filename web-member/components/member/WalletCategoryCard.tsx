@@ -29,7 +29,7 @@ const WalletCategoryCard = memo(({
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 truncate">{category.name}</p>
+            <p className="font-medium truncate" style={{ color: '#0E51A2' }}>{category.name}</p>
             {typeof category.total === 'number' && category.total > 0 && (
               <div className="mt-1 w-full bg-gray-200/50 rounded-full h-1 overflow-hidden">
                 <div
@@ -41,7 +41,7 @@ const WalletCategoryCard = memo(({
           </div>
         </div>
         <div className="text-right ml-2">
-          <div className="font-bold text-gray-900 whitespace-nowrap">
+          <div className="font-bold whitespace-nowrap" style={{ color: '#303030' }}>
             ₹{typeof category.available === 'number' ? category.available.toLocaleString() : category.available}
           </div>
           {typeof category.total === 'number' && (

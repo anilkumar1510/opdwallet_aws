@@ -134,13 +134,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<MemberProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc') // desc = highest balance first
   const { activeMember, viewingUserId } = useFamily()
   // Compact wallet cards with modern design
-
-  const handleSort = useCallback(() => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
-  }, [])
 
   useEffect(() => {
     if (viewingUserId) {
@@ -248,13 +243,13 @@ export default function DashboardPage() {
   // Memoized computed values
   const walletCategories = useMemo(() => {
     const categories = user?.walletCategories || []
-    // Sort by available balance
+    // Sort by available balance (highest first)
     return [...categories].sort((a, b) => {
       const aBalance = Number(a.available) || 0
       const bBalance = Number(b.available) || 0
-      return sortOrder === 'desc' ? bBalance - aBalance : aBalance - bBalance
+      return bBalance - aBalance
     })
-  }, [user?.walletCategories, sortOrder])
+  }, [user?.walletCategories])
 
   const totalAvailableBalance = useMemo(() => user?.wallet?.totalBalance?.current || 0, [user?.wallet?.totalBalance])
   const totalWalletBalance = useMemo(() => user?.wallet?.totalBalance?.allocated || 0, [user?.wallet?.totalBalance])
@@ -497,7 +492,7 @@ export default function DashboardPage() {
   const policies = preparePolicies()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* User Greeting Section */}
       <UserGreeting
         userName={`${activeMember?.name?.firstName || ''} ${activeMember?.name?.lastName || ''}`.trim()}
@@ -520,24 +515,8 @@ export default function DashboardPage() {
 
         {/* Health Benefits Section */}
         <section className="px-4 lg:px-6 py-6 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
-          {/* Header with Sort Button */}
-          <div className="flex items-center justify-between mb-4 lg:mb-6">
-            <h2 className="text-lg lg:text-xl font-bold text-black">Health Benefits</h2>
-            <button
-              onClick={handleSort}
-              className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl hover:border-gray-300 transition-colors active:scale-95"
-            >
-              <svg
-                className={`w-5 h-5 text-gray-600 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-              </svg>
-              <span className="text-base font-medium text-gray-600">Sort</span>
-            </button>
-          </div>
+          {/* Header */}
+          <h2 className="text-lg lg:text-xl font-bold text-black mb-4 lg:mb-6">Health Benefits</h2>
 
           <div className="grid grid-cols-2 gap-3 lg:gap-4">
             {walletCategories.map((category: any) => (

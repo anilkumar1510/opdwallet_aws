@@ -153,7 +153,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
       </div>
     )
@@ -161,7 +161,7 @@ export default function ProfilePage() {
 
   if (error || !profileData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'Failed to load profile'}</p>
           <button onClick={() => router.back()} className="btn-primary">
@@ -182,7 +182,7 @@ export default function ProfilePage() {
   const policyDetails = assignment?.policyId
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
