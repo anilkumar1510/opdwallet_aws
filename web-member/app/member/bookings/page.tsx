@@ -435,15 +435,15 @@ export default function BookingsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING_CONFIRMATION':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-50 text-yellow-700 border-2 border-yellow-200'
       case 'CONFIRMED':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-50 text-green-700 border-2 border-green-200'
       case 'COMPLETED':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-blue-50 text-blue-700 border-2 border-blue-200'
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-50 text-red-700 border-2 border-red-200'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-50 text-gray-700 border-2 border-gray-200'
     }
   }
 
@@ -465,15 +465,15 @@ export default function BookingsPage() {
   const getPaymentStatusColor = (paymentStatus: string) => {
     switch (paymentStatus) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-50 text-yellow-700 border-2 border-yellow-200'
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-50 text-green-700 border-2 border-green-200'
       case 'FAILED':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-50 text-red-700 border-2 border-red-200'
       case 'REFUNDED':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-50 text-blue-700 border-2 border-blue-200'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-50 text-gray-700 border-2 border-gray-200'
     }
   }
 
@@ -620,97 +620,103 @@ export default function BookingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#f7f7fc' }}>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+    <div className="min-h-screen pb-24" style={{ backgroundColor: '#f7f7fc' }}>
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all"
             >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+              <ChevronLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">My Bookings</h1>
+            <div className="flex-1">
+              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>
+                My Bookings
+              </h1>
+              <p className="text-xs lg:text-sm text-gray-600">View all your appointments and bookings</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white px-4 border-b border-gray-200">
-        <nav className="flex space-x-8">
+      <div className="bg-white px-4 lg:px-6 border-b shadow-sm max-w-[480px] mx-auto lg:max-w-full" style={{ borderColor: '#e5e7eb' }}>
+        <nav className="flex space-x-6 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab('doctors')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
               activeTab === 'doctors'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
             }`}
-            style={activeTab === 'doctors' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+            style={activeTab === 'doctors' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
               <span>Doctors</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('lab')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
               activeTab === 'lab'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
             }`}
-            style={activeTab === 'lab' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+            style={activeTab === 'lab' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <BeakerIcon className="h-5 w-5" />
               <span>Lab</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('pharmacy')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
               activeTab === 'pharmacy'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
             }`}
-            style={activeTab === 'pharmacy' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+            style={activeTab === 'pharmacy' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <BuildingStorefrontIcon className="h-5 w-5" />
               <span>Pharmacy</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('dental')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
               activeTab === 'dental'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
             }`}
-            style={activeTab === 'dental' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+            style={activeTab === 'dental' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <SparklesIcon className="h-5 w-5" />
               <span>Dental</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('vision')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
               activeTab === 'vision'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
             }`}
-            style={activeTab === 'vision' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+            style={activeTab === 'vision' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <EyeIcon className="h-5 w-5" />
               <span>Vision</span>
             </div>
@@ -719,22 +725,25 @@ export default function BookingsPage() {
       </div>
 
       {/* Content */}
-      <div className="p-4 max-w-4xl mx-auto">
+      <div className="p-4 lg:p-6 max-w-[480px] mx-auto lg:max-w-full">
         {activeTab === 'doctors' && (
           <div className="space-y-4">
             {appointments.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <div className="mb-4">
-                  <CalendarIcon className="h-16 w-16 text-gray-300 mx-auto" />
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
+              }}>
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <CalendarIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments yet</h3>
-                <p className="text-gray-600 mb-4">Book your first appointment to get started</p>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No appointments yet</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">Book your first appointment to get started</p>
                 <button
                   onClick={() => router.push('/member/appointments')}
-                  className="px-6 py-2 text-white rounded-lg"
-                  style={{ backgroundColor: '#0a529f' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#0F5FDC' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
                 >
                   Book Appointment
                 </button>
@@ -747,12 +756,23 @@ export default function BookingsPage() {
                     {upcomingAppointments.map((appointment) => (
                       <div
                         key={appointment._id}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                        style={{
+                          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                          borderColor: '#86ACD8'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                              <UserIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                              style={{
+                                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                                border: '1px solid #A4BFFE7A',
+                                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                              }}
+                            >
+                              <UserIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
@@ -880,12 +900,23 @@ export default function BookingsPage() {
                     {pastAppointments.map((appointment) => (
                       <div
                         key={appointment._id}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow opacity-75"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 opacity-80"
+                        style={{
+                          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                          borderColor: '#86ACD8'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="bg-gray-100 p-2 rounded-full">
-                              <UserIcon className="h-5 w-5 text-gray-600" />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                              style={{
+                                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                                border: '1px solid #A4BFFE7A',
+                                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                              }}
+                            >
+                              <UserIcon className="h-6 w-6 text-gray-600" />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
@@ -957,18 +988,21 @@ export default function BookingsPage() {
         {activeTab === 'lab' && (
           <div className="space-y-4">
             {labCarts.length === 0 && labOrders.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <div className="mb-4">
-                  <BeakerIcon className="h-16 w-16 text-gray-300 mx-auto" />
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
+              }}>
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <BeakerIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No lab tests yet</h3>
-                <p className="text-gray-600 mb-4">Upload a prescription and create a cart to get started</p>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No lab tests yet</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">Upload a prescription and create a cart to get started</p>
                 <button
                   onClick={() => router.push('/member/lab-tests')}
-                  className="px-6 py-2 text-white rounded-lg"
-                  style={{ backgroundColor: '#0a529f' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#0F5FDC' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
                 >
                   Go to Lab Tests
                 </button>
@@ -979,12 +1013,23 @@ export default function BookingsPage() {
                 {labOrders.map((order) => (
                   <div
                     key={order._id}
-                    className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                          <BeakerIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <BeakerIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Lab Test Order</div>
@@ -1053,13 +1098,24 @@ export default function BookingsPage() {
                   return (
                     <div
                       key={cart._id}
-                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+                      style={{
+                        background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                        borderColor: '#86ACD8'
+                      }}
                       onClick={() => router.push(`/member/lab-tests?cartId=${cart.cartId}`)}
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                            <BeakerIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                            style={{
+                              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                              border: '1px solid #A4BFFE7A',
+                              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                            }}
+                          >
+                            <BeakerIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">Lab Test Cart</div>
@@ -1105,22 +1161,22 @@ export default function BookingsPage() {
                             ✓ Vendors assigned by operations team
                           </div>
                           <button
-                            className="w-full py-2 px-4 text-white rounded-lg font-medium"
-                            style={{ backgroundColor: '#0a529f' }}
+                            className="w-full py-3 px-4 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                            style={{ backgroundColor: '#0F5FDC' }}
                             onClick={(e) => {
                               e.stopPropagation()
                               router.push(`/member/lab-tests/booking/${cart.cartId}`)
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
                           >
                             Select Vendor & Book
                           </button>
                         </div>
                       ) : (
                         <button
-                          className="text-sm font-medium"
-                          style={{ color: '#0a529f' }}
+                          className="text-sm font-semibold hover:underline transition-all"
+                          style={{ color: '#0F5FDC' }}
                           onClick={(e) => {
                             e.stopPropagation()
                             router.push(`/member/lab-tests?cartId=${cart.cartId}`)
@@ -1139,30 +1195,36 @@ export default function BookingsPage() {
         )}
 
         {activeTab === 'pharmacy' && (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <div className="mb-4">
-              <BuildingStorefrontIcon className="h-16 w-16 text-gray-300 mx-auto" />
+          <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}>
+            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <BuildingStorefrontIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Pharmacy Orders</h3>
-            <p className="text-gray-600">Pharmacy orders will appear here</p>
+            <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Pharmacy Orders</h3>
+            <p className="text-gray-600 text-sm lg:text-base">Pharmacy orders will appear here</p>
           </div>
         )}
 
         {activeTab === 'dental' && (
           <div className="space-y-4">
             {dentalBookings.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <div className="mb-4">
-                  <SparklesIcon className="h-16 w-16 text-gray-300 mx-auto" />
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
+              }}>
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <SparklesIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No dental bookings yet</h3>
-                <p className="text-gray-600 mb-4">Book your first dental service to get started</p>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No dental bookings yet</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">Book your first dental service to get started</p>
                 <button
                   onClick={() => router.push('/member/dental')}
-                  className="px-6 py-2 text-white rounded-lg"
-                  style={{ backgroundColor: '#0a529f' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#0F5FDC' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
                 >
                   Browse Dental Services
                 </button>
@@ -1175,12 +1237,23 @@ export default function BookingsPage() {
                     {upcomingDentalBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                        style={{
+                          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                          borderColor: '#86ACD8'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                              <SparklesIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                              style={{
+                                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                                border: '1px solid #A4BFFE7A',
+                                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                              }}
+                            >
+                              <SparklesIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
@@ -1316,12 +1389,23 @@ export default function BookingsPage() {
                     {pastDentalBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow opacity-75"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 opacity-80"
+                        style={{
+                          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                          borderColor: '#86ACD8'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="bg-gray-100 p-2 rounded-full">
-                              <SparklesIcon className="h-5 w-5 text-gray-600" />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                              style={{
+                                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                                border: '1px solid #A4BFFE7A',
+                                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                              }}
+                            >
+                              <SparklesIcon className="h-6 w-6 text-gray-600" />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
@@ -1405,18 +1489,21 @@ export default function BookingsPage() {
         {activeTab === 'vision' && (
           <div className="space-y-4">
             {visionBookings.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <div className="mb-4">
-                  <EyeIcon className="h-16 w-16 text-gray-300 mx-auto" />
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
+              }}>
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <EyeIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No vision bookings yet</h3>
-                <p className="text-gray-600 mb-4">Book your first vision service to get started</p>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No vision bookings yet</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">Book your first vision service to get started</p>
                 <button
                   onClick={() => router.push('/member/vision')}
-                  className="px-6 py-2 text-white rounded-lg"
-                  style={{ backgroundColor: '#0a529f' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#0F5FDC' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
                 >
                   Browse Vision Services
                 </button>
@@ -1429,12 +1516,23 @@ export default function BookingsPage() {
                     {upcomingVisionBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                        style={{
+                          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                          borderColor: '#86ACD8'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                              <EyeIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                              style={{
+                                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                                border: '1px solid #A4BFFE7A',
+                                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                              }}
+                            >
+                              <EyeIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
@@ -1532,12 +1630,23 @@ export default function BookingsPage() {
                     {pastVisionBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow opacity-75"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 opacity-80"
+                        style={{
+                          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                          borderColor: '#86ACD8'
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className="bg-gray-100 p-2 rounded-full">
-                              <EyeIcon className="h-5 w-5 text-gray-600" />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                              style={{
+                                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                                border: '1px solid #A4BFFE7A',
+                                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                              }}
+                            >
+                              <EyeIcon className="h-6 w-6 text-gray-600" />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
