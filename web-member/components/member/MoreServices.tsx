@@ -28,7 +28,14 @@ export default function MoreServices({ services }: MoreServicesProps) {
             href={service.href}
             className="bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl p-4 lg:p-5 flex flex-col items-center justify-center gap-3 lg:gap-4 transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
           >
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <div
+              className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
               {service.icon}
             </div>
             <span className="text-xs lg:text-sm font-semibold text-gray-700 text-center leading-tight">

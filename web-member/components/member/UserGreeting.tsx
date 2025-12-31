@@ -70,9 +70,15 @@ export default function UserGreeting({ userName, familyMembers = [] }: UserGreet
                   onClick={() => handleAvatarClick(member)}
                   className={`relative flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-semibold text-sm lg:text-base cursor-pointer transition-all ${
                     isActive
-                      ? 'ring-2 ring-blue-500 ring-offset-2 scale-105 bg-blue-100 text-blue-700'
-                      : 'hover:scale-105 bg-slate-200 text-slate-700 border border-slate-300'
+                      ? 'ring-2 ring-blue-500 ring-offset-2 scale-105'
+                      : 'hover:scale-105'
                   }`}
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D',
+                    color: '#0E51A2'
+                  }}
                   title={`Switch to ${member.name}`}
                 >
                   {member.avatar ? (
@@ -85,7 +91,10 @@ export default function UserGreeting({ userName, familyMembers = [] }: UserGreet
                     <span>{member.initials}</span>
                   )}
                   {isActive && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 lg:w-4 lg:h-4 bg-green-500 rounded-full border-2 border-white" />
+                    <div
+                      className="absolute -bottom-0.5 -right-0.5 w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-white"
+                      style={{ background: '#046D40' }}
+                    />
                   )}
                 </button>
               );

@@ -82,7 +82,14 @@ export default function QuickLinks() {
 
     const content = (
       <>
-        <div className={`${link.iconBgColor} rounded-full ${iconClasses} flex items-center justify-center flex-shrink-0 ${isMobile ? 'shadow-sm' : 'shadow-md'}`}>
+        <div
+          className={`rounded-full ${iconClasses} flex items-center justify-center flex-shrink-0`}
+          style={{
+            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+            border: '1px solid #A4BFFE7A',
+            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+          }}
+        >
           {link.icon}
         </div>
         <span className={labelClasses}>
