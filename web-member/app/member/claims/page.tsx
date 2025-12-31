@@ -275,8 +275,8 @@ export default function ClaimsPage() {
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-ink-900">Claims History</h1>
-            <p className="text-ink-500 mt-1">Track and manage your medical claims</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Claims History</h1>
+            <p className="text-gray-600 mt-1">Track and manage your medical claims</p>
           </div>
           <div className="mt-4 sm:mt-0 flex items-center gap-3">
             <Link
@@ -297,10 +297,10 @@ export default function ClaimsPage() {
             <Card key={i} className="animate-pulse">
               <div className="p-4">
                 <div className="flex items-center">
-                  <div className="h-8 w-8 bg-surface-alt rounded mr-3" />
+                  <div className="h-8 w-8 bg-gray-200 rounded mr-3" />
                   <div>
-                    <div className="h-6 w-12 bg-surface-alt rounded mb-2" />
-                    <div className="h-3 w-16 bg-surface-alt rounded" />
+                    <div className="h-6 w-12 bg-gray-200 rounded mb-2" />
+                    <div className="h-3 w-16 bg-gray-200 rounded" />
                   </div>
                 </div>
               </div>
@@ -310,48 +310,48 @@ export default function ClaimsPage() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card>
-            <div className="p-2">
+            <div className="p-4">
               <div className="flex items-center">
-                <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
+                <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{stats.approved}</p>
-                  <p className="text-xs text-gray-600">Approved</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
+                  <p className="text-sm text-gray-600">Approved</p>
                 </div>
               </div>
             </div>
           </Card>
 
           <Card>
-            <div className="p-2">
+            <div className="p-4">
               <div className="flex items-center">
-                <ClockIcon className="h-4 w-4 text-blue-600 mr-2" />
+                <ClockIcon className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{stats.processing}</p>
-                  <p className="text-xs text-gray-600">Processing</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.processing}</p>
+                  <p className="text-sm text-gray-600">Processing</p>
                 </div>
               </div>
             </div>
           </Card>
 
           <Card>
-            <div className="p-2">
+            <div className="p-4">
               <div className="flex items-center">
-                <ExclamationCircleIcon className="h-4 w-4 text-amber-600 mr-2" />
+                <ExclamationCircleIcon className="h-8 w-8 text-amber-600 mr-3" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{stats.underReview}</p>
-                  <p className="text-xs text-gray-600">Under Review</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.underReview}</p>
+                  <p className="text-sm text-gray-600">Under Review</p>
                 </div>
               </div>
             </div>
           </Card>
 
           <Card>
-            <div className="p-2">
+            <div className="p-4">
               <div className="flex items-center">
-                <DocumentTextIcon className="h-4 w-4 text-indigo-600 mr-2" />
+                <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
-                  <p className="text-xs text-gray-600">Total Claims</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
+                  <p className="text-sm text-gray-600">Total Claims</p>
                 </div>
               </div>
             </div>
@@ -361,19 +361,19 @@ export default function ClaimsPage() {
 
       {/* Controls Bar */}
       <Card className="mb-6" noPadding>
-        <div className="p-4 border-b border-surface-border">
+        <div className="p-4 border-b border-gray-200">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3 flex-1">
               {/* Search */}
               <div className="relative flex-1 max-w-md">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search claims..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-surface border border-surface-border rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
                 />
               </div>
 
@@ -381,7 +381,7 @@ export default function ClaimsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as ClaimStatus | 'all')}
-                className="px-3 py-2 bg-surface border border-surface-border rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent text-sm"
+                className="px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="draft">Draft</option>
@@ -396,7 +396,7 @@ export default function ClaimsPage() {
               {/* Desktop Filters Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="hidden lg:flex items-center px-3 py-2 border border-surface-border rounded-lg text-sm hover:bg-surface-alt"
+                className="hidden lg:flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
               >
                 <FunnelIcon className="h-4 w-4 mr-2" />
                 Filters
@@ -407,11 +407,11 @@ export default function ClaimsPage() {
             <div className="flex items-center gap-3">
               {/* Data Density - Desktop Only */}
               <div className="hidden xl:flex items-center gap-2">
-                <span className="text-xs text-ink-500">Density:</span>
+                <span className="text-xs text-gray-600">Density:</span>
                 <select
                   value={dataView}
                   onChange={(e) => setDataView(e.target.value as 'compact' | 'comfortable' | 'spacious')}
-                  className="px-2 py-1 bg-surface border border-surface-border rounded text-xs"
+                  className="px-2 py-1 bg-white border border-gray-200 rounded text-xs"
                 >
                   <option value="compact">Compact</option>
                   <option value="comfortable">Comfortable</option>
@@ -420,16 +420,16 @@ export default function ClaimsPage() {
               </div>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center bg-surface-alt rounded-lg p-1">
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('table')}
-                  className={`p-2 rounded ${viewMode === 'table' ? 'bg-surface shadow-sm' : 'hover:bg-surface'}`}
+                  className={`p-2 rounded ${viewMode === 'table' ? 'bg-white shadow-sm' : 'hover:bg-white'}`}
                 >
                   <TableCellsIcon className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`p-2 rounded ${viewMode === 'cards' ? 'bg-surface shadow-sm' : 'hover:bg-surface'}`}
+                  className={`p-2 rounded ${viewMode === 'cards' ? 'bg-white shadow-sm' : 'hover:bg-white'}`}
                 >
                   <Squares2X2Icon className="h-4 w-4" />
                 </button>
@@ -438,7 +438,7 @@ export default function ClaimsPage() {
               {/* Export Button */}
               <button
                 onClick={exportData}
-                className="hidden sm:flex items-center px-3 py-2 border border-surface-border rounded-lg text-sm hover:bg-surface-alt"
+                className="hidden sm:flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
               >
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
                 Export
@@ -449,11 +449,11 @@ export default function ClaimsPage() {
 
         {/* Advanced Filters - Desktop Only */}
         {showFilters && (
-          <div className="p-4 bg-surface-alt border-b border-surface-border">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-medium text-ink-700 mb-1">Date Range</label>
-                <select className="w-full px-3 py-2 bg-surface border border-surface-border rounded text-sm">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Date Range</label>
+                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm">
                   <option>All Time</option>
                   <option>Last 7 days</option>
                   <option>Last 30 days</option>
@@ -463,8 +463,8 @@ export default function ClaimsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink-700 mb-1">Category</label>
-                <select className="w-full px-3 py-2 bg-surface border border-surface-border rounded text-sm">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm">
                   <option>All Categories</option>
                   <option>Consultation</option>
                   <option>Pharmacy</option>
@@ -474,8 +474,8 @@ export default function ClaimsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink-700 mb-1">Amount Range</label>
-                <select className="w-full px-3 py-2 bg-surface border border-surface-border rounded text-sm">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Amount Range</label>
+                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm">
                   <option>All Amounts</option>
                   <option>Under ₹1,000</option>
                   <option>₹1,000 - ₹5,000</option>
@@ -484,11 +484,11 @@ export default function ClaimsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink-700 mb-1">Provider</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Provider</label>
                 <input
                   type="text"
                   placeholder="Provider name..."
-                  className="w-full px-3 py-2 bg-surface border border-surface-border rounded text-sm"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm"
                 />
               </div>
             </div>
@@ -513,8 +513,8 @@ export default function ClaimsPage() {
         // Loading State
         <Card noPadding className="overflow-hidden">
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mx-auto mb-4"></div>
-            <p className="text-ink-500">Loading claims...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading claims...</p>
           </div>
         </Card>
       ) : viewMode === 'table' ? (
@@ -522,7 +522,7 @@ export default function ClaimsPage() {
         <Card noPadding className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-surface-alt border-b border-surface-border">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   {[
                     { key: 'date', label: 'Date', sortable: true },
@@ -539,12 +539,12 @@ export default function ClaimsPage() {
                                            column.key !== 'claimNumber' &&
                                            column.key !== 'provider' &&
                                            column.key !== 'actions'
-                    const cursorClass = column.sortable ? 'cursor-pointer hover:bg-surface' : ''
+                    const cursorClass = column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
 
                     return (
                       <th
                         key={column.key}
-                        className={`px-6 ${headerPadding} text-left text-xs font-semibold text-ink-600 uppercase tracking-wider ${cursorClass}`}
+                        className={`px-6 ${headerPadding} text-left text-xs font-semibold text-gray-600 uppercase tracking-wider ${cursorClass}`}
                         onClick={() => isSortableField && handleSort(column.key as SortField)}
                       >
                         <div className="flex items-center">
@@ -558,19 +558,19 @@ export default function ClaimsPage() {
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-surface-border">
+              <tbody className="divide-y divide-gray-100">
                 {paginatedClaims.map((claim) => {
                   const cellPadding = dataView === 'compact' ? 'py-2' : dataView === 'spacious' ? 'py-5' : 'py-3'
                   return (
-                    <tr key={claim.id} className="hover:bg-surface-alt transition-colors">
+                    <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
                       <td className={`px-6 ${cellPadding} text-sm`}>
                         <div>
-                          <p className="font-medium text-ink-900">{new Date(claim.date).toLocaleDateString()}</p>
-                          <p className="text-xs text-ink-500">Submitted: {new Date(claim.submittedDate).toLocaleDateString()}</p>
+                          <p className="font-medium text-gray-900">{new Date(claim.date).toLocaleDateString()}</p>
+                          <p className="text-xs text-gray-500">Submitted: {new Date(claim.submittedDate).toLocaleDateString()}</p>
                         </div>
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
-                        <p className="font-medium text-ink-900">{claim.claimNumber}</p>
+                        <p className="font-medium text-gray-900">{claim.claimNumber}</p>
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
@@ -579,18 +579,18 @@ export default function ClaimsPage() {
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
                         <div>
-                          <p className="font-medium text-ink-900">{claim.provider}</p>
-                          <p className="text-xs text-ink-500 truncate max-w-xs">{claim.description}</p>
+                          <p className="font-medium text-gray-900">{claim.provider}</p>
+                          <p className="text-xs text-gray-500 truncate max-w-xs">{claim.description}</p>
                         </div>
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
                         {claim.wasAutoCapped && claim.originalBillAmount ? (
                           <div>
-                            <p className="font-semibold text-ink-900">₹{claim.originalBillAmount.toLocaleString()}</p>
+                            <p className="font-semibold text-gray-900">₹{claim.originalBillAmount.toLocaleString()}</p>
                             <p className="text-xs text-amber-600">Auto-capped to ₹{claim.amount.toLocaleString()}</p>
                           </div>
                         ) : (
-                          <p className="font-semibold text-ink-900">₹{claim.amount.toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">₹{claim.amount.toLocaleString()}</p>
                         )}
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
@@ -621,12 +621,12 @@ export default function ClaimsPage() {
         // Mobile Card View
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {paginatedClaims.map((claim) => (
-            <Card key={claim.id} className="hover:shadow-soft transition-all cursor-pointer">
+            <Card key={claim.id} className="hover:shadow-md transition-shadow cursor-pointer">
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-ink-900">{claim.claimNumber}</p>
-                    <p className="text-xs text-ink-500">{new Date(claim.date).toLocaleDateString()}</p>
+                    <p className="font-semibold text-gray-900">{claim.claimNumber}</p>
+                    <p className="text-xs text-gray-500">{new Date(claim.date).toLocaleDateString()}</p>
                   </div>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
                     {getStatusIcon(claim.status)}
@@ -635,19 +635,19 @@ export default function ClaimsPage() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <p className="text-sm font-medium text-ink-900">{claim.provider}</p>
-                  <p className="text-sm text-ink-600">{claim.description}</p>
+                  <p className="text-sm font-medium text-gray-900">{claim.provider}</p>
+                  <p className="text-sm text-gray-600">{claim.description}</p>
 
                   <div className="flex items-center justify-between pt-2">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                       {claim.type}
                     </span>
-                    <p className="text-lg font-semibold text-ink-900">₹{claim.amount.toLocaleString()}</p>
+                    <p className="text-lg font-semibold text-gray-900">₹{claim.amount.toLocaleString()}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-surface-border">
-                  <p className="text-xs text-ink-500">{claim.documents} document{claim.documents !== 1 ? 's' : ''}</p>
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">{claim.documents} document{claim.documents !== 1 ? 's' : ''}</p>
                   <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 text-sm font-medium">
                     View Details
                   </Link>
@@ -661,7 +661,7 @@ export default function ClaimsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-ink-500">
+          <div className="text-sm text-gray-600">
             Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedClaims.length)} of {filteredAndSortedClaims.length} claims
           </div>
 
@@ -669,7 +669,7 @@ export default function ClaimsPage() {
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded border border-surface-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt"
+              className="p-2 rounded border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronLeftIcon className="h-4 w-4" />
             </button>
@@ -683,7 +683,7 @@ export default function ClaimsPage() {
                   className={`px-3 py-2 rounded text-sm ${
                     currentPage === page
                       ? 'bg-brand-600 text-white'
-                      : 'border border-surface-border hover:bg-surface-alt'
+                      : 'border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
                   {page}
@@ -694,7 +694,7 @@ export default function ClaimsPage() {
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded border border-surface-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-alt"
+              className="p-2 rounded border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronRightIcon className="h-4 w-4" />
             </button>
@@ -705,9 +705,9 @@ export default function ClaimsPage() {
       {/* Empty State */}
       {!loading && filteredAndSortedClaims.length === 0 && (
         <Card className="text-center py-12">
-          <DocumentTextIcon className="mx-auto h-12 w-12 text-ink-400 mb-4" />
-          <h3 className="text-lg font-medium text-ink-900 mb-2">No claims found</h3>
-          <p className="text-ink-500 mb-6">
+          <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No claims found</h3>
+          <p className="text-gray-600 mb-6">
             {claims.length === 0
               ? 'You have not submitted any claims yet. Create your first claim to get started.'
               : 'Try adjusting your search or filters to find claims.'
