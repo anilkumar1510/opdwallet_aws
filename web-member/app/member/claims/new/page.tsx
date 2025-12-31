@@ -618,7 +618,7 @@ export default function NewClaimPage() {
       <div className="sticky top-0 z-40 bg-white border-b border-surface-border">
         <div className="flex items-center justify-between p-4">
           <Link
-            href="/member/reimbursements"
+            href="/member"
             className="flex items-center text-ink-500 hover:text-ink-700"
           >
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
