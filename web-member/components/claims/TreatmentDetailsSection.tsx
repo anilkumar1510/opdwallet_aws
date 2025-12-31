@@ -73,12 +73,22 @@ export function TreatmentDetailsSection({
   return (
     <div className="space-y-5 lg:space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="text-center mb-6 lg:mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-brand-500 rounded-xl shadow-md mb-4">
-          <SparklesIcon className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+      <div className="rounded-2xl p-6 lg:p-8 text-center border-2 shadow-md" style={{
+        background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+        borderColor: '#F7DCAF'
+      }}>
+        <div
+          className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{
+            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+            border: '1px solid #A4BFFE7A',
+            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+          }}
+        >
+          <SparklesIcon className="w-8 h-8 lg:w-10 lg:h-10" style={{ color: '#0F5FDC' }} />
         </div>
-        <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Treatment Details</h2>
-        <p className="text-sm lg:text-base text-gray-600">Provide information about your treatment</p>
+        <h2 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Treatment Details</h2>
+        <p className="text-sm lg:text-base text-gray-700">Provide information about your treatment</p>
       </div>
 
       {/* Family Member Selection */}
@@ -149,15 +159,25 @@ export function TreatmentDetailsSection({
 
         {/* Available Balance */}
         {formData.category && walletData && (
-          <div className="mt-4 bg-brand-500 rounded-xl p-4 lg:p-5 shadow-md">
+          <div className="mt-4 rounded-xl p-4 border-2 shadow-md" style={{
+            background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+            borderColor: '#86ACD8'
+          }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-lg">
-                  <ShieldCheckIcon className="w-5 h-5 text-white" />
+                <div
+                  className="flex items-center justify-center w-10 h-10 rounded-full"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
+                  <ShieldCheckIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
                 </div>
-                <span className="text-sm lg:text-base font-medium text-white">Available Balance</span>
+                <span className="text-sm lg:text-base font-semibold" style={{ color: '#0E51A2' }}>Available Balance</span>
               </div>
-              <span className="text-2xl lg:text-3xl font-bold text-white">
+              <span className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>
                 ₹{getAvailableBalance().toLocaleString()}
               </span>
             </div>

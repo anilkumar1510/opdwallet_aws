@@ -65,7 +65,7 @@ export default function ClaimsPage() {
   const mapStatus = (backendStatus: string): ClaimStatus => {
     const statusMap: Record<string, ClaimStatus> = {
       'DRAFT': 'draft',
-      'SUBMITTED': 'submitted',
+      'SUBMITTED': 'under_review',  // Changed: submitted claims go to under_review
       'UNDER_REVIEW': 'under_review',
       'APPROVED': 'approved',
       'REJECTED': 'rejected',
@@ -74,9 +74,35 @@ export default function ClaimsPage() {
       'PAYMENT_PROCESSING': 'processing',
       'PAYMENT_COMPLETED': 'approved',
       'ASSIGNED': 'under_review',
-      'UNASSIGNED': 'submitted'
+      'UNASSIGNED': 'under_review',  // Changed: unassigned claims also under review
+      // Add lowercase variants
+      'draft': 'draft',
+      'submitted': 'under_review',  // Changed: submitted claims go to under_review
+      'under_review': 'under_review',
+      'approved': 'approved',
+      'rejected': 'rejected',
+      'cancelled': 'cancelled',
+      'payment_pending': 'processing',
+      'payment_processing': 'processing',
+      'payment_completed': 'approved',
+      'assigned': 'under_review',
+      'unassigned': 'under_review',  // Changed: unassigned claims also under review
+      // Add common variations
+      'PENDING': 'under_review',  // Changed: pending claims are under review
+      'pending': 'under_review',  // Changed: pending claims are under review
+      'IN_REVIEW': 'under_review',
+      'in_review': 'under_review',
+      'REVIEWING': 'under_review',
+      'reviewing': 'under_review',
+      'COMPLETED': 'approved',
+      'completed': 'approved',
+      'PROCESSING': 'processing',
+      'processing': 'processing'
     }
-    return statusMap[backendStatus] || 'submitted'
+
+    const mappedStatus = statusMap[backendStatus] || statusMap[backendStatus?.toUpperCase()] || 'under_review'
+
+    return mappedStatus
   }
 
   // Format category for display

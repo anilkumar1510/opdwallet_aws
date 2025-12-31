@@ -58,36 +58,56 @@ export function ClaimReviewSection({
   return (
     <div className="space-y-5 lg:space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="text-center mb-6 lg:mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-green-600 rounded-xl shadow-md mb-4">
+      <div className="rounded-2xl p-6 lg:p-8 text-center border-2 shadow-md" style={{
+        background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+        borderColor: '#F7DCAF'
+      }}>
+        <div
+          className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{
+            background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)',
+            border: '1px solid rgba(95, 161, 113, 0.3)',
+            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+          }}
+        >
           <DocumentCheckIcon className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
         </div>
-        <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Review & Submit</h2>
-        <p className="text-sm lg:text-base text-gray-600">Please verify all details before submitting</p>
+        <h2 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Review & Submit</h2>
+        <p className="text-sm lg:text-base text-gray-700">Please verify all details before submitting</p>
       </div>
 
       {/* Wallet Rules Card */}
       {walletRules && (
-        <div className="bg-brand-500 rounded-xl p-6 lg:p-8 shadow-md">
+        <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
+          background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+          borderColor: '#86ACD8'
+        }}>
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 bg-white/20 rounded-lg">
-              <ShieldCheckIcon className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
+            <div
+              className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-full"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <ShieldCheckIcon className="w-6 h-6 lg:w-7 lg:h-7" style={{ color: '#0F5FDC' }} />
             </div>
-            <h3 className="text-lg lg:text-xl font-bold text-white">Your OPD Wallet Details</h3>
+            <h3 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>Your OPD Wallet Details</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-4 lg:gap-5">
             {walletRules.totalAnnualAmount && (
-              <div className="bg-white/10 rounded-xl p-4 lg:p-5 border border-white/20">
-                <p className="text-xs lg:text-sm text-white/70 font-medium mb-2">Annual Limit</p>
-                <p className="text-xl lg:text-2xl font-bold text-white">₹{walletRules.totalAnnualAmount.toLocaleString()}</p>
+              <div className="rounded-xl p-4 lg:p-5 border-2 bg-white/50" style={{ borderColor: '#86ACD8' }}>
+                <p className="text-xs lg:text-sm text-gray-600 font-medium mb-2">Annual Limit</p>
+                <p className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>₹{walletRules.totalAnnualAmount.toLocaleString()}</p>
               </div>
             )}
 
             {walletRules.copay && (
-              <div className="bg-white/10 rounded-xl p-4 lg:p-5 border border-white/20">
-                <p className="text-xs lg:text-sm text-white/70 font-medium mb-2">Your Co-pay</p>
-                <p className="text-xl lg:text-2xl font-bold text-white">
+              <div className="rounded-xl p-4 lg:p-5 border-2 bg-white/50" style={{ borderColor: '#86ACD8' }}>
+                <p className="text-xs lg:text-sm text-gray-600 font-medium mb-2">Your Co-pay</p>
+                <p className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>
                   {walletRules.copay.mode === 'PERCENT'
                     ? `${walletRules.copay.value}%`
                     : `₹${walletRules.copay.value}`}
@@ -96,16 +116,16 @@ export function ClaimReviewSection({
             )}
 
             {walletRules.perClaimLimit && (
-              <div className="bg-white/10 rounded-xl p-4 lg:p-5 border border-white/20">
-                <p className="text-xs lg:text-sm text-white/70 font-medium mb-2">Per Claim Cap</p>
-                <p className="text-xl lg:text-2xl font-bold text-white">₹{walletRules.perClaimLimit.toLocaleString()}</p>
+              <div className="rounded-xl p-4 lg:p-5 border-2 bg-white/50" style={{ borderColor: '#86ACD8' }}>
+                <p className="text-xs lg:text-sm text-gray-600 font-medium mb-2">Per Claim Cap</p>
+                <p className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>₹{walletRules.perClaimLimit.toLocaleString()}</p>
               </div>
             )}
 
             {walletRules.partialPaymentEnabled && (
-              <div className="bg-white/10 rounded-xl p-4 lg:p-5 border border-white/20">
-                <p className="text-xs lg:text-sm text-white/70 font-medium mb-2">Partial Payment</p>
-                <p className="text-xl lg:text-2xl font-bold text-white">Allowed ✓</p>
+              <div className="rounded-xl p-4 lg:p-5 border-2 bg-white/50" style={{ borderColor: '#86ACD8' }}>
+                <p className="text-xs lg:text-sm text-gray-600 font-medium mb-2">Partial Payment</p>
+                <p className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>Allowed ✓</p>
               </div>
             )}
           </div>
@@ -113,50 +133,78 @@ export function ClaimReviewSection({
       )}
 
       {/* Claim Summary */}
-      <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
-          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg">
-            <SparklesIcon className="w-6 h-6 text-blue-600" />
+      <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
+        background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+        borderColor: '#86ACD8'
+      }}>
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b" style={{ borderColor: '#86ACD8' }}>
+          <div
+            className="flex items-center justify-center w-12 h-12 rounded-full"
+            style={{
+              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+              border: '1px solid #A4BFFE7A',
+              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+            }}
+          >
+            <SparklesIcon className="w-6 h-6" style={{ color: '#0F5FDC' }} />
           </div>
-          <h3 className="text-xl lg:text-2xl font-bold text-gray-900">Claim Summary</h3>
+          <h3 className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>Claim Summary</h3>
         </div>
 
         <div className="space-y-4">
           {/* Claim Type */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+          <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border" style={{ borderColor: '#86ACD8' }}>
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                <TagIcon className="w-5 h-5 text-blue-600" />
+              <div
+                className="flex items-center justify-center w-10 h-10 rounded-full"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A'
+                }}
+              >
+                <TagIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
               </div>
-              <span className="text-sm lg:text-base text-gray-600 font-medium">Claim Type</span>
+              <span className="text-sm lg:text-base text-gray-700 font-medium">Claim Type</span>
             </div>
-            <span className="text-sm lg:text-base font-semibold text-gray-900 capitalize">
+            <span className="text-sm lg:text-base font-semibold capitalize" style={{ color: '#0E51A2' }}>
               {formData.claimType.replace('-', ' ')}
             </span>
           </div>
 
           {/* Category */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+          <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border" style={{ borderColor: '#86ACD8' }}>
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                <TagIcon className="w-5 h-5 text-blue-600" />
+              <div
+                className="flex items-center justify-center w-10 h-10 rounded-full"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A'
+                }}
+              >
+                <TagIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
               </div>
-              <span className="text-sm lg:text-base text-gray-600 font-medium">Category</span>
+              <span className="text-sm lg:text-base text-gray-700 font-medium">Category</span>
             </div>
-            <span className="text-sm lg:text-base font-semibold text-gray-900">
+            <span className="text-sm lg:text-base font-semibold" style={{ color: '#0E51A2' }}>
               {availableCategories.find(c => c.categoryId === formData.category)?.name || 'Not selected'}
             </span>
           </div>
 
           {/* Billing Date */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+          <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border" style={{ borderColor: '#86ACD8' }}>
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                <CalendarIcon className="w-5 h-5 text-blue-600" />
+              <div
+                className="flex items-center justify-center w-10 h-10 rounded-full"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A'
+                }}
+              >
+                <CalendarIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
               </div>
-              <span className="text-sm lg:text-base text-gray-600 font-medium">Billing Date</span>
+              <span className="text-sm lg:text-base text-gray-700 font-medium">Billing Date</span>
             </div>
-            <span className="text-sm lg:text-base font-semibold text-gray-900">
+            <span className="text-sm lg:text-base font-semibold" style={{ color: '#0E51A2' }}>
               {new Date(formData.treatmentDate).toLocaleDateString('en-IN', {
                 day: '2-digit',
                 month: 'short',
@@ -166,15 +214,25 @@ export function ClaimReviewSection({
           </div>
 
           {/* Bill Amount */}
-          <div className="bg-brand-500 rounded-xl p-5 lg:p-6 shadow-md">
+          <div className="rounded-xl p-5 lg:p-6 border-2 shadow-md" style={{
+            background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+            borderColor: '#86ACD8'
+          }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg">
-                  <CurrencyRupeeIcon className="w-6 h-6 text-white" />
+                <div
+                  className="flex items-center justify-center w-12 h-12 rounded-full"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
+                  <CurrencyRupeeIcon className="w-6 h-6" style={{ color: '#0F5FDC' }} />
                 </div>
-                <span className="text-base lg:text-lg text-white font-semibold">Bill Amount</span>
+                <span className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>Bill Amount</span>
               </div>
-              <span className="text-3xl lg:text-4xl font-bold text-white">
+              <span className="text-2xl lg:text-3xl font-bold" style={{ color: '#0E51A2' }}>
                 ₹{parseFloat(formData.billAmount || '0').toLocaleString()}
               </span>
             </div>
@@ -182,15 +240,25 @@ export function ClaimReviewSection({
 
           {/* Estimated Reimbursement */}
           {estimatedReimbursement > 0 && (
-            <div className="bg-green-600 rounded-xl p-5 lg:p-6 shadow-md border-2 border-green-500">
+            <div className="rounded-xl p-5 lg:p-6 border-2 shadow-md" style={{
+              background: 'linear-gradient(243.73deg, rgba(144, 234, 169, 0.15) -12.23%, rgba(95, 161, 113, 0.15) 94.15%)',
+              borderColor: 'rgba(95, 161, 113, 0.3)'
+            }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-12 h-12 bg-white/20 rounded-lg">
+                  <div
+                    className="flex items-center justify-center w-12 h-12 rounded-full"
+                    style={{
+                      background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)',
+                      border: '1px solid rgba(95, 161, 113, 0.3)',
+                      boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                    }}
+                  >
                     <CheckCircleIcon className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-base lg:text-lg text-white font-semibold">Estimated Reimbursement</span>
+                  <span className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>Estimated Reimbursement</span>
                 </div>
-                <span className="text-3xl lg:text-4xl font-bold text-white">
+                <span className="text-2xl lg:text-3xl font-bold" style={{ color: '#0E51A2' }}>
                   ₹{estimatedReimbursement.toLocaleString()}
                 </span>
               </div>
@@ -198,16 +266,22 @@ export function ClaimReviewSection({
           )}
 
           {/* Documents */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+          <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border" style={{ borderColor: '#86ACD8' }}>
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                <DocumentCheckIcon className="w-5 h-5 text-blue-600" />
+              <div
+                className="flex items-center justify-center w-10 h-10 rounded-full"
+                style={{
+                  background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                  border: '1px solid #A4BFFE7A'
+                }}
+              >
+                <DocumentCheckIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
               </div>
-              <span className="text-sm lg:text-base text-gray-600 font-medium">Documents</span>
+              <span className="text-sm lg:text-base text-gray-700 font-medium">Documents</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircleIcon className="w-5 h-5 text-green-600" />
-              <span className="text-sm lg:text-base font-semibold text-gray-900">
+              <CheckCircleIcon className="w-5 h-5" style={{ color: '#5FA171' }} />
+              <span className="text-sm lg:text-base font-semibold" style={{ color: '#0E51A2' }}>
                 {totalDocuments} file{totalDocuments !== 1 ? 's' : ''} uploaded
               </span>
             </div>
@@ -216,13 +290,23 @@ export function ClaimReviewSection({
       </div>
 
       {/* Terms Agreement */}
-      <div className="bg-blue-50 rounded-xl p-5 lg:p-6 shadow-sm border border-blue-100">
+      <div className="rounded-2xl p-5 lg:p-6 border-2 shadow-md" style={{
+        background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+        borderColor: '#86ACD8'
+      }}>
         <div className="flex items-start gap-4">
-          <div className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 bg-brand-500 rounded-lg flex-shrink-0">
-            <ShieldCheckIcon className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
+          <div
+            className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-full flex-shrink-0"
+            style={{
+              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+              border: '1px solid #A4BFFE7A',
+              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+            }}
+          >
+            <ShieldCheckIcon className="w-6 h-6 lg:w-7 lg:h-7" style={{ color: '#0F5FDC' }} />
           </div>
           <div>
-            <p className="font-semibold text-base lg:text-lg text-gray-900 mb-2">Verification & Terms</p>
+            <p className="font-semibold text-base lg:text-lg mb-2" style={{ color: '#0E51A2' }}>Verification & Terms</p>
             <p className="text-sm lg:text-base text-gray-700 leading-relaxed">
               By submitting this claim, you confirm that all information provided is
               accurate and complete. False claims may result in policy termination.
@@ -232,13 +316,23 @@ export function ClaimReviewSection({
       </div>
 
       {/* Expected Processing Time */}
-      <div className="flex items-center gap-4 p-5 lg:p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg flex-shrink-0">
-          <ClockIcon className="w-6 h-6 text-blue-600" />
+      <div className="flex items-center gap-4 p-5 lg:p-6 rounded-2xl border-2 shadow-md" style={{
+        background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+        borderColor: '#86ACD8'
+      }}>
+        <div
+          className="flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0"
+          style={{
+            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+            border: '1px solid #A4BFFE7A',
+            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+          }}
+        >
+          <ClockIcon className="w-6 h-6" style={{ color: '#0F5FDC' }} />
         </div>
         <div className="text-sm lg:text-base text-gray-700">
-          <span className="font-semibold text-gray-900">Expected processing time:</span>
-          <span className="ml-2 text-brand-600 font-semibold">3-5 business days</span>
+          <span className="font-semibold" style={{ color: '#0E51A2' }}>Expected processing time:</span>
+          <span className="ml-2 font-semibold" style={{ color: '#0F5FDC' }}>3-5 business days</span>
         </div>
       </div>
     </div>

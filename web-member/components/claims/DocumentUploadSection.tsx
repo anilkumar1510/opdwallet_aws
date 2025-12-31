@@ -63,47 +63,64 @@ export function DocumentUploadSection({
     return (
       <div className="space-y-5 lg:space-y-6 animate-fadeIn">
         {/* Prescription Upload Section */}
-        <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100">
+        <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
+          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          borderColor: '#F7DCAF'
+        }}>
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 bg-blue-100 rounded-lg">
-              <DocumentTextIcon className="w-6 h-6 lg:w-7 lg:h-7 text-blue-600" />
+            <div
+              className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-full"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <DocumentTextIcon className="w-6 h-6 lg:w-7 lg:h-7" style={{ color: '#0F5FDC' }} />
             </div>
             <div>
-              <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Prescription Documents</h3>
-              <p className="text-sm lg:text-base text-gray-600">Upload doctor's prescription <span className="text-red-500">*</span></p>
+              <h3 className="text-lg lg:text-xl font-semibold" style={{ color: '#0E51A2' }}>Prescription Documents</h3>
+              <p className="text-sm lg:text-base text-gray-700">Upload doctor's prescription <span className="text-red-500">*</span></p>
             </div>
           </div>
 
           {/* Upload Area */}
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 lg:p-10 bg-gray-50 hover:bg-gray-100 transition-all">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-blue-100 rounded-lg mb-4">
-                <CloudArrowUpIcon className="h-8 w-8 lg:h-10 lg:w-10 text-blue-600" />
-              </div>
-              <p className="text-sm lg:text-base text-gray-700 font-medium mb-6">
-                Drag & drop or click to upload prescription
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => triggerFileInput('image/*,application/pdf', true, onPrescriptionUpload)}
-                  className="px-6 py-3 lg:px-8 lg:py-4 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-all font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                >
-                  <DocumentPlusIcon className="h-5 w-5" />
-                  Choose Files
-                </button>
-
-                <button
-                  onClick={() => triggerFileInput('image/*', false, onPrescriptionUpload, true)}
-                  className="px-6 py-3 lg:px-8 lg:py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-semibold shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-                >
-                  <CameraIcon className="h-5 w-5" />
-                  Camera
-                </button>
-              </div>
-
-              <p className="text-xs lg:text-sm text-gray-500 mt-4 font-medium">PDF, JPG, PNG up to 5MB each</p>
+          <div className="text-center py-6">
+            <div
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <CloudArrowUpIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
             </div>
+            <p className="text-sm lg:text-base text-gray-700 font-medium mb-6">
+              Drag & drop or click to upload prescription
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => triggerFileInput('image/*,application/pdf', true, onPrescriptionUpload)}
+                className="px-6 py-3 lg:px-8 lg:py-4 text-white rounded-xl transition-all font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+              >
+                <DocumentPlusIcon className="h-5 w-5" />
+                Choose Files
+              </button>
+
+              <button
+                onClick={() => triggerFileInput('image/*', false, onPrescriptionUpload, true)}
+                className="px-6 py-3 lg:px-8 lg:py-4 border-2 text-gray-700 rounded-xl hover:bg-white/50 transition-all font-semibold shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                style={{ borderColor: '#86ACD8' }}
+              >
+                <CameraIcon className="h-5 w-5" />
+                Camera
+              </button>
+            </div>
+
+            <p className="text-xs lg:text-sm text-gray-600 mt-4 font-medium">PDF, JPG, PNG up to 5MB each</p>
           </div>
 
           {/* Prescription Previews */}
@@ -147,47 +164,64 @@ export function DocumentUploadSection({
         </div>
 
         {/* Bills Upload Section */}
-        <div className="bg-white rounded-xl p-6 lg:p-8 shadow-sm border border-gray-100">
+        <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
+          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          borderColor: '#F7DCAF'
+        }}>
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 bg-green-100 rounded-lg">
-              <DocumentTextIcon className="w-6 h-6 lg:w-7 lg:h-7 text-green-600" />
+            <div
+              className="flex items-center justify-center w-12 h-12 lg:w-14 lg:h-14 rounded-full"
+              style={{
+                background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)',
+                border: '1px solid rgba(95, 161, 113, 0.3)',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <DocumentTextIcon className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
             </div>
             <div>
-              <h3 className="text-lg lg:text-xl font-semibold text-gray-900">Bill Documents</h3>
-              <p className="text-sm lg:text-base text-gray-600">Upload consultation bills <span className="text-red-500">*</span></p>
+              <h3 className="text-lg lg:text-xl font-semibold" style={{ color: '#0E51A2' }}>Bill Documents</h3>
+              <p className="text-sm lg:text-base text-gray-700">Upload consultation bills <span className="text-red-500">*</span></p>
             </div>
           </div>
 
           {/* Upload Area */}
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 lg:p-10 bg-gray-50 hover:bg-gray-100 transition-all">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-lg mb-4">
-                <CloudArrowUpIcon className="h-8 w-8 lg:h-10 lg:w-10 text-green-600" />
-              </div>
-              <p className="text-sm lg:text-base text-gray-700 font-medium mb-6">
-                Drag & drop or click to upload bills
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => triggerFileInput('image/*,application/pdf', true, onBillUpload)}
-                  className="px-6 py-3 lg:px-8 lg:py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                >
-                  <DocumentPlusIcon className="h-5 w-5" />
-                  Choose Files
-                </button>
-
-                <button
-                  onClick={() => triggerFileInput('image/*', false, onBillUpload, true)}
-                  className="px-6 py-3 lg:px-8 lg:py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-semibold shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-                >
-                  <CameraIcon className="h-5 w-5" />
-                  Camera
-                </button>
-              </div>
-
-              <p className="text-xs lg:text-sm text-gray-500 mt-4 font-medium">PDF, JPG, PNG up to 5MB each</p>
+          <div className="text-center py-6">
+            <div
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{
+                background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)',
+                border: '1px solid rgba(95, 161, 113, 0.3)',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <CloudArrowUpIcon className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
             </div>
+            <p className="text-sm lg:text-base text-gray-700 font-medium mb-6">
+              Drag & drop or click to upload bills
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => triggerFileInput('image/*,application/pdf', true, onBillUpload)}
+                className="px-6 py-3 lg:px-8 lg:py-4 text-white rounded-xl transition-all font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)' }}
+              >
+                <DocumentPlusIcon className="h-5 w-5" />
+                Choose Files
+              </button>
+
+              <button
+                onClick={() => triggerFileInput('image/*', false, onBillUpload, true)}
+                className="px-6 py-3 lg:px-8 lg:py-4 border-2 text-gray-700 rounded-xl hover:bg-white/50 transition-all font-semibold shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                style={{ borderColor: '#86ACD8' }}
+              >
+                <CameraIcon className="h-5 w-5" />
+                Camera
+              </button>
+            </div>
+
+            <p className="text-xs lg:text-sm text-gray-600 mt-4 font-medium">PDF, JPG, PNG up to 5MB each</p>
           </div>
 
           {/* Bill Previews */}
@@ -236,40 +270,50 @@ export function DocumentUploadSection({
   // Generic Upload Area for Lab/Pharmacy
   return (
     <div className="space-y-5 lg:space-y-6 animate-fadeIn">
-      <div className="bg-white rounded-xl p-8 lg:p-10 shadow-sm border border-gray-100">
+      <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
+        background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+        borderColor: '#F7DCAF'
+      }}>
         {/* Upload Area */}
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 lg:p-12 bg-gray-50 hover:bg-gray-100 transition-all">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 lg:w-24 lg:h-24 bg-brand-500 rounded-xl mb-6 shadow-md">
-              <PhotoIcon className="h-10 w-10 lg:h-12 lg:w-12 text-white" />
-            </div>
-            <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">Upload Documents</h3>
-            <p className="text-sm lg:text-base text-gray-600 mb-8 max-w-md mx-auto">
-              Drag and drop your bills and reports here, or tap to browse
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => triggerFileInput('image/*,application/pdf', true, onFileUpload)}
-                className="px-8 py-4 lg:px-10 lg:py-5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-all font-semibold text-base lg:text-lg shadow-md hover:shadow-lg flex items-center justify-center gap-3"
-              >
-                <DocumentPlusIcon className="h-6 w-6" />
-                Choose Files
-              </button>
-
-              <button
-                onClick={onCameraCapture || (() => triggerFileInput('image/*', false, onFileUpload, true))}
-                className="px-8 py-4 lg:px-10 lg:py-5 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all font-semibold text-base lg:text-lg shadow-sm hover:shadow-md flex items-center justify-center gap-3"
-              >
-                <CameraIcon className="h-6 w-6" />
-                Take Photo
-              </button>
-            </div>
-
-            <p className="text-xs lg:text-sm text-gray-500 mt-6">
-              Supports PDF, JPG, PNG • Maximum 5MB per file
-            </p>
+        <div className="text-center">
+          <div
+            className="w-20 h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-6"
+            style={{
+              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+              border: '1px solid #A4BFFE7A',
+              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+            }}
+          >
+            <PhotoIcon className="h-10 w-10 lg:h-12 lg:w-12" style={{ color: '#0F5FDC' }} />
           </div>
+          <h3 className="text-xl lg:text-2xl font-bold mb-3" style={{ color: '#0E51A2' }}>Upload Documents</h3>
+          <p className="text-sm lg:text-base text-gray-700 mb-8 max-w-md mx-auto">
+            Drag and drop your bills and reports here, or tap to browse
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => triggerFileInput('image/*,application/pdf', true, onFileUpload)}
+              className="px-8 py-4 lg:px-10 lg:py-5 text-white rounded-xl transition-all font-semibold text-base lg:text-lg shadow-md hover:shadow-lg flex items-center justify-center gap-3"
+              style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+            >
+              <DocumentPlusIcon className="h-6 w-6" />
+              Choose Files
+            </button>
+
+            <button
+              onClick={onCameraCapture || (() => triggerFileInput('image/*', false, onFileUpload, true))}
+              className="px-8 py-4 lg:px-10 lg:py-5 border-2 text-gray-700 rounded-xl hover:bg-white/50 transition-all font-semibold text-base lg:text-lg shadow-sm hover:shadow-md flex items-center justify-center gap-3"
+              style={{ borderColor: '#86ACD8' }}
+            >
+              <CameraIcon className="h-6 w-6" />
+              Take Photo
+            </button>
+          </div>
+
+          <p className="text-xs lg:text-sm text-gray-600 mt-6 font-medium">
+            Supports PDF, JPG, PNG • Maximum 5MB per file
+          </p>
         </div>
       </div>
 
