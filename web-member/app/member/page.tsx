@@ -9,6 +9,7 @@ import {
   UserIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
   VideoCameraIcon,
   BeakerIcon,
   CubeIcon,
@@ -18,7 +19,10 @@ import {
   ReceiptPercentIcon,
   BanknotesIcon,
   HeartIcon,
-  PhoneIcon
+  PhoneIcon,
+  ChatBubbleLeftRightIcon,
+  FolderOpenIcon,
+  DocumentPlusIcon
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
@@ -107,25 +111,25 @@ const MORE_SERVICES = [
   {
     id: 'helpline',
     label: '24/7 Helpline',
-    icon: <PhoneIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    icon: <ChatBubbleLeftRightIcon className="w-6 h-6 text-brand-600" />,
     href: '/member/helpline'
   },
   {
     id: 'wellness',
     label: 'Wellness Programs',
-    icon: <HeartIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    icon: <SparklesIcon className="w-6 h-6 text-brand-600" />,
     href: '/member/wellness'
   },
   {
     id: 'health-records',
     label: 'Health Records',
-    icon: <DocumentTextIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    icon: <FolderOpenIcon className="w-6 h-6 text-brand-600" />,
     href: '/member/health-records'
   },
   {
     id: 'claims',
     label: 'File Claims',
-    icon: <ClipboardDocumentCheckIcon className="w-5 h-5 lg:w-6 lg:h-6 text-brand-600" />,
+    icon: <DocumentPlusIcon className="w-6 h-6 text-brand-600" />,
     href: '/member/claims/new'
   }
 ]
@@ -134,8 +138,25 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<MemberProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showLeftBenefitsArrow, setShowLeftBenefitsArrow] = useState(false)
+  const [showRightBenefitsArrow, setShowRightBenefitsArrow] = useState(false)
+  const [showLoader, setShowLoader] = useState(false)
+
   const { activeMember, viewingUserId } = useFamily()
+  const benefitsScrollRef = React.useRef<HTMLDivElement>(null)
+
   // Compact wallet cards with modern design
+
+  // Delay showing loader to avoid flicker on fast loads
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+    if (loading) {
+      timeout = setTimeout(() => setShowLoader(true), 200)
+    } else {
+      setShowLoader(false)
+    }
+    return () => clearTimeout(timeout)
+  }, [loading])
 
   useEffect(() => {
     if (viewingUserId) {
@@ -401,15 +422,50 @@ export default function DashboardPage() {
     })
   }, [user?._id])
 
+  // Health Benefits carousel handlers
+  const handleBenefitsScroll = useCallback(() => {
+    if (benefitsScrollRef.current) {
+      const container = benefitsScrollRef.current
+      const scrollLeft = container.scrollLeft
+      setShowLeftBenefitsArrow(scrollLeft > 10)
+      setShowRightBenefitsArrow(scrollLeft < container.scrollWidth - container.offsetWidth - 10)
+    }
+  }, [])
+
+  const scrollBenefitsLeft = useCallback(() => {
+    if (benefitsScrollRef.current) {
+      benefitsScrollRef.current.scrollBy({ left: -300, behavior: 'smooth' })
+    }
+  }, [])
+
+  const scrollBenefitsRight = useCallback(() => {
+    if (benefitsScrollRef.current) {
+      benefitsScrollRef.current.scrollBy({ left: 300, behavior: 'smooth' })
+    }
+  }, [])
+
+  useEffect(() => {
+    const container = benefitsScrollRef.current
+    if (container) {
+      container.addEventListener('scroll', handleBenefitsScroll)
+      handleBenefitsScroll() // Initial check
+      return () => container.removeEventListener('scroll', handleBenefitsScroll)
+    }
+  }, [handleBenefitsScroll])
+
   // Get user policy before rendering
   const userPolicy = getUserPolicy()
 
-  if (loading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin" />
+      <div className="flex items-center justify-center min-h-screen animate-fadeIn">
+        <div className="h-12 w-12 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
       </div>
     )
+  }
+
+  if (loading) {
+    return null // Return nothing during the delay period
   }
 
   // Prepare all members array for carousel
@@ -492,7 +548,7 @@ export default function DashboardPage() {
   const policies = preparePolicies()
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen animate-fadeIn">
       {/* User Greeting Section */}
       <UserGreeting
         userName={`${activeMember?.name?.firstName || ''} ${activeMember?.name?.lastName || ''}`.trim()}
@@ -514,23 +570,61 @@ export default function DashboardPage() {
         <QuickLinks />
 
         {/* Health Benefits Section */}
-        <section className="px-4 lg:px-6 py-6 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
+        <section className="py-6 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
           {/* Header */}
-          <h2 className="text-lg lg:text-xl font-bold text-black mb-4 lg:mb-6">Health Benefits</h2>
+          <h2 className="text-lg lg:text-xl font-bold text-black mb-4 lg:mb-6 px-4 lg:px-6">Health Benefits</h2>
 
-          <div className="grid grid-cols-2 gap-3 lg:gap-4">
-            {walletCategories.map((category: any) => (
-              <BenefitCardEnhanced
-                key={category.categoryCode}
-                benefitId={category.categoryCode}
-                title={category.name}
-                currentAmount={category.available}
-                totalAmount={category.total}
-                href={benefitUIConfig[category.categoryCode]?.href || '/member/benefits'}
-                icon={getCategoryIcon(category.categoryCode)}
-              />
-            ))}
+          {/* Carousel Container with Navigation Arrows */}
+          <div className="relative group px-4 lg:px-6">
+            <div
+              ref={benefitsScrollRef}
+              className="grid grid-cols-2 gap-3 lg:gap-4 lg:overflow-x-auto lg:flex lg:flex-nowrap scrollbar-hide"
+            >
+              {walletCategories.map((category: any) => (
+                <div key={category.categoryCode} className="lg:flex-shrink-0 lg:w-[calc(50%-8px)]">
+                  <BenefitCardEnhanced
+                    benefitId={category.categoryCode}
+                    title={category.name}
+                    currentAmount={category.available}
+                    totalAmount={category.total}
+                    href={benefitUIConfig[category.categoryCode]?.href || '/member/benefits'}
+                    icon={getCategoryIcon(category.categoryCode)}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Arrow Navigation (Desktop) */}
+            {showLeftBenefitsArrow && (
+              <button
+                onClick={scrollBenefitsLeft}
+                className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all z-10 hover:scale-110"
+                aria-label="Previous benefits"
+              >
+                <ChevronLeftIcon className="h-8 w-8 text-gray-600" />
+              </button>
+            )}
+
+            {showRightBenefitsArrow && (
+              <button
+                onClick={scrollBenefitsRight}
+                className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all z-10 hover:scale-110"
+                aria-label="Next benefits"
+              >
+                <ChevronRightIcon className="h-8 w-8 text-gray-600" />
+              </button>
+            )}
           </div>
+
+          <style jsx>{`
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+            .scrollbar-hide {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+          `}</style>
         </section>
 
         {/* More Services Section */}

@@ -139,7 +139,8 @@ export default function OPDCardCarousel({
       {showLeftArrow && (
         <button
           onClick={scrollLeft}
-          className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-gray-50"
+          className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-gray-200"
+          style={{ backgroundColor: '#F0F0F0' }}
           aria-label="Previous card"
         >
           <ChevronLeftIcon className="h-6 w-6 text-gray-700" />
@@ -149,7 +150,8 @@ export default function OPDCardCarousel({
       {showRightArrow && (
         <button
           onClick={scrollRight}
-          className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-gray-50"
+          className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-gray-200"
+          style={{ backgroundColor: '#F0F0F0' }}
           aria-label="Next card"
         >
           <ChevronRightIcon className="h-6 w-6 text-gray-700" />

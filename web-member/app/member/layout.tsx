@@ -45,12 +45,12 @@ export default function MemberLayout({
 
   return (
     <FamilyProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen" style={{ backgroundColor: '#f7f7fc' }}>
         {/* Top padding for mobile header and desktop navigation */}
         <div className="h-14 lg:h-16"></div>
 
         {/* Main content - increased mobile bottom padding for nudge + bottom nav */}
-        <main className="overflow-y-auto pb-32 lg:pb-0 lg:pt-0" role="main">
+        <main className="overflow-y-auto pb-32 lg:pb-0 lg:pt-0" role="main" style={{ backgroundColor: '#f7f7fc' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}

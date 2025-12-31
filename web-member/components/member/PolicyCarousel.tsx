@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import PolicyCardEnhanced from './PolicyCardEnhanced';
 
 interface Policy {
@@ -20,14 +21,50 @@ interface PolicyCarouselProps {
 
 export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
-      const scrollLeft = scrollContainerRef.current.scrollLeft;
+      const container = scrollContainerRef.current;
+      const scrollLeft = container.scrollLeft;
       const cardWidth = 320 + 12; // Card width + gap
       const newIndex = Math.round(scrollLeft / cardWidth);
       setActiveIndex(newIndex);
+
+      // Update arrow visibility
+      setShowLeftArrow(scrollLeft > 10);
+      setShowRightArrow(scrollLeft < container.scrollWidth - container.offsetWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial check
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  const scrollLeft = () => {
+    const newIndex = Math.max(0, activeIndex - 1);
+    scrollToCard(newIndex);
+  };
+
+  const scrollRight = () => {
+    const newIndex = Math.min(policies.length - 1, activeIndex + 1);
+    scrollToCard(newIndex);
+  };
+
+  const scrollToCard = (index: number) => {
+    if (scrollContainerRef.current) {
+      const cardWidth = 320 + 12; // Card width + gap
+      scrollContainerRef.current.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -37,26 +74,51 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
         Your Policies
       </h2>
 
-      {/* Carousel Container */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex gap-3 lg:gap-5 overflow-x-auto scrollbar-hide px-4 lg:px-6 pb-2"
-      >
-        {policies.map((policy, index) => (
-          <PolicyCardEnhanced
-            key={policy.policyId}
-            policyId={policy.policyId}
-            policyNumber={policy.policyNumber}
-            policyHolder={policy.policyHolder}
-            age={policy.age}
-            corporate={policy.corporate}
-            coverageAmount={policy.coverageAmount}
-            expiryDate={policy.expiryDate}
-            isActive={index === activeIndex}
-            href={`/member/policy-details/${policy.policyId}`}
-          />
-        ))}
+      {/* Carousel Container with Navigation Arrows */}
+      <div className="relative group px-4 lg:px-6">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex gap-3 lg:gap-5 overflow-x-auto scrollbar-hide pb-2"
+        >
+          {policies.map((policy, index) => (
+            <PolicyCardEnhanced
+              key={policy.policyId}
+              policyId={policy.policyId}
+              policyNumber={policy.policyNumber}
+              policyHolder={policy.policyHolder}
+              age={policy.age}
+              corporate={policy.corporate}
+              coverageAmount={policy.coverageAmount}
+              expiryDate={policy.expiryDate}
+              isActive={index === activeIndex}
+              href={`/member/policy-details/${policy.policyId}`}
+            />
+          ))}
+        </div>
+
+        {/* Arrow Navigation (Desktop) */}
+        {showLeftArrow && (
+          <button
+            onClick={scrollLeft}
+            className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-gray-200"
+            style={{ backgroundColor: '#F0F0F0' }}
+            aria-label="Previous card"
+          >
+            <ChevronLeftIcon className="h-6 w-6 text-gray-700" />
+          </button>
+        )}
+
+        {showRightArrow && (
+          <button
+            onClick={scrollRight}
+            className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-gray-200"
+            style={{ backgroundColor: '#F0F0F0' }}
+            aria-label="Next card"
+          >
+            <ChevronRightIcon className="h-6 w-6 text-gray-700" />
+          </button>
+        )}
       </div>
 
       {/* Pagination Dots */}
@@ -65,15 +127,7 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
           {policies.map((_, index) => (
             <div
               key={index}
-              onClick={() => {
-                if (scrollContainerRef.current) {
-                  const cardWidth = 320 + 12; // Card width + gap
-                  scrollContainerRef.current.scrollTo({
-                    left: index * cardWidth,
-                    behavior: 'smooth',
-                  });
-                }
-              }}
+              onClick={() => scrollToCard(index)}
               className={`cursor-pointer rounded-full transition-all duration-200 ${
                 index === activeIndex
                   ? 'h-[4px] w-[14px]'

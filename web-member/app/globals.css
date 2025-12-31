@@ -34,7 +34,7 @@
 
   body {
     @apply text-gray-900;
-    background: #EFF4FF;
+    background: #f7f7fc;
     font-family: var(--font-body), -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

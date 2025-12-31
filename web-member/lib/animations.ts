@@ -3,22 +3,19 @@ import { Variants } from 'framer-motion'
 // Page transition animations
 export const pageTransitions: Variants = {
   initial: {
-    opacity: 0,
-    y: 20
+    opacity: 0
   },
   animate: {
     opacity: 1,
-    y: 0,
     transition: {
-      duration: 0.3,
+      duration: 0.15,
       ease: [0.4, 0.0, 0.2, 1]
     }
   },
   exit: {
     opacity: 0,
-    y: -20,
     transition: {
-      duration: 0.2,
+      duration: 0.1,
       ease: [0.4, 0.0, 0.2, 1]
     }
   }
