@@ -733,7 +733,14 @@ export default function BookingsPage() {
                 background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
                 borderColor: '#86ACD8'
               }}>
-                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
                   <CalendarIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No appointments yet</h3>
@@ -741,9 +748,7 @@ export default function BookingsPage() {
                 <button
                   onClick={() => router.push('/member/appointments')}
                   className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                  style={{ backgroundColor: '#0F5FDC' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                 >
                   Book Appointment
                 </button>
@@ -772,7 +777,7 @@ export default function BookingsPage() {
                                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
                               }}
                             >
-                              <UserIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+                              <UserIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
@@ -916,7 +921,7 @@ export default function BookingsPage() {
                                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
                               }}
                             >
-                              <UserIcon className="h-6 w-6 text-gray-600" />
+                              <UserIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
@@ -992,7 +997,14 @@ export default function BookingsPage() {
                 background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
                 borderColor: '#86ACD8'
               }}>
-                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
                   <BeakerIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No lab tests yet</h3>
@@ -1000,9 +1012,7 @@ export default function BookingsPage() {
                 <button
                   onClick={() => router.push('/member/lab-tests')}
                   className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                  style={{ backgroundColor: '#0F5FDC' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                 >
                   Go to Lab Tests
                 </button>
@@ -1029,7 +1039,7 @@ export default function BookingsPage() {
                             boxShadow: '-2px 11px 46.1px 0px #0000000D'
                           }}
                         >
-                          <BeakerIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+                          <BeakerIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Lab Test Order</div>
@@ -1115,7 +1125,7 @@ export default function BookingsPage() {
                               boxShadow: '-2px 11px 46.1px 0px #0000000D'
                             }}
                           >
-                            <BeakerIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+                            <BeakerIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">Lab Test Cart</div>
@@ -1162,13 +1172,11 @@ export default function BookingsPage() {
                           </div>
                           <button
                             className="w-full py-3 px-4 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                            style={{ backgroundColor: '#0F5FDC' }}
+                            style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                             onClick={(e) => {
                               e.stopPropagation()
                               router.push(`/member/lab-tests/booking/${cart.cartId}`)
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
                           >
                             Select Vendor & Book
                           </button>
@@ -1199,7 +1207,14 @@ export default function BookingsPage() {
             background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
             borderColor: '#86ACD8'
           }}>
-            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <div
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
               <BuildingStorefrontIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
             </div>
             <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Pharmacy Orders</h3>
@@ -1214,7 +1229,14 @@ export default function BookingsPage() {
                 background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
                 borderColor: '#86ACD8'
               }}>
-                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
                   <SparklesIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No dental bookings yet</h3>
@@ -1222,9 +1244,7 @@ export default function BookingsPage() {
                 <button
                   onClick={() => router.push('/member/dental')}
                   className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                  style={{ backgroundColor: '#0F5FDC' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                 >
                   Browse Dental Services
                 </button>
@@ -1253,7 +1273,7 @@ export default function BookingsPage() {
                                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
                               }}
                             >
-                              <SparklesIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+                              <SparklesIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
@@ -1405,7 +1425,7 @@ export default function BookingsPage() {
                                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
                               }}
                             >
-                              <SparklesIcon className="h-6 w-6 text-gray-600" />
+                              <SparklesIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
@@ -1493,7 +1513,14 @@ export default function BookingsPage() {
                 background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
                 borderColor: '#86ACD8'
               }}>
-                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
                   <EyeIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No vision bookings yet</h3>
@@ -1501,9 +1528,7 @@ export default function BookingsPage() {
                 <button
                   onClick={() => router.push('/member/vision')}
                   className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                  style={{ backgroundColor: '#0F5FDC' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E51A2'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0F5FDC'}
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                 >
                   Browse Vision Services
                 </button>
@@ -1532,7 +1557,7 @@ export default function BookingsPage() {
                                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
                               }}
                             >
-                              <EyeIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+                              <EyeIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
@@ -1589,7 +1614,8 @@ export default function BookingsPage() {
                           {booking.billGenerated && booking.paymentStatus === 'PENDING' && (
                             <button
                               onClick={() => router.push(`/member/vision/payment/${booking.bookingId}`)}
-                              className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                              className="w-full py-2 px-3 text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg"
+                              style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                             >
                               View and Pay Bill
                             </button>
@@ -1646,7 +1672,7 @@ export default function BookingsPage() {
                                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
                               }}
                             >
-                              <EyeIcon className="h-6 w-6 text-gray-600" />
+                              <EyeIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
