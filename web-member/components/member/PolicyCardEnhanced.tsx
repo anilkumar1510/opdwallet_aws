@@ -39,13 +39,15 @@ export default function PolicyCardEnhanced({
   return (
     <Link
       href={href}
-      className={`flex-shrink-0 min-w-[320px] lg:w-[340px] border-2 border-blue-300 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg ${
+      className={`flex-shrink-0 min-w-[320px] lg:w-[340px] rounded-2xl p-6 transition-all duration-300 ${
         isActive
-          ? 'opacity-100 scale-100 shadow-md'
+          ? 'opacity-100 scale-100'
           : 'opacity-60 scale-95'
       }`}
       style={{
-        background: 'linear-gradient(135deg, #D4E4F7 0%, #B8D4F1 100%)',
+        background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+        border: '1px solid #A4BFFE7A',
+        boxShadow: '-2px 11px 46.1px 0px #0000000D'
       }}
     >
       {/* Top Section: User Icon + Name + Age */}
