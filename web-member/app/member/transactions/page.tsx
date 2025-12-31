@@ -9,6 +9,11 @@ import {
   ArrowDownIcon,
   FunnelIcon,
   DocumentArrowDownIcon,
+  WalletIcon,
+  BanknotesIcon,
+  CalendarIcon,
+  ClockIcon,
+  TagIcon,
 } from '@heroicons/react/24/outline'
 import {
   BarChart,
@@ -25,6 +30,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { motion } from 'framer-motion'
 
 type TransactionType = 'DEBIT' | 'CREDIT' | 'REFUND'
 
@@ -149,19 +155,19 @@ export default function TransactionsPage() {
         name: 'Credits',
         count: filteredTransactions.filter(t => t.type === 'CREDIT').length,
         amount: totals.credits,
-        fill: '#22c55e'
+        fill: '#06C270'
       },
       {
         name: 'Debits',
         count: filteredTransactions.filter(t => t.type === 'DEBIT').length,
         amount: totals.debits,
-        fill: '#ef4444'
+        fill: '#F5821E'
       },
       {
         name: 'Refunds',
         count: filteredTransactions.filter(t => t.type === 'REFUND').length,
         amount: filteredTransactions.filter(t => t.type === 'REFUND').reduce((sum, t) => sum + t.amount, 0),
-        fill: '#3b82f6'
+        fill: '#8C2CE2'
       }
     ]
 
@@ -209,7 +215,7 @@ export default function TransactionsPage() {
     return { typeData, categoryData, dailyData, balanceTrend }
   }, [filteredTransactions, totals, walletBalance])
 
-  const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4']
+  const COLORS = ['#FFCA9D', '#FFF2BE', '#FFE681', '#06C270', '#8C2CE2', '#8A4910', '#F5821E', '#FFCC00']
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -231,91 +237,137 @@ export default function TransactionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f7f7fc' }}>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24" style={{ backgroundColor: '#f7f7fc' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-white px-4 py-6 lg:px-6">
-        <div className="max-w-[480px] mx-auto lg:max-w-6xl">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-white hover:text-gray-100 transition-colors mb-4"
-          >
-            <ArrowLeftIcon className="w-5 h-5" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <h1 className="text-2xl lg:text-3xl font-bold mb-2">Transaction History</h1>
-          <p className="text-blue-100 text-sm">View your complete transaction record</p>
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all"
+            >
+              <ArrowLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>
+                Transaction History
+              </h1>
+              <p className="text-xs lg:text-sm text-gray-600">View your complete transaction record</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-[480px] mx-auto lg:max-w-6xl px-4 lg:px-6 py-6">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6"
+        >
           {/* Current Balance */}
-          <div className="bg-quickLink-blue rounded-xl lg:rounded-2xl p-4 lg:p-5 border-2 border-quickLink-border shadow-sm">
-            <div className="text-xs lg:text-sm text-white/90 mb-1">Current Balance</div>
-            <div className="text-xl lg:text-2xl font-bold text-white">
+          <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <WalletIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
+              </div>
+            </div>
+            <div className="text-xs lg:text-sm text-gray-600 mb-1 font-medium">Current Balance</div>
+            <div className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>
               ₹{(walletBalance?.totalBalance?.current || 0).toLocaleString('en-IN')}
             </div>
           </div>
 
           {/* Total Credits */}
-          <div className="bg-quickLink-blue rounded-xl lg:rounded-2xl p-4 lg:p-5 border-2 border-quickLink-border shadow-sm">
-            <div className="flex items-center gap-2 mb-1">
-              <ArrowUpIcon className="w-4 h-4 text-white" />
-              <div className="text-xs lg:text-sm text-white/90">Credits</div>
+          <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <ArrowUpIcon className="w-5 h-5" style={{ color: '#16a34a' }} />
+              </div>
             </div>
-            <div className="text-xl lg:text-2xl font-bold text-white">
+            <div className="text-xs lg:text-sm text-gray-600 mb-1 font-medium">Total Credits</div>
+            <div className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>
               ₹{totals.credits.toLocaleString('en-IN')}
             </div>
           </div>
 
           {/* Total Debits */}
-          <div className="bg-quickLink-blue rounded-xl lg:rounded-2xl p-4 lg:p-5 border-2 border-quickLink-border shadow-sm">
-            <div className="flex items-center gap-2 mb-1">
-              <ArrowDownIcon className="w-4 h-4 text-white" />
-              <div className="text-xs lg:text-sm text-white/90">Debits</div>
+          <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <ArrowDownIcon className="w-5 h-5" style={{ color: '#ef4444' }} />
+              </div>
             </div>
-            <div className="text-xl lg:text-2xl font-bold text-white">
+            <div className="text-xs lg:text-sm text-gray-600 mb-1 font-medium">Total Debits</div>
+            <div className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>
               ₹{totals.debits.toLocaleString('en-IN')}
             </div>
           </div>
 
           {/* Net Change */}
-          <div className="bg-quickLink-blue rounded-xl lg:rounded-2xl p-4 lg:p-5 border-2 border-quickLink-border shadow-sm">
-            <div className="text-xs lg:text-sm text-white/90 mb-1">Net Change</div>
-            <div className="text-xl lg:text-2xl font-bold text-white">
+          <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <BanknotesIcon className="w-5 h-5" style={{ color: '#0F5FDC' }} />
+              </div>
+            </div>
+            <div className="text-xs lg:text-sm text-gray-600 mb-1 font-medium">Net Change</div>
+            <div className="text-xl lg:text-2xl font-bold" style={{ color: totals.net >= 0 ? '#16a34a' : '#ef4444' }}>
               {totals.net >= 0 ? '+' : ''}₹{totals.net.toLocaleString('en-IN')}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Analytics Charts */}
-        <div className="mb-6">
-          <h2 className="text-lg lg:text-xl font-bold text-gray-900 mb-4 px-1">Analytics Overview</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="mb-6"
+        >
+          <h2 className="text-lg lg:text-xl font-bold mb-4 px-1" style={{ color: '#0E51A2' }}>
+            Analytics Overview
+          </h2>
 
           {/* Mobile: Horizontal Scroll */}
-          <div className="lg:hidden overflow-x-auto pb-4 -mx-4 px-4">
+          <div className="lg:hidden overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
             <div className="flex gap-3 min-w-max">
               {/* Chart 1: Transaction Volume by Type */}
-              <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm w-[280px] flex-shrink-0">
-                <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Transaction Volume</h3>
+              <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                borderColor: '#86ACD8'
+              }}>
+                <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Transaction Volume</h3>
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={chartData.typeData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} width={35} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={35} />
                     <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb', fontSize: '12px' }}
+                      contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', fontSize: '12px', backgroundColor: 'white' }}
                       formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     />
-                    <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
                       {chartData.typeData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
@@ -325,26 +377,32 @@ export default function TransactionsPage() {
               </div>
 
               {/* Chart 2: Daily Trend */}
-              <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm w-[280px] flex-shrink-0">
-                <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">7-Day Trend</h3>
+              <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                borderColor: '#86ACD8'
+              }}>
+                <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>7-Day Trend</h3>
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={chartData.dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} width={35} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={35} />
                     <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb', fontSize: '12px' }}
+                      contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', fontSize: '12px', backgroundColor: 'white' }}
                       formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     />
-                    <Bar dataKey="credits" fill="#22c55e" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="debits" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="credits" fill="#06C270" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="debits" fill="#F5821E" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Chart 3: Category Distribution */}
-              <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm w-[280px] flex-shrink-0">
-                <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Category Split</h3>
+              <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                borderColor: '#86ACD8'
+              }}>
+                <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Category Split</h3>
                 <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Pie
@@ -361,7 +419,7 @@ export default function TransactionsPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb', fontSize: '12px' }}
+                      contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', fontSize: '12px', backgroundColor: 'white' }}
                       formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     />
                   </PieChart>
@@ -369,52 +427,49 @@ export default function TransactionsPage() {
               </div>
 
               {/* Chart 4: Balance Trend */}
-              <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-sm w-[280px] flex-shrink-0">
-                <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Balance Trend</h3>
+              <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                borderColor: '#86ACD8'
+              }}>
+                <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Balance Trend</h3>
                 <ResponsiveContainer width="100%" height={160}>
                   <LineChart data={chartData.balanceTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} width={35} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={35} />
                     <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb', fontSize: '12px' }}
+                      contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', fontSize: '12px', backgroundColor: 'white' }}
                       formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     />
                     <Line
                       type="monotone"
                       dataKey="balance"
-                      stroke="#3b82f6"
+                      stroke="#8C2CE2"
                       strokeWidth={2}
-                      dot={{ fill: '#3b82f6', r: 3 }}
+                      dot={{ fill: '#8C2CE2', r: 3 }}
                       activeDot={{ r: 5 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
-            {/* Scroll Indicator */}
-            <div className="flex justify-center gap-1 mt-3">
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-                <span>Swipe to view all charts</span>
-              </div>
-            </div>
           </div>
 
           {/* Desktop: Grid Layout */}
-          <div className="hidden lg:grid lg:grid-cols-2 2xl:grid-cols-4 gap-4 lg:gap-6">
+          <div className="hidden lg:grid lg:grid-cols-2 2xl:grid-cols-4 gap-4 lg:gap-5">
             {/* Chart 1: Transaction Volume by Type */}
-            <div className="bg-white rounded-xl lg:rounded-2xl p-5 border-2 border-gray-200 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide">Transaction Volume</h3>
+            <div className="rounded-2xl p-5 border-2 shadow-md" style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}>
+              <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Transaction Volume</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData.typeData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb' }}
+                    contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', backgroundColor: 'white' }}
                     formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                   />
                   <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
@@ -427,26 +482,32 @@ export default function TransactionsPage() {
             </div>
 
             {/* Chart 2: Daily Trend */}
-            <div className="bg-white rounded-xl lg:rounded-2xl p-5 border-2 border-gray-200 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide">7-Day Trend</h3>
+            <div className="rounded-2xl p-5 border-2 shadow-md" style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}>
+              <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>7-Day Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData.dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb' }}
+                    contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', backgroundColor: 'white' }}
                     formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                   />
-                  <Bar dataKey="credits" fill="#22c55e" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="debits" fill="#ef4444" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="credits" fill="#06C270" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="debits" fill="#F5821E" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             {/* Chart 3: Category Distribution */}
-            <div className="bg-white rounded-xl lg:rounded-2xl p-5 border-2 border-gray-200 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide">Category Split</h3>
+            <div className="rounded-2xl p-5 border-2 shadow-md" style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}>
+              <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Category Split</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
@@ -463,7 +524,7 @@ export default function TransactionsPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb' }}
+                    contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', backgroundColor: 'white' }}
                     formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                   />
                 </PieChart>
@@ -471,33 +532,45 @@ export default function TransactionsPage() {
             </div>
 
             {/* Chart 4: Balance Trend */}
-            <div className="bg-white rounded-xl lg:rounded-2xl p-5 border-2 border-gray-200 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wide">Balance Trend</h3>
+            <div className="rounded-2xl p-5 border-2 shadow-md" style={{
+              background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+              borderColor: '#86ACD8'
+            }}>
+              <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Balance Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData.balanceTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} />
                   <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '2px solid #e5e7eb' }}
+                    contentStyle={{ borderRadius: '12px', border: '2px solid #86ACD8', backgroundColor: 'white' }}
                     formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                   />
                   <Line
                     type="monotone"
                     dataKey="balance"
-                    stroke="#3b82f6"
+                    stroke="#8C2CE2"
                     strokeWidth={3}
-                    dot={{ fill: '#3b82f6', r: 4 }}
+                    dot={{ fill: '#8C2CE2', r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-5 border-2 border-gray-200 shadow-sm mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="rounded-2xl p-4 lg:p-5 border-2 shadow-md mb-6"
+          style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}
+        >
           <div className="flex flex-col gap-3">
             {/* Search Bar */}
             <div className="relative">
@@ -507,14 +580,16 @@ export default function TransactionsPage() {
                 placeholder="Search by transaction ID, description, or provider..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 bg-gray-50 rounded-lg focus:border-brand-500 focus:bg-white focus:outline-none text-sm text-gray-900 placeholder:text-gray-500 transition-colors"
+                className="w-full pl-10 pr-4 py-3 border-2 bg-white/60 backdrop-blur-sm rounded-xl focus:bg-white focus:outline-none text-sm font-medium transition-all shadow-sm"
+                style={{ borderColor: '#86ACD8', color: '#303030' }}
               />
             </div>
 
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-white/60 backdrop-blur-sm border-2 rounded-xl hover:bg-white transition-all text-sm font-semibold shadow-sm"
+              style={{ borderColor: '#86ACD8', color: '#0E51A2' }}
             >
               <FunnelIcon className="w-4 h-4" />
               <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
@@ -522,18 +597,19 @@ export default function TransactionsPage() {
 
             {/* Filters */}
             {showFilters && (
-              <div className="pt-4 border-t-2 border-gray-100">
-                <label className="block text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Transaction Type</label>
+              <div className="pt-4 border-t-2" style={{ borderColor: '#86ACD8' }}>
+                <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Transaction Type</label>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {(['ALL', 'CREDIT', 'DEBIT', 'REFUND'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setTypeFilter(type)}
-                      className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                      className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all shadow-sm ${
                         typeFilter === type
-                          ? 'bg-brand-600 text-white shadow-md scale-105'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-gray-200'
+                          ? 'text-white scale-105'
+                          : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
                       }`}
+                      style={typeFilter === type ? { backgroundColor: '#0F5FDC' } : { borderColor: '#86ACD8', color: '#0E51A2' }}
                     >
                       {type === 'ALL' ? 'All Types' : type.charAt(0) + type.slice(1).toLowerCase()}
                     </button>
@@ -542,29 +618,44 @@ export default function TransactionsPage() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Transactions List */}
-        <div className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+          className="space-y-4"
+        >
           {filteredTransactions.length === 0 ? (
-            <div className="bg-white rounded-xl lg:rounded-2xl p-12 text-center border-2 border-gray-200 shadow-sm">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="rounded-2xl p-12 text-center border-2 shadow-md" style={{
+              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+              borderColor: '#86ACD8'
+            }}>
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                 <DocumentArrowDownIcon className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No transactions found</h3>
-              <p className="text-gray-500 text-sm">Try adjusting your search or filters to find transactions</p>
+              <h3 className="text-xl font-bold mb-2" style={{ color: '#0E51A2' }}>No transactions found</h3>
+              <p className="text-gray-600 text-sm">Try adjusting your search or filters to find transactions</p>
             </div>
           ) : (
-            filteredTransactions.map((txn) => (
-              <div
+            filteredTransactions.map((txn, index) => (
+              <motion.div
                 key={txn._id}
-                className="bg-white rounded-xl lg:rounded-2xl p-5 lg:p-6 border-2 border-gray-200 hover:border-brand-400 hover:shadow-lg transition-all duration-200 group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 + (index * 0.05) }}
+                className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                  borderColor: '#86ACD8'
+                }}
               >
                 {/* Main Content */}
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex-1 min-w-0">
                     {/* Transaction Title */}
-                    <h3 className="text-base lg:text-lg font-bold text-gray-900 mb-1 truncate">
+                    <h3 className="text-base lg:text-lg font-bold mb-1 truncate" style={{ color: '#0E51A2' }}>
                       {txn.notes || `${txn.serviceType || 'Transaction'}`}
                     </h3>
 
@@ -577,14 +668,14 @@ export default function TransactionsPage() {
                     )}
 
                     {/* Transaction ID */}
-                    <p className="text-xs text-gray-500 font-mono bg-gray-50 inline-block px-2 py-1 rounded">
+                    <p className="text-xs text-gray-600 font-mono bg-white/60 backdrop-blur-sm inline-block px-3 py-1.5 rounded-lg shadow-sm">
                       {txn.transactionId}
                     </p>
                   </div>
 
                   {/* Amount Badge */}
                   <div
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-base lg:text-lg shadow-sm ${
+                    className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-base lg:text-lg shadow-sm ${
                       txn.type === 'CREDIT'
                         ? 'bg-green-50 text-green-700 border-2 border-green-200'
                         : txn.type === 'REFUND'
@@ -592,11 +683,13 @@ export default function TransactionsPage() {
                         : 'bg-red-50 text-red-700 border-2 border-red-200'
                     }`}
                   >
-                    {txn.type === 'CREDIT' ? (
-                      <ArrowUpIcon className="w-5 h-5" />
-                    ) : (
-                      <ArrowDownIcon className="w-5 h-5" />
-                    )}
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      {txn.type === 'CREDIT' ? (
+                        <ArrowUpIcon className="w-4 h-4" />
+                      ) : (
+                        <ArrowDownIcon className="w-4 h-4" />
+                      )}
+                    </div>
                     <span>
                       {txn.type === 'CREDIT' || txn.type === 'REFUND' ? '+' : '-'}₹{txn.amount.toLocaleString('en-IN')}
                     </span>
@@ -604,38 +697,35 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Metadata Row */}
-                <div className="flex flex-wrap items-center gap-3 lg:gap-4 pt-4 border-t-2 border-gray-100">
+                <div className="flex flex-wrap items-center gap-3 lg:gap-4 pt-4 border-t-2" style={{ borderColor: '#86ACD8' }}>
                   {/* Date */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                  <div className="flex items-center gap-2 text-sm bg-white/60 backdrop-blur-sm px-3 py-2 rounded-xl shadow-sm">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <CalendarIcon className="w-4 h-4" style={{ color: '#0F5FDC' }} />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Date</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatDate(txn.createdAt)}</p>
+                      <p className="text-sm font-bold" style={{ color: '#303030' }}>{formatDate(txn.createdAt)}</p>
                     </div>
                   </div>
 
                   {/* Time */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                  <div className="flex items-center gap-2 text-sm bg-white/60 backdrop-blur-sm px-3 py-2 rounded-xl shadow-sm">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <ClockIcon className="w-4 h-4" style={{ color: '#0F5FDC' }} />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Time</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatTime(txn.createdAt)}</p>
+                      <p className="text-sm font-bold" style={{ color: '#303030' }}>{formatTime(txn.createdAt)}</p>
                     </div>
                   </div>
 
                   {/* Category Badge */}
                   {txn.categoryCode && (
                     <div className="ml-auto">
-                      <div className="px-3 py-1.5 bg-brand-50 border-2 border-brand-200 rounded-lg">
-                        <p className="text-xs font-bold text-brand-700">{getCategoryName(txn.categoryCode)}</p>
+                      <div className="flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-sm rounded-xl shadow-sm">
+                        <TagIcon className="w-4 h-4" style={{ color: '#0F5FDC' }} />
+                        <p className="text-xs font-bold" style={{ color: '#0E51A2' }}>{getCategoryName(txn.categoryCode)}</p>
                       </div>
                     </div>
                   )}
@@ -643,25 +733,36 @@ export default function TransactionsPage() {
 
                 {/* Balance After Transaction */}
                 {txn.newBalance && (
-                  <div className="mt-4 pt-4 border-t-2 border-gray-100">
-                    <div className="flex items-center justify-between bg-gray-50 px-4 py-3 rounded-lg">
+                  <div className="mt-4 pt-4 border-t-2" style={{ borderColor: '#86ACD8' }}>
+                    <div className="flex items-center justify-between bg-white/60 backdrop-blur-sm px-4 py-3 rounded-xl shadow-sm">
                       <span className="text-sm font-semibold text-gray-700">Balance After Transaction</span>
-                      <span className="text-base lg:text-lg font-bold text-gray-900">₹{txn.newBalance.total.toLocaleString('en-IN')}</span>
+                      <span className="text-base lg:text-lg font-bold" style={{ color: '#0E51A2' }}>₹{txn.newBalance.total.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))
           )}
-        </div>
+        </motion.div>
 
         {/* Results Count */}
         {filteredTransactions.length > 0 && (
-          <div className="mt-4 text-center text-sm text-gray-600">
+          <div className="mt-6 text-center text-sm text-gray-600 font-medium">
             Showing {filteredTransactions.length} {filteredTransactions.length === 1 ? 'transaction' : 'transactions'}
           </div>
         )}
       </div>
+
+      {/* Scrollbar Hide Styles */}
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   )
 }
