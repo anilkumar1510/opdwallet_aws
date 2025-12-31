@@ -69,7 +69,7 @@ export default function BenefitCardEnhanced({
       {/* Amount Display */}
       <div className="mb-2 lg:mb-3">
         <span className="text-xl lg:text-2xl font-bold text-blue-600">
-          ₹{formatCurrency(consumed)}
+          ₹{formatCurrency(current)}
         </span>
         <span className="text-sm lg:text-base text-gray-400 ml-1">
           / ₹{formatCurrency(total)}
