@@ -781,7 +781,7 @@ export default function BookingsPage() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
-                              <div className="text-sm text-gray-600">{appointment.specialty}</div>
+                              <div className="text-sm text-gray-900">{appointment.specialty}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
@@ -796,23 +796,23 @@ export default function BookingsPage() {
                         </div>
 
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <UserIcon className="h-4 w-4" />
                             <span>Patient: {appointment.patientName}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <CalendarIcon className="h-4 w-4" />
                             <span>{formatDate(appointment.appointmentDate)}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <ClockIcon className="h-4 w-4" />
                             <span>{appointment.timeSlot}</span>
                           </div>
 
                           {appointment.appointmentType === 'IN_CLINIC' && (
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <div className="flex items-center space-x-2 text-sm text-gray-900">
                               <MapPinIcon className="h-4 w-4" />
                               <span className="line-clamp-1">{appointment.clinicName}</span>
                             </div>
@@ -821,7 +821,7 @@ export default function BookingsPage() {
 
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
                             </div>
                             <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
@@ -905,7 +905,7 @@ export default function BookingsPage() {
                     {pastAppointments.map((appointment) => (
                       <div
                         key={appointment._id}
-                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 opacity-80"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
                         style={{
                           background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
                           borderColor: '#86ACD8'
@@ -925,7 +925,7 @@ export default function BookingsPage() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
-                              <div className="text-sm text-gray-600">{appointment.specialty}</div>
+                              <div className="text-sm text-gray-900">{appointment.specialty}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
@@ -940,23 +940,23 @@ export default function BookingsPage() {
                         </div>
 
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <UserIcon className="h-4 w-4" />
                             <span>Patient: {appointment.patientName}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <CalendarIcon className="h-4 w-4" />
                             <span>{formatDate(appointment.appointmentDate)}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <ClockIcon className="h-4 w-4" />
                             <span>{appointment.timeSlot}</span>
                           </div>
 
                           {appointment.appointmentType === 'IN_CLINIC' && (
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <div className="flex items-center space-x-2 text-sm text-gray-900">
                               <MapPinIcon className="h-4 w-4" />
                               <span className="line-clamp-1">{appointment.clinicName}</span>
                             </div>
@@ -965,10 +965,10 @@ export default function BookingsPage() {
 
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
                             </div>
-                            <div className="text-sm font-semibold text-gray-600">
+                            <div className="text-sm font-semibold text-gray-900">
                               ₹{appointment.consultationFee}
                             </div>
                           </div>
@@ -1043,7 +1043,7 @@ export default function BookingsPage() {
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Lab Test Order</div>
-                          <div className="text-sm text-gray-600">{order.items?.length || 0} test(s)</div>
+                          <div className="text-sm text-gray-900">{order.items?.length || 0} test(s)</div>
                         </div>
                       </div>
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -1052,7 +1052,7 @@ export default function BookingsPage() {
                     </div>
 
                     <div className="space-y-2 mb-3">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <UserIcon className="h-4 w-4" />
                         <span>Vendor: {order.vendorName}</span>
                       </div>
@@ -1068,7 +1068,7 @@ export default function BookingsPage() {
                       </div>
 
                       {order.items && order.items.length > 0 && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           <div className="font-medium mb-1">Tests:</div>
                           <ul className="list-disc list-inside text-xs space-y-1">
                             {order.items.slice(0, 3).map((item: any, idx: number) => (
@@ -1084,7 +1084,7 @@ export default function BookingsPage() {
 
                     <div className="pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           Order ID: <span className="font-medium text-gray-900">{order.orderId}</span>
                         </div>
                         <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
@@ -1129,7 +1129,7 @@ export default function BookingsPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">Lab Test Cart</div>
-                            <div className="text-sm text-gray-600">{cart.items?.length || 0} test(s)</div>
+                            <div className="text-sm text-gray-900">{cart.items?.length || 0} test(s)</div>
                           </div>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
@@ -1138,13 +1138,13 @@ export default function BookingsPage() {
                       </div>
 
                     <div className="space-y-2 mb-3">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <UserIcon className="h-4 w-4" />
                         <span>Patient: {cart.patientName}</span>
                       </div>
 
                       {cart.items && cart.items.length > 0 && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           <div className="font-medium mb-1">Tests:</div>
                           <ul className="list-disc list-inside text-xs space-y-1">
                             {cart.items.slice(0, 3).map((item: any, idx: number) => (
@@ -1160,7 +1160,7 @@ export default function BookingsPage() {
 
                     <div className="pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           Cart ID: <span className="font-medium text-gray-900">{cart.cartId}</span>
                         </div>
                       </div>
@@ -1277,7 +1277,7 @@ export default function BookingsPage() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
-                              <div className="text-sm text-gray-600">{booking.clinicName}</div>
+                              <div className="text-sm text-gray-900">{booking.clinicName}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
@@ -1293,22 +1293,22 @@ export default function BookingsPage() {
                         </div>
 
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <UserIcon className="h-4 w-4" />
                             <span>Patient: {booking.patientName}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <CalendarIcon className="h-4 w-4" />
                             <span>{formatDate(booking.appointmentDate)}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <ClockIcon className="h-4 w-4" />
                             <span>{booking.appointmentTime}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <MapPinIcon className="h-4 w-4" />
                             <span className="line-clamp-1">
                               {booking.clinicAddress.city}, {booking.clinicAddress.state}
@@ -1318,7 +1318,7 @@ export default function BookingsPage() {
 
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
                             </div>
                             <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
@@ -1409,7 +1409,7 @@ export default function BookingsPage() {
                     {pastDentalBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 opacity-80"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
                         style={{
                           background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
                           borderColor: '#86ACD8'
@@ -1429,7 +1429,7 @@ export default function BookingsPage() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
-                              <div className="text-sm text-gray-600">{booking.clinicName}</div>
+                              <div className="text-sm text-gray-900">{booking.clinicName}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
@@ -1445,22 +1445,22 @@ export default function BookingsPage() {
                         </div>
 
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <UserIcon className="h-4 w-4" />
                             <span>Patient: {booking.patientName}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <CalendarIcon className="h-4 w-4" />
                             <span>{formatDate(booking.appointmentDate)}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <ClockIcon className="h-4 w-4" />
                             <span>{booking.appointmentTime}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <MapPinIcon className="h-4 w-4" />
                             <span className="line-clamp-1">
                               {booking.clinicAddress.city}, {booking.clinicAddress.state}
@@ -1470,10 +1470,10 @@ export default function BookingsPage() {
 
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
                             </div>
-                            <div className="text-sm font-semibold text-gray-600">
+                            <div className="text-sm font-semibold text-gray-900">
                               ₹{booking.servicePrice}
                             </div>
                           </div>
@@ -1561,7 +1561,7 @@ export default function BookingsPage() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
-                              <div className="text-sm text-gray-600">{booking.clinicName}</div>
+                              <div className="text-sm text-gray-900">{booking.clinicName}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
@@ -1577,22 +1577,22 @@ export default function BookingsPage() {
                         </div>
 
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <UserIcon className="h-4 w-4" />
                             <span>Patient: {booking.patientName}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <CalendarIcon className="h-4 w-4" />
                             <span>{formatDate(booking.appointmentDate)}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <ClockIcon className="h-4 w-4" />
                             <span>{booking.appointmentTime}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <MapPinIcon className="h-4 w-4" />
                             <span className="line-clamp-1">
                               {booking.clinicAddress.city}, {booking.clinicAddress.state}
@@ -1602,10 +1602,10 @@ export default function BookingsPage() {
 
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
                             </div>
-                            <div className="text-sm font-semibold text-gray-600">
+                            <div className="text-sm font-semibold text-gray-900">
                               ₹{booking.billAmount || booking.servicePrice}
                             </div>
                           </div>
@@ -1656,7 +1656,7 @@ export default function BookingsPage() {
                     {pastVisionBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 opacity-80"
+                        className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
                         style={{
                           background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
                           borderColor: '#86ACD8'
@@ -1676,7 +1676,7 @@ export default function BookingsPage() {
                             </div>
                             <div>
                               <div className="font-semibold text-gray-900">{booking.serviceName}</div>
-                              <div className="text-sm text-gray-600">{booking.clinicName}</div>
+                              <div className="text-sm text-gray-900">{booking.clinicName}</div>
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
@@ -1692,22 +1692,22 @@ export default function BookingsPage() {
                         </div>
 
                         <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <UserIcon className="h-4 w-4" />
                             <span>Patient: {booking.patientName}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <CalendarIcon className="h-4 w-4" />
                             <span>{formatDate(booking.appointmentDate)}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <ClockIcon className="h-4 w-4" />
                             <span>{booking.appointmentTime}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-gray-900">
                             <MapPinIcon className="h-4 w-4" />
                             <span className="line-clamp-1">
                               {booking.clinicAddress.city}, {booking.clinicAddress.state}
@@ -1717,10 +1717,10 @@ export default function BookingsPage() {
 
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
                             </div>
-                            <div className="text-sm font-semibold text-gray-600">
+                            <div className="text-sm font-semibold text-gray-900">
                               ₹{booking.servicePrice || booking.billAmount}
                             </div>
                           </div>

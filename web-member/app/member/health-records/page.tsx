@@ -209,22 +209,25 @@ export default function HealthRecordsPage() {
   const totalPrescriptions = filteredPrescriptions.length + filteredDigitalPrescriptions.length
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b">
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Link href="/member" className="mr-4">
-                <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
-              </Link>
-              <h1 className="text-xl font-bold text-gray-900">Health Records</h1>
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/member">
+              <button className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+                <ArrowLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+              </button>
+            </Link>
+            <div className="flex-1">
+              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>Health Records</h1>
+              <p className="text-xs lg:text-sm text-gray-600">View your prescriptions and medical records</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
@@ -234,32 +237,48 @@ export default function HealthRecordsPage() {
               placeholder="Search prescriptions by doctor, diagnosis, or patient..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-500"
+              className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all"
+              style={{
+                borderColor: '#e5e7eb',
+                backgroundColor: '#ffffff'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#0F5FDC'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(15, 95, 220, 0.1)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#e5e7eb'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             />
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-gray-100 rounded-xl p-1 mb-6">
+        <div className="flex gap-2 border-b-2 mb-6 overflow-x-auto" style={{ borderColor: '#e5e7eb' }}>
           <button
             onClick={() => setActiveTab('prescriptions')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
-              activeTab === 'prescriptions'
-                ? 'bg-white text-brand-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+            className={`py-4 px-4 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+              activeTab === 'prescriptions' ? 'border-b-4' : 'border-transparent'
             }`}
+            style={activeTab === 'prescriptions' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            Prescriptions
+            <div className="flex items-center gap-2">
+              <DocumentTextIcon className="h-5 w-5" />
+              <span>Prescriptions</span>
+            </div>
           </button>
           <button
             onClick={() => setActiveTab('bills')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
-              activeTab === 'bills'
-                ? 'bg-white text-brand-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+            className={`py-4 px-4 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+              activeTab === 'bills' ? 'border-b-4' : 'border-transparent'
             }`}
+            style={activeTab === 'bills' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            Bills & Invoices
+            <div className="flex items-center gap-2">
+              <DocumentTextIcon className="h-5 w-5" />
+              <span>Bills & Invoices</span>
+            </div>
           </button>
         </div>
 
@@ -274,7 +293,7 @@ export default function HealthRecordsPage() {
         {activeTab === 'prescriptions' ? (
           loading ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -282,28 +301,42 @@ export default function HealthRecordsPage() {
               {filteredDigitalPrescriptions.map((prescription) => {
                 const appointment = prescription.appointmentId
                 return (
-                  <Card key={prescription._id} className="hover:shadow-md transition-shadow overflow-hidden">
+                  <div
+                    key={prescription._id}
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
+                  >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b border-blue-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <DocumentTextIcon className="h-5 w-5 text-blue-600" />
-                          <h3 className="text-lg font-bold text-blue-900">Digital Prescription</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <DocumentTextIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                         </div>
-                        <span className="text-xs px-3 py-1 rounded-full bg-blue-600 text-white font-medium">
-                          {prescription.prescriptionType}
-                        </span>
+                        <div>
+                          <h3 className="text-base lg:text-lg font-bold" style={{ color: '#0E51A2' }}>Digital Prescription</h3>
+                          <p className="text-xs text-gray-600">{prescription.prescriptionType}</p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-6">
+                    <div className="space-y-4">
                       {/* Appointment Details */}
                       {appointment && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="pb-4 border-b border-gray-200">
                           <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Appointment Details</h4>
                           <div className="space-y-3">
                             <div className="flex items-start gap-3">
-                              <UserIcon className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0" />
+                              <UserIcon className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                               <div>
                                 <p className="text-base font-semibold text-gray-900">{prescription.doctorName}</p>
                                 {prescription.doctorQualification && (
@@ -313,7 +346,7 @@ export default function HealthRecordsPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <CalendarIcon className="h-5 w-5 text-brand-600 flex-shrink-0" />
+                              <CalendarIcon className="h-5 w-5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                               <span className="text-sm font-medium text-gray-900">{formatDate(appointment.appointmentDate)}</span>
                             </div>
                           </div>
@@ -322,7 +355,7 @@ export default function HealthRecordsPage() {
 
                       {/* Clinical Information */}
                       {(prescription.chiefComplaint || prescription.diagnosis) && (
-                        <div className="mb-6 pb-6 border-b border-gray-200 space-y-3">
+                        <div className="pb-4 border-b border-gray-200 space-y-3">
                           {prescription.chiefComplaint && (
                             <div>
                               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Chief Complaint</p>
@@ -340,7 +373,7 @@ export default function HealthRecordsPage() {
 
                       {/* Medicines */}
                       {prescription.medicines && prescription.medicines.length > 0 && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="pb-4 border-b border-gray-200">
                           <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Prescribed Medicines (Rx)</h4>
                           <div className="space-y-3">
                             {prescription.medicines.map((medicine, idx) => (
@@ -377,7 +410,7 @@ export default function HealthRecordsPage() {
 
                       {/* Lab Tests */}
                       {prescription.labTests && prescription.labTests.length > 0 && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="pb-4 border-b border-gray-200">
                           <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
                             <BeakerIcon className="h-4 w-4" />
                             Lab Tests / Investigations
@@ -397,7 +430,7 @@ export default function HealthRecordsPage() {
 
                       {/* Instructions */}
                       {(prescription.generalInstructions || prescription.dietaryAdvice) && (
-                        <div className="mb-6 pb-6 border-b border-gray-200 space-y-3">
+                        <div className="pb-4 border-b border-gray-200 space-y-3">
                           {prescription.generalInstructions && (
                             <div>
                               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">General Instructions</p>
@@ -415,7 +448,7 @@ export default function HealthRecordsPage() {
 
                       {/* Follow-up */}
                       {(prescription.followUpDate || prescription.followUpInstructions) && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="pb-4 border-b border-gray-200">
                           <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Follow-up</p>
                           {prescription.followUpDate && (
                             <p className="text-sm text-gray-900">Date: {formatDate(prescription.followUpDate)}</p>
@@ -431,7 +464,8 @@ export default function HealthRecordsPage() {
                         {prescription.pdfGenerated && (
                           <button
                             onClick={() => downloadDigitalPrescriptionPDF(prescription.prescriptionId)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                            style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                           >
                             <CloudArrowDownIcon className="h-5 w-5" />
                             Download PDF
@@ -440,13 +474,13 @@ export default function HealthRecordsPage() {
                       </div>
 
                       {/* Prescription ID & Date */}
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-400 text-center">
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 text-center">
                           ID: {prescription.prescriptionId} • Created: {formatDate(prescription.createdDate)}
                         </p>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 )
               })}
 
@@ -454,30 +488,44 @@ export default function HealthRecordsPage() {
               {filteredPrescriptions.map((prescription) => {
                 const appointment = prescription.appointmentId
                 return (
-                  <Card key={prescription._id} className="hover:shadow-md transition-shadow overflow-hidden">
+                  <div
+                    key={prescription._id}
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
+                  >
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-brand-50 to-brand-100 px-6 py-4 border-b border-brand-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <DocumentTextIcon className="h-5 w-5 text-brand-600" />
-                          <h3 className="text-lg font-bold text-brand-900">Prescription</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <DocumentTextIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                         </div>
-                        <span className="text-xs px-3 py-1 rounded-full bg-green-600 text-white font-medium">
-                          Active
-                        </span>
+                        <div>
+                          <h3 className="text-base lg:text-lg font-bold" style={{ color: '#0E51A2' }}>PDF Prescription</h3>
+                          <p className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium inline-block">Active</p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-6">
+                    <div className="space-y-4">
                       {/* Appointment Details Section */}
                       {appointment && (
-                        <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="pb-4 border-b border-gray-200">
                           <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Appointment Details</h4>
 
                           <div className="space-y-3">
                             {/* Doctor & Specialty */}
                             <div className="flex items-start gap-3">
-                              <UserIcon className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0" />
+                              <UserIcon className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                               <div>
                                 <p className="text-base font-semibold text-gray-900">{appointment.doctorName || prescription.doctorName}</p>
                                 <p className="text-sm text-gray-600">{appointment.specialty}</p>
@@ -486,7 +534,7 @@ export default function HealthRecordsPage() {
 
                             {/* Date & Time */}
                             <div className="flex items-center gap-3">
-                              <CalendarIcon className="h-5 w-5 text-brand-600 flex-shrink-0" />
+                              <CalendarIcon className="h-5 w-5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                               <div className="flex items-center gap-4">
                                 <span className="text-sm font-medium text-gray-900">{formatDate(appointment.appointmentDate)}</span>
                                 <div className="flex items-center gap-1">
@@ -500,7 +548,7 @@ export default function HealthRecordsPage() {
                             <div className="flex items-start gap-3">
                               {appointment.appointmentType === 'ONLINE' ? (
                                 <>
-                                  <VideoCameraIcon className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0" />
+                                  <VideoCameraIcon className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                                   <div>
                                     <p className="text-sm font-medium text-gray-900">Online Consultation</p>
                                     <p className="text-xs text-gray-500">Video Call</p>
@@ -508,7 +556,7 @@ export default function HealthRecordsPage() {
                                 </>
                               ) : (
                                 <>
-                                  <MapPinIcon className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0" />
+                                  <MapPinIcon className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                                   <div>
                                     <p className="text-sm font-medium text-gray-900">{appointment.clinicName || "In-Clinic Visit"}</p>
                                     {appointment.clinicAddress && (
@@ -530,7 +578,7 @@ export default function HealthRecordsPage() {
 
                       {/* Clinical Information */}
                       {(prescription.diagnosis || prescription.notes) && (
-                        <div className="mb-6 pb-6 border-b border-gray-200 space-y-3">
+                        <div className="pb-4 border-b border-gray-200 space-y-3">
                           {prescription.diagnosis && (
                             <div>
                               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Diagnosis</p>
@@ -548,7 +596,7 @@ export default function HealthRecordsPage() {
                       )}
 
                       {/* File Information */}
-                      <div className="mb-6 pb-6 border-b border-gray-200">
+                      <div className="pb-4 border-b border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="bg-red-50 p-2 rounded-lg">
@@ -569,14 +617,16 @@ export default function HealthRecordsPage() {
                       <div className="flex gap-3">
                         <button
                           onClick={() => viewPrescription(prescription.prescriptionId)}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                          style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                         >
                           <EyeIcon className="h-5 w-5" />
                           View PDF
                         </button>
                         <button
                           onClick={() => downloadPrescription(prescription.prescriptionId, prescription.fileName)}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-700 rounded-xl font-semibold border-2 transition-all hover:shadow-lg"
+                          style={{ borderColor: '#86ACD8' }}
                         >
                           <CloudArrowDownIcon className="h-5 w-5" />
                           Download
@@ -584,21 +634,33 @@ export default function HealthRecordsPage() {
                       </div>
 
                       {/* Prescription ID */}
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-400 text-center">
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 text-center">
                           ID: {prescription.prescriptionId}
                         </p>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 )
               })}
 
               {totalPrescriptions === 0 && !loading && (
-                <div className="text-center py-12">
-                  <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No prescriptions found</p>
-                  <p className="text-sm text-gray-400 mt-2">
+                <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                  background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                  borderColor: '#86ACD8'
+                }}>
+                  <div
+                    className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                    style={{
+                      background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                      border: '1px solid #A4BFFE7A',
+                      boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                    }}
+                  >
+                    <DocumentTextIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
+                  </div>
+                  <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No prescriptions found</h3>
+                  <p className="text-gray-600 text-sm lg:text-base">
                     Prescriptions from your doctor will appear here
                   </p>
                 </div>
@@ -606,9 +668,22 @@ export default function HealthRecordsPage() {
             </div>
           )
         ) : (
-          <div className="text-center py-12">
-            <DocumentTextIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Bills & Invoices coming soon</p>
+          <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            borderColor: '#86ACD8'
+          }}>
+            <div
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <DocumentTextIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
+            </div>
+            <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Bills & Invoices</h3>
+            <p className="text-gray-600 text-sm lg:text-base">Coming soon</p>
           </div>
         )}
       </div>
