@@ -270,110 +270,112 @@ export default function ClaimsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Claims History</h1>
-            <p className="text-gray-600 mt-1">Track and manage your medical claims</p>
-          </div>
-          <div className="mt-4 sm:mt-0 flex items-center gap-3">
-            <Link
-              href="/member/claims/new"
-              className="btn-primary"
-            >
-              <DocumentTextIcon className="h-4 w-4 mr-2" />
-              New Claim
-            </Link>
+    <div className="min-h-screen bg-white">
+      {/* Header - Professional Style */}
+      <div className="bg-gradient-to-r from-brand-500 to-brand-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 lg:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold">Claims History</h1>
+              <p className="text-white/90 mt-1 text-sm lg:text-base">Track and manage your medical claims</p>
+            </div>
+            <div className="mt-4 sm:mt-0">
+              <Link
+                href="/member/claims/new"
+                className="inline-flex items-center gap-2 px-5 lg:px-6 py-2.5 lg:py-3 bg-white text-brand-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-md"
+              >
+                <DocumentTextIcon className="h-5 w-5" />
+                New Claim
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 lg:py-8">
+
+      {/* Quick Stats - Professional Style */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-6">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="p-4">
-                <div className="flex items-center">
-                  <div className="h-8 w-8 bg-gray-200 rounded mr-3" />
-                  <div>
-                    <div className="h-6 w-12 bg-gray-200 rounded mb-2" />
-                    <div className="h-3 w-16 bg-gray-200 rounded" />
-                  </div>
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 animate-pulse">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                <div className="flex-1">
+                  <div className="h-7 w-16 bg-gray-200 rounded mb-2" />
+                  <div className="h-4 w-20 bg-gray-200 rounded" />
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <div className="p-4">
-              <div className="flex items-center">
-                <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
-                  <p className="text-sm text-gray-600">Approved</p>
-                </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircleIcon className="h-6 w-6 lg:h-7 lg:w-7 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.approved}</p>
+                <p className="text-sm text-gray-600 mt-1">Approved</p>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <Card>
-            <div className="p-4">
-              <div className="flex items-center">
-                <ClockIcon className="h-8 w-8 text-blue-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.processing}</p>
-                  <p className="text-sm text-gray-600">Processing</p>
-                </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-blue-100 rounded-lg flex items-center justify-center">
+                <ClockIcon className="h-6 w-6 lg:h-7 lg:w-7 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.processing}</p>
+                <p className="text-sm text-gray-600 mt-1">Processing</p>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <Card>
-            <div className="p-4">
-              <div className="flex items-center">
-                <ExclamationCircleIcon className="h-8 w-8 text-amber-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.underReview}</p>
-                  <p className="text-sm text-gray-600">Under Review</p>
-                </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-amber-100 rounded-lg flex items-center justify-center">
+                <ExclamationCircleIcon className="h-6 w-6 lg:h-7 lg:w-7 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.underReview}</p>
+                <p className="text-sm text-gray-600 mt-1">Under Review</p>
               </div>
             </div>
-          </Card>
+          </div>
 
-          <Card>
-            <div className="p-4">
-              <div className="flex items-center">
-                <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">Total Claims</p>
-                </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 bg-brand-100 rounded-lg flex items-center justify-center">
+                <DocumentTextIcon className="h-6 w-6 lg:h-7 lg:w-7 text-brand-600" />
+              </div>
+              <div>
+                <p className="text-2xl lg:text-3xl font-bold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
+                <p className="text-sm text-gray-600 mt-1">Total Claims</p>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
-      {/* Controls Bar */}
-      <Card className="mb-6" noPadding>
-        <div className="p-4 border-b border-gray-200">
+      {/* Controls Bar - Professional Style */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+        <div className="p-4 lg:p-5 border-b border-gray-200">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3 flex-1">
               {/* Search */}
               <div className="relative flex-1 max-w-md">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search claims..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
                 />
               </div>
 
@@ -381,7 +383,7 @@ export default function ClaimsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as ClaimStatus | 'all')}
-                className="px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+                className="px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm font-medium"
               >
                 <option value="all">All Status</option>
                 <option value="draft">Draft</option>
@@ -396,9 +398,9 @@ export default function ClaimsPage() {
               {/* Desktop Filters Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="hidden lg:flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
+                className="hidden lg:flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
               >
-                <FunnelIcon className="h-4 w-4 mr-2" />
+                <FunnelIcon className="h-4 w-4" />
                 Filters
               </button>
             </div>
@@ -407,7 +409,7 @@ export default function ClaimsPage() {
             <div className="flex items-center gap-3">
               {/* Data Density - Desktop Only */}
               <div className="hidden xl:flex items-center gap-2">
-                <span className="text-xs text-gray-600">Density:</span>
+                <span className="text-xs text-gray-600 font-medium">Density:</span>
                 <select
                   value={dataView}
                   onChange={(e) => setDataView(e.target.value as 'compact' | 'comfortable' | 'spacious')}
@@ -423,13 +425,13 @@ export default function ClaimsPage() {
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('table')}
-                  className={`p-2 rounded ${viewMode === 'table' ? 'bg-white shadow-sm' : 'hover:bg-white'}`}
+                  className={`p-2 rounded transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-brand-600' : 'text-gray-600 hover:bg-white/50'}`}
                 >
                   <TableCellsIcon className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`p-2 rounded ${viewMode === 'cards' ? 'bg-white shadow-sm' : 'hover:bg-white'}`}
+                  className={`p-2 rounded transition-all ${viewMode === 'cards' ? 'bg-white shadow-sm text-brand-600' : 'text-gray-600 hover:bg-white/50'}`}
                 >
                   <Squares2X2Icon className="h-4 w-4" />
                 </button>
@@ -438,9 +440,9 @@ export default function ClaimsPage() {
               {/* Export Button */}
               <button
                 onClick={exportData}
-                className="hidden sm:flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50"
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
               >
-                <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                <ArrowDownTrayIcon className="h-4 w-4" />
                 Export
               </button>
             </div>
@@ -449,11 +451,11 @@ export default function ClaimsPage() {
 
         {/* Advanced Filters - Desktop Only */}
         {showFilters && (
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
+          <div className="p-4 lg:p-5 bg-gray-50 border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Date Range</label>
-                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Date Range</label>
+                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
                   <option>All Time</option>
                   <option>Last 7 days</option>
                   <option>Last 30 days</option>
@@ -463,8 +465,8 @@ export default function ClaimsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
-                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Category</label>
+                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
                   <option>All Categories</option>
                   <option>Consultation</option>
                   <option>Pharmacy</option>
@@ -474,8 +476,8 @@ export default function ClaimsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Amount Range</label>
-                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Amount Range</label>
+                <select className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
                   <option>All Amounts</option>
                   <option>Under ₹1,000</option>
                   <option>₹1,000 - ₹5,000</option>
@@ -484,42 +486,38 @@ export default function ClaimsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Provider</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">Provider</label>
                 <input
                   type="text"
                   placeholder="Provider name..."
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
             </div>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Error State */}
       {error && (
-        <Card className="mb-6 bg-red-50 border-red-200">
-          <div className="p-4">
-            <div className="flex items-center">
-              <XCircleIcon className="h-5 w-5 text-red-600 mr-2" />
-              <p className="text-red-700">Failed to load claims: {error}</p>
-            </div>
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 lg:p-5">
+          <div className="flex items-center gap-3">
+            <XCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <p className="text-red-700 font-medium">Failed to load claims: {error}</p>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Content */}
       {loading ? (
         // Loading State
-        <Card noPadding className="overflow-hidden">
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading claims...</p>
-          </div>
-        </Card>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 lg:p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading claims...</p>
+        </div>
       ) : viewMode === 'table' ? (
         // Desktop Table View
-        <Card noPadding className="overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -616,52 +614,52 @@ export default function ClaimsPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       ) : (
         // Mobile Card View
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
           {paginatedClaims.map((claim) => (
-            <Card key={claim.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
+            <div key={claim.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer">
+              <div className="p-5 lg:p-6">
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="font-semibold text-gray-900">{claim.claimNumber}</p>
-                    <p className="text-xs text-gray-500">{new Date(claim.date).toLocaleDateString()}</p>
+                    <p className="font-bold text-gray-900">{claim.claimNumber}</p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(claim.date).toLocaleDateString()}</p>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
                     {getStatusIcon(claim.status)}
                     <span className="ml-1 capitalize">{claim.status.replace('_', ' ')}</span>
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm font-medium text-gray-900">{claim.provider}</p>
-                  <p className="text-sm text-gray-600">{claim.description}</p>
+                <div className="space-y-3 mb-4">
+                  <p className="text-sm font-semibold text-gray-900">{claim.provider}</p>
+                  <p className="text-sm text-gray-600 line-clamp-2">{claim.description}</p>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                       {claim.type}
                     </span>
-                    <p className="text-lg font-semibold text-gray-900">₹{claim.amount.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-gray-900">₹{claim.amount.toLocaleString()}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500">{claim.documents} document{claim.documents !== 1 ? 's' : ''}</p>
-                  <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 text-sm font-medium">
-                    View Details
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 font-medium">{claim.documents} document{claim.documents !== 1 ? 's' : ''}</p>
+                  <Link href={`/member/claims/${claim.id}`} className="text-brand-600 hover:text-brand-700 text-sm font-semibold">
+                    View Details →
                   </Link>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+        <div className="mt-6 lg:mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-sm text-gray-600 font-medium">
             Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedClaims.length)} of {filteredAndSortedClaims.length} claims
           </div>
 
@@ -669,7 +667,7 @@ export default function ClaimsPage() {
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
             >
               <ChevronLeftIcon className="h-4 w-4" />
             </button>
@@ -680,10 +678,10 @@ export default function ClaimsPage() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-2 rounded text-sm ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     currentPage === page
-                      ? 'bg-brand-600 text-white'
-                      : 'border border-gray-200 hover:bg-gray-50'
+                      ? 'bg-brand-600 text-white shadow-sm'
+                      : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   {page}
@@ -694,7 +692,7 @@ export default function ClaimsPage() {
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="p-2 rounded-lg border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
             >
               <ChevronRightIcon className="h-4 w-4" />
             </button>
@@ -704,20 +702,29 @@ export default function ClaimsPage() {
 
       {/* Empty State */}
       {!loading && filteredAndSortedClaims.length === 0 && (
-        <Card className="text-center py-12">
-          <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No claims found</h3>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 text-center py-12 lg:py-16">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gray-100 rounded-full flex items-center justify-center">
+              <DocumentTextIcon className="h-8 w-8 lg:h-10 lg:w-10 text-gray-400" />
+            </div>
+          </div>
+          <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">No claims found</h3>
+          <p className="text-gray-600 mb-6 lg:mb-8 max-w-md mx-auto">
             {claims.length === 0
               ? 'You have not submitted any claims yet. Create your first claim to get started.'
               : 'Try adjusting your search or filters to find claims.'
             }
           </p>
-          <Link href="/member/claims/new" className="btn-primary">
+          <Link
+            href="/member/claims/new"
+            className="inline-flex items-center gap-2 px-6 lg:px-8 py-3 lg:py-4 bg-brand-600 text-white rounded-lg font-semibold hover:bg-brand-700 transition-colors shadow-md"
+          >
+            <DocumentTextIcon className="h-5 w-5" />
             {claims.length === 0 ? 'Create First Claim' : 'New Claim'}
           </Link>
-        </Card>
+        </div>
       )}
+      </div>
     </div>
   )
 }
