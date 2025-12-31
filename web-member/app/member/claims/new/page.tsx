@@ -613,81 +613,74 @@ export default function NewClaimPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Stunning Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b-2 border-gray-100 shadow-sm">
-        <div className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full -mr-32 -mt-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-200/20 to-pink-200/20 rounded-full -ml-24 -mb-24"></div>
-
-          <div className="relative flex items-center justify-between p-4 lg:p-5">
-            <Link
-              href="/member"
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-all group"
-            >
-              <div className="flex items-center justify-center w-9 h-9 bg-gray-100 rounded-xl group-hover:bg-blue-100 transition-all">
-                <ArrowLeftIcon className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-bold">Back</span>
-            </Link>
-
-            <div className="text-center">
-              <h1 className="text-xl lg:text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">New Claim</h1>
-              <p className="text-xs text-gray-500 font-medium">Step {currentStep} of 3</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between p-4 lg:p-5">
+          <Link
+            href="/member"
+            className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors"
+          >
+            <div className="flex items-center justify-center w-9 h-9 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              <ArrowLeftIcon className="h-5 w-5" />
             </div>
+            <span className="text-sm font-semibold">Back</span>
+          </Link>
 
-            <div className="w-20">
-              {isDraftSaved && (
-                <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                  <CheckCircleIcon className="h-4 w-4" />
-                  <span className="font-bold">Saved</span>
-                </div>
-              )}
-            </div>
+          <div className="text-center">
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">New Claim</h1>
+            <p className="text-xs text-gray-500">Step {currentStep} of 3</p>
           </div>
 
-          {/* Beautiful Progress Indicator */}
-          <div className="px-4 lg:px-5 pb-4 lg:pb-5">
-            <div className="flex items-center justify-between mb-3">
-              {steps.map((step, index) => (
-                <div key={step.number} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className={cn(
-                      "h-10 w-10 lg:h-12 lg:w-12 rounded-xl lg:rounded-2xl flex items-center justify-center text-sm font-black transition-all shadow-md",
-                      step.completed
-                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white scale-110'
-                        : currentStep === step.number
-                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white ring-4 ring-blue-200 scale-110'
-                        : 'bg-gray-200 text-gray-500'
-                    )}>
-                      {step.completed ? <CheckCircleIcon className="h-5 w-5 lg:h-6 lg:w-6" /> : step.number}
-                    </div>
-                    <span className={cn(
-                      "text-xs lg:text-sm font-bold hidden sm:block",
-                      step.completed || currentStep === step.number ? 'text-gray-900' : 'text-gray-400'
-                    )}>
-                      {step.title}
-                    </span>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className={cn(
-                      "h-1 flex-1 mx-2 lg:mx-3 rounded-full transition-all",
-                      step.completed ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gray-200'
-                    )} />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Animated Progress Bar */}
-            <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-              <div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-500 shadow-lg"
-                style={{ width: `${progressPercentage}%` }}
-              >
-                <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+          <div className="w-20">
+            {isDraftSaved && (
+              <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+                <CheckCircleIcon className="h-4 w-4" />
+                <span className="font-semibold">Saved</span>
               </div>
-            </div>
+            )}
+          </div>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="px-4 lg:px-5 pb-4 lg:pb-5">
+          <div className="flex items-center mb-3 w-full">
+            {steps.map((step, index) => (
+              <div key={step.number} className="flex items-center flex-1 last:flex-none">
+                <div className="flex flex-col items-center gap-2">
+                  <div className={cn(
+                    "h-10 w-10 lg:h-12 lg:w-12 rounded-lg flex items-center justify-center text-sm font-semibold transition-all",
+                    step.completed
+                      ? 'bg-green-600 text-white'
+                      : currentStep === step.number
+                      ? 'bg-brand-500 text-white ring-2 ring-blue-200'
+                      : 'bg-gray-200 text-gray-500'
+                  )}>
+                    {step.completed ? <CheckCircleIcon className="h-5 w-5 lg:h-6 lg:w-6" /> : step.number}
+                  </div>
+                  <span className={cn(
+                    "text-xs lg:text-sm font-medium hidden sm:block whitespace-nowrap",
+                    step.completed || currentStep === step.number ? 'text-gray-900' : 'text-gray-400'
+                  )}>
+                    {step.title}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className={cn(
+                    "h-1 flex-1 mx-2 lg:mx-3 rounded-full transition-all",
+                    step.completed ? 'bg-green-600' : 'bg-gray-200'
+                  )} />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Progress Bar */}
+          <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 bg-brand-500 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercentage}%` }}
+            />
           </div>
         </div>
       </div>
@@ -706,17 +699,17 @@ export default function NewClaimPage() {
         </div>
       </div>
 
-      {/* Stunning Bottom Navigation */}
-      <div className="sticky bottom-0 bg-white/95 backdrop-blur-lg border-t-2 border-gray-100 p-4 lg:p-5 shadow-2xl">
+      {/* Bottom Navigation */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 lg:p-5 shadow-lg">
         <div className="flex items-center justify-between max-w-2xl mx-auto gap-4">
           <button
             onClick={handlePrevious}
             disabled={currentStep === 1}
             className={cn(
-              "flex items-center gap-2 px-5 lg:px-6 py-3 lg:py-4 rounded-xl lg:rounded-2xl font-bold text-sm lg:text-base transition-all shadow-md",
+              "flex items-center gap-2 px-5 lg:px-6 py-3 lg:py-4 rounded-xl font-semibold text-sm lg:text-base transition-all",
               currentStep === 1
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-gray-700 bg-gray-100 hover:bg-gray-200 hover:shadow-lg transform hover:scale-105"
+                : "text-gray-700 bg-gray-100 hover:bg-gray-200"
             )}
           >
             <ArrowLeftIcon className="h-5 w-5" />
@@ -726,21 +719,20 @@ export default function NewClaimPage() {
           {currentStep < 3 ? (
             <button
               onClick={handleNext}
-              className="relative group flex items-center gap-2 px-8 lg:px-10 py-3 lg:py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl lg:rounded-2xl font-bold text-sm lg:text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all overflow-hidden"
+              className="flex items-center gap-2 px-8 lg:px-10 py-3 lg:py-4 bg-brand-500 text-white rounded-xl font-semibold text-sm lg:text-base shadow-md hover:bg-brand-600 hover:shadow-lg transition-all"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <span className="relative">Next Step</span>
-              <ArrowRightIcon className="relative h-5 w-5" />
+              <span>Next Step</span>
+              <ArrowRightIcon className="h-5 w-5" />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
               className={cn(
-                "relative group flex items-center gap-3 px-8 lg:px-10 py-3 lg:py-4 rounded-xl lg:rounded-2xl font-black text-sm lg:text-base shadow-lg transition-all overflow-hidden",
+                "flex items-center gap-3 px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-semibold text-sm lg:text-base shadow-md transition-all",
                 isSubmitting
                   ? "bg-gray-400 text-white cursor-not-allowed"
-                  : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-2xl transform hover:scale-105"
+                  : "bg-green-600 text-white hover:bg-green-700 hover:shadow-lg"
               )}
             >
               {isSubmitting ? (
@@ -750,9 +742,8 @@ export default function NewClaimPage() {
                 </>
               ) : (
                 <>
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <CheckCircleIcon className="relative h-6 w-6" />
-                  <span className="relative">Submit Claim</span>
+                  <CheckCircleIcon className="h-6 w-6" />
+                  <span>Submit Claim</span>
                 </>
               )}
             </button>
