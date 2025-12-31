@@ -613,63 +613,87 @@ export default function NewClaimPage() {
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between p-4 lg:p-5">
-          <Link
-            href="/member"
-            className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors"
-          >
-            <div className="flex items-center justify-center w-9 h-9 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-              <ArrowLeftIcon className="h-5 w-5" />
+      <div className="sticky top-0 z-40 bg-white border-b shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/member"
+              className="flex items-center gap-2 transition-colors"
+            >
+              <button className="p-2 hover:bg-gray-100 rounded-xl transition-all">
+                <ArrowLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
+              </button>
+              <span className="text-sm font-semibold" style={{ color: '#0E51A2' }}>Back</span>
+            </Link>
+
+            <div className="text-center">
+              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>New Claim</h1>
+              <p className="text-xs text-gray-600">Step {currentStep} of 3</p>
             </div>
-            <span className="text-sm font-semibold">Back</span>
-          </Link>
 
-          <div className="text-center">
-            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">New Claim</h1>
-            <p className="text-xs text-gray-500">Step {currentStep} of 3</p>
-          </div>
-
-          <div className="w-20">
-            {isDraftSaved && (
-              <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                <CheckCircleIcon className="h-4 w-4" />
-                <span className="font-semibold">Saved</span>
-              </div>
-            )}
+            <div className="w-20">
+              {isDraftSaved && (
+                <div className="flex items-center gap-1 text-xs text-white px-2 py-1 rounded-lg" style={{ background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)' }}>
+                  <CheckCircleIcon className="h-4 w-4" />
+                  <span className="font-semibold">Saved</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Progress Indicator */}
-        <div className="px-4 lg:px-5 pb-4 lg:pb-5">
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 pb-4">
           <div className="flex items-center mb-3 w-full">
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-center flex-1 last:flex-none">
                 <div className="flex flex-col items-center gap-2">
-                  <div className={cn(
-                    "h-10 w-10 lg:h-12 lg:w-12 rounded-lg flex items-center justify-center text-sm font-semibold transition-all",
-                    step.completed
-                      ? 'bg-green-600 text-white'
-                      : currentStep === step.number
-                      ? 'bg-brand-500 text-white ring-2 ring-blue-200'
-                      : 'bg-gray-200 text-gray-500'
-                  )}>
+                  <div
+                    className="h-10 w-10 lg:h-12 lg:w-12 rounded-full flex items-center justify-center text-sm font-semibold transition-all border"
+                    style={
+                      step.completed
+                        ? {
+                            background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)',
+                            color: 'white',
+                            borderColor: 'rgba(95, 161, 113, 0.3)',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }
+                        : currentStep === step.number
+                        ? {
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            color: '#0F5FDC',
+                            borderColor: '#A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }
+                        : {
+                            background: '#f3f4f6',
+                            color: '#9ca3af',
+                            borderColor: '#e5e7eb'
+                          }
+                    }
+                  >
                     {step.completed ? <CheckCircleIcon className="h-5 w-5 lg:h-6 lg:w-6" /> : step.number}
                   </div>
-                  <span className={cn(
-                    "text-xs lg:text-sm font-medium hidden sm:block whitespace-nowrap",
-                    step.completed || currentStep === step.number ? 'text-gray-900' : 'text-gray-400'
-                  )}>
+                  <span
+                    className="text-xs lg:text-sm font-medium hidden sm:block whitespace-nowrap"
+                    style={{
+                      color: step.completed || currentStep === step.number ? '#0E51A2' : '#9ca3af'
+                    }}
+                  >
                     {step.title}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={cn(
-                    "h-1 flex-1 mx-2 lg:mx-3 rounded-full transition-all",
-                    step.completed ? 'bg-green-600' : 'bg-gray-200'
-                  )} />
+                  <div
+                    className="h-1 flex-1 mx-2 lg:mx-3 rounded-full transition-all"
+                    style={{
+                      background: step.completed
+                        ? 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)'
+                        : '#e5e7eb'
+                    }}
+                  />
                 )}
               </div>
             ))}
@@ -678,8 +702,11 @@ export default function NewClaimPage() {
           {/* Progress Bar */}
           <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="absolute inset-y-0 left-0 bg-brand-500 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
+              className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+              style={{
+                width: `${progressPercentage}%`,
+                background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)'
+              }}
             />
           </div>
         </div>
@@ -700,54 +727,58 @@ export default function NewClaimPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 lg:p-5 shadow-lg">
-        <div className="flex items-center justify-between max-w-2xl mx-auto gap-4">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-            className={cn(
-              "flex items-center gap-2 px-5 lg:px-6 py-3 lg:py-4 rounded-xl font-semibold text-sm lg:text-base transition-all",
-              currentStep === 1
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-gray-700 bg-gray-100 hover:bg-gray-200"
-            )}
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-            <span className="hidden sm:inline">Previous</span>
-          </button>
-
-          {currentStep < 3 ? (
+      <div className="sticky bottom-0 bg-white border-t shadow-lg" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
             <button
-              onClick={handleNext}
-              className="flex items-center gap-2 px-8 lg:px-10 py-3 lg:py-4 bg-brand-500 text-white rounded-xl font-semibold text-sm lg:text-base shadow-md hover:bg-brand-600 hover:shadow-lg transition-all"
-            >
-              <span>Next Step</span>
-              <ArrowRightIcon className="h-5 w-5" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
               className={cn(
-                "flex items-center gap-3 px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-semibold text-sm lg:text-base shadow-md transition-all",
-                isSubmitting
-                  ? "bg-gray-400 text-white cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700 hover:shadow-lg"
+                "flex items-center gap-2 px-5 lg:px-6 py-3 lg:py-4 rounded-xl font-semibold text-sm lg:text-base transition-all",
+                currentStep === 1
+                  ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                  : "text-gray-700 bg-gray-100 hover:bg-gray-200"
               )}
             >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon className="h-6 w-6" />
-                  <span>Submit Claim</span>
-                </>
-              )}
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="hidden sm:inline">Previous</span>
             </button>
-          )}
+
+            {currentStep < 3 ? (
+              <button
+                onClick={handleNext}
+                className="flex items-center gap-2 px-8 lg:px-10 py-3 lg:py-4 text-white rounded-xl font-semibold text-sm lg:text-base shadow-md hover:shadow-lg transition-all"
+                style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+              >
+                <span>Next Step</span>
+                <ArrowRightIcon className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex items-center gap-3 px-8 lg:px-10 py-3 lg:py-4 text-white rounded-xl font-semibold text-sm lg:text-base shadow-md transition-all hover:shadow-lg"
+                style={{
+                  background: isSubmitting
+                    ? '#9ca3af'
+                    : 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="h-6 w-6" />
+                    <span>Submit Claim</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
