@@ -20,15 +20,83 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
-// Icon mapping for categories
-const getCategoryIcon = (categoryCode: string) => {
-  switch (categoryCode) {
-    case 'CAT001': return VideoCameraIcon
-    case 'CAT002': return CubeIcon
-    case 'CAT003': return BeakerIcon
-    case 'CAT004': return EyeIcon
-    default: return HeartIcon
+// Icon mapping for categories - Comprehensive mapping for all category variations
+const getCategoryIcon = (categoryCode: string, categoryName?: string) => {
+  const code = categoryCode?.toUpperCase() || ''
+  const name = categoryName?.toUpperCase() || ''
+  const combined = `${code} ${name}`
+
+  // Lab/Diagnostics - CHECK FIRST to prevent false matches
+  if (code === 'CAT003' ||
+      code === 'DIAGNOSTICS' ||
+      code === 'LAB' ||
+      combined.includes('LABORATORY') ||
+      combined.includes('DIAGNOSTIC') ||
+      combined.includes('LAB TEST') ||
+      combined.includes('PATHOLOGY') ||
+      combined.includes('RADIOLOGY') ||
+      combined.includes('X-RAY') ||
+      combined.includes('XRAY') ||
+      combined.includes('SCAN') ||
+      combined.includes('TEST') && !combined.includes('CONTEST') ||
+      (combined.includes('LAB') && !combined.includes('AVAILABLE') && !combined.includes('COLLABORATION'))) {
+    return BeakerIcon
   }
+
+  // Pharmacy/Medicine
+  if (code === 'CAT002' ||
+      code === 'PHARMACY' ||
+      code === 'MEDICINE' ||
+      combined.includes('PHARMACY') ||
+      combined.includes('MEDICINE') ||
+      combined.includes('DRUG') ||
+      combined.includes('PRESCRIPTION')) {
+    return CubeIcon
+  }
+
+  // Online/Tele Consultation
+  if (code === 'ONLINE_CONSULTATION' ||
+      code === 'TELE_CONSULTATION' ||
+      code === 'TELECONSULTATION' ||
+      code.includes('ONLINE') ||
+      code.includes('TELE') ||
+      code.includes('VIRTUAL') ||
+      combined.includes('ONLINE') ||
+      combined.includes('TELE') ||
+      combined.includes('VIRTUAL') ||
+      combined.includes('VIDEO CONSULT')) {
+    return HeartIcon
+  }
+
+  // In-Clinic Consultation
+  if (code === 'CAT001' ||
+      code === 'CONSULTATION' ||
+      code === 'IN_CLINIC' ||
+      code === 'IN_CLINIC_CONSULTATION' ||
+      code.includes('CLINIC') ||
+      combined.includes('CLINIC') ||
+      combined.includes('IN-CLINIC') ||
+      combined.includes('CONSULTATION') && !combined.includes('ONLINE') && !combined.includes('TELE')) {
+    return VideoCameraIcon
+  }
+
+  // Dental/Vision - CHECK LAST to avoid conflicts
+  if (code === 'CAT004' ||
+      code === 'DENTAL' ||
+      code === 'VISION' ||
+      code === 'DENTAL_VISION' ||
+      code === 'EYE_CARE' ||
+      combined.includes('DENTAL') ||
+      combined.includes('VISION') ||
+      combined.includes('EYE CARE') ||
+      combined.includes('EYECARE') ||
+      combined.includes('OPTICAL') ||
+      combined.includes('OPHTHALMOLOGY')) {
+    return EyeIcon
+  }
+
+  // Wellness/Preventive/Other - Default with Heart icon
+  return HeartIcon
 }
 
 export default function WalletPage() {
@@ -404,7 +472,7 @@ export default function WalletPage() {
           {activeTab === 'categories' && (
             <div className="p-5 lg:p-6 space-y-4">
               {categories.map((category: any) => {
-                const Icon = getCategoryIcon(category.categoryCode)
+                const Icon = getCategoryIcon(category.categoryCode, category.name)
                 const availablePercentage = category.total > 0 ? ((category.available / category.total) * 100) : 0
 
                 return (
@@ -416,8 +484,8 @@ export default function WalletPage() {
                       borderColor: '#86ACD8'
                     }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3 lg:gap-4 flex-1">
+                    <div className="flex items-start justify-between mb-3 gap-3">
+                      <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
                         <div
                           className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{
@@ -429,19 +497,19 @@ export default function WalletPage() {
                           <Icon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm lg:text-base font-semibold mb-1 truncate" style={{ color: '#0E51A2' }}>
+                          <p className="text-sm lg:text-base font-semibold mb-1 break-words" style={{ color: '#0E51A2' }}>
                             {category.name}
                           </p>
-                          <p className="text-xs lg:text-sm text-gray-600">
+                          <p className="text-xs lg:text-sm text-gray-600 truncate">
                             {category.isUnlimited ? 'Unlimited' : `Limit: ₹${category.total.toLocaleString()}`}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-lg lg:text-xl font-bold whitespace-nowrap" style={{ color: '#0E51A2' }}>
                           ₹{category.available.toLocaleString()}
                         </p>
-                        <p className="text-xs text-gray-600">Available</p>
+                        <p className="text-xs text-gray-600 whitespace-nowrap">Available</p>
                       </div>
                     </div>
 

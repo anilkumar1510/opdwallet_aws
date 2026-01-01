@@ -71,21 +71,6 @@ export default function AppointmentsPage() {
     return `${day} ${month} ${year}`
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING_CONFIRMATION':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800'
-      case 'COMPLETED':
-        return 'bg-gray-100 text-gray-800'
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const getStatusText = (status: string) => {
     switch (status) {
       case 'PENDING_CONFIRMATION':
@@ -123,165 +108,222 @@ export default function AppointmentsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+    <div className="min-h-screen pb-20" style={{ background: '#f7f7fc' }}>
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all"
             >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+              <ChevronLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">In-Clinic Appointments</h1>
+            <div className="flex-1">
+              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>In-Clinic Appointments</h1>
+              <p className="text-xs lg:text-sm text-gray-600">View and manage your appointments</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        {/* Book New Appointment CTA */}
         <button
           onClick={handleBookAppointment}
-          className="w-full mb-6 flex items-center justify-center space-x-2 text-white px-4 py-3 rounded-xl font-medium transition-all hover:shadow-lg"
-          style={{ backgroundColor: '#0a529f' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+          className="w-full mb-6 flex items-center justify-center gap-2 text-white px-6 py-3 lg:py-4 rounded-xl font-semibold transition-all hover:shadow-lg"
+          style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
         >
-          <PlusIcon className="h-5 w-5" />
-          <span>Book New Appointment</span>
+          <PlusIcon className="h-5 w-5 lg:h-6 lg:w-6" />
+          <span className="text-sm lg:text-base">Book New Appointment</span>
         </button>
 
         {appointments.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <div className="mb-4">
-              <CalendarIcon className="h-16 w-16 text-gray-300 mx-auto" />
+          <div
+            className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md"
+            style={{
+              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+              borderColor: '#F7DCAF'
+            }}
+          >
+            <div
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <CalendarIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments yet</h3>
-            <p className="text-gray-600 mb-4">Book your first appointment to get started</p>
+            <h3 className="text-lg lg:text-xl font-bold mb-2" style={{ color: '#0E51A2' }}>No appointments yet</h3>
+            <p className="text-sm lg:text-base text-gray-600">Book your first appointment to get started</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-2">
+          <div className="space-y-4 lg:space-y-5">
+            <h2 className="text-sm lg:text-base font-bold uppercase tracking-wide" style={{ color: '#0E51A2' }}>
               Your Appointments ({appointments.length})
             </h2>
 
             {appointments.map((appointment) => (
               <div
                 key={appointment._id}
-                className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all"
+                style={{
+                  background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                  borderColor: '#F7DCAF'
+                }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-blue-100 p-2 rounded-full">
-                      <UserIcon className="h-5 w-5 text-blue-600" />
+                {/* Doctor Info and Status */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3 lg:gap-4 flex-1">
+                    <div
+                      className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{
+                        background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                        border: '1px solid #A4BFFE7A',
+                        boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                      }}
+                    >
+                      <UserIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
                     </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{appointment.doctorName}</div>
-                      <div className="text-sm text-gray-600">{appointment.specialty}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-base lg:text-lg mb-1 truncate" style={{ color: '#0E51A2' }}>
+                        {appointment.doctorName}
+                      </div>
+                      <div className="text-xs lg:text-sm text-gray-600">{appointment.specialty}</div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 items-end">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                  <div className="flex flex-col gap-2 items-end ml-3">
+                    <span
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                        appointment.status === 'CONFIRMED' ? 'text-white' :
+                        appointment.status === 'COMPLETED' ? 'text-white' :
+                        appointment.status === 'CANCELLED' ? 'text-white' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}
+                      style={
+                        appointment.status === 'CONFIRMED' ? { background: '#25A425' } :
+                        appointment.status === 'COMPLETED' ? { background: '#6b7280' } :
+                        appointment.status === 'CANCELLED' ? { background: '#E53535' } :
+                        {}
+                      }
+                    >
                       {getStatusText(appointment.status)}
                     </span>
                     <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
                   </div>
                 </div>
 
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <UserIcon className="h-4 w-4" />
-                    <span>Patient: {appointment.patientName}</span>
-                  </div>
+                {/* Appointment Details */}
+                <div
+                  className="rounded-xl p-4 mb-4 border-2"
+                  style={{
+                    background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                    borderColor: '#86ACD8'
+                  }}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm lg:text-base text-gray-700">
+                      <UserIcon className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: '#0F5FDC' }} />
+                      <span className="font-medium">Patient:</span>
+                      <span>{appointment.patientName}</span>
+                    </div>
 
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>{formatDate(appointment.appointmentDate)}</span>
-                  </div>
+                    <div className="flex items-center gap-2 text-sm lg:text-base text-gray-700">
+                      <CalendarIcon className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: '#0F5FDC' }} />
+                      <span className="font-medium">Date:</span>
+                      <span>{formatDate(appointment.appointmentDate)}</span>
+                    </div>
 
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <ClockIcon className="h-4 w-4" />
-                    <span>{appointment.timeSlot}</span>
-                  </div>
+                    <div className="flex items-center gap-2 text-sm lg:text-base text-gray-700">
+                      <ClockIcon className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: '#0F5FDC' }} />
+                      <span className="font-medium">Time:</span>
+                      <span>{appointment.timeSlot}</span>
+                    </div>
 
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <MapPinIcon className="h-4 w-4" />
-                    <span className="line-clamp-1">{appointment.clinicName}</span>
+                    <div className="flex items-start gap-2 text-sm lg:text-base text-gray-700">
+                      <MapPinIcon className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0 mt-0.5" style={{ color: '#0F5FDC' }} />
+                      <span className="font-medium">Clinic:</span>
+                      <span className="flex-1">{appointment.clinicName}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm text-gray-600">
-                      Appointment ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
-                    </div>
-                    <div className="text-sm font-semibold text-blue-600">
-                      ₹{appointment.consultationFee}
-                    </div>
+                {/* Appointment ID and Fee */}
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <div className="text-xs lg:text-sm text-gray-600">
+                    ID: <span className="font-semibold" style={{ color: '#0E51A2' }}>{appointment.appointmentId}</span>
                   </div>
+                  <div className="text-base lg:text-lg font-bold" style={{ color: '#25A425' }}>
+                    ₹{appointment.consultationFee}
+                  </div>
+                </div>
 
-                  {/* View Prescription Button */}
-                  {appointment.hasPrescription && appointment.prescriptionId && (
-                    <div className="mb-3">
-                      <ViewPrescriptionButton
-                        prescriptionId={appointment.prescriptionId}
-                        hasPrescription={appointment.hasPrescription}
-                      />
-                    </div>
-                  )}
+                {/* View Prescription Button */}
+                {appointment.hasPrescription && appointment.prescriptionId && (
+                  <div className="mb-3">
+                    <ViewPrescriptionButton
+                      prescriptionId={appointment.prescriptionId}
+                      hasPrescription={appointment.hasPrescription}
+                    />
+                  </div>
+                )}
 
-                  {(() => {
-                    // Parse appointment date and time
-                    const [year, month, day] = appointment.appointmentDate.split('-').map(Number);
-                    const appointmentDateObj = new Date(year, month - 1, day); // month is 0-indexed
+                {/* Cancel Button */}
+                {(() => {
+                  // Parse appointment date and time
+                  const [year, month, day] = appointment.appointmentDate.split('-').map(Number);
+                  const appointmentDateObj = new Date(year, month - 1, day); // month is 0-indexed
 
-                    // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
-                    const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                    if (timeParts) {
-                      let hours = parseInt(timeParts[1]);
-                      const minutes = parseInt(timeParts[2]);
-                      const period = timeParts[3].toUpperCase();
+                  // Parse time slot (e.g., "1:30 PM" or "10:00 AM")
+                  const timeParts = appointment.timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                  if (timeParts) {
+                    let hours = parseInt(timeParts[1]);
+                    const minutes = parseInt(timeParts[2]);
+                    const period = timeParts[3].toUpperCase();
 
-                      if (period === 'PM' && hours !== 12) {
-                        hours += 12;
-                      } else if (period === 'AM' && hours === 12) {
-                        hours = 0;
-                      }
-
-                      appointmentDateObj.setHours(hours, minutes, 0, 0);
+                    if (period === 'PM' && hours !== 12) {
+                      hours += 12;
+                    } else if (period === 'AM' && hours === 12) {
+                      hours = 0;
                     }
 
-                    const now = new Date();
-                    const isFuture = appointmentDateObj > now;
-                    const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture;
+                    appointmentDateObj.setHours(hours, minutes, 0, 0);
+                  }
 
-                    console.log('[Appointments] Cancel button check:', {
-                      appointmentId: appointment.appointmentId,
-                      appointmentDate: appointment.appointmentDate,
-                      timeSlot: appointment.timeSlot,
-                      parsedDateTime: appointmentDateObj.toString(),
-                      now: now.toString(),
-                      isFuture,
-                      status: appointment.status,
-                      canCancel
-                    });
+                  const now = new Date();
+                  const isFuture = appointmentDateObj > now;
+                  const canCancel = (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture;
 
-                    return canCancel;
-                  })() && (
-                    <button
-                      onClick={() => handleCancelAppointment(appointment.appointmentId)}
-                      className="w-full py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Cancel Appointment
-                    </button>
-                  )}
-                </div>
+                  console.log('[Appointments] Cancel button check:', {
+                    appointmentId: appointment.appointmentId,
+                    appointmentDate: appointment.appointmentDate,
+                    timeSlot: appointment.timeSlot,
+                    parsedDateTime: appointmentDateObj.toString(),
+                    now: now.toString(),
+                    isFuture,
+                    status: appointment.status,
+                    canCancel
+                  });
+
+                  return canCancel;
+                })() && (
+                  <button
+                    onClick={() => handleCancelAppointment(appointment.appointmentId)}
+                    className="w-full py-3 px-4 text-white rounded-xl text-sm lg:text-base font-semibold transition-all hover:shadow-lg"
+                    style={{ background: '#E53535' }}
+                  >
+                    Cancel Appointment
+                  </button>
+                )}
               </div>
             ))}
           </div>
