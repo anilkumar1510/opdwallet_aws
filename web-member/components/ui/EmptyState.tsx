@@ -19,7 +19,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className="rounded-xl p-8 lg:p-12 text-center"
+      className="rounded-xl p-8 lg:p-12 text-center overflow-hidden break-words"
       style={{
         background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
         border: '2px solid #F7DCAF',
@@ -41,14 +41,14 @@ export default function EmptyState({
 
       {/* Title */}
       <h3
-        className="text-lg lg:text-xl font-bold mb-2"
+        className="text-lg lg:text-xl font-bold mb-2 break-words"
         style={{ color: '#0E51A2' }}
       >
         {title}
       </h3>
 
       {/* Message */}
-      <p className="text-sm lg:text-base text-gray-600 mb-6">
+      <p className="text-sm lg:text-base text-gray-600 mb-6 break-words">
         {message}
       </p>
 

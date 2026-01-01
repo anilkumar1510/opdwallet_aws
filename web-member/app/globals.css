@@ -502,4 +502,26 @@
   .animate-fadeIn {
     animation: fade-in 0.5s ease-out forwards;
   }
+
+  /* Text overflow prevention for mobile */
+  .text-wrap-safe {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+}
+
+/* Global mobile text overflow fixes */
+@media (max-width: 640px) {
+  * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  p, span, div, h1, h2, h3, h4, h5, h6, td, th, li {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
 }

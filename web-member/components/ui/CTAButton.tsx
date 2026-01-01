@@ -42,7 +42,7 @@ export default function CTAButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'px-6 py-3 lg:py-4 rounded-xl text-white text-sm lg:text-base font-semibold transition-shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2',
+        'px-6 py-3 lg:py-4 rounded-xl text-white text-sm lg:text-base font-semibold transition-shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 break-words',
         fullWidth && 'w-full',
         className
       )}

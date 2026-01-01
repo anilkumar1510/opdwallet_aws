@@ -27,7 +27,7 @@ export default function DetailCard({
 
   return (
     <div
-      className={cn('rounded-xl p-4 lg:p-5', className)}
+      className={cn('rounded-xl p-4 lg:p-5 overflow-hidden break-words', className)}
       style={variantStyles[variant]}
     >
       {children}
