@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ChevronLeftIcon, BeakerIcon, MapPinIcon, CalendarIcon, ClockIcon, HomeIcon, BuildingOfficeIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { BeakerIcon, CalendarIcon, ClockIcon, HomeIcon, BuildingOfficeIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
 import PaymentProcessor from '@/components/PaymentProcessor'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface LabCart {
   _id: string
@@ -220,23 +223,23 @@ export default function LabBookingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   if (!cart) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f7f7fc' }}>
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Cart not found</p>
-          <button
+          <p className="text-sm lg:text-base text-gray-600 mb-4">Cart not found</p>
+          <CTAButton
             onClick={() => router.push('/member/lab-tests')}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg"
+            variant="primary"
           >
             Go Back
-          </button>
+          </CTAButton>
         </div>
       </div>
     )
@@ -244,138 +247,131 @@ export default function LabBookingPage() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-sm max-w-md w-full p-8 text-center">
-          <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: '#e8f5e9' }}>
-            <CheckCircleIcon className="h-10 w-10" style={{ color: '#4caf50' }} />
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f7f7fc' }}>
+        <DetailCard variant="primary" className="max-w-md w-full">
+          <div className="text-center">
+            <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6" style={{ background: '#25A425' }}>
+              <CheckCircleIcon className="h-10 w-10 lg:h-12 lg:w-12 text-white" />
+            </div>
+            <h1 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Booking Confirmed!</h1>
+            <p className="text-sm lg:text-base text-gray-600 mb-2">Order ID: {orderId}</p>
+            <p className="text-xs lg:text-sm text-gray-500 mb-6">{selectedDate} at {selectedSlot?.timeSlot}</p>
+            <CTAButton
+              onClick={() => router.push('/member/bookings?tab=lab')}
+              variant="primary"
+              fullWidth
+            >
+              View Bookings
+            </CTAButton>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h1>
-          <p className="text-gray-600 mb-2">Order ID: {orderId}</p>
-          <p className="text-sm text-gray-500 mb-6">{selectedDate} at {selectedSlot?.timeSlot}</p>
-          <button
-            onClick={() => router.push('/member/bookings?tab=lab')}
-            className="w-full py-3 text-white rounded-lg font-medium"
-            style={{ backgroundColor: '#0a529f' }}
-          >
-            View Bookings
-          </button>
-        </div>
+        </DetailCard>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-3"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold text-gray-900">Book Lab Tests</h1>
-            <p className="text-sm text-gray-600">Cart ID: {cart.cartId}</p>
-          </div>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Book Lab Tests"
+        subtitle={`Cart ID: ${cart.cartId}`}
+        onBack={() => router.back()}
+        sticky
+      />
 
-        {/* Progress Steps */}
-        <div className="px-4 pb-4">
-          <div className="flex items-center justify-between max-w-md mx-auto">
-            <div className={`flex flex-col items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
-                1
-              </div>
-              <span className="text-xs">Vendor</span>
+      {/* Progress Steps */}
+      <div className="bg-white border-b px-4 py-4" style={{ borderColor: '#86ACD8' }}>
+        <div className="flex items-center justify-between max-w-md mx-auto">
+          <div className={`flex flex-col items-center ${step >= 1 ? '' : 'text-gray-400'}`} style={step >= 1 ? { color: '#0F5FDC' } : {}}>
+            <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-1 text-sm lg:text-base font-semibold ${step >= 1 ? 'text-white' : ''}`} style={step >= 1 ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' } : { background: '#e5e7eb' }}>
+              1
             </div>
-            <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-            <div className={`flex flex-col items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
-                2
-              </div>
-              <span className="text-xs">Slot</span>
+            <span className="text-xs lg:text-sm">Vendor</span>
+          </div>
+          <div className={`flex-1 h-1 mx-2`} style={step >= 2 ? { background: '#0F5FDC' } : { background: '#e5e7eb' }}></div>
+          <div className={`flex flex-col items-center ${step >= 2 ? '' : 'text-gray-400'}`} style={step >= 2 ? { color: '#0F5FDC' } : {}}>
+            <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-1 text-sm lg:text-base font-semibold ${step >= 2 ? 'text-white' : ''}`} style={step >= 2 ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' } : { background: '#e5e7eb' }}>
+              2
             </div>
-            <div className={`flex-1 h-1 mx-2 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-            <div className={`flex flex-col items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
-                3
-              </div>
-              <span className="text-xs">Payment</span>
+            <span className="text-xs lg:text-sm">Slot</span>
+          </div>
+          <div className={`flex-1 h-1 mx-2`} style={step >= 3 ? { background: '#0F5FDC' } : { background: '#e5e7eb' }}></div>
+          <div className={`flex flex-col items-center ${step >= 3 ? '' : 'text-gray-400'}`} style={step >= 3 ? { color: '#0F5FDC' } : {}}>
+            <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-1 text-sm lg:text-base font-semibold ${step >= 3 ? 'text-white' : ''}`} style={step >= 3 ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' } : { background: '#e5e7eb' }}>
+              3
             </div>
+            <span className="text-xs lg:text-sm">Payment</span>
           </div>
         </div>
       </div>
 
-      <div className="p-4 max-w-4xl mx-auto">
+      <div className="max-w-[480px] mx-auto lg:max-w-4xl px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
         {/* Tests Summary */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-          <h3 className="font-semibold text-gray-900 mb-2">Tests in Cart</h3>
-          <div className="space-y-1">
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Tests in Cart</h3>
+          <div className="space-y-2">
             {cart.items.map((item, idx) => (
-              <div key={idx} className="flex items-center text-sm text-gray-600">
-                <BeakerIcon className="h-4 w-4 mr-2" />
+              <div key={idx} className="flex items-center text-xs lg:text-sm text-gray-600">
+                <BeakerIcon className="h-4 w-4 lg:h-5 lg:w-5 mr-2" style={{ color: '#0F5FDC' }} />
                 <span>{item.serviceName}</span>
               </div>
             ))}
           </div>
-        </div>
+        </DetailCard>
 
         {/* Step 1: Vendor Selection */}
         {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Select Lab Vendor</h2>
+          <div className="space-y-4 lg:space-y-5">
+            <h2 className="text-lg lg:text-xl font-semibold" style={{ color: '#0E51A2' }}>Select Lab Vendor</h2>
 
             {vendors.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <p className="text-gray-600">No vendors assigned yet. Please wait for operations team to assign vendors.</p>
-              </div>
+              <DetailCard variant="primary">
+                <div className="text-center py-8">
+                  <p className="text-sm lg:text-base text-gray-600">No vendors assigned yet. Please wait for operations team to assign vendors.</p>
+                </div>
+              </DetailCard>
             ) : (
               vendors.map((vendor) => (
-                <div
+                <DetailCard
                   key={vendor._id}
-                  className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-500"
-                  onClick={() => handleVendorSelect(vendor)}
+                  variant="primary"
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-3 lg:mb-4">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{vendor.name}</h3>
+                      <h3 className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>{vendor.name}</h3>
                       <div className="flex items-center text-sm text-gray-600 mt-1">
-                        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                        <span className="text-xs font-medium px-2 py-1 rounded" style={{ background: '#EFF4FF', color: '#0F5FDC' }}>
                           {vendor.code}
                         </span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold" style={{ color: '#0a529f' }}>
+                      <div className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>
                         ₹{vendor.totalDiscountedPrice}
                       </div>
                       <div className="text-xs text-gray-500">Total</div>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-100 pt-3">
-                    <div className="text-xs text-gray-600 mb-2">Test Pricing:</div>
+                  <div className="border-t pt-3" style={{ borderColor: '#86ACD8' }}>
+                    <div className="text-xs font-medium text-gray-700 mb-2">Test Pricing:</div>
                     {vendor.pricing.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-xs text-gray-600 mb-1">
+                      <div key={idx} className="flex justify-between text-xs lg:text-sm text-gray-600 mb-1">
                         <span>{item.serviceName}</span>
-                        <span>₹{item.discountedPrice}</span>
+                        <span className="font-medium" style={{ color: '#0E51A2' }}>₹{item.discountedPrice}</span>
                       </div>
                     ))}
                   </div>
 
-                  <button
-                    className="w-full mt-3 py-2 text-white rounded-lg font-medium"
-                    style={{ backgroundColor: '#0a529f' }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleVendorSelect(vendor)
-                    }}
-                  >
-                    Select This Vendor
-                  </button>
-                </div>
+                  <div className="mt-3 lg:mt-4">
+                    <CTAButton
+                      onClick={() => handleVendorSelect(vendor)}
+                      variant="primary"
+                      fullWidth
+                    >
+                      Select This Vendor
+                    </CTAButton>
+                  </div>
+                </DetailCard>
               ))
             )}
           </div>
@@ -383,43 +379,38 @@ export default function LabBookingPage() {
 
         {/* Step 2: Slot Selection */}
         {step === 2 && selectedVendor && (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:space-y-5">
             <button
               onClick={() => setStep(1)}
-              className="text-sm text-blue-600 flex items-center mb-2"
+              className="text-xs lg:text-sm flex items-center mb-2"
+              style={{ color: '#0F5FDC' }}
             >
               ← Change Vendor
             </button>
 
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-3">Selected Vendor: {selectedVendor.name}</h3>
+            <DetailCard variant="primary">
+              <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Selected Vendor: {selectedVendor.name}</h3>
 
               {/* Collection Type */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Collection Type</label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="mb-4 lg:mb-5">
+                <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-2 lg:mb-3">Collection Type</label>
+                <div className="grid grid-cols-2 gap-3 lg:gap-4">
                   <button
                     onClick={() => setCollectionType('IN_CLINIC')}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      collectionType === 'IN_CLINIC'
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className="p-3 lg:p-4 rounded-lg border-2 transition-all"
+                    style={collectionType === 'IN_CLINIC' ? { borderColor: '#0F5FDC', background: '#EFF4FF' } : { borderColor: '#86ACD8' }}
                   >
-                    <BuildingOfficeIcon className="h-6 w-6 mx-auto mb-1" />
-                    <div className="text-sm font-medium">Lab Visit</div>
+                    <BuildingOfficeIcon className="h-6 w-6 lg:h-7 lg:w-7 mx-auto mb-1" style={{ color: '#0F5FDC' }} />
+                    <div className="text-xs lg:text-sm font-medium" style={{ color: '#0E51A2' }}>Lab Visit</div>
                     <div className="text-xs text-gray-600">Visit lab for sample collection</div>
                   </button>
                   <button
                     onClick={() => setCollectionType('HOME_COLLECTION')}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      collectionType === 'HOME_COLLECTION'
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className="p-3 lg:p-4 rounded-lg border-2 transition-all"
+                    style={collectionType === 'HOME_COLLECTION' ? { borderColor: '#0F5FDC', background: '#EFF4FF' } : { borderColor: '#86ACD8' }}
                   >
-                    <HomeIcon className="h-6 w-6 mx-auto mb-1" />
-                    <div className="text-sm font-medium">Home Collection</div>
+                    <HomeIcon className="h-6 w-6 lg:h-7 lg:w-7 mx-auto mb-1" style={{ color: '#0F5FDC' }} />
+                    <div className="text-xs lg:text-sm font-medium" style={{ color: '#0E51A2' }}>Home Collection</div>
                     <div className="text-xs text-gray-600">
                       Sample collected at home (+₹{selectedVendor.homeCollectionCharges || 100})
                     </div>
@@ -428,8 +419,8 @@ export default function LabBookingPage() {
               </div>
 
               {/* Date Selection */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+              <div className="mb-4 lg:mb-5">
+                <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-2 lg:mb-3">Select Date</label>
                 <input
                   type="date"
                   value={selectedDate}
@@ -438,20 +429,23 @@ export default function LabBookingPage() {
                     setSelectedSlot(null)
                   }}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 lg:py-3 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                  style={{ borderColor: '#86ACD8' }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
                 />
               </div>
 
               {/* Time Slots */}
               {selectedDate && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Time Slot</label>
+                  <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-2 lg:mb-3">Select Time Slot</label>
                   {availableSlots.length === 0 ? (
-                    <div className="text-center py-6 text-gray-500">
+                    <div className="text-center py-6 text-sm lg:text-base text-gray-500">
                       No slots available for this date
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2 lg:gap-3">
                       {availableSlots.map((slot) => {
                         const isAvailable = slot.currentBookings < slot.maxBookings
                         return (
@@ -459,17 +453,18 @@ export default function LabBookingPage() {
                             key={slot.slotId}
                             onClick={() => handleSlotSelect(slot)}
                             disabled={!isAvailable}
-                            className={`p-3 rounded-lg border-2 transition-all ${
+                            className={`p-3 lg:p-4 rounded-lg border-2 transition-all ${!isAvailable ? 'cursor-not-allowed opacity-50' : ''}`}
+                            style={
                               selectedSlot?.slotId === slot.slotId
-                                ? 'border-blue-600 bg-blue-50'
+                                ? { borderColor: '#0F5FDC', background: '#EFF4FF' }
                                 : isAvailable
-                                ? 'border-gray-200 hover:border-gray-300'
-                                : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50'
-                            }`}
+                                ? { borderColor: '#86ACD8' }
+                                : { borderColor: '#e5e7eb', background: '#f3f4f6' }
+                            }
                           >
                             <div className="flex items-center justify-center">
-                              <ClockIcon className="h-4 w-4 mr-1" />
-                              <span className="text-sm font-medium">{slot.timeSlot}</span>
+                              <ClockIcon className="h-4 w-4 lg:h-5 lg:w-5 mr-1" style={{ color: '#0F5FDC' }} />
+                              <span className="text-xs lg:text-sm font-medium" style={{ color: '#0E51A2' }}>{slot.timeSlot}</span>
                             </div>
                             <div className="text-xs text-gray-600 mt-1">
                               {isAvailable
@@ -483,52 +478,55 @@ export default function LabBookingPage() {
                   )}
                 </div>
               )}
-            </div>
+            </DetailCard>
           </div>
         )}
 
         {/* Step 3: Payment */}
         {step === 3 && selectedVendor && selectedSlot && (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:space-y-5">
             <button
               onClick={() => setStep(2)}
-              className="text-sm text-blue-600 flex items-center mb-2"
+              className="text-xs lg:text-sm flex items-center mb-2"
+              style={{ color: '#0F5FDC' }}
             >
               ← Change Slot
             </button>
 
             {/* Booking Summary */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-3">Booking Summary</h3>
+            <DetailCard variant="primary">
+              <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Booking Summary</h3>
 
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 lg:space-y-3 text-xs lg:text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Vendor:</span>
-                  <span className="font-medium">{selectedVendor.name}</span>
+                  <span className="font-medium" style={{ color: '#0E51A2' }}>{selectedVendor.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Collection Type:</span>
-                  <span className="font-medium">
+                  <span className="font-medium" style={{ color: '#0E51A2' }}>
                     {collectionType === 'HOME_COLLECTION' ? 'Home Collection' : 'Lab Visit'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Date:</span>
-                  <span className="font-medium">{new Date(selectedDate).toLocaleDateString()}</span>
+                  <span className="font-medium" style={{ color: '#0E51A2' }}>{new Date(selectedDate).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Time:</span>
-                  <span className="font-medium">{selectedSlot.timeSlot}</span>
+                  <span className="font-medium" style={{ color: '#0E51A2' }}>{selectedSlot.timeSlot}</span>
                 </div>
               </div>
-            </div>
+            </DetailCard>
 
             {/* Payment Processor Component */}
             {validating && (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f' }}></div>
-                <span className="ml-2 text-gray-600">Validating order...</span>
-              </div>
+              <DetailCard variant="primary">
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
+                  <span className="ml-2 text-sm lg:text-base text-gray-600">Validating order...</span>
+                </div>
+              </DetailCard>
             )}
 
             {!validating && userId && validationResult?.valid && (
@@ -568,17 +566,21 @@ export default function LabBookingPage() {
             )}
 
             {!validating && validationResult && !validationResult.valid && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                <p className="text-red-800 font-medium">Unable to validate order</p>
-                <p className="text-red-600 text-sm mt-1">{validationResult.error || 'Please try again'}</p>
-              </div>
+              <DetailCard variant="primary">
+                <div className="p-4 text-center" style={{ background: '#FEF1E7', border: '1px solid #F9B376', borderRadius: '12px' }}>
+                  <p className="font-medium" style={{ color: '#E53535' }}>Unable to validate order</p>
+                  <p className="text-xs lg:text-sm text-gray-600 mt-1">{validationResult.error || 'Please try again'}</p>
+                </div>
+              </DetailCard>
             )}
 
             {!validating && !userId && (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f' }}></div>
-                <span className="ml-2 text-gray-600">Loading payment details...</span>
-              </div>
+              <DetailCard variant="primary">
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
+                  <span className="ml-2 text-sm lg:text-base text-gray-600">Loading payment details...</span>
+                </div>
+              </DetailCard>
             )}
           </div>
         )}

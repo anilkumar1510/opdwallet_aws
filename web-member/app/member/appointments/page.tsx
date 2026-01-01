@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   PlusIcon,
   ClockIcon,
   CalendarIcon,
@@ -13,6 +12,11 @@ import {
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { appointmentsApi, usersApi, type Appointment } from '@/lib/api'
 import { useFamily } from '@/contexts/FamilyContext'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
+import DetailCard from '@/components/ui/DetailCard'
+import IconCircle from '@/components/ui/IconCircle'
+import CTAButton from '@/components/ui/CTAButton'
 
 export default function AppointmentsPage() {
   const router = useRouter()
@@ -116,56 +120,30 @@ export default function AppointmentsPage() {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: '#f7f7fc' }}>
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
-        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-all"
-            >
-              <ChevronLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>In-Clinic Appointments</h1>
-              <p className="text-xs lg:text-sm text-gray-600">View and manage your appointments</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="In-Clinic Appointments"
+        subtitle="View and manage your appointments"
+        backHref="/member"
+      />
 
       <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
         {/* Book New Appointment CTA */}
-        <button
+        <CTAButton
+          variant="primary"
+          fullWidth
           onClick={handleBookAppointment}
-          className="w-full mb-6 flex items-center justify-center gap-2 text-white px-6 py-3 lg:py-4 rounded-xl font-semibold transition-all hover:shadow-lg"
-          style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+          leftIcon={PlusIcon}
+          className="mb-6"
         >
-          <PlusIcon className="h-5 w-5 lg:h-6 lg:w-6" />
-          <span className="text-sm lg:text-base">Book New Appointment</span>
-        </button>
+          Book New Appointment
+        </CTAButton>
 
         {appointments.length === 0 ? (
-          <div
-            className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md"
-            style={{
-              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
-              borderColor: '#F7DCAF'
-            }}
-          >
-            <div
-              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{
-                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
-                border: '1px solid #A4BFFE7A',
-                boxShadow: '-2px 11px 46.1px 0px #0000000D'
-              }}
-            >
-              <CalendarIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
-            </div>
-            <h3 className="text-lg lg:text-xl font-bold mb-2" style={{ color: '#0E51A2' }}>No appointments yet</h3>
-            <p className="text-sm lg:text-base text-gray-600">Book your first appointment to get started</p>
-          </div>
+          <EmptyState
+            icon={CalendarIcon}
+            title="No appointments yet"
+            message="Book your first appointment to get started"
+          />
         ) : (
           <div className="space-y-4 lg:space-y-5">
             <h2 className="text-sm lg:text-base font-bold uppercase tracking-wide" style={{ color: '#0E51A2' }}>
@@ -173,27 +151,15 @@ export default function AppointmentsPage() {
             </h2>
 
             {appointments.map((appointment) => (
-              <div
+              <DetailCard
                 key={appointment._id}
-                className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all"
-                style={{
-                  background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
-                  borderColor: '#F7DCAF'
-                }}
+                variant="primary"
+                className="shadow-md hover:shadow-lg transition-all"
               >
                 {/* Doctor Info and Status */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 lg:gap-4 flex-1">
-                    <div
-                      className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
-                        border: '1px solid #A4BFFE7A',
-                        boxShadow: '-2px 11px 46.1px 0px #0000000D'
-                      }}
-                    >
-                      <UserIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
-                    </div>
+                    <IconCircle icon={UserIcon} size="md" />
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-base lg:text-lg mb-1 truncate" style={{ color: '#0E51A2' }}>
                         {appointment.doctorName}
@@ -223,13 +189,7 @@ export default function AppointmentsPage() {
                 </div>
 
                 {/* Appointment Details */}
-                <div
-                  className="rounded-xl p-4 mb-4 border-2"
-                  style={{
-                    background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-                    borderColor: '#86ACD8'
-                  }}
-                >
+                <DetailCard variant="secondary" className="mb-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm lg:text-base text-gray-700">
                       <UserIcon className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: '#0F5FDC' }} />
@@ -255,7 +215,7 @@ export default function AppointmentsPage() {
                       <span className="flex-1">{appointment.clinicName}</span>
                     </div>
                   </div>
-                </div>
+                </DetailCard>
 
                 {/* Appointment ID and Fee */}
                 <div className="flex items-center justify-between mb-4 px-2">
@@ -324,7 +284,7 @@ export default function AppointmentsPage() {
                     Cancel Appointment
                   </button>
                 )}
-              </div>
+              </DetailCard>
             ))}
           </div>
         )}

@@ -3,10 +3,14 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronLeftIcon as ChevronLeftSmallIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface TimeSlot {
   time: string
@@ -163,65 +167,55 @@ function SelectSlotContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Select Date & Time</h1>
-              <p className="text-sm text-gray-600">{doctorName}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Date & Time"
+        subtitle={doctorName || 'Choose your appointment slot'}
+      />
 
-      <div className="p-4 max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        <DetailCard variant="primary" className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2 text-gray-900">
-              <CalendarIcon className="h-5 w-5" />
-              <span className="font-medium">Select Date</span>
+            <div className="flex items-center gap-2" style={{ color: '#0E51A2' }}>
+              <CalendarIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
+              <span className="font-medium text-sm lg:text-base">Select Date</span>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex gap-2">
               <button
                 onClick={handlePrevWeek}
                 disabled={currentWeekStart === 0}
-                className={`p-1 rounded-lg ${
+                className={`p-1 rounded-lg transition-colors ${
                   currentWeekStart === 0
                     ? 'text-gray-300 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'hover:bg-gray-100'
                 }`}
+                style={currentWeekStart === 0 ? {} : { color: '#0E51A2' }}
               >
-                <ChevronLeftIcon className="h-5 w-5" />
+                <ChevronLeftSmallIcon className="h-5 w-5" />
               </button>
               <button
                 onClick={handleNextWeek}
                 disabled={currentWeekStart + 5 >= daySlots.length}
-                className={`p-1 rounded-lg ${
+                className={`p-1 rounded-lg transition-colors ${
                   currentWeekStart + 5 >= daySlots.length
                     ? 'text-gray-300 cursor-not-allowed'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'hover:bg-gray-100'
                 }`}
+                style={currentWeekStart + 5 >= daySlots.length ? {} : { color: '#0E51A2' }}
               >
                 <ChevronRightIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
 
-          <div className="flex space-x-2 overflow-x-auto">
+          <div className="flex gap-2 overflow-x-auto pb-2">
             {getVisibleDays().map((day) => (
               <button
                 key={day.dateStr}
@@ -229,63 +223,71 @@ function SelectSlotContent() {
                 className={`flex-shrink-0 flex flex-col items-center px-4 py-3 rounded-xl transition-all ${
                   selectedDate === day.dateStr
                     ? 'text-white shadow-md'
-                    : 'bg-gray-50 text-gray-900 hover:bg-gray-100'
+                    : 'hover:shadow-md'
                 }`}
-                style={selectedDate === day.dateStr ? { backgroundColor: '#0a529f' } : undefined}
+                style={
+                  selectedDate === day.dateStr
+                    ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }
+                    : { background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)', color: '#0E51A2' }
+                }
               >
-                <span className="text-xs font-medium mb-1">{day.dayName}</span>
-                <span className="text-sm font-semibold">{formatDate(day.date)}</span>
+                <span className="text-xs lg:text-sm font-medium mb-1">{day.dayName}</span>
+                <span className="text-sm lg:text-base font-semibold">{formatDate(day.date)}</span>
               </button>
             ))}
           </div>
-        </div>
+        </DetailCard>
 
         {selectedDaySlots && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-            <h3 className="font-medium text-gray-900 mb-4">Available Time Slots</h3>
+          <DetailCard variant="secondary" className="mb-6">
+            <h3 className="font-medium text-sm lg:text-base mb-4" style={{ color: '#0E51A2' }}>Available Time Slots</h3>
 
             {selectedDaySlots.slots.filter(s => s.available).length === 0 ? (
-              <div className="text-center py-8 text-gray-600">
-                No slots available for this date
+              <div className="text-center py-8">
+                <EmptyState
+                  icon={CalendarIcon}
+                  title="No slots available"
+                  message="Please select a different date"
+                />
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 lg:gap-3">
                 {selectedDaySlots.slots.map((slot) => (
                   <button
                     key={slot.time}
                     onClick={() => slot.available && handleSlotSelect(slot.time, slot.slotId)}
                     disabled={!slot.available}
-                    className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                    className={`py-2 lg:py-3 px-3 rounded-xl text-xs lg:text-sm font-medium transition-all ${
                       selectedSlot === slot.time
                         ? 'text-white shadow-md'
                         : slot.available
-                        ? 'bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-200'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? 'hover:shadow-md'
+                        : 'cursor-not-allowed opacity-50'
                     }`}
-                    style={selectedSlot === slot.time ? { backgroundColor: '#0a529f' } : undefined}
+                    style={
+                      selectedSlot === slot.time
+                        ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }
+                        : slot.available
+                        ? { background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)', border: '1px solid #F7DCAF', color: '#0E51A2' }
+                        : { background: '#f3f4f6', color: '#9ca3af' }
+                    }
                   >
                     {slot.time}
                   </button>
                 ))}
               </div>
             )}
-          </div>
+          </DetailCard>
         )}
 
-        <button
+        <CTAButton
           onClick={handleContinue}
           disabled={!selectedDate || !selectedSlot}
-          className={`w-full py-3 px-4 rounded-xl font-medium transition-colors ${
-            selectedDate && selectedSlot
-              ? 'text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-          style={selectedDate && selectedSlot ? { backgroundColor: '#0a529f' } : undefined}
-          onMouseEnter={(e) => selectedDate && selectedSlot && (e.currentTarget.style.backgroundColor = '#084080')}
-          onMouseLeave={(e) => selectedDate && selectedSlot && (e.currentTarget.style.backgroundColor = '#0a529f')}
+          variant="primary"
+          fullWidth
         >
           Continue
-        </button>
+        </CTAButton>
       </div>
     </div>
   )
@@ -294,8 +296,8 @@ function SelectSlotContent() {
 export default function SelectSlotPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <SelectSlotContent />

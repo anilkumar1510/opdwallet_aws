@@ -3,13 +3,17 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   UserIcon,
   StarIcon,
   ClockIcon
 } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import IconCircle from '@/components/ui/IconCircle'
+import EmptyState from '@/components/ui/EmptyState'
 
 // API base URL configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
@@ -128,131 +132,138 @@ function OnlineDoctorsContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Select Doctor</h1>
-              <p className="text-sm text-gray-600">{specialtyName}</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Doctor"
+        subtitle={specialtyName || 'Online Consultation'}
+      />
 
-        <div className="px-4 pb-4 space-y-3">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        <div className="space-y-4 mb-6">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="h-5 w-5 lg:h-6 lg:w-6 text-gray-400" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search doctors..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block w-full pl-10 pr-3 py-2 lg:py-3 border-2 rounded-xl text-sm lg:text-base focus:outline-none transition-all"
+              style={{
+                borderColor: '#86ACD8',
+                background: '#FFFFFF'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#0F5FDC'}
+              onBlur={(e) => e.target.style.borderColor = '#86ACD8'}
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 lg:gap-3">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 lg:py-3 rounded-xl text-xs lg:text-sm font-medium transition-all border-2"
+              style={{
+                borderColor: '#86ACD8',
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                color: '#0E51A2'
+              }}
             >
-              <FunnelIcon className="h-4 w-4" />
-              <span className="text-sm">Filters</span>
+              <FunnelIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+              <span>Filters</span>
             </button>
 
             <button
               onClick={() => setShowAvailableNow(!showAvailableNow)}
-              className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+              className="px-4 py-2 lg:py-3 rounded-xl text-xs lg:text-sm font-medium transition-all border-2"
+              style={
                 showAvailableNow
-                  ? 'bg-green-600 text-white'
-                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+                  ? { background: '#25A425', color: '#FFFFFF', borderColor: '#25A425' }
+                  : {
+                      borderColor: '#86ACD8',
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      color: '#0E51A2'
+                    }
+              }
             >
               Available Now (5 mins)
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="p-4 max-w-2xl mx-auto">
         {filteredDoctors.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No doctors found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search term</p>
-          </div>
+          <EmptyState
+            icon={UserIcon}
+            title="No doctors found"
+            message="Try adjusting your filters or search term"
+          />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:space-y-5">
             {filteredDoctors.map((doctor) => (
-              <div key={doctor._id} className="bg-white rounded-2xl p-4 shadow-sm">
-                <div className="flex items-start space-x-4 mb-4">
+              <DetailCard key={doctor._id} variant="primary" className="shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-start gap-3 lg:gap-4 mb-4">
                   {doctor.profilePhoto ? (
                     <img
                       src={`${API_BASE_URL}${doctor.profilePhoto}`}
                       alt={doctor.name}
-                      className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-gray-200"
+                      className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover flex-shrink-0"
+                      style={{ border: '2px solid #A4BFFE7A' }}
                     />
                   ) : (
-                    <div className="bg-blue-100 p-3 rounded-full flex-shrink-0">
-                      <UserIcon className="h-8 w-8" style={{ color: '#0a529f' }} />
-                    </div>
+                    <IconCircle icon={UserIcon} size="lg" />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
+                      <h3 className="font-semibold text-base lg:text-lg" style={{ color: '#0E51A2' }}>
+                        {doctor.name}
+                      </h3>
                       {doctor.availableInMinutes !== null && (
-                        <span className={`text-xs px-2 py-1 rounded-full flex items-center space-x-1 ${
-                          doctor.availableInMinutes <= 5
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          <ClockIcon className="h-3 w-3" />
-                          <span>{formatAvailability(doctor.availableInMinutes)}</span>
+                        <span
+                          className="text-xs lg:text-sm px-2 py-1 rounded-lg flex items-center gap-1 flex-shrink-0 ml-2"
+                          style={
+                            doctor.availableInMinutes <= 5
+                              ? { background: '#E8F5E9', color: '#25A425' }
+                              : { background: '#F3F4F6', color: '#6B7280' }
+                          }
+                        >
+                          <ClockIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+                          <span className="font-medium">{formatAvailability(doctor.availableInMinutes)}</span>
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600">{doctor.qualifications}</p>
-                    <p className="text-sm text-gray-600">{doctor.experienceYears} years experience</p>
-                    <div className="flex items-center space-x-1 mt-1">
-                      <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm font-medium text-gray-900">{doctor.rating}</span>
-                      <span className="text-sm text-gray-600">({doctor.reviewCount} reviews)</span>
+                    <p className="text-xs lg:text-sm text-gray-600 mb-1">{doctor.qualifications}</p>
+                    <p className="text-xs lg:text-sm text-gray-600 mb-2">{doctor.experienceYears} years experience</p>
+                    <div className="flex items-center gap-1">
+                      <StarIcon className="h-4 w-4 lg:h-5 lg:w-5 text-yellow-400 fill-current" />
+                      <span className="text-sm lg:text-base font-medium text-gray-900">{doctor.rating}</span>
+                      <span className="text-xs lg:text-sm text-gray-600">({doctor.reviewCount} reviews)</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                <DetailCard variant="secondary" className="mb-0">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm">
+                    <div className="text-sm lg:text-base">
                       <span className="text-gray-600">Consultation: </span>
-                      <span className="font-semibold" style={{ color: '#0a529f' }}>₹{doctor.consultationFee}</span>
+                      <span className="font-bold text-base lg:text-lg" style={{ color: '#25A425' }}>
+                        ₹{doctor.consultationFee}
+                      </span>
                     </div>
-                    <button
+                    <CTAButton
                       onClick={() => handleSelectDoctor(doctor)}
-                      className="px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors"
-                      style={{ backgroundColor: '#0a529f' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                      variant="primary"
                     >
                       Select
-                    </button>
+                    </CTAButton>
                   </div>
-                </div>
-              </div>
+                </DetailCard>
+              </DetailCard>
             ))}
           </div>
         )}
@@ -264,8 +275,8 @@ function OnlineDoctorsContent() {
 export default function OnlineDoctorsPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <OnlineDoctorsContent />

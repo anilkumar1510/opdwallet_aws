@@ -3,7 +3,6 @@
 import React, { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   UserIcon,
   CalendarIcon,
   ClockIcon,
@@ -12,6 +11,10 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
 import PaymentProcessor from '@/components/PaymentProcessor'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import IconCircle from '@/components/ui/IconCircle'
 
 function ConfirmAppointmentContent() {
   const router = useRouter()
@@ -172,144 +175,134 @@ function ConfirmAppointmentContent() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-          <div className="mb-6">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircleIcon className="h-10 w-10 text-green-600" />
-            </div>
-          </div>
-
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-          <p className="text-gray-600 mb-6">
-            Your appointment has been booked and is awaiting confirmation
-          </p>
-
-          <div className="bg-blue-50 rounded-xl p-4 mb-6">
-            <div className="text-sm text-gray-600 mb-1">Appointment ID</div>
-            <div className="text-xl font-bold" style={{ color: '#0a529f' }}>{appointmentId}</div>
-          </div>
-
-          <div className="space-y-3 text-left mb-6">
-            <div className="flex items-center space-x-3 text-sm">
-              <UserIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Doctor</div>
-                <div className="font-medium text-gray-900">{doctorName}</div>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f7f7fc' }}>
+        <div className="max-w-[480px] w-full">
+          <DetailCard variant="primary" className="text-center">
+            <div className="flex justify-center mb-6">
+              <div
+                className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center"
+                style={{ background: '#25A425' }}
+              >
+                <CheckCircleIcon className="h-10 w-10 lg:h-12 lg:w-12 text-white" />
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 text-sm">
-              <CalendarIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Date</div>
-                <div className="font-medium text-gray-900">{formatDate(appointmentDate || '')}</div>
+            <h2 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Booking Confirmed!</h2>
+            <p className="text-sm lg:text-base text-gray-600 mb-6">
+              Your appointment has been booked and is awaiting confirmation
+            </p>
+
+            <DetailCard variant="secondary" className="mb-6">
+              <div className="text-xs lg:text-sm text-gray-600 mb-1">Appointment ID</div>
+              <div className="text-lg lg:text-xl font-bold" style={{ color: '#0F5FDC' }}>{appointmentId}</div>
+            </DetailCard>
+
+            <div className="space-y-3 lg:space-y-4 text-left mb-6">
+              <div className="flex items-center gap-3">
+                <UserIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs lg:text-sm text-gray-600">Doctor</div>
+                  <div className="font-medium text-sm lg:text-base truncate" style={{ color: '#0E51A2' }}>{doctorName}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <CalendarIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs lg:text-sm text-gray-600">Date</div>
+                  <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>{formatDate(appointmentDate || '')}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <ClockIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs lg:text-sm text-gray-600">Time</div>
+                  <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>{timeSlot}</div>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 text-sm">
-              <ClockIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <div>
-                <div className="text-gray-600">Time</div>
-                <div className="font-medium text-gray-900">{timeSlot}</div>
-              </div>
+            <div className="space-y-3">
+              <CTAButton
+                onClick={handleViewAppointments}
+                variant="success"
+                fullWidth
+              >
+                View Appointments
+              </CTAButton>
+              <button
+                onClick={handleBackToDashboard}
+                className="w-full py-3 lg:py-4 px-4 rounded-xl font-semibold transition-all hover:shadow-md text-sm lg:text-base"
+                style={{ background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)', color: '#0F5FDC' }}
+              >
+                Back to Dashboard
+              </button>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={handleViewAppointments}
-              className="w-full py-3 px-4 text-white rounded-xl font-medium transition-colors"
-              style={{ backgroundColor: '#0a529f' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-            >
-              View Appointments
-            </button>
-            <button
-              onClick={handleBackToDashboard}
-              className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors"
-            >
-              Back to Dashboard
-            </button>
-          </div>
+          </DetailCard>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Confirm Appointment</h1>
-              <p className="text-sm text-gray-600">Review your booking details</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Confirm Appointment"
+        subtitle="Review your booking details"
+      />
 
-      <div className="p-4 max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Doctor Details</h3>
-          <div className="flex items-start space-x-4 mb-4">
-            <div className="bg-blue-100 p-3 rounded-full flex-shrink-0">
-              <UserIcon className="h-8 w-8" style={{ color: '#0a529f' }} />
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold text-gray-900">{doctorName}</div>
-              <div className="text-sm text-gray-600">{specialty}</div>
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        <DetailCard variant="primary" className="mb-4 lg:mb-5">
+          <h3 className="font-semibold text-sm lg:text-base mb-4" style={{ color: '#0E51A2' }}>Doctor Details</h3>
+          <div className="flex items-start gap-3 lg:gap-4 mb-4">
+            <IconCircle icon={UserIcon} size="lg" />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-base lg:text-lg truncate" style={{ color: '#0E51A2' }}>{doctorName}</div>
+              <div className="text-xs lg:text-sm text-gray-600">{specialty}</div>
             </div>
           </div>
 
-          <div className="space-y-3 pt-3 border-t border-gray-100">
-            <div className="flex items-start space-x-3 text-sm">
-              <MapPinIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <div className="font-medium text-gray-900">{clinicName}</div>
-                <div className="text-gray-600">{clinicAddress}</div>
+          <div className="pt-3 border-t" style={{ borderColor: '#F7DCAF' }}>
+            <div className="flex items-start gap-3 text-sm lg:text-base">
+              <MapPinIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0 mt-0.5" style={{ color: '#0F5FDC' }} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate" style={{ color: '#0E51A2' }}>{clinicName}</div>
+                <div className="text-gray-600 text-xs lg:text-sm">{clinicAddress}</div>
               </div>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Appointment Details</h3>
+        <DetailCard variant="secondary" className="mb-4 lg:mb-5">
+          <h3 className="font-semibold text-sm lg:text-base mb-4" style={{ color: '#0E51A2' }}>Appointment Details</h3>
 
-          <div className="space-y-3">
+          <div className="space-y-3 lg:space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <UserIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-xs lg:text-sm">
+                <UserIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Patient</span>
               </div>
-              <span className="font-medium text-gray-900">{patientName}</span>
+              <span className="font-medium text-sm lg:text-base truncate ml-2" style={{ color: '#0E51A2' }}>{patientName}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <CalendarIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-xs lg:text-sm">
+                <CalendarIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Date</span>
               </div>
-              <span className="font-medium text-gray-900">{formatDate(appointmentDate || '')}</span>
+              <span className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>{formatDate(appointmentDate || '')}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <ClockIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-xs lg:text-sm">
+                <ClockIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Time</span>
               </div>
-              <span className="font-medium text-gray-900">{timeSlot}</span>
+              <span className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>{timeSlot}</span>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
         {/* Payment Processor Component */}
         {!loadingUser && userId && patientId && (
@@ -339,9 +332,9 @@ function ConfirmAppointmentContent() {
         )}
 
         {loadingUser && (
-          <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
-            <span className="ml-2 text-gray-600">Loading payment details...</span>
+          <div className="flex items-center justify-center py-8 gap-3">
+            <div className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
+            <span className="text-sm lg:text-base text-gray-600">Loading payment details...</span>
           </div>
         )}
       </div>
@@ -352,8 +345,8 @@ function ConfirmAppointmentContent() {
 export default function ConfirmAppointmentPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <ConfirmAppointmentContent />

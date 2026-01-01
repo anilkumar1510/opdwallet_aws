@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MapPinIcon, MagnifyingGlassIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
-import { Card } from '@/components/ui/Card'
+import { MapPinIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface Clinic {
   clinicId: string
@@ -146,90 +149,93 @@ export default function DentalClinicsPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-flex items-center gap-1"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Find Dental Clinics</h1>
-          <p className="text-gray-600 mt-2">Search for clinics near you</p>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Find Dental Clinics"
+        subtitle="Search for clinics near you"
+      />
 
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
         {/* Location Search Card */}
-        <Card className="mb-6">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Enter Location</h2>
+        <DetailCard variant="primary" className="mb-4 lg:mb-5">
+          <h2
+            className="text-base lg:text-lg font-semibold mb-4"
+            style={{ color: '#0E51A2' }}
+          >
+            Enter Location
+          </h2>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Manual Pincode Entry */}
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter Pincode
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g., 110001"
-                    value={pincode}
-                    onChange={(e) => setPincode(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        searchClinics(pincode)
-                      }
-                    }}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  <button
-                    onClick={() => searchClinics(pincode)}
-                    disabled={loading || !pincode}
-                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <MagnifyingGlassIcon className="h-5 w-5" />
-                    Search
-                  </button>
-                </div>
-              </div>
-
-              {/* OR Divider */}
-              <div className="flex items-center justify-center md:py-8">
-                <span className="text-gray-500 font-medium">OR</span>
-              </div>
-
-              {/* Auto-detect Location */}
-              <div className="flex-1 flex flex-col justify-end">
-                <button
-                  onClick={detectLocation}
-                  disabled={detectingLocation || loading}
-                  className="w-full px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          <div className="flex flex-col gap-4">
+            {/* Manual Pincode Entry */}
+            <div className="flex-1">
+              <label className="block text-sm lg:text-base font-medium text-gray-700 mb-2">
+                Enter Pincode
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g., 110001"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      searchClinics(pincode)
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 lg:py-3 border rounded-xl focus:ring-2 focus:border-transparent text-sm lg:text-base"
+                  style={{ borderColor: '#86ACD8', outlineColor: '#0F5FDC' }}
+                />
+                <CTAButton
+                  variant="primary"
+                  onClick={() => searchClinics(pincode)}
+                  disabled={loading || !pincode}
+                  leftIcon={MagnifyingGlassIcon}
                 >
-                  <MapPinIcon className="h-5 w-5" />
-                  {detectingLocation ? 'Detecting...' : 'Use My Location'}
-                </button>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  Automatically detect your location
-                </p>
+                  Search
+                </CTAButton>
               </div>
             </div>
+
+            {/* OR Divider */}
+            <div className="flex items-center justify-center py-2">
+              <span className="text-gray-500 font-medium text-sm lg:text-base">OR</span>
+            </div>
+
+            {/* Auto-detect Location */}
+            <div className="flex-1">
+              <CTAButton
+                variant="success"
+                fullWidth
+                onClick={detectLocation}
+                disabled={detectingLocation || loading}
+                leftIcon={MapPinIcon}
+              >
+                {detectingLocation ? 'Detecting...' : 'Use My Location'}
+              </CTAButton>
+              <p className="text-xs lg:text-sm text-gray-500 mt-2 text-center">
+                Automatically detect your location
+              </p>
+            </div>
           </div>
-        </Card>
+        </DetailCard>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
+          <div
+            className="mb-4 lg:mb-5 p-4 lg:p-5 rounded-xl text-sm lg:text-base"
+            style={{ background: '#FEF1E7', border: '1px solid #F9B376' }}
+          >
+            <p style={{ color: '#E53535' }}>{error}</p>
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+            <div
+              className="animate-spin rounded-full h-12 w-12 lg:h-14 lg:w-14 border-4 border-t-transparent"
+              style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+            ></div>
           </div>
         )}
 
@@ -237,58 +243,76 @@ export default function DentalClinicsPage() {
         {!loading && searchedPincode && clinics.length > 0 && (
           <div>
             <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2
+                className="text-lg lg:text-xl font-semibold"
+                style={{ color: '#0E51A2' }}
+              >
                 Clinics in {searchedPincode} ({clinics.length})
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:gap-5">
               {clinics.map((clinic) => (
-                <Card key={clinic.clinicId} className="hover:shadow-lg transition-shadow">
-                  <div className="p-6">
-                    {/* Clinic Name */}
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {clinic.clinicName}
-                    </h3>
+                <DetailCard key={clinic.clinicId} variant="primary">
+                  {/* Clinic Name */}
+                  <h3
+                    className="text-base lg:text-lg font-semibold mb-3"
+                    style={{ color: '#0E51A2' }}
+                  >
+                    {clinic.clinicName}
+                  </h3>
 
-                    {/* Address */}
-                    <div className="flex items-start gap-2 text-sm text-gray-600 mb-4">
-                      <MapPinIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p>{clinic.address.street || clinic.address.line1}</p>
-                        <p>
-                          {clinic.address.city}, {clinic.address.state} - {clinic.address.pincode}
-                        </p>
-                      </div>
+                  {/* Address */}
+                  <div className="flex items-start gap-2 text-sm lg:text-base text-gray-600 mb-3">
+                    <MapPinIcon
+                      className="h-5 w-5 flex-shrink-0 mt-0.5"
+                      style={{ color: '#0F5FDC' }}
+                    />
+                    <div>
+                      <p>{clinic.address.street || clinic.address.line1}</p>
+                      <p>
+                        {clinic.address.city}, {clinic.address.state} - {clinic.address.pincode}
+                      </p>
                     </div>
-
-                    {/* Contact */}
-                    <div className="text-sm text-gray-600 mb-4">
-                      <span className="font-medium">Contact:</span> {clinic.contactNumber}
-                    </div>
-
-                    {/* Price and Availability */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Price</p>
-                        <p className="text-lg font-semibold text-gray-900">₹{clinic.servicePrice}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600">Available Slots</p>
-                        <p className="text-lg font-semibold text-green-600">{clinic.availableSlots}</p>
-                      </div>
-                    </div>
-
-                    {/* Select Button */}
-                    <button
-                      onClick={() => handleSelectClinic(clinic.clinicId)}
-                      disabled={clinic.availableSlots === 0}
-                      className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-                    >
-                      {clinic.availableSlots > 0 ? 'Select Clinic' : 'No Slots Available'}
-                    </button>
                   </div>
-                </Card>
+
+                  {/* Contact */}
+                  <div className="text-sm lg:text-base text-gray-600 mb-4">
+                    <span className="font-medium">Contact:</span> {clinic.contactNumber}
+                  </div>
+
+                  {/* Price and Availability */}
+                  <div className="flex items-center justify-between mb-4 pb-4 border-t border-gray-200 pt-4">
+                    <div>
+                      <p className="text-xs lg:text-sm text-gray-600">Price</p>
+                      <p
+                        className="text-base lg:text-lg font-semibold"
+                        style={{ color: '#0E51A2' }}
+                      >
+                        ₹{clinic.servicePrice}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs lg:text-sm text-gray-600">Available Slots</p>
+                      <p
+                        className="text-base lg:text-lg font-semibold"
+                        style={{ color: '#25A425' }}
+                      >
+                        {clinic.availableSlots}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Select Button */}
+                  <CTAButton
+                    variant="primary"
+                    fullWidth
+                    onClick={() => handleSelectClinic(clinic.clinicId)}
+                    disabled={clinic.availableSlots === 0}
+                  >
+                    {clinic.availableSlots > 0 ? 'Select Clinic' : 'No Slots Available'}
+                  </CTAButton>
+                </DetailCard>
               ))}
             </div>
           </div>
@@ -296,15 +320,11 @@ export default function DentalClinicsPage() {
 
         {/* Empty State */}
         {!loading && !searchedPincode && (
-          <Card className="text-center py-16">
-            <div className="flex flex-col items-center">
-              <MapPinIcon className="h-16 w-16 text-gray-400 mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Search for Clinics</h2>
-              <p className="text-gray-600 max-w-md">
-                Enter your pincode or use auto-detect to find dental clinics near you
-              </p>
-            </div>
-          </Card>
+          <EmptyState
+            icon={MapPinIcon}
+            title="Search for Clinics"
+            message="Enter your pincode or use auto-detect to find dental clinics near you"
+          />
         )}
       </div>
     </div>

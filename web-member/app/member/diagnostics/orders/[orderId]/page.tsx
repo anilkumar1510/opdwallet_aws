@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   CheckCircleIcon,
   ClockIcon,
   TruckIcon,
   DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface OrderItem {
   serviceId: string
@@ -116,19 +118,19 @@ export default function OrderDetailsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PLACED':
-        return 'bg-yellow-100 text-yellow-800'
+        return { background: '#FEF1E7', color: '#E67E22' }
       case 'CONFIRMED':
-        return 'bg-blue-100 text-blue-800'
+        return { background: '#EFF4FF', color: '#0F5FDC' }
       case 'SAMPLE_COLLECTED':
-        return 'bg-purple-100 text-purple-800'
+        return { background: '#F3E8FF', color: '#9333EA' }
       case 'PROCESSING':
-        return 'bg-orange-100 text-orange-800'
+        return { background: '#FEF1E7', color: '#F97316' }
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800'
+        return { background: '#E8F5E9', color: '#25A425' }
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
+        return { background: '#FFEBEE', color: '#E53535' }
       default:
-        return 'bg-gray-100 text-gray-800'
+        return { background: '#f3f4f6', color: '#6b7280' }
     }
   }
 
@@ -156,47 +158,41 @@ export default function OrderDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   if (!order) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">Order not found</p>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <p className="text-sm lg:text-base text-gray-500">Order not found</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
       <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-3"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
+        <div className="px-4 lg:px-6 py-4 flex items-center">
           <div className="flex-1">
-            <h1 className="text-xl font-semibold text-gray-900">Order Details</h1>
-            <p className="text-sm text-gray-600 font-mono">{order.orderId}</p>
+            <h1 className="text-lg lg:text-xl font-semibold" style={{ color: '#0E51A2' }}>Order Details</h1>
+            <p className="text-xs lg:text-sm font-mono" style={{ color: '#0F5FDC' }}>{order.orderId}</p>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+            className="px-2 lg:px-3 py-1 rounded-full text-xs font-medium"
+            style={getStatusColor(order.status)}
           >
             {order.status.replace('_', ' ')}
           </span>
         </div>
       </div>
 
-      <div className="p-4 max-w-4xl mx-auto space-y-4">
+      <div className="max-w-[480px] mx-auto lg:max-w-4xl px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
         {/* Status Timeline */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-900 mb-6">Order Status</h3>
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4 lg:mb-6" style={{ color: '#0E51A2' }}>Order Status</h3>
           <div className="space-y-4">
             {statusSteps.map((step, index) => {
               const completed = isStepCompleted(step.key)
@@ -207,49 +203,46 @@ export default function OrderDetailsPage() {
                 <div key={step.key} className="flex items-start">
                   <div className="flex flex-col items-center mr-4">
                     <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                        completed
-                          ? 'bg-green-500'
-                          : current
-                          ? 'bg-blue-500'
-                          : 'bg-gray-300'
-                      }`}
+                      className="flex items-center justify-center w-10 h-10 lg:w-12 lg:h-12 rounded-full"
+                      style={{
+                        background: completed ? '#25A425' : current ? '#0F5FDC' : '#e5e7eb'
+                      }}
                     >
-                      <Icon className="h-5 w-5 text-white" />
+                      <Icon className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
                     </div>
                     {index < statusSteps.length - 1 && (
                       <div
-                        className={`w-0.5 h-12 ${
-                          completed ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
+                        className="w-0.5 h-12"
+                        style={{ background: completed ? '#25A425' : '#e5e7eb' }}
                       />
                     )}
                   </div>
                   <div className="flex-1 pb-8">
                     <p
-                      className={`font-medium ${
-                        completed || current ? 'text-gray-900' : 'text-gray-500'
+                      className={`text-sm lg:text-base font-medium ${
+                        completed || current ? '' : 'text-gray-500'
                       }`}
+                      style={completed || current ? { color: '#0E51A2' } : {}}
                     >
                       {step.label}
                     </p>
                     {completed && step.key === 'PLACED' && order.placedAt && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs lg:text-sm text-gray-600 mt-1">
                         {formatDateTime(order.placedAt)}
                       </p>
                     )}
                     {completed && step.key === 'CONFIRMED' && order.confirmedAt && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs lg:text-sm text-gray-600 mt-1">
                         {formatDateTime(order.confirmedAt)}
                       </p>
                     )}
                     {completed && step.key === 'SAMPLE_COLLECTED' && order.collectedAt && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs lg:text-sm text-gray-600 mt-1">
                         {formatDateTime(order.collectedAt)}
                       </p>
                     )}
                     {completed && step.key === 'COMPLETED' && order.completedAt && (
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs lg:text-sm text-gray-600 mt-1">
                         {formatDateTime(order.completedAt)}
                       </p>
                     )}
@@ -258,156 +251,158 @@ export default function OrderDetailsPage() {
               )
             })}
           </div>
-        </div>
+        </DetailCard>
 
-        {/* Lab Partner Info */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">Lab Partner</h3>
-          <p className="text-lg font-medium text-gray-900">{order.vendorName}</p>
-        </div>
+        {/* Diagnostic Center Info */}
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Diagnostic Center</h3>
+          <p className="text-base lg:text-lg font-medium" style={{ color: '#0E51A2' }}>{order.vendorName}</p>
+        </DetailCard>
 
         {/* Tests Ordered */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">Tests Ordered</h3>
-          <div className="space-y-2">
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Tests Ordered</h3>
+          <div className="space-y-3">
             {order.items.map((item, index) => (
-              <div
+              <DetailCard
                 key={index}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-xl"
+                variant="secondary"
               >
-                <div>
-                  <p className="font-medium text-gray-900">{item.serviceName}</p>
-                  <p className="text-sm text-gray-600">{item.serviceCode}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{item.serviceName}</p>
+                    <p className="text-xs lg:text-sm text-gray-600">{item.serviceCode}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs lg:text-sm text-gray-500 line-through">₹{item.actualPrice}</p>
+                    <p className="text-sm lg:text-base font-bold" style={{ color: '#0E51A2' }}>₹{item.discountedPrice}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 line-through">₹{item.actualPrice}</p>
-                  <p className="font-bold text-gray-900">₹{item.discountedPrice}</p>
-                </div>
-              </div>
+              </DetailCard>
             ))}
           </div>
-        </div>
+        </DetailCard>
 
         {/* Collection Details */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">Collection Details</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Collection Details</h3>
+          <div className="space-y-2 lg:space-y-3">
+            <div className="flex items-center justify-between text-xs lg:text-sm">
               <span className="text-gray-600">Type</span>
-              <span className="font-medium text-gray-900">
+              <span className="font-medium" style={{ color: '#0E51A2' }}>
                 {order.collectionType === 'HOME_COLLECTION' ? 'Home Collection' : 'Center Visit'}
               </span>
             </div>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs lg:text-sm">
               <span className="text-gray-600">Date</span>
-              <span className="font-medium text-gray-900">{order.collectionDate}</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>{order.collectionDate}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs lg:text-sm">
               <span className="text-gray-600">Time</span>
-              <span className="font-medium text-gray-900">{order.collectionTime}</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>{order.collectionTime}</span>
             </div>
             {order.collectionAddress && (
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">Address</p>
-                <p className="text-sm text-gray-900">
+              <div className="pt-2 lg:pt-3 border-t" style={{ borderColor: '#86ACD8' }}>
+                <p className="text-xs lg:text-sm text-gray-600 mb-1">Address</p>
+                <p className="text-xs lg:text-sm" style={{ color: '#0E51A2' }}>
                   {order.collectionAddress.line1}
                   {order.collectionAddress.line2 && `, ${order.collectionAddress.line2}`}
                 </p>
-                <p className="text-sm text-gray-900">
+                <p className="text-xs lg:text-sm" style={{ color: '#0E51A2' }}>
                   {order.collectionAddress.city}, {order.collectionAddress.state} -{' '}
                   {order.collectionAddress.pincode}
                 </p>
               </div>
             )}
           </div>
-        </div>
+        </DetailCard>
 
         {/* Payment Summary */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">Payment Summary</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Payment Summary</h3>
+          <div className="space-y-2 lg:space-y-3">
+            <div className="flex items-center justify-between text-xs lg:text-sm">
               <span className="text-gray-600">Tests Subtotal</span>
-              <span className="text-gray-900">₹{order.totalDiscountedPrice}</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>₹{order.totalDiscountedPrice}</span>
             </div>
             {order.homeCollectionCharges > 0 && (
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs lg:text-sm">
                 <span className="text-gray-600">Home Collection Charges</span>
-                <span className="text-gray-900">₹{order.homeCollectionCharges}</span>
+                <span className="font-medium" style={{ color: '#0E51A2' }}>₹{order.homeCollectionCharges}</span>
               </div>
             )}
-            <div className="pt-2 border-t border-gray-200">
+            <div className="pt-2 lg:pt-3 border-t" style={{ borderColor: '#86ACD8' }}>
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-900">Total Paid</span>
-                <span className="text-xl font-bold text-gray-900">₹{order.finalAmount}</span>
+                <span className="text-sm lg:text-base font-semibold" style={{ color: '#0E51A2' }}>Total Paid</span>
+                <span className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>₹{order.finalAmount}</span>
               </div>
             </div>
-            <div className="flex items-center justify-between text-sm pt-2">
+            <div className="flex items-center justify-between text-xs lg:text-sm pt-2">
               <span className="text-gray-600">Payment Status</span>
               <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  order.paymentStatus === 'PAID'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}
+                className="px-2 py-1 rounded-full text-xs font-medium"
+                style={order.paymentStatus === 'PAID' ? { background: '#E8F5E9', color: '#25A425' } : { background: '#FEF1E7', color: '#E67E22' }}
               >
                 {order.paymentStatus}
               </span>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
         {/* Reports Section */}
         {order.reports && order.reports.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <h3 className="font-semibold text-gray-900 mb-3">Lab Reports</h3>
-            <div className="space-y-2">
+          <DetailCard variant="primary">
+            <h3 className="text-base lg:text-lg font-semibold mb-3 lg:mb-4" style={{ color: '#0E51A2' }}>Diagnostic Reports</h3>
+            <div className="space-y-3">
               {order.reports.map((report, index) => (
-                <div
+                <DetailCard
                   key={index}
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                  variant="secondary"
                 >
-                  <div className="flex items-center">
-                    <DocumentArrowDownIcon className="h-5 w-5 text-blue-600 mr-3" />
-                    <div>
-                      <p className="font-medium text-gray-900">{report.originalName}</p>
-                      <p className="text-xs text-gray-600">
-                        Uploaded on {formatDate(report.uploadedAt)}
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center flex-1">
+                      <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center mr-3" style={{ background: '#EFF4FF' }}>
+                        <DocumentArrowDownIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
+                      </div>
+                      <div>
+                        <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{report.originalName}</p>
+                        <p className="text-xs lg:text-sm text-gray-600">Uploaded on {formatDate(report.uploadedAt)}</p>
+                      </div>
                     </div>
+                    <CTAButton
+                      onClick={() => handleDownloadReport(report)}
+                      variant="primary"
+                    >
+                      Download
+                    </CTAButton>
                   </div>
-                  <button
-                    onClick={() => handleDownloadReport(report)}
-                    className="px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors"
-                    style={{ backgroundColor: '#0a529f' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-                  >
-                    Download
-                  </button>
-                </div>
+                </DetailCard>
               ))}
             </div>
-          </div>
+          </DetailCard>
         )}
 
         {/* Empty Reports State */}
         {order.status === 'COMPLETED' && (!order.reports || order.reports.length === 0) && (
-          <div className="rounded-2xl p-6 text-center border" style={{ backgroundColor: '#e6f0fa', borderColor: '#b3d4f0' }}>
-            <DocumentArrowDownIcon className="h-12 w-12 mx-auto mb-3" style={{ color: '#0a529f' }} />
-            <p className="font-medium" style={{ color: '#084080' }}>Reports will be available soon</p>
-            <p className="text-sm mt-1" style={{ color: '#0a529f' }}>
-              Your lab reports are being processed and will be uploaded shortly
-            </p>
-          </div>
+          <DetailCard variant="primary">
+            <div className="text-center py-6 lg:py-8">
+              <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto rounded-full flex items-center justify-center mb-4" style={{ background: '#EFF4FF' }}>
+                <DocumentArrowDownIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
+              </div>
+              <p className="text-base lg:text-lg font-semibold mb-2" style={{ color: '#0E51A2' }}>Reports will be available soon</p>
+              <p className="text-sm lg:text-base text-gray-600">
+                Your diagnostic reports are being processed and will be uploaded shortly
+              </p>
+            </div>
+          </DetailCard>
         )}
 
         {/* Help Section */}
-        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
-          <p className="text-sm text-gray-600 text-center">
+        <DetailCard variant="secondary">
+          <p className="text-sm lg:text-base text-gray-600 text-center">
             Need help with your order? Contact support
           </p>
-        </div>
+        </DetailCard>
       </div>
     </div>
   )

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   VideoCameraIcon,
   ClockIcon,
   CheckCircleIcon,
@@ -12,6 +11,11 @@ import {
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { useFamily } from '@/contexts/FamilyContext'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import IconCircle from '@/components/ui/IconCircle'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface Appointment {
   _id: string
@@ -164,44 +168,17 @@ export default function OnlineConsultPage() {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: '#f7f7fc' }}>
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm" style={{ borderColor: '#e5e7eb' }}>
-        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-all"
-            >
-              <ChevronLeftIcon className="h-6 w-6" style={{ color: '#0E51A2' }} />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-lg lg:text-xl font-bold" style={{ color: '#0E51A2' }}>Online Consultation</h1>
-              <p className="text-xs lg:text-sm text-gray-600">Consult with doctors on call</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Online Consultation"
+        subtitle="Consult with doctors on call"
+        backHref="/member"
+      />
 
       <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
         {/* Consult Doctor Card */}
-        <div
-          className="rounded-2xl p-6 lg:p-8 border-2 shadow-lg mb-6"
-          style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
-            borderColor: '#F7DCAF'
-          }}
-        >
+        <DetailCard variant="primary" className="shadow-lg mb-6">
           <div className="flex items-center gap-4 mb-5">
-            <div
-              className="w-14 h-14 lg:w-16 lg:h-16 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
-                border: '1px solid #A4BFFE7A',
-                boxShadow: '-2px 11px 46.1px 0px #0000000D'
-              }}
-            >
-              <VideoCameraIcon className="h-7 w-7 lg:h-8 lg:w-8" style={{ color: '#0F5FDC' }} />
-            </div>
+            <IconCircle icon={VideoCameraIcon} size="lg" />
             <div className="flex-1">
               <h2 className="text-lg lg:text-xl font-bold mb-1" style={{ color: '#0E51A2' }}>Consult Doctor on Call</h2>
               <p className="text-xs lg:text-sm text-gray-600">Connect with top doctors instantly</p>
@@ -223,36 +200,17 @@ export default function OnlineConsultPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleConsultNow}
-            className="w-full py-3 lg:py-4 px-6 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-            style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
-          >
+          <CTAButton onClick={handleConsultNow} variant="primary" fullWidth>
             Consult Now
-          </button>
-        </div>
+          </CTAButton>
+        </DetailCard>
 
         {appointments.length === 0 ? (
-          <div
-            className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md"
-            style={{
-              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
-              borderColor: '#F7DCAF'
-            }}
-          >
-            <div
-              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{
-                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
-                border: '1px solid #A4BFFE7A',
-                boxShadow: '-2px 11px 46.1px 0px #0000000D'
-              }}
-            >
-              <VideoCameraIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
-            </div>
-            <h3 className="text-lg lg:text-xl font-bold mb-2" style={{ color: '#0E51A2' }}>No online consultations yet</h3>
-            <p className="text-sm lg:text-base text-gray-600">Book your first online consultation to get started</p>
-          </div>
+          <EmptyState
+            icon={VideoCameraIcon}
+            title="No online consultations yet"
+            message="Book your first online consultation to get started"
+          />
         ) : (
           <div className="space-y-4 lg:space-y-5">
             <h2 className="text-sm lg:text-base font-bold uppercase tracking-wide" style={{ color: '#0E51A2' }}>
@@ -260,27 +218,11 @@ export default function OnlineConsultPage() {
             </h2>
 
             {appointments.map((appointment) => (
-              <div
-                key={appointment._id}
-                className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all"
-                style={{
-                  background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
-                  borderColor: '#F7DCAF'
-                }}
-              >
+              <DetailCard key={appointment._id} variant="primary" className="shadow-md hover:shadow-lg transition-all">
                 {/* Doctor Info and Status */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 lg:gap-4 flex-1">
-                    <div
-                      className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
-                        border: '1px solid #A4BFFE7A',
-                        boxShadow: '-2px 11px 46.1px 0px #0000000D'
-                      }}
-                    >
-                      <VideoCameraIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
-                    </div>
+                    <IconCircle icon={VideoCameraIcon} size="md" />
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-base lg:text-lg mb-1 truncate" style={{ color: '#0E51A2' }}>
                         {appointment.doctorName}
@@ -310,13 +252,7 @@ export default function OnlineConsultPage() {
                 </div>
 
                 {/* Appointment Details */}
-                <div
-                  className="rounded-xl p-4 mb-4 border-2"
-                  style={{
-                    background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-                    borderColor: '#86ACD8'
-                  }}
-                >
+                <DetailCard variant="secondary" className="mb-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm lg:text-base text-gray-700">
                       <UserIcon className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: '#0F5FDC' }} />
@@ -350,7 +286,7 @@ export default function OnlineConsultPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </DetailCard>
 
                 {/* Appointment ID and Fee */}
                 <div className="flex items-center justify-between mb-4 px-2">
@@ -375,13 +311,13 @@ export default function OnlineConsultPage() {
                 {/* Join Call Button - Only for confirmed online appointments without prescription */}
                 {appointment.status === 'CONFIRMED' && !appointment.hasPrescription && (
                   <div className="mb-3">
-                    <button
+                    <CTAButton
                       onClick={() => handleJoinAppointment(appointment)}
-                      className="w-full py-3 px-4 text-white rounded-xl text-sm lg:text-base font-semibold transition-all hover:shadow-lg"
-                      style={{ background: '#25A425' }}
+                      variant="success"
+                      fullWidth
                     >
                       Join Call
-                    </button>
+                    </CTAButton>
                   </div>
                 )}
 
@@ -421,15 +357,15 @@ export default function OnlineConsultPage() {
 
                   return canCancel
                 })() && (
-                  <button
+                  <CTAButton
                     onClick={() => handleCancelAppointment(appointment.appointmentId)}
-                    className="w-full py-3 px-4 text-white rounded-xl text-sm lg:text-base font-semibold transition-all hover:shadow-lg"
-                    style={{ background: '#E53535' }}
+                    variant="danger"
+                    fullWidth
                   >
                     Cancel Consultation
-                  </button>
+                  </CTAButton>
                 )}
-              </div>
+              </DetailCard>
             ))}
           </div>
         )}

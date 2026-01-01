@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ChevronLeftIcon, MapPinIcon, CurrencyRupeeIcon } from '@heroicons/react/24/outline'
+import { MapPinIcon, BeakerIcon } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface CartItem {
   serviceId: string
@@ -108,149 +112,140 @@ export default function CartDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   if (!cart) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">Cart not found</p>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <p className="text-sm lg:text-base text-gray-500">Cart not found</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-3"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Your Cart</h1>
-            <p className="text-sm text-gray-600">Review tests and select lab</p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Your Cart"
+        subtitle="Review tests and select lab"
+        onBack={() => router.back()}
+      />
 
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
+      <div className="max-w-[480px] mx-auto lg:max-w-4xl px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
         {/* Cart Info */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">
+        <DetailCard variant="primary">
+          <div className="flex items-center justify-between mb-4 lg:mb-5">
+            <h3 className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>
               Tests ({cart.items.length})
             </h3>
             {cart.pincode && (
-              <div className="flex items-center text-sm text-gray-600">
-                <MapPinIcon className="h-4 w-4 mr-1" />
+              <div className="flex items-center text-xs lg:text-sm text-gray-600">
+                <MapPinIcon className="h-4 w-4 lg:h-5 lg:w-5 mr-1" style={{ color: '#0F5FDC' }} />
                 <span>Pincode: {cart.pincode}</span>
               </div>
             )}
           </div>
           <div className="space-y-3">
             {cart.items.map((item, index) => (
-              <div
+              <DetailCard
                 key={index}
-                className="p-4 border border-gray-200 rounded-xl"
+                variant="secondary"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">{item.serviceName}</p>
-                    <p className="text-sm text-gray-600">{item.serviceCode}</p>
-                    <span className="inline-block mt-1 px-2 py-1 rounded-full text-xs" style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}>
+                    <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{item.serviceName}</p>
+                    <p className="text-xs lg:text-sm text-gray-600">{item.serviceCode}</p>
+                    <span className="inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ background: '#EFF4FF', color: '#0F5FDC' }}>
                       {item.category}
                     </span>
                   </div>
                 </div>
-              </div>
+              </DetailCard>
             ))}
           </div>
-        </div>
+        </DetailCard>
 
         {/* Loading Vendors */}
         {loadingVendors && (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-            <div className="h-12 w-12 mx-auto rounded-full border-4 border-t-transparent animate-spin mb-3" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
-            <p className="text-gray-600">Loading lab partners...</p>
-          </div>
+          <DetailCard variant="primary">
+            <div className="text-center py-8 lg:py-12">
+              <div className="h-12 w-12 lg:h-14 lg:w-14 mx-auto rounded-full border-4 border-t-transparent animate-spin mb-3" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
+              <p className="text-sm lg:text-base text-gray-600">Loading lab partners...</p>
+            </div>
+          </DetailCard>
         )}
 
         {/* Available Vendors */}
         {!loadingVendors && vendors.length > 0 && (
-          <div className="space-y-3">
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">
+          <div className="space-y-3 lg:space-y-4">
+            <DetailCard variant="primary">
+              <h3 className="text-base lg:text-lg font-semibold mb-2" style={{ color: '#0E51A2' }}>
                 Available Lab Partners ({vendors.length})
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs lg:text-sm text-gray-600">
                 Compare prices and select your preferred lab partner
               </p>
-            </div>
+            </DetailCard>
 
             {vendors.map((vendor, index) => (
-              <div
+              <DetailCard
                 key={vendor._id}
-                className="bg-white rounded-2xl shadow-sm p-4 border-2 transition-colors hover:border-blue-300"
-                style={{ borderColor: index === 0 ? '#0a529f' : '#e5e7eb' }}
+                variant="primary"
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-3 lg:mb-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-bold text-lg text-gray-900">{vendor.name}</h4>
+                      <h4 className="text-base lg:text-lg font-bold" style={{ color: '#0E51A2' }}>{vendor.name}</h4>
                       {index === 0 && (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                        <span className="px-2 py-1 text-xs font-semibold rounded" style={{ background: '#25A425', color: 'white' }}>
                           BEST PRICE
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-xs lg:text-sm text-gray-600 mb-2">
                       <span className="font-mono">{vendor.code}</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Pricing */}
-                <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: '#e6f0fa' }}>
+                <DetailCard variant="secondary" className="mb-3 lg:mb-4">
                   <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-sm text-gray-700 font-medium">Total Price:</span>
+                    <span className="text-xs lg:text-sm text-gray-700 font-medium">Total Price:</span>
                     <div className="text-right">
-                      <span className="text-2xl font-bold" style={{ color: '#0a529f' }}>
+                      <span className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>
                         ₹{vendor.totalDiscountedPrice}
                       </span>
                       {vendor.totalActualPrice > vendor.totalDiscountedPrice && (
-                        <span className="ml-2 text-sm text-gray-500 line-through">
+                        <span className="ml-2 text-xs lg:text-sm text-gray-500 line-through">
                           ₹{vendor.totalActualPrice}
                         </span>
                       )}
                     </div>
                   </div>
                   {vendor.totalActualPrice > vendor.totalDiscountedPrice && (
-                    <p className="text-xs text-right text-green-600 font-medium">
+                    <p className="text-xs text-right font-medium" style={{ color: '#25A425' }}>
                       Save ₹{vendor.totalActualPrice - vendor.totalDiscountedPrice}
                     </p>
                   )}
-                </div>
+                </DetailCard>
 
                 {/* Features */}
-                <div className="flex items-center space-x-3 mb-3 text-sm">
+                <div className="flex items-center space-x-3 lg:space-x-4 mb-3 lg:mb-4 text-xs lg:text-sm">
                   {vendor.homeCollection && (
-                    <span className="flex items-center text-green-600">
-                      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="flex items-center" style={{ color: '#25A425' }}>
+                      <svg className="h-4 w-4 lg:h-5 lg:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       Home Collection (+₹{vendor.homeCollectionCharges})
                     </span>
                   )}
                   {vendor.centerVisit && (
-                    <span className="flex items-center text-blue-600">
-                      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="flex items-center" style={{ color: '#0F5FDC' }}>
+                      <svg className="h-4 w-4 lg:h-5 lg:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       Center Visit
@@ -259,42 +254,38 @@ export default function CartDetailPage() {
                 </div>
 
                 {/* Test Pricing Breakdown */}
-                <div className="border-t border-gray-200 pt-3 mb-3">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Price Breakdown:</p>
-                  <div className="space-y-1">
+                <div className="border-t pt-3 lg:pt-4 mb-3 lg:mb-4" style={{ borderColor: '#86ACD8' }}>
+                  <p className="text-xs font-semibold text-gray-700 mb-2 lg:mb-3">Price Breakdown:</p>
+                  <div className="space-y-1 lg:space-y-2">
                     {vendor.pricing.map((price, idx) => (
-                      <div key={idx} className="flex justify-between text-xs text-gray-600">
+                      <div key={idx} className="flex justify-between text-xs lg:text-sm text-gray-600">
                         <span>{price.serviceName}</span>
-                        <span className="font-medium">₹{price.discountedPrice}</span>
+                        <span className="font-medium" style={{ color: '#0E51A2' }}>₹{price.discountedPrice}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Book Button */}
-                <button
+                <CTAButton
                   onClick={() => handleSelectVendor(vendor)}
-                  className="w-full py-3 text-white rounded-xl font-semibold transition-colors"
-                  style={{ backgroundColor: '#0a529f' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  variant="primary"
+                  fullWidth
                 >
                   Select & Book Slot
-                </button>
-              </div>
+                </CTAButton>
+              </DetailCard>
             ))}
           </div>
         )}
 
         {/* Empty State */}
         {!loadingVendors && vendors.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
-            <MapPinIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-600 font-medium mb-2">No lab partners available yet</p>
-            <p className="text-sm text-gray-500">
-              Our team is processing your prescription. Lab partners will appear here once available.
-            </p>
-          </div>
+          <EmptyState
+            icon={BeakerIcon}
+            title="No lab partners available yet"
+            message="Our team is processing your prescription. Lab partners will appear here once available."
+          />
         )}
       </div>
     </div>

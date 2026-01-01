@@ -176,21 +176,21 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
       case 'APPROVED':
       case 'PARTIALLY_APPROVED':
       case 'PAYMENT_COMPLETED':
-        return 'bg-green-100 text-green-700 border-green-200'
+        return { background: '#E8F5E9', color: '#25A425', borderColor: '#25A425' }
       case 'REJECTED':
-        return 'bg-red-100 text-red-700 border-red-200'
+        return { background: '#FFEBEE', color: '#E53535', borderColor: '#E53535' }
       case 'CANCELLED':
-        return 'bg-gray-100 text-gray-700 border-gray-200'
+        return { background: '#f3f4f6', color: '#6b7280', borderColor: '#6b7280' }
       case 'DOCUMENTS_REQUIRED':
-        return 'bg-orange-100 text-orange-700 border-orange-200'
+        return { background: '#FEF1E7', color: '#E67E22', borderColor: '#E67E22' }
       case 'UNDER_REVIEW':
       case 'ASSIGNED':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+        return { background: '#FEF1E7', color: '#E67E22', borderColor: '#E67E22' }
       case 'PAYMENT_PENDING':
       case 'PAYMENT_PROCESSING':
-        return 'bg-purple-100 text-purple-700 border-purple-200'
+        return { background: '#F3E8FF', color: '#9333EA', borderColor: '#9333EA' }
       default:
-        return 'bg-blue-100 text-blue-700 border-blue-200'
+        return { background: '#EFF4FF', color: '#0F5FDC', borderColor: '#0F5FDC' }
     }
   }
 
@@ -275,7 +275,10 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
           </div>
 
           <div className="mt-4 md:mt-0">
-            <div className={`inline-flex items-center px-4 py-2 rounded-lg border-2 ${getStatusColor(claim.status)}`}>
+            <div
+              className="inline-flex items-center px-4 py-2 rounded-lg border-2"
+              style={getStatusColor(claim.status)}
+            >
               {getStatusIcon(claim.status)}
               <span className="ml-2 font-semibold">{formatStatusName(claim.status)}</span>
             </div>

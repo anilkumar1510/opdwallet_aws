@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeftIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline'
-import { Card } from '@/components/ui/Card'
+import { CalendarIcon, ClockIcon } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface TimeSlot {
   slotId: string
@@ -128,188 +131,192 @@ function SelectSlotContent() {
   const { morning, afternoon, evening } = groupSlotsByTime(slots)
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-flex items-center gap-1"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Select Date & Time</h1>
-          <p className="text-gray-600 mt-2">Choose a convenient slot for your appointment</p>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Date & Time"
+        subtitle="Choose a convenient slot for your appointment"
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        <div className="grid grid-cols-1 gap-4 lg:gap-5">
           {/* Calendar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5" />
-                  Select Date
-                </h2>
-                <div className="grid grid-cols-7 gap-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
-                      {day}
-                    </div>
-                  ))}
-                  {/* Add empty cells for calendar alignment */}
-                  {Array.from({ length: calendarDates[0].getDay() }).map((_, i) => (
-                    <div key={`empty-${i}`} />
-                  ))}
-                  {calendarDates.map((date, index) => {
-                    const isSelected = selectedDate?.toDateString() === date.toDateString()
-                    const isToday = new Date().toDateString() === date.toDateString()
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedDate(date)}
-                        className={`p-2 text-sm rounded-lg transition-colors ${
-                          isSelected
-                            ? 'bg-purple-600 text-white'
-                            : isToday
-                            ? 'bg-purple-100 text-purple-600'
-                            : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        {date.getDate()}
-                      </button>
-                    )
-                  })}
+          <DetailCard variant="primary">
+            <h2
+              className="text-base lg:text-lg font-semibold mb-4 flex items-center gap-2"
+              style={{ color: '#0E51A2' }}
+            >
+              <CalendarIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
+              Select Date
+            </h2>
+            <div className="grid grid-cols-7 gap-1 lg:gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs lg:text-sm font-medium text-gray-500 py-1">
+                  {day}
                 </div>
-              </div>
-            </Card>
-          </div>
+              ))}
+              {/* Add empty cells for calendar alignment */}
+              {Array.from({ length: calendarDates[0].getDay() }).map((_, i) => (
+                <div key={`empty-${i}`} />
+              ))}
+              {calendarDates.map((date, index) => {
+                const isSelected = selectedDate?.toDateString() === date.toDateString()
+                const isToday = new Date().toDateString() === date.toDateString()
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedDate(date)}
+                    className="p-2 text-xs lg:text-sm rounded-lg transition-colors font-medium"
+                    style={
+                      isSelected
+                        ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', color: 'white' }
+                        : isToday
+                        ? { background: '#EFF4FF', color: '#0F5FDC' }
+                        : {}
+                    }
+                  >
+                    {date.getDate()}
+                  </button>
+                )
+              })}
+            </div>
+          </DetailCard>
 
           {/* Time Slots */}
-          <div className="lg:col-span-2">
-            {!selectedDate ? (
-              <Card className="text-center py-16">
-                <div className="flex flex-col items-center">
-                  <CalendarIcon className="h-16 w-16 text-gray-400 mb-4" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Select a Date</h2>
-                  <p className="text-gray-600">
-                    Choose a date from the calendar to see available time slots
-                  </p>
-                </div>
-              </Card>
-            ) : loading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
-              </div>
-            ) : error ? (
-              <Card className="p-6">
-                <div className="text-center py-8">
-                  <p className="text-red-600">{error}</p>
-                </div>
-              </Card>
-            ) : (
-              <Card>
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <ClockIcon className="h-5 w-5" />
-                    {formatDate(selectedDate)}
-                  </h2>
+          {!selectedDate ? (
+            <EmptyState
+              icon={CalendarIcon}
+              title="Select a Date"
+              message="Choose a date from the calendar to see available time slots"
+            />
+          ) : loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div
+                className="animate-spin rounded-full h-12 w-12 lg:h-14 lg:w-14 border-4 border-t-transparent"
+                style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+              ></div>
+            </div>
+          ) : error ? (
+            <div
+              className="p-4 lg:p-5 rounded-xl text-center text-sm lg:text-base"
+              style={{ background: '#FEF1E7', border: '1px solid #F9B376' }}
+            >
+              <p style={{ color: '#E53535' }}>{error}</p>
+            </div>
+          ) : (
+            <DetailCard variant="secondary">
+              <h2
+                className="text-base lg:text-lg font-semibold mb-4 flex items-center gap-2"
+                style={{ color: '#0E51A2' }}
+              >
+                <ClockIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
+                {formatDate(selectedDate)}
+              </h2>
 
-                  <div className="space-y-6">
-                    {/* Morning Slots */}
-                    {morning.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Morning</h3>
-                        <div className="grid grid-cols-3 gap-3">
-                          {morning.map((slot) => (
-                            <button
-                              key={slot.startTime}
-                              onClick={() => slot.isAvailable && setSelectedSlot(slot)}
-                              disabled={!slot.isAvailable}
-                              className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                                selectedSlot?.startTime === slot.startTime
-                                  ? 'border-purple-600 bg-purple-50 text-purple-600'
-                                  : slot.isAvailable
-                                  ? 'border-gray-200 hover:border-purple-400'
-                                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                              }`}
-                            >
-                              {slot.startTime}
-                              {!slot.isAvailable && <div className="text-xs mt-1">Full</div>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Afternoon Slots */}
-                    {afternoon.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Afternoon</h3>
-                        <div className="grid grid-cols-3 gap-3">
-                          {afternoon.map((slot) => (
-                            <button
-                              key={slot.startTime}
-                              onClick={() => slot.isAvailable && setSelectedSlot(slot)}
-                              disabled={!slot.isAvailable}
-                              className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                                selectedSlot?.startTime === slot.startTime
-                                  ? 'border-purple-600 bg-purple-50 text-purple-600'
-                                  : slot.isAvailable
-                                  ? 'border-gray-200 hover:border-purple-400'
-                                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                              }`}
-                            >
-                              {slot.startTime}
-                              {!slot.isAvailable && <div className="text-xs mt-1">Full</div>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Evening Slots */}
-                    {evening.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Evening</h3>
-                        <div className="grid grid-cols-3 gap-3">
-                          {evening.map((slot) => (
-                            <button
-                              key={slot.startTime}
-                              onClick={() => slot.isAvailable && setSelectedSlot(slot)}
-                              disabled={!slot.isAvailable}
-                              className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                                selectedSlot?.startTime === slot.startTime
-                                  ? 'border-purple-600 bg-purple-50 text-purple-600'
-                                  : slot.isAvailable
-                                  ? 'border-gray-200 hover:border-purple-400'
-                                  : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                              }`}
-                            >
-                              {slot.startTime}
-                              {!slot.isAvailable && <div className="text-xs mt-1">Full</div>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+              <div className="space-y-4 lg:space-y-5">
+                {/* Morning Slots */}
+                {morning.length > 0 && (
+                  <div>
+                    <h3 className="text-sm lg:text-base font-medium text-gray-700 mb-3">Morning</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+                      {morning.map((slot) => {
+                        const isSelected = selectedSlot?.startTime === slot.startTime
+                        return (
+                          <button
+                            key={slot.startTime}
+                            onClick={() => slot.isAvailable && setSelectedSlot(slot)}
+                            disabled={!slot.isAvailable}
+                            className="p-2 lg:p-3 rounded-xl text-xs lg:text-sm font-semibold transition-all disabled:cursor-not-allowed"
+                            style={
+                              isSelected
+                                ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', color: 'white', border: '2px solid #0F5FDC' }
+                                : slot.isAvailable
+                                ? { background: 'white', border: '2px solid #86ACD8', color: '#0E51A2' }
+                                : { background: '#f3f4f6', border: '2px solid #e5e7eb', color: '#9ca3af' }
+                            }
+                          >
+                            {slot.startTime}
+                            {!slot.isAvailable && <div className="text-xs mt-1">Full</div>}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            )}
-          </div>
+                )}
+
+                {/* Afternoon Slots */}
+                {afternoon.length > 0 && (
+                  <div>
+                    <h3 className="text-sm lg:text-base font-medium text-gray-700 mb-3">Afternoon</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+                      {afternoon.map((slot) => {
+                        const isSelected = selectedSlot?.startTime === slot.startTime
+                        return (
+                          <button
+                            key={slot.startTime}
+                            onClick={() => slot.isAvailable && setSelectedSlot(slot)}
+                            disabled={!slot.isAvailable}
+                            className="p-2 lg:p-3 rounded-xl text-xs lg:text-sm font-semibold transition-all disabled:cursor-not-allowed"
+                            style={
+                              isSelected
+                                ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', color: 'white', border: '2px solid #0F5FDC' }
+                                : slot.isAvailable
+                                ? { background: 'white', border: '2px solid #86ACD8', color: '#0E51A2' }
+                                : { background: '#f3f4f6', border: '2px solid #e5e7eb', color: '#9ca3af' }
+                            }
+                          >
+                            {slot.startTime}
+                            {!slot.isAvailable && <div className="text-xs mt-1">Full</div>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Evening Slots */}
+                {evening.length > 0 && (
+                  <div>
+                    <h3 className="text-sm lg:text-base font-medium text-gray-700 mb-3">Evening</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
+                      {evening.map((slot) => {
+                        const isSelected = selectedSlot?.startTime === slot.startTime
+                        return (
+                          <button
+                            key={slot.startTime}
+                            onClick={() => slot.isAvailable && setSelectedSlot(slot)}
+                            disabled={!slot.isAvailable}
+                            className="p-2 lg:p-3 rounded-xl text-xs lg:text-sm font-semibold transition-all disabled:cursor-not-allowed"
+                            style={
+                              isSelected
+                                ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', color: 'white', border: '2px solid #0F5FDC' }
+                                : slot.isAvailable
+                                ? { background: 'white', border: '2px solid #86ACD8', color: '#0E51A2' }
+                                : { background: '#f3f4f6', border: '2px solid #e5e7eb', color: '#9ca3af' }
+                            }
+                          >
+                            {slot.startTime}
+                            {!slot.isAvailable && <div className="text-xs mt-1">Full</div>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DetailCard>
+          )}
         </div>
 
         {/* Continue Button */}
-        <div className="mt-6 flex justify-end">
-          <button
+        <div className="mt-6">
+          <CTAButton
+            variant="primary"
+            fullWidth
             onClick={handleContinue}
             disabled={!selectedSlot}
-            className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium text-lg"
           >
             Continue
-          </button>
+          </CTAButton>
         </div>
       </div>
     </div>
@@ -319,8 +326,11 @@ function SelectSlotContent() {
 export default function SelectSlotPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f7f7fc' }}>
+        <div
+          className="animate-spin rounded-full h-12 w-12 lg:h-14 lg:w-14 border-4 border-t-transparent"
+          style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+        ></div>
       </div>
     }>
       <SelectSlotContent />

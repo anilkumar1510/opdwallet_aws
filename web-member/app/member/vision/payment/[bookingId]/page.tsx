@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import PaymentProcessor from '@/components/PaymentProcessor'
-import { Card } from '@/components/ui/Card'
-import { ChevronLeftIcon } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
 
 function VisionPaymentContent() {
   const router = useRouter()
@@ -119,8 +119,8 @@ function VisionPaymentContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -130,51 +130,42 @@ function VisionPaymentContent() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-flex items-center gap-1"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Payment for Vision Service</h1>
-          <p className="text-gray-600 mt-2">Complete your payment for the appointment</p>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Payment for Vision Service"
+        subtitle="Complete your payment for the appointment"
+        onBack={() => router.back()}
+      />
 
+      <div className="max-w-[480px] mx-auto lg:max-w-4xl px-4 lg:px-6 py-6 lg:py-8">
         {/* Booking Summary */}
-        <Card className="mb-6">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Booking Details</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Patient:</span>
-                <span className="font-medium">{booking.patientName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service:</span>
-                <span className="font-medium">{booking.serviceName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Clinic:</span>
-                <span className="font-medium">{booking.clinicName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium">
-                  {new Date(booking.appointmentDate).toLocaleDateString()} at {booking.appointmentTime}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Booking ID:</span>
-                <span className="font-mono text-xs">{booking.bookingId}</span>
-              </div>
+        <DetailCard variant="primary" className="mb-6">
+          <h2 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>Booking Details</h2>
+          <div className="space-y-2 lg:space-y-3">
+            <div className="flex justify-between text-xs lg:text-sm">
+              <span className="text-gray-600">Patient:</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>{booking.patientName}</span>
+            </div>
+            <div className="flex justify-between text-xs lg:text-sm">
+              <span className="text-gray-600">Service:</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>{booking.serviceName}</span>
+            </div>
+            <div className="flex justify-between text-xs lg:text-sm">
+              <span className="text-gray-600">Clinic:</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>{booking.clinicName}</span>
+            </div>
+            <div className="flex justify-between text-xs lg:text-sm">
+              <span className="text-gray-600">Date:</span>
+              <span className="font-medium" style={{ color: '#0E51A2' }}>
+                {new Date(booking.appointmentDate).toLocaleDateString()} at {booking.appointmentTime}
+              </span>
+            </div>
+            <div className="flex justify-between text-xs lg:text-sm">
+              <span className="text-gray-600">Booking ID:</span>
+              <span className="font-mono text-xs" style={{ color: '#0F5FDC' }}>{booking.bookingId}</span>
             </div>
           </div>
-        </Card>
+        </DetailCard>
 
         {/* Payment Processor */}
         {userId && (
@@ -213,8 +204,8 @@ function VisionPaymentContent() {
 export default function VisionPaymentPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <VisionPaymentContent />

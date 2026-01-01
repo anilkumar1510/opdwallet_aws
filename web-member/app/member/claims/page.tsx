@@ -274,19 +274,19 @@ export default function ClaimsPage() {
   const getStatusColor = (status: ClaimStatus) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 text-green-700'
+        return { background: '#E8F5E9', color: '#25A425' }
       case 'rejected':
-        return 'bg-red-100 text-red-700'
+        return { background: '#FFEBEE', color: '#E53535' }
       case 'cancelled':
-        return 'bg-gray-100 text-gray-700'
+        return { background: '#f3f4f6', color: '#6b7280' }
       case 'processing':
-        return 'bg-blue-100 text-blue-700'
+        return { background: '#EFF4FF', color: '#0F5FDC' }
       case 'under_review':
-        return 'bg-amber-100 text-amber-700'
+        return { background: '#FEF1E7', color: '#E67E22' }
       case 'draft':
-        return 'bg-gray-100 text-gray-700'
+        return { background: '#f3f4f6', color: '#6b7280' }
       default:
-        return 'bg-gray-100 text-gray-700'
+        return { background: '#f3f4f6', color: '#6b7280' }
     }
   }
 
@@ -686,7 +686,10 @@ export default function ClaimsPage() {
                         )}
                       </td>
                       <td className={`px-6 ${cellPadding} text-sm`}>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          style={getStatusColor(claim.status)}
+                        >
                           {getStatusIcon(claim.status)}
                           <span className="ml-1 capitalize">{claim.status.replace('_', ' ')}</span>
                         </span>
@@ -721,7 +724,10 @@ export default function ClaimsPage() {
                     <p className="font-bold text-gray-900">{claim.claimNumber}</p>
                     <p className="text-xs text-gray-500 mt-1">{new Date(claim.date).toLocaleDateString()}</p>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
+                  <span
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                    style={getStatusColor(claim.status)}
+                  >
                     {getStatusIcon(claim.status)}
                     <span className="ml-1 capitalize">{claim.status.replace('_', ' ')}</span>
                   </span>

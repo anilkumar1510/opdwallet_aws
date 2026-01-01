@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeftIcon, CloudArrowUpIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
+import { CloudArrowUpIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 import AddAddressModal from '@/components/AddAddressModal'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface FamilyMember {
   userId: string
@@ -312,41 +315,31 @@ export default function UploadPrescriptionPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-3"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Upload Prescription</h1>
-            <p className="text-sm text-gray-600">Upload your lab test prescription</p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Upload Prescription"
+        subtitle="Upload your lab test prescription"
+        onBack={() => router.back()}
+      />
 
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
+      <div className="max-w-[480px] mx-auto lg:max-w-2xl px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
         {/* Upload Area */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Select Prescription File</h3>
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>Select Prescription File</h3>
 
           {!file ? (
             <label className="block">
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 transition-colors cursor-pointer"
-                style={{ borderColor: '#d4d4d4' }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#0a529f'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d4'}
+              <div className="border-2 border-dashed rounded-xl p-6 lg:p-8 transition-all cursor-pointer"
+                style={{ borderColor: '#86ACD8' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
               >
                 <div className="text-center">
-                  <CloudArrowUpIcon className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-700 font-medium mb-2">
+                  <CloudArrowUpIcon className="h-12 w-12 lg:h-16 lg:w-16 mx-auto mb-3 lg:mb-4" style={{ color: '#0F5FDC' }} />
+                  <p className="text-sm lg:text-base font-medium mb-2" style={{ color: '#0E51A2' }}>
                     Click to upload or drag and drop
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs lg:text-sm text-gray-500">
                     JPG, PNG, PDF (Max 10MB)
                   </p>
                 </div>
@@ -359,9 +352,9 @@ export default function UploadPrescriptionPage() {
               />
             </label>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 lg:space-y-4">
               {/* Preview */}
-              <div className="border border-gray-200 rounded-xl p-4">
+              <div className="border-2 rounded-xl p-4" style={{ borderColor: '#86ACD8' }}>
                 {preview ? (
                   <img
                     src={preview}
@@ -370,47 +363,53 @@ export default function UploadPrescriptionPage() {
                   />
                 ) : (
                   <div className="flex items-center justify-center py-8">
-                    <DocumentTextIcon className="h-16 w-16 text-gray-400" />
+                    <DocumentTextIcon className="h-12 w-12 lg:h-16 lg:w-16" style={{ color: '#0F5FDC' }} />
                   </div>
                 )}
               </div>
 
               {/* File Info */}
-              <div className="flex items-center justify-between p-4 rounded-xl" style={{ backgroundColor: '#e6f0fa' }}>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-600">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+              <DetailCard variant="secondary">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{file.name}</p>
+                    <p className="text-xs lg:text-sm text-gray-600">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFile(null)
+                      setPreview(null)
+                    }}
+                    className="text-xs lg:text-sm font-medium hover:opacity-80"
+                    style={{ color: '#E53535' }}
+                  >
+                    Remove
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setFile(null)
-                    setPreview(null)
-                  }}
-                  className="text-red-600 hover:text-red-700 font-medium"
-                >
-                  Remove
-                </button>
-              </div>
+              </DetailCard>
             </div>
           )}
-        </div>
+        </DetailCard>
 
         {/* Patient Information */}
         {file && (
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Patient Information</h3>
+          <DetailCard variant="primary">
+            <h3 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>Patient Information</h3>
             <div className="space-y-4">
               {/* Family Member Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Patient <span className="text-red-500">*</span>
+                <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-2">
+                  Select Patient <span style={{ color: '#E53535' }}>*</span>
                 </label>
                 <select
                   value={patientId}
                   onChange={handleFamilyMemberChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl focus:outline-none transition-all bg-white text-sm lg:text-base"
+                  style={{ borderColor: '#86ACD8' }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
                   required
                 >
                   {familyMembers.map((member) => (
@@ -423,47 +422,53 @@ export default function UploadPrescriptionPage() {
 
               {/* Prescription Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prescription Date <span className="text-red-500">*</span>
+                <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-2">
+                  Prescription Date <span style={{ color: '#E53535' }}>*</span>
                 </label>
                 <input
                   type="date"
                   value={prescriptionDate}
                   onChange={(e) => setPrescriptionDate(e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl focus:outline-none transition-all text-sm lg:text-base"
+                  style={{ borderColor: '#86ACD8' }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
                   required
                 />
               </div>
 
               {/* Address Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Address <span className="text-red-500">*</span>
+                <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-2">
+                  Select Address <span style={{ color: '#E53535' }}>*</span>
                 </label>
                 {addresses.length === 0 ? (
-                  <div className="p-4 border border-gray-200 rounded-xl bg-gray-50">
-                    <p className="text-sm text-gray-500 mb-3">
+                  <DetailCard variant="secondary">
+                    <p className="text-xs lg:text-sm text-gray-600 mb-3">
                       No addresses found. Please add an address first.
                     </p>
-                    <button
-                      type="button"
+                    <CTAButton
                       onClick={() => {
                         console.log('[ADDRESS-UPLOAD] "Add New Address" button clicked')
                         console.log('[ADDRESS-UPLOAD] Opening address modal...')
                         setIsAddressModalOpen(true)
                         console.log('[ADDRESS-UPLOAD] Modal state set to open')
                       }}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                      variant="primary"
+                      fullWidth
                     >
                       Add New Address
-                    </button>
-                  </div>
+                    </CTAButton>
+                  </DetailCard>
                 ) : (
                   <select
                     value={selectedAddressId}
                     onChange={(e) => setSelectedAddressId(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl focus:outline-none transition-all bg-white text-sm lg:text-base"
+                    style={{ borderColor: '#86ACD8' }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
                     required
                   >
                     <option value="">Select an address</option>
@@ -476,71 +481,72 @@ export default function UploadPrescriptionPage() {
                   </select>
                 )}
                 {selectedAddressId && addresses.find(addr => addr._id === selectedAddressId) && (
-                  <div className="mt-2 p-3 rounded-lg text-sm" style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}>
+                  <div className="mt-2 p-2 lg:p-3 rounded-lg text-xs lg:text-sm" style={{ background: '#EFF4FF', color: '#0F5FDC' }}>
                     <strong>Pincode:</strong> {addresses.find(addr => addr._id === selectedAddressId)?.pincode}
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </DetailCard>
         )}
 
         {/* Notes */}
         {file && (
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Additional Notes (Optional)</h3>
+          <DetailCard variant="primary">
+            <h3 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>Additional Notes (Optional)</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any specific instructions or information..."
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl focus:outline-none transition-all text-sm lg:text-base"
+              style={{ borderColor: '#86ACD8' }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
             />
-          </div>
+          </DetailCard>
         )}
 
         {/* Info Card */}
-        <div className="rounded-2xl p-4 border" style={{ backgroundColor: '#e6f0fa', borderColor: '#b3d4f0' }}>
-          <h4 className="font-semibold mb-2" style={{ color: '#084080' }}>What happens next?</h4>
-          <ul className="space-y-2 text-sm" style={{ color: '#0a529f' }}>
+        <DetailCard variant="secondary">
+          <h4 className="text-sm lg:text-base font-semibold mb-3" style={{ color: '#0E51A2' }}>What happens next?</h4>
+          <ul className="space-y-2 text-xs lg:text-sm text-gray-700">
             <li className="flex items-start">
-              <span className="mr-2">1.</span>
+              <span className="mr-2 font-medium" style={{ color: '#0F5FDC' }}>1.</span>
               <span>Your prescription will be reviewed by our team</span>
             </li>
             <li className="flex items-start">
-              <span className="mr-2">2.</span>
+              <span className="mr-2 font-medium" style={{ color: '#0F5FDC' }}>2.</span>
               <span>We&apos;ll create a cart with all the tests from your prescription</span>
             </li>
             <li className="flex items-start">
-              <span className="mr-2">3.</span>
+              <span className="mr-2 font-medium" style={{ color: '#0F5FDC' }}>3.</span>
               <span>You&apos;ll be notified once your cart is ready for review</span>
             </li>
             <li className="flex items-start">
-              <span className="mr-2">4.</span>
+              <span className="mr-2 font-medium" style={{ color: '#0F5FDC' }}>4.</span>
               <span>Select a lab partner and book your slot</span>
             </li>
           </ul>
-        </div>
+        </DetailCard>
 
         {/* Upload Button */}
         {file && (
-          <button
+          <CTAButton
             onClick={handleUpload}
             disabled={uploading}
-            className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors shadow-lg"
-            style={!uploading ? { backgroundColor: '#0a529f' } : undefined}
-            onMouseEnter={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#084080')}
-            onMouseLeave={(e) => !uploading && (e.currentTarget.style.backgroundColor = '#0a529f')}
+            variant="primary"
+            fullWidth
           >
             {uploading ? (
-              <span className="flex items-center justify-center">
-                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin mr-2"></div>
+              <span className="flex items-center justify-center gap-2">
+                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
                 Uploading...
               </span>
             ) : (
               'Upload Prescription'
             )}
-          </button>
+          </CTAButton>
         )}
       </div>
 

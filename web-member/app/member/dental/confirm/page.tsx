@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeftIcon, UserIcon, CalendarIcon, ClockIcon, MapPinIcon, BanknotesIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { UserIcon, CalendarIcon, ClockIcon, MapPinIcon, BanknotesIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import PaymentProcessor from '@/components/PaymentProcessor'
-import { Card } from '@/components/ui/Card'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import IconCircle from '@/components/ui/IconCircle'
+import CTAButton from '@/components/ui/CTAButton'
 
 function ConfirmDentalBookingContent() {
   const router = useRouter()
@@ -161,109 +164,118 @@ function ConfirmDentalBookingContent() {
 
   if (bookingSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <div className="p-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-              <CheckCircleIcon className="h-10 w-10 text-green-600" />
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f7f7fc' }}>
+        <div className="max-w-[480px] w-full">
+          <DetailCard variant="primary">
+            <div className="text-center">
+              <div className="flex justify-center mb-6">
+                <IconCircle icon={CheckCircleIcon} size="lg" />
+              </div>
+              <h1 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>
+                Booking Confirmed!
+              </h1>
+              <p className="text-sm lg:text-base text-gray-600 mb-2">Booking ID: {bookingId}</p>
+              <p className="text-xs lg:text-sm text-gray-500 mb-6">
+                {formatDate(appointmentDate || '')} at {appointmentTime}
+              </p>
+              <CTAButton
+                variant="success"
+                fullWidth
+                onClick={() => router.push('/member/bookings')}
+              >
+                View Bookings
+              </CTAButton>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h1>
-            <p className="text-gray-600 mb-2">Booking ID: {bookingId}</p>
-            <p className="text-sm text-gray-500 mb-6">{formatDate(appointmentDate || '')} at {appointmentTime}</p>
-            <button
-              onClick={() => router.push('/member/bookings')}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-medium"
-            >
-              View Bookings
-            </button>
-          </div>
-        </Card>
+          </DetailCard>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Confirm Dental Booking</h1>
-              <p className="text-sm text-gray-600">Review your booking details</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Confirm Dental Booking"
+        subtitle="Review your booking details"
+      />
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
         {/* Service Details */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Service Details</h3>
-          <div className="flex items-start space-x-4 mb-4">
-            <div className="bg-purple-100 p-3 rounded-full flex-shrink-0">
-              <BanknotesIcon className="h-8 w-8 text-purple-600" />
-            </div>
+        <DetailCard variant="primary" className="mb-4 lg:mb-5">
+          <h3 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>
+            Service Details
+          </h3>
+          <div className="flex items-start gap-3 lg:gap-4 mb-4">
+            <IconCircle icon={BanknotesIcon} size="md" />
             <div className="flex-1">
-              <div className="font-semibold text-gray-900">{service?.name || 'Dental Service'}</div>
-              <div className="text-sm text-gray-600">{service?.description || ''}</div>
+              <div className="font-semibold text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                {service?.name || 'Dental Service'}
+              </div>
+              <div className="text-xs lg:text-sm text-gray-600">{service?.description || ''}</div>
             </div>
           </div>
 
-          <div className="space-y-3 pt-3 border-t border-gray-100">
-            <div className="flex items-start space-x-3 text-sm">
-              <MapPinIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+          <div className="pt-3 border-t" style={{ borderColor: '#F7DCAF' }}>
+            <div className="flex items-start gap-3 text-sm lg:text-base">
+              <MapPinIcon className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: '#0F5FDC' }} />
               <div>
-                <div className="font-medium text-gray-900">{clinic?.clinicName}</div>
+                <div className="font-medium" style={{ color: '#0E51A2' }}>
+                  {clinic?.clinicName}
+                </div>
                 <div className="text-gray-600">{clinic?.address?.city}</div>
               </div>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
         {/* Appointment Details */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm mb-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Appointment Details</h3>
+        <DetailCard variant="secondary" className="mb-4 lg:mb-5">
+          <h3 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>
+            Appointment Details
+          </h3>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <UserIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-sm lg:text-base">
+                <UserIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Patient</span>
               </div>
-              <span className="font-medium text-gray-900">{patientName}</span>
+              <span className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                {patientName}
+              </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <CalendarIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-sm lg:text-base">
+                <CalendarIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Date</span>
               </div>
-              <span className="font-medium text-gray-900">{formatDate(appointmentDate || '')}</span>
+              <span className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                {formatDate(appointmentDate || '')}
+              </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <ClockIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-sm lg:text-base">
+                <ClockIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Time</span>
               </div>
-              <span className="font-medium text-gray-900">{appointmentTime}</span>
+              <span className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                {appointmentTime}
+              </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 text-sm">
-                <BanknotesIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2 lg:gap-3 text-sm lg:text-base">
+                <BanknotesIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
                 <span className="text-gray-600">Service Fee</span>
               </div>
-              <span className="font-medium text-gray-900">₹{price}</span>
+              <span className="font-medium text-sm lg:text-base" style={{ color: '#25A425' }}>
+                ₹{price}
+              </span>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
         {/* Payment Processor Component */}
         {userId && patientId && (
@@ -299,9 +311,12 @@ function ConfirmDentalBookingContent() {
         )}
 
         {!userId && (
-          <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 rounded-full border-4 border-purple-600 border-t-transparent animate-spin"></div>
-            <span className="ml-2 text-gray-600">Loading payment details...</span>
+          <div className="flex items-center justify-center py-8 gap-3">
+            <div
+              className="h-8 w-8 rounded-full border-4 border-t-transparent animate-spin"
+              style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+            ></div>
+            <span className="text-sm lg:text-base text-gray-600">Loading payment details...</span>
           </div>
         )}
       </div>
@@ -317,7 +332,14 @@ const formatDate = (dateStr: string) => {
 
 export default function ConfirmDentalBookingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f7f7fc' }}>
+        <div
+          className="animate-spin rounded-full h-12 w-12 lg:h-14 lg:w-14 border-4 border-t-transparent"
+          style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+        ></div>
+      </div>
+    }>
       <ConfirmDentalBookingContent />
     </Suspense>
   )

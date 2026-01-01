@@ -12,6 +12,9 @@ import {
 import ServiceDescriptionCard from '@/components/ServiceDescriptionCard'
 import PrescriptionSelectorModal from '@/components/PrescriptionSelectorModal'
 import PrescriptionConfirmationModal from '@/components/PrescriptionConfirmationModal'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface Prescription {
   prescriptionId: string
@@ -140,30 +143,28 @@ export default function LabTestsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">Lab Tests</h1>
-          <p className="text-sm text-gray-600 mt-1">Book lab tests with ease</p>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Lab Tests"
+        subtitle="Book lab tests with ease"
+        backHref="/member"
+      />
 
-      <div className="p-4 space-y-4 max-w-4xl mx-auto">
+      <div className="max-w-[480px] mx-auto lg:max-w-4xl px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
         {/* Service Description */}
         <ServiceDescriptionCard type="lab" />
 
         {/* Prescription Options */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Get Started</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4" style={{ color: '#0E51A2' }}>Get Started</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
             {/* Upload New Prescription */}
             <div
               role="button"
@@ -175,12 +176,12 @@ export default function LabTestsPage() {
                   router.push('/member/lab-tests/upload')
                 }
               }}
-              className="rounded-xl p-5 text-white cursor-pointer hover:shadow-lg transition-all"
-              style={{ backgroundImage: 'linear-gradient(to right, #0a529f, #084080)' }}
+              className="rounded-xl p-4 lg:p-5 cursor-pointer hover:shadow-lg transition-all"
+              style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
             >
-              <DocumentPlusIcon className="h-8 w-8 mb-3" />
-              <h4 className="font-semibold mb-1">Upload New Prescription</h4>
-              <p className="text-sm" style={{ color: '#d4e5f5' }}>
+              <DocumentPlusIcon className="h-7 w-7 lg:h-8 lg:w-8 mb-2 lg:mb-3 text-white" />
+              <h4 className="text-sm lg:text-base font-semibold mb-1 text-white">Upload New Prescription</h4>
+              <p className="text-xs lg:text-sm text-white opacity-90">
                 Upload a new prescription from your device
               </p>
             </div>
@@ -196,24 +197,24 @@ export default function LabTestsPage() {
                   setShowSelectorModal(true)
                 }
               }}
-              className="rounded-xl p-5 border-2 cursor-pointer hover:shadow-lg transition-all"
-              style={{ borderColor: '#0a529f' }}
+              className="rounded-xl p-4 lg:p-5 border-2 cursor-pointer hover:shadow-lg transition-all"
+              style={{ borderColor: '#0F5FDC', background: 'white' }}
             >
-              <FolderOpenIcon className="h-8 w-8 mb-3" style={{ color: '#0a529f' }} />
-              <h4 className="font-semibold mb-1 text-gray-900">Use Existing Prescription</h4>
-              <p className="text-sm text-gray-600">
+              <FolderOpenIcon className="h-7 w-7 lg:h-8 lg:w-8 mb-2 lg:mb-3" style={{ color: '#0F5FDC' }} />
+              <h4 className="text-sm lg:text-base font-semibold mb-1" style={{ color: '#0E51A2' }}>Use Existing Prescription</h4>
+              <p className="text-xs lg:text-sm text-gray-600">
                 Select from your health records
               </p>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
         {/* Active Carts */}
         {carts.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
+          <DetailCard variant="primary">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center">
-                <ShoppingCartIcon className="h-5 w-5 mr-2" />
+              <h3 className="text-base lg:text-lg font-semibold flex items-center" style={{ color: '#0E51A2' }}>
+                <ShoppingCartIcon className="h-5 w-5 lg:h-6 lg:w-6 mr-2" style={{ color: '#0F5FDC' }} />
                 Your Carts ({carts.length})
               </h3>
             </div>
@@ -231,28 +232,26 @@ export default function LabTestsPage() {
                       router.push(`/member/bookings?tab=lab`)
                     }
                   }}
-                  className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="rounded-xl p-4 hover:shadow-md cursor-pointer transition-all"
+                  style={{ border: '2px solid #86ACD8', background: 'white' }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                      <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>
                         {cart.items.length} test{cart.items.length > 1 ? 's' : ''} added
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs lg:text-sm text-gray-600">
                         Cart ID: {cart.cartId}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Created: {formatDate(cart.createdAt)}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end">
+                    <div className="flex flex-col items-end gap-2">
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(cart.status)}`}>
                         {cart.status}
                       </span>
-                      <button className="mt-2 text-sm font-medium" style={{ color: '#0a529f' }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#084080'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#0a529f'}
-                      >
+                      <button className="text-xs lg:text-sm font-medium" style={{ color: '#0F5FDC' }}>
                         Review Cart →
                       </button>
                     </div>
@@ -260,30 +259,30 @@ export default function LabTestsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </DetailCard>
         )}
 
         {/* Recent Prescriptions */}
         {prescriptions.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
+          <DetailCard variant="primary">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Recent Prescriptions</h3>
+              <h3 className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>Recent Prescriptions</h3>
             </div>
 
             <div className="space-y-3">
               {prescriptions.slice(0, 5).map((prescription) => (
-                <div
+                <DetailCard
                   key={prescription.prescriptionId}
-                  className="border border-gray-200 rounded-xl p-4"
+                  variant="secondary"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       {/* File Name */}
-                      <p className="font-medium text-gray-900">{prescription.fileName}</p>
+                      <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{prescription.fileName}</p>
 
                       {/* Doctor Name and Date (if from health record) */}
                       {prescription.doctorName && (
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-xs lg:text-sm text-gray-600 mt-1">
                           Dr. {prescription.doctorName}
                           {prescription.prescriptionDate && (
                             <> • {new Date(prescription.prescriptionDate).toLocaleDateString()}</>
@@ -299,7 +298,8 @@ export default function LabTestsPage() {
                             {prescription.labTests.map((test: any, idx: number) => (
                               <span
                                 key={idx}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                style={{ background: '#EFF4FF', color: '#0F5FDC' }}
                               >
                                 {test.testName || test}
                               </span>
@@ -338,39 +338,40 @@ export default function LabTestsPage() {
                     {/* Icons */}
                     <div className="flex items-center space-x-2 ml-2">
                       {prescription.status === 'DIGITIZING' && (
-                        <ClockIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                        <ClockIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
                       )}
                       {prescription.status === 'DIGITIZED' && prescription.cartId && (
-                        <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                        <CheckCircleIcon className="h-5 w-5" style={{ color: '#25A425' }} />
                       )}
                     </div>
                   </div>
 
                   {/* Action Button */}
                   {prescription.status === 'DIGITIZED' && prescription.cartId && (
-                    <button
-                      onClick={() => router.push(`/member/bookings?tab=lab`)}
-                      className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium transition-colors"
-                      style={{ backgroundColor: '#0a529f' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-                    >
-                      Review Cart
-                    </button>
+                    <div className="mt-3">
+                      <CTAButton
+                        onClick={() => router.push(`/member/bookings?tab=lab`)}
+                        variant="primary"
+                        fullWidth
+                      >
+                        Review Cart
+                      </CTAButton>
+                    </div>
                   )}
-                </div>
+                </DetailCard>
               ))}
             </div>
-          </div>
+          </DetailCard>
         )}
 
         {/* View Orders Link */}
-        <button
+        <CTAButton
           onClick={() => router.push('/member/bookings?tab=lab')}
-          className="w-full py-3 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+          variant="primary"
+          fullWidth
         >
           View Lab Bookings
-        </button>
+        </CTAButton>
       </div>
 
       {/* Modals */}

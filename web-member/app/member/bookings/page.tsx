@@ -435,15 +435,15 @@ export default function BookingsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING_CONFIRMATION':
-        return 'bg-yellow-50 text-yellow-700 border-2 border-yellow-200'
+        return { background: '#FEF1E7', color: '#E67E22', borderColor: '#E67E22' }
       case 'CONFIRMED':
-        return 'bg-green-50 text-green-700 border-2 border-green-200'
+        return { background: '#E8F5E9', color: '#25A425', borderColor: '#25A425' }
       case 'COMPLETED':
-        return 'bg-blue-50 text-blue-700 border-2 border-blue-200'
+        return { background: '#EFF4FF', color: '#0F5FDC', borderColor: '#0F5FDC' }
       case 'CANCELLED':
-        return 'bg-red-50 text-red-700 border-2 border-red-200'
+        return { background: '#FFEBEE', color: '#E53535', borderColor: '#E53535' }
       default:
-        return 'bg-gray-50 text-gray-700 border-2 border-gray-200'
+        return { background: '#f3f4f6', color: '#6b7280', borderColor: '#6b7280' }
     }
   }
 
@@ -465,15 +465,15 @@ export default function BookingsPage() {
   const getPaymentStatusColor = (paymentStatus: string) => {
     switch (paymentStatus) {
       case 'PENDING':
-        return 'bg-yellow-50 text-yellow-700 border-2 border-yellow-200'
+        return { background: '#FEF1E7', color: '#E67E22', borderColor: '#E67E22' }
       case 'COMPLETED':
-        return 'bg-green-50 text-green-700 border-2 border-green-200'
+        return { background: '#E8F5E9', color: '#25A425', borderColor: '#25A425' }
       case 'FAILED':
-        return 'bg-red-50 text-red-700 border-2 border-red-200'
+        return { background: '#FFEBEE', color: '#E53535', borderColor: '#E53535' }
       case 'REFUNDED':
-        return 'bg-blue-50 text-blue-700 border-2 border-blue-200'
+        return { background: '#EFF4FF', color: '#0F5FDC', borderColor: '#0F5FDC' }
       default:
-        return 'bg-gray-50 text-gray-700 border-2 border-gray-200'
+        return { background: '#f3f4f6', color: '#6b7280', borderColor: '#6b7280' }
     }
   }
 
@@ -785,7 +785,10 @@ export default function BookingsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={getStatusColor(appointment.status)}
+                            >
                               {getStatusText(appointment.status)}
                             </span>
                             <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
@@ -929,7 +932,10 @@ export default function BookingsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={getStatusColor(appointment.status)}
+                            >
                               {getStatusText(appointment.status)}
                             </span>
                             <PrescriptionBadge hasPrescription={appointment.hasPrescription} />
@@ -1281,11 +1287,17 @@ export default function BookingsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={getStatusColor(booking.status)}
+                            >
                               {getStatusText(booking.status)}
                             </span>
                             {booking.paymentStatus && (
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                              <span
+                                className="px-3 py-1 rounded-full text-xs font-medium"
+                                style={getPaymentStatusColor(booking.paymentStatus)}
+                              >
                                 {getPaymentStatusText(booking.paymentStatus)}
                               </span>
                             )}
@@ -1433,11 +1445,17 @@ export default function BookingsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={getStatusColor(booking.status)}
+                            >
                               {getStatusText(booking.status)}
                             </span>
                             {booking.paymentStatus && (
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                              <span
+                                className="px-3 py-1 rounded-full text-xs font-medium"
+                                style={getPaymentStatusColor(booking.paymentStatus)}
+                              >
                                 {getPaymentStatusText(booking.paymentStatus)}
                               </span>
                             )}
@@ -1565,11 +1583,17 @@ export default function BookingsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={getStatusColor(booking.status)}
+                            >
                               {getStatusText(booking.status)}
                             </span>
                             {booking.paymentStatus && (
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                              <span
+                                className="px-3 py-1 rounded-full text-xs font-medium"
+                                style={getPaymentStatusColor(booking.paymentStatus)}
+                              >
                                 {getPaymentStatusText(booking.paymentStatus)}
                               </span>
                             )}
@@ -1680,11 +1704,17 @@ export default function BookingsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-medium"
+                              style={getStatusColor(booking.status)}
+                            >
                               {getStatusText(booking.status)}
                             </span>
                             {booking.paymentStatus && (
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                              <span
+                                className="px-3 py-1 rounded-full text-xs font-medium"
+                                style={getPaymentStatusColor(booking.paymentStatus)}
+                              >
                                 {getPaymentStatusText(booking.paymentStatus)}
                               </span>
                             )}

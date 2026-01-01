@@ -3,13 +3,16 @@
 import React, { useState, useEffect, Suspense, useMemo, useCallback, memo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   MagnifyingGlassIcon,
   MapPinIcon,
   FunnelIcon,
   UserIcon,
   StarIcon
 } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import EmptyState from '@/components/ui/EmptyState'
 
 // API base URL configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
@@ -49,40 +52,34 @@ const ClinicCard = memo(({
   onBookAppointment: () => void
 }) => {
   return (
-    <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+    <DetailCard variant="secondary" className="p-3 lg:p-4">
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <div className="font-medium text-gray-900">{clinic.name}</div>
+            <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>{clinic.name}</div>
             {clinic.distanceText && (
-              <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700 ml-2">
+              <span className="text-xs font-medium px-2 py-1 rounded-full ml-2" style={{ background: '#25A425', color: 'white' }}>
                 📏 {clinic.distanceText}
               </span>
             )}
           </div>
-          <div className="flex items-start space-x-1 text-sm text-gray-600 mt-1">
-            <MapPinIcon className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-1 text-xs lg:text-sm text-gray-600 mt-1">
+            <MapPinIcon className="h-4 w-4 lg:h-5 lg:w-5 mt-0.5 flex-shrink-0" style={{ color: '#0F5FDC' }} />
             <span className="line-clamp-2">{clinic.address}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-        <div className="text-sm">
+      <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: '#86ACD8' }}>
+        <div className="text-sm lg:text-base">
           <span className="text-gray-600">Consultation: </span>
-          <span className="font-semibold" style={{ color: '#0a529f' }}>₹{clinic.consultationFee}</span>
+          <span className="font-semibold" style={{ color: '#25A425' }}>₹{clinic.consultationFee}</span>
         </div>
-        <button
-          onClick={onBookAppointment}
-          className="px-4 py-2 text-white rounded-lg text-sm font-medium transition-colors"
-          style={{ backgroundColor: '#0a529f' }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-        >
+        <CTAButton onClick={onBookAppointment} variant="primary" className="!px-4 !py-2 text-sm">
           Book Appointment
-        </button>
+        </CTAButton>
       </div>
-    </div>
+    </DetailCard>
   )
 })
 
@@ -97,32 +94,31 @@ const DoctorCard = memo(({
   onBookAppointment: (doctor: Doctor, clinic: ClinicLocation) => void
 }) => {
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm">
-      <div className="flex items-start space-x-4 mb-4">
+    <DetailCard variant="primary" className="shadow-md hover:shadow-lg transition-shadow">
+      <div className="flex items-start gap-3 lg:gap-4 mb-4">
         {doctor.profilePhoto ? (
           <img
             src={`${API_BASE_URL}${doctor.profilePhoto}`}
             alt={doctor.name}
-            className="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-gray-200"
+            className="w-16 h-16 lg:w-20 lg:h-20 rounded-full object-cover flex-shrink-0"
+            style={{ border: '2px solid #A4BFFE7A' }}
           />
         ) : (
-          <div className="p-3 rounded-full flex-shrink-0" style={{ backgroundColor: '#e6f0fa' }}>
-            <UserIcon className="h-8 w-8" style={{ color: '#0a529f' }} />
-          </div>
+          <IconCircle icon={UserIcon} size="lg" />
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900">{doctor.name}</h3>
-          <p className="text-sm text-gray-600">{doctor.qualifications}</p>
-          <p className="text-sm text-gray-600">{doctor.experience} years experience</p>
-          <div className="flex items-center space-x-1 mt-1">
-            <StarIcon className="h-4 w-4 text-yellow-400 fill-current" />
-            <span className="text-sm font-medium text-gray-900">{doctor.rating}</span>
-            <span className="text-sm text-gray-600">({doctor.reviewCount} reviews)</span>
+          <h3 className="font-semibold text-base lg:text-lg" style={{ color: '#0E51A2' }}>{doctor.name}</h3>
+          <p className="text-xs lg:text-sm text-gray-600">{doctor.qualifications}</p>
+          <p className="text-xs lg:text-sm text-gray-600">{doctor.experience} years experience</p>
+          <div className="flex items-center gap-1 mt-1">
+            <StarIcon className="h-4 w-4 lg:h-5 lg:w-5 text-yellow-400 fill-current" />
+            <span className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{doctor.rating}</span>
+            <span className="text-xs lg:text-sm text-gray-600">({doctor.reviewCount} reviews)</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:space-y-4">
         {doctor.clinics && doctor.clinics.length > 0 ? (
           doctor.clinics.map((clinic, index) => (
             <ClinicCard
@@ -132,12 +128,12 @@ const DoctorCard = memo(({
             />
           ))
         ) : (
-          <div className="p-4 bg-gray-50 rounded-lg text-center">
-            <p className="text-sm text-gray-500">No clinic locations available</p>
-          </div>
+          <DetailCard variant="secondary" className="text-center py-4">
+            <p className="text-sm lg:text-base text-gray-500">No clinic locations available</p>
+          </DetailCard>
         )}
       </div>
-    </div>
+    </DetailCard>
   )
 })
 
@@ -484,41 +480,31 @@ function DoctorsContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleBackClick}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Select Doctor</h1>
-              <p className="text-sm text-gray-600">{specialtyName}</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Doctor"
+        subtitle={specialtyName || 'Choose your doctor'}
+      />
 
-        <div className="px-4 pb-4 space-y-3">
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        <div className="space-y-4 lg:space-y-5">
+          <DetailCard variant="secondary" className="p-3 lg:p-4">
+            <div className="flex items-center justify-between mb-2 lg:mb-3">
+              <label className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>
                 📍 Filter by Location
               </label>
               {pincode && (
                 <button
                   onClick={handleClearPincode}
-                  className="text-xs px-2 py-1 rounded"
-                  style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}
+                  className="text-xs lg:text-sm px-2 py-1 rounded font-medium"
+                  style={{ background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)', color: '#0F5FDC' }}
                 >
                   Clear
                 </button>
@@ -534,30 +520,29 @@ function DoctorsContent() {
                     onChange={handlePincodeChange}
                     placeholder="Enter 6-digit pincode (e.g., 560001)"
                     maxLength={6}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 lg:py-3 border rounded-xl focus:ring-2 focus:border-transparent text-sm lg:text-base"
+                    style={{ borderColor: '#86ACD8', outlineColor: '#0F5FDC' }}
                   />
-                  <button
+                  <CTAButton
                     onClick={handleUseCurrentLocation}
                     disabled={fetchingLocation}
-                    className="px-4 py-2 text-white rounded-lg font-medium transition-colors whitespace-nowrap disabled:opacity-50"
-                    style={{ backgroundColor: '#0a529f' }}
-                    onMouseEnter={(e) => !fetchingLocation && (e.currentTarget.style.backgroundColor = '#084080')}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                    variant="primary"
+                    className="!px-3 !py-2 lg:!py-3 whitespace-nowrap text-xs lg:text-sm"
                   >
                     {fetchingLocation ? (
-                      <span className="flex items-center">
-                        <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2"></div>
-                        Locating...
+                      <span className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                        <span className="hidden sm:inline">Locating...</span>
                       </span>
                     ) : (
                       '📍 Use Current'
                     )}
-                  </button>
+                  </CTAButton>
                 </div>
                 <button
                   onClick={() => setShowCityInput(true)}
-                  className="text-xs underline"
-                  style={{ color: '#0a529f' }}
+                  className="text-xs lg:text-sm underline font-medium"
+                  style={{ color: '#0F5FDC' }}
                 >
                   Or search by city name
                 </button>
@@ -570,28 +555,30 @@ function DoctorsContent() {
                     value={citySearch}
                     onChange={handleCitySearchChange}
                     placeholder="Search city or area (e.g., Bangalore, Koramangala)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 lg:py-3 border rounded-xl focus:ring-2 focus:border-transparent text-sm lg:text-base"
+                    style={{ borderColor: '#86ACD8', outlineColor: '#0F5FDC' }}
                     autoFocus
                   />
                   {searchingCity && (
                     <div className="absolute right-3 top-3">
-                      <div className="h-4 w-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#0a529f' }}></div>
+                      <div className="h-4 w-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC' }}></div>
                     </div>
                   )}
 
                   {showCitySuggestions && citySuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white rounded-xl shadow-lg max-h-60 overflow-y-auto" style={{ border: '2px solid #86ACD8' }}>
                       {citySuggestions.map((location, index) => (
                         <button
                           key={index}
                           onClick={() => handleCitySelect(location)}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-0"
+                          style={{ borderColor: '#F7DCAF' }}
                         >
-                          <div className="font-medium text-sm text-gray-900">
+                          <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
                             {location.city}
                             {location.pincode && ` - ${location.pincode}`}
                           </div>
-                          <div className="text-xs text-gray-500 line-clamp-1">
+                          <div className="text-xs lg:text-sm text-gray-500 line-clamp-1">
                             {location.formattedAddress}
                           </div>
                         </button>
@@ -605,8 +592,8 @@ function DoctorsContent() {
                     setCitySearch('')
                     setShowCitySuggestions(false)
                   }}
-                  className="text-xs underline"
-                  style={{ color: '#0a529f' }}
+                  className="text-xs lg:text-sm underline font-medium"
+                  style={{ color: '#0F5FDC' }}
                 >
                   Back to pincode entry
                 </button>
@@ -614,53 +601,51 @@ function DoctorsContent() {
             )}
 
             {locationName && (
-              <p className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
+              <p className="text-xs lg:text-sm font-medium px-2 py-1 rounded" style={{ color: '#25A425', background: '#f0fdf4' }}>
                 ✓ {locationName}
               </p>
             )}
 
             {locationError && (
-              <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+              <p className="text-xs lg:text-sm px-2 py-1 rounded" style={{ color: '#E53535', background: '#fef2f2' }}>
                 {locationError}
               </p>
             )}
 
             {pincode.length > 0 && pincode.length < 6 && !locationError && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs lg:text-sm text-gray-500 mt-1">
                 {6 - pincode.length} more digit(s) required
               </p>
             )}
-          </div>
+          </DetailCard>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
             <input
               type="text"
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder="Search doctors..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 lg:pl-12 pr-4 py-3 lg:py-4 border rounded-xl focus:ring-2 focus:border-transparent text-sm lg:text-base"
+              style={{ borderColor: '#86ACD8', outlineColor: '#0F5FDC' }}
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 lg:gap-3">
             <button
               onClick={handleToggleFilters}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 lg:py-3 border rounded-xl hover:shadow-md transition-shadow text-sm lg:text-base"
+              style={{ borderColor: '#86ACD8', color: '#0E51A2' }}
             >
-              <FunnelIcon className="h-4 w-4" />
-              <span className="text-sm">Filters</span>
+              <FunnelIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+              <span>Filters</span>
             </button>
 
             {selectedCity && (
               <button
                 onClick={handleClearCity}
-                className="px-3 py-2 rounded-lg text-sm"
-                style={{ backgroundColor: '#e6f0fa', color: '#0a529f' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4e5f5'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e6f0fa'}
+                className="px-3 py-2 lg:py-3 rounded-xl text-sm lg:text-base font-medium"
+                style={{ background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)', color: '#0F5FDC' }}
               >
                 {selectedCity} ×
               </button>
@@ -668,37 +653,41 @@ function DoctorsContent() {
           </div>
 
           {showFilters && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="mb-2 text-sm font-medium text-gray-700">Filter by City</div>
+            <DetailCard variant="secondary" className="p-3 lg:p-4">
+              <div className="mb-3 text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>Filter by City</div>
               <div className="flex flex-wrap gap-2">
                 {cities.map((city) => (
                   <button
                     key={city}
                     onClick={() => handleCityClick(city)}
-                    className={`px-3 py-1 rounded-full text-sm ${
+                    className={`px-3 py-1.5 lg:py-2 rounded-full text-sm lg:text-base font-medium transition-all ${
                       city === selectedCity
-                        ? 'text-white'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        ? 'text-white shadow-md'
+                        : 'border hover:shadow-md'
                     }`}
-                    style={city === selectedCity ? { backgroundColor: '#0a529f' } : undefined}
+                    style={
+                      city === selectedCity
+                        ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }
+                        : { borderColor: '#86ACD8', color: '#0E51A2', background: 'white' }
+                    }
                   >
                     {city}
                   </button>
                 ))}
               </div>
-            </div>
+            </DetailCard>
           )}
         </div>
-      </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
+        {/* Doctors List */}
         {filteredDoctors.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No doctors found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search term</p>
-          </div>
+          <EmptyState
+            icon={UserIcon}
+            title="No doctors found"
+            message="Try adjusting your filters or search term"
+          />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:space-y-5">
             {filteredDoctors.map((doctor) => (
               <DoctorCard
                 key={doctor._id}
@@ -716,8 +705,8 @@ function DoctorsContent() {
 export default function DoctorsPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <DoctorsContent />

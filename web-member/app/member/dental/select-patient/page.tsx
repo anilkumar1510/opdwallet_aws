@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeftIcon, UserIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { UserIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useFamily } from '@/contexts/FamilyContext'
-import { Card } from '@/components/ui/Card'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import IconCircle from '@/components/ui/IconCircle'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface Patient {
   id: string
@@ -128,74 +131,69 @@ function SelectPatientContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f7f7fc' }}>
+        <div
+          className="animate-spin rounded-full h-12 w-12 lg:h-14 lg:w-14 border-4 border-t-transparent"
+          style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+        ></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-flex items-center gap-1"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Select Patient</h1>
-          <p className="text-gray-600 mt-2">Who is this appointment for?</p>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Patient"
+        subtitle="Who is this appointment for?"
+      />
 
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
         {/* Patients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 gap-4 lg:gap-5 mb-6">
           {patients.map((patient) => (
-            <Card
+            <DetailCard
               key={patient.id}
+              variant={selectedPatient?.id === patient.id ? 'secondary' : 'primary'}
+              className="cursor-pointer transition-all hover:shadow-md"
               onClick={() => setSelectedPatient(patient)}
-              className={`cursor-pointer transition-all ${
-                selectedPatient?.id === patient.id
-                  ? 'ring-2 ring-purple-600 bg-purple-50'
-                  : 'hover:shadow-lg'
-              }`}
             >
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <UserIcon className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{patient.name}</h3>
-                      <p className="text-sm text-gray-600">{patient.relationship}</p>
-                      <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                        <span>{patient.age} years</span>
-                        <span>{patient.gender}</span>
-                      </div>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 lg:gap-4 flex-1 min-w-0">
+                  <IconCircle icon={UserIcon} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <h3
+                      className="text-base lg:text-lg font-semibold truncate"
+                      style={{ color: '#0E51A2' }}
+                    >
+                      {patient.name}
+                    </h3>
+                    <p className="text-sm lg:text-base text-gray-600">{patient.relationship}</p>
+                    <div className="flex gap-3 lg:gap-4 mt-2 text-xs lg:text-sm text-gray-500">
+                      <span>{patient.age} years</span>
+                      <span>{patient.gender}</span>
                     </div>
                   </div>
-                  {selectedPatient?.id === patient.id && (
-                    <CheckCircleIcon className="h-6 w-6 text-purple-600 flex-shrink-0" />
-                  )}
                 </div>
+                {selectedPatient?.id === patient.id && (
+                  <CheckCircleIcon
+                    className="h-6 w-6 lg:h-7 lg:w-7 flex-shrink-0"
+                    style={{ color: '#25A425' }}
+                  />
+                )}
               </div>
-            </Card>
+            </DetailCard>
           ))}
         </div>
 
         {/* Continue Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleContinue}
-            disabled={!selectedPatient}
-            className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium text-lg"
-          >
-            Continue
-          </button>
-        </div>
+        <CTAButton
+          variant="primary"
+          fullWidth
+          onClick={handleContinue}
+          disabled={!selectedPatient}
+        >
+          Continue
+        </CTAButton>
       </div>
     </div>
   )
@@ -204,8 +202,11 @@ function SelectPatientContent() {
 export default function SelectPatientPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#f7f7fc' }}>
+        <div
+          className="animate-spin rounded-full h-12 w-12 lg:h-14 lg:w-14 border-4 border-t-transparent"
+          style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+        ></div>
       </div>
     }>
       <SelectPatientContent />

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   UserIcon,
   ClockIcon,
   PhoneIcon,
@@ -18,6 +17,10 @@ import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents
 import PaymentProcessor from '@/components/PaymentProcessor'
 import { createTransaction } from '@/lib/transactions'
 import { useFamily } from '@/contexts/FamilyContext'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import IconCircle from '@/components/ui/IconCircle'
 
 // Success screen component
 function BookingSuccessScreen({
@@ -51,87 +54,106 @@ function BookingSuccessScreen({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg">
-        <div className="mb-6">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircleIcon className="h-10 w-10 text-green-600" />
-          </div>
-        </div>
-
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-        <p className="text-gray-600 mb-6">
-          Your online consultation has been booked and is awaiting confirmation
-        </p>
-
-        <div className="bg-blue-50 rounded-xl p-4 mb-6">
-          <div className="text-sm text-gray-600 mb-1">Appointment ID</div>
-          <div className="text-xl font-bold" style={{ color: '#0a529f' }}>{appointmentId}</div>
-        </div>
-
-        <div className="space-y-3 text-left mb-6">
-          <div className="flex items-center space-x-3 text-sm">
-            <UserIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-            <div>
-              <div className="text-gray-600">Doctor</div>
-              <div className="font-medium text-gray-900">{doctorName}</div>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f7f7fc' }}>
+      <div className="max-w-[480px] w-full">
+        <DetailCard variant="primary" className="text-center">
+          <div className="flex justify-center mb-6">
+            <div
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center"
+              style={{ background: '#25A425' }}
+            >
+              <CheckCircleIcon className="h-10 w-10 lg:h-12 lg:w-12 text-white" />
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 text-sm">
-            <CalendarIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-            <div>
-              <div className="text-gray-600">Date</div>
-              <div className="font-medium text-gray-900">{formatDate(appointmentDate)}</div>
-            </div>
-          </div>
+          <h2 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>
+            Booking Confirmed!
+          </h2>
+          <p className="text-sm lg:text-base text-gray-600 mb-6">
+            Your online consultation has been booked and is awaiting confirmation
+          </p>
 
-          <div className="flex items-center space-x-3 text-sm">
-            <ClockIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-            <div>
-              <div className="text-gray-600">Time</div>
-              <div className="font-medium text-gray-900">{appointmentTime}</div>
+          <DetailCard variant="secondary" className="mb-6">
+            <div className="text-xs lg:text-sm text-gray-600 mb-1">Appointment ID</div>
+            <div className="text-lg lg:text-xl font-bold" style={{ color: '#0F5FDC' }}>
+              {appointmentId}
             </div>
-          </div>
+          </DetailCard>
 
-          <div className="flex items-center space-x-3 text-sm">
-            <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-            <div>
-              <div className="text-gray-600">Contact Number</div>
-              <div className="font-medium text-gray-900">{contactNumber}</div>
+          <div className="space-y-3 lg:space-y-4 text-left mb-6">
+            <div className="flex items-center gap-3">
+              <UserIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs lg:text-sm text-gray-600">Doctor</div>
+                <div className="font-medium text-sm lg:text-base truncate" style={{ color: '#0E51A2' }}>
+                  {doctorName}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3 text-sm">
-            {callPreference === 'VOICE' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
-            {callPreference === 'VIDEO' && <VideoCameraIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
-            {callPreference === 'BOTH' && <PhoneIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />}
-            <div>
-              <div className="text-gray-600">Call Preference</div>
-              <div className="font-medium text-gray-900">
-                {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
+            <div className="flex items-center gap-3">
+              <CalendarIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs lg:text-sm text-gray-600">Date</div>
+                <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                  {formatDate(appointmentDate)}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <ClockIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs lg:text-sm text-gray-600">Time</div>
+                <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                  {appointmentTime}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <PhoneIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs lg:text-sm text-gray-600">Contact Number</div>
+                <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                  {contactNumber}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {callPreference === 'VOICE' && <PhoneIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />}
+              {callPreference === 'VIDEO' && <VideoCameraIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />}
+              {callPreference === 'BOTH' && <PhoneIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />}
+              <div className="flex-1 min-w-0">
+                <div className="text-xs lg:text-sm text-gray-600">Call Preference</div>
+                <div className="font-medium text-sm lg:text-base" style={{ color: '#0E51A2' }}>
+                  {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <button
-            onClick={onViewAppointments}
-            className="w-full py-3 px-4 text-white rounded-xl font-medium transition-colors"
-            style={{ backgroundColor: '#0a529f' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
-          >
-            View Online Consultations
-          </button>
-          <button
-            onClick={onBackToDashboard}
-            className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors"
-          >
-            Back to Dashboard
-          </button>
-        </div>
+          <div className="space-y-3">
+            <CTAButton
+              onClick={onViewAppointments}
+              variant="success"
+              fullWidth
+            >
+              View Online Consultations
+            </CTAButton>
+            <button
+              onClick={onBackToDashboard}
+              className="w-full py-3 lg:py-4 px-4 rounded-xl font-semibold transition-all hover:shadow-md text-sm lg:text-base"
+              style={{
+                background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                color: '#0F5FDC'
+              }}
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </DetailCard>
       </div>
     </div>
   )
@@ -477,8 +499,8 @@ function OnlineConfirmContent() {
   // Early return for loading state
   if (loadingRelationships) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
@@ -504,66 +526,59 @@ function OnlineConfirmContent() {
   // Show payment step
   if (showPaymentStep && selectedPatient && !paymentProcessed) {
     return (
-      <div className="min-h-screen">
-        <div className="bg-white shadow-sm">
-          <div className="px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowPaymentStep(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">Payment & Confirmation</h1>
-                <p className="text-sm text-gray-600">Complete payment to confirm booking</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+        <PageHeader
+          title="Payment & Confirmation"
+          subtitle="Complete payment to confirm booking"
+          onBack={() => setShowPaymentStep(false)}
+        />
 
-        <div className="p-4 max-w-2xl mx-auto space-y-4">
+        <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
           {/* Booking Summary */}
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-3">Booking Summary</h3>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <UserIcon className="h-6 w-6" style={{ color: '#0a529f' }} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{doctorName}</h4>
-                  <p className="text-sm text-gray-600">{specialty}</p>
-                  <p className="text-sm text-gray-500 mt-1">Online Consultation</p>
+          <DetailCard variant="primary">
+            <h3 className="font-semibold text-base lg:text-lg mb-4" style={{ color: '#0E51A2' }}>
+              Booking Summary
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 lg:gap-4">
+                <IconCircle icon={UserIcon} size="lg" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-base lg:text-lg truncate" style={{ color: '#0E51A2' }}>
+                    {doctorName}
+                  </h4>
+                  <p className="text-xs lg:text-sm text-gray-600">{specialty}</p>
+                  <p className="text-xs lg:text-sm text-gray-500 mt-1">Online Consultation</p>
                 </div>
               </div>
 
-              <div className="border-t pt-3 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Patient</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedPatient.name} {!selectedPatient.isPrimary && `(${selectedPatient.relation})`}
-                  </span>
+              <DetailCard variant="secondary" className="mb-0">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-xs lg:text-sm">
+                    <span className="text-gray-600">Patient</span>
+                    <span className="font-medium text-gray-900 truncate ml-2">
+                      {selectedPatient.name} {!selectedPatient.isPrimary && `(${selectedPatient.relation})`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs lg:text-sm">
+                    <span className="text-gray-600">Date & Time</span>
+                    <span className="font-medium text-gray-900 text-right ml-2">
+                      {timeChoice === 'NOW' ? 'Immediate' : `${selectedDate} at ${selectedTime}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs lg:text-sm">
+                    <span className="text-gray-600">Contact</span>
+                    <span className="font-medium text-gray-900">{contactNumber}</span>
+                  </div>
+                  <div className="flex justify-between text-xs lg:text-sm">
+                    <span className="text-gray-600">Preference</span>
+                    <span className="font-medium text-gray-900">
+                      {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Date & Time</span>
-                  <span className="font-medium text-gray-900">
-                    {timeChoice === 'NOW' ? 'Immediate' : `${selectedDate} at ${selectedTime}`}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Contact</span>
-                  <span className="font-medium text-gray-900">{contactNumber}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Preference</span>
-                  <span className="font-medium text-gray-900">
-                    {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
-                  </span>
-                </div>
-              </div>
+              </DetailCard>
             </div>
-          </div>
+          </DetailCard>
 
           {/* Payment Component */}
           <PaymentProcessor
@@ -599,201 +614,272 @@ function OnlineConfirmContent() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Confirm Booking</h1>
-              <p className="text-sm text-gray-600">Review and confirm details</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Confirm Booking"
+        subtitle="Review and confirm details"
+      />
 
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">Doctor Details</h3>
-          <div className="flex items-start space-x-3">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <UserIcon className="h-6 w-6" style={{ color: '#0a529f' }} />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900">{doctorName}</h4>
-              <p className="text-sm text-gray-600">{specialty}</p>
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
+        <DetailCard variant="primary">
+          <h3 className="font-semibold text-base lg:text-lg mb-4" style={{ color: '#0E51A2' }}>
+            Doctor Details
+          </h3>
+          <div className="flex items-start gap-3 lg:gap-4">
+            <IconCircle icon={UserIcon} size="lg" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-base lg:text-lg truncate" style={{ color: '#0E51A2' }}>
+                {doctorName}
+              </h4>
+              <p className="text-xs lg:text-sm text-gray-600 mb-1">{specialty}</p>
               {availableInMinutes !== null && availableInMinutes <= 5 && (
-                <span className="inline-flex items-center space-x-1 text-xs text-green-600 mt-1">
-                  <ClockIcon className="h-3 w-3" />
-                  <span>Available {availableInMinutes === 0 ? 'now' : `in ${availableInMinutes} mins`}</span>
+                <span
+                  className="inline-flex items-center gap-1 text-xs lg:text-sm px-2 py-1 rounded-lg"
+                  style={{ background: '#E8F5E9', color: '#25A425' }}
+                >
+                  <ClockIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="font-medium">
+                    Available {availableInMinutes === 0 ? 'now' : `in ${availableInMinutes} mins`}
+                  </span>
                 </span>
               )}
             </div>
           </div>
-        </div>
+        </DetailCard>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">Select Patient</h3>
-          <div className="space-y-2">
+        <DetailCard variant="secondary">
+          <h3 className="font-semibold text-base lg:text-lg mb-4" style={{ color: '#0E51A2' }}>
+            Select Patient
+          </h3>
+          <div className="space-y-2 lg:space-y-3">
             {familyMembers.map((member) => (
               <button
                 key={member._id}
                 onClick={() => setSelectedPatient(member)}
-                className={`w-full p-3 rounded-xl text-left transition-colors ${
+                className={`w-full p-3 lg:p-4 rounded-xl text-left transition-all border-2 ${
                   selectedPatient?._id === member._id
-                    ? 'bg-blue-50 border-2'
-                    : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                    ? 'shadow-md'
+                    : 'hover:shadow-sm'
                 }`}
-                style={selectedPatient?._id === member._id ? { borderColor: '#0a529f' } : {}}
+                style={
+                  selectedPatient?._id === member._id
+                    ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', borderColor: '#0F5FDC', color: '#FFFFFF' }
+                    : { background: '#FFFFFF', borderColor: '#86ACD8' }
+                }
               >
-                <div className="font-medium text-gray-900">{member.name}</div>
-                <div className="text-sm text-gray-600">
+                <div className="font-medium text-sm lg:text-base">{member.name}</div>
+                <div
+                  className="text-xs lg:text-sm mt-1"
+                  style={{
+                    color: selectedPatient?._id === member._id ? 'rgba(255, 255, 255, 0.8)' : '#6B7280'
+                  }}
+                >
                   {member.relation}{member.isPrimary && ' (You)'}
                 </div>
               </button>
             ))}
           </div>
-        </div>
+        </DetailCard>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">Contact Number</h3>
+        <DetailCard variant="secondary">
+          <h3 className="font-semibold text-base lg:text-lg mb-4" style={{ color: '#0E51A2' }}>
+            Contact Number
+          </h3>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <PhoneIcon className="h-5 w-5 text-gray-400" />
+              <PhoneIcon className="h-5 w-5 lg:h-6 lg:w-6 text-gray-400" />
             </div>
             <input
               type="tel"
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
               placeholder="Enter contact number"
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="block w-full pl-10 pr-3 py-3 lg:py-4 border-2 rounded-xl text-sm lg:text-base focus:outline-none transition-all"
+              style={{ borderColor: '#86ACD8', background: '#FFFFFF' }}
+              onFocus={(e) => e.target.style.borderColor = '#0F5FDC'}
+              onBlur={(e) => e.target.style.borderColor = '#86ACD8'}
             />
           </div>
-          <p className="text-xs text-gray-500 mt-2">Doctor will call you on this number</p>
-        </div>
+          <p className="text-xs lg:text-sm text-gray-500 mt-2">
+            Doctor will call you on this number
+          </p>
+        </DetailCard>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">Call Preference</h3>
-          <div className="grid grid-cols-3 gap-2">
+        <DetailCard variant="secondary">
+          <h3 className="font-semibold text-base lg:text-lg mb-4" style={{ color: '#0E51A2' }}>
+            Call Preference
+          </h3>
+          <div className="grid grid-cols-3 gap-2 lg:gap-3">
             <button
               onClick={() => setCallPreference('VOICE')}
-              className={`p-3 rounded-xl border-2 transition-colors ${
+              className="p-3 lg:p-4 rounded-xl border-2 transition-all"
+              style={
                 callPreference === 'VOICE'
-                  ? 'bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              }`}
-              style={callPreference === 'VOICE' ? { borderColor: '#0a529f' } : {}}
+                  ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', borderColor: '#0F5FDC' }
+                  : { background: '#FFFFFF', borderColor: '#86ACD8' }
+              }
             >
-              <PhoneIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
-              <div className="text-sm font-medium text-gray-900">Voice</div>
+              <PhoneIcon
+                className="h-6 w-6 lg:h-7 lg:w-7 mx-auto mb-1"
+                style={{ color: callPreference === 'VOICE' ? '#FFFFFF' : '#0E51A2' }}
+              />
+              <div
+                className="text-xs lg:text-sm font-medium"
+                style={{ color: callPreference === 'VOICE' ? '#FFFFFF' : '#0E51A2' }}
+              >
+                Voice
+              </div>
             </button>
             <button
               onClick={() => setCallPreference('VIDEO')}
-              className={`p-3 rounded-xl border-2 transition-colors ${
+              className="p-3 lg:p-4 rounded-xl border-2 transition-all"
+              style={
                 callPreference === 'VIDEO'
-                  ? 'bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              }`}
-              style={callPreference === 'VIDEO' ? { borderColor: '#0a529f' } : {}}
+                  ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', borderColor: '#0F5FDC' }
+                  : { background: '#FFFFFF', borderColor: '#86ACD8' }
+              }
             >
-              <VideoCameraIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
-              <div className="text-sm font-medium text-gray-900">Video</div>
+              <VideoCameraIcon
+                className="h-6 w-6 lg:h-7 lg:w-7 mx-auto mb-1"
+                style={{ color: callPreference === 'VIDEO' ? '#FFFFFF' : '#0E51A2' }}
+              />
+              <div
+                className="text-xs lg:text-sm font-medium"
+                style={{ color: callPreference === 'VIDEO' ? '#FFFFFF' : '#0E51A2' }}
+              >
+                Video
+              </div>
             </button>
             <button
               onClick={() => setCallPreference('BOTH')}
-              className={`p-3 rounded-xl border-2 transition-colors ${
+              className="p-3 lg:p-4 rounded-xl border-2 transition-all"
+              style={
                 callPreference === 'BOTH'
-                  ? 'bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              }`}
-              style={callPreference === 'BOTH' ? { borderColor: '#0a529f' } : {}}
+                  ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', borderColor: '#0F5FDC' }
+                  : { background: '#FFFFFF', borderColor: '#86ACD8' }
+              }
             >
-              <div className="text-sm font-medium text-gray-900 mb-1">Both</div>
-              <div className="text-xs text-gray-600">Voice & Video</div>
+              <div
+                className="text-xs lg:text-sm font-medium mb-1"
+                style={{ color: callPreference === 'BOTH' ? '#FFFFFF' : '#0E51A2' }}
+              >
+                Both
+              </div>
+              <div
+                className="text-xs"
+                style={{ color: callPreference === 'BOTH' ? 'rgba(255, 255, 255, 0.8)' : '#6B7280' }}
+              >
+                Voice & Video
+              </div>
             </button>
           </div>
-        </div>
+        </DetailCard>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">When do you want to consult?</h3>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+        <DetailCard variant="secondary">
+          <h3 className="font-semibold text-base lg:text-lg mb-4" style={{ color: '#0E51A2' }}>
+            When do you want to consult?
+          </h3>
+          <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-3">
             <button
               onClick={() => setTimeChoice('NOW')}
-              className={`p-4 rounded-xl border-2 transition-colors ${
+              className="p-4 lg:p-5 rounded-xl border-2 transition-all"
+              style={
                 timeChoice === 'NOW'
-                  ? 'bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              }`}
-              style={timeChoice === 'NOW' ? { borderColor: '#0a529f' } : {}}
+                  ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', borderColor: '#0F5FDC' }
+                  : { background: '#FFFFFF', borderColor: '#86ACD8' }
+              }
             >
-              <ClockIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
-              <div className="text-sm font-medium text-gray-900">Consult Now</div>
-              <div className="text-xs text-gray-600 mt-1">Immediate</div>
+              <ClockIcon
+                className="h-6 w-6 lg:h-7 lg:w-7 mx-auto mb-2"
+                style={{ color: timeChoice === 'NOW' ? '#FFFFFF' : '#0E51A2' }}
+              />
+              <div
+                className="text-sm lg:text-base font-medium"
+                style={{ color: timeChoice === 'NOW' ? '#FFFFFF' : '#0E51A2' }}
+              >
+                Consult Now
+              </div>
+              <div
+                className="text-xs mt-1"
+                style={{ color: timeChoice === 'NOW' ? 'rgba(255, 255, 255, 0.8)' : '#6B7280' }}
+              >
+                Immediate
+              </div>
             </button>
             <button
               onClick={handleScheduleLater}
-              className={`p-4 rounded-xl border-2 transition-colors ${
+              className="p-4 lg:p-5 rounded-xl border-2 transition-all"
+              style={
                 timeChoice === 'LATER'
-                  ? 'bg-blue-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-              }`}
-              style={timeChoice === 'LATER' ? { borderColor: '#0a529f' } : {}}
+                  ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)', borderColor: '#0F5FDC' }
+                  : { background: '#FFFFFF', borderColor: '#86ACD8' }
+              }
             >
-              <CalendarIcon className="h-6 w-6 mx-auto mb-1 text-gray-700" />
-              <div className="text-sm font-medium text-gray-900">Schedule Later</div>
-              <div className="text-xs text-gray-600 mt-1">Choose time</div>
+              <CalendarIcon
+                className="h-6 w-6 lg:h-7 lg:w-7 mx-auto mb-2"
+                style={{ color: timeChoice === 'LATER' ? '#FFFFFF' : '#0E51A2' }}
+              />
+              <div
+                className="text-sm lg:text-base font-medium"
+                style={{ color: timeChoice === 'LATER' ? '#FFFFFF' : '#0E51A2' }}
+              >
+                Schedule Later
+              </div>
+              <div
+                className="text-xs mt-1"
+                style={{ color: timeChoice === 'LATER' ? 'rgba(255, 255, 255, 0.8)' : '#6B7280' }}
+              >
+                Choose time
+              </div>
             </button>
           </div>
 
           {timeChoice === 'LATER' && selectedDate && selectedTime && (
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-              <div className="text-sm text-gray-600">Selected Time:</div>
-              <div className="font-semibold text-gray-900">{selectedDate} at {selectedTime}</div>
+            <div className="rounded-xl p-3 lg:p-4 border-2" style={{ background: '#E8F5E9', borderColor: '#25A425' }}>
+              <div className="text-xs lg:text-sm text-gray-600">Selected Time:</div>
+              <div className="font-semibold text-sm lg:text-base mt-1" style={{ color: '#0E51A2' }}>
+                {selectedDate} at {selectedTime}
+              </div>
               <button
                 onClick={handleScheduleLater}
-                className="text-sm mt-1"
-                style={{ color: '#0a529f' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#084080'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#0a529f'}
+                className="text-xs lg:text-sm mt-2 font-medium"
+                style={{ color: '#0F5FDC' }}
               >
                 Change slot
               </button>
             </div>
           )}
-        </div>
+        </DetailCard>
 
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-600">Consultation Fee</span>
-            <span className="font-semibold text-gray-900">₹{consultationFee}</span>
+        <DetailCard variant="primary">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm lg:text-base">
+              <span className="text-gray-600">Consultation Fee</span>
+              <span className="font-semibold text-gray-900">₹{consultationFee}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm lg:text-base">
+              <span className="text-gray-600">Platform Fee</span>
+              <span className="font-semibold text-gray-900">₹0</span>
+            </div>
+            <div className="border-t-2 my-3" style={{ borderColor: '#F7DCAF' }}></div>
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-base lg:text-lg text-gray-900">Total Amount</span>
+              <span className="text-xl lg:text-2xl font-bold" style={{ color: '#25A425' }}>
+                ₹{consultationFee}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-600">Platform Fee</span>
-            <span className="font-semibold text-gray-900">₹0</span>
-          </div>
-          <div className="border-t border-gray-200 my-3"></div>
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-900">Total Amount</span>
-            <span className="text-xl font-bold" style={{ color: '#0a529f' }}>₹{consultationFee}</span>
-          </div>
-        </div>
+        </DetailCard>
 
-        <button
+        <CTAButton
           onClick={handleConfirmBooking}
           disabled={loading || !selectedPatient || !contactNumber}
-          className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors flex items-center justify-center"
-          style={!(loading || !selectedPatient || !contactNumber) ? { backgroundColor: '#0a529f' } : {}}
-          onMouseEnter={(e) => { if (!(loading || !selectedPatient || !contactNumber)) e.currentTarget.style.backgroundColor = '#084080' }}
-          onMouseLeave={(e) => { if (!(loading || !selectedPatient || !contactNumber)) e.currentTarget.style.backgroundColor = '#0a529f' }}
+          variant="primary"
+          fullWidth
+          leftIcon={CreditCardIcon}
         >
-          <CreditCardIcon className="h-6 w-6 mr-2" />
           {loading ? 'Processing...' : 'Proceed to Payment'}
-        </button>
+        </CTAButton>
       </div>
 
       <SlotSelectionModal
@@ -810,8 +896,8 @@ function OnlineConfirmContent() {
 export default function OnlineConfirmPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <OnlineConfirmContent />

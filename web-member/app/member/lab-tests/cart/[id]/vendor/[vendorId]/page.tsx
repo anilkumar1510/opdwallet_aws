@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ChevronLeftIcon, MapPinIcon, HomeIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
+import { HomeIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
 
 interface CartItem {
   serviceId: string
@@ -205,16 +208,16 @@ export default function VendorBookingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   if (!cart || !vendor) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">Cart or vendor not found</p>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <p className="text-sm lg:text-base text-gray-500">Cart or vendor not found</p>
       </div>
     )
   }
@@ -222,57 +225,45 @@ export default function VendorBookingPage() {
   const { subtotal, homeCollectionCharges, total } = calculateTotal()
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg mr-3"
-          >
-            <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Book Lab Tests</h1>
-            <p className="text-sm text-gray-600">{vendor.name}</p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Book Lab Tests"
+        subtitle={vendor.name}
+        onBack={() => router.back()}
+      />
 
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
+      <div className="max-w-[480px] mx-auto lg:max-w-4xl px-4 lg:px-6 py-6 lg:py-8 space-y-4 lg:space-y-5">
         {/* Tests & Pricing */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Tests & Pricing</h3>
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4 lg:mb-5" style={{ color: '#0E51A2' }}>Tests & Pricing</h3>
           <div className="space-y-3">
             {pricing.map((item, index) => (
-              <div
+              <DetailCard
                 key={index}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-xl"
+                variant="secondary"
               >
-                <div>
-                  <p className="font-medium text-gray-900">{item.serviceName}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>{item.serviceName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs lg:text-sm text-gray-500 line-through">₹{item.actualPrice}</p>
+                    <p className="text-base lg:text-lg font-bold" style={{ color: '#0E51A2' }}>₹{item.discountedPrice}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 line-through">₹{item.actualPrice}</p>
-                  <p className="text-lg font-bold text-gray-900">₹{item.discountedPrice}</p>
-                </div>
-              </div>
+              </DetailCard>
             ))}
           </div>
-        </div>
+        </DetailCard>
 
         {/* Collection Type */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Collection Type</h3>
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4 lg:mb-5" style={{ color: '#0E51A2' }}>Collection Type</h3>
           <div className="space-y-3">
             {vendor.homeCollection && (
               <label
-                className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors ${
-                  collectionType === 'HOME_COLLECTION'
-                    ? 'bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                style={collectionType === 'HOME_COLLECTION' ? { borderColor: '#0a529f', backgroundColor: '#e6f0fa' } : undefined}
+                className="flex items-center p-4 lg:p-5 border-2 rounded-xl cursor-pointer transition-all"
+                style={collectionType === 'HOME_COLLECTION' ? { borderColor: '#0F5FDC', background: '#EFF4FF' } : { borderColor: '#86ACD8' }}
               >
                 <input
                   type="radio"
@@ -282,22 +273,18 @@ export default function VendorBookingPage() {
                   onChange={(e) => setCollectionType(e.target.value as any)}
                   className="mr-3"
                 />
-                <HomeIcon className="h-6 w-6 mr-3" style={{ color: '#0a529f' }} />
+                <HomeIcon className="h-6 w-6 lg:h-7 lg:w-7 mr-3" style={{ color: '#0F5FDC' }} />
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">Home Collection</p>
-                  <p className="text-sm text-gray-600">Sample collected at your doorstep</p>
+                  <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>Home Collection</p>
+                  <p className="text-xs lg:text-sm text-gray-600">Sample collected at your doorstep</p>
                 </div>
-                <p className="text-sm text-gray-600">+₹50</p>
+                <p className="text-xs lg:text-sm text-gray-600">+₹50</p>
               </label>
             )}
             {vendor.centerVisit && (
               <label
-                className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors ${
-                  collectionType === 'CENTER_VISIT'
-                    ? 'bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                style={collectionType === 'CENTER_VISIT' ? { borderColor: '#0a529f', backgroundColor: '#e6f0fa' } : undefined}
+                className="flex items-center p-4 lg:p-5 border-2 rounded-xl cursor-pointer transition-all"
+                style={collectionType === 'CENTER_VISIT' ? { borderColor: '#0F5FDC', background: '#EFF4FF' } : { borderColor: '#86ACD8' }}
               >
                 <input
                   type="radio"
@@ -307,64 +294,82 @@ export default function VendorBookingPage() {
                   onChange={(e) => setCollectionType(e.target.value as any)}
                   className="mr-3"
                 />
-                <BuildingOfficeIcon className="h-6 w-6 mr-3" style={{ color: '#0a529f' }} />
+                <BuildingOfficeIcon className="h-6 w-6 lg:h-7 lg:w-7 mr-3" style={{ color: '#0F5FDC' }} />
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">Visit Center</p>
-                  <p className="text-sm text-gray-600">Visit lab center for sample collection</p>
+                  <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>Visit Center</p>
+                  <p className="text-xs lg:text-sm text-gray-600">Visit lab center for sample collection</p>
                 </div>
-                <p className="text-sm text-green-600">Free</p>
+                <p className="text-xs lg:text-sm font-medium" style={{ color: '#25A425' }}>Free</p>
               </label>
             )}
           </div>
-        </div>
+        </DetailCard>
 
         {/* Address (if home collection) */}
         {collectionType === 'HOME_COLLECTION' && (
-          <div className="bg-white rounded-2xl shadow-sm p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Collection Address</h3>
-            <div className="space-y-3">
+          <DetailCard variant="primary">
+            <h3 className="text-base lg:text-lg font-semibold mb-4 lg:mb-5" style={{ color: '#0E51A2' }}>Collection Address</h3>
+            <div className="space-y-3 lg:space-y-4">
               <input
                 type="text"
                 placeholder="Full Name *"
                 value={address.fullName}
                 onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                style={{ borderColor: '#86ACD8' }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
               />
               <input
                 type="tel"
                 placeholder="Phone Number *"
                 value={address.phone}
                 onChange={(e) => setAddress({ ...address, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                style={{ borderColor: '#86ACD8' }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
               />
               <input
                 type="text"
                 placeholder="Address Line 1 *"
                 value={address.addressLine1}
                 onChange={(e) => setAddress({ ...address, addressLine1: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                style={{ borderColor: '#86ACD8' }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
               />
               <input
                 type="text"
                 placeholder="Address Line 2 (Optional)"
                 value={address.addressLine2}
                 onChange={(e) => setAddress({ ...address, addressLine2: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                style={{ borderColor: '#86ACD8' }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
               />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 lg:gap-4">
                 <input
                   type="text"
                   placeholder="City *"
                   value={address.city}
                   onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                  style={{ borderColor: '#86ACD8' }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
                 />
                 <input
                   type="text"
                   placeholder="State *"
                   value={address.state}
                   onChange={(e) => setAddress({ ...address, state: e.target.value })}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                  style={{ borderColor: '#86ACD8' }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
                 />
               </div>
               <input
@@ -372,33 +377,32 @@ export default function VendorBookingPage() {
                 placeholder="Pincode *"
                 value={address.pincode}
                 onChange={(e) => setAddress({ ...address, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 lg:py-4 text-sm lg:text-base border-2 rounded-xl focus:outline-none transition-colors"
+                style={{ borderColor: '#86ACD8' }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
               />
             </div>
-          </div>
+          </DetailCard>
         )}
 
         {/* Time Slots */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Select Time Slot</h3>
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4 lg:mb-5" style={{ color: '#0E51A2' }}>Select Time Slot</h3>
           {slots.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600">No slots available</p>
-              <p className="text-sm text-gray-500 mt-1">Please contact support</p>
+            <div className="text-center py-8 lg:py-12">
+              <p className="text-sm lg:text-base text-gray-600">No slots available</p>
+              <p className="text-xs lg:text-sm text-gray-500 mt-1">Please contact support</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 lg:space-y-3">
               {slots.map((slot) => (
                 <label
                   key={slot._id}
-                  className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-colors ${
-                    selectedSlot === slot._id
-                      ? ''
-                      : slot.currentBookings >= slot.maxBookings
-                      ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                      : 'border-gray-200 hover:border-gray-300'
+                  className={`flex items-center justify-between p-3 lg:p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    slot.currentBookings >= slot.maxBookings ? 'cursor-not-allowed opacity-50' : ''
                   }`}
-                  style={selectedSlot === slot._id ? { borderColor: '#0a529f', backgroundColor: '#e6f0fa' } : undefined}
+                  style={selectedSlot === slot._id ? { borderColor: '#0F5FDC', background: '#EFF4FF' } : { borderColor: '#86ACD8' }}
                 >
                   <div className="flex items-center">
                     <input
@@ -411,20 +415,20 @@ export default function VendorBookingPage() {
                       className="mr-3"
                     />
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-sm lg:text-base font-medium" style={{ color: '#0E51A2' }}>
                         {new Date(slot.date).toLocaleDateString('en-IN', {
                           weekday: 'short',
                           day: '2-digit',
                           month: 'short',
                         })}
                       </p>
-                      <p className="text-sm text-gray-600">{slot.timeSlot}</p>
+                      <p className="text-xs lg:text-sm text-gray-600">{slot.timeSlot}</p>
                     </div>
                   </div>
                   {slot.currentBookings >= slot.maxBookings ? (
-                    <span className="text-xs text-red-600 font-medium">Full</span>
+                    <span className="text-xs font-medium" style={{ color: '#E53535' }}>Full</span>
                   ) : (
-                    <span className="text-xs text-green-600 font-medium">
+                    <span className="text-xs font-medium" style={{ color: '#25A425' }}>
                       {slot.maxBookings - slot.currentBookings} slots left
                     </span>
                   )}
@@ -432,39 +436,37 @@ export default function VendorBookingPage() {
               ))}
             </div>
           )}
-        </div>
+        </DetailCard>
 
         {/* Price Summary */}
-        <div className="bg-white rounded-2xl shadow-sm p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Price Summary</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-gray-600">
+        <DetailCard variant="primary">
+          <h3 className="text-base lg:text-lg font-semibold mb-4 lg:mb-5" style={{ color: '#0E51A2' }}>Price Summary</h3>
+          <div className="space-y-2 lg:space-y-3">
+            <div className="flex items-center justify-between text-xs lg:text-sm text-gray-600">
               <span>Tests Subtotal</span>
-              <span>₹{subtotal}</span>
+              <span className="font-medium">₹{subtotal}</span>
             </div>
             {collectionType === 'HOME_COLLECTION' && (
-              <div className="flex items-center justify-between text-gray-600">
+              <div className="flex items-center justify-between text-xs lg:text-sm text-gray-600">
                 <span>Home Collection Charges</span>
-                <span>₹{homeCollectionCharges}</span>
+                <span className="font-medium">₹{homeCollectionCharges}</span>
               </div>
             )}
-            <div className="pt-2 border-t border-gray-200">
+            <div className="pt-2 lg:pt-3 border-t" style={{ borderColor: '#86ACD8' }}>
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-900">Total Amount</span>
-                <span className="text-2xl font-bold text-gray-900">₹{total}</span>
+                <span className="text-sm lg:text-base font-semibold" style={{ color: '#0E51A2' }}>Total Amount</span>
+                <span className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>₹{total}</span>
               </div>
             </div>
           </div>
-        </div>
+        </DetailCard>
 
         {/* Place Order Button */}
-        <button
+        <CTAButton
           onClick={handlePlaceOrder}
           disabled={submitting || !selectedSlot}
-          className="w-full py-4 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-lg transition-colors shadow-lg"
-          style={!submitting && selectedSlot ? { backgroundColor: '#0a529f' } : undefined}
-          onMouseEnter={(e) => !submitting && selectedSlot && (e.currentTarget.style.backgroundColor = '#084080')}
-          onMouseLeave={(e) => !submitting && selectedSlot && (e.currentTarget.style.backgroundColor = '#0a529f')}
+          variant="primary"
+          fullWidth
         >
           {submitting ? (
             <span className="flex items-center justify-center">
@@ -474,7 +476,7 @@ export default function VendorBookingPage() {
           ) : (
             'Place Order'
           )}
-        </button>
+        </CTAButton>
       </div>
     </div>
   )

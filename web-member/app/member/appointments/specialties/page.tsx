@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronLeftIcon,
   MagnifyingGlassIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
 import { apiClient } from '@/lib/api/client'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
+import DetailCard from '@/components/ui/DetailCard'
+import IconCircle from '@/components/ui/IconCircle'
 
 interface Specialty {
   _id: string
@@ -74,75 +77,86 @@ export default function SpecialtiesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0a529f', borderTopColor: 'transparent' }}></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div
+          className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin"
+          style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}
+        ></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-900">Select Specialty</h1>
-          </div>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Specialty"
+        subtitle="Choose your medical specialty"
+      />
 
-        <div className="px-4 pb-4">
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
+        {/* Search Bar */}
+        <div className="mb-4 lg:mb-5">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
+            <MagnifyingGlassIcon
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5"
+              style={{ color: '#0F5FDC' }}
+            />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search specialties..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 lg:py-4 border rounded-xl focus:ring-2 focus:border-transparent text-sm lg:text-base"
+              style={{ borderColor: '#86ACD8', outlineColor: '#0F5FDC' }}
             />
           </div>
         </div>
-      </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
         {filteredSpecialties.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center">
-            <div className="text-5xl mb-4">🏥</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchQuery.trim() === '' ? 'No Specialties Available' : 'No specialties found'}
-            </h3>
-            <p className="text-gray-600">
-              {searchQuery.trim() === ''
+          <EmptyState
+            icon={MagnifyingGlassIcon}
+            title={searchQuery.trim() === '' ? 'No Specialties Available' : 'No specialties found'}
+            message={
+              searchQuery.trim() === ''
                 ? 'In-clinic consultation is not configured in your policy. Please contact your HR administrator.'
-                : 'Try a different search term'}
-            </p>
-          </div>
+                : 'Try a different search term'
+            }
+          />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3 lg:space-y-4">
             {filteredSpecialties.map((specialty) => (
-              <button
+              <div
                 key={specialty._id}
                 onClick={() => handleSpecialtyClick(specialty)}
-                className="w-full bg-white rounded-xl p-4 flex items-center justify-between hover:bg-gray-50 transition-colors shadow-sm"
+                className="cursor-pointer"
               >
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-100 w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center">
-                    <span className="text-xl font-semibold" style={{ color: '#0a529f' }}>{specialty.name.charAt(0)}</span>
+                <DetailCard variant="primary" className="hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between gap-3 lg:gap-4">
+                    <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
+                      <div
+                        className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex-shrink-0 flex items-center justify-center"
+                        style={{
+                          background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                          border: '1px solid #A4BFFE7A'
+                        }}
+                      >
+                        <span className="text-lg lg:text-xl font-bold" style={{ color: '#0F5FDC' }}>
+                          {specialty.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="text-left flex-1 min-w-0">
+                        <div className="font-semibold text-sm lg:text-base truncate" style={{ color: '#0E51A2' }}>
+                          {specialty.name}
+                        </div>
+                        <div className="text-xs lg:text-sm text-gray-600 line-clamp-1">
+                          {specialty.description}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRightIcon className="h-5 w-5 lg:h-6 lg:w-6 flex-shrink-0" style={{ color: '#0F5FDC' }} />
                   </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">{specialty.name}</div>
-                    <div className="text-sm text-gray-600">{specialty.description}</div>
-                  </div>
-                </div>
-                <ChevronRightIcon className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              </button>
+                </DetailCard>
+              </div>
             ))}
           </div>
         )}

@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeftIcon, UserIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { UserIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useFamily } from '@/contexts/FamilyContext'
-import { Card } from '@/components/ui/Card'
+import PageHeader from '@/components/ui/PageHeader'
+import DetailCard from '@/components/ui/DetailCard'
+import CTAButton from '@/components/ui/CTAButton'
+import IconCircle from '@/components/ui/IconCircle'
 
 interface Patient {
   id: string
@@ -128,73 +131,85 @@ function SelectPatientContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-flex items-center gap-1"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Select Patient</h1>
-          <p className="text-gray-600 mt-2">Who is this appointment for?</p>
-        </div>
+    <div className="min-h-screen" style={{ background: '#f7f7fc' }}>
+      <PageHeader
+        title="Select Patient"
+        subtitle="Who is this appointment for?"
+        onBack={() => router.back()}
+      />
+
+      <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
 
         {/* Patients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {patients.map((patient) => (
-            <Card
-              key={patient.id}
-              onClick={() => setSelectedPatient(patient)}
-              className={`cursor-pointer transition-all ${
-                selectedPatient?.id === patient.id
-                  ? 'ring-2 ring-blue-600 bg-blue-50'
-                  : 'hover:shadow-lg'
-              }`}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <UserIcon className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{patient.name}</h3>
-                      <p className="text-sm text-gray-600">{patient.relationship}</p>
-                      <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                        <span>{patient.age} years</span>
-                        <span>{patient.gender}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 mb-6">
+          {patients.map((patient) => {
+            const isSelected = selectedPatient?.id === patient.id
+            return (
+              <button
+                key={patient.id}
+                onClick={() => setSelectedPatient(patient)}
+                className="w-full text-left"
+              >
+                <DetailCard
+                  variant="primary"
+                  className={`cursor-pointer transition-all ${
+                    isSelected
+                      ? 'ring-2 shadow-lg'
+                      : 'shadow-sm hover:shadow-md'
+                  }`}
+                  style={isSelected ? { ringColor: '#0F5FDC' } : {}}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      {isSelected ? (
+                        <div
+                          className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{
+                            background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)',
+                          }}
+                        >
+                          <UserIcon className="h-6 w-6 lg:h-7 lg:w-7 text-white" />
+                        </div>
+                      ) : (
+                        <IconCircle icon={UserIcon} size="md" />
+                      )}
+                      <div>
+                        <h3 className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>
+                          {patient.name}
+                        </h3>
+                        <p className="text-xs lg:text-sm text-gray-600">{patient.relationship}</p>
+                        <div className="flex gap-3 lg:gap-4 mt-1 lg:mt-2 text-xs lg:text-sm text-gray-500">
+                          <span>{patient.age} years</span>
+                          <span>{patient.gender}</span>
+                        </div>
                       </div>
                     </div>
+                    {isSelected && (
+                      <CheckCircleIcon className="h-6 w-6 lg:h-7 lg:w-7 flex-shrink-0" style={{ color: '#25A425' }} />
+                    )}
                   </div>
-                  {selectedPatient?.id === patient.id && (
-                    <CheckCircleIcon className="h-6 w-6 text-blue-600 flex-shrink-0" />
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
+                </DetailCard>
+              </button>
+            )
+          })}
         </div>
 
         {/* Continue Button */}
         <div className="flex justify-end">
-          <button
+          <CTAButton
             onClick={handleContinue}
             disabled={!selectedPatient}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium text-lg"
+            variant="primary"
           >
             Continue
-          </button>
+          </CTAButton>
         </div>
       </div>
     </div>
@@ -204,8 +219,8 @@ function SelectPatientContent() {
 export default function SelectPatientPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#f7f7fc' }}>
+        <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
       </div>
     }>
       <SelectPatientContent />
