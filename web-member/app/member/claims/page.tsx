@@ -329,117 +329,117 @@ export default function ClaimsPage() {
 
       {/* Quick Stats - Professional Style */}
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 lg:p-6 animate-pulse">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6 animate-pulse">
+              <div className="flex items-start gap-2 lg:gap-4">
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-200 rounded-lg" />
                 <div className="flex-1">
-                  <div className="h-7 w-16 bg-gray-200 rounded mb-2" />
-                  <div className="h-4 w-20 bg-gray-200 rounded" />
+                  <div className="h-6 lg:h-7 w-12 lg:w-16 bg-gray-200 rounded mb-2" />
+                  <div className="h-3 lg:h-4 w-16 lg:w-20 bg-gray-200 rounded" />
                 </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-6">
           <div
-            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            className="rounded-2xl p-4 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
             style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
               borderColor: '#86ACD8'
             }}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-2 lg:gap-4">
               <div
-                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
                   border: '1px solid #A4BFFE7A',
                   boxShadow: '-2px 11px 46.1px 0px #0000000D'
                 }}
               >
-                <CheckCircleIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
+                <CheckCircleIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
               </div>
-              <div>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.approved}</p>
-                <p className="text-sm text-gray-600 mt-1">Approved</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xl lg:text-2xl font-bold text-gray-900">{stats.approved}</p>
+                <p className="text-xs lg:text-sm text-gray-600 mt-0.5 lg:mt-1 truncate">Approved</p>
               </div>
             </div>
           </div>
 
           <div
-            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            className="rounded-2xl p-4 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
             style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
               borderColor: '#86ACD8'
             }}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-2 lg:gap-4">
               <div
-                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
                   border: '1px solid #A4BFFE7A',
                   boxShadow: '-2px 11px 46.1px 0px #0000000D'
                 }}
               >
-                <ClockIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
+                <ClockIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
               </div>
-              <div>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.processing}</p>
-                <p className="text-sm text-gray-600 mt-1">Processing</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xl lg:text-2xl font-bold text-gray-900">{stats.processing}</p>
+                <p className="text-xs lg:text-sm text-gray-600 mt-0.5 lg:mt-1 truncate">Processing</p>
               </div>
             </div>
           </div>
 
           <div
-            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            className="rounded-2xl p-4 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
             style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
               borderColor: '#86ACD8'
             }}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-2 lg:gap-4">
               <div
-                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
                   border: '1px solid #A4BFFE7A',
                   boxShadow: '-2px 11px 46.1px 0px #0000000D'
                 }}
               >
-                <ExclamationCircleIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
+                <ExclamationCircleIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
               </div>
-              <div>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900">{stats.underReview}</p>
-                <p className="text-sm text-gray-600 mt-1">Under Review</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xl lg:text-2xl font-bold text-gray-900">{stats.underReview}</p>
+                <p className="text-xs lg:text-sm text-gray-600 mt-0.5 lg:mt-1 truncate">Under Review</p>
               </div>
             </div>
           </div>
 
           <div
-            className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+            className="rounded-2xl p-4 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
             style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
               borderColor: '#86ACD8'
             }}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-2 lg:gap-4">
               <div
-                className="flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center"
+                className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
                   border: '1px solid #A4BFFE7A',
                   boxShadow: '-2px 11px 46.1px 0px #0000000D'
                 }}
               >
-                <DocumentTextIcon className="h-6 w-6 lg:h-7 lg:w-7" style={{ color: '#0F5FDC' }} />
+                <DocumentTextIcon className="h-5 w-5 lg:h-6 lg:w-6" style={{ color: '#0F5FDC' }} />
               </div>
-              <div>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900">₹{stats.totalAmount.toLocaleString()}</p>
-                <p className="text-sm text-gray-600 mt-1">Total Claims</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xl lg:text-2xl font-bold text-gray-900 truncate">₹{stats.totalAmount.toLocaleString()}</p>
+                <p className="text-xs lg:text-sm text-gray-600 mt-0.5 lg:mt-1 truncate">Total Claims</p>
               </div>
             </div>
           </div>
