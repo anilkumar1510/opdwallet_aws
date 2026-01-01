@@ -13,6 +13,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import DetailCard from '@/components/ui/DetailCard'
 import CTAButton from '@/components/ui/CTAButton'
 import EmptyState from '@/components/ui/EmptyState'
+import IconCircle from '@/components/ui/IconCircle'
 
 // API base URL configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
