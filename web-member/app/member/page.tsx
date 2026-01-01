@@ -574,23 +574,22 @@ export default function DashboardPage() {
           {/* Header */}
           <h2 className="text-lg lg:text-xl font-bold text-black mb-4 lg:mb-6 px-4 lg:px-6">Health Benefits</h2>
 
-          {/* Carousel Container with Navigation Arrows */}
+          {/* Benefits Grid */}
           <div className="relative group px-4 lg:px-6">
             <div
               ref={benefitsScrollRef}
-              className="grid grid-cols-2 gap-3 lg:gap-4 lg:overflow-x-auto lg:flex lg:flex-nowrap scrollbar-hide"
+              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4"
             >
               {walletCategories.map((category: any) => (
-                <div key={category.categoryCode} className="lg:flex-shrink-0 lg:w-[calc(50%-8px)]">
-                  <BenefitCardEnhanced
-                    benefitId={category.categoryCode}
-                    title={category.name}
-                    currentAmount={category.available}
-                    totalAmount={category.total}
-                    href={benefitUIConfig[category.categoryCode]?.href || '/member/benefits'}
-                    icon={getCategoryIcon(category.categoryCode)}
-                  />
-                </div>
+                <BenefitCardEnhanced
+                  key={category.categoryCode}
+                  benefitId={category.categoryCode}
+                  title={category.name}
+                  currentAmount={category.available}
+                  totalAmount={category.total}
+                  href={benefitUIConfig[category.categoryCode]?.href || '/member/benefits'}
+                  icon={getCategoryIcon(category.categoryCode)}
+                />
               ))}
             </div>
 

@@ -56,7 +56,7 @@ export default function BenefitCardEnhanced({
   return (
     <Link
       href={href}
-      className="block bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl p-4 lg:p-5 transition-all duration-200 hover:shadow-md"
+      className="flex flex-col bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl p-4 lg:p-5 transition-all duration-200 hover:shadow-md h-full min-h-[180px] lg:min-h-[200px]"
       style={{
         ['--hover-border-color' as any]: '#0F5FDC'
       }}
@@ -68,8 +68,8 @@ export default function BenefitCardEnhanced({
       }}
     >
       {/* Title and Chevron */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base lg:text-lg font-semibold" style={{ color: '#0E51A2' }}>
+      <div className="flex items-start justify-between mb-3 min-h-[48px]">
+        <h3 className="text-base lg:text-lg font-semibold leading-tight flex-1 pr-2" style={{ color: '#0E51A2' }}>
           {title}
         </h3>
         <ChevronRightIcon className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400 flex-shrink-0" />
@@ -99,7 +99,7 @@ export default function BenefitCardEnhanced({
       </div>
 
       {/* Amount Left */}
-      <div className="text-sm lg:text-base font-medium" style={{ color: '#303030' }}>
+      <div className="text-sm lg:text-base font-medium mt-auto" style={{ color: '#303030' }}>
         ₹{formatCurrency(amountLeft)} left
       </div>
     </Link>
