@@ -462,23 +462,39 @@ export default function UploadPrescriptionPage() {
                     </CTAButton>
                   </DetailCard>
                 ) : (
-                  <select
-                    value={selectedAddressId}
-                    onChange={(e) => setSelectedAddressId(e.target.value)}
-                    className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl focus:outline-none transition-all bg-white text-sm lg:text-base"
-                    style={{ borderColor: '#86ACD8' }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
-                    required
-                  >
-                    <option value="">Select an address</option>
-                    {addresses.map((address) => (
-                      <option key={address._id} value={address._id}>
-                        {address.addressLine1}, {address.city} - {address.pincode}
-                        {address.isDefault && ' (Default)'}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-3">
+                    <select
+                      value={selectedAddressId}
+                      onChange={(e) => setSelectedAddressId(e.target.value)}
+                      className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl focus:outline-none transition-all bg-white text-sm lg:text-base"
+                      style={{ borderColor: '#86ACD8' }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#0F5FDC'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#86ACD8'}
+                      required
+                    >
+                      <option value="">Select an address</option>
+                      {addresses.map((address) => (
+                        <option key={address._id} value={address._id}>
+                          {address.addressLine1}, {address.city} - {address.pincode}
+                          {address.isDefault && ' (Default)'}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddressModalOpen(true)}
+                      className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 rounded-xl text-sm lg:text-base font-medium transition-all"
+                      style={{ borderColor: '#0F5FDC', color: '#0F5FDC' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#EFF4FF'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                      }}
+                    >
+                      + Add New Address
+                    </button>
+                  </div>
                 )}
                 {selectedAddressId && addresses.find(addr => addr._id === selectedAddressId) && (
                   <div className="mt-2 p-2 lg:p-3 rounded-lg text-xs lg:text-sm" style={{ background: '#EFF4FF', color: '#0F5FDC' }}>
