@@ -63,11 +63,54 @@ export class DiagnosticPrescriptionService {
     return prescription;
   }
 
-  async findByUserId(userId: string): Promise<DiagnosticPrescription[]> {
-    return this.diagnosticPrescriptionModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .sort({ uploadedAt: -1 })
-      .exec();
+  async findByUserId(userId: string): Promise<any[]> {
+    // Use aggregation to join with diagnostic_orders and get order count
+    const prescriptions = await this.diagnosticPrescriptionModel.aggregate([
+      // Match user's prescriptions
+      { $match: { userId: new Types.ObjectId(userId) } },
+
+      // Sort by upload date (newest first)
+      { $sort: { uploadedAt: -1 } },
+
+      // Left join with diagnostic_orders to check if order exists
+      {
+        $lookup: {
+          from: 'diagnostic_orders',
+          localField: '_id',
+          foreignField: 'prescriptionId',
+          as: 'orders',
+        },
+      },
+
+      // Add computed fields
+      {
+        $addFields: {
+          hasOrder: { $gt: [{ $size: '$orders' }, 0] },
+          orderCount: { $size: '$orders' },
+        },
+      },
+
+      // Project fields needed for frontend
+      {
+        $project: {
+          prescriptionId: 1,
+          userId: 1,
+          fileName: 1,
+          filePath: 1,
+          uploadedAt: 1,
+          status: 1,
+          source: 1,
+          healthRecordId: 1,
+          cartId: 1,
+          hasOrder: 1,
+          orderCount: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]).exec();
+
+    return prescriptions;
   }
 
   async findByStatus(status: PrescriptionStatus): Promise<DiagnosticPrescription[]> {

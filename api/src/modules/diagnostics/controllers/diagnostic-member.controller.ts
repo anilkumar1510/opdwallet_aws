@@ -17,6 +17,7 @@ import { DiagnosticOrderService, CreateDiagnosticOrderDto } from '../services/di
 import { DiagnosticVendorService } from '../services/diagnostic-vendor.service';
 import { PrescriptionSource } from '../schemas/diagnostic-prescription.schema';
 import { CancelledBy } from '../schemas/diagnostic-order.schema';
+import { UploadDiagnosticPrescriptionDto } from '../dto/upload-prescription.dto';
 
 @Controller('member/diagnostics')
 @UseGuards(JwtAuthGuard)
@@ -34,7 +35,7 @@ export class DiagnosticMemberController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadPrescription(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: Omit<CreateDiagnosticPrescriptionDto, 'fileName' | 'originalName' | 'fileType' | 'fileSize' | 'filePath'>,
+    @Body() uploadDto: UploadDiagnosticPrescriptionDto,
     @Req() req: any,
   ) {
     if (!file) {
@@ -44,8 +45,13 @@ export class DiagnosticMemberController {
     const userId = req.user?.userId || req.user?.sub;
 
     const prescription = await this.prescriptionService.create({
-      ...body,
       userId,
+      patientId: uploadDto.patientId,
+      patientName: uploadDto.patientName,
+      patientRelationship: uploadDto.patientRelationship,
+      prescriptionDate: new Date(uploadDto.prescriptionDate),
+      pincode: uploadDto.pincode,
+      addressId: uploadDto.addressId,
       fileName: file.filename,
       originalName: file.originalname,
       fileType: file.mimetype,

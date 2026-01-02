@@ -124,6 +124,75 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /member/lab/orders | Get user orders |
 | GET | /member/lab/orders/:orderId | Get order details |
 
+### Lab Tests Flow & ID Mapping
+
+**Complete Lab Test Journey:**
+
+1. **Prescription Upload** → Creates `LabPrescription` with `prescriptionId` (e.g., PRES-1234567890-ABC123)
+   - Status: `UPLOADED`
+   - Endpoint: `POST /member/lab/prescriptions/upload`
+   - Returns: `{ prescriptionId, fileName, uploadedAt, status: 'UPLOADED' }`
+   - At this stage: `hasOrder: false`, `orderCount: 0`
+
+2. **Pending Review State** (Visible in Bookings → Lab Tab)
+   - Prescriptions with `hasOrder: false` appear with status **"Pending review and cart creation"**
+   - Endpoint: `GET /member/lab/prescriptions` (filter for `hasOrder === false`)
+   - User waits for operations team to digitize and create cart
+
+3. **Cart Creation** (Operations Portal) → Creates `LabCart` with `cartId`
+   - Status: `ACTIVE`
+   - Cart is linked to the prescription via `prescriptionId`
+   - Endpoint: `GET /member/lab/carts` (returns carts linked to user's prescriptions)
+   - Visible in Bookings → Lab Tab as "Payment Pending" or cart status
+
+4. **Vendor Selection & Slot Booking** → User selects vendor and time slot
+   - Endpoints:
+     - `GET /member/lab/carts/:cartId/vendors`
+     - `GET /member/lab/vendors/:vendorId/slots`
+
+5. **Order Creation** → Creates `LabOrder` with `orderId` (e.g., ORD-1234567890-XYZ456)
+   - Payment is processed (wallet debit, transaction creation)
+   - Endpoint: `POST /member/lab/orders`
+   - Order is linked to prescription via `prescriptionId` field in LabOrder
+   - Returns: `{ orderId, prescriptionId, cartId, items, vendorName, collectionDate, collectionTime, finalAmount }`
+   - At this stage: Prescription's `hasOrder: true`, `orderCount: 1`
+
+6. **Order Tracking** → User can view order in Bookings → Lab Tab
+   - Endpoint: `GET /member/lab/orders`
+   - Shows as "Paid" with full order details
+
+**ID Relationships:**
+```
+LabPrescription (prescriptionId)
+    ↓
+LabCart (cartId, references prescriptionId)
+    ↓
+LabOrder (orderId, references prescriptionId + cartId)
+    ↓
+Transaction (references orderId for payment tracking)
+```
+
+**Key Fields for Frontend:**
+- **GET /member/lab/prescriptions** response includes:
+  - `hasOrder` (boolean): Whether order exists for this prescription
+  - `orderCount` (number): Number of orders created from this prescription
+  - `labTests` (array): Structured lab tests if from digital prescription
+  - `prescriptionId` (string): Unique prescription identifier
+
+- **GET /member/lab/orders** response includes:
+  - `orderId` (string): Unique order identifier for tracking
+  - `prescriptionId` (ObjectId): Link back to original prescription
+  - `cartId` (string): Link to cart used for this order
+  - `items` (array): Lab tests/services in the order
+
+**Bookings Display Logic:**
+- **Pending Prescriptions** (hasOrder: false): Display with "Pending review and cart creation" badge
+- **Active Carts**: Display with "Payment Pending" or cart status
+- **Paid Orders**: Display with "Paid" badge and full order details
+
+**Recent Prescriptions Limit:**
+- `/member/lab-tests` page shows maximum 2 most recent prescriptions (changed from 5)
+
 ---
 
 ## Diagnostics (Member)
@@ -132,7 +201,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 |--------|----------|-------------|
 | POST | /member/diagnostics/prescriptions/upload | Upload diagnostic prescription |
 | POST | /member/diagnostics/prescriptions/submit-existing | Submit existing health record prescription for diagnostics |
-| GET | /member/diagnostics/prescriptions | Get user diagnostic prescriptions |
+| GET | /member/diagnostics/prescriptions | Get user diagnostic prescriptions with order status (enhanced: includes hasOrder, orderCount) |
 | GET | /member/diagnostics/prescriptions/:id | Get diagnostic prescription details |
 | GET | /member/diagnostics/carts | Get diagnostic carts for user |
 | GET | /member/diagnostics/carts/:cartId | Get diagnostic cart by ID |
@@ -143,6 +212,126 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /member/diagnostics/orders/:id | Get diagnostic order details |
 | POST | /member/diagnostics/orders/:id/cancel | Cancel diagnostic order |
 | GET | /member/diagnostics/orders/:id/reports | Get diagnostic order reports |
+
+### ⚠️ CRITICAL: Data Separation Between Lab and Diagnostics
+
+**IMPORTANT**: Lab and Diagnostics use completely separate database collections and API endpoints:
+
+- **Lab Tests**:
+  - Collection: `lab_prescriptions`, `lab_carts`, `lab_orders`
+  - API Prefix: `/api/member/lab/*`
+  - Upload Endpoint: `POST /api/member/lab/prescriptions/upload`
+
+- **Diagnostics**:
+  - Collection: `diagnostic_prescriptions`, `diagnostic_carts`, `diagnostic_orders`
+  - API Prefix: `/api/member/diagnostics/*`
+  - Upload Endpoint: `POST /api/member/diagnostics/prescriptions/upload`
+
+**Frontend Pages Must Use Correct Endpoints**:
+- `/member/lab-tests/upload` → POST to `/api/member/lab/prescriptions/upload`
+- `/member/diagnostics/upload` → POST to `/api/member/diagnostics/prescriptions/upload`
+- `/member/bookings` Lab tab → GET from `/api/member/lab/*`
+- `/member/bookings` Diagnostics tab → GET from `/api/member/diagnostics/*`
+
+**Bugs Fixed (2026-01-02)**:
+1. **Frontend Endpoint Issue**:
+   - Issue: Diagnostics upload page was incorrectly posting to lab endpoint
+   - Fixed: Line 274 in `/member/diagnostics/upload/page.tsx` corrected to use `/api/member/diagnostics/prescriptions/upload`
+
+2. **Backend DTO Validation Issue**:
+   - Issue: Diagnostic upload endpoint was failing with "Internal server error" due to missing DTO validation
+   - Root Cause: Controller was using inline type without proper validation, and `prescriptionDate` type mismatch (string vs Date)
+   - Fixed:
+     - Created `/api/src/modules/diagnostics/dto/upload-prescription.dto.ts` with proper validation decorators
+     - Updated controller to use `UploadDiagnosticPrescriptionDto` and convert `prescriptionDate` string to Date object
+     - Now matches the pattern used in lab upload endpoint
+
+3. **Backend File Upload Configuration Missing**:
+   - Issue: Mongoose validation error - "fileName: Path `fileName` is required., filePath: Path `filePath` is required."
+   - Root Cause: DiagnosticsModule was missing MulterModule configuration for file uploads
+   - Fixed:
+     - Added MulterModule.register() to `/api/src/modules/diagnostics/diagnostics.module.ts`
+     - Configured diskStorage with upload path: `./uploads/diagnostic-prescriptions`
+     - Added file validation (JPEG, PNG, PDF only, max 10MB)
+     - Now matches the configuration used in lab module
+
+4. **Upload Directory Not Created**:
+   - Issue: ENOENT error - "no such file or directory, open 'uploads/diagnostic-prescriptions/...'"
+   - Root Cause: Upload directories didn't exist in Docker container
+   - Fixed:
+     - Updated `docker-compose.yml` line 59 to create directories on container startup
+     - Created local directories: `api/uploads/diagnostic-prescriptions` and `api/uploads/diagnostic-reports`
+     - Added .gitkeep files to track empty directories in git
+     - Directories now created automatically when container starts
+
+---
+
+### Diagnostics Flow & ID Mapping
+
+**Complete Diagnostics Journey:**
+
+1. **Prescription Upload** → Creates `DiagnosticPrescription` with `prescriptionId` (e.g., DIAG-PRES-1234567890-ABC123)
+   - Status: `UPLOADED`
+   - Endpoint: `POST /member/diagnostics/prescriptions/upload`
+   - Returns: `{ prescriptionId, fileName, uploadedAt, status: 'UPLOADED' }`
+   - At this stage: `hasOrder: false`, `orderCount: 0`
+
+2. **Pending Review State** (Visible in Bookings → Diagnostics Tab)
+   - Prescriptions with `hasOrder: false` appear with status **"Pending review and cart creation"**
+   - Endpoint: `GET /member/diagnostics/prescriptions` (filter for `hasOrder === false`)
+   - User waits for operations team to digitize and create cart
+
+3. **Cart Creation** (Operations Portal) → Creates `DiagnosticCart` with `cartId`
+   - Status: `ACTIVE`
+   - Cart is linked to the prescription via `prescriptionId`
+   - Endpoint: `GET /member/diagnostics/carts` (returns carts linked to user's prescriptions)
+
+4. **Vendor Selection & Slot Booking** → User selects vendor and time slot
+   - Endpoints:
+     - `GET /member/diagnostics/carts/:cartId/vendors/:vendorId/pricing`
+     - `GET /member/diagnostics/vendors/:vendorId/slots`
+
+5. **Order Creation** → Creates `DiagnosticOrder` with `orderId` (e.g., DIAG-ORD-1234567890-XYZ456)
+   - Payment is processed (wallet debit, transaction creation)
+   - Endpoint: `POST /member/diagnostics/orders`
+   - Order is linked to prescription via `prescriptionId` field in DiagnosticOrder
+   - Returns: `{ orderId, prescriptionId, cartId, items, vendorName, collectionDate, collectionTime, finalAmount }`
+   - At this stage: Prescription's `hasOrder: true`, `orderCount: 1`
+
+6. **Order Tracking** → User can view order in Bookings → Diagnostics Tab
+   - Endpoint: `GET /member/diagnostics/orders`
+   - Shows as "Paid" with full order details
+
+**ID Relationships:**
+```
+DiagnosticPrescription (prescriptionId)
+    ↓
+DiagnosticCart (cartId, references prescriptionId)
+    ↓
+DiagnosticOrder (orderId, references prescriptionId + cartId)
+    ↓
+Transaction (references orderId for payment tracking)
+```
+
+**Key Fields for Frontend:**
+- **GET /member/diagnostics/prescriptions** response includes:
+  - `hasOrder` (boolean): Whether order exists for this prescription
+  - `orderCount` (number): Number of orders created from this prescription
+  - `prescriptionId` (string): Unique prescription identifier
+
+- **GET /member/diagnostics/orders** response includes:
+  - `orderId` (string): Unique order identifier for tracking
+  - `prescriptionId` (ObjectId): Link back to original prescription
+  - `cartId` (string): Link to cart used for this order
+  - `items` (array): Diagnostic tests/services in the order
+
+**Bookings Display Logic:**
+- **Pending Prescriptions** (hasOrder: false): Display with "Pending review and cart creation" badge
+- **Active Carts**: Display with "Payment Pending" or cart status
+- **Paid Orders**: Display with "Paid" badge and full order details
+
+**Recent Prescriptions Limit:**
+- `/member/diagnostics` page shows maximum 2 most recent prescriptions (changed from 5)
 
 ---
 

@@ -270,7 +270,7 @@ export default function LabTestsPage() {
             </div>
 
             <div className="space-y-3">
-              {prescriptions.slice(0, 5).map((prescription) => (
+              {prescriptions.slice(0, 2).map((prescription) => (
                 <DetailCard
                   key={prescription.prescriptionId}
                   variant="secondary"

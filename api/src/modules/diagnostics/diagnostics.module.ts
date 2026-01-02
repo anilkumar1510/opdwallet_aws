@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { DiagnosticService, DiagnosticServiceSchema } from './schemas/diagnostic-service.schema';
 import { DiagnosticVendor, DiagnosticVendorSchema } from './schemas/diagnostic-vendor.schema';
 import { DiagnosticVendorPricing, DiagnosticVendorPricingSchema } from './schemas/diagnostic-vendor-pricing.schema';
@@ -30,6 +33,38 @@ import { DiagnosticMemberController } from './controllers/diagnostic-member.cont
       { name: DiagnosticOrder.name, schema: DiagnosticOrderSchema },
       { name: DiagnosticMasterTest.name, schema: DiagnosticMasterTestSchema },
     ]),
+    MulterModule.register({
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadPath = file.fieldname === 'file'
+            ? './uploads/diagnostic-prescriptions'
+            : './uploads/diagnostic-reports';
+          cb(null, uploadPath);
+        },
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+      fileFilter: (req, file, cb) => {
+        if (
+          file.mimetype === 'image/jpeg' ||
+          file.mimetype === 'image/png' ||
+          file.mimetype === 'image/jpg' ||
+          file.mimetype === 'application/pdf'
+        ) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only images and PDF files are allowed'), false);
+        }
+      },
+    }),
   ],
   controllers: [
     DiagnosticAdminController,

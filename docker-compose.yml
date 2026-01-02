@@ -56,7 +56,7 @@ services:
       - ./api:/app
     networks:
       - opd-network
-    command: sh -c "npm install --include=dev && npm run build && npm run start:prod"
+    command: sh -c "mkdir -p uploads/diagnostic-prescriptions uploads/diagnostic-reports && npm install --include=dev && npm run build && npm run start:prod"
 
   web-admin:
     image: node:20-alpine

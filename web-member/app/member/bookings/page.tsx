@@ -12,7 +12,8 @@ import {
   BuildingStorefrontIcon,
   SparklesIcon,
   EyeIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
@@ -134,6 +135,9 @@ export default function BookingsPage() {
   const [pastVisionBookings, setPastVisionBookings] = useState<VisionBooking[]>([])
   const [labCarts, setLabCarts] = useState<any[]>([])
   const [labOrders, setLabOrders] = useState<any[]>([])
+  const [labPrescriptions, setLabPrescriptions] = useState<any[]>([])
+  const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([])
+  const [diagnosticPrescriptions, setDiagnosticPrescriptions] = useState<any[]>([])
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<DentalBooking | null>(null)
 
@@ -151,6 +155,9 @@ export default function BookingsPage() {
     fetchVisionBookings()
     fetchLabCarts()
     fetchLabOrders()
+    fetchLabPrescriptions()
+    fetchDiagnosticOrders()
+    fetchDiagnosticPrescriptions()
   }, [viewingUserId])
 
   const fetchAppointments = async () => {
@@ -424,6 +431,84 @@ export default function BookingsPage() {
     }
   }
 
+  const fetchLabPrescriptions = async () => {
+    try {
+      console.log('[LabPrescriptions] Fetching lab prescriptions')
+      const response = await fetch('/api/member/lab/prescriptions', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[LabPrescriptions] No lab prescriptions found or error fetching')
+        setLabPrescriptions([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[LabPrescriptions] Lab prescriptions received:', data)
+
+      // Filter for prescriptions without orders (hasOrder === false)
+      const pendingPrescriptions = (data.data || []).filter(
+        (prescription: any) => prescription.hasOrder === false
+      )
+      console.log('[LabPrescriptions] Pending prescriptions (no order):', pendingPrescriptions)
+      setLabPrescriptions(pendingPrescriptions)
+    } catch (error) {
+      console.error('[LabPrescriptions] Error fetching lab prescriptions:', error)
+      setLabPrescriptions([])
+    }
+  }
+
+  const fetchDiagnosticOrders = async () => {
+    try {
+      console.log('[DiagnosticOrders] Fetching diagnostic orders')
+      const response = await fetch('/api/member/diagnostics/orders', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[DiagnosticOrders] No diagnostic orders found or error fetching')
+        setDiagnosticOrders([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[DiagnosticOrders] Diagnostic orders received:', data)
+      setDiagnosticOrders(data.data || [])
+    } catch (error) {
+      console.error('[DiagnosticOrders] Error fetching diagnostic orders:', error)
+      setDiagnosticOrders([])
+    }
+  }
+
+  const fetchDiagnosticPrescriptions = async () => {
+    try {
+      console.log('[DiagnosticPrescriptions] Fetching diagnostic prescriptions')
+      const response = await fetch('/api/member/diagnostics/prescriptions', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[DiagnosticPrescriptions] No diagnostic prescriptions found or error fetching')
+        setDiagnosticPrescriptions([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[DiagnosticPrescriptions] Diagnostic prescriptions received:', data)
+
+      // Filter for prescriptions without orders (hasOrder === false)
+      const pendingPrescriptions = (data.data || []).filter(
+        (prescription: any) => prescription.hasOrder === false
+      )
+      console.log('[DiagnosticPrescriptions] Pending prescriptions (no order):', pendingPrescriptions)
+      setDiagnosticPrescriptions(pendingPrescriptions)
+    } catch (error) {
+      console.error('[DiagnosticPrescriptions] Error fetching diagnostic prescriptions:', error)
+      setDiagnosticPrescriptions([])
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const day = date.getDate()
@@ -677,6 +762,20 @@ export default function BookingsPage() {
             <div className="flex items-center gap-1.5 lg:gap-2">
               <BeakerIcon className="h-4 w-4 lg:h-5 lg:w-5" />
               <span>Lab</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('diagnostics')}
+            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+              activeTab === 'diagnostics'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
+            }`}
+            style={activeTab === 'diagnostics' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
+          >
+            <div className="flex items-center gap-1.5 lg:gap-2">
+              <HeartIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+              <span>Diagnostics</span>
             </div>
           </button>
           <button
@@ -998,7 +1097,7 @@ export default function BookingsPage() {
 
         {activeTab === 'lab' && (
           <div className="space-y-4">
-            {labCarts.length === 0 && labOrders.length === 0 ? (
+            {labPrescriptions.length === 0 && labCarts.length === 0 && labOrders.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
                 background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
                 borderColor: '#86ACD8'
@@ -1025,6 +1124,70 @@ export default function BookingsPage() {
               </div>
             ) : (
               <>
+                {/* Pending Lab Prescriptions (Awaiting Review) */}
+                {labPrescriptions.map((prescription) => (
+                  <div
+                    key={prescription._id || prescription.prescriptionId}
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <DocumentArrowDownIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Lab Prescription</div>
+                          <div className="text-sm text-gray-600">Uploaded {formatDate(prescription.uploadedAt)}</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        Pending Review
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="text-sm text-gray-900">
+                        <span className="font-medium">File:</span> {prescription.fileName || prescription.originalName || 'Prescription document'}
+                      </div>
+
+                      {prescription.labTests && prescription.labTests.length > 0 && (
+                        <div className="text-sm text-gray-900">
+                          <div className="font-medium mb-1">Prescribed Tests:</div>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {prescription.labTests.slice(0, 3).map((test: any, idx: number) => (
+                              <li key={idx}>{test.testName || test}</li>
+                            ))}
+                            {prescription.labTests.length > 3 && (
+                              <li className="text-gray-500">+{prescription.labTests.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-600 mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                        <span className="font-medium">Status:</span> Your prescription is being reviewed. Once processed, you'll be able to select a vendor and book your lab test.
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="text-sm text-gray-900">
+                        Prescription ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
                 {/* Lab Orders (Paid) */}
                 {labOrders.map((order) => (
                   <div
@@ -1203,6 +1366,165 @@ export default function BookingsPage() {
                   </div>
                 )
                 })}
+              </>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'diagnostics' && (
+          <div className="space-y-4">
+            {diagnosticPrescriptions.length === 0 && diagnosticOrders.length === 0 ? (
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
+              }}>
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
+                  <HeartIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
+                </div>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No Diagnostic Tests</h3>
+                <p className="text-gray-600 text-sm lg:text-base mb-6">You haven't booked any diagnostic tests yet</p>
+                <button
+                  onClick={() => router.push('/member/diagnostics')}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+                >
+                  Go to Diagnostics
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Pending Diagnostic Prescriptions (Awaiting Review) */}
+                {diagnosticPrescriptions.map((prescription) => (
+                  <div
+                    key={prescription._id || prescription.prescriptionId}
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <DocumentArrowDownIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Diagnostic Prescription</div>
+                          <div className="text-sm text-gray-600">Uploaded {formatDate(prescription.uploadedAt)}</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        Pending Review
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="text-sm text-gray-900">
+                        <span className="font-medium">File:</span> {prescription.fileName || prescription.originalName || 'Prescription document'}
+                      </div>
+
+                      <div className="text-xs text-gray-600 mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                        <span className="font-medium">Status:</span> Your prescription is being reviewed. Once processed, you'll be able to select a vendor and book your diagnostic test.
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="text-sm text-gray-900">
+                        Prescription ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Diagnostic Orders (Paid) */}
+                {diagnosticOrders.map((order) => (
+                  <div
+                    key={order._id}
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <HeartIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Diagnostic Test Order</div>
+                          <div className="text-sm text-gray-900">{order.items?.length || 0} test(s)</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Paid
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
+                        <UserIcon className="h-4 w-4" />
+                        <span>Vendor: {order.vendorName}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>{formatDate(order.collectionDate)}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <ClockIcon className="h-4 w-4" />
+                        <span>{order.collectionTime}</span>
+                      </div>
+
+                      {order.items && order.items.length > 0 && (
+                        <div className="text-sm text-gray-900">
+                          <div className="font-medium mb-1">Tests:</div>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {order.items.slice(0, 3).map((item: any, idx: number) => (
+                              <li key={idx}>{item.serviceName}</li>
+                            ))}
+                            {order.items.length > 3 && (
+                              <li className="text-gray-500">+{order.items.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-900">
+                          Order ID: <span className="font-medium text-gray-900">{order.orderId}</span>
+                        </div>
+                        <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
+                          ₹{order.finalAmount}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </>
             )}
           </div>
