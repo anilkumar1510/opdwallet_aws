@@ -110,10 +110,10 @@ export default function BottomNavigation() {
   return (
     <>
       {/* Top Header for Mobile - Logo, Profile, and Notifications */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md">
-        <div className="flex items-center justify-between h-14 px-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md overflow-visible">
+        <div className="flex items-center justify-between h-14 px-3 overflow-visible">
           {/* Left: Profile Dropdown */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 overflow-visible">
             <ProfileDropdown user={user} theme="dark" />
           </div>
 

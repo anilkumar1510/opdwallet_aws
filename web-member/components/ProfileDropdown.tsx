@@ -108,7 +108,7 @@ export default function ProfileDropdown({ user, theme = 'light' }: ProfileDropdo
   // Navigate to services page to view all available services
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative overflow-visible" ref={dropdownRef}>
       {/* Avatar Button */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
@@ -122,7 +122,7 @@ export default function ProfileDropdown({ user, theme = 'light' }: ProfileDropdo
 
       {/* Dropdown Menu */}
       {showDropdown && (
-        <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200" style={{ minWidth: '14rem', width: '14rem' }}>
           {/* User Info */}
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900 truncate">
