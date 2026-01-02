@@ -12,6 +12,33 @@ Before starting tests:
 - ✅ API endpoint tests passed
 - ✅ All services running (API + 6 portals)
 
+## Automated Operations (No Permission Required)
+
+The following operations can be performed automatically without requiring explicit user permission during testing:
+
+### Docker Operations
+- ✅ **Docker restart** - `docker-compose restart`
+- ✅ **Docker stop** - `docker-compose stop`
+- ✅ **Docker start** - `docker-compose up -d`
+- ✅ **Docker rebuild** - `docker-compose build`
+- ✅ **View Docker logs** - `docker-compose logs`
+- ✅ **Check Docker status** - `docker-compose ps`
+
+### Service Management
+- ✅ **Restart individual services** - `docker-compose restart <service-name>`
+- ✅ **View service logs** - `docker-compose logs -f <service-name>`
+- ✅ **Rebuild services** - `docker-compose up -d --build <service-name>`
+
+### Why These Don't Require Permission
+During the **testing phase**, these operations are considered safe and necessary for:
+- Debugging and troubleshooting
+- Applying configuration changes
+- Recovering from service failures
+- Testing deployment scenarios
+- Performance optimization
+
+**Note:** These automated permissions apply ONLY during development/testing phase. Production deployments require explicit approval.
+
 ## Testing Credentials
 
 ### Member Portal
