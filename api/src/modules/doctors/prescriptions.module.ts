@@ -33,13 +33,22 @@ import { Medicine, MedicineSchema } from './schemas/medicine.schema';
 import { Diagnosis, DiagnosisSchema } from './schemas/diagnosis.schema';
 import { Symptom, SymptomSchema } from './schemas/symptom.schema';
 import { Doctor, DoctorSchema } from './schemas/doctor.schema';
+import { PrescriptionTemplate, PrescriptionTemplateSchema } from './schemas/prescription-template.schema';
+import { PrescriptionTemplateService } from './prescription-template.service';
+import { PrescriptionTemplateController } from './prescription-template.controller';
+import { ConsultationNote, ConsultationNoteSchema } from './schemas/consultation-note.schema';
+import { ConsultationNoteService } from './consultation-note.service';
+import { ConsultationNoteController } from './consultation-note.controller';
+import { HealthRecordsService } from './health-records.service';
 import {
   Appointment,
   AppointmentSchema,
 } from '../appointments/schemas/appointment.schema';
+import { CounterModule } from '../counters/counter.module';
 
 @Module({
   imports: [
+    CounterModule,
     MongooseModule.forFeature([
       { name: DoctorPrescription.name, schema: DoctorPrescriptionSchema },
       { name: DigitalPrescription.name, schema: DigitalPrescriptionSchema },
@@ -47,6 +56,8 @@ import {
       { name: Diagnosis.name, schema: DiagnosisSchema },
       { name: Symptom.name, schema: SymptomSchema },
       { name: Doctor.name, schema: DoctorSchema },
+      { name: PrescriptionTemplate.name, schema: PrescriptionTemplateSchema },
+      { name: ConsultationNote.name, schema: ConsultationNoteSchema },
       { name: Appointment.name, schema: AppointmentSchema },
     ]),
     JwtModule.registerAsync({
@@ -70,6 +81,8 @@ import {
     SymptomsController,
     DoctorAuthController,
     DoctorAppointmentsController,
+    PrescriptionTemplateController,
+    ConsultationNoteController,
   ],
   providers: [
     PrescriptionsService,
@@ -78,6 +91,9 @@ import {
     DiagnosisService,
     SymptomsService,
     DoctorAuthService,
+    PrescriptionTemplateService,
+    ConsultationNoteService,
+    HealthRecordsService,
   ],
   exports: [PrescriptionsService, DigitalPrescriptionService, PdfGenerationService, DoctorAuthService],
 })

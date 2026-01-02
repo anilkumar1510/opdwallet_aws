@@ -16,7 +16,7 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 | Path | Description |
 |------|-------------|
-| /member | Main member dashboard with OPD cards, wallet balance, and quick actions |
+| /member | Main member dashboard with OPD cards, wallet balance, and quick actions. Includes mobile-responsive profile dropdown menu in top navigation with user info, profile switching, services access, and logout functionality. |
 
 ---
 
@@ -52,7 +52,7 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 | Path | Description |
 |------|-------------|
 | /member/wallet | Detailed wallet balance with category breakdown |
-| /member/transactions | Complete transaction history with filters |
+| /member/transactions | Complete transaction history with filters and analytics overview. Includes mobile-responsive analytics charts (Transaction Volume bar chart, 7-Day Trend chart, Category Split pie chart, Balance Trend line chart) with horizontal scroll on mobile and grid layout on desktop. |
 | /member/orders | View all orders and transaction history |
 | /member/orders/[transactionId] | View specific order details |
 

@@ -6,12 +6,16 @@ import {
   HomeIcon,
   CalendarDaysIcon,
   DocumentTextIcon,
+  ClockIcon,
+  UserCircleIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'
 import {
   HomeIcon as HomeIconSolid,
   CalendarDaysIcon as CalendarDaysIconSolid,
   DocumentTextIcon as DocumentTextIconSolid,
+  ClockIcon as ClockIconSolid,
+  UserCircleIcon as UserCircleIconSolid,
 } from '@heroicons/react/24/solid'
 import { logoutDoctor } from '@/lib/api/auth'
 import { Logo } from '@/components/ui/Logo'
@@ -41,6 +45,18 @@ const navItems: NavItem[] = [
     href: '/doctorview/prescriptions',
     icon: DocumentTextIcon,
     activeIcon: DocumentTextIconSolid,
+  },
+  {
+    name: 'Calendar',
+    href: '/doctorview/calendar',
+    icon: ClockIcon,
+    activeIcon: ClockIconSolid,
+  },
+  {
+    name: 'Profile',
+    href: '/doctorview/profile',
+    icon: UserCircleIcon,
+    activeIcon: UserCircleIconSolid,
   },
 ]
 
@@ -121,7 +137,7 @@ export default function DoctorNavigation() {
 
       {/* Mobile Navigation */}
       <div className="md:hidden border-t border-white/10">
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-5">
           {navItems.map((item) => {
             const active = isActive(item.href)
             const Icon = active ? item.activeIcon : item.icon

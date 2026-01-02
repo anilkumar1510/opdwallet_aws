@@ -7,10 +7,12 @@ import { DoctorAppointmentsController } from './doctor-appointments.controller';
 import { DoctorAuthController } from './doctor-auth.controller';
 import { DoctorsService } from './doctors.service';
 import { DoctorAuthService } from './doctor-auth.service';
+import { HealthRecordsService } from './health-records.service';
 import { Doctor, DoctorSchema } from './schemas/doctor.schema';
 import { DoctorSlot, DoctorSlotSchema } from '../doctor-slots/schemas/doctor-slot.schema';
 import { Clinic, ClinicSchema } from '../clinics/schemas/clinic.schema';
 import { Appointment, AppointmentSchema } from '../appointments/schemas/appointment.schema';
+import { DigitalPrescription, DigitalPrescriptionSchema } from './schemas/digital-prescription.schema';
 import { CounterModule } from '../counters/counter.module';
 import { PrescriptionsModule } from './prescriptions.module';
 import { LocationModule } from '../location/location.module';
@@ -22,6 +24,7 @@ import { LocationModule } from '../location/location.module';
       { name: DoctorSlot.name, schema: DoctorSlotSchema },
       { name: Clinic.name, schema: ClinicSchema },
       { name: Appointment.name, schema: AppointmentSchema },
+      { name: DigitalPrescription.name, schema: DigitalPrescriptionSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -38,7 +41,7 @@ import { LocationModule } from '../location/location.module';
     LocationModule, // Added for location-based filtering
   ],
   controllers: [DoctorsController, DoctorAppointmentsController, DoctorAuthController],
-  providers: [DoctorsService, DoctorAuthService],
+  providers: [DoctorsService, DoctorAuthService, HealthRecordsService],
   exports: [DoctorsService],
 })
 export class DoctorsModule {}

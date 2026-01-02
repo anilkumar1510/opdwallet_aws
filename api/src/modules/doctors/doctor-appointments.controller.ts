@@ -8,15 +8,17 @@ import {
   Request,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Request as ExpressRequest } from 'express';
 import { Appointment, AppointmentDocument, AppointmentStatus } from '../appointments/schemas/appointment.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { HealthRecordsService } from './health-records.service';
 
 interface AuthRequest extends ExpressRequest {
   user: {
@@ -32,6 +34,7 @@ export class DoctorAppointmentsController {
   constructor(
     @InjectModel(Appointment.name)
     private appointmentModel: Model<AppointmentDocument>,
+    private healthRecordsService: HealthRecordsService,
   ) {}
 
   @Get('counts')
@@ -382,6 +385,65 @@ export class DoctorAppointmentsController {
     return {
       message: 'Appointment confirmed successfully',
       appointment: appointment.toObject(),
+    };
+  }
+
+  // ==================== PATIENT HEALTH RECORDS ====================
+
+  /**
+   * Verify if doctor has/had appointment relationship with patient
+   */
+  private async verifyDoctorPatientRelationship(
+    doctorId: string,
+    patientId: string,
+  ): Promise<boolean> {
+    const patientObjectId = new Types.ObjectId(patientId);
+
+    const appointmentExists = await this.appointmentModel.exists({
+      doctorId,
+      userId: patientObjectId,
+      status: {
+        $in: [
+          AppointmentStatus.CONFIRMED,
+          AppointmentStatus.COMPLETED,
+          AppointmentStatus.PENDING_CONFIRMATION,
+        ],
+      },
+    });
+
+    return !!appointmentExists;
+  }
+
+  @Get('patients/:patientId/health-records')
+  async getPatientHealthRecords(
+    @Param('patientId') patientId: string,
+    @Request() req: AuthRequest,
+  ) {
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    // Verify doctor has/had appointment with this patient
+    const hasAccess = await this.verifyDoctorPatientRelationship(
+      doctorId,
+      patientId,
+    );
+
+    if (!hasAccess) {
+      throw new ForbiddenException(
+        'No appointment relationship with this patient. Access denied.',
+      );
+    }
+
+    const healthRecords = await this.healthRecordsService.getPatientRecords(
+      patientId,
+    );
+
+    return {
+      message: 'Patient health records retrieved successfully',
+      data: healthRecords,
     };
   }
 }

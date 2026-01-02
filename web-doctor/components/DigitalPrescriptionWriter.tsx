@@ -5,12 +5,17 @@ import { createDigitalPrescription, generatePrescriptionPDF, MedicineItem, LabTe
 import MedicineAutocomplete from './MedicineAutocomplete'
 import DiagnosisAutocomplete from './DiagnosisAutocomplete'
 import SymptomsAutocomplete from './SymptomsAutocomplete'
+import VitalsInput, { Vitals } from './VitalsInput'
+import AllergiesInput, { Allergies } from './AllergiesInput'
+import TemplateSelector from './TemplateSelector'
+import { createTemplate, PrescriptionTemplate } from '@/lib/api/templates'
 import {
   PlusIcon,
   TrashIcon,
   DocumentTextIcon,
   CheckCircleIcon,
   XCircleIcon,
+  BookmarkIcon,
 } from '@heroicons/react/24/outline'
 
 interface DigitalPrescriptionWriterProps {
@@ -40,6 +45,14 @@ export default function DigitalPrescriptionWriter({
   const [dietaryAdvice, setDietaryAdvice] = useState('')
   const [followUpDate, setFollowUpDate] = useState('')
   const [followUpInstructions, setFollowUpInstructions] = useState('')
+
+  const [vitals, setVitals] = useState<Vitals>({})
+  const [allergies, setAllergies] = useState<Allergies>({
+    hasKnownAllergies: false,
+    drugAllergies: [],
+    foodAllergies: [],
+    otherAllergies: [],
+  })
 
   const [medicines, setMedicines] = useState<MedicineItem[]>([
     {
@@ -101,6 +114,50 @@ export default function DigitalPrescriptionWriter({
     setLabTests(updated)
   }
 
+  const loadTemplate = (template: PrescriptionTemplate) => {
+    // Load template data into form
+    setDiagnosis(template.diagnosis || '')
+    setMedicines(template.medicines && template.medicines.length > 0 ? template.medicines : [{
+      medicineName: '',
+      genericName: '',
+      dosage: '',
+      frequency: 'BD (Twice Daily)',
+      duration: '5 days',
+      route: 'Oral',
+      instructions: 'After Food',
+    }])
+    setLabTests(template.labTests || [])
+    setGeneralInstructions(template.generalInstructions || '')
+    setDietaryAdvice(template.dietaryAdvice || '')
+  }
+
+  const saveAsTemplate = async () => {
+    const templateName = prompt('Enter a name for this template:')
+    if (!templateName) return
+
+    const description = prompt('Enter a description (optional):')
+
+    const validMedicines = medicines.filter(m => m.medicineName.trim() && m.dosage.trim())
+
+    try {
+      await createTemplate({
+        templateName,
+        description: description || undefined,
+        diagnosis: diagnosis.trim() || undefined,
+        medicines: validMedicines.length > 0 ? validMedicines : undefined,
+        labTests: labTests.filter(t => t.testName.trim()).length > 0
+          ? labTests.filter(t => t.testName.trim())
+          : undefined,
+        generalInstructions: generalInstructions.trim() || undefined,
+        dietaryAdvice: dietaryAdvice.trim() || undefined,
+      })
+
+      alert('Template saved successfully!')
+    } catch (err: any) {
+      alert(err.message || 'Failed to save template')
+    }
+  }
+
   const handleSubmit = async (e: FormEvent, withPDF = false) => {
     e.preventDefault()
     setLoading(true)
@@ -123,6 +180,9 @@ export default function DigitalPrescriptionWriter({
     }
 
     try {
+      // Check if vitals has any values
+      const hasVitals = Object.values(vitals).some(v => v !== undefined && v !== '')
+
       const prescriptionData = {
         appointmentId,
         chiefComplaint: chiefComplaint.trim() || undefined,
@@ -136,6 +196,8 @@ export default function DigitalPrescriptionWriter({
         followUpInstructions: followUpInstructions.trim() || undefined,
         generalInstructions: generalInstructions.trim() || undefined,
         dietaryAdvice: dietaryAdvice.trim() || undefined,
+        vitals: hasVitals ? vitals : undefined,
+        allergies: allergies,
       }
 
       console.log('🔵 [DigitalPrescriptionWriter] Sending prescription to API:', prescriptionData)
@@ -207,9 +269,25 @@ export default function DigitalPrescriptionWriter({
       )}
 
       <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+        {/* Template Selector */}
+        <div className="pb-4 border-b border-gray-200">
+          <TemplateSelector onSelect={loadTemplate} disabled={loading} />
+        </div>
+
         {/* Clinical Information */}
         <div className="space-y-4">
-          <h4 className="font-medium text-gray-900">Clinical Information</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-gray-900">Clinical Information</h4>
+            <button
+              type="button"
+              onClick={saveAsTemplate}
+              className="text-sm text-[#2B4D8C] hover:text-[#1E3A6B] flex items-center gap-1"
+              disabled={loading}
+            >
+              <BookmarkIcon className="h-4 w-4" />
+              Save as Template
+            </button>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -255,6 +333,12 @@ export default function DigitalPrescriptionWriter({
             </p>
           </div>
         </div>
+
+        {/* Vitals */}
+        <VitalsInput vitals={vitals} onChange={setVitals} />
+
+        {/* Allergies */}
+        <AllergiesInput allergies={allergies} onChange={setAllergies} />
 
         {/* Medicines */}
         <div className="space-y-4">

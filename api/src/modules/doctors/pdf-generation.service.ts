@@ -5,6 +5,7 @@ import {
   DigitalPrescription,
   DigitalPrescriptionDocument,
 } from './schemas/digital-prescription.schema';
+import { Doctor, DoctorDocument } from './schemas/doctor.schema';
 import * as PDFDocument from 'pdfkit';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -16,6 +17,8 @@ export class PdfGenerationService {
   constructor(
     @InjectModel(DigitalPrescription.name)
     private digitalPrescriptionModel: Model<DigitalPrescriptionDocument>,
+    @InjectModel(Doctor.name)
+    private doctorModel: Model<DoctorDocument>,
   ) {
     // Ensure upload directory exists
     if (!existsSync(this.uploadDir)) {
@@ -34,6 +37,10 @@ export class PdfGenerationService {
       throw new Error('Prescription not found');
     }
 
+    // Fetch doctor for signature
+    const doctor = await this.doctorModel.findOne({ doctorId: prescription.doctorId, isActive: true });
+    const doctorSignaturePath = doctor?.signatureImage;
+
     const fileName = `prescription-${prescriptionId}-${Date.now()}.pdf`;
     const filePath = join(this.uploadDir, fileName);
 
@@ -44,59 +51,191 @@ export class PdfGenerationService {
 
         doc.pipe(stream);
 
-        // Header
+        // ==================== ENHANCED HEADER ====================
         doc
           .fontSize(20)
           .font('Helvetica-Bold')
-          .text('MEDICAL PRESCRIPTION', { align: 'center' })
-          .moveDown(0.5);
+          .text('PRESCRIPTION', { align: 'center' })
+          .moveDown(0.3);
 
-        // Doctor Details
+        // Prescription Date (top right)
+        const currentY = doc.y;
+        doc
+          .fontSize(9)
+          .font('Helvetica')
+          .text(
+            `Date: ${new Date(prescription.createdDate).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            })}`,
+            { align: 'right' }
+          );
+
+        doc.y = currentY;
+        doc.moveDown(0.5);
+
+        // Doctor Details with Clinic Info
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text(prescription.doctorName.toUpperCase())
+          .text(`Dr. ${prescription.doctorName}`)
           .font('Helvetica')
-          .fontSize(10);
+          .fontSize(9);
 
         if (prescription.doctorQualification) {
           doc.text(prescription.doctorQualification);
+        }
+
+        if (prescription.doctorSpecialty) {
+          doc.text(`Specialty: ${prescription.doctorSpecialty}`);
         }
 
         if (prescription.doctorRegistrationNumber) {
           doc.text(`Reg. No: ${prescription.doctorRegistrationNumber}`);
         }
 
-        doc.moveDown(1);
+        // Clinic Information
+        if (prescription.clinicName || prescription.clinicAddress) {
+          doc.moveDown(0.3);
+          if (prescription.clinicName) {
+            doc.font('Helvetica-Bold').text(prescription.clinicName);
+          }
+          doc.font('Helvetica');
+          if (prescription.clinicAddress) {
+            doc.text(prescription.clinicAddress);
+          }
+          if (prescription.clinicPhone) {
+            doc.text(`Ph: ${prescription.clinicPhone}`);
+          }
+        }
 
-        // Prescription Date
-        doc
-          .fontSize(10)
-          .text(`Date: ${new Date(prescription.createdDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          })}`, { align: 'right' });
+        doc.moveDown(0.8);
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(0.8);
 
-        doc.moveDown(1);
-
-        // Patient Details Box
-        doc.rect(50, doc.y, 500, 80).stroke();
-        const patientBoxY = doc.y + 10;
-
+        // ==================== PATIENT DETAILS (ENHANCED) ====================
         doc
           .fontSize(11)
           .font('Helvetica-Bold')
-          .text('Patient Details:', 60, patientBoxY);
+          .text('PATIENT DETAILS');
 
-        doc
-          .font('Helvetica')
-          .fontSize(10)
-          .text(`Name: ${prescription.patientName}`, 60, patientBoxY + 20)
-          .text(`Prescription ID: ${prescription.prescriptionId}`, 60, patientBoxY + 35);
+        doc.moveDown(0.3);
+        doc.fontSize(9).font('Helvetica');
 
-        doc.y = patientBoxY + 80;
-        doc.moveDown(1);
+        // Build patient details string
+        let patientDetails = `Name: ${prescription.patientName}`;
+        if (prescription.patientAge) {
+          patientDetails += `    Age: ${prescription.patientAge} years`;
+        }
+        if (prescription.patientGender) {
+          patientDetails += `    Gender: ${prescription.patientGender}`;
+        }
+        if (prescription.patientWeight) {
+          patientDetails += `    Weight: ${prescription.patientWeight} kg`;
+        }
+
+        doc.text(patientDetails);
+
+        if (prescription.patientBloodGroup) {
+          doc.text(`Blood Group: ${prescription.patientBloodGroup}`);
+        }
+
+        if (prescription.patientPhone) {
+          doc.text(`Contact: ${prescription.patientPhone}`);
+        }
+
+        doc.moveDown(0.5);
+
+        // ==================== ALLERGY WARNING BOX (PROMINENT) ====================
+        if (prescription.allergies) {
+          const hasAllergies = prescription.allergies.hasKnownAllergies &&
+            (prescription.allergies.drugAllergies?.length > 0 ||
+             prescription.allergies.foodAllergies?.length > 0 ||
+             prescription.allergies.otherAllergies?.length > 0);
+
+          if (hasAllergies) {
+            // Draw red warning box
+            doc.fillColor('#FF0000').rect(50, doc.y, 500, 5).fill();
+            doc.fillColor('#000000');
+            doc.moveDown(0.3);
+
+            doc
+              .fontSize(10)
+              .font('Helvetica-Bold')
+              .fillColor('#FF0000')
+              .text('⚠ ALLERGIES - CRITICAL', 50, doc.y);
+
+            doc.fillColor('#000000').font('Helvetica').fontSize(9);
+
+            const allergies = [];
+            if (prescription.allergies.drugAllergies?.length > 0) {
+              allergies.push(`Drugs: ${prescription.allergies.drugAllergies.join(', ')}`);
+            }
+            if (prescription.allergies.foodAllergies?.length > 0) {
+              allergies.push(`Food: ${prescription.allergies.foodAllergies.join(', ')}`);
+            }
+            if (prescription.allergies.otherAllergies?.length > 0) {
+              allergies.push(`Other: ${prescription.allergies.otherAllergies.join(', ')}`);
+            }
+
+            doc.text(allergies.join(' | '), 50, doc.y);
+            doc.fillColor('#FF0000').rect(50, doc.y + 5, 500, 2).fill();
+            doc.fillColor('#000000');
+            doc.moveDown(0.8);
+          } else if (!prescription.allergies.hasKnownAllergies) {
+            // NKDA - No Known Drug Allergies
+            doc
+              .fontSize(9)
+              .font('Helvetica')
+              .fillColor('#666666')
+              .text('NKDA - No Known Drug Allergies', 50, doc.y);
+            doc.fillColor('#000000');
+            doc.moveDown(0.5);
+          }
+        }
+
+        // ==================== VITALS SECTION ====================
+        if (prescription.vitals && Object.keys(prescription.vitals).some(key =>
+          key !== 'recordedAt' && prescription.vitals?.[key as keyof typeof prescription.vitals] != null
+        )) {
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .text('VITALS', 50, doc.y);
+
+          doc.moveDown(0.2);
+          doc.fontSize(9).font('Helvetica');
+
+          const vitals = [];
+          if (prescription.vitals.bloodPressure) {
+            vitals.push(`BP: ${prescription.vitals.bloodPressure}`);
+          }
+          if (prescription.vitals.pulse) {
+            vitals.push(`Pulse: ${prescription.vitals.pulse} bpm`);
+          }
+          if (prescription.vitals.temperature) {
+            vitals.push(`Temp: ${prescription.vitals.temperature}°F`);
+          }
+          if (prescription.vitals.oxygenSaturation) {
+            vitals.push(`SpO2: ${prescription.vitals.oxygenSaturation}%`);
+          }
+          if (prescription.vitals.weight) {
+            vitals.push(`Wt: ${prescription.vitals.weight} kg`);
+          }
+          if (prescription.vitals.height) {
+            vitals.push(`Ht: ${prescription.vitals.height} cm`);
+          }
+          if (prescription.vitals.bmi) {
+            vitals.push(`BMI: ${prescription.vitals.bmi}`);
+          }
+
+          doc.text(vitals.join(' | '), 50, doc.y);
+          doc.moveDown(0.5);
+        }
+
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(0.5);
 
         // Chief Complaint & Diagnosis
         if (prescription.chiefComplaint || prescription.diagnosis) {
@@ -267,11 +406,30 @@ export class PdfGenerationService {
           doc.moveDown(2);
         }
 
-        // Doctor Signature
+        // ==================== DOCTOR SIGNATURE ====================
+        doc.moveDown(2);
+
+        // Try to embed signature image if available
+        if (doctorSignaturePath && existsSync(doctorSignaturePath)) {
+          try {
+            doc.image(doctorSignaturePath, 400, doc.y, {
+              width: 100,
+              height: 40,
+              align: 'right'
+            });
+            doc.moveDown(3);
+          } catch (error) {
+            console.error('Error embedding signature image:', error);
+          }
+        } else {
+          doc.moveDown(2);
+        }
+
+        // Doctor name and credentials
         doc
           .fontSize(10)
           .font('Helvetica-Bold')
-          .text('Dr. ' + prescription.doctorName, 350, doc.y, { align: 'right' });
+          .text(`Dr. ${prescription.doctorName}`, 350, doc.y, { align: 'right' });
 
         if (prescription.doctorQualification) {
           doc
@@ -280,15 +438,36 @@ export class PdfGenerationService {
             .text(prescription.doctorQualification, 350, doc.y, { align: 'right' });
         }
 
-        // Footer
+        if (prescription.doctorRegistrationNumber) {
+          doc.text(`Reg. No: ${prescription.doctorRegistrationNumber}`, 350, doc.y, { align: 'right' });
+        }
+
+        // ==================== ENHANCED FOOTER ====================
+        doc.moveDown(2);
+
+        // Prescription metadata
+        const footerY = 750;
+        doc.fontSize(8).font('Helvetica').fillColor('#666666');
+
+        const rxId = prescription.prescriptionNumber || prescription.prescriptionId;
+        const validityDays = prescription.validityDays || 30;
+        const validUntil = new Date(prescription.createdDate);
+        validUntil.setDate(validUntil.getDate() + validityDays);
+
+        doc.text(
+          `Rx ID: ${rxId} | Generated: ${new Date(prescription.createdDate).toLocaleDateString('en-IN')} | Valid until: ${validUntil.toLocaleDateString('en-IN')} (${validityDays} days)`,
+          50,
+          footerY,
+          { align: 'center', width: 500 }
+        );
+
+        doc.moveDown(0.3);
         doc
-          .fontSize(8)
-          .font('Helvetica')
           .fillColor('#999999')
           .text(
-            'This is a digitally generated prescription. For any queries, please contact the clinic.',
+            'This is a digitally generated prescription per MCI e-prescribing guidelines.',
             50,
-            750,
+            doc.y,
             { align: 'center', width: 500 }
           );
 

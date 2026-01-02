@@ -221,3 +221,59 @@ export async function getDoctorProfile(): Promise<Doctor> {
   console.groupEnd()
   return data.doctor;
 }
+
+// ==================== SIGNATURE MANAGEMENT ====================
+
+export interface SignatureStatus {
+  hasSignature: boolean;
+  uploadedAt?: string;
+  previewUrl?: string;
+}
+
+export interface UploadSignatureResponse {
+  message: string;
+  signature: SignatureStatus;
+}
+
+export async function uploadSignature(file: File): Promise<UploadSignatureResponse> {
+  const formData = new FormData();
+  formData.append('signature', file);
+
+  const response = await fetch('/doctor/api/auth/doctor/profile/signature', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to upload signature');
+  }
+
+  return response.json();
+}
+
+export async function getSignatureStatus(): Promise<SignatureStatus> {
+  const response = await fetch('/doctor/api/auth/doctor/profile/signature/status', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch signature status');
+  }
+
+  const data = await response.json();
+  return data.status;
+}
+
+export async function deleteSignature(): Promise<void> {
+  const response = await fetch('/doctor/api/auth/doctor/profile/signature', {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to delete signature');
+  }
+}

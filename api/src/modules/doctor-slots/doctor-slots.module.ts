@@ -1,19 +1,23 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DoctorSlotsService } from './doctor-slots.service';
 import { DoctorSlotsController } from './doctor-slots.controller';
+import { DoctorCalendarService } from './doctor-calendar.service';
+import { DoctorCalendarController } from './doctor-calendar.controller';
 import { DoctorSlot, DoctorSlotSchema } from './schemas/doctor-slot.schema';
+import { DoctorUnavailability, DoctorUnavailabilitySchema } from './schemas/doctor-unavailability.schema';
 import { CounterModule } from '../counters/counter.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: DoctorSlot.name, schema: DoctorSlotSchema },
+      { name: DoctorUnavailability.name, schema: DoctorUnavailabilitySchema },
     ]),
     CounterModule,
   ],
-  controllers: [DoctorSlotsController],
-  providers: [DoctorSlotsService],
-  exports: [DoctorSlotsService],
+  controllers: [DoctorSlotsController, DoctorCalendarController],
+  providers: [DoctorSlotsService, DoctorCalendarService],
+  exports: [DoctorSlotsService, DoctorCalendarService],
 })
 export class DoctorSlotsModule {}

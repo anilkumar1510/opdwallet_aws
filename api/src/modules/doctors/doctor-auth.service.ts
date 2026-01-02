@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -10,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import { Doctor, DoctorDocument } from './schemas/doctor.schema';
 import { DoctorLoginDto } from './dto/doctor-login.dto';
 import { ConfigService } from '@nestjs/config';
+import { unlinkSync, existsSync } from 'fs';
+import { join } from 'path';
 
 @Injectable()
 export class DoctorAuthService {
@@ -155,6 +158,105 @@ export class DoctorAuthService {
     await this.doctorModel.updateOne(
       { doctorId },
       { password: hashedPassword },
+    );
+  }
+
+  // ==================== SIGNATURE MANAGEMENT ====================
+
+  async uploadSignature(
+    doctorId: string,
+    file: Express.Multer.File,
+  ): Promise<{
+    hasSignature: boolean;
+    uploadedAt: Date;
+    previewUrl: string;
+  }> {
+    const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
+
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    // Delete old signature file if exists
+    if (doctor.signatureImage && existsSync(doctor.signatureImage)) {
+      try {
+        unlinkSync(doctor.signatureImage);
+      } catch (error) {
+        console.error('Error deleting old signature:', error);
+      }
+    }
+
+    // Update doctor with new signature info
+    const uploadedAt = new Date();
+    await this.doctorModel.updateOne(
+      { doctorId },
+      {
+        $set: {
+          signatureImage: file.path,
+          signatureUploadedAt: uploadedAt,
+          hasValidSignature: true,
+        },
+      },
+    );
+
+    return {
+      hasSignature: true,
+      uploadedAt,
+      previewUrl: `/uploads/signatures/${file.filename}`,
+    };
+  }
+
+  async getSignatureStatus(doctorId: string): Promise<{
+    hasSignature: boolean;
+    uploadedAt?: Date;
+    previewUrl?: string;
+  }> {
+    const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
+
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    if (!doctor.hasValidSignature || !doctor.signatureImage) {
+      return { hasSignature: false };
+    }
+
+    // Extract filename from path
+    const filename = doctor.signatureImage.split('/').pop() || doctor.signatureImage.split('\\').pop();
+
+    return {
+      hasSignature: true,
+      uploadedAt: doctor.signatureUploadedAt,
+      previewUrl: `/uploads/signatures/${filename}`,
+    };
+  }
+
+  async deleteSignature(doctorId: string): Promise<void> {
+    const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
+
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    // Delete signature file if exists
+    if (doctor.signatureImage && existsSync(doctor.signatureImage)) {
+      try {
+        unlinkSync(doctor.signatureImage);
+      } catch (error) {
+        console.error('Error deleting signature file:', error);
+      }
+    }
+
+    // Update doctor record
+    await this.doctorModel.updateOne(
+      { doctorId },
+      {
+        $set: {
+          signatureImage: undefined,
+          signatureUploadedAt: undefined,
+          hasValidSignature: false,
+        },
+      },
     );
   }
 }

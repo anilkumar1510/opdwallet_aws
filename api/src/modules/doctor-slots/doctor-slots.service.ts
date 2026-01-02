@@ -1,16 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DoctorSlot, DoctorSlotDocument } from './schemas/doctor-slot.schema';
 import { CreateSlotConfigDto } from './dto/create-slot-config.dto';
 import { UpdateSlotConfigDto } from './dto/update-slot-config.dto';
 import { CounterService } from '../counters/counter.service';
+import { DoctorCalendarService } from './doctor-calendar.service';
 
 @Injectable()
 export class DoctorSlotsService {
   constructor(
     @InjectModel(DoctorSlot.name) private slotModel: Model<DoctorSlotDocument>,
     private readonly counterService: CounterService,
+    @Inject(forwardRef(() => DoctorCalendarService))
+    private readonly calendarService: DoctorCalendarService,
   ) {}
 
   async create(createSlotDto: CreateSlotConfigDto): Promise<DoctorSlot> {
@@ -159,6 +162,19 @@ export class DoctorSlotsService {
       return [];
     }
 
+    // Check if doctor is unavailable on this date
+    const isUnavailable = await this.calendarService.isUnavailable(
+      slot.doctorId,
+      targetDate,
+      undefined, // Check entire day first
+      slot.clinicId,
+    );
+
+    if (isUnavailable) {
+      // If entirely unavailable for the day, return empty slots
+      return [];
+    }
+
     const date = new Date(targetDate);
     const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
 
@@ -180,14 +196,26 @@ export class DoctorSlotsService {
       const slotEndHour = Math.floor(slotEndMinutes / 60);
       const slotEndMinute = slotEndMinutes % 60;
 
-      timeSlots.push({
-        startTime: `${String(slotStartHour).padStart(2, '0')}:${String(slotStartMinute).padStart(2, '0')}`,
-        endTime: `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMinute).padStart(2, '0')}`,
-        duration: slot.slotDuration,
-        fee: slot.consultationFee,
-        consultationType: slot.consultationType,
-        available: true,
-      });
+      const startTime = `${String(slotStartHour).padStart(2, '0')}:${String(slotStartMinute).padStart(2, '0')}`;
+
+      // Check if this specific time is unavailable
+      const isTimeUnavailable = await this.calendarService.isUnavailable(
+        slot.doctorId,
+        targetDate,
+        startTime,
+        slot.clinicId,
+      );
+
+      if (!isTimeUnavailable) {
+        timeSlots.push({
+          startTime,
+          endTime: `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMinute).padStart(2, '0')}`,
+          duration: slot.slotDuration,
+          fee: slot.consultationFee,
+          consultationType: slot.consultationType,
+          available: true,
+        });
+      }
 
       currentMinutes += slot.slotDuration;
     }

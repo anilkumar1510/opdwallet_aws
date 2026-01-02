@@ -70,6 +70,16 @@ export class Doctor {
 
   @Prop({ default: false })
   availableOffline?: boolean;
+
+  // Signature Management (for prescription PDFs)
+  @Prop()
+  signatureImage?: string; // Path to uploaded signature file
+
+  @Prop({ type: Date })
+  signatureUploadedAt?: Date;
+
+  @Prop({ default: false })
+  hasValidSignature: boolean;
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);

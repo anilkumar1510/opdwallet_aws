@@ -3,12 +3,16 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   UseGuards,
   Request,
   Res,
   BadRequestException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { DoctorAuthService } from './doctor-auth.service';
 import { DoctorLoginDto } from './dto/doctor-login.dto';
@@ -16,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { signatureMulterConfig } from './config/signature-multer.config';
 
 interface AuthRequest extends Request {
   user: {
@@ -137,6 +142,69 @@ export class DoctorAuthController {
     return {
       message: 'Profile updated successfully',
       doctor,
+    };
+  }
+
+  // ==================== SIGNATURE MANAGEMENT ====================
+
+  @Post('profile/signature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  @UseInterceptors(FileInterceptor('signature', signatureMulterConfig))
+  async uploadSignature(
+    @Request() req: AuthRequest,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    if (!file) {
+      throw new BadRequestException('Signature file is required');
+    }
+
+    const result = await this.doctorAuthService.uploadSignature(doctorId, file);
+
+    return {
+      message: 'Signature uploaded successfully',
+      signature: result,
+    };
+  }
+
+  @Get('profile/signature/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  async getSignatureStatus(@Request() req: AuthRequest) {
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    const status = await this.doctorAuthService.getSignatureStatus(doctorId);
+
+    return {
+      message: 'Signature status retrieved successfully',
+      status,
+    };
+  }
+
+  @Delete('profile/signature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  async deleteSignature(@Request() req: AuthRequest) {
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    await this.doctorAuthService.deleteSignature(doctorId);
+
+    return {
+      message: 'Signature deleted successfully',
     };
   }
 }

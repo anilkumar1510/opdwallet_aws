@@ -67,4 +67,19 @@ export class CounterService {
     const seq = await this.getNextSequence('payment');
     return `PAY-${year}${month}${day}-${String(seq).padStart(4, '0')}`;
   }
+
+  async generateUnavailabilityId(): Promise<string> {
+    const seq = await this.getNextSequence('unavailability');
+    return `UNAVAIL${String(seq).padStart(6, '0')}`;
+  }
+
+  async generateTemplateId(): Promise<string> {
+    const seq = await this.getNextSequence('prescription-template');
+    return `TMPL${String(seq).padStart(6, '0')}`;
+  }
+
+  async generateConsultationNoteId(): Promise<string> {
+    const seq = await this.getNextSequence('consultation-note');
+    return `NOTE${String(seq).padStart(6, '0')}`;
+  }
 }

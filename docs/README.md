@@ -93,6 +93,35 @@ Guides for testing the platform:
 
 ---
 
+## 🛠️ Development Workflow
+
+### Claude Code Integration
+
+This project uses **Claude Code** for AI-assisted development with enforced project rules and best practices.
+
+**Project Rules System:**
+- Comprehensive development guidelines in `.claude/project-rules.md`
+- Mandatory pre-task and post-task checklists in `.claude/START_CHECKLIST.md`
+- Automatic enforcement via SessionStart hook with visual warning banners
+
+**Key Requirements:**
+- ✅ **Analysis Before Action** - Thorough analysis with proof validation required before any changes
+- ✅ **Documentation Updates** - MANDATORY after every code change (update relevant docs/ files and CHANGELOG.md)
+- ✅ **Code Quality** - Robust fixes only, never break project structure
+- ✅ **Testing Protocol** - Browser automation for UI changes, check both backend and frontend logs
+- ✅ **Task Tracking** - Use PLAN.md for multi-step tasks
+- ✅ **New Features** - Review existing APIs and system context before building
+
+**Configuration Files:**
+- `.claude/project-rules.md` - Complete project development guidelines (9 rules)
+- `.claude/START_CHECKLIST.md` - Pre/post-task checklists with warning banners
+- `.claude/settings.local.json` - User-specific local configuration (not committed)
+
+**For Developers:**
+When starting a new Claude Code session, you'll see prominent warning banners and checklists ensuring rules are read and followed.
+
+---
+
 ## 🏗️ Architecture Overview
 
 ### Technology Stack

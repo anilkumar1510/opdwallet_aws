@@ -8,6 +8,8 @@ import { getStatusColor, getAppointmentTypeText } from '@/lib/utils/appointment-
 import { getDigitalPrescription } from '@/lib/api/digital-prescriptions'
 import PrescriptionUpload from '@/components/PrescriptionUpload'
 import DigitalPrescriptionWriter from '@/components/DigitalPrescriptionWriter'
+import ConsultationNoteEditor from '@/components/ConsultationNoteEditor'
+import PatientHealthRecords from '@/components/PatientHealthRecords'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import {
   ArrowLeftIcon,
@@ -233,6 +235,25 @@ export default function AppointmentDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Patient Health Records Section */}
+      {(appointment.status === 'CONFIRMED' || appointment.status === 'COMPLETED') && (
+        <div className="mb-6">
+          <PatientHealthRecords patientId={appointment.userId} />
+        </div>
+      )}
+
+      {/* Consultation Notes Section */}
+      {(appointment.status === 'CONFIRMED' || appointment.status === 'COMPLETED') && (
+        <div className="mb-6">
+          <ConsultationNoteEditor
+            appointmentId={appointment._id}
+            patientId={appointment.userId}
+            clinicId={appointment.clinicId}
+            consultationDate={new Date(appointment.appointmentDate)}
+          />
+        </div>
+      )}
 
       {/* Prescription Section */}
       {appointment.hasPrescription ? (

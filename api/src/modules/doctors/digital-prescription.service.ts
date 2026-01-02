@@ -37,6 +37,20 @@ export class DigitalPrescriptionService {
     doctorRegistrationNumber?: string,
     doctorSpecialty?: string,
   ): Promise<DigitalPrescriptionDocument> {
+    // SIGNATURE VALIDATION - Doctor must upload signature before generating prescriptions
+    const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
+
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    if (!doctor.hasValidSignature) {
+      throw new BadRequestException(
+        'Please upload your signature in profile settings before generating prescriptions. ' +
+        'A valid signature is required for all prescriptions per MCI guidelines.'
+      );
+    }
+
     // Verify appointment exists and belongs to this doctor
     const appointment = await this.appointmentModel.findOne({
       _id: new Types.ObjectId(createDto.appointmentId),

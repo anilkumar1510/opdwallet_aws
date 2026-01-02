@@ -2,6 +2,54 @@
 
 All notable changes to the OPD Wallet project will be documented in this file.
 
+## [Unreleased] - 2026-01-02
+
+### Fixed
+
+- **Member Portal - Transactions Page Analytics Charts**
+  - Fixed analytics overview charts (Transaction Volume, 7-Day Trend, Category Split, Balance Trend) not rendering on mobile viewport
+  - Root cause: ResponsiveContainer using percentage-based width (100%) couldn't calculate dimensions on mobile
+  - Solution: Changed ResponsiveContainer to fixed pixel width (248px) for mobile charts
+  - Added explicit minHeight to chart containers to prevent collapse
+  - Charts now render correctly on both mobile and desktop viewports
+  - File: `web-member/app/member/transactions/page.tsx`
+
+- **Member Portal - Profile Dropdown Menu Overflow**
+  - Fixed profile dropdown menu text overflowing outside white background container on mobile view
+  - Root cause: Dropdown constrained to 48px width by parent flex-shrink-0 container
+  - Solution:
+    - Added overflow-visible to ProfileDropdown root container and parent wrappers
+    - Replaced Tailwind w-56 class with inline styles to force 14rem (224px) width
+    - Ensures dropdown expands properly beyond the 48px parent container
+  - Dropdown now displays correctly with all menu items fully visible on mobile and desktop
+  - Files: `web-member/components/ProfileDropdown.tsx`, `web-member/components/BottomNavigation.tsx`
+
+### Added
+
+- **Claude Code Project Rules Enforcement System**
+  - Added comprehensive project rules documentation in `.claude/project-rules.md`
+  - Added mandatory checklist system in `.claude/START_CHECKLIST.md`
+  - Updated SessionStart hook to display prominent warning banners and rules at session start
+  - Ensures project rules are always read before any implementation work
+  - Rules include:
+    - Analysis before action requirement with proof validation
+    - Code quality and maintainability standards (no breaking structure)
+    - MANDATORY documentation updates after every change
+    - Testing protocol with browser automation and log checking
+    - Task tracking with PLAN.md for multi-step tasks
+    - New feature development guidelines (review existing APIs first)
+  - Files: `.claude/project-rules.md`, `.claude/START_CHECKLIST.md`
+  - Note: `settings.local.json` hook configuration is user-specific (not committed)
+
+### Changed
+
+- **Development Workflow**
+  - All developers now see warning banners and mandatory checklist at Claude Code session start
+  - Documentation updates are now explicitly required for all code changes
+  - Testing protocol enforces checking both backend and frontend logs
+
+---
+
 ## [1.1.0] - 2025-12-15
 
 ### Added - User Segregation Migration
