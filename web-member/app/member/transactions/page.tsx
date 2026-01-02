@@ -365,10 +365,12 @@ export default function TransactionsPage() {
               {/* Chart 1: Transaction Volume by Type */}
               <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
                 background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-                borderColor: '#86ACD8'
+                borderColor: '#86ACD8',
+                minHeight: '220px'
               }}>
                 <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Transaction Volume</h3>
-                <ResponsiveContainer width="100%" height={160}>
+                <div style={{ width: '248px', height: '160px' }}>
+                  <ResponsiveContainer width={248} height={160}>
                   <BarChart data={chartData.typeData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6b7280' }} />
@@ -384,15 +386,18 @@ export default function TransactionsPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Chart 2: Daily Trend */}
               <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
                 background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-                borderColor: '#86ACD8'
+                borderColor: '#86ACD8',
+                minHeight: '220px'
               }}>
                 <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>7-Day Trend</h3>
-                <ResponsiveContainer width="100%" height={160}>
+                <div style={{ width: '248px', height: '160px' }}>
+                  <ResponsiveContainer width={248} height={160}>
                   <BarChart data={chartData.dailyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
@@ -405,15 +410,18 @@ export default function TransactionsPage() {
                     <Bar dataKey="debits" fill="#FFF2E7" stroke="#CD6D19" strokeWidth={2} radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Chart 3: Category Distribution */}
               <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
                 background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-                borderColor: '#86ACD8'
+                borderColor: '#86ACD8',
+                minHeight: '220px'
               }}>
                 <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Category Split</h3>
-                <ResponsiveContainer width="100%" height={160}>
+                <div style={{ width: '248px', height: '160px' }}>
+                  <ResponsiveContainer width={248} height={160}>
                   <PieChart>
                     <Pie
                       data={chartData.categoryData}
@@ -439,15 +447,18 @@ export default function TransactionsPage() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Chart 4: Balance Trend */}
               <div className="rounded-2xl p-4 border-2 shadow-md w-[280px] flex-shrink-0" style={{
                 background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-                borderColor: '#86ACD8'
+                borderColor: '#86ACD8',
+                minHeight: '220px'
               }}>
                 <h3 className="text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Balance Trend</h3>
-                <ResponsiveContainer width="100%" height={160}>
+                <div style={{ width: '248px', height: '160px' }}>
+                  <ResponsiveContainer width={248} height={160}>
                   <LineChart data={chartData.balanceTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6b7280' }} />
@@ -466,6 +477,7 @@ export default function TransactionsPage() {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </div>
@@ -475,7 +487,8 @@ export default function TransactionsPage() {
             {/* Chart 1: Transaction Volume by Type */}
             <div className="rounded-2xl p-5 border-2 shadow-md" style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-              borderColor: '#86ACD8'
+              borderColor: '#86ACD8',
+              minHeight: '280px'
             }}>
               <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Transaction Volume</h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -499,7 +512,8 @@ export default function TransactionsPage() {
             {/* Chart 2: Daily Trend */}
             <div className="rounded-2xl p-5 border-2 shadow-md" style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-              borderColor: '#86ACD8'
+              borderColor: '#86ACD8',
+              minHeight: '280px'
             }}>
               <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>7-Day Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -520,7 +534,8 @@ export default function TransactionsPage() {
             {/* Chart 3: Category Distribution */}
             <div className="rounded-2xl p-5 border-2 shadow-md" style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-              borderColor: '#86ACD8'
+              borderColor: '#86ACD8',
+              minHeight: '280px'
             }}>
               <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Category Split</h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -554,7 +569,8 @@ export default function TransactionsPage() {
             {/* Chart 4: Balance Trend */}
             <div className="rounded-2xl p-5 border-2 shadow-md" style={{
               background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
-              borderColor: '#86ACD8'
+              borderColor: '#86ACD8',
+              minHeight: '280px'
             }}>
               <h3 className="text-sm font-bold mb-4 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Balance Trend</h3>
               <ResponsiveContainer width="100%" height={200}>
