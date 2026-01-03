@@ -40,20 +40,34 @@ export class ConsultationNoteController {
     @Request() req: AuthRequest,
     @Body() dto: Omit<CreateConsultationNoteDto, 'doctorId'>,
   ) {
-    const doctorId = req.user?.doctorId;
-    if (!doctorId) {
-      throw new BadRequestException('Doctor ID is required');
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 📝 [ConsultationNote] CREATE START`);
+    console.log(`[${timestamp}] User:`, req.user);
+    console.log(`[${timestamp}] DTO:`, JSON.stringify(dto, null, 2));
+
+    try {
+      const doctorId = req.user?.doctorId;
+      if (!doctorId) {
+        console.error(`[${timestamp}] ❌ No doctorId found`);
+        throw new BadRequestException('Doctor ID is required');
+      }
+
+      console.log(`[${timestamp}] Doctor ID: ${doctorId}`);
+      const note = await this.noteService.create({
+        ...dto,
+        doctorId,
+      });
+
+      console.log(`[${timestamp}] ✅ Note created: ${note.noteId}`);
+      return {
+        message: 'Consultation note created successfully',
+        data: note,
+      };
+    } catch (error) {
+      console.error(`[${timestamp}] ❌ CREATE FAILED:`, error);
+      console.error(`[${timestamp}] Error stack:`, error.stack);
+      throw error;
     }
-
-    const note = await this.noteService.create({
-      ...dto,
-      doctorId,
-    });
-
-    return {
-      message: 'Consultation note created successfully',
-      data: note,
-    };
   }
 
   @Get()
@@ -139,17 +153,32 @@ export class ConsultationNoteController {
     @Request() req: AuthRequest,
     @Body() dto: UpdateConsultationNoteDto,
   ) {
-    const doctorId = req.user?.doctorId;
-    if (!doctorId) {
-      throw new BadRequestException('Doctor ID is required');
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] 📝 [ConsultationNote] UPDATE START`);
+    console.log(`[${timestamp}] Note ID: ${noteId}`);
+    console.log(`[${timestamp}] User:`, req.user);
+    console.log(`[${timestamp}] DTO:`, JSON.stringify(dto, null, 2));
+
+    try {
+      const doctorId = req.user?.doctorId;
+      if (!doctorId) {
+        console.error(`[${timestamp}] ❌ No doctorId found`);
+        throw new BadRequestException('Doctor ID is required');
+      }
+
+      console.log(`[${timestamp}] Doctor ID: ${doctorId}`);
+      const note = await this.noteService.update(noteId, doctorId, dto);
+
+      console.log(`[${timestamp}] ✅ Note updated: ${note.noteId}`);
+      return {
+        message: 'Consultation note updated successfully',
+        data: note,
+      };
+    } catch (error) {
+      console.error(`[${timestamp}] ❌ UPDATE FAILED:`, error);
+      console.error(`[${timestamp}] Error stack:`, error.stack);
+      throw error;
     }
-
-    const note = await this.noteService.update(noteId, doctorId, dto);
-
-    return {
-      message: 'Consultation note updated successfully',
-      data: note,
-    };
   }
 
   @Delete(':noteId')
