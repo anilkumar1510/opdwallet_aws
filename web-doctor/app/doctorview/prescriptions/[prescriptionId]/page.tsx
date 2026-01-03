@@ -196,9 +196,10 @@ export default function PrescriptionDetailsPage() {
             </div>
             {data.pdfGenerated && (
               <a
-                href={`/doctor/api/doctor/digital-prescriptions/${data.prescriptionId}/download-pdf`}
+                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/doctor/digital-prescriptions/${data.prescriptionId}/download-pdf`}
                 className="btn-primary inline-flex items-center"
-                download
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                 Download PDF
@@ -445,9 +446,10 @@ export default function PrescriptionDetailsPage() {
             <p className="text-sm text-gray-600">ID: {data.prescriptionId}</p>
           </div>
           <a
-            href={`/doctor/api/doctor/prescriptions/${data.prescriptionId}/download`}
+            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/doctor/prescriptions/${data.prescriptionId}/download`}
             className="btn-primary inline-flex items-center"
-            download
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Download PDF
@@ -518,7 +520,7 @@ export default function PrescriptionDetailsPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Prescription Document</h2>
         <div className="bg-gray-100 rounded-lg overflow-hidden" style={{ height: '800px' }}>
           <iframe
-            src={`/doctor/api/doctor/prescriptions/${data.prescriptionId}/download`}
+            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/doctor/prescriptions/${data.prescriptionId}/download`}
             className="w-full h-full"
             title="Prescription PDF"
           />

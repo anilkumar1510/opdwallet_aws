@@ -274,7 +274,9 @@ export default function PrescriptionsPage() {
                       <>
                         {prescription.pdfGenerated && (
                           <a
-                            href={`/doctor/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
+                            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
                             title="Download PDF"
                           >
@@ -285,7 +287,9 @@ export default function PrescriptionsPage() {
                     ) : (
                       <>
                         <a
-                          href={`/api/doctor/prescriptions/${prescription.prescriptionId}/download`}
+                          href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/doctor/prescriptions/${prescription.prescriptionId}/download`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
                           title="Download PDF"
                         >
