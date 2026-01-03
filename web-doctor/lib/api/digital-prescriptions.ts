@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+// Use relative path with basePath prefix for doctor portal
+// This ensures API calls go through Next.js proxy: /doctor/api/* -> /api/* -> backend
+const API_BASE = '/doctor/api';
 
 export interface MedicineItem {
   medicineName: string;
