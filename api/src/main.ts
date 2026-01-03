@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -8,6 +8,43 @@ import { ConfigService } from '@nestjs/config';
 import rateLimit from 'express-rate-limit';
 import { secretsManager } from './config/secrets-manager';
 import { mkdirSync, existsSync } from 'fs';
+
+@Catch()
+class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger('ExceptionFilter');
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const message =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : exception;
+
+    // Log the full error details
+    const timestamp = new Date().toISOString();
+    this.logger.error(`❌ [${timestamp}] ${request.method} ${request.url} - Status: ${status}`);
+    this.logger.error(`❌ [${timestamp}] Exception:`, exception);
+    if (exception instanceof Error) {
+      this.logger.error(`❌ [${timestamp}] Error message: ${exception.message}`);
+      this.logger.error(`❌ [${timestamp}] Stack trace:`, exception.stack);
+    }
+
+    response.status(status).json({
+      statusCode: status,
+      timestamp,
+      path: request.url,
+      message: exception instanceof HttpException ? message : 'Internal server error',
+    });
+  }
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -135,6 +172,9 @@ async function bootstrap() {
     }),
   );
 
+  // Global Exception Filter - catches ALL errors and logs them
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   // Input Validation (Rule #5)
   app.useGlobalPipes(
     new ValidationPipe({
@@ -144,7 +184,7 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-      disableErrorMessages: isProduction,
+      disableErrorMessages: false, // Enable error messages even in production for debugging
       validationError: {
         target: false,
         value: false,
