@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { getPatientHealthRecords, PatientHealthRecords as HealthRecordsType } from '@/lib/api/health-records'
 import {
   ExclamationTriangleIcon,
@@ -10,6 +11,7 @@ import {
   CalendarDaysIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 
 interface PatientHealthRecordsProps {
@@ -17,6 +19,7 @@ interface PatientHealthRecordsProps {
 }
 
 export default function PatientHealthRecords({ patientId }: PatientHealthRecordsProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [records, setRecords] = useState<HealthRecordsType | null>(null)
@@ -39,12 +42,23 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+  const formatDate = (dateString: string | Date | undefined) => {
+    if (!dateString) return 'N/A'
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return 'Invalid Date'
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    } catch {
+      return 'Invalid Date'
+    }
+  }
+
+  const handleViewPrescription = (prescriptionId: string) => {
+    router.push(`/doctorview/prescriptions/${prescriptionId}`)
   }
 
   if (loading) {
@@ -91,21 +105,58 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
       {expanded && (
         <div className="mt-4 space-y-4">
           {/* Allergies */}
-          {records.patient.allergies.length > 0 && (
+          {records.patient.allergies?.hasKnownAllergies && (
             <div className="border-2 border-red-200 rounded-lg p-4 bg-red-50">
               <div className="flex items-center space-x-2 mb-2">
                 <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
                 <h4 className="font-semibold text-red-900">Known Allergies</h4>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {records.patient.allergies.map((allergy, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium"
-                  >
-                    {allergy}
-                  </span>
-                ))}
+              <div className="space-y-2">
+                {records.patient.allergies.drugAllergies?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-900 mb-1">Drug Allergies:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {records.patient.allergies.drugAllergies.map((allergy: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium"
+                        >
+                          {allergy}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {records.patient.allergies.foodAllergies?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-900 mb-1">Food Allergies:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {records.patient.allergies.foodAllergies.map((allergy: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium"
+                        >
+                          {allergy}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {records.patient.allergies.otherAllergies?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-900 mb-1">Other Allergies:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {records.patient.allergies.otherAllergies.map((allergy: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium"
+                        >
+                          {allergy}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -171,7 +222,7 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
                           </span>
                           <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
                           <span className="text-xs text-gray-600">
-                            {formatDate(prescription.createdAt)}
+                            {formatDate(prescription.date)}
                           </span>
                         </div>
                         {prescription.diagnosis && (
@@ -190,6 +241,13 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
                           )}
                         </div>
                       </div>
+                      <button
+                        onClick={() => handleViewPrescription(prescription.prescriptionId)}
+                        className="ml-2 p-2 text-[#2B4D8C] hover:bg-[#2B4D8C] hover:text-white rounded-lg transition-colors"
+                        title="View Prescription"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -220,11 +278,11 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-purple-900">
-                        {formatDate(consultation.consultationDate)}
+                        {formatDate(consultation.date)}
                       </span>
-                      {consultation.provisionalDiagnosis && (
+                      {consultation.diagnosis && (
                         <span className="text-xs text-purple-700">
-                          {consultation.provisionalDiagnosis}
+                          {consultation.diagnosis}
                         </span>
                       )}
                     </div>
@@ -240,11 +298,11 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
           )}
 
           {/* Empty State */}
-          {records.patient.allergies.length === 0 &&
+          {!records.patient.allergies?.hasKnownAllergies &&
             records.patient.chronicConditions.length === 0 &&
             records.patient.currentMedications.length === 0 &&
             records.prescriptions.length === 0 &&
-            records.consultationHistory.length === 0 && (
+            (!records.consultationHistory || records.consultationHistory.length === 0) && (
               <div className="text-center py-8 text-gray-500">
                 <p className="text-sm">No health records available for this patient.</p>
                 <p className="text-xs mt-1">Records will appear here as you add prescriptions and notes.</p>

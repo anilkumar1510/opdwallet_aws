@@ -1,11 +1,37 @@
 export interface PatientHealthRecords {
   patient: {
-    allergies: string[];
+    name: string;
+    age?: number;
+    gender?: string;
+    bloodGroup?: string;
+    phone?: string;
+    address?: string;
+    allergies: any;
     chronicConditions: string[];
     currentMedications: string[];
   };
-  prescriptions: any[];
-  consultationHistory: any[];
+  prescriptions: Array<{
+    prescriptionId: string;
+    doctorName: string;
+    doctorSpecialty: string;
+    date: string;
+    diagnosis?: string;
+    medicines?: any[];
+    labTests?: any[];
+    chiefComplaint?: string;
+    clinicalFindings?: string;
+    vitals?: any;
+  }>;
+  consultationHistory: Array<{
+    prescriptionId: string;
+    doctorName: string;
+    specialty: string;
+    date: string;
+    chiefComplaint?: string;
+    diagnosis?: string;
+  }>;
+  labReports?: any[];
+  diagnosticReports?: any[];
 }
 
 export async function getPatientHealthRecords(patientId: string): Promise<PatientHealthRecords> {
