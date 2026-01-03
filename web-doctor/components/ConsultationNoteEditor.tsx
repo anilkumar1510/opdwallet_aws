@@ -134,6 +134,13 @@ export default function ConsultationNoteEditor({
 
       setTimeout(() => setSuccess(''), 3000)
     } catch (err: any) {
+      console.error('❌ [ConsultationNoteEditor] Save failed:', err)
+      console.error('❌ [ConsultationNoteEditor] Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+        fullError: err,
+      })
       setError(err.message || 'Failed to save consultation note')
     } finally {
       setSaving(false)
