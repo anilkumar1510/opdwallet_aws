@@ -196,8 +196,8 @@ export default function DigitalPrescriptionWriter({
         followUpInstructions: followUpInstructions.trim() || undefined,
         generalInstructions: generalInstructions.trim() || undefined,
         dietaryAdvice: dietaryAdvice.trim() || undefined,
-        vitals: hasVitals ? vitals : undefined,
-        allergies: allergies,
+        // Note: vitals and allergies are displayed but not sent to API
+        // They're for doctor's reference only during consultation
       }
 
       console.log('🔵 [DigitalPrescriptionWriter] Sending prescription to API:', prescriptionData)
