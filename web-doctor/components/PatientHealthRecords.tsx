@@ -105,7 +105,7 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
       {expanded && (
         <div className="mt-4 space-y-4">
           {/* Allergies */}
-          {records.patient.allergies?.hasKnownAllergies && (
+          {records.patient?.allergies?.hasKnownAllergies && (
             <div className="border-2 border-red-200 rounded-lg p-4 bg-red-50">
               <div className="flex items-center space-x-2 mb-2">
                 <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
@@ -162,14 +162,14 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
           )}
 
           {/* Chronic Conditions */}
-          {records.patient.chronicConditions.length > 0 && (
+          {(records.patient?.chronicConditions?.length || 0) > 0 && (
             <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
               <div className="flex items-center space-x-2 mb-2">
                 <HeartIcon className="h-5 w-5 text-orange-600" />
                 <h4 className="font-semibold text-orange-900">Chronic Conditions</h4>
               </div>
               <div className="flex flex-wrap gap-2">
-                {records.patient.chronicConditions.map((condition, index) => (
+                {records.patient?.chronicConditions?.map((condition, index) => (
                   <span
                     key={index}
                     className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium"
@@ -182,14 +182,14 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
           )}
 
           {/* Current Medications */}
-          {records.patient.currentMedications.length > 0 && (
+          {(records.patient?.currentMedications?.length || 0) > 0 && (
             <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
               <div className="flex items-center space-x-2 mb-2">
                 <BeakerIcon className="h-5 w-5 text-blue-600" />
                 <h4 className="font-semibold text-blue-900">Current Medications</h4>
               </div>
               <ul className="list-disc list-inside space-y-1">
-                {records.patient.currentMedications.map((medication, index) => (
+                {records.patient?.currentMedications?.map((medication, index) => (
                   <li key={index} className="text-sm text-blue-800">
                     {medication}
                   </li>
@@ -298,10 +298,10 @@ export default function PatientHealthRecords({ patientId }: PatientHealthRecords
           )}
 
           {/* Empty State */}
-          {!records.patient.allergies?.hasKnownAllergies &&
-            records.patient.chronicConditions.length === 0 &&
-            records.patient.currentMedications.length === 0 &&
-            records.prescriptions.length === 0 &&
+          {!records.patient?.allergies?.hasKnownAllergies &&
+            (records.patient?.chronicConditions?.length || 0) === 0 &&
+            (records.patient?.currentMedications?.length || 0) === 0 &&
+            (records.prescriptions?.length || 0) === 0 &&
             (!records.consultationHistory || records.consultationHistory.length === 0) && (
               <div className="text-center py-8 text-gray-500">
                 <p className="text-sm">No health records available for this patient.</p>
