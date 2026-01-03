@@ -75,8 +75,12 @@ jobs:
               echo "✅ No port conflicts detected"
             fi
 
-            # Clean up Docker to free memory (preserves volumes including mongo-data-prod)
-            docker system prune -af 2>/dev/null || true
+            # Clean up Docker to free memory (preserves build cache and volumes including mongo-data-prod)
+            # Only remove stopped containers, dangling images, and unused networks (NOT build cache)
+            echo "🧹 Cleaning up stopped containers and dangling images (preserving build cache)..."
+            docker container prune -f 2>/dev/null || true
+            docker image prune -f 2>/dev/null || true
+            docker network prune -f 2>/dev/null || true
 
             # Ensure we're in the project directory
             cd ~/opdwallet_aws || { echo "❌ ERROR: Cannot access opdwallet_aws directory"; exit 1; }
@@ -114,12 +118,13 @@ jobs:
             docker pull node:20-alpine 2>/dev/null || echo "⚠️ Warning: Failed to pre-pull node:20-alpine, will retry during compose"
 
             # Build and run with retry mechanism for Docker Hub intermittent issues
-            echo "🔨 Building and starting services..."
+            # Using --parallel 2 to limit concurrent builds and prevent memory exhaustion
+            echo "🔨 Building and starting services (max 2 parallel builds to prevent OOM)..."
             MAX_RETRIES=3
             RETRY_COUNT=0
 
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans; then
+              if docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --parallel 2; then
                 echo "✅ Docker-compose succeeded"
                 break
               else
