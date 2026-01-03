@@ -8,7 +8,7 @@ export interface CreateConsultationNoteDto {
   appointmentId: string;
   doctorId: string;
   patientId: string;
-  clinicId: string;
+  clinicId?: string; // Optional - online appointments don't have clinicId
   consultationDate: Date | string;
   chiefComplaint?: string;
   historyOfPresentIllness?: string;

@@ -17,8 +17,8 @@ export class ConsultationNote {
   @Prop({ required: true })
   patientId: string;
 
-  @Prop({ required: true })
-  clinicId: string;
+  @Prop() // Optional - online appointments don't have clinicId
+  clinicId?: string;
 
   @Prop({ type: Date, required: true })
   consultationDate: Date;

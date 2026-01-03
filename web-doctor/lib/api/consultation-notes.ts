@@ -10,7 +10,7 @@ export interface ConsultationNote {
   appointmentId: string;
   doctorId: string;
   patientId: string;
-  clinicId: string;
+  clinicId?: string; // Optional - online appointments don't have clinicId
   consultationDate: string;
   chiefComplaint?: string;
   historyOfPresentIllness?: string;
@@ -31,7 +31,7 @@ export interface ConsultationNote {
 export interface CreateConsultationNoteDto {
   appointmentId: string;
   patientId: string;
-  clinicId: string;
+  clinicId?: string; // Optional - online appointments don't have clinicId
   consultationDate: string;
   chiefComplaint?: string;
   historyOfPresentIllness?: string;
