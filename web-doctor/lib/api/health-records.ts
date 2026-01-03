@@ -9,7 +9,7 @@ export interface PatientHealthRecords {
 }
 
 export async function getPatientHealthRecords(patientId: string): Promise<PatientHealthRecords> {
-  const response = await fetch(`/doctor/api/doctor/health-records/${patientId}`, {
+  const response = await fetch(`/doctor/api/doctor/appointments/patients/${patientId}/health-records`, {
     credentials: 'include',
   });
 

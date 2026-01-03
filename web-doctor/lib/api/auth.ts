@@ -25,6 +25,7 @@ export async function loginDoctor(credentials: DoctorLoginDto): Promise<LoginRes
     hasPassword: !!credentials.password
   });
 
+  // With basePath: '/doctor', API routes are at /doctor/api/*
   const apiUrl = '/doctor/api/auth/doctor/login'
   console.log('🌐 [REQUEST] Target API URL:', apiUrl);
   console.log('🌐 [REQUEST] Full window location:', window.location.href);
