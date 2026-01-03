@@ -161,7 +161,7 @@ export default function SignatureUpload() {
               <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
               <div className="bg-white p-4 rounded border border-gray-200 inline-block">
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}${signatureStatus.previewUrl}`}
+                  src={`/doctor${signatureStatus.previewUrl}`}
                   alt="Signature preview"
                   className="h-20 object-contain"
                   onError={(e) => {
