@@ -41,6 +41,9 @@ export class PdfGenerationService {
     const doctor = await this.doctorModel.findOne({ doctorId: prescription.doctorId, isActive: true });
     const doctorSignaturePath = doctor?.signatureImage;
 
+    console.log('[PDF Generation] Doctor signature path:', doctorSignaturePath);
+    console.log('[PDF Generation] Signature exists:', doctorSignaturePath ? existsSync(doctorSignaturePath) : false);
+
     const fileName = `prescription-${prescriptionId}-${Date.now()}.pdf`;
     const filePath = join(this.uploadDir, fileName);
 
