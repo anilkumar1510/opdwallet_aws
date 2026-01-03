@@ -49,7 +49,7 @@ services:
       context: ./web-admin
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: ${AWS_PUBLIC_IP:-34.202.161.177}:4000/api
+        NEXT_PUBLIC_API_URL: ${AWS_PUBLIC_IP:-54.234.58.213}:4000/api
     container_name: opd-web-admin-prod
     restart: always
     ports:
@@ -72,7 +72,7 @@ services:
       context: ./web-member
       dockerfile: Dockerfile.production
       args:
-        NEXT_PUBLIC_API_URL: ${AWS_PUBLIC_IP:-34.202.161.177}:4000/api
+        NEXT_PUBLIC_API_URL: ${AWS_PUBLIC_IP:-54.234.58.213}:4000/api
     container_name: opd-web-member-prod
     restart: always
     ports:

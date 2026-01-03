@@ -122,7 +122,7 @@ All services communicate through an internal Docker network. Only Nginx is expos
 ### Server Details
 - **Provider**: Amazon Web Services (AWS)
 - **Service**: EC2 Instance
-- **IP Address**: 34.202.161.177
+- **IP Address**: 54.234.58.213
 - **Domain**: eliktron.com
 - **Operating System**: Ubuntu Linux
 
