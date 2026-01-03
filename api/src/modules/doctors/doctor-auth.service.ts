@@ -227,7 +227,7 @@ export class DoctorAuthService {
     return {
       hasSignature: true,
       uploadedAt: doctor.signatureUploadedAt,
-      // Return full API path for signature preview
+      // ServeStaticModule now serves at /api/uploads
       previewUrl: `/api/uploads/signatures/${filename}`,
     };
   }

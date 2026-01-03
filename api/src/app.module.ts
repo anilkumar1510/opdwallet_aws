@@ -45,7 +45,7 @@ import configuration from './config/configuration';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads',
+      serveRoot: '/api/uploads',
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
