@@ -5,14 +5,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DoctorsController } from './doctors.controller';
 import { DoctorAppointmentsController } from './doctor-appointments.controller';
 import { DoctorAuthController } from './doctor-auth.controller';
+import { ConsultationNoteController } from './consultation-note.controller';
 import { DoctorsService } from './doctors.service';
 import { DoctorAuthService } from './doctor-auth.service';
 import { HealthRecordsService } from './health-records.service';
+import { ConsultationNoteService } from './consultation-note.service';
 import { Doctor, DoctorSchema } from './schemas/doctor.schema';
 import { DoctorSlot, DoctorSlotSchema } from '../doctor-slots/schemas/doctor-slot.schema';
 import { Clinic, ClinicSchema } from '../clinics/schemas/clinic.schema';
 import { Appointment, AppointmentSchema } from '../appointments/schemas/appointment.schema';
 import { DigitalPrescription, DigitalPrescriptionSchema } from './schemas/digital-prescription.schema';
+import { ConsultationNote, ConsultationNoteSchema } from './schemas/consultation-note.schema';
 import { CounterModule } from '../counters/counter.module';
 import { PrescriptionsModule } from './prescriptions.module';
 import { LocationModule } from '../location/location.module';
@@ -25,6 +28,7 @@ import { LocationModule } from '../location/location.module';
       { name: Clinic.name, schema: ClinicSchema },
       { name: Appointment.name, schema: AppointmentSchema },
       { name: DigitalPrescription.name, schema: DigitalPrescriptionSchema },
+      { name: ConsultationNote.name, schema: ConsultationNoteSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -40,8 +44,8 @@ import { LocationModule } from '../location/location.module';
     PrescriptionsModule, // Added for DoctorAuthService
     LocationModule, // Added for location-based filtering
   ],
-  controllers: [DoctorsController, DoctorAppointmentsController, DoctorAuthController],
-  providers: [DoctorsService, DoctorAuthService, HealthRecordsService],
+  controllers: [DoctorsController, DoctorAppointmentsController, DoctorAuthController, ConsultationNoteController],
+  providers: [DoctorsService, DoctorAuthService, HealthRecordsService, ConsultationNoteService],
   exports: [DoctorsService],
 })
 export class DoctorsModule {}
