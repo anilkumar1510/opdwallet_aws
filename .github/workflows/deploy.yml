@@ -107,8 +107,8 @@ jobs:
             mkdir -p api/uploads/diagnostic-reports
 
             # Set permissions so Docker container can write
-            # Using 777 to ensure the container user (regardless of UID) can write
-            chmod -R 777 api/uploads
+            # Using sudo because existing files may be owned by root (from Docker containers)
+            sudo chmod -R 777 api/uploads 2>/dev/null || true
             echo "✅ Upload directories created with write permissions"
 
             # Pre-pull critical images to avoid Docker Hub 503 errors during compose
@@ -118,13 +118,14 @@ jobs:
             docker pull node:20-alpine 2>/dev/null || echo "⚠️ Warning: Failed to pre-pull node:20-alpine, will retry during compose"
 
             # Build and run with retry mechanism for Docker Hub intermittent issues
-            # Using --parallel 2 to limit concurrent builds and prevent memory exhaustion
+            # Using COMPOSE_PARALLEL_LIMIT to limit concurrent builds and prevent memory exhaustion
             echo "🔨 Building and starting services (max 2 parallel builds to prevent OOM)..."
+            export COMPOSE_PARALLEL_LIMIT=2
             MAX_RETRIES=3
             RETRY_COUNT=0
 
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --parallel 2; then
+              if docker compose -f docker-compose.prod.yml up -d --build --remove-orphans; then
                 echo "✅ Docker-compose succeeded"
                 break
               else
