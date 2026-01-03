@@ -227,17 +227,30 @@ export class DoctorDigitalPrescriptionsController {
       throw new BadRequestException('Doctor ID is required');
     }
 
-    const prescription = await this.digitalPrescriptionService.getDigitalPrescriptionById(
+    let prescription = await this.digitalPrescriptionService.getDigitalPrescriptionById(
       prescriptionId,
       doctorId,
     );
 
-    if (!prescription.pdfGenerated || !prescription.pdfPath) {
-      throw new BadRequestException('PDF not generated yet');
+    // Auto-generate PDF if it doesn't exist or file is missing
+    if (!prescription.pdfGenerated || !prescription.pdfPath || !existsSync(prescription.pdfPath)) {
+      console.log(`[PDF Download] PDF not found for ${prescriptionId}, generating now...`);
+
+      // Generate the PDF
+      const { filePath, fileName } = await this.pdfGenerationService.generatePrescriptionPDF(prescriptionId);
+
+      // Reload prescription to get updated pdfPath
+      prescription = await this.digitalPrescriptionService.getDigitalPrescriptionById(
+        prescriptionId,
+        doctorId,
+      );
+
+      console.log(`[PDF Download] PDF generated successfully: ${fileName}`);
     }
 
-    if (!existsSync(prescription.pdfPath)) {
-      throw new BadRequestException('PDF file not found');
+    // Final check - if still no PDF path, something went wrong
+    if (!prescription.pdfPath || !existsSync(prescription.pdfPath)) {
+      throw new BadRequestException('Failed to generate PDF');
     }
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -533,9 +546,9 @@ export class MemberDigitalPrescriptionsController {
         pdfFileName: prescription.pdfFileName
       });
 
-      // Auto-generate PDF if not generated yet
-      if (!prescription.pdfGenerated || !prescription.pdfPath) {
-        console.log(`[${timestamp}] ⚠️ [MemberPrescriptionDownload] PDF not generated, generating now...`);
+      // Auto-generate PDF if not generated yet or file is missing
+      if (!prescription.pdfGenerated || !prescription.pdfPath || !existsSync(prescription.pdfPath)) {
+        console.log(`[${timestamp}] ⚠️ [MemberPrescriptionDownload] PDF not generated or missing, generating now...`);
         await this.pdfGenerationService.generatePrescriptionPDF(prescriptionId);
 
         // Reload prescription to get updated PDF path
