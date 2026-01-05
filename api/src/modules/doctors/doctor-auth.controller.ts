@@ -202,7 +202,7 @@ export class DoctorAuthController {
       throw new BadRequestException('Doctor ID is required');
     }
 
-    const doctor = await this.doctorAuthService.getDoctorById(doctorId);
+    const doctor = await this.doctorAuthService.getDoctorProfile(doctorId);
 
     if (!doctor || !doctor.signatureImage || !existsSync(doctor.signatureImage)) {
       throw new BadRequestException('Signature not found');
