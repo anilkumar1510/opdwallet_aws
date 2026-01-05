@@ -224,7 +224,7 @@ export default function PrescriptionDetailsPage() {
                 {data.doctorSignatureUrl && (
                   <div className="mb-2">
                     <img
-                      src={`/doctor${data.doctorSignatureUrl}`}
+                      src={data.doctorSignatureUrl}
                       alt="Doctor Signature"
                       className="h-12 w-auto object-contain"
                       onError={(e) => {

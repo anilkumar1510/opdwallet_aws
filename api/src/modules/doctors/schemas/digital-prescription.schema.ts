@@ -153,6 +153,9 @@ export class DigitalPrescription {
   @Prop()
   doctorRegistrationNumber?: string;
 
+  @Prop()
+  doctorSignatureImage?: string; // Path to doctor's signature image (copied at prescription creation)
+
   // CLINIC INFORMATION - NEW (from appointment)
   @Prop()
   clinicName?: string;

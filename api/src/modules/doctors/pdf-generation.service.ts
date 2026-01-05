@@ -5,7 +5,6 @@ import {
   DigitalPrescription,
   DigitalPrescriptionDocument,
 } from './schemas/digital-prescription.schema';
-import { Doctor, DoctorDocument } from './schemas/doctor.schema';
 import * as PDFDocument from 'pdfkit';
 import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -17,8 +16,6 @@ export class PdfGenerationService {
   constructor(
     @InjectModel(DigitalPrescription.name)
     private digitalPrescriptionModel: Model<DigitalPrescriptionDocument>,
-    @InjectModel(Doctor.name)
-    private doctorModel: Model<DoctorDocument>,
   ) {
     // Ensure upload directory exists
     if (!existsSync(this.uploadDir)) {
@@ -37,11 +34,10 @@ export class PdfGenerationService {
       throw new Error('Prescription not found');
     }
 
-    // Fetch doctor for signature
-    const doctor = await this.doctorModel.findOne({ doctorId: prescription.doctorId, isActive: true });
-    const doctorSignaturePath = doctor?.signatureImage;
+    // Use prescription's stored signature (copied at prescription creation time)
+    const doctorSignaturePath = prescription.doctorSignatureImage;
 
-    console.log('[PDF Generation] Doctor signature path:', doctorSignaturePath);
+    console.log('[PDF Generation] Prescription signature path:', doctorSignaturePath);
     console.log('[PDF Generation] Signature exists:', doctorSignaturePath ? existsSync(doctorSignaturePath) : false);
 
     const fileName = `prescription-${prescriptionId}-${Date.now()}.pdf`;

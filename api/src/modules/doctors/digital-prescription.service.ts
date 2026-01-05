@@ -13,11 +13,13 @@ import { Medicine, MedicineDocument } from './schemas/medicine.schema';
 import { Appointment, AppointmentDocument } from '../appointments/schemas/appointment.schema';
 import { Doctor, DoctorDocument } from './schemas/doctor.schema';
 import { CreateDigitalPrescriptionDto, UpdateDigitalPrescriptionDto } from './dto/create-digital-prescription.dto';
-import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { join, extname } from 'path';
+import { existsSync, mkdirSync, copyFileSync } from 'fs';
 
 @Injectable()
 export class DigitalPrescriptionService {
+  private readonly signatureUploadDir = join(process.cwd(), 'uploads', 'prescriptions', 'signatures');
+
   constructor(
     @InjectModel(DigitalPrescription.name)
     private digitalPrescriptionModel: Model<DigitalPrescriptionDocument>,
@@ -27,7 +29,12 @@ export class DigitalPrescriptionService {
     private appointmentModel: Model<AppointmentDocument>,
     @InjectModel(Doctor.name)
     private doctorModel: Model<DoctorDocument>,
-  ) {}
+  ) {
+    // Ensure signature upload directory exists
+    if (!existsSync(this.signatureUploadDir)) {
+      mkdirSync(this.signatureUploadDir, { recursive: true });
+    }
+  }
 
   async createDigitalPrescription(
     createDto: CreateDigitalPrescriptionDto,
@@ -79,6 +86,26 @@ export class DigitalPrescriptionService {
       medicines: createDto.medicines || [],
     });
 
+    // Copy doctor's signature for this prescription
+    let doctorSignatureImage: string | undefined;
+    if (doctor.signatureImage && existsSync(doctor.signatureImage)) {
+      try {
+        const ext = extname(doctor.signatureImage);
+        const signatureFileName = `signature-${prescriptionId}${ext}`;
+        const signatureFilePath = join(this.signatureUploadDir, signatureFileName);
+
+        copyFileSync(doctor.signatureImage, signatureFilePath);
+        doctorSignatureImage = signatureFilePath;
+
+        console.log('✅ [DigitalPrescriptionService] Doctor signature copied:', {
+          from: doctor.signatureImage,
+          to: signatureFilePath,
+        });
+      } catch (error) {
+        console.error('❌ [DigitalPrescriptionService] Failed to copy signature:', error);
+      }
+    }
+
     // Create digital prescription
     const prescription = new this.digitalPrescriptionModel({
       prescriptionId,
@@ -88,6 +115,7 @@ export class DigitalPrescriptionService {
       doctorQualification,
       doctorSpecialty,
       doctorRegistrationNumber,
+      doctorSignatureImage,
       userId: appointment.userId,
       patientName: appointment.patientName,
       chiefComplaint: createDto.chiefComplaint,

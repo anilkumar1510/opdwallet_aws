@@ -181,13 +181,11 @@ export class DoctorDigitalPrescriptionsController {
       doctorId,
     );
 
-    // Fetch doctor details to include signature info
-    const doctor = await this.digitalPrescriptionService.getDoctorDetails(doctorId);
     const prescriptionObj = prescription.toObject();
 
-    // Add signature URL if available
-    if (doctor?.signatureImage) {
-      prescriptionObj['doctorSignatureUrl'] = `/api/doctor/digital-prescriptions/signature/${doctorId}`;
+    // Add signature URL if prescription has stored signature
+    if (prescription.doctorSignatureImage) {
+      prescriptionObj['doctorSignatureUrl'] = `/api/doctor/digital-prescriptions/${prescriptionId}/signature`;
     }
 
     return {
@@ -224,34 +222,36 @@ export class DoctorDigitalPrescriptionsController {
     };
   }
 
-  @Get('signature/:doctorId')
-  async getDoctorSignature(
-    @Param('doctorId') doctorId: string,
+  @Get(':prescriptionId/signature')
+  async getPrescriptionSignature(
+    @Param('prescriptionId') prescriptionId: string,
     @Request() req: AuthRequest,
     @Res() res: Response,
   ) {
-    // Verify doctor is accessing their own signature or prescription
-    const requestingDoctorId = req.user.doctorId;
+    const doctorId = req.user.doctorId;
 
-    if (!requestingDoctorId) {
+    if (!doctorId) {
       throw new BadRequestException('Doctor ID is required');
     }
 
-    // Get doctor details
-    const doctor = await this.digitalPrescriptionService.getDoctorDetails(doctorId);
+    // Get prescription to verify ownership and get signature path
+    const prescription = await this.digitalPrescriptionService.getDigitalPrescriptionById(
+      prescriptionId,
+      doctorId,
+    );
 
-    if (!doctor || !doctor.signatureImage || !existsSync(doctor.signatureImage)) {
-      throw new BadRequestException('Signature not found');
+    if (!prescription.doctorSignatureImage || !existsSync(prescription.doctorSignatureImage)) {
+      throw new BadRequestException('Signature not found for this prescription');
     }
 
     // Determine content type based on file extension
-    const ext = doctor.signatureImage.toLowerCase().split('.').pop();
+    const ext = prescription.doctorSignatureImage.toLowerCase().split('.').pop();
     const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
 
-    const fileStream = createReadStream(doctor.signatureImage);
+    const fileStream = createReadStream(prescription.doctorSignatureImage);
     fileStream.pipe(res);
   }
 
@@ -547,13 +547,11 @@ export class MemberDigitalPrescriptionsController {
       userId,
     );
 
-    // Fetch doctor details to include signature info
-    const doctor = await this.digitalPrescriptionService.getDoctorDetails(prescription.doctorId);
     const prescriptionObj = prescription.toObject();
 
-    // Add signature URL if available
-    if (doctor?.signatureImage) {
-      prescriptionObj['doctorSignatureUrl'] = `/api/doctor/digital-prescriptions/signature/${prescription.doctorId}`;
+    // Add signature URL if prescription has stored signature
+    if (prescription.doctorSignatureImage) {
+      prescriptionObj['doctorSignatureUrl'] = `/api/member/digital-prescriptions/${prescriptionId}/signature`;
     }
 
     return {
@@ -640,5 +638,38 @@ export class MemberDigitalPrescriptionsController {
       console.error(`[${timestamp}] ❌ [MemberPrescriptionDownload] Error stack:`, error.stack);
       throw error;
     }
+  }
+
+  @Get(':prescriptionId/signature')
+  async getPrescriptionSignature(
+    @Param('prescriptionId') prescriptionId: string,
+    @Request() req: AuthRequest,
+    @Res() res: Response,
+  ) {
+    const userId = req.user.userId || req.user.id;
+
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    // Get prescription to verify ownership and get signature path
+    const prescription = await this.digitalPrescriptionService.getMemberDigitalPrescriptionById(
+      prescriptionId,
+      userId,
+    );
+
+    if (!prescription.doctorSignatureImage || !existsSync(prescription.doctorSignatureImage)) {
+      throw new BadRequestException('Signature not found for this prescription');
+    }
+
+    // Determine content type based on file extension
+    const ext = prescription.doctorSignatureImage.toLowerCase().split('.').pop();
+    const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+
+    const fileStream = createReadStream(prescription.doctorSignatureImage);
+    fileStream.pipe(res);
   }
 }
