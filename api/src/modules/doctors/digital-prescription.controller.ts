@@ -181,9 +181,18 @@ export class DoctorDigitalPrescriptionsController {
       doctorId,
     );
 
+    // Fetch doctor details to include signature info
+    const doctor = await this.digitalPrescriptionService.getDoctorDetails(doctorId);
+    const prescriptionObj = prescription.toObject();
+
+    // Add signature URL if available
+    if (doctor?.signatureImage) {
+      prescriptionObj['doctorSignatureUrl'] = `/api/doctor/digital-prescriptions/signature/${doctorId}`;
+    }
+
     return {
       message: 'Digital prescription retrieved successfully',
-      prescription: prescription.toObject(),
+      prescription: prescriptionObj,
     };
   }
 
@@ -213,6 +222,37 @@ export class DoctorDigitalPrescriptionsController {
       fileName,
       downloadUrl: `/api/doctor/digital-prescriptions/${prescriptionId}/download-pdf`,
     };
+  }
+
+  @Get('signature/:doctorId')
+  async getDoctorSignature(
+    @Param('doctorId') doctorId: string,
+    @Request() req: AuthRequest,
+    @Res() res: Response,
+  ) {
+    // Verify doctor is accessing their own signature or prescription
+    const requestingDoctorId = req.user.doctorId;
+
+    if (!requestingDoctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    // Get doctor details
+    const doctor = await this.digitalPrescriptionService.getDoctorDetails(doctorId);
+
+    if (!doctor || !doctor.signatureImage || !existsSync(doctor.signatureImage)) {
+      throw new BadRequestException('Signature not found');
+    }
+
+    // Determine content type based on file extension
+    const ext = doctor.signatureImage.toLowerCase().split('.').pop();
+    const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+
+    const fileStream = createReadStream(doctor.signatureImage);
+    fileStream.pipe(res);
   }
 
   @Get(':prescriptionId/download-pdf')
@@ -507,9 +547,18 @@ export class MemberDigitalPrescriptionsController {
       userId,
     );
 
+    // Fetch doctor details to include signature info
+    const doctor = await this.digitalPrescriptionService.getDoctorDetails(prescription.doctorId);
+    const prescriptionObj = prescription.toObject();
+
+    // Add signature URL if available
+    if (doctor?.signatureImage) {
+      prescriptionObj['doctorSignatureUrl'] = `/api/doctor/digital-prescriptions/signature/${prescription.doctorId}`;
+    }
+
     return {
       message: 'Digital prescription retrieved successfully',
-      prescription: prescription.toObject(),
+      prescription: prescriptionObj,
     };
   }
 

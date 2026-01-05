@@ -34,6 +34,7 @@ interface DigitalPrescription {
   doctorName: string
   doctorQualification?: string
   doctorSpecialty?: string
+  doctorSignatureUrl?: string
   patientName: string
   createdAt: string
   chiefComplaint?: string
@@ -220,6 +221,19 @@ export default function PrescriptionDetailsPage() {
               <UserIcon className="h-5 w-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-600">Doctor</p>
+                {data.doctorSignatureUrl && (
+                  <div className="mb-2">
+                    <img
+                      src={`/doctor${data.doctorSignatureUrl}`}
+                      alt="Doctor Signature"
+                      className="h-12 w-auto object-contain"
+                      onError={(e) => {
+                        // Hide if image fails to load
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                )}
                 <p className="font-medium text-gray-900">{data.doctorName}</p>
                 {data.doctorQualification && (
                   <p className="text-sm text-gray-600">{data.doctorQualification}</p>

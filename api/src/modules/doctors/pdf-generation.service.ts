@@ -412,21 +412,37 @@ export class PdfGenerationService {
         // ==================== DOCTOR SIGNATURE ====================
         doc.moveDown(2);
 
-        // Try to embed signature image if available
+        // Calculate space needed for doctor info
+        const doctorInfoStartY = doc.y;
+        let textHeight = 0;
+
+        // Calculate text height for doctor name and credentials
+        textHeight += 12; // Doctor name line height
+        if (prescription.doctorQualification) {
+          textHeight += 11; // Qualification line height
+        }
+        if (prescription.doctorRegistrationNumber) {
+          textHeight += 11; // Registration number line height
+        }
+
+        // Try to embed signature image ABOVE doctor info
         if (doctorSignaturePath && existsSync(doctorSignaturePath)) {
           try {
-            doc.image(doctorSignaturePath, 400, doc.y, {
+            // Place signature above where the text will go
+            const signatureY = doctorInfoStartY - 10;
+            doc.image(doctorSignaturePath, 400, signatureY, {
               width: 100,
               height: 40,
               align: 'right'
             });
-            doc.moveDown(3);
+            console.log('[PDF] Signature embedded at Y:', signatureY);
           } catch (error) {
             console.error('Error embedding signature image:', error);
           }
-        } else {
-          doc.moveDown(2);
         }
+
+        // Keep Y position at doctorInfoStartY for doctor name (below signature)
+        doc.y = doctorInfoStartY + 35; // Position text below signature
 
         // Doctor name and credentials
         doc
