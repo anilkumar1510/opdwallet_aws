@@ -56,13 +56,19 @@ export default function BenefitCardEnhanced({
   return (
     <Link
       href={href}
-      className="flex flex-col bg-white transition-all duration-200 h-full"
+      className="flex flex-col bg-white transition-all duration-200 h-full group"
       style={{
-        border: '1.5px solid #0F5FDC',
+        border: '1.5px solid #E5E7EB',
         borderRadius: '16px',
         boxShadow: '0 1px 8px 0 rgba(3, 77, 162, 0.24)',
         minHeight: '123px',
         padding: '18px 11px 11px 11px'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.border = '1.5px solid #0F5FDC'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.border = '1.5px solid #E5E7EB'
       }}
     >
       {/* Title and Chevron */}
