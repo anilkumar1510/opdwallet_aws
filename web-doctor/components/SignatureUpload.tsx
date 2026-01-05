@@ -16,6 +16,7 @@ export default function SignatureUpload() {
   const [success, setSuccess] = useState(false)
   const [signatureStatus, setSignatureStatus] = useState<SignatureStatus | null>(null)
   const [fetchingStatus, setFetchingStatus] = useState(true)
+  const [imageRefreshKey, setImageRefreshKey] = useState(Date.now())
 
   useEffect(() => {
     loadSignatureStatus()
@@ -26,6 +27,8 @@ export default function SignatureUpload() {
       setFetchingStatus(true)
       const status = await getSignatureStatus()
       setSignatureStatus(status)
+      // Force image refresh every time we load status
+      setImageRefreshKey(Date.now())
     } catch (err) {
       console.error('Error fetching signature status:', err)
     } finally {
@@ -160,8 +163,8 @@ export default function SignatureUpload() {
             <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
             <div className="bg-white p-4 rounded border border-gray-200 inline-block">
               <img
-                key={signatureStatus.uploadedAt || Date.now()}
-                src={`/doctor/api/auth/doctor/profile/signature?t=${Date.now()}`}
+                key={imageRefreshKey}
+                src={`/doctor/api/auth/doctor/profile/signature?t=${imageRefreshKey}`}
                 alt="Signature preview"
                 className="h-20 object-contain"
                 onError={(e) => {
