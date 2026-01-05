@@ -156,22 +156,21 @@ export default function SignatureUpload() {
             </button>
           </div>
 
-          {signatureStatus.previewUrl && (
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-              <div className="bg-white p-4 rounded border border-gray-200 inline-block">
-                <img
-                  src={`/doctor${signatureStatus.previewUrl}`}
-                  alt="Signature preview"
-                  className="h-20 object-contain"
-                  onError={(e) => {
-                    console.error('Failed to load signature preview');
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              </div>
+          <div className="mt-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+            <div className="bg-white p-4 rounded border border-gray-200 inline-block">
+              <img
+                key={signatureStatus.uploadedAt || Date.now()}
+                src={`/doctor/api/auth/doctor/profile/signature?t=${Date.now()}`}
+                alt="Signature preview"
+                className="h-20 object-contain"
+                onError={(e) => {
+                  console.error('Failed to load signature preview');
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             </div>
-          )}
+          </div>
         </div>
       )}
 

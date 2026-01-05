@@ -408,39 +408,28 @@ export class PdfGenerationService {
         // ==================== DOCTOR SIGNATURE ====================
         doc.moveDown(2);
 
-        // Calculate space needed for doctor info
         const doctorInfoStartY = doc.y;
-        let textHeight = 0;
 
-        // Calculate text height for doctor name and credentials
-        textHeight += 12; // Doctor name line height
-        if (prescription.doctorQualification) {
-          textHeight += 11; // Qualification line height
-        }
-        if (prescription.doctorRegistrationNumber) {
-          textHeight += 11; // Registration number line height
-        }
-
-        // Try to embed signature image ABOVE doctor info
+        // FIRST: Embed signature image if available
         if (doctorSignaturePath && existsSync(doctorSignaturePath)) {
           try {
-            // Place signature above where the text will go
-            const signatureY = doctorInfoStartY - 10;
-            doc.image(doctorSignaturePath, 400, signatureY, {
+            // Place signature image at current Y position on the right side
+            doc.image(doctorSignaturePath, 400, doctorInfoStartY, {
               width: 100,
               height: 40,
               align: 'right'
             });
-            console.log('[PDF] Signature embedded at Y:', signatureY);
+            console.log('[PDF] Signature embedded at Y:', doctorInfoStartY);
+
+            // Move Y position down to make space for signature (so text appears below it)
+            doc.y = doctorInfoStartY + 50;
           } catch (error) {
             console.error('Error embedding signature image:', error);
+            // If signature fails, just continue with text at current position
           }
         }
 
-        // Keep Y position at doctorInfoStartY for doctor name (below signature)
-        doc.y = doctorInfoStartY + 35; // Position text below signature
-
-        // Doctor name and credentials
+        // THEN: Doctor name and credentials (will be below signature due to Y adjustment)
         doc
           .fontSize(10)
           .font('Helvetica-Bold')

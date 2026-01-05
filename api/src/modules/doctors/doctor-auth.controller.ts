@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import { createReadStream, existsSync } from 'fs';
 import { DoctorAuthService } from './doctor-auth.service';
 import { DoctorLoginDto } from './dto/doctor-login.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -187,8 +188,38 @@ export class DoctorAuthController {
 
     return {
       message: 'Signature status retrieved successfully',
-      status,
+      ...status,
     };
+  }
+
+  @Get('profile/signature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.DOCTOR)
+  async getSignature(@Request() req: AuthRequest, @Res() res: Response) {
+    const doctorId = req.user.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    const doctor = await this.doctorAuthService.getDoctorById(doctorId);
+
+    if (!doctor || !doctor.signatureImage || !existsSync(doctor.signatureImage)) {
+      throw new BadRequestException('Signature not found');
+    }
+
+    // Determine content type
+    const ext = doctor.signatureImage.toLowerCase().split('.').pop();
+    const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+
+    // NO cache headers - force browser to always fetch fresh
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const fileStream = createReadStream(doctor.signatureImage);
+    fileStream.pipe(res);
   }
 
   @Delete('profile/signature')

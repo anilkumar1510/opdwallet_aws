@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { createDigitalPrescription, generatePrescriptionPDF, MedicineItem, LabTestItem } from '@/lib/api/digital-prescriptions'
 import MedicineAutocomplete from './MedicineAutocomplete'
 import DiagnosisAutocomplete from './DiagnosisAutocomplete'
@@ -16,6 +16,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   BookmarkIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline'
 
 interface DigitalPrescriptionWriterProps {
@@ -36,6 +37,7 @@ export default function DigitalPrescriptionWriter({
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [prescriptionId, setPrescriptionId] = useState<string | null>(null)
+  const [signatureStatus, setSignatureStatus] = useState<{ hasSignature: boolean; signatureUrl?: string } | null>(null)
 
   // Form state
   const [chiefComplaint, setChiefComplaint] = useState('')
@@ -67,6 +69,27 @@ export default function DigitalPrescriptionWriter({
   ])
 
   const [labTests, setLabTests] = useState<LabTestItem[]>([])
+
+  // Fetch doctor's signature status on component mount
+  useEffect(() => {
+    const fetchSignatureStatus = async () => {
+      try {
+        const response = await fetch('/doctor/api/auth/doctor/profile/signature/status', {
+          credentials: 'include',
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setSignatureStatus({
+            hasSignature: data.hasSignature,
+            signatureUrl: data.hasSignature ? `/doctor/api/auth/doctor/profile/signature?t=${Date.now()}` : undefined
+          })
+        }
+      } catch (err) {
+        console.error('Failed to fetch signature status:', err)
+      }
+    }
+    fetchSignatureStatus()
+  }, [])
 
   const addMedicine = () => {
     setMedicines([
@@ -607,6 +630,39 @@ export default function DigitalPrescriptionWriter({
             </div>
           </div>
         </div>
+
+        {/* Doctor Signature Preview */}
+        {signatureStatus?.hasSignature && signatureStatus.signatureUrl && (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">Doctor Signature (will appear on prescription)</label>
+            </div>
+            <div className="bg-white p-3 rounded border border-gray-300 inline-block">
+              <img
+                src={signatureStatus.signatureUrl}
+                alt="Doctor Signature"
+                className="h-16 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {!signatureStatus?.hasSignature && signatureStatus !== null && (
+          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 flex items-start gap-3">
+            <PencilSquareIcon className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-900">Signature Required</p>
+              <p className="text-xs text-yellow-700 mt-1">
+                Please upload your signature in{' '}
+                <a href="/doctor/doctorview/profile" className="underline font-medium">Profile Settings</a>
+                {' '}before creating prescriptions.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Submit Buttons */}
         <div className="flex gap-3 pt-4 border-t">
