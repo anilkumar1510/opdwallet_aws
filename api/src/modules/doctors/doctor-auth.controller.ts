@@ -197,26 +197,44 @@ export class DoctorAuthController {
   @Roles(UserRole.DOCTOR)
   async getSignature(@Request() req: AuthRequest, @Res() res: Response) {
     const doctorId = req.user.doctorId;
+    console.log('[GET-SIGNATURE] Request for doctorId:', doctorId);
 
     if (!doctorId) {
+      console.error('[GET-SIGNATURE] No doctorId in request');
       throw new BadRequestException('Doctor ID is required');
     }
 
     const doctor = await this.doctorAuthService.getDoctorProfile(doctorId);
 
-    if (!doctor || !doctor.signatureImage || !existsSync(doctor.signatureImage)) {
+    console.log('[GET-SIGNATURE] Doctor profile fetched');
+    console.log('[GET-SIGNATURE] Has signatureImage:', !!doctor.signatureImage);
+    console.log('[GET-SIGNATURE] Signature path:', doctor.signatureImage);
+
+    if (!doctor || !doctor.signatureImage) {
+      console.error('[GET-SIGNATURE] No signature in doctor profile');
       throw new BadRequestException('Signature not found');
+    }
+
+    const fileExists = existsSync(doctor.signatureImage);
+    console.log('[GET-SIGNATURE] File exists on disk:', fileExists);
+
+    if (!fileExists) {
+      console.error('[GET-SIGNATURE] ❌ Signature file not found on disk:', doctor.signatureImage);
+      throw new BadRequestException('Signature file not found');
     }
 
     // Determine content type
     const ext = doctor.signatureImage.toLowerCase().split('.').pop();
     const contentType = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
 
+    console.log('[GET-SIGNATURE] ✅ Streaming signature file, content-type:', contentType);
+
     // NO cache headers - force browser to always fetch fresh
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
 
     const fileStream = createReadStream(doctor.signatureImage);
     fileStream.pipe(res);

@@ -115,7 +115,11 @@ export class DoctorAuthService {
   }
 
   async getDoctorProfile(doctorId: string): Promise<DoctorDocument> {
-    const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
+    // Force fresh query with no caching
+    const doctor = await this.doctorModel
+      .findOne({ doctorId, isActive: true })
+      .lean(false) // Get full document, no caching
+      .exec();
 
     if (!doctor) {
       throw new NotFoundException('Doctor not found');
@@ -171,25 +175,34 @@ export class DoctorAuthService {
     uploadedAt: Date;
     previewUrl: string;
   }> {
+    console.log('[SIGNATURE-UPLOAD] Starting upload for doctorId:', doctorId);
+    console.log('[SIGNATURE-UPLOAD] File path:', file.path);
+    console.log('[SIGNATURE-UPLOAD] File exists:', existsSync(file.path));
+
     const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
 
     if (!doctor) {
+      console.error('[SIGNATURE-UPLOAD] Doctor not found:', doctorId);
       throw new NotFoundException('Doctor not found');
     }
+
+    console.log('[SIGNATURE-UPLOAD] Doctor found, current signature:', doctor.signatureImage);
+    console.log('[SIGNATURE-UPLOAD] Has valid signature before:', doctor.hasValidSignature);
 
     // Delete old signature file if exists
     if (doctor.signatureImage && existsSync(doctor.signatureImage)) {
       try {
         unlinkSync(doctor.signatureImage);
+        console.log('[SIGNATURE-UPLOAD] Deleted old signature file');
       } catch (error) {
-        console.error('Error deleting old signature:', error);
+        console.error('[SIGNATURE-UPLOAD] Error deleting old signature:', error);
       }
     }
 
-    // Update doctor with new signature info
+    // Update doctor with new signature info using findOneAndUpdate for atomic operation
     const uploadedAt = new Date();
-    await this.doctorModel.updateOne(
-      { doctorId },
+    const updatedDoctor = await this.doctorModel.findOneAndUpdate(
+      { doctorId, isActive: true },
       {
         $set: {
           signatureImage: file.path,
@@ -197,7 +210,30 @@ export class DoctorAuthService {
           hasValidSignature: true,
         },
       },
+      {
+        new: true, // Return updated document
+        runValidators: true,
+        lean: false // Get full mongoose document
+      }
     );
+
+    if (!updatedDoctor) {
+      console.error('[SIGNATURE-UPLOAD] Failed to update doctor document');
+      throw new Error('Failed to update signature');
+    }
+
+    console.log('[SIGNATURE-UPLOAD] ✅ Doctor updated successfully');
+    console.log('[SIGNATURE-UPLOAD] New signature path:', updatedDoctor.signatureImage);
+    console.log('[SIGNATURE-UPLOAD] Has valid signature after:', updatedDoctor.hasValidSignature);
+    console.log('[SIGNATURE-UPLOAD] Uploaded at:', updatedDoctor.signatureUploadedAt);
+
+    // Verify file exists on disk
+    if (!existsSync(file.path)) {
+      console.error('[SIGNATURE-UPLOAD] ❌ File does not exist on disk after upload:', file.path);
+      throw new Error('Signature file not found on disk');
+    }
+
+    console.log('[SIGNATURE-UPLOAD] ✅ File verified on disk');
 
     return {
       hasSignature: true,
@@ -211,18 +247,49 @@ export class DoctorAuthService {
     uploadedAt?: Date;
     previewUrl?: string;
   }> {
-    const doctor = await this.doctorModel.findOne({ doctorId, isActive: true });
+    console.log('[SIGNATURE-STATUS] Fetching status for doctorId:', doctorId);
+
+    // Force fresh query with lean() disabled to avoid caching
+    const doctor = await this.doctorModel
+      .findOne({ doctorId, isActive: true })
+      .lean(false) // Get full document, no caching
+      .exec();
 
     if (!doctor) {
+      console.error('[SIGNATURE-STATUS] Doctor not found:', doctorId);
       throw new NotFoundException('Doctor not found');
     }
 
+    console.log('[SIGNATURE-STATUS] Doctor found');
+    console.log('[SIGNATURE-STATUS] hasValidSignature:', doctor.hasValidSignature);
+    console.log('[SIGNATURE-STATUS] signatureImage:', doctor.signatureImage);
+    console.log('[SIGNATURE-STATUS] signatureUploadedAt:', doctor.signatureUploadedAt);
+
+    // Check if file exists on disk
+    if (doctor.signatureImage) {
+      const fileExists = existsSync(doctor.signatureImage);
+      console.log('[SIGNATURE-STATUS] File exists on disk:', fileExists);
+
+      if (!fileExists) {
+        console.error('[SIGNATURE-STATUS] ❌ DB has signature path but file missing on disk:', doctor.signatureImage);
+        // File is missing, update DB to reflect this
+        await this.doctorModel.updateOne(
+          { doctorId },
+          { $set: { hasValidSignature: false } }
+        );
+        return { hasSignature: false };
+      }
+    }
+
     if (!doctor.hasValidSignature || !doctor.signatureImage) {
+      console.log('[SIGNATURE-STATUS] No valid signature found');
       return { hasSignature: false };
     }
 
     // Extract filename from path
     const filename = doctor.signatureImage.split('/').pop() || doctor.signatureImage.split('\\').pop();
+
+    console.log('[SIGNATURE-STATUS] ✅ Valid signature found, filename:', filename);
 
     return {
       hasSignature: true,

@@ -237,39 +237,55 @@ export interface UploadSignatureResponse {
 }
 
 export async function uploadSignature(file: File): Promise<UploadSignatureResponse> {
+  console.log('[API-AUTH] 📤 uploadSignature called', { fileName: file.name, fileSize: file.size })
   const formData = new FormData();
   formData.append('signature', file);
 
+  console.log('[API-AUTH] 🔄 Sending POST request...')
   const response = await fetch('/doctor/api/auth/doctor/profile/signature', {
     method: 'POST',
     credentials: 'include',
     body: formData,
   });
 
+  console.log('[API-AUTH] 📥 Response received:', { status: response.status, ok: response.ok })
+
   if (!response.ok) {
     const error = await response.json();
+    console.error('[API-AUTH] ❌ Upload failed:', error)
     throw new Error(error.message || 'Failed to upload signature');
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('[API-AUTH] ✅ Upload successful:', result)
+  return result;
 }
 
 export async function getSignatureStatus(): Promise<SignatureStatus> {
+  console.log('[API-AUTH] 🔄 getSignatureStatus called')
   const response = await fetch('/doctor/api/auth/doctor/profile/signature/status', {
     credentials: 'include',
   });
 
+  console.log('[API-AUTH] 📥 Status response received:', { status: response.status, ok: response.ok })
+
   if (!response.ok) {
+    console.error('[API-AUTH] ❌ Failed to fetch signature status')
     throw new Error('Failed to fetch signature status');
   }
 
   const data = await response.json();
+  console.log('[API-AUTH] 📦 Raw response data:', data)
+
   // Backend spreads status fields directly, not nested under 'status'
-  return {
+  const result = {
     hasSignature: data.hasSignature,
     uploadedAt: data.uploadedAt,
     previewUrl: data.previewUrl,
   };
+
+  console.log('[API-AUTH] ✅ Parsed signature status:', result)
+  return result;
 }
 
 export async function deleteSignature(): Promise<void> {

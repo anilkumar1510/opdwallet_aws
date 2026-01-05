@@ -24,13 +24,17 @@ export default function SignatureUpload() {
 
   const loadSignatureStatus = async () => {
     try {
+      console.log('[FRONTEND-SIGNATURE] 🔄 Loading signature status...')
       setFetchingStatus(true)
       const status = await getSignatureStatus()
+      console.log('[FRONTEND-SIGNATURE] ✅ Status received:', status)
       setSignatureStatus(status)
       // Force image refresh every time we load status
-      setImageRefreshKey(Date.now())
+      const newRefreshKey = Date.now()
+      setImageRefreshKey(newRefreshKey)
+      console.log('[FRONTEND-SIGNATURE] 🔄 Image refresh key updated:', newRefreshKey)
     } catch (err) {
-      console.error('Error fetching signature status:', err)
+      console.error('[FRONTEND-SIGNATURE] ❌ Error fetching signature status:', err)
     } finally {
       setFetchingStatus(false)
     }
@@ -67,12 +71,15 @@ export default function SignatureUpload() {
       return
     }
 
+    console.log('[FRONTEND-SIGNATURE] 📤 Starting upload...', { fileName: file.name, fileSize: file.size })
     setLoading(true)
     setError('')
     setSuccess(false)
 
     try {
-      await uploadSignature(file)
+      console.log('[FRONTEND-SIGNATURE] 🔄 Calling uploadSignature API...')
+      const result = await uploadSignature(file)
+      console.log('[FRONTEND-SIGNATURE] ✅ Upload successful:', result)
       setSuccess(true)
       setFile(null)
 
@@ -80,13 +87,18 @@ export default function SignatureUpload() {
       const fileInput = document.getElementById('signature-file') as HTMLInputElement
       if (fileInput) fileInput.value = ''
 
-      // Reload signature status
+      // Wait a bit to ensure DB commit, then reload signature status
+      console.log('[FRONTEND-SIGNATURE] ⏳ Waiting 500ms before reloading status...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      console.log('[FRONTEND-SIGNATURE] 🔄 Reloading signature status after upload...')
       await loadSignatureStatus()
 
       setTimeout(() => {
         setSuccess(false)
       }, 3000)
     } catch (err: any) {
+      console.error('[FRONTEND-SIGNATURE] ❌ Upload failed:', err)
       setError(err.message || 'Failed to upload signature')
     } finally {
       setLoading(false)
