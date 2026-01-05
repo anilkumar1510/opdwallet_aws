@@ -43,6 +43,10 @@ export class LabVendor extends Document {
   @Prop()
   description?: string;
 
+  // Lab services offered by this vendor
+  @Prop({ type: [String], default: [] })
+  services: string[];
+
   // Service type support
   @Prop({ default: true })
   offersLabServices: boolean;

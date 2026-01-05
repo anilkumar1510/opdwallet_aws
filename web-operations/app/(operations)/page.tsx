@@ -102,23 +102,23 @@ export default function OperationsDashboard() {
         </button>
 
         <button
-          onClick={() => router.push('/lab/prescriptions')}
+          onClick={() => router.push('/prescriptions?tab=lab')}
           className="card hover:shadow-lg transition-shadow cursor-pointer text-left"
         >
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Lab Prescriptions</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Prescriptions</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Digitize uploaded prescriptions and create lab test carts
+            Digitize uploaded lab and diagnostic prescriptions
           </p>
           <span className="text-green-600 font-medium">Go to Prescriptions →</span>
         </button>
 
         <button
-          onClick={() => router.push('/lab/orders')}
+          onClick={() => router.push('/orders?tab=lab')}
           className="card hover:shadow-lg transition-shadow cursor-pointer text-left"
         >
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Lab Orders</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Orders</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Manage lab orders, confirm, collect samples, and upload reports
+            Manage lab and diagnostic orders, confirm, collect samples, and upload reports
           </p>
           <span className="text-green-600 font-medium">Go to Orders →</span>
         </button>

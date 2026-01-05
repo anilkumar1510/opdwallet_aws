@@ -14,7 +14,7 @@ export interface CreateDiagnosticVendorDto {
     address: string;
   };
   serviceablePincodes: string[];
-  equipmentCapabilities: {
+  equipmentCapabilities?: {
     ctScan?: boolean;
     mri?: boolean;
     xRay?: boolean;
@@ -25,6 +25,7 @@ export interface CreateDiagnosticVendorDto {
     petScan?: boolean;
     boneDensity?: boolean;
   };
+  services?: string[];
   homeCollection?: boolean;
   centerVisit?: boolean;
   homeCollectionCharges?: number;
@@ -72,6 +73,7 @@ export class DiagnosticVendorService {
       contactInfo: createDto.contactInfo,
       serviceablePincodes: createDto.serviceablePincodes,
       equipmentCapabilities: createDto.equipmentCapabilities,
+      services: createDto.services ?? [],
       homeCollection: createDto.homeCollection !== false,
       centerVisit: createDto.centerVisit !== false,
       homeCollectionCharges: createDto.homeCollectionCharges || 100,
@@ -140,9 +142,9 @@ export class DiagnosticVendorService {
 
     if (updateDto.equipmentCapabilities) {
       vendor.equipmentCapabilities = {
-        ...vendor.equipmentCapabilities,
+        ...(vendor.equipmentCapabilities || {}),
         ...updateDto.equipmentCapabilities,
-      };
+      } as any;
     }
 
     if (updateDto.homeCollection !== undefined) {
@@ -161,15 +163,22 @@ export class DiagnosticVendorService {
       vendor.description = updateDto.description;
     }
 
+    if (updateDto.services !== undefined) {
+      vendor.services = updateDto.services;
+    }
+
     return vendor.save();
   }
 
   // ============ PRICING MANAGEMENT ============
 
   async createPricing(createDto: CreateDiagnosticPricingDto): Promise<DiagnosticVendorPricing> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(createDto.vendorId);
+
     // Check if pricing already exists
     const existingPricing = await this.diagnosticVendorPricingModel.findOne({
-      vendorId: new Types.ObjectId(createDto.vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       serviceId: new Types.ObjectId(createDto.serviceId),
     });
 
@@ -178,7 +187,7 @@ export class DiagnosticVendorService {
     }
 
     const pricing = new this.diagnosticVendorPricingModel({
-      vendorId: new Types.ObjectId(createDto.vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       serviceId: new Types.ObjectId(createDto.serviceId),
       actualPrice: createDto.actualPrice,
       discountedPrice: createDto.discountedPrice,
@@ -190,9 +199,12 @@ export class DiagnosticVendorService {
   }
 
   async getVendorPricing(vendorId: string): Promise<any[]> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     const pricing = await this.diagnosticVendorPricingModel
       .find({
-        vendorId: new Types.ObjectId(vendorId),
+        vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
         isActive: true,
       })
       .populate('serviceId')
@@ -216,8 +228,11 @@ export class DiagnosticVendorService {
     serviceId: string,
     updateDto: Partial<CreateDiagnosticPricingDto>,
   ): Promise<DiagnosticVendorPricing> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     const pricing = await this.diagnosticVendorPricingModel.findOne({
-      vendorId: new Types.ObjectId(vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       serviceId: new Types.ObjectId(serviceId),
     });
 
@@ -251,11 +266,14 @@ export class DiagnosticVendorService {
     endTime: string,
     maxBookings: number = 5,
   ): Promise<DiagnosticVendorSlot> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     const slotId = `DIAG-SLOT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     // Check if slot already exists
     const existingSlot = await this.diagnosticVendorSlotModel.findOne({
-      vendorId: new Types.ObjectId(vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       pincode,
       date,
       timeSlot,
@@ -267,7 +285,7 @@ export class DiagnosticVendorService {
 
     const slot = new this.diagnosticVendorSlotModel({
       slotId,
-      vendorId: new Types.ObjectId(vendorId),
+      vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
       pincode,
       date,
       timeSlot: timeSlot as TimeSlot,
@@ -282,15 +300,28 @@ export class DiagnosticVendorService {
   }
 
   async getAvailableSlots(vendorId: string, pincode: string, date: string): Promise<DiagnosticVendorSlot[]> {
+    // First get the vendor document by string vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
     return this.diagnosticVendorSlotModel
       .find({
-        vendorId: new Types.ObjectId(vendorId),
+        vendorId: vendor._id, // Use MongoDB ObjectId from vendor document
         pincode,
         date,
         isActive: true,
       })
       .sort({ startTime: 1 })
       .exec();
+  }
+
+  async getSlotById(slotId: string): Promise<DiagnosticVendorSlot> {
+    const slot = await this.diagnosticVendorSlotModel.findOne({ slotId });
+
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    return slot;
   }
 
   async bookSlot(slotId: string): Promise<DiagnosticVendorSlot> {
@@ -320,5 +351,132 @@ export class DiagnosticVendorService {
     }
 
     return slot.save();
+  }
+
+  // ============ ELIGIBLE VENDORS FOR PRESCRIPTION DIGITIZATION ============
+
+  /**
+   * Get eligible vendors based on selected services and pincode
+   * Returns vendors that:
+   * 1. Serve the specified pincode
+   * 2. Have pricing for ALL selected services
+   */
+  async getEligibleVendors(serviceIds: string[], pincode: string): Promise<any[]> {
+    // Convert serviceIds to ObjectIds
+    const serviceObjectIds = serviceIds.map(id => new Types.ObjectId(id));
+
+    // Find vendors that serve this pincode
+    const vendorsInPincode = await this.diagnosticVendorModel.find({
+      isActive: true,
+      serviceablePincodes: pincode,
+    });
+
+    if (vendorsInPincode.length === 0) {
+      return [];
+    }
+
+    const eligibleVendors = [];
+
+    // For each vendor, check if they have pricing for ALL selected services
+    for (const vendor of vendorsInPincode) {
+      const vendorPricing = await this.diagnosticVendorPricingModel.find({
+        vendorId: vendor._id,
+        serviceId: { $in: serviceObjectIds },
+        isActive: true,
+      }).populate('serviceId', 'name code category');
+
+      // Vendor is eligible only if they have pricing for ALL services
+      if (vendorPricing.length === serviceIds.length) {
+        // Calculate total price
+        const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
+        const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
+
+        eligibleVendors.push({
+          _id: vendor._id,
+          vendorId: vendor.vendorId,
+          name: vendor.name,
+          code: vendor.code,
+          homeCollection: vendor.homeCollection,
+          centerVisit: vendor.centerVisit,
+          homeCollectionCharges: vendor.homeCollectionCharges,
+          pricing: vendorPricing.map((p: any) => ({
+            serviceId: p.serviceId._id,
+            serviceName: p.serviceId.name,
+            serviceCode: p.serviceId.code,
+            category: p.serviceId.category,
+            actualPrice: p.actualPrice,
+            discountedPrice: p.discountedPrice,
+          })),
+          totalActualPrice,
+          totalDiscountedPrice,
+          totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
+        });
+      }
+    }
+
+    return eligibleVendors;
+  }
+
+  /**
+   * Get selected vendors for cart with pricing details
+   * Used when member is viewing cart and selecting vendor
+   */
+  async getSelectedVendorsForCart(
+    selectedVendorIds: Types.ObjectId[],
+    serviceIds: Types.ObjectId[],
+  ): Promise<any[]> {
+    if (selectedVendorIds.length === 0) {
+      return [];
+    }
+
+    const selectedVendors = [];
+
+    // For each selected vendor, get their pricing for the cart items
+    for (const vendorId of selectedVendorIds) {
+      const vendor = await this.diagnosticVendorModel.findById(vendorId);
+
+      if (!vendor || !vendor.isActive) {
+        continue;
+      }
+
+      const vendorPricing = await this.diagnosticVendorPricingModel.find({
+        vendorId: vendor._id,
+        serviceId: { $in: serviceIds },
+        isActive: true,
+      }).populate('serviceId', 'name code category');
+
+      // Only include vendor if they have pricing for all services
+      if (vendorPricing.length === serviceIds.length) {
+        // Calculate total price
+        const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
+        const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
+
+        selectedVendors.push({
+          _id: vendor._id,
+          vendorId: vendor.vendorId,
+          name: vendor.name,
+          code: vendor.code,
+          homeCollection: vendor.homeCollection,
+          centerVisit: vendor.centerVisit,
+          homeCollectionCharges: vendor.homeCollectionCharges,
+          pricing: vendorPricing.map((p: any) => ({
+            serviceId: p.serviceId._id,
+            serviceName: p.serviceId.name,
+            serviceCode: p.serviceId.code,
+            category: p.serviceId.category,
+            actualPrice: p.actualPrice,
+            discountedPrice: p.discountedPrice,
+          })),
+          totalActualPrice,
+          totalDiscountedPrice,
+          totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
+        });
+      }
+    }
+
+    // Sort by total price (cheapest first)
+    selectedVendors.sort((a, b) => a.totalDiscountedPrice - b.totalDiscountedPrice);
+
+    return selectedVendors;
   }
 }

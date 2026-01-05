@@ -49,9 +49,11 @@ import { TransactionSummaryModule } from '../transactions/transaction-summary.mo
     MulterModule.register({
       storage: diskStorage({
         destination: (req, file, cb) => {
-          const uploadPath = file.fieldname === 'file'
-            ? './uploads/lab-prescriptions'
-            : './uploads/lab-reports';
+          // Check request URL to determine upload destination
+          const isReportUpload = req.url.includes('/reports/') || req.url.includes('/orders/');
+          const uploadPath = isReportUpload
+            ? './uploads/lab-reports'
+            : './uploads/lab-prescriptions';
           cb(null, uploadPath);
         },
         filename: (req, file, cb) => {

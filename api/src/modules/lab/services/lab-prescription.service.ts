@@ -184,7 +184,17 @@ export class LabPrescriptionService {
   async getPendingPrescriptions(): Promise<LabPrescription[]> {
     return this.prescriptionModel
       .find({ status: PrescriptionStatus.UPLOADED })
+      .populate('userId', 'name phone email')
       .sort({ uploadedAt: 1 })
+      .exec();
+  }
+
+  async getPrescriptionsByStatus(status?: PrescriptionStatus): Promise<LabPrescription[]> {
+    const query = status ? { status } : {};
+    return this.prescriptionModel
+      .find(query)
+      .populate('userId', 'name phone email')
+      .sort({ uploadedAt: -1 })
       .exec();
   }
 

@@ -18,6 +18,17 @@ export interface CreateDiagnosticPrescriptionDto {
   filePath: string;
   source?: PrescriptionSource;
   healthRecordId?: string;
+  notes?: string;
+}
+
+export interface UploadDiagnosticPrescriptionDto {
+  patientId: string;
+  patientName: string;
+  patientRelationship: string;
+  prescriptionDate: string;
+  pincode: string;
+  addressId?: string;
+  notes?: string;
 }
 
 @Injectable()
@@ -26,6 +37,36 @@ export class DiagnosticPrescriptionService {
     @InjectModel(DiagnosticPrescription.name)
     private diagnosticPrescriptionModel: Model<DiagnosticPrescription>,
   ) {}
+
+  async uploadPrescription(
+    userId: Types.ObjectId,
+    uploadDto: UploadDiagnosticPrescriptionDto,
+    file: any,
+  ): Promise<DiagnosticPrescription> {
+    const prescriptionId = `DIAG-RX-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    const prescription = new this.diagnosticPrescriptionModel({
+      prescriptionId,
+      userId,
+      patientId: uploadDto.patientId,
+      patientName: uploadDto.patientName,
+      patientRelationship: uploadDto.patientRelationship,
+      prescriptionDate: new Date(uploadDto.prescriptionDate),
+      addressId: uploadDto.addressId ? new Types.ObjectId(uploadDto.addressId) : undefined,
+      pincode: uploadDto.pincode,
+      fileName: file.filename,
+      originalName: file.originalname,
+      fileType: file.mimetype,
+      fileSize: file.size,
+      filePath: file.path,
+      status: PrescriptionStatus.UPLOADED,
+      uploadedAt: new Date(),
+      notes: uploadDto.notes,
+      source: PrescriptionSource.UPLOAD,
+    });
+
+    return prescription.save();
+  }
 
   async create(createDto: CreateDiagnosticPrescriptionDto): Promise<DiagnosticPrescription> {
     const prescriptionId = `DIAG-RX-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -73,6 +114,7 @@ export class DiagnosticPrescriptionService {
   async findByStatus(status: PrescriptionStatus): Promise<DiagnosticPrescription[]> {
     return this.diagnosticPrescriptionModel
       .find({ status })
+      .populate('userId', 'name phone email')
       .sort({ uploadedAt: 1 })
       .exec();
   }

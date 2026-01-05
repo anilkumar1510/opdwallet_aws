@@ -80,27 +80,25 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 ---
 
-## Lab Management
+## Prescriptions Management (Unified)
 
 | Path | Description |
 |------|-------------|
-| /operations/lab/prescriptions | Browse lab prescriptions for digitization |
-| /operations/lab/prescriptions/[id]/digitize | Digitize individual prescription and create cart |
-| /operations/lab/orders | Manage lab orders and track status through workflow |
+| /operations/prescriptions | Unified prescriptions page with tab-based navigation (Lab + Diagnostic)<br>- Query params: `?tab=lab\|diagnostic`, `?status=UPLOADED\|DIGITIZED\|DELAYED`<br>- Features: View/preview prescriptions, filter by status, digitize workflow<br>- PDF and image support in preview modal<br>- "Digitize" button hidden for DIGITIZED prescriptions |
+| /operations/lab/prescriptions/[id]/digitize | Digitize lab prescription: search tests, select vendors, create cart |
+| /operations/diagnostics/prescriptions/[id]/digitize | Digitize diagnostic prescription: search services, select vendors, create cart |
 
 ---
 
-## Diagnostics Management
+## Orders Management (Unified)
 
 | Path | Description |
 |------|-------------|
-| /operations/diagnostics/prescriptions | Browse diagnostic prescriptions for digitization |
-| /operations/diagnostics/prescriptions/[id]/digitize | Digitize diagnostic prescription and create cart |
-| /operations/diagnostics/orders | Manage diagnostic orders and track status through workflow |
+| /operations/orders | Unified orders page with tab-based navigation (Lab + Diagnostic)<br>- Query params: `?tab=lab\|diagnostic`, `?status=PLACED\|CONFIRMED\|COMPLETED`<br>- Features: Confirm orders, upload reports via modal, track status<br>- Lab workflow: PLACED → CONFIRMED → SAMPLE_COLLECTED → COMPLETED<br>- Diagnostic workflow: PLACED → CONFIRMED → COMPLETED (skips sample collection)<br>- Report upload modal supports PDF and images |
 
 ---
 
-**Total Pages: 21**
+**Total Pages: 17**
 
 **Key Features:**
 - Independent authentication with `/operations` cookie path
@@ -109,7 +107,22 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 - Doctor and clinic lifecycle management
 - Dental service pricing configuration per clinic
 - Vision service management (operations-only booking)
-- Lab prescription digitization and order tracking
-- Diagnostics prescription digitization and order tracking
+- **Unified tab-based interface** for Lab and Diagnostic prescriptions/orders
+- Prescription digitization workflow with test/service selection
+- Order management with status-based workflows
+- **Report upload via modal** supporting PDF and images
+- **Prescription preview modal** supporting PDF and images
+- Status filtering for prescriptions (UPLOADED, DIGITIZED, DELAYED)
+- Conditional action buttons based on prescription/order status
+- Different workflows for Lab (sample collection) vs Diagnostic (direct report upload)
 - Appointment confirmation and cancellation workflows
 - Real-time booking status updates
+
+**Recent Updates:**
+- Consolidated separate Lab/Diagnostic pages into unified Prescriptions and Orders pages
+- Added tab-based navigation to reduce navigation complexity
+- Implemented report upload modal instead of separate pages
+- Enhanced PDF support in prescription preview modal
+- Fixed report URL routing with proper `/api/` prefix
+- Added status filtering support for prescription queries
+- Conditional display of "Digitize" button (hidden for DIGITIZED prescriptions)

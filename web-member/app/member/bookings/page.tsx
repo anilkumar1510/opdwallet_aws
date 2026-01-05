@@ -12,7 +12,8 @@ import {
   BuildingStorefrontIcon,
   SparklesIcon,
   EyeIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
@@ -134,8 +135,13 @@ export default function BookingsPage() {
   const [pastVisionBookings, setPastVisionBookings] = useState<VisionBooking[]>([])
   const [labCarts, setLabCarts] = useState<any[]>([])
   const [labOrders, setLabOrders] = useState<any[]>([])
+  const [diagnosticCarts, setDiagnosticCarts] = useState<any[]>([])
+  const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([])
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<DentalBooking | null>(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [selectedReportUrl, setSelectedReportUrl] = useState<string>('')
+  const [reportOrderId, setReportOrderId] = useState<string>('')
 
   // Update active tab when URL changes
   useEffect(() => {
@@ -151,6 +157,8 @@ export default function BookingsPage() {
     fetchVisionBookings()
     fetchLabCarts()
     fetchLabOrders()
+    fetchDiagnosticCarts()
+    fetchDiagnosticOrders()
   }, [viewingUserId])
 
   const fetchAppointments = async () => {
@@ -424,12 +432,82 @@ export default function BookingsPage() {
     }
   }
 
+  const fetchDiagnosticCarts = async () => {
+    try {
+      console.log('[DiagnosticCarts] Fetching diagnostic carts')
+      const response = await fetch('/api/member/diagnostics/carts', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[DiagnosticCarts] No diagnostic carts found or error fetching')
+        setDiagnosticCarts([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[DiagnosticCarts] Diagnostic carts received:', data)
+      setDiagnosticCarts(data.data || [])
+    } catch (error) {
+      console.error('[DiagnosticCarts] Error fetching diagnostic carts:', error)
+      setDiagnosticCarts([])
+    }
+  }
+
+  const fetchDiagnosticOrders = async () => {
+    try {
+      console.log('[DiagnosticOrders] Fetching diagnostic orders')
+      const response = await fetch('/api/member/diagnostics/orders', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[DiagnosticOrders] No diagnostic orders found or error fetching')
+        setDiagnosticOrders([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[DiagnosticOrders] Diagnostic orders received:', data)
+      setDiagnosticOrders(data.data || [])
+    } catch (error) {
+      console.error('[DiagnosticOrders] Error fetching diagnostic orders:', error)
+      setDiagnosticOrders([])
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const day = date.getDate()
     const month = date.toLocaleString('default', { month: 'short' })
     const year = date.getFullYear()
     return `${day} ${month} ${year}`
+  }
+
+  const handleViewReport = (reportUrl: string, orderId: string) => {
+    // Ensure the URL bypasses the /member basePath to reach the Next.js rewrite
+    // Convert /api/uploads/... or uploads/... to absolute URL at root level
+    let absoluteUrl = reportUrl
+    if (reportUrl.startsWith('/api/')) {
+      absoluteUrl = `${window.location.protocol}//${window.location.host}${reportUrl}`
+    } else if (reportUrl.startsWith('uploads/')) {
+      // Handle legacy URLs without /api/ prefix
+      absoluteUrl = `${window.location.protocol}//${window.location.host}/api/${reportUrl}`
+    }
+    setSelectedReportUrl(absoluteUrl)
+    setReportOrderId(orderId)
+    setShowReportModal(true)
+  }
+
+  const handleDownloadReport = () => {
+    if (selectedReportUrl) {
+      const link = document.createElement('a')
+      link.href = selectedReportUrl
+      link.download = `report-${reportOrderId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -677,6 +755,20 @@ export default function BookingsPage() {
             <div className="flex items-center gap-1.5 lg:gap-2">
               <BeakerIcon className="h-4 w-4 lg:h-5 lg:w-5" />
               <span>Lab</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('diagnostic')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'diagnostic'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            style={activeTab === 'diagnostic' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+          >
+            <div className="flex items-center space-x-2">
+              <HeartIcon className="h-5 w-5" />
+              <span>Diagnostic</span>
             </div>
           </button>
           <button
@@ -1097,6 +1189,18 @@ export default function BookingsPage() {
                           ₹{order.finalAmount}
                         </div>
                       </div>
+                      {order.reportUrl && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => handleViewReport(order.reportUrl, order.orderId)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg font-medium transition-all hover:shadow-lg"
+                            style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                            View / Download Report
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1225,6 +1329,204 @@ export default function BookingsPage() {
             </div>
             <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>Pharmacy Orders</h3>
             <p className="text-gray-600 text-sm lg:text-base">Pharmacy orders will appear here</p>
+          </div>
+        )}
+
+        {activeTab === 'diagnostic' && (
+          <div className="space-y-4">
+            {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 text-center">
+                <div className="mb-4">
+                  <HeartIcon className="h-16 w-16 text-gray-300 mx-auto" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No diagnostic tests yet</h3>
+                <p className="text-gray-600 mb-4">Upload a prescription and create a cart to get started</p>
+                <button
+                  onClick={() => router.push('/member/diagnostics')}
+                  className="px-6 py-2 text-white rounded-lg"
+                  style={{ backgroundColor: '#0a529f' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                >
+                  Go to Diagnostics
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Diagnostic Orders (Paid) */}
+                {diagnosticOrders.map((order) => (
+                  <div
+                    key={order._id}
+                    className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
+                          <HeartIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Diagnostic Order</div>
+                          <div className="text-sm text-gray-600">{order.items?.length || 0} service(s)</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Paid
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <UserIcon className="h-4 w-4" />
+                        <span>Vendor: {order.vendorName}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>{formatDate(order.appointmentDate)}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <ClockIcon className="h-4 w-4" />
+                        <span>{order.timeSlot}</span>
+                      </div>
+
+                      {order.items && order.items.length > 0 && (
+                        <div className="text-sm text-gray-600">
+                          <div className="font-medium mb-1">Services:</div>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {order.items.slice(0, 3).map((item: any, idx: number) => (
+                              <li key={idx}>{item.serviceName}</li>
+                            ))}
+                            {order.items.length > 3 && (
+                              <li className="text-gray-500">+{order.items.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          Order ID: <span className="font-medium text-gray-900">{order.orderId}</span>
+                        </div>
+                        <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
+                          ₹{order.finalAmount}
+                        </div>
+                      </div>
+                      {order.reportUrl && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => handleViewReport(order.reportUrl, order.orderId)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg font-medium transition-all"
+                            style={{ backgroundColor: '#0a529f' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                            View / Download Report
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Diagnostic Carts (Payment Pending or Active) */}
+                {diagnosticCarts.map((cart) => {
+                  const hasVendorsAssigned = cart.selectedVendorIds && cart.selectedVendorIds.length > 0
+                  const displayStatus = hasVendorsAssigned ? 'Payment Pending' : cart.status
+                  const statusColor = hasVendorsAssigned
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : cart.status === 'ACTIVE'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-800'
+
+                  return (
+                    <div
+                      key={cart._id}
+                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/member/diagnostics?cartId=${cart.cartId}`)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
+                            <HeartIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">Diagnostic Cart</div>
+                            <div className="text-sm text-gray-600">{cart.items?.length || 0} service(s)</div>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
+                          {displayStatus}
+                        </span>
+                      </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <UserIcon className="h-4 w-4" />
+                        <span>Patient: {cart.patientName}</span>
+                      </div>
+
+                      {cart.items && cart.items.length > 0 && (
+                        <div className="text-sm text-gray-600">
+                          <div className="font-medium mb-1">Services:</div>
+                          <ul className="list-disc list-inside text-xs space-y-1">
+                            {cart.items.slice(0, 3).map((item: any, idx: number) => (
+                              <li key={idx}>{item.serviceName}</li>
+                            ))}
+                            {cart.items.length > 3 && (
+                              <li className="text-gray-500">+{cart.items.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm text-gray-600">
+                          Cart ID: <span className="font-medium text-gray-900">{cart.cartId}</span>
+                        </div>
+                      </div>
+
+                      {cart.selectedVendorIds && cart.selectedVendorIds.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs text-green-600 mb-2">
+                            ✓ Vendors assigned by operations team
+                          </div>
+                          <button
+                            className="w-full py-2 px-4 text-white rounded-lg font-medium"
+                            style={{ backgroundColor: '#0a529f' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/member/diagnostics/booking/${cart.cartId}`)
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                          >
+                            Select Vendor & Book
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-sm font-medium"
+                          style={{ color: '#0a529f' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/member/diagnostics?cartId=${cart.cartId}`)
+                          }}
+                        >
+                          View Details →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+                })}
+              </>
+            )}
           </div>
         )}
 
@@ -1781,6 +2083,54 @@ export default function BookingsPage() {
         onClose={() => setInvoiceModalOpen(false)}
         booking={selectedBooking}
       />
+
+      {/* Report View Modal */}
+      {showReportModal && selectedReportUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-lg">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Test Report</h3>
+                <p className="text-sm text-gray-600">Order ID: {reportOrderId}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowReportModal(false)
+                  setSelectedReportUrl('')
+                  setReportOrderId('')
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="text-2xl">&times;</span>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6">
+              {selectedReportUrl.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={selectedReportUrl}
+                  className="w-full h-full min-h-[600px]"
+                  title="Report PDF"
+                />
+              ) : (
+                <img
+                  src={selectedReportUrl}
+                  alt="Report"
+                  className="w-full h-auto"
+                />
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 rounded-b-lg">
+              <button
+                onClick={handleDownloadReport}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5" />
+                Download Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

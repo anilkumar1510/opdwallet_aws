@@ -40,7 +40,9 @@ export class LabOpsController {
 
   @Get('prescriptions/queue')
   async getPrescriptionsQueue(@Query('status') status?: PrescriptionStatus) {
-    const prescriptions = await this.prescriptionService.getPendingPrescriptions();
+    const prescriptions = status
+      ? await this.prescriptionService.getPrescriptionsByStatus(status)
+      : await this.prescriptionService.getPendingPrescriptions();
 
     return {
       success: true,
@@ -261,8 +263,10 @@ export class LabOpsController {
     @Param('orderId') orderId: string,
     @UploadedFile() file: any,
   ) {
-    // In production, save file to disk/S3 and get URL
-    const reportUrl = file.path; // or S3 URL
+    // Convert file path to API URL path
+    // file.path can be 'uploads/lab-reports/filename.pdf' or './uploads/lab-reports/filename.pdf'
+    // Convert to '/api/uploads/lab-reports/filename.pdf'
+    const reportUrl = file.path.replace(/^(\.\/)?uploads\//, '/api/uploads/');
 
     const order = await this.orderService.updateOrderStatus(orderId, {
       status: OrderStatus.COMPLETED,

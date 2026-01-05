@@ -11,16 +11,13 @@ import {
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 
-interface EquipmentCapabilities {
-  ctScan: boolean
-  mri: boolean
-  xRay: boolean
-  ultrasound: boolean
-  ecg: boolean
-  mammography: boolean
-  petScan: boolean
-  boneDensity: boolean
-  endoscopy: boolean
+interface DiagnosticService {
+  _id: string
+  serviceId: string
+  name: string
+  code: string
+  category: string
+  isActive: boolean
 }
 
 interface DiagnosticVendor {
@@ -34,7 +31,7 @@ interface DiagnosticVendor {
     address: string
   }
   serviceablePincodes: string[]
-  equipmentCapabilities: EquipmentCapabilities
+  services?: string[]
   homeCollection: boolean
   centerVisit: boolean
   homeCollectionCharges: number
@@ -42,21 +39,11 @@ interface DiagnosticVendor {
   isActive: boolean
 }
 
-const EQUIPMENT_OPTIONS = [
-  { key: 'ctScan', label: 'CT Scan' },
-  { key: 'mri', label: 'MRI' },
-  { key: 'xRay', label: 'X-Ray' },
-  { key: 'ultrasound', label: 'Ultrasound' },
-  { key: 'ecg', label: 'ECG' },
-  { key: 'mammography', label: 'Mammography' },
-  { key: 'petScan', label: 'PET Scan' },
-  { key: 'boneDensity', label: 'Bone Density' },
-  { key: 'endoscopy', label: 'Endoscopy' },
-]
-
 export default function DiagnosticVendorsPage() {
   const router = useRouter()
   const [vendors, setVendors] = useState<DiagnosticVendor[]>([])
+  const [diagnosticServices, setDiagnosticServices] = useState<DiagnosticService[]>([])
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingVendor, setEditingVendor] = useState<DiagnosticVendor | null>(null)
@@ -73,21 +60,11 @@ export default function DiagnosticVendorsPage() {
     centerVisit: true,
     homeCollectionCharges: 50,
     description: '',
-    equipmentCapabilities: {
-      ctScan: false,
-      mri: false,
-      xRay: false,
-      ultrasound: false,
-      ecg: false,
-      mammography: false,
-      petScan: false,
-      boneDensity: false,
-      endoscopy: false,
-    },
   })
 
   useEffect(() => {
     fetchVendors()
+    fetchDiagnosticServices()
   }, [])
 
   const fetchVendors = async () => {
@@ -112,6 +89,19 @@ export default function DiagnosticVendorsPage() {
     }
   }
 
+  const fetchDiagnosticServices = async () => {
+    try {
+      const response = await apiFetch('/api/admin/diagnostics/services')
+      if (!response.ok) throw new Error('Failed to fetch diagnostic services')
+
+      const data = await response.json()
+      setDiagnosticServices(data.data || [])
+    } catch (error: any) {
+      console.error('Error fetching diagnostic services:', error)
+      toast.error('Failed to fetch diagnostic services')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -130,7 +120,7 @@ export default function DiagnosticVendorsPage() {
           address: formData.address,
         },
         serviceablePincodes: pincodeArray,
-        equipmentCapabilities: formData.equipmentCapabilities,
+        services: selectedServices,
         homeCollection: formData.homeCollection,
         centerVisit: formData.centerVisit,
         homeCollectionCharges: formData.homeCollectionCharges,
@@ -176,8 +166,8 @@ export default function DiagnosticVendorsPage() {
       centerVisit: vendor.centerVisit,
       homeCollectionCharges: vendor.homeCollectionCharges || 50,
       description: vendor.description || '',
-      equipmentCapabilities: vendor.equipmentCapabilities,
     })
+    setSelectedServices(vendor.services || [])
     setShowModal(true)
   }
 
@@ -193,24 +183,16 @@ export default function DiagnosticVendorsPage() {
       centerVisit: true,
       homeCollectionCharges: 50,
       description: '',
-      equipmentCapabilities: {
-        ctScan: false,
-        mri: false,
-        xRay: false,
-        ultrasound: false,
-        ecg: false,
-        mammography: false,
-        petScan: false,
-        boneDensity: false,
-        endoscopy: false,
-      },
     })
+    setSelectedServices([])
   }
 
-  const getActiveEquipment = (capabilities: EquipmentCapabilities) => {
-    return EQUIPMENT_OPTIONS.filter(
-      (opt) => capabilities[opt.key as keyof EquipmentCapabilities]
-    ).map((opt) => opt.label)
+  const handleServiceToggle = (serviceId: string) => {
+    setSelectedServices((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    )
   }
 
   if (loading) {
@@ -283,7 +265,13 @@ export default function DiagnosticVendorsPage() {
         ) : (
           <div className="divide-y divide-gray-200">
             {vendors.map((vendor) => {
-              const activeEquipment = getActiveEquipment(vendor.equipmentCapabilities)
+              const vendorServiceNames = (vendor.services || [])
+                .map(serviceId => {
+                  const service = diagnosticServices.find(s => s.serviceId === serviceId)
+                  return service ? service.name : null
+                })
+                .filter(Boolean)
+
               return (
                 <div key={vendor._id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex justify-between items-start">
@@ -318,14 +306,13 @@ export default function DiagnosticVendorsPage() {
                           </span>
                         </div>
                         <div className="mt-2">
-                          <span className="font-medium">Equipment: </span>
-                          {activeEquipment.length > 0 ? (
-                            <span className="text-cyan-700">
-                              {activeEquipment.slice(0, 4).join(', ')}
-                              {activeEquipment.length > 4 && ` +${activeEquipment.length - 4} more`}
+                          <span className="font-medium">Services: </span>
+                          {vendorServiceNames.length > 0 ? (
+                            <span className="text-purple-700">
+                              {vendorServiceNames.join(', ')}
                             </span>
                           ) : (
-                            <span className="text-gray-400">None configured</span>
+                            <span className="text-gray-400">No services configured</span>
                           )}
                         </div>
                         <p className="mt-2">
@@ -464,32 +451,45 @@ export default function DiagnosticVendorsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Equipment Capabilities
+                  Services Available
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {EQUIPMENT_OPTIONS.map((equipment) => (
-                    <label
-                      key={equipment.key}
-                      className="flex items-center space-x-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.equipmentCapabilities[equipment.key as keyof EquipmentCapabilities]}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            equipmentCapabilities: {
-                              ...formData.equipmentCapabilities,
-                              [equipment.key]: e.target.checked,
-                            },
-                          })
-                        }
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">{equipment.label}</span>
-                    </label>
-                  ))}
+                <div className="border border-gray-300 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
+                  {diagnosticServices.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No diagnostic services available. Please add services first.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {diagnosticServices.map((service) => (
+                        <label
+                          key={service.serviceId}
+                          className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedServices.includes(service.serviceId)}
+                            onChange={() => handleServiceToggle(service.serviceId)}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              {service.name}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-500 font-mono">
+                              ({service.code})
+                            </span>
+                            <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
+                              {service.category}
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selected: {selectedServices.length} service(s)
+                </p>
               </div>
 
               <div className="flex space-x-6">

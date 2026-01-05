@@ -11,6 +11,15 @@ import {
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 
+interface LabService {
+  _id: string
+  serviceId: string
+  name: string
+  code: string
+  category: string
+  isActive: boolean
+}
+
 interface LabVendor {
   _id: string
   vendorId: string
@@ -27,6 +36,7 @@ interface LabVendor {
   homeCollectionCharges: number
   description?: string
   isActive: boolean
+  services?: string[]
 }
 
 export default function LabVendorsPage() {
@@ -34,6 +44,8 @@ export default function LabVendorsPage() {
 
   const router = useRouter()
   const [vendors, setVendors] = useState<LabVendor[]>([])
+  const [labServices, setLabServices] = useState<LabService[]>([])
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingVendor, setEditingVendor] = useState<LabVendor | null>(null)
@@ -56,6 +68,7 @@ export default function LabVendorsPage() {
 
   useEffect(() => {
     fetchVendors()
+    fetchLabServices()
   }, [])
 
   const fetchVendors = async () => {
@@ -90,6 +103,19 @@ export default function LabVendorsPage() {
     }
   }
 
+  const fetchLabServices = async () => {
+    try {
+      const response = await apiFetch('/api/admin/lab/services')
+      if (!response.ok) throw new Error('Failed to fetch lab services')
+
+      const data = await response.json()
+      setLabServices(data.data || [])
+    } catch (error: any) {
+      console.error('Error fetching lab services:', error)
+      toast.error('Failed to fetch lab services')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -112,6 +138,7 @@ export default function LabVendorsPage() {
         centerVisit: formData.centerVisit,
         homeCollectionCharges: formData.homeCollectionCharges,
         description: formData.description,
+        services: selectedServices,
       }
 
       const url = editingVendor
@@ -154,6 +181,7 @@ export default function LabVendorsPage() {
       homeCollectionCharges: vendor.homeCollectionCharges || 50,
       description: vendor.description || '',
     })
+    setSelectedServices(vendor.services || [])
     setShowModal(true)
   }
 
@@ -170,6 +198,15 @@ export default function LabVendorsPage() {
       homeCollectionCharges: 50,
       description: '',
     })
+    setSelectedServices([])
+  }
+
+  const handleServiceToggle = (serviceId: string) => {
+    setSelectedServices((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    )
   }
 
   console.log('🔍 [VENDORS] Render conditions - loading:', loading, 'error:', error)
@@ -247,50 +284,68 @@ export default function LabVendorsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {vendors.map((vendor) => (
-              <div key={vendor._id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {vendor.name}
-                      </h3>
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">
-                        {vendor.code}
-                      </span>
-                      {vendor.isActive ? (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                          Inactive
-                        </span>
-                      )}
-                    </div>
+            {vendors.map((vendor) => {
+              const vendorServiceNames = (vendor.services || [])
+                .map(serviceId => {
+                  const service = labServices.find(s => s.serviceId === serviceId)
+                  return service ? service.name : null
+                })
+                .filter(Boolean)
 
-                    <div className="mt-2 space-y-1 text-sm text-gray-600">
-                      <p>📞 {vendor.contactInfo.phone} | ✉️ {vendor.contactInfo.email}</p>
-                      <p>📍 {vendor.contactInfo.address}</p>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className={vendor.homeCollection ? 'text-green-600' : 'text-gray-400'}>
-                          {vendor.homeCollection ? '✓' : '✗'} Home Collection
+              return (
+                <div key={vendor._id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {vendor.name}
+                        </h3>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono">
+                          {vendor.code}
                         </span>
-                        <span className={vendor.centerVisit ? 'text-green-600' : 'text-gray-400'}>
-                          {vendor.centerVisit ? '✓' : '✗'} Center Visit
-                        </span>
-                      </div>
-                      <p className="mt-2">
-                        <span className="font-medium">Pincodes:</span>{' '}
-                        {vendor.serviceablePincodes.slice(0, 5).join(', ')}
-                        {vendor.serviceablePincodes.length > 5 && (
-                          <span className="text-gray-500">
-                            {' '}+{vendor.serviceablePincodes.length - 5} more
+                        {vendor.isActive ? (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                            Inactive
                           </span>
                         )}
-                      </p>
+                      </div>
+
+                      <div className="mt-2 space-y-1 text-sm text-gray-600">
+                        <p>📞 {vendor.contactInfo.phone} | ✉️ {vendor.contactInfo.email}</p>
+                        <p>📍 {vendor.contactInfo.address}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className={vendor.homeCollection ? 'text-green-600' : 'text-gray-400'}>
+                            {vendor.homeCollection ? '✓' : '✗'} Home Collection
+                          </span>
+                          <span className={vendor.centerVisit ? 'text-green-600' : 'text-gray-400'}>
+                            {vendor.centerVisit ? '✓' : '✗'} Center Visit
+                          </span>
+                        </div>
+                        <div className="mt-2">
+                          <span className="font-medium">Services: </span>
+                          {vendorServiceNames.length > 0 ? (
+                            <span className="text-blue-700">
+                              {vendorServiceNames.join(', ')}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">No services configured</span>
+                          )}
+                        </div>
+                        <p className="mt-2">
+                          <span className="font-medium">Pincodes:</span>{' '}
+                          {vendor.serviceablePincodes.slice(0, 5).join(', ')}
+                          {vendor.serviceablePincodes.length > 5 && (
+                            <span className="text-gray-500">
+                              {' '}+{vendor.serviceablePincodes.length - 5} more
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="flex space-x-2 ml-4">
                     <button
@@ -317,7 +372,8 @@ export default function LabVendorsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            )
+            })}
           </div>
         )}
       </div>
@@ -462,6 +518,49 @@ export default function LabVendorsPage() {
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lab Services Available
+                </label>
+                <div className="border border-gray-300 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
+                  {labServices.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No lab services available. Please add services first.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {labServices.map((service) => (
+                        <label
+                          key={service.serviceId}
+                          className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedServices.includes(service.serviceId)}
+                            onChange={() => handleServiceToggle(service.serviceId)}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              {service.name}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-500 font-mono">
+                              ({service.code})
+                            </span>
+                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                              {service.category}
+                            </span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selected: {selectedServices.length} service(s)
+                </p>
               </div>
 
               <div className="flex space-x-3 pt-4">

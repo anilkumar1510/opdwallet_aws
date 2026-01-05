@@ -19,6 +19,7 @@ import { UserRole } from '@/common/constants/roles.enum';
 import { DiagnosticPrescriptionService } from '../services/diagnostic-prescription.service';
 import { DiagnosticCartService, CreateDiagnosticCartDto } from '../services/diagnostic-cart.service';
 import { DiagnosticOrderService } from '../services/diagnostic-order.service';
+import { DiagnosticVendorService } from '../services/diagnostic-vendor.service';
 import { PrescriptionStatus } from '../schemas/diagnostic-prescription.schema';
 import { OrderStatus, CancelledBy } from '../schemas/diagnostic-order.schema';
 
@@ -30,6 +31,7 @@ export class DiagnosticOpsController {
     private readonly prescriptionService: DiagnosticPrescriptionService,
     private readonly cartService: DiagnosticCartService,
     private readonly orderService: DiagnosticOrderService,
+    private readonly vendorService: DiagnosticVendorService,
   ) {}
 
   // ============ PRESCRIPTION MANAGEMENT ============
@@ -57,6 +59,25 @@ export class DiagnosticOpsController {
     return {
       success: true,
       data: prescription,
+    };
+  }
+
+  @Post('prescriptions/:id/eligible-vendors')
+  async getEligibleVendors(
+    @Param('id') id: string,
+    @Body() body: { serviceIds: string[] },
+  ) {
+    console.log('🔍 [DIAGNOSTIC-OPS] Getting eligible vendors for prescription:', id);
+
+    const prescription = await this.prescriptionService.findOne(id);
+    const eligibleVendors = await this.vendorService.getEligibleVendors(
+      body.serviceIds,
+      prescription.pincode,
+    );
+
+    return {
+      success: true,
+      data: eligibleVendors,
     };
   }
 
@@ -95,28 +116,48 @@ export class DiagnosticOpsController {
   @Post('prescriptions/:id/digitize')
   async digitizePrescription(
     @Param('id') id: string,
-    @Body() createDto: Omit<CreateDiagnosticCartDto, 'prescriptionId'>,
+    @Body() digitizeDto: { status: PrescriptionStatus; items?: any[]; selectedVendorIds?: string[]; delayReason?: string },
     @Req() req: any,
   ) {
     const createdBy = req.user?.userId || req.user?.sub || 'system';
 
-    // Create cart with digitized items
-    const cart = await this.cartService.create({
-      ...createDto,
-      prescriptionId: id,
-      createdBy,
-    });
+    // Update prescription status
+    await this.prescriptionService.updateStatus(id, digitizeDto.status, createdBy);
 
-    // Link cart to prescription
-    await this.prescriptionService.linkCart(id, cart.cartId);
+    // Create cart if status is DIGITIZED
+    if (digitizeDto.status === PrescriptionStatus.DIGITIZED && digitizeDto.items) {
+      // Fetch the prescription first to get MongoDB _id and userId
+      const prescription = await this.prescriptionService.findOne(id);
 
-    // Update prescription status to digitized
-    await this.prescriptionService.updateStatus(id, PrescriptionStatus.DIGITIZED, createdBy);
+      // Create cart with digitized items
+      const cart = await this.cartService.createCart(
+        prescription.userId,
+        {
+          prescriptionId: (prescription as unknown as { _id: any })._id.toString(),
+          items: digitizeDto.items,
+        },
+        createdBy,
+        digitizeDto.selectedVendorIds,
+      );
+
+      // Link cart to prescription (use cart's MongoDB _id, not cartId string)
+      await this.prescriptionService.linkCart(id, (cart as unknown as { _id: any })._id.toString());
+
+      return {
+        success: true,
+        message: 'Prescription digitized and cart created successfully',
+        data: { prescription, cart },
+      };
+    }
+
+    // Handle delayed status
+    if (digitizeDto.status === PrescriptionStatus.DELAYED && digitizeDto.delayReason) {
+      await this.prescriptionService.addDelay(id, digitizeDto.delayReason);
+    }
 
     return {
       success: true,
-      message: 'Prescription digitized and cart created successfully',
-      data: cart,
+      message: 'Prescription status updated successfully',
     };
   }
 
@@ -165,6 +206,30 @@ export class DiagnosticOpsController {
     return {
       success: true,
       message: 'Order status updated successfully',
+      data: order,
+    };
+  }
+
+  @Patch('orders/:id/confirm')
+  async confirmOrder(@Param('id') id: string, @Req() req: any) {
+    const confirmedBy = req.user?.userId || req.user?.sub || 'system';
+    const order = await this.orderService.updateStatus(id, OrderStatus.CONFIRMED, confirmedBy);
+
+    return {
+      success: true,
+      message: 'Order confirmed successfully',
+      data: order,
+    };
+  }
+
+  @Patch('orders/:id/collect')
+  async markCollected(@Param('id') id: string, @Req() req: any) {
+    const confirmedBy = req.user?.userId || req.user?.sub || 'system';
+    const order = await this.orderService.updateStatus(id, OrderStatus.SCHEDULED, confirmedBy);
+
+    return {
+      success: true,
+      message: 'Service scheduled successfully',
       data: order,
     };
   }

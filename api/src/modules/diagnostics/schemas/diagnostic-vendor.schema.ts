@@ -59,9 +59,13 @@ export class DiagnosticVendor extends Document {
   @Prop({ type: [String], required: true, default: [] })
   serviceablePincodes: string[];
 
-  // Equipment capabilities
-  @Prop({ type: EquipmentCapabilities, required: true })
-  equipmentCapabilities: EquipmentCapabilities;
+  // Equipment capabilities (deprecated - keeping for backwards compatibility)
+  @Prop({ type: EquipmentCapabilities })
+  equipmentCapabilities?: EquipmentCapabilities;
+
+  // Diagnostic services offered by this vendor
+  @Prop({ type: [String], default: [] })
+  services: string[];
 
   // Collection types
   @Prop({ default: true })

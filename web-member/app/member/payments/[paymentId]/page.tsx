@@ -213,6 +213,63 @@ export default function PaymentPage() {
             console.log('✅ [PaymentPage] Order ID:', labOrderData.data?.orderId);
           }
         }
+        // Complete the diagnostic order creation if pending
+        else if (bookingData.serviceType === 'DIAGNOSTIC') {
+          console.log('🔬 [PaymentPage] Creating diagnostic order with booking data...');
+
+          // Verify we have all required fields for diagnostic order
+          if (!bookingData.serviceDetails?.clinicId || !bookingData.serviceDetails?.slotId || !bookingData.serviceDetails?.date || !bookingData.serviceDetails?.time) {
+            console.error('❌ [PaymentPage] Missing required diagnostic order details:', {
+              hasVendorId: !!bookingData.serviceDetails?.clinicId,
+              hasSlotId: !!bookingData.serviceDetails?.slotId,
+              hasDate: !!bookingData.serviceDetails?.date,
+              hasTime: !!bookingData.serviceDetails?.time,
+            });
+            throw new Error('Missing required diagnostic order details. Please try booking again.');
+          }
+
+          // Get cartId from serviceCode field (just the cartId, no pipe separator needed)
+          const cartId = bookingData.serviceDetails?.serviceCode || '';
+
+          // Build diagnostic order payload (all diagnostic orders are center visits)
+          const diagnosticOrderPayload = {
+            cartId: cartId,
+            vendorId: bookingData.serviceDetails.clinicId,  // clinicId stores vendorId
+            slotId: bookingData.serviceDetails.slotId,
+            appointmentDate: bookingData.serviceDetails.date,
+            timeSlot: bookingData.serviceDetails.time,
+            paymentAlreadyProcessed: true  // Payment was already handled by PaymentProcessor
+          };
+
+          console.log('[PaymentPage] Diagnostic order payload:', JSON.stringify(diagnosticOrderPayload, null, 2));
+
+          // Create the diagnostic order
+          const diagnosticOrderResponse = await fetch('/api/member/diagnostics/orders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(diagnosticOrderPayload)
+          });
+
+          console.log('[PaymentPage] Diagnostic order response status:', diagnosticOrderResponse.status);
+
+          if (!diagnosticOrderResponse.ok) {
+            const errorText = await diagnosticOrderResponse.text();
+            console.error('[PaymentPage] Failed to create diagnostic order:', {
+              status: diagnosticOrderResponse.status,
+              statusText: diagnosticOrderResponse.statusText,
+              errorBody: errorText
+            });
+
+            throw new Error(`Failed to create diagnostic order: ${diagnosticOrderResponse.status} - ${errorText}`);
+          } else {
+            const diagnosticOrderData = await diagnosticOrderResponse.json();
+            console.log('[PaymentPage] Diagnostic order created successfully:', diagnosticOrderData);
+            console.log('✅ [PaymentPage] Order ID:', diagnosticOrderData.data?.orderId);
+          }
+        }
         // Complete the appointment creation if pending
         else if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
           console.log('📅 [PaymentPage] Creating appointment with booking data...');

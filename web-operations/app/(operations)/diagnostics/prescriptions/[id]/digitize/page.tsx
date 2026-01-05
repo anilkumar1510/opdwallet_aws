@@ -6,7 +6,7 @@ import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/ou
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 
-interface LabService {
+interface DiagnosticService {
   _id: string
   serviceId: string
   name: string
@@ -66,9 +66,9 @@ export default function DigitizePrescriptionPage() {
   // Helper function to convert API filePath to absolute URL
   const getAbsoluteFilePath = (filePath: string) => {
     if (!filePath) return ''
-    // If filePath starts with 'uploads/', convert to '/operations/lab/uploads/' to match rewrite rule
+    // If filePath starts with 'uploads/', convert to '/operations/diagnostics/uploads/' to match rewrite rule
     if (filePath.startsWith('uploads/')) {
-      return `/operations/lab/${filePath}`
+      return `/operations/diagnostics/${filePath}`
     }
     // If it already starts with '/operations/', return as is
     if (filePath.startsWith('/operations/')) {
@@ -78,12 +78,12 @@ export default function DigitizePrescriptionPage() {
     if (filePath.startsWith('/')) {
       return `/operations${filePath}`
     }
-    // Otherwise, prepend '/operations/lab/'
-    return `/operations/lab/${filePath}`
+    // Otherwise, prepend '/operations/diagnostics/'
+    return `/operations/diagnostics/${filePath}`
   }
 
   const [prescription, setPrescription] = useState<Prescription | null>(null)
-  const [services, setServices] = useState<LabService[]>([])
+  const [services, setServices] = useState<DiagnosticService[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTests, setSelectedTests] = useState<SelectedTest[]>([])
   const [eligibleVendors, setEligibleVendors] = useState<EligibleVendor[]>([])
@@ -98,7 +98,7 @@ export default function DigitizePrescriptionPage() {
   const fetchPrescription = useCallback(async () => {
     console.log('🔍 [FETCH PRESCRIPTION] Starting fetch for:', prescriptionId)
     try {
-      const url = `/api/ops/lab/prescriptions/${prescriptionId}`
+      const url = `/api/ops/diagnostics/prescriptions/${prescriptionId}`
       console.log('🔍 [FETCH PRESCRIPTION] URL:', url)
 
       const response = await apiFetch(url)
@@ -128,7 +128,7 @@ export default function DigitizePrescriptionPage() {
   const fetchServices = async () => {
     console.log('🔍 [FETCH SERVICES] Starting fetch')
     try {
-      const url = '/api/admin/lab/services'
+      const url = '/api/admin/diagnostics/services'
       console.log('🔍 [FETCH SERVICES] URL:', url)
 
       const response = await apiFetch(url)
@@ -138,7 +138,7 @@ export default function DigitizePrescriptionPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         console.error('❌ [FETCH SERVICES] Error response:', errorData)
-        throw new Error(errorData.message || `Failed to fetch lab services (${response.status})`)
+        throw new Error(errorData.message || `Failed to fetch diagnostic services (${response.status})`)
       }
 
       const data = await response.json()
@@ -147,8 +147,8 @@ export default function DigitizePrescriptionPage() {
       setServices(data.data || [])
     } catch (error: any) {
       console.error('❌ [FETCH SERVICES] Exception:', error)
-      setError(error.message || 'Failed to fetch lab services')
-      toast.error(error.message || 'Failed to fetch lab services. Please refresh the page.')
+      setError(error.message || 'Failed to fetch diagnostic services')
+      toast.error(error.message || 'Failed to fetch diagnostic services. Please refresh the page.')
     }
   }
 
@@ -159,9 +159,9 @@ export default function DigitizePrescriptionPage() {
     fetchServices()
   }, [fetchPrescription])
 
-  const handleAddTest = (service: LabService) => {
+  const handleAddTest = (service: DiagnosticService) => {
     if (selectedTests.find((t) => t.serviceId === service._id)) {
-      toast.warning('Test already added')
+      toast.warning('Service already added')
       return
     }
 
@@ -188,7 +188,7 @@ export default function DigitizePrescriptionPage() {
 
   const fetchEligibleVendors = async () => {
     if (!prescription || selectedTests.length === 0) {
-      toast.warning('Please select at least one test first')
+      toast.warning('Please select at least one service first')
       return
     }
 
@@ -196,7 +196,7 @@ export default function DigitizePrescriptionPage() {
 
     try {
       const serviceIds = selectedTests.map(t => t.serviceId)
-      const response = await apiFetch(`/api/ops/lab/prescriptions/${prescriptionId}/eligible-vendors`, {
+      const response = await apiFetch(`/api/ops/diagnostics/prescriptions/${prescriptionId}/eligible-vendors`, {
         method: 'POST',
         body: JSON.stringify({ serviceIds }),
       })
@@ -209,7 +209,7 @@ export default function DigitizePrescriptionPage() {
       setEligibleVendors(data.data || [])
 
       if (data.data.length === 0) {
-        toast.warning('No vendors available for selected tests in this pincode')
+        toast.warning('No vendors available for selected services in this pincode')
       } else {
         toast.success(`Found ${data.data.length} eligible vendors`)
       }
@@ -231,7 +231,7 @@ export default function DigitizePrescriptionPage() {
 
   const handleSubmit = async (status: 'DIGITIZED' | 'DELAYED') => {
     if (status === 'DIGITIZED' && selectedTests.length === 0) {
-      toast.error('Please add at least one test')
+      toast.error('Please add at least one service')
       return
     }
 
@@ -249,7 +249,7 @@ export default function DigitizePrescriptionPage() {
     setSubmitting(true)
 
     try {
-      const response = await apiFetch(`/api/ops/lab/prescriptions/${prescriptionId}/digitize`, {
+      const response = await apiFetch(`/api/ops/diagnostics/prescriptions/${prescriptionId}/digitize`, {
         method: 'POST',
         body: JSON.stringify({
           prescriptionId,
@@ -264,7 +264,7 @@ export default function DigitizePrescriptionPage() {
 
       const data = await response.json()
       toast.success(data.message)
-      router.push('/prescriptions?tab=lab')
+      router.push('/prescriptions?tab=diagnostic')
     } catch (error) {
       console.error('Error digitizing prescription:', error)
       toast.error('Failed to digitize prescription')

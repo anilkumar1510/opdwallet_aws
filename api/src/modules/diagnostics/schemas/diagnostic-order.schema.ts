@@ -36,6 +36,9 @@ export class OrderItem {
   @Prop({ required: true })
   serviceCode: string;
 
+  @Prop()
+  category?: string;
+
   @Prop({ required: true })
   actualPrice: number;
 
@@ -109,7 +112,7 @@ export class DiagnosticOrder extends Document {
   @Prop({ required: true, enum: OrderStatus, default: OrderStatus.PLACED })
   status: OrderStatus;
 
-  @Prop({ required: true, enum: CollectionType })
+  @Prop({ enum: CollectionType, default: CollectionType.CENTER_VISIT })
   collectionType: CollectionType;
 
   @Prop({ type: CollectionAddress })
@@ -136,6 +139,19 @@ export class DiagnosticOrder extends Document {
   @Prop({ required: true })
   finalAmount: number;
 
+  // Payment breakdown fields
+  @Prop({ default: 0 })
+  copayAmount: number;
+
+  @Prop({ default: 0 })
+  serviceLimitDeduction: number;
+
+  @Prop({ default: 0 })
+  walletDeduction: number;
+
+  @Prop({ default: 0 })
+  finalPayable: number;
+
   @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDING })
   paymentStatus: PaymentStatus;
 
@@ -144,6 +160,9 @@ export class DiagnosticOrder extends Document {
 
   @Prop()
   paymentDate?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'TransactionSummary' })
+  transactionId?: Types.ObjectId;
 
   @Prop({ type: PaymentInfo })
   paymentInfo?: PaymentInfo;

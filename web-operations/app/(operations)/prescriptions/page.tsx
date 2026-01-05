@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DocumentTextIcon, EyeIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
@@ -22,32 +22,33 @@ interface Prescription {
   cartId?: string
 }
 
-export default function OpsLabPrescriptionsPage() {
+export default function OpsPrescriptionsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState<'lab' | 'diagnostic'>(
+    (searchParams.get('tab') as 'lab' | 'diagnostic') || 'lab'
+  )
 
   // Helper function to convert API filePath to absolute URL
-  const getAbsoluteFilePath = (filePath: string) => {
+  const getAbsoluteFilePath = (filePath: string, serviceType: 'LAB' | 'DIAGNOSTIC') => {
     if (!filePath) return ''
-    // If filePath starts with 'uploads/', convert to '/operations/lab/uploads/' to match rewrite rule
+    const basePath = serviceType === 'LAB' ? '/operations/lab' : '/operations/diagnostics'
+
     if (filePath.startsWith('uploads/')) {
-      return `/operations/lab/${filePath}`
+      return `${basePath}/${filePath}`
     }
-    // If it already starts with '/operations/', return as is
     if (filePath.startsWith('/operations/')) {
       return filePath
     }
-    // If it starts with '/', prepend basePath
     if (filePath.startsWith('/')) {
       return `/operations${filePath}`
     }
-    // Otherwise, prepend '/operations/lab/'
-    return `/operations/lab/${filePath}`
+    return `${basePath}/${filePath}`
   }
 
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
-  const [serviceTypeFilter, setServiceTypeFilter] = useState('')
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
 
@@ -56,9 +57,13 @@ export default function OpsLabPrescriptionsPage() {
       setLoading(true)
       const params = new URLSearchParams()
       if (statusFilter) params.append('status', statusFilter)
-      if (serviceTypeFilter) params.append('serviceType', serviceTypeFilter)
+      params.append('serviceType', activeTab === 'lab' ? 'LAB' : 'DIAGNOSTIC')
 
-      const response = await apiFetch(`/api/ops/lab/prescriptions/queue?${params}`)
+      const apiPath = activeTab === 'lab'
+        ? `/api/ops/lab/prescriptions/queue?${params}`
+        : `/api/ops/diagnostics/prescriptions/queue?${params}`
+
+      const response = await apiFetch(apiPath)
 
       if (!response.ok) throw new Error('Failed to fetch prescriptions')
 
@@ -70,11 +75,18 @@ export default function OpsLabPrescriptionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, serviceTypeFilter])
+  }, [statusFilter, activeTab])
 
   useEffect(() => {
     fetchPrescriptions()
   }, [fetchPrescriptions])
+
+  useEffect(() => {
+    // Update URL when tab changes
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', activeTab)
+    router.push(`/prescriptions?${params.toString()}`, { scroll: false })
+  }, [activeTab])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -91,17 +103,6 @@ export default function OpsLabPrescriptionsPage() {
     }
   }
 
-  const getServiceTypeColor = (serviceType: string) => {
-    switch (serviceType) {
-      case 'LAB':
-        return 'bg-purple-100 text-purple-800'
-      case 'DIAGNOSTIC':
-        return 'bg-cyan-100 text-cyan-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-IN', {
       day: '2-digit',
@@ -112,23 +113,53 @@ export default function OpsLabPrescriptionsPage() {
     })
   }
 
+  const handleDigitize = (prescription: Prescription) => {
+    const digitizePath = activeTab === 'lab'
+      ? `/lab/prescriptions/${prescription.prescriptionId}/digitize`
+      : `/diagnostics/prescriptions/${prescription.prescriptionId}/digitize`
+    router.push(digitizePath)
+  }
+
   return (
     <div className="p-6">
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('lab')}
+              className={`${
+                activeTab === 'lab'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              Lab Prescriptions
+            </button>
+            <button
+              onClick={() => setActiveTab('diagnostic')}
+              className={`${
+                activeTab === 'diagnostic'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              Diagnostic Prescriptions
+            </button>
+          </nav>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prescriptions Queue</h1>
-          <p className="text-sm text-gray-600 mt-1">Digitize uploaded prescriptions for Lab & Diagnostic services</p>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {activeTab === 'lab' ? 'Lab' : 'Diagnostic'} Prescriptions Queue
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Digitize uploaded {activeTab === 'lab' ? 'lab test' : 'diagnostic'} prescriptions
+          </p>
         </div>
-        <div className="flex space-x-3">
-          <select
-            value={serviceTypeFilter}
-            onChange={(e) => setServiceTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">All Services</option>
-            <option value="LAB">Lab Tests</option>
-            <option value="DIAGNOSTIC">Diagnostic</option>
-          </select>
+        <div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -165,9 +196,6 @@ export default function OpsLabPrescriptionsPage() {
                     Patient
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Uploaded At
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -190,11 +218,6 @@ export default function OpsLabPrescriptionsPage() {
                         <p className="text-gray-500 text-xs">{prescription.userId?.phone || 'N/A'}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getServiceTypeColor(prescription.serviceType)}`}>
-                        {prescription.serviceType}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {formatDate(prescription.uploadedAt)}
                     </td>
@@ -215,21 +238,15 @@ export default function OpsLabPrescriptionsPage() {
                         <EyeIcon className="h-4 w-4 mr-1" />
                         View
                       </button>
+
                       {prescription.status !== 'DIGITIZED' && (
                         <button
-                          onClick={() => router.push(`/lab/prescriptions/${prescription.prescriptionId}/digitize`)}
+                          onClick={() => handleDigitize(prescription)}
                           className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          title="Digitize prescription"
                         >
                           <PencilSquareIcon className="h-4 w-4 mr-1" />
-                          {prescription.status === 'DIGITIZING' ? 'Continue' : 'Digitize'}
-                        </button>
-                      )}
-                      {prescription.cartId && (
-                        <button
-                          onClick={() => router.push(`/ops/lab/carts/${prescription.cartId}`)}
-                          className="inline-flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                        >
-                          View Cart
+                          Digitize
                         </button>
                       )}
                     </td>
@@ -241,40 +258,39 @@ export default function OpsLabPrescriptionsPage() {
         )}
       </div>
 
-      {/* Image Modal */}
+      {/* Image Preview Modal */}
       {showImageModal && selectedPrescription && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-semibold">Prescription: {selectedPrescription.prescriptionId}</h3>
-                <p className="text-sm text-gray-600">Patient: {selectedPrescription.patientName}</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Prescription: {selectedPrescription.prescriptionId}
+                </h3>
+                <p className="text-sm text-gray-600">{selectedPrescription.patientName}</p>
               </div>
               <button
                 onClick={() => {
                   setShowImageModal(false)
                   setSelectedPrescription(null)
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-400 hover:text-gray-600"
               >
-                ×
+                <span className="text-2xl">&times;</span>
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-6">
               {selectedPrescription.fileName?.toLowerCase().endsWith('.pdf') ? (
                 <iframe
-                  src={getAbsoluteFilePath(selectedPrescription.filePath)}
-                  className="w-full h-[70vh] rounded-lg border border-gray-300"
+                  src={getAbsoluteFilePath(selectedPrescription.filePath, selectedPrescription.serviceType)}
+                  className="w-full h-[75vh] border-0"
                   title="Prescription PDF"
                 />
               ) : (
                 <img
-                  src={getAbsoluteFilePath(selectedPrescription.filePath)}
+                  src={getAbsoluteFilePath(selectedPrescription.filePath, selectedPrescription.serviceType)}
                   alt="Prescription"
-                  className="w-full h-auto rounded-lg"
-                  onError={(e) => {
-                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EPrescription Image%3C/text%3E%3C/svg%3E'
-                  }}
+                  className="w-full h-auto"
                 />
               )}
             </div>

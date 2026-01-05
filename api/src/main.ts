@@ -55,6 +55,8 @@ async function bootstrap() {
     './uploads/claims',
     './uploads/lab-prescriptions',
     './uploads/lab-reports',
+    './uploads/diagnostic-prescriptions',
+    './uploads/diagnostic-reports',
     './uploads/doctors',
     './uploads/prescriptions',
     './uploads/prescriptions/generated',

@@ -4,19 +4,24 @@ import {
   Get,
   Param,
   Body,
+  Query,
   UseGuards,
   Req,
   UseInterceptors,
   UploadedFile,
+  Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DiagnosticPrescriptionService, CreateDiagnosticPrescriptionDto } from '../services/diagnostic-prescription.service';
 import { DiagnosticCartService } from '../services/diagnostic-cart.service';
 import { DiagnosticOrderService, CreateDiagnosticOrderDto } from '../services/diagnostic-order.service';
 import { DiagnosticVendorService } from '../services/diagnostic-vendor.service';
 import { PrescriptionSource } from '../schemas/diagnostic-prescription.schema';
+import { ValidateDiagnosticOrderDto } from '../dto/validate-diagnostic-order.dto';
 import { CancelledBy } from '../schemas/diagnostic-order.schema';
+import { UploadDiagnosticPrescriptionDto } from '../dto/upload-diagnostic-prescription.dto';
 
 @Controller('member/diagnostics')
 @UseGuards(JwtAuthGuard)
@@ -33,26 +38,17 @@ export class DiagnosticMemberController {
   @Post('prescriptions/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadPrescription(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: Omit<CreateDiagnosticPrescriptionDto, 'fileName' | 'originalName' | 'fileType' | 'fileSize' | 'filePath'>,
-    @Req() req: any,
+    @Request() req: any,
+    @UploadedFile() file: any,
+    @Body() uploadDto: UploadDiagnosticPrescriptionDto,
   ) {
-    if (!file) {
-      throw new Error('No file uploaded');
-    }
+    const userId = new Types.ObjectId(req.user.userId);
 
-    const userId = req.user?.userId || req.user?.sub;
-
-    const prescription = await this.prescriptionService.create({
-      ...body,
+    const prescription = await this.prescriptionService.uploadPrescription(
       userId,
-      fileName: file.filename,
-      originalName: file.originalname,
-      fileType: file.mimetype,
-      fileSize: file.size,
-      filePath: file.path,
-      source: PrescriptionSource.UPLOAD,
-    });
+      uploadDto,
+      file,
+    );
 
     return {
       success: true,
@@ -143,6 +139,34 @@ export class DiagnosticMemberController {
     };
   }
 
+  @Get('carts/:cartId/vendors')
+  async getCartVendors(@Param('cartId') cartId: string) {
+    // Get cart to access selectedVendorIds and items
+    const cart = await this.cartService.getCartById(cartId);
+
+    if (!cart.selectedVendorIds || cart.selectedVendorIds.length === 0) {
+      return {
+        success: true,
+        message: 'No vendors selected for this cart yet',
+        data: [],
+      };
+    }
+
+    // Extract service IDs from cart items
+    const serviceIds = cart.items.map((item) => item.serviceId);
+
+    // Get vendor details with pricing for selected vendors
+    const vendors = await this.vendorService.getSelectedVendorsForCart(
+      cart.selectedVendorIds,
+      serviceIds,
+    );
+
+    return {
+      success: true,
+      data: vendors,
+    };
+  }
+
   @Get('carts/:cartId/vendors/:vendorId/pricing')
   async getVendorPricingForCart(
     @Param('cartId') cartId: string,
@@ -166,12 +190,13 @@ export class DiagnosticMemberController {
   @Get('vendors/:vendorId/slots')
   async getVendorSlots(
     @Param('vendorId') vendorId: string,
-    @Body() body: { pincode: string; date: string },
+    @Query('pincode') pincode: string,
+    @Query('date') date: string,
   ) {
     const slots = await this.vendorService.getAvailableSlots(
       vendorId,
-      body.pincode,
-      body.date,
+      pincode,
+      date,
     );
 
     return {
@@ -182,6 +207,13 @@ export class DiagnosticMemberController {
 
   // ============ ORDER MANAGEMENT ============
 
+  @Post('orders/validate')
+  async validateOrder(@Request() req: any, @Body() validateDto: ValidateDiagnosticOrderDto) {
+    const userId = req.user.userId;
+    console.log('[DiagnosticMemberController] POST /api/member/diagnostics/orders/validate - User:', userId);
+    return this.orderService.validateOrder(userId, validateDto);
+  }
+
   @Post('orders')
   async createOrder(
     @Body() createDto: Omit<CreateDiagnosticOrderDto, 'userId'>,
@@ -189,18 +221,11 @@ export class DiagnosticMemberController {
   ) {
     const userId = req.user?.userId || req.user?.sub;
 
+    // Service handles all the fetching and transformations
     const order = await this.orderService.create({
       ...createDto,
       userId,
     });
-
-    // Link order to cart
-    await this.cartService.linkOrder(createDto.cartId, order.orderId);
-
-    // Book the slot if provided
-    if (createDto.slotId) {
-      await this.vendorService.bookSlot(createDto.slotId);
-    }
 
     return {
       success: true,

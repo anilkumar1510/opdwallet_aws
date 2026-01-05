@@ -270,8 +270,8 @@ export default function UploadPrescriptionPage() {
         notes: notes.trim() || '(none)',
       })
 
-      console.log('[UPLOAD] Sending request to /api/member/lab/prescriptions/upload...')
-      const response = await fetch('/api/member/lab/prescriptions/upload', {
+      console.log('[UPLOAD] Sending request to /api/member/diagnostics/prescriptions/upload...')
+      const response = await fetch('/api/member/diagnostics/prescriptions/upload', {
         method: 'POST',
         credentials: 'include',
         body: formData,

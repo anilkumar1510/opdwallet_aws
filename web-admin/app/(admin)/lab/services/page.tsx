@@ -36,7 +36,7 @@ export default function LabServicesPage() {
     description: '',
   })
 
-  const categories = ['PATHOLOGY', 'RADIOLOGY', 'CARDIOLOGY', 'ENDOSCOPY', 'OTHER']
+  const categories = ['PATHOLOGY', 'CARDIOLOGY', 'OTHER']
 
   const fetchServices = useCallback(async () => {
     try {

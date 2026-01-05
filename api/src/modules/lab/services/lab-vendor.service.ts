@@ -38,7 +38,9 @@ export class LabVendorService {
       serviceablePincodes: createDto.serviceablePincodes,
       homeCollection: createDto.homeCollection ?? true,
       centerVisit: createDto.centerVisit ?? true,
+      homeCollectionCharges: createDto.homeCollectionCharges ?? 50,
       description: createDto.description,
+      services: createDto.services ?? [],
       isActive: true,
     });
 
@@ -108,8 +110,16 @@ export class LabVendorService {
       vendor.centerVisit = updateDto.centerVisit;
     }
 
+    if (updateDto.homeCollectionCharges !== undefined) {
+      vendor.homeCollectionCharges = updateDto.homeCollectionCharges;
+    }
+
     if (updateDto.description !== undefined) {
       vendor.description = updateDto.description;
+    }
+
+    if (updateDto.services !== undefined) {
+      vendor.services = updateDto.services;
     }
 
     return vendor.save();

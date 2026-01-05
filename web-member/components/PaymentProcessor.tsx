@@ -26,8 +26,8 @@ interface PaymentProcessorProps {
   userId: string;
   patientId: string;
   patientName: string;
-  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL' | 'VISION' | 'LAB';
-  bookingId?: string; // Optional booking ID for VISION, DENTAL, and LAB service types
+  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC';
+  bookingId?: string; // Optional booking ID for VISION, DENTAL, LAB, and DIAGNOSTIC service types
   serviceDetails: {
     doctorName: string;
     doctorId?: string;
@@ -211,6 +211,8 @@ export default function PaymentProcessor({
             ? '/member/bookings'
             : serviceType === 'LAB'
             ? '/member/bookings?tab=lab'
+            : serviceType === 'DIAGNOSTIC'
+            ? '/member/bookings?tab=diagnostic'
             : '/member/online-consult';
 
           router.push(`/member/payments/${payment.paymentId}?redirect=${redirectUrl}`);
@@ -264,6 +266,8 @@ export default function PaymentProcessor({
           ? '/member/bookings'
           : serviceType === 'LAB'
           ? '/member/bookings?tab=lab'
+          : serviceType === 'DIAGNOSTIC'
+          ? '/member/bookings?tab=diagnostic'
           : '/member/online-consult';
 
         router.push(`/member/payments/${payment.paymentId}?redirect=${redirectUrl}`);

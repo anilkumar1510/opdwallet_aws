@@ -24,14 +24,7 @@ interface DiagnosticService {
 }
 
 const categories = [
-  'CT_SCAN',
-  'MRI',
-  'X_RAY',
-  'ULTRASOUND',
-  'ECG',
-  'MAMMOGRAPHY',
-  'PET_SCAN',
-  'BONE_DENSITY',
+  'RADIOLOGY',
   'ENDOSCOPY',
   'OTHER',
 ]
@@ -48,7 +41,7 @@ export default function DiagnosticServicesPage() {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    category: 'CT_SCAN',
+    category: 'RADIOLOGY',
     description: '',
     bodyPart: '',
     requiresContrast: false,
@@ -123,7 +116,7 @@ export default function DiagnosticServicesPage() {
       setFormData({
         name: '',
         code: '',
-        category: 'CT_SCAN',
+        category: 'RADIOLOGY',
         description: '',
         bodyPart: '',
         requiresContrast: false,
@@ -191,7 +184,7 @@ export default function DiagnosticServicesPage() {
             setFormData({
               name: '',
               code: '',
-              category: 'CT_SCAN',
+              category: 'RADIOLOGY',
               description: '',
               bodyPart: '',
               requiresContrast: false,

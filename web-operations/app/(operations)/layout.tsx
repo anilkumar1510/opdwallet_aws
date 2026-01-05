@@ -25,9 +25,10 @@ function OperationsLayoutContent({
     if (pathname.startsWith('/appointments')) return 'Appointments'
     if (pathname.startsWith('/dental-services')) return 'Dental Services'
     if (pathname.startsWith('/vision-services')) return 'Vision Services'
-    if (pathname.startsWith('/lab/prescriptions')) return 'Lab Prescriptions'
-    if (pathname.startsWith('/lab/orders')) return 'Lab Orders'
-    if (pathname.startsWith('/lab')) return 'Lab Diagnostics'
+    if (pathname.startsWith('/prescriptions')) return 'Prescriptions'
+    if (pathname.startsWith('/orders')) return 'Orders'
+    if (pathname.startsWith('/diagnostics')) return 'Diagnostics'
+    if (pathname.startsWith('/lab')) return 'Lab'
     return 'Operations'
   }
 
@@ -69,13 +70,13 @@ function OperationsLayoutContent({
     },
     {
       name: 'Prescriptions',
-      path: '/lab/prescriptions',
-      current: pathname.startsWith('/lab/prescriptions')
+      path: '/prescriptions',
+      current: pathname.startsWith('/prescriptions')
     },
     {
-      name: 'Lab Orders',
-      path: '/lab/orders',
-      current: pathname.startsWith('/lab/orders')
+      name: 'Orders',
+      path: '/orders',
+      current: pathname.startsWith('/orders')
     },
   ]
 
