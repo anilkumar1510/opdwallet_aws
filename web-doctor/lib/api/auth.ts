@@ -264,7 +264,12 @@ export async function getSignatureStatus(): Promise<SignatureStatus> {
   }
 
   const data = await response.json();
-  return data.status;
+  // Backend spreads status fields directly, not nested under 'status'
+  return {
+    hasSignature: data.hasSignature,
+    uploadedAt: data.uploadedAt,
+    previewUrl: data.previewUrl,
+  };
 }
 
 export async function deleteSignature(): Promise<void> {
