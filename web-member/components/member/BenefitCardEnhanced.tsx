@@ -75,10 +75,10 @@ export default function BenefitCardEnhanced({
 
       {/* Amount Display */}
       <div style={{ marginBottom: '4px' }}>
-        <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030', fontFamily: 'SF Pro Display' }}>
+        <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030' }}>
           ₹{formatCurrency(current)}
         </span>
-        <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px', fontFamily: 'Roboto' }}>
+        <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px' }}>
           / ₹{formatCurrency(total)}
         </span>
       </div>
@@ -97,7 +97,7 @@ export default function BenefitCardEnhanced({
       </div>
 
       {/* Amount Left */}
-      <div className="mt-auto" style={{ fontSize: '12px', fontWeight: 400, color: '#303030', fontFamily: 'Roboto', lineHeight: '120%' }}>
+      <div className="mt-auto" style={{ fontSize: '12px', fontWeight: 400, color: '#303030', lineHeight: '120%' }}>
         ₹{formatCurrency(amountLeft)} left
       </div>
     </Link>
