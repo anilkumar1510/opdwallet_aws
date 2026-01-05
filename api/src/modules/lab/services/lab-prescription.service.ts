@@ -131,6 +131,10 @@ export class LabPrescriptionService {
         $project: {
           prescriptionId: 1,
           userId: 1,
+          patientId: 1,
+          patientName: 1,
+          patientRelationship: 1,
+          pincode: 1,
           fileName: 1,
           filePath: 1,
           uploadedAt: 1,

@@ -135,8 +135,10 @@ export default function BookingsPage() {
   const [pastVisionBookings, setPastVisionBookings] = useState<VisionBooking[]>([])
   const [labCarts, setLabCarts] = useState<any[]>([])
   const [labOrders, setLabOrders] = useState<any[]>([])
+  const [labPrescriptions, setLabPrescriptions] = useState<any[]>([])
   const [diagnosticCarts, setDiagnosticCarts] = useState<any[]>([])
   const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([])
+  const [diagnosticPrescriptions, setDiagnosticPrescriptions] = useState<any[]>([])
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<DentalBooking | null>(null)
   const [showReportModal, setShowReportModal] = useState(false)
@@ -157,8 +159,10 @@ export default function BookingsPage() {
     fetchVisionBookings()
     fetchLabCarts()
     fetchLabOrders()
+    fetchLabPrescriptions()
     fetchDiagnosticCarts()
     fetchDiagnosticOrders()
+    fetchDiagnosticPrescriptions()
   }, [viewingUserId])
 
   const fetchAppointments = async () => {
@@ -473,6 +477,58 @@ export default function BookingsPage() {
     } catch (error) {
       console.error('[DiagnosticOrders] Error fetching diagnostic orders:', error)
       setDiagnosticOrders([])
+    }
+  }
+
+  const fetchLabPrescriptions = async () => {
+    try {
+      console.log('[LabPrescriptions] Fetching lab prescriptions')
+      const response = await fetch('/api/member/lab/prescriptions', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[LabPrescriptions] No lab prescriptions found or error fetching')
+        setLabPrescriptions([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[LabPrescriptions] Lab prescriptions received:', data)
+      // Filter to show only prescriptions in queue (UPLOADED or DIGITIZING status)
+      const inQueuePrescriptions = (data.data || []).filter((p: any) =>
+        p.status === 'UPLOADED' || p.status === 'DIGITIZING'
+      )
+      setLabPrescriptions(inQueuePrescriptions)
+    } catch (error) {
+      console.error('[LabPrescriptions] Error fetching lab prescriptions:', error)
+      setLabPrescriptions([])
+    }
+  }
+
+  const fetchDiagnosticPrescriptions = async () => {
+    try {
+      console.log('[DiagnosticPrescriptions] Fetching diagnostic prescriptions')
+      const response = await fetch('/api/member/diagnostics/prescriptions', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[DiagnosticPrescriptions] No diagnostic prescriptions found or error fetching')
+        setDiagnosticPrescriptions([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[DiagnosticPrescriptions] Diagnostic prescriptions received:', data)
+      // Filter to show only prescriptions in queue (UPLOADED or DIGITIZING status)
+      const inQueuePrescriptions = (data.data || []).filter((p: any) =>
+        p.status === 'UPLOADED' || p.status === 'DIGITIZING'
+      )
+      setDiagnosticPrescriptions(inQueuePrescriptions)
+    } catch (error) {
+      console.error('[DiagnosticPrescriptions] Error fetching diagnostic prescriptions:', error)
+      setDiagnosticPrescriptions([])
     }
   }
 
@@ -1090,7 +1146,7 @@ export default function BookingsPage() {
 
         {activeTab === 'lab' && (
           <div className="space-y-4">
-            {labCarts.length === 0 && labOrders.length === 0 ? (
+            {labCarts.length === 0 && labOrders.length === 0 && labPrescriptions.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
                 background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
                 borderColor: '#86ACD8'
@@ -1117,6 +1173,66 @@ export default function BookingsPage() {
               </div>
             ) : (
               <>
+                {/* Lab Prescriptions (In Queue) */}
+                {labPrescriptions.map((prescription) => (
+                  <div
+                    key={prescription._id}
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(255, 247, 224, 0.48) -12.23%, rgba(255, 237, 200, 0.48) 94.15%)',
+                      borderColor: '#FFD88A'
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(255, 247, 223, 0.75) 4.4%, rgba(255, 235, 189, 0.75) 91.97%)',
+                            border: '1px solid #FFD88A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <BeakerIcon className="h-6 w-6" style={{ color: '#D97706' }} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Lab Prescription</div>
+                          <div className="text-sm text-gray-600">In Queue</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {prescription.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
+                        <UserIcon className="h-4 w-4" />
+                        <span>Patient: {prescription.patientName}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>Uploaded: {formatDate(prescription.uploadedAt)}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <MapPinIcon className="h-4 w-4" />
+                        <span>Pincode: {prescription.pincode}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="text-sm text-gray-900 mb-2">
+                        ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Our team is processing your prescription. You will be notified once it's ready for ordering.
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
                 {/* Lab Orders (Paid) */}
                 {labOrders.map((order) => (
                   <div
@@ -1334,7 +1450,7 @@ export default function BookingsPage() {
 
         {activeTab === 'diagnostic' && (
           <div className="space-y-4">
-            {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 ? (
+            {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 && diagnosticPrescriptions.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center">
                 <div className="mb-4">
                   <HeartIcon className="h-16 w-16 text-gray-300 mx-auto" />
@@ -1353,6 +1469,55 @@ export default function BookingsPage() {
               </div>
             ) : (
               <>
+                {/* Diagnostic Prescriptions (In Queue) */}
+                {diagnosticPrescriptions.map((prescription) => (
+                  <div
+                    key={prescription._id}
+                    className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center flex-shrink-0">
+                          <HeartIcon className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Diagnostic Prescription</div>
+                          <div className="text-sm text-gray-600">In Queue</div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {prescription.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
+                        <UserIcon className="h-4 w-4 text-gray-400" />
+                        <span>Patient: {prescription.patientName}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <CalendarIcon className="h-4 w-4 text-gray-400" />
+                        <span>Uploaded: {formatDate(prescription.uploadedAt)}</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <MapPinIcon className="h-4 w-4 text-gray-400" />
+                        <span>Pincode: {prescription.pincode}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="text-sm text-gray-900 mb-2">
+                        ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Our team is processing your prescription. You will be notified once it's ready for ordering.
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
                 {/* Diagnostic Orders (Paid) */}
                 {diagnosticOrders.map((order) => (
                   <div
