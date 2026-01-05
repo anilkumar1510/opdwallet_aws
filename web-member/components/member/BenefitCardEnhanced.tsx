@@ -56,38 +56,36 @@ export default function BenefitCardEnhanced({
   return (
     <Link
       href={href}
-      className="flex flex-col bg-white border-2 border-gray-200 rounded-xl lg:rounded-2xl p-4 lg:p-5 transition-all duration-200 hover:shadow-md h-full min-h-[180px] lg:min-h-[200px]"
+      className="flex flex-col bg-white transition-all duration-200 h-full"
       style={{
-        ['--hover-border-color' as any]: '#0F5FDC'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#0F5FDC'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = ''
+        border: '1.5px solid #0F5FDC',
+        borderRadius: '16px',
+        boxShadow: '0 1px 8px 0 rgba(3, 77, 162, 0.24)',
+        minHeight: '123px',
+        padding: '18px 11px 11px 11px'
       }}
     >
       {/* Title and Chevron */}
-      <div className="flex items-start justify-between mb-3 min-h-[48px]">
-        <h3 className="text-base lg:text-lg font-semibold leading-tight flex-1 pr-2" style={{ color: '#0E51A2' }}>
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="text-base font-semibold leading-tight flex-1 pr-2" style={{ color: '#034DA2', fontSize: '16px' }}>
           {title}
         </h3>
-        <ChevronRightIcon className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400 flex-shrink-0" />
+        <ChevronRightIcon className="w-[13.5px] h-[13.5px] flex-shrink-0" style={{ color: '#545454' }} />
       </div>
 
       {/* Amount Display */}
-      <div className="mb-2 lg:mb-3">
-        <span className="text-xl lg:text-2xl font-bold" style={{ color: '#303030' }}>
+      <div style={{ marginBottom: '4px' }}>
+        <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030', fontFamily: 'SF Pro Display' }}>
           ₹{formatCurrency(current)}
         </span>
-        <span className="text-sm lg:text-base text-gray-400 ml-1">
+        <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px', fontFamily: 'Roboto' }}>
           / ₹{formatCurrency(total)}
         </span>
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-2">
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div style={{ marginBottom: '4px' }}>
+        <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#F6F6F6' }}>
           <div
             className="h-full transition-all duration-500"
             style={{
@@ -99,7 +97,7 @@ export default function BenefitCardEnhanced({
       </div>
 
       {/* Amount Left */}
-      <div className="text-sm lg:text-base font-medium mt-auto" style={{ color: '#303030' }}>
+      <div className="mt-auto" style={{ fontSize: '12px', fontWeight: 400, color: '#303030', fontFamily: 'Roboto', lineHeight: '120%' }}>
         ₹{formatCurrency(amountLeft)} left
       </div>
     </Link>
