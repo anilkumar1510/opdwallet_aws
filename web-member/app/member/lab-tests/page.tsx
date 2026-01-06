@@ -85,7 +85,22 @@ export default function LabTestsPage() {
     setSubmittingPrescription(true)
     setShowConfirmationModal(true)
 
+    console.log('[LAB-TESTS-FRONTEND] Selected prescription:', prescription)
+    console.log('[LAB-TESTS-FRONTEND] Prescription type:', prescription.type)
+
     try {
+      const requestBody = {
+        healthRecordId: prescription._id,
+        prescriptionType: prescription.type.toUpperCase() as 'DIGITAL' | 'PDF',
+        patientId: 'current', // Will be determined by backend
+        patientName: 'Current Member', // Will be determined by backend
+        patientRelationship: 'Self',
+        pincode: '', // Will be determined by backend
+        prescriptionDate: new Date().toISOString(),
+      }
+
+      console.log('[LAB-TESTS-FRONTEND] Request body:', requestBody)
+
       // Submit the existing prescription for lab services
       const response = await fetch('/api/member/lab/prescriptions/submit-existing', {
         method: 'POST',
@@ -93,14 +108,7 @@ export default function LabTestsPage() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          healthRecordId: prescription._id,
-          patientId: 'current', // Will be determined by backend
-          patientName: 'Current Member', // Will be determined by backend
-          patientRelationship: 'Self',
-          pincode: '', // Will be determined by backend
-          prescriptionDate: new Date().toISOString(),
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (response.ok) {

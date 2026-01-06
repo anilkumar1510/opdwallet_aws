@@ -23,6 +23,7 @@ import { LabOrderService } from '../services/lab-order.service';
 import { UploadPrescriptionDto } from '../dto/upload-prescription.dto';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { ValidateLabOrderDto } from '../dto/validate-lab-order.dto';
+import { SubmitExistingPrescriptionDto } from '../dto/submit-existing-prescription.dto';
 import { Types } from 'mongoose';
 
 @Controller('member/lab')
@@ -63,25 +64,22 @@ export class LabMemberController {
   @Post('prescriptions/submit-existing')
   async submitExistingPrescription(
     @Request() req: any,
-    @Body() body: {
-      healthRecordId: string;
-      patientId: string;
-      patientName: string;
-      patientRelationship: string;
-      pincode: string;
-      prescriptionDate: string;
-    },
+    @Body() dto: SubmitExistingPrescriptionDto,
   ) {
+    console.log('[LAB CONTROLLER] Received DTO:', JSON.stringify(dto, null, 2));
+    console.log('[LAB CONTROLLER] prescriptionType field:', dto.prescriptionType);
+
     const userId = new Types.ObjectId(req.user.userId);
 
     const prescription = await this.prescriptionService.submitExistingPrescription(
       userId,
-      body.healthRecordId,
-      body.patientId,
-      body.patientName,
-      body.patientRelationship,
-      body.pincode,
-      new Date(body.prescriptionDate),
+      dto.healthRecordId,
+      dto.prescriptionType as 'DIGITAL' | 'PDF',
+      dto.patientId,
+      dto.patientName,
+      dto.patientRelationship,
+      dto.pincode,
+      new Date(dto.prescriptionDate),
     );
 
     return {

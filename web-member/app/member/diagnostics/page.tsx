@@ -85,7 +85,22 @@ export default function DiagnosticsPage() {
     setSubmittingPrescription(true)
     setShowConfirmationModal(true)
 
+    console.log('[DIAGNOSTICS-FRONTEND] Selected prescription:', prescription)
+    console.log('[DIAGNOSTICS-FRONTEND] Prescription type:', prescription.type)
+
     try {
+      const requestBody = {
+        healthRecordId: prescription._id,
+        prescriptionType: prescription.type.toUpperCase() as 'DIGITAL' | 'PDF',
+        patientId: 'current', // Will be determined by backend
+        patientName: 'Current Member', // Will be determined by backend
+        patientRelationship: 'Self',
+        pincode: '', // Will be determined by backend
+        prescriptionDate: new Date().toISOString(),
+      }
+
+      console.log('[DIAGNOSTICS-FRONTEND] Request body:', requestBody)
+
       // Submit the existing prescription for diagnostic services
       const response = await fetch('/api/member/diagnostics/prescriptions/submit-existing', {
         method: 'POST',
@@ -93,14 +108,7 @@ export default function DiagnosticsPage() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          healthRecordId: prescription._id,
-          patientId: 'current', // Will be determined by backend
-          patientName: 'Current Member', // Will be determined by backend
-          patientRelationship: 'Self',
-          pincode: '', // Will be determined by backend
-          prescriptionDate: new Date().toISOString(),
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (response.ok) {

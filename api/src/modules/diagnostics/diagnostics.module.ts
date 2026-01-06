@@ -24,6 +24,7 @@ import { AssignmentsModule } from '../assignments/assignments.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { TransactionSummaryModule } from '../transactions/transaction-summary.mo
       { name: DiagnosticCart.name, schema: DiagnosticCartSchema },
       { name: DiagnosticOrder.name, schema: DiagnosticOrderSchema },
       { name: DiagnosticMasterTest.name, schema: DiagnosticMasterTestSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     AssignmentsModule,
     PlanConfigModule,

@@ -19,6 +19,10 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     if (contentType?.includes('application/json')) {
       body = await request.text()
+      if (apiPath.includes('submit-existing')) {
+        console.log('[PROXY] Forwarding submit-existing request')
+        console.log('[PROXY] Body received from client:', body)
+      }
     } else if (contentType?.includes('multipart/form-data')) {
       body = await request.formData()
     } else {

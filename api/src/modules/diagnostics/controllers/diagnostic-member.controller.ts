@@ -22,6 +22,7 @@ import { PrescriptionSource } from '../schemas/diagnostic-prescription.schema';
 import { ValidateDiagnosticOrderDto } from '../dto/validate-diagnostic-order.dto';
 import { CancelledBy } from '../schemas/diagnostic-order.schema';
 import { UploadDiagnosticPrescriptionDto } from '../dto/upload-diagnostic-prescription.dto';
+import { SubmitExistingDiagnosticPrescriptionDto } from '../dto/submit-existing-prescription.dto';
 
 @Controller('member/diagnostics')
 @UseGuards(JwtAuthGuard)
@@ -59,34 +60,21 @@ export class DiagnosticMemberController {
 
   @Post('prescriptions/submit-existing')
   async submitExistingPrescription(
-    @Body() body: {
-      healthRecordId: string;
-      patientId: string;
-      patientName: string;
-      patientRelationship: string;
-      pincode: string;
-      prescriptionDate: Date;
-    },
+    @Body() dto: SubmitExistingDiagnosticPrescriptionDto,
     @Req() req: any,
   ) {
-    const userId = req.user?.userId || req.user?.sub;
+    const userId = new Types.ObjectId(req.user?.userId || req.user?.sub);
 
-    // Create a prescription record linking to health record
-    const prescription = await this.prescriptionService.create({
+    const prescription = await this.prescriptionService.submitExistingPrescription(
       userId,
-      patientId: body.patientId,
-      patientName: body.patientName,
-      patientRelationship: body.patientRelationship,
-      pincode: body.pincode,
-      prescriptionDate: body.prescriptionDate,
-      fileName: `health-record-${body.healthRecordId}`,
-      originalName: 'From Health Records',
-      fileType: 'application/pdf',
-      fileSize: 0,
-      filePath: `/health-records/${body.healthRecordId}`,
-      source: PrescriptionSource.HEALTH_RECORD,
-      healthRecordId: body.healthRecordId,
-    });
+      dto.healthRecordId,
+      dto.prescriptionType as 'DIGITAL' | 'PDF',
+      dto.patientId,
+      dto.patientName,
+      dto.patientRelationship,
+      dto.pincode,
+      new Date(dto.prescriptionDate),
+    );
 
     return {
       success: true,

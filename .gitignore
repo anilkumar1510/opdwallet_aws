@@ -79,3 +79,4 @@ logs/
 .scannerwork/
 **/report-task.txt
 *.pdf
+*.jpg

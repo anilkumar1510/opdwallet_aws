@@ -1,6 +1,25 @@
 # Local Development Configuration
 # This file stays on your machine and never gets deployed
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: opd-nginx-dev
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web-admin
+      - web-member
+      - web-doctor
+      - web-tpa
+      - web-operations
+      - web-finance
+    networks:
+      - opd-network
+
   mongo:
     image: mongo:7.0
     container_name: opd-mongo-dev
@@ -46,8 +65,8 @@ services:
     ports:
       - "3001:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
@@ -65,8 +84,8 @@ services:
     ports:
       - "3002:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
@@ -84,8 +103,8 @@ services:
     ports:
       - "3003:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
@@ -103,8 +122,8 @@ services:
     ports:
       - "3004:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
@@ -122,8 +141,8 @@ services:
     ports:
       - "3005:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api
@@ -141,8 +160,8 @@ services:
     ports:
       - "3006:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000/api
-      API_URL: http://opd-api-dev:4000
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
       NODE_ENV: development
     depends_on:
       - api

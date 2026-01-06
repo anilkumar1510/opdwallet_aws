@@ -46,12 +46,18 @@ export class LabPrescriptionService {
   async submitExistingPrescription(
     userId: Types.ObjectId,
     healthRecordId: string,
+    prescriptionType: 'DIGITAL' | 'PDF',
     patientId: string,
     patientName: string,
     patientRelationship: string,
     pincode: string,
     prescriptionDate: Date,
   ): Promise<LabPrescription> {
+    console.log('[LAB SERVICE] submitExistingPrescription called with:', {
+      healthRecordId,
+      prescriptionType,
+    });
+
     const prescriptionId = `PRES-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     // Fetch user's pincode if not provided
@@ -66,6 +72,69 @@ export class LabPrescriptionService {
       }
     }
 
+    // Initialize with placeholder values
+    let fileData = {
+      fileName: `health-record-${healthRecordId}`,
+      filePath: `/health-records/${healthRecordId}`,
+      fileSize: 0,
+      fileType: 'application/pdf',
+      originalName: 'From Health Records',
+    };
+
+    console.log('[LAB SERVICE] Fetching from collection based on type:', prescriptionType);
+
+    // Fetch from appropriate collection based on prescriptionType
+    if (prescriptionType === 'DIGITAL') {
+      const digitalPrescription: any = await this.prescriptionModel.db
+        .model('DigitalPrescription')
+        .findById(healthRecordId)
+        .select('pdfGenerated pdfPath pdfFileName')
+        .lean();
+
+      console.log('[LAB SERVICE] Digital prescription found:', digitalPrescription ? 'yes' : 'no');
+      if (digitalPrescription) {
+        console.log('[LAB SERVICE] Digital prescription details:', {
+          pdfGenerated: digitalPrescription.pdfGenerated,
+          pdfPath: digitalPrescription.pdfPath,
+          pdfFileName: digitalPrescription.pdfFileName,
+        });
+      }
+
+      if (digitalPrescription && digitalPrescription.pdfGenerated && digitalPrescription.pdfPath) {
+        fileData.fileName = digitalPrescription.pdfFileName || `prescription-${healthRecordId}.pdf`;
+        // Remove /app/ prefix from absolute path to get relative path for static file serving
+        fileData.filePath = digitalPrescription.pdfPath.replace(/^\/app\//, '');
+        fileData.originalName = digitalPrescription.pdfFileName || 'Digital Prescription';
+        console.log('[LAB SERVICE] Updated fileData from digital prescription:', fileData);
+      }
+    } else if (prescriptionType === 'PDF') {
+      const doctorPrescription: any = await this.prescriptionModel.db
+        .model('DoctorPrescription')
+        .findById(healthRecordId)
+        .select('fileName filePath fileSize')
+        .lean();
+
+      console.log('[LAB SERVICE] Doctor prescription found:', doctorPrescription ? 'yes' : 'no');
+      if (doctorPrescription) {
+        console.log('[LAB SERVICE] Doctor prescription details:', {
+          fileName: doctorPrescription.fileName,
+          filePath: doctorPrescription.filePath,
+          fileSize: doctorPrescription.fileSize,
+        });
+      }
+
+      if (doctorPrescription && doctorPrescription.filePath) {
+        fileData.fileName = doctorPrescription.fileName;
+        // Remove /app/ prefix if present
+        fileData.filePath = doctorPrescription.filePath.replace(/^\/app\//, '');
+        fileData.fileSize = doctorPrescription.fileSize || 0;
+        fileData.originalName = doctorPrescription.fileName;
+        console.log('[LAB SERVICE] Updated fileData from doctor prescription:', fileData);
+      }
+    }
+
+    console.log('[LAB SERVICE] Final fileData:', fileData);
+
     const prescription = new this.prescriptionModel({
       prescriptionId,
       userId,
@@ -77,11 +146,11 @@ export class LabPrescriptionService {
       serviceType: ServiceType.LAB,
       source: PrescriptionSource.HEALTH_RECORD,
       healthRecordId: new Types.ObjectId(healthRecordId),
-      fileName: `health-record-${healthRecordId}`,
-      originalName: 'From Health Records',
-      fileType: 'application/pdf',
-      fileSize: 0,
-      filePath: `/health-records/${healthRecordId}`,
+      fileName: fileData.fileName,
+      originalName: fileData.originalName,
+      fileType: fileData.fileType,
+      fileSize: fileData.fileSize,
+      filePath: fileData.filePath,
       status: PrescriptionStatus.UPLOADED,
       uploadedAt: new Date(),
     });
