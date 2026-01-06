@@ -4,34 +4,9 @@ import { Model, Types } from 'mongoose';
 import { DiagnosticVendor } from '../schemas/diagnostic-vendor.schema';
 import { DiagnosticVendorPricing } from '../schemas/diagnostic-vendor-pricing.schema';
 import { DiagnosticVendorSlot, TimeSlot } from '../schemas/diagnostic-vendor-slot.schema';
-
-export interface CreateDiagnosticVendorDto {
-  name: string;
-  code: string;
-  contactInfo: {
-    phone: string;
-    email: string;
-    address: string;
-  };
-  serviceablePincodes: string[];
-  equipmentCapabilities?: {
-    ctScan?: boolean;
-    mri?: boolean;
-    xRay?: boolean;
-    ultrasound?: boolean;
-    ecg?: boolean;
-    echo?: boolean;
-    mammography?: boolean;
-    petScan?: boolean;
-    boneDensity?: boolean;
-  };
-  services?: string[];
-  homeCollection?: boolean;
-  centerVisit?: boolean;
-  homeCollectionCharges?: number;
-  description?: string;
-  labVendorId?: string;
-}
+import { DiagnosticService } from '../schemas/diagnostic-service.schema';
+import { CreateDiagnosticVendorDto } from '../dto/create-diagnostic-vendor.dto';
+import { DiagnosticMasterTestService } from './diagnostic-master-test.service';
 
 export interface CreateDiagnosticPricingDto {
   vendorId: string;
@@ -50,6 +25,9 @@ export class DiagnosticVendorService {
     private diagnosticVendorPricingModel: Model<DiagnosticVendorPricing>,
     @InjectModel(DiagnosticVendorSlot.name)
     private diagnosticVendorSlotModel: Model<DiagnosticVendorSlot>,
+    @InjectModel(DiagnosticService.name)
+    private diagnosticServiceModel: Model<DiagnosticService>,
+    private readonly masterTestService: DiagnosticMasterTestService,
   ) {}
 
   // ============ VENDOR MANAGEMENT ============
@@ -74,6 +52,7 @@ export class DiagnosticVendorService {
       serviceablePincodes: createDto.serviceablePincodes,
       equipmentCapabilities: createDto.equipmentCapabilities,
       services: createDto.services ?? [],
+      serviceAliases: createDto.serviceAliases ?? {},
       homeCollection: createDto.homeCollection !== false,
       centerVisit: createDto.centerVisit !== false,
       homeCollectionCharges: createDto.homeCollectionCharges || 100,
@@ -82,7 +61,14 @@ export class DiagnosticVendorService {
       isActive: true,
     });
 
-    return vendor.save();
+    const savedVendor = await vendor.save();
+
+    // Process service aliases and create/update master tests
+    if (createDto.serviceAliases && Object.keys(createDto.serviceAliases).length > 0) {
+      await this.processMasterTests(createDto.services || [], createDto.serviceAliases);
+    }
+
+    return savedVendor;
   }
 
   async getVendorById(vendorId: string): Promise<DiagnosticVendor> {
@@ -165,6 +151,15 @@ export class DiagnosticVendorService {
 
     if (updateDto.services !== undefined) {
       vendor.services = updateDto.services;
+    }
+
+    if (updateDto.serviceAliases !== undefined) {
+      vendor.serviceAliases = updateDto.serviceAliases;
+
+      // Process service aliases and create/update master tests
+      if (Object.keys(updateDto.serviceAliases).length > 0) {
+        await this.processMasterTests(vendor.services || [], updateDto.serviceAliases);
+      }
     }
 
     return vendor.save();
@@ -478,5 +473,53 @@ export class DiagnosticVendorService {
     selectedVendors.sort((a, b) => a.totalDiscountedPrice - b.totalDiscountedPrice);
 
     return selectedVendors;
+  }
+
+  /**
+   * Process service aliases and create/update diagnostic master tests
+   * For each service with an alias:
+   * - Check if diagnostic master test exists with matching service code
+   * - If exists: Update synonyms to include the new alias
+   * - If not exists: Create new diagnostic master test with mappings
+   */
+  private async processMasterTests(
+    serviceIds: string[],
+    serviceAliases: Record<string, string>,
+  ): Promise<void> {
+    // Process each service that has an alias
+    for (const serviceId of serviceIds) {
+      const alias = serviceAliases[serviceId];
+      if (!alias || alias.trim() === '') {
+        continue; // Skip if no alias provided
+      }
+
+      // Fetch the diagnostic service to get its details
+      const diagnosticService = await this.diagnosticServiceModel.findOne({ serviceId: serviceId });
+      if (!diagnosticService) {
+        console.warn(`Diagnostic service ${serviceId} not found, skipping master test creation`);
+        continue;
+      }
+
+      // Check if diagnostic master test exists with this service code
+      const existingMasterTest = await this.masterTestService.getByCode(diagnosticService.code);
+
+      if (existingMasterTest) {
+        // Update synonyms: add alias if not already present
+        const currentSynonyms = existingMasterTest.synonyms || [];
+        if (!currentSynonyms.includes(alias.trim())) {
+          await this.masterTestService.update(existingMasterTest.parameterId, {
+            synonyms: [...currentSynonyms, alias.trim()],
+          });
+        }
+      } else {
+        // Create new diagnostic master test
+        await this.masterTestService.create({
+          code: diagnosticService.code,
+          standardName: diagnosticService.name,
+          category: diagnosticService.category as any,
+          synonyms: [alias.trim()],
+        });
+      }
+    }
   }
 }

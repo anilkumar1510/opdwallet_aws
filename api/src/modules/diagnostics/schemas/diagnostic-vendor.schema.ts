@@ -67,6 +67,10 @@ export class DiagnosticVendor extends Document {
   @Prop({ type: [String], default: [] })
   services: string[];
 
+  // Service aliases (vendor-specific names for services)
+  @Prop({ type: Map, of: String, default: {} })
+  serviceAliases: Record<string, string>;
+
   // Collection types
   @Prop({ default: true })
   homeCollection: boolean;

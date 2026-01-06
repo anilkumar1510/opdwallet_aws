@@ -2,14 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export enum DiagnosticMasterTestCategory {
-  CT_SCAN = 'CT_SCAN',
-  MRI = 'MRI',
-  X_RAY = 'X_RAY',
-  ULTRASOUND = 'ULTRASOUND',
-  ECG = 'ECG',
-  MAMMOGRAPHY = 'MAMMOGRAPHY',
-  PET_SCAN = 'PET_SCAN',
-  BONE_DENSITY = 'BONE_DENSITY',
+  RADIOLOGY = 'RADIOLOGY',
   ENDOSCOPY = 'ENDOSCOPY',
   OTHER = 'OTHER',
 }

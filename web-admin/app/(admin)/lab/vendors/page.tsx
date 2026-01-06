@@ -37,6 +37,7 @@ interface LabVendor {
   description?: string
   isActive: boolean
   services?: string[]
+  serviceAliases?: Record<string, string>
 }
 
 export default function LabVendorsPage() {
@@ -46,6 +47,7 @@ export default function LabVendorsPage() {
   const [vendors, setVendors] = useState<LabVendor[]>([])
   const [labServices, setLabServices] = useState<LabService[]>([])
   const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [serviceAliases, setServiceAliases] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingVendor, setEditingVendor] = useState<LabVendor | null>(null)
@@ -139,6 +141,7 @@ export default function LabVendorsPage() {
         homeCollectionCharges: formData.homeCollectionCharges,
         description: formData.description,
         services: selectedServices,
+        serviceAliases: serviceAliases,
       }
 
       const url = editingVendor
@@ -182,6 +185,7 @@ export default function LabVendorsPage() {
       description: vendor.description || '',
     })
     setSelectedServices(vendor.services || [])
+    setServiceAliases(vendor.serviceAliases || {})
     setShowModal(true)
   }
 
@@ -199,14 +203,31 @@ export default function LabVendorsPage() {
       description: '',
     })
     setSelectedServices([])
+    setServiceAliases({})
   }
 
   const handleServiceToggle = (serviceId: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(serviceId)
+    setSelectedServices((prev) => {
+      const isRemoving = prev.includes(serviceId)
+      if (isRemoving) {
+        // Remove alias when unchecking service
+        setServiceAliases(prevAliases => {
+          const newAliases = { ...prevAliases }
+          delete newAliases[serviceId]
+          return newAliases
+        })
+      }
+      return isRemoving
         ? prev.filter((id) => id !== serviceId)
         : [...prev, serviceId]
-    )
+    })
+  }
+
+  const handleAliasChange = (serviceId: string, alias: string) => {
+    setServiceAliases(prev => ({
+      ...prev,
+      [serviceId]: alias
+    }))
   }
 
   console.log('🔍 [VENDORS] Render conditions - loading:', loading, 'error:', error)
@@ -531,30 +552,51 @@ export default function LabVendorsPage() {
                     </p>
                   ) : (
                     <div className="grid grid-cols-1 gap-2">
-                      {labServices.map((service) => (
-                        <label
-                          key={service.serviceId}
-                          className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedServices.includes(service.serviceId)}
-                            onChange={() => handleServiceToggle(service.serviceId)}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-900">
-                              {service.name}
-                            </span>
-                            <span className="ml-2 text-xs text-gray-500 font-mono">
-                              ({service.code})
-                            </span>
-                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                              {service.category}
-                            </span>
+                      {labServices.map((service) => {
+                        const isSelected = selectedServices.includes(service.serviceId)
+                        return (
+                          <div
+                            key={service.serviceId}
+                            className="border rounded-lg p-3"
+                          >
+                            <label className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleServiceToggle(service.serviceId)}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {service.name}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500 font-mono">
+                                  ({service.code})
+                                </span>
+                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                  {service.category}
+                                </span>
+                              </div>
+                            </label>
+
+                            {/* Alias input - shown only when service is selected */}
+                            {isSelected && (
+                              <div className="mt-2 ml-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Alias Name
+                                </label>
+                                <input
+                                  type="text"
+                                  value={serviceAliases[service.serviceId] || ''}
+                                  onChange={(e) => handleAliasChange(service.serviceId, e.target.value)}
+                                  placeholder="Enter alias name (optional)"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                            )}
                           </div>
-                        </label>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>

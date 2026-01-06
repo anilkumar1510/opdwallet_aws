@@ -47,6 +47,10 @@ export class LabVendor extends Document {
   @Prop({ type: [String], default: [] })
   services: string[];
 
+  // Service aliases (vendor-specific names for services)
+  @Prop({ type: Map, of: String, default: {} })
+  serviceAliases: Record<string, string>;
+
   // Service type support
   @Prop({ default: true })
   offersLabServices: boolean;

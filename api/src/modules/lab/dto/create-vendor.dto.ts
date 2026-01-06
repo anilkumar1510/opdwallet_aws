@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsBoolean, IsArray, IsOptional, ValidateNested, IsNumber, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsBoolean, IsArray, IsOptional, ValidateNested, IsNumber, Min, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class VendorContactInfoDto {
@@ -54,4 +54,8 @@ export class CreateVendorDto {
   @IsArray()
   @IsString({ each: true })
   services?: string[];
+
+  @IsOptional()
+  @IsObject()
+  serviceAliases?: Record<string, string>;
 }

@@ -4,8 +4,10 @@ import { Model, Types } from 'mongoose';
 import { LabVendor } from '../schemas/lab-vendor.schema';
 import { LabVendorPricing } from '../schemas/lab-vendor-pricing.schema';
 import { LabVendorSlot } from '../schemas/lab-vendor-slot.schema';
+import { LabService } from '../schemas/lab-service.schema';
 import { CreateVendorDto } from '../dto/create-vendor.dto';
 import { CreatePricingDto } from '../dto/create-pricing.dto';
+import { MasterTestParameterService } from './master-test-parameter.service';
 
 @Injectable()
 export class LabVendorService {
@@ -16,6 +18,9 @@ export class LabVendorService {
     private pricingModel: Model<LabVendorPricing>,
     @InjectModel(LabVendorSlot.name)
     private slotModel: Model<LabVendorSlot>,
+    @InjectModel(LabService.name)
+    private labServiceModel: Model<LabService>,
+    private readonly masterTestService: MasterTestParameterService,
   ) {}
 
   async createVendor(createDto: CreateVendorDto): Promise<LabVendor> {
@@ -41,10 +46,18 @@ export class LabVendorService {
       homeCollectionCharges: createDto.homeCollectionCharges ?? 50,
       description: createDto.description,
       services: createDto.services ?? [],
+      serviceAliases: createDto.serviceAliases ?? {},
       isActive: true,
     });
 
-    return vendor.save();
+    const savedVendor = await vendor.save();
+
+    // Process service aliases and create/update master tests
+    if (createDto.serviceAliases && Object.keys(createDto.serviceAliases).length > 0) {
+      await this.processMasterTests(createDto.services || [], createDto.serviceAliases);
+    }
+
+    return savedVendor;
   }
 
   async getVendorById(vendorId: string): Promise<LabVendor> {
@@ -120,6 +133,15 @@ export class LabVendorService {
 
     if (updateDto.services !== undefined) {
       vendor.services = updateDto.services;
+    }
+
+    if (updateDto.serviceAliases !== undefined) {
+      vendor.serviceAliases = updateDto.serviceAliases;
+
+      // Process service aliases and create/update master tests
+      if (Object.keys(updateDto.serviceAliases).length > 0) {
+        await this.processMasterTests(vendor.services || [], updateDto.serviceAliases);
+      }
     }
 
     return vendor.save();
@@ -445,5 +467,53 @@ export class LabVendorService {
     selectedVendors.sort((a, b) => a.totalDiscountedPrice - b.totalDiscountedPrice);
 
     return selectedVendors;
+  }
+
+  /**
+   * Process service aliases and create/update master tests
+   * For each service with an alias:
+   * - Check if master test exists with matching service code
+   * - If exists: Update synonyms to include the new alias
+   * - If not exists: Create new master test with mappings
+   */
+  private async processMasterTests(
+    serviceIds: string[],
+    serviceAliases: Record<string, string>,
+  ): Promise<void> {
+    // Process each service that has an alias
+    for (const serviceId of serviceIds) {
+      const alias = serviceAliases[serviceId];
+      if (!alias || alias.trim() === '') {
+        continue; // Skip if no alias provided
+      }
+
+      // Fetch the lab service to get its details
+      const labService = await this.labServiceModel.findOne({ serviceId: serviceId });
+      if (!labService) {
+        console.warn(`Lab service ${serviceId} not found, skipping master test creation`);
+        continue;
+      }
+
+      // Check if master test exists with this service code
+      const existingMasterTest = await this.masterTestService.getByCode(labService.code);
+
+      if (existingMasterTest) {
+        // Update synonyms: add alias if not already present
+        const currentSynonyms = existingMasterTest.synonyms || [];
+        if (!currentSynonyms.includes(alias.trim())) {
+          await this.masterTestService.update(existingMasterTest.parameterId, {
+            synonyms: [...currentSynonyms, alias.trim()],
+          });
+        }
+      } else {
+        // Create new master test
+        await this.masterTestService.create({
+          code: labService.code,
+          standardName: labService.name,
+          category: labService.category as any,
+          synonyms: [alias.trim()],
+        });
+      }
+    }
   }
 }
