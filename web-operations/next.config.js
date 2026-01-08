@@ -32,14 +32,6 @@ const nextConfig = {
         source: '/api/:path*',
         destination: apiUrl,
       },
-      {
-        source: '/lab/uploads/:path*',
-        destination: `${apiBaseUrl}/api/uploads/:path*`,
-      },
-      {
-        source: '/diagnostics/uploads/:path*',
-        destination: `${apiBaseUrl}/api/uploads/:path*`,
-      },
     ];
   },
 };
