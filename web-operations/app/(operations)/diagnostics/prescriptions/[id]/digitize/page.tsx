@@ -66,24 +66,20 @@ export default function DigitizePrescriptionPage() {
   // Helper function to convert API filePath to absolute URL
   const getAbsoluteFilePath = (filePath: string) => {
     if (!filePath) return ''
-    // If filePath starts with 'uploads/', convert to '/operations/api/uploads/' to use the API route
+    // If filePath starts with 'uploads/', convert to '/operations/diagnostics/uploads/' to match rewrite rule
     if (filePath.startsWith('uploads/')) {
-      return `/operations/api/${filePath}`
+      return `/operations/diagnostics/${filePath}`
     }
     // If it already starts with '/operations/', return as is
     if (filePath.startsWith('/operations/')) {
       return filePath
     }
-    // If it starts with '/api/', prepend basePath
-    if (filePath.startsWith('/api/')) {
-      return `/operations${filePath}`
-    }
     // If it starts with '/', prepend basePath
     if (filePath.startsWith('/')) {
       return `/operations${filePath}`
     }
-    // Otherwise, prepend '/operations/api/'
-    return `/operations/api/${filePath}`
+    // Otherwise, prepend '/operations/diagnostics/'
+    return `/operations/diagnostics/${filePath}`
   }
 
   const [prescription, setPrescription] = useState<Prescription | null>(null)
