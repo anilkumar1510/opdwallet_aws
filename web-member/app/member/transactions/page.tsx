@@ -14,6 +14,7 @@ import {
   CalendarIcon,
   ClockIcon,
   TagIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import {
   BarChart,
@@ -80,19 +81,60 @@ export default function TransactionsPage() {
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState<TransactionType | 'ALL'>('ALL')
   const [showFilters, setShowFilters] = useState(false)
+
+  // Enhanced filter states
+  const [selectedTypes, setSelectedTypes] = useState<Set<TransactionType | 'ALL'>>(new Set(['ALL']))
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [amountMin, setAmountMin] = useState('')
+  const [amountMax, setAmountMax] = useState('')
 
   useEffect(() => {
     fetchData()
   }, [])
 
+  const buildQueryParams = () => {
+    const params = new URLSearchParams()
+    params.append('limit', '1000')
+
+    // Add type filter (only if not ALL)
+    if (!selectedTypes.has('ALL') && selectedTypes.size > 0) {
+      params.append('type', Array.from(selectedTypes).join(','))
+    }
+
+    // Add category filter
+    if (selectedCategories.size > 0) {
+      params.append('categoryCode', Array.from(selectedCategories).join(','))
+    }
+
+    // Add date range
+    if (dateFrom) {
+      params.append('dateFrom', dateFrom)
+    }
+    if (dateTo) {
+      params.append('dateTo', dateTo)
+    }
+
+    // Add amount range
+    if (amountMin) {
+      params.append('amountMin', amountMin)
+    }
+    if (amountMax) {
+      params.append('amountMax', amountMax)
+    }
+
+    return params.toString()
+  }
+
   const fetchData = async () => {
     try {
       setLoading(true)
 
+      const queryParams = buildQueryParams()
       const [transactionsRes, balanceRes] = await Promise.all([
-        fetch('/api/wallet/transactions?limit=100', { credentials: 'include' }),
+        fetch(`/api/wallet/transactions?${queryParams}`, { credentials: 'include' }),
         fetch('/api/wallet/balance', { credentials: 'include' })
       ])
 
@@ -114,7 +156,23 @@ export default function TransactionsPage() {
     }
   }
 
-  // Filter transactions
+  // Apply filters button
+  const applyFilters = () => {
+    fetchData()
+  }
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedTypes(new Set(['ALL']))
+    setSelectedCategories(new Set())
+    setDateFrom('')
+    setDateTo('')
+    setAmountMin('')
+    setAmountMax('')
+    setSearchQuery('')
+  }
+
+  // Filter transactions (for search only, other filters are server-side)
   const filteredTransactions = useMemo(() => {
     return transactions.filter(txn => {
       const matchesSearch = searchQuery === '' ||
@@ -122,11 +180,9 @@ export default function TransactionsPage() {
         txn.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         txn.serviceProvider?.toLowerCase().includes(searchQuery.toLowerCase())
 
-      const matchesType = typeFilter === 'ALL' || txn.type === typeFilter
-
-      return matchesSearch && matchesType
+      return matchesSearch
     })
-  }, [transactions, searchQuery, typeFilter])
+  }, [transactions, searchQuery])
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -146,6 +202,64 @@ export default function TransactionsPage() {
     const category = walletBalance?.categories.find(c => c.categoryCode === categoryCode)
     return category?.name || categoryCode
   }
+
+  // Get available categories from transactions
+  const availableCategories = useMemo(() => {
+    const categorySet = new Set<string>()
+    transactions.forEach(txn => {
+      if (txn.categoryCode) {
+        categorySet.add(txn.categoryCode)
+      }
+    })
+    return Array.from(categorySet).map(code => ({
+      code,
+      name: getCategoryName(code)
+    }))
+  }, [transactions, walletBalance])
+
+  // Handle type filter toggle
+  const toggleTypeFilter = (type: TransactionType | 'ALL') => {
+    const newSelected = new Set(selectedTypes)
+
+    if (type === 'ALL') {
+      newSelected.clear()
+      newSelected.add('ALL')
+    } else {
+      newSelected.delete('ALL')
+      if (newSelected.has(type)) {
+        newSelected.delete(type)
+      } else {
+        newSelected.add(type)
+      }
+      // If nothing selected, select ALL
+      if (newSelected.size === 0) {
+        newSelected.add('ALL')
+      }
+    }
+
+    setSelectedTypes(newSelected)
+  }
+
+  // Handle category filter toggle
+  const toggleCategoryFilter = (categoryCode: string) => {
+    const newSelected = new Set(selectedCategories)
+    if (newSelected.has(categoryCode)) {
+      newSelected.delete(categoryCode)
+    } else {
+      newSelected.add(categoryCode)
+    }
+    setSelectedCategories(newSelected)
+  }
+
+  // Active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0
+    if (!selectedTypes.has('ALL')) count++
+    if (selectedCategories.size > 0) count++
+    if (dateFrom || dateTo) count++
+    if (amountMin || amountMax) count++
+    return count
+  }, [selectedTypes, selectedCategories, dateFrom, dateTo, amountMin, amountMax])
 
   // Prepare chart data
   const chartData = useMemo(() => {
@@ -622,34 +736,148 @@ export default function TransactionsPage() {
             </div>
 
             {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-white/60 backdrop-blur-sm border-2 rounded-xl hover:bg-white transition-all text-sm font-semibold shadow-sm"
-              style={{ borderColor: '#86ACD8', color: '#0E51A2' }}
-            >
-              <FunnelIcon className="w-4 h-4" />
-              <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/60 backdrop-blur-sm border-2 rounded-xl hover:bg-white transition-all text-sm font-semibold shadow-sm"
+                style={{ borderColor: '#86ACD8', color: '#0E51A2' }}
+              >
+                <FunnelIcon className="w-4 h-4" />
+                <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+                {activeFiltersCount > 0 && (
+                  <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">{activeFiltersCount}</span>
+                )}
+              </button>
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-3 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 transition-all text-sm font-semibold text-red-700 shadow-sm"
+                  title="Clear all filters"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              )}
+            </div>
 
             {/* Filters */}
             {showFilters && (
-              <div className="pt-4 border-t-2" style={{ borderColor: '#86ACD8' }}>
-                <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>Transaction Type</label>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  {(['ALL', 'CREDIT', 'DEBIT', 'REFUND'] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setTypeFilter(type)}
-                      className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all shadow-sm ${
-                        typeFilter === type
-                          ? 'text-white scale-105'
-                          : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
-                      }`}
-                      style={typeFilter === type ? { backgroundColor: '#0F5FDC' } : { borderColor: '#86ACD8', color: '#0E51A2' }}
-                    >
-                      {type === 'ALL' ? 'All Types' : type.charAt(0) + type.slice(1).toLowerCase()}
-                    </button>
-                  ))}
+              <div className="pt-4 border-t-2 space-y-4" style={{ borderColor: '#86ACD8' }}>
+                {/* Transaction Type Filter */}
+                <div>
+                  <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>
+                    Transaction Type (Select multiple)
+                  </label>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    {(['ALL', 'CREDIT', 'DEBIT', 'REFUND'] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => toggleTypeFilter(type)}
+                        className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all shadow-sm border-2 ${
+                          selectedTypes.has(type)
+                            ? 'bg-blue-600 text-white border-blue-600 scale-105'
+                            : 'bg-white/60 backdrop-blur-sm hover:bg-white border-gray-300'
+                        }`}
+                        style={!selectedTypes.has(type) ? { color: '#0E51A2' } : {}}
+                      >
+                        {type === 'ALL' ? 'All Types' : type.charAt(0) + type.slice(1).toLowerCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                {availableCategories.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>
+                      Category (Select multiple)
+                    </label>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                      {availableCategories.map((category) => (
+                        <button
+                          key={category.code}
+                          onClick={() => toggleCategoryFilter(category.code)}
+                          className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm border-2 text-left ${
+                            selectedCategories.has(category.code)
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white/60 backdrop-blur-sm hover:bg-white border-gray-300'
+                          }`}
+                          style={!selectedCategories.has(category.code) ? { color: '#0E51A2' } : {}}
+                        >
+                          {category.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Date Range Filter */}
+                <div>
+                  <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>
+                    Date Range
+                  </label>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">From Date</label>
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="w-full px-4 py-2 border-2 bg-white/60 backdrop-blur-sm rounded-xl focus:bg-white focus:outline-none text-sm"
+                        style={{ borderColor: '#86ACD8', color: '#303030' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">To Date</label>
+                      <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="w-full px-4 py-2 border-2 bg-white/60 backdrop-blur-sm rounded-xl focus:bg-white focus:outline-none text-sm"
+                        style={{ borderColor: '#86ACD8', color: '#303030' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount Range Filter */}
+                <div>
+                  <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: '#0E51A2' }}>
+                    Amount Range (₹)
+                  </label>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">Minimum Amount</label>
+                      <input
+                        type="number"
+                        placeholder="Min amount"
+                        value={amountMin}
+                        onChange={(e) => setAmountMin(e.target.value)}
+                        className="w-full px-4 py-2 border-2 bg-white/60 backdrop-blur-sm rounded-xl focus:bg-white focus:outline-none text-sm"
+                        style={{ borderColor: '#86ACD8', color: '#303030' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">Maximum Amount</label>
+                      <input
+                        type="number"
+                        placeholder="Max amount"
+                        value={amountMax}
+                        onChange={(e) => setAmountMax(e.target.value)}
+                        className="w-full px-4 py-2 border-2 bg-white/60 backdrop-blur-sm rounded-xl focus:bg-white focus:outline-none text-sm"
+                        style={{ borderColor: '#86ACD8', color: '#303030' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Apply Filters Button */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={applyFilters}
+                    className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-md"
+                  >
+                    Apply Filters
+                  </button>
                 </div>
               </div>
             )}

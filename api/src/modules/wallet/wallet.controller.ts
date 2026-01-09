@@ -31,27 +31,67 @@ export class WalletController {
 
   @Get('transactions')
   @Roles(UserRole.MEMBER)
-  @ApiOperation({ summary: 'Get wallet transactions for logged-in member or family member' })
+  @ApiOperation({ summary: 'Get wallet transactions for logged-in member or family member with advanced filters' })
   @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch transactions for (must be in same family)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of transactions to return (default: 15)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of transactions to return (default: 100)' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: 'Transaction type filter: CREDIT, DEBIT, REFUND (comma-separated for multiple)' })
+  @ApiQuery({ name: 'categoryCode', required: false, type: String, description: 'Category code filter (comma-separated for multiple)' })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Start date filter (ISO format)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'End date filter (ISO format)' })
+  @ApiQuery({ name: 'amountMin', required: false, type: Number, description: 'Minimum amount filter' })
+  @ApiQuery({ name: 'amountMax', required: false, type: Number, description: 'Maximum amount filter' })
   @ApiResponse({ status: 200, description: 'Transactions fetched successfully' })
   async getTransactions(
     @Request() req: AuthRequest,
     @Query('userId') userId?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('type') type?: string,
+    @Query('categoryCode') categoryCode?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('amountMin') amountMin?: string,
+    @Query('amountMax') amountMax?: string
   ) {
     const targetUserId = userId || req.user.userId;
-    const limitNum = limit ? parseInt(limit) : 15;
+    const limitNum = limit ? parseInt(limit) : 100;
 
     // Verify family access
     await this.verifyFamilyAccess(req.user.userId, targetUserId);
 
-    const transactions = await this.walletService.getWalletTransactions(targetUserId, limitNum);
+    // Build filter object
+    const filters: any = {};
+
+    if (type) {
+      filters.type = type.split(',').map(t => t.trim());
+    }
+
+    if (categoryCode) {
+      filters.categoryCode = categoryCode.split(',').map(c => c.trim());
+    }
+
+    if (dateFrom) {
+      filters.dateFrom = new Date(dateFrom);
+    }
+
+    if (dateTo) {
+      filters.dateTo = new Date(dateTo);
+    }
+
+    if (amountMin) {
+      filters.amountMin = parseFloat(amountMin);
+    }
+
+    if (amountMax) {
+      filters.amountMax = parseFloat(amountMax);
+    }
+
+    const transactions = await this.walletService.getWalletTransactions(targetUserId, limitNum, filters);
 
     return {
       transactions,
       total: transactions.length,
-      limit: limitNum
+      limit: limitNum,
+      filters: filters
     };
   }
 

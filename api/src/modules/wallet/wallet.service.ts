@@ -128,10 +128,58 @@ export class WalletService {
     }
   }
 
-  async getWalletTransactions(userId: string, limit: number = 50) {
+  async getWalletTransactions(userId: string, limit: number = 50, filters?: {
+    type?: string[];
+    categoryCode?: string[];
+    dateFrom?: Date;
+    dateTo?: Date;
+    amountMin?: number;
+    amountMax?: number;
+  }) {
     try {
+      // Build query
+      const query: any = { userId };
+
+      // Add filters
+      if (filters) {
+        // Transaction type filter (supports multiple types)
+        if (filters.type && filters.type.length > 0) {
+          query.type = { $in: filters.type };
+        }
+
+        // Category filter (supports multiple categories)
+        if (filters.categoryCode && filters.categoryCode.length > 0) {
+          query.categoryCode = { $in: filters.categoryCode };
+        }
+
+        // Date range filter
+        if (filters.dateFrom || filters.dateTo) {
+          query.createdAt = {};
+          if (filters.dateFrom) {
+            query.createdAt.$gte = filters.dateFrom;
+          }
+          if (filters.dateTo) {
+            // Set to end of day for dateTo
+            const endOfDay = new Date(filters.dateTo);
+            endOfDay.setHours(23, 59, 59, 999);
+            query.createdAt.$lte = endOfDay;
+          }
+        }
+
+        // Amount range filter
+        if (filters.amountMin !== undefined || filters.amountMax !== undefined) {
+          query.amount = {};
+          if (filters.amountMin !== undefined) {
+            query.amount.$gte = filters.amountMin;
+          }
+          if (filters.amountMax !== undefined) {
+            query.amount.$lte = filters.amountMax;
+          }
+        }
+      }
+
       const transactions = await this.walletTransactionModel
-        .find({ userId })
+        .find(query)
         .select('transactionId type amount categoryCode previousBalance newBalance serviceType serviceProvider bookingId notes createdAt status')
         .sort({ createdAt: -1 })
         .limit(limit)
