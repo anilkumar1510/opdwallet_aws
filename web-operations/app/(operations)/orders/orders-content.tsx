@@ -14,11 +14,37 @@ interface Order {
     phone: string
   }
   patientName?: string
+  packageName?: string
   vendorName: string
+  labVendorName?: string
+  diagnosticVendorName?: string
   items: Array<{
     serviceName: string
     serviceCode: string
     discountedPrice: number
+  }>
+  labItems?: Array<{
+    serviceName: string
+    serviceCode: string
+    discountedPrice: number
+  }>
+  diagnosticItems?: Array<{
+    serviceName: string
+    serviceCode: string
+    category?: string
+    discountedPrice: number
+  }>
+  labReports?: Array<{
+    fileName: string
+    originalName: string
+    filePath: string
+    uploadedAt: string
+  }>
+  diagnosticReports?: Array<{
+    fileName: string
+    originalName: string
+    filePath: string
+    uploadedAt: string
   }>
   status: string
   collectionType: string
@@ -32,8 +58,8 @@ interface Order {
 export default function OpsOrdersContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'lab' | 'diagnostic'>(
-    (searchParams.get('tab') as 'lab' | 'diagnostic') || 'lab'
+  const [activeTab, setActiveTab] = useState<'lab' | 'diagnostic' | 'ahc'>(
+    (searchParams.get('tab') as 'lab' | 'diagnostic' | 'ahc') || 'lab'
   )
 
   const [orders, setOrders] = useState<Order[]>([])
@@ -46,6 +72,8 @@ export default function OpsOrdersContent() {
   const [cancelling, setCancelling] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedLabFile, setSelectedLabFile] = useState<File | null>(null)
+  const [selectedDiagnosticFile, setSelectedDiagnosticFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
 
   const fetchOrders = useCallback(async () => {
@@ -56,7 +84,9 @@ export default function OpsOrdersContent() {
 
       const apiPath = activeTab === 'lab'
         ? `/api/ops/lab/orders?${params}`
-        : `/api/ops/diagnostics/orders?${params}`
+        : activeTab === 'diagnostic'
+        ? `/api/ops/diagnostics/orders?${params}`
+        : `/api/ops/ahc/orders?${params}`
 
       const response = await apiFetch(apiPath)
 
@@ -89,7 +119,9 @@ export default function OpsOrdersContent() {
     try {
       const apiPath = activeTab === 'lab'
         ? `/api/ops/lab/orders/${orderId}/confirm`
-        : `/api/ops/diagnostics/orders/${orderId}/confirm`
+        : activeTab === 'diagnostic'
+        ? `/api/ops/diagnostics/orders/${orderId}/confirm`
+        : `/api/ops/ahc/orders/${orderId}/complete-collection`
 
       const response = await apiFetch(apiPath, {
         method: 'PATCH',
@@ -98,7 +130,7 @@ export default function OpsOrdersContent() {
       if (!response.ok) throw new Error('Failed to confirm order')
 
       const data = await response.json()
-      toast.success(data.message)
+      toast.success(data.message || 'Order confirmed successfully')
       fetchOrders()
     } catch (error) {
       console.error('Error confirming order:', error)
@@ -140,40 +172,89 @@ export default function OpsOrdersContent() {
     }
   }
 
-  const handleConfirmUpload = async () => {
-    if (!selectedOrder || !selectedFile) {
-      toast.error('Please select a file to upload')
-      return
+  const handleLabFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedLabFile(e.target.files[0])
     }
+  }
 
-    setUploading(true)
+  const handleDiagnosticFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedDiagnosticFile(e.target.files[0])
+    }
+  }
 
-    try {
-      const formData = new FormData()
-      formData.append('file', selectedFile)
+  const handleConfirmUpload = async () => {
+    if (activeTab === 'ahc') {
+      // AHC dual upload
+      if (!selectedOrder || (!selectedLabFile && !selectedDiagnosticFile)) {
+        toast.error('Please select at least one report file to upload')
+        return
+      }
 
-      const apiPath = activeTab === 'lab'
-        ? `/api/ops/lab/orders/${selectedOrder.orderId}/reports/upload`
-        : `/api/ops/diagnostics/orders/${selectedOrder.orderId}/report`
+      setUploading(true)
 
-      const response = await apiFetch(apiPath, {
-        method: 'POST',
-        body: formData,
-      })
+      try {
+        const formData = new FormData()
+        if (selectedLabFile) formData.append('labReport', selectedLabFile)
+        if (selectedDiagnosticFile) formData.append('diagnosticReport', selectedDiagnosticFile)
 
-      if (!response.ok) throw new Error('Failed to upload report')
+        const response = await apiFetch(`/api/ops/ahc/orders/${selectedOrder.orderId}/reports/upload`, {
+          method: 'POST',
+          body: formData,
+        })
 
-      const data = await response.json()
-      toast.success(data.message || 'Report uploaded successfully')
-      setShowUploadModal(false)
-      setSelectedFile(null)
-      setSelectedOrder(null)
-      fetchOrders()
-    } catch (error) {
-      console.error('Error uploading report:', error)
-      toast.error('Failed to upload report')
-    } finally {
-      setUploading(false)
+        if (!response.ok) throw new Error('Failed to upload reports')
+
+        const data = await response.json()
+        toast.success(data.message || 'Reports uploaded successfully')
+        setShowUploadModal(false)
+        setSelectedLabFile(null)
+        setSelectedDiagnosticFile(null)
+        setSelectedOrder(null)
+        fetchOrders()
+      } catch (error) {
+        console.error('Error uploading reports:', error)
+        toast.error('Failed to upload reports')
+      } finally {
+        setUploading(false)
+      }
+    } else {
+      // Lab/Diagnostic single upload
+      if (!selectedOrder || !selectedFile) {
+        toast.error('Please select a file to upload')
+        return
+      }
+
+      setUploading(true)
+
+      try {
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+
+        const apiPath = activeTab === 'lab'
+          ? `/api/ops/lab/orders/${selectedOrder.orderId}/reports/upload`
+          : `/api/ops/diagnostics/orders/${selectedOrder.orderId}/report`
+
+        const response = await apiFetch(apiPath, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) throw new Error('Failed to upload report')
+
+        const data = await response.json()
+        toast.success(data.message || 'Report uploaded successfully')
+        setShowUploadModal(false)
+        setSelectedFile(null)
+        setSelectedOrder(null)
+        fetchOrders()
+      } catch (error) {
+        console.error('Error uploading report:', error)
+        toast.error('Failed to upload report')
+      } finally {
+        setUploading(false)
+      }
     }
   }
 
@@ -188,7 +269,9 @@ export default function OpsOrdersContent() {
     try {
       const apiPath = activeTab === 'lab'
         ? `/api/ops/lab/orders/${selectedOrder.orderId}/cancel`
-        : `/api/ops/diagnostics/orders/${selectedOrder.orderId}/cancel`
+        : activeTab === 'diagnostic'
+        ? `/api/ops/diagnostics/orders/${selectedOrder.orderId}/cancel`
+        : `/api/ops/ahc/orders/${selectedOrder.orderId}/cancel`
 
       const response = await apiFetch(apiPath, {
         method: 'POST',
@@ -266,6 +349,16 @@ export default function OpsOrdersContent() {
             >
               Diagnostic Orders
             </button>
+            <button
+              onClick={() => setActiveTab('ahc')}
+              className={`${
+                activeTab === 'ahc'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              AHC Orders
+            </button>
           </nav>
         </div>
       </div>
@@ -273,10 +366,10 @@ export default function OpsOrdersContent() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
-            {activeTab === 'lab' ? 'Lab' : 'Diagnostic'} Orders
+            {activeTab === 'lab' ? 'Lab' : activeTab === 'diagnostic' ? 'Diagnostic' : 'AHC'} Orders
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            Manage {activeTab === 'lab' ? 'lab test' : 'diagnostic service'} orders
+            Manage {activeTab === 'lab' ? 'lab test' : activeTab === 'diagnostic' ? 'diagnostic service' : 'annual health check'} orders
           </p>
         </div>
         <div>
@@ -288,8 +381,10 @@ export default function OpsOrdersContent() {
             <option value="">All Status</option>
             <option value="PLACED">Placed</option>
             <option value="CONFIRMED">Confirmed</option>
-            <option value="SAMPLE_COLLECTED">Sample Collected</option>
-            <option value="PROCESSING">Processing</option>
+            {activeTab !== 'ahc' && <option value="SAMPLE_COLLECTED">Sample Collected</option>}
+            {activeTab !== 'ahc' && <option value="PROCESSING">Processing</option>}
+            {activeTab === 'ahc' && <option value="LAB_COMPLETED">Lab Completed</option>}
+            {activeTab === 'ahc' && <option value="DIAGNOSTIC_COMPLETED">Diagnostic Completed</option>}
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
@@ -316,12 +411,28 @@ export default function OpsOrdersContent() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Patient
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vendor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tests
-                  </th>
+                  {activeTab === 'ahc' ? (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Package
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Lab Vendor
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Diagnostic Vendor
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Vendor
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tests
+                      </th>
+                    </>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
@@ -349,12 +460,28 @@ export default function OpsOrdersContent() {
                         <p className="text-gray-500 text-xs">{order.userId?.phone || 'N/A'}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {order.vendorName}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {order.items.length} test{order.items.length > 1 ? 's' : ''}
-                    </td>
+                    {activeTab === 'ahc' ? (
+                      <>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {order.packageName || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {order.labVendorName || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {order.diagnosticVendorName || 'N/A'}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {order.vendorName}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {order.items.length} test{order.items.length > 1 ? 's' : ''}
+                        </td>
+                      </>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                       ₹{order.finalAmount || order.totalAmount || 0}
                     </td>
@@ -418,10 +545,23 @@ export default function OpsOrdersContent() {
                         </button>
                       )}
 
-                      {/* Cancel button - show for both order types */}
+                      {/* For AHC orders: Show upload after collection complete */}
+                      {['CONFIRMED', 'LAB_COMPLETED', 'DIAGNOSTIC_COMPLETED'].includes(order.status) && activeTab === 'ahc' && (
+                        <button
+                          onClick={() => handleUploadReport(order)}
+                          className="inline-flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                          title="Upload reports"
+                        >
+                          <DocumentArrowUpIcon className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      {/* Cancel button - show for all order types */}
                       {(activeTab === 'lab'
                         ? ['PLACED', 'CONFIRMED'].includes(order.status)
-                        : ['PLACED', 'CONFIRMED', 'SCHEDULED'].includes(order.status)
+                        : activeTab === 'diagnostic'
+                        ? ['PLACED', 'CONFIRMED', 'SCHEDULED'].includes(order.status)
+                        : ['PLACED', 'CONFIRMED'].includes(order.status)
                       ) && (
                         <button
                           onClick={() => {
@@ -466,38 +606,89 @@ export default function OpsOrdersContent() {
             </div>
 
             <div className="p-6 space-y-4">
-              <div>
-                <h4 className="font-semibold mb-2">Tests Ordered</h4>
-                <div className="space-y-2">
-                  {selectedOrder.items.map((item, index) => (
-                    <div key={index} className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{item.serviceName}</p>
-                        <p className="text-sm text-gray-600">{item.serviceCode}</p>
+              {/* AHC Orders: Show Lab and Diagnostic sections separately */}
+              {activeTab === 'ahc' ? (
+                <>
+                  {/* Lab Tests Section */}
+                  {selectedOrder.labItems && selectedOrder.labItems.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Lab Tests ({selectedOrder.labVendorName})</h4>
+                      <div className="space-y-2">
+                        {selectedOrder.labItems.map((item, index) => (
+                          <div key={index} className="flex justify-between p-3 bg-blue-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{item.serviceName}</p>
+                              <p className="text-sm text-gray-600">{item.serviceCode}</p>
+                            </div>
+                            <p className="font-semibold">₹{item.discountedPrice}</p>
+                          </div>
+                        ))}
                       </div>
-                      <p className="font-semibold">₹{item.discountedPrice}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  )}
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total Amount</span>
-                  <span>₹{selectedOrder.finalAmount || selectedOrder.totalAmount || 0}</span>
-                </div>
-              </div>
+                  {/* Diagnostic Tests Section */}
+                  {selectedOrder.diagnosticItems && selectedOrder.diagnosticItems.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2">Diagnostic Tests ({selectedOrder.diagnosticVendorName})</h4>
+                      <div className="space-y-2">
+                        {selectedOrder.diagnosticItems.map((item, index) => (
+                          <div key={index} className="flex justify-between p-3 bg-purple-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{item.serviceName}</p>
+                              <p className="text-sm text-gray-600">{item.serviceCode}</p>
+                            </div>
+                            <p className="font-semibold">₹{item.discountedPrice}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              <div>
-                <h4 className="font-semibold mb-2">Collection Details</h4>
-                <p className="text-sm">Type: {selectedOrder.collectionType.replace('_', ' ')}</p>
-                {selectedOrder.collectionDate && (
-                  <p className="text-sm">Date: {selectedOrder.collectionDate}</p>
-                )}
-                {selectedOrder.collectionTime && (
-                  <p className="text-sm">Time: {selectedOrder.collectionTime}</p>
-                )}
-              </div>
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total Amount</span>
+                      <span>₹{selectedOrder.finalAmount || selectedOrder.totalAmount || 0}</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Lab/Diagnostic Orders: Show items as before */}
+                  <div>
+                    <h4 className="font-semibold mb-2">Tests Ordered</h4>
+                    <div className="space-y-2">
+                      {selectedOrder.items?.map((item, index) => (
+                        <div key={index} className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium">{item.serviceName}</p>
+                            <p className="text-sm text-gray-600">{item.serviceCode}</p>
+                          </div>
+                          <p className="font-semibold">₹{item.discountedPrice}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total Amount</span>
+                      <span>₹{selectedOrder.finalAmount || selectedOrder.totalAmount || 0}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Collection Details</h4>
+                    <p className="text-sm">Type: {selectedOrder.collectionType?.replace('_', ' ')}</p>
+                    {selectedOrder.collectionDate && (
+                      <p className="text-sm">Date: {selectedOrder.collectionDate}</p>
+                    )}
+                    {selectedOrder.collectionTime && (
+                      <p className="text-sm">Time: {selectedOrder.collectionTime}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -578,7 +769,7 @@ export default function OpsOrdersContent() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Upload Report</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{activeTab === 'ahc' ? 'Upload AHC Reports' : 'Upload Report'}</h3>
                   <p className="text-sm text-gray-600 mt-1 font-mono">{selectedOrder.orderId}</p>
                 </div>
                 <button
@@ -596,23 +787,75 @@ export default function OpsOrdersContent() {
             </div>
 
             <div className="p-6">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Report File <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="file"
-                  onChange={handleFileSelect}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  disabled={uploading}
-                />
-                {selectedFile && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Selected: <span className="font-medium">{selectedFile.name}</span> ({(selectedFile.size / 1024).toFixed(2)} KB)
+              {activeTab === 'ahc' ? (
+                <>
+                  {/* AHC Dual Upload */}
+                  {(!selectedOrder.labReports || selectedOrder.labReports.length === 0) && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Lab Report {selectedOrder.labItems && selectedOrder.labItems.length > 0 ? <span className="text-red-500">*</span> : ''}
+                      </label>
+                      <input
+                        type="file"
+                        onChange={handleLabFileSelect}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={uploading}
+                      />
+                      {selectedLabFile && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Selected: <span className="font-medium">{selectedLabFile.name}</span> ({(selectedLabFile.size / 1024).toFixed(2)} KB)
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {(!selectedOrder.diagnosticReports || selectedOrder.diagnosticReports.length === 0) && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Diagnostic Report {selectedOrder.diagnosticItems && selectedOrder.diagnosticItems.length > 0 ? <span className="text-red-500">*</span> : ''}
+                      </label>
+                      <input
+                        type="file"
+                        onChange={handleDiagnosticFileSelect}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        disabled={uploading}
+                      />
+                      {selectedDiagnosticFile && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Selected: <span className="font-medium">{selectedDiagnosticFile.name}</span> ({(selectedDiagnosticFile.size / 1024).toFixed(2)} KB)
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-500 mb-4">
+                    Upload at least one report. You can upload both reports at once or separately.
                   </p>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  {/* Lab/Diagnostic Single Upload */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Report File <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      onChange={handleFileSelect}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      disabled={uploading}
+                    />
+                    {selectedFile && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Selected: <span className="font-medium">{selectedFile.name}</span> ({(selectedFile.size / 1024).toFixed(2)} KB)
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="flex space-x-3">
                 <button
@@ -620,6 +863,8 @@ export default function OpsOrdersContent() {
                     setShowUploadModal(false)
                     setSelectedOrder(null)
                     setSelectedFile(null)
+                    setSelectedLabFile(null)
+                    setSelectedDiagnosticFile(null)
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   disabled={uploading}
@@ -629,7 +874,7 @@ export default function OpsOrdersContent() {
                 <button
                   onClick={handleConfirmUpload}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={uploading || !selectedFile}
+                  disabled={uploading || (activeTab === 'ahc' ? (!selectedLabFile && !selectedDiagnosticFile) : !selectedFile)}
                 >
                   {uploading ? 'Uploading...' : 'Confirm Upload'}
                 </button>

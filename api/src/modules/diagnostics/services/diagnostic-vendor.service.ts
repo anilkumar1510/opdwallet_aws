@@ -218,6 +218,54 @@ export class DiagnosticVendorService {
     }));
   }
 
+  /**
+   * Get pricing for multiple services for a vendor
+   * Used by AHC order creation to get pricing for all package services
+   */
+  async getPricingForServices(
+    vendorId: string,
+    serviceIds: string[], // Array of service codes like ["DIAG-001", "DIAG-002"]
+  ): Promise<any[]> {
+    console.log('[DIAGNOSTIC-VENDOR] getPricingForServices called:', { vendorId, serviceIds });
+
+    // Get vendor by vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
+    // Query diagnostic services to get their ObjectIds from service codes
+    const diagnosticServices = await this.diagnosticServiceModel.find({
+      serviceId: { $in: serviceIds },
+    });
+
+    console.log('[DIAGNOSTIC-VENDOR] Found diagnostic services:', diagnosticServices.length);
+
+    const serviceObjectIds = diagnosticServices.map((service) => service._id);
+
+    // Get pricing for these services
+    const pricingRecords = await this.diagnosticVendorPricingModel
+      .find({
+        vendorId: vendor._id,
+        serviceId: { $in: serviceObjectIds },
+        isActive: true,
+      })
+      .populate('serviceId')
+      .exec();
+
+    console.log('[DIAGNOSTIC-VENDOR] Found pricing records:', pricingRecords.length);
+
+    // Transform to flatten service data
+    return pricingRecords.map((p: any) => ({
+      _id: p._id,
+      serviceId: p.serviceId._id,
+      serviceName: p.serviceId.name,
+      serviceCode: p.serviceId.code,
+      category: p.serviceId.category,
+      actualPrice: p.actualPrice,
+      discountedPrice: p.discountedPrice,
+      homeCollectionCharges: p.homeCollectionCharges,
+      isActive: p.isActive,
+    }));
+  }
+
   async updatePricing(
     vendorId: string,
     serviceId: string,

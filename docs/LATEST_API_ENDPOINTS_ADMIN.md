@@ -227,6 +227,20 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 
 ---
 
+## AHC Packages (Annual Health Check)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/ahc/packages | Create new AHC package |
+| GET | /admin/ahc/packages | Get all AHC packages |
+| GET | /admin/ahc/packages?search={query} | Search packages by package ID or name |
+| GET | /admin/ahc/packages/:packageId | Get AHC package by ID |
+| PATCH | /admin/ahc/packages/:packageId | Update AHC package |
+| PATCH | /admin/ahc/packages/:packageId/toggle-active | Toggle package active status |
+| DELETE | /admin/ahc/packages/:packageId | Delete AHC package |
+
+---
+
 ## Payments
 
 | Method | Endpoint | Description |
@@ -353,7 +367,7 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 
 ---
 
-**Total Endpoints: ~110**
+**Total Endpoints: ~117**
 
 **Notes:**
 - All endpoints require authentication (JWT token via cookie with path `/admin`)

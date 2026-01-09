@@ -241,6 +241,59 @@ export class LabVendorService {
       .exec();
   }
 
+  /**
+   * Get pricing for multiple services for a vendor
+   * Used by AHC order creation to get pricing for all package services
+   */
+  async getPricingForServices(
+    vendorId: string,
+    serviceIds: string[], // Array of service codes like ["LABS-001", "LABS-002"]
+  ): Promise<any[]> {
+    console.log('[LAB-VENDOR] getPricingForServices called:', { vendorId, serviceIds });
+
+    // Get vendor by vendorId to get MongoDB _id
+    const vendor = await this.getVendorById(vendorId);
+
+    // Query lab services to get their ObjectIds from service codes
+    const labServices = await this.labServiceModel.find({
+      serviceId: { $in: serviceIds },
+    });
+
+    console.log('[LAB-VENDOR] Found lab services:', labServices.length);
+
+    const serviceObjectIds = labServices.map((service) => service._id);
+
+    // Get pricing for these services
+    const pricingRecords = await this.pricingModel
+      .find({
+        vendorId: vendor._id,
+        serviceId: { $in: serviceObjectIds },
+        isActive: true,
+      })
+      .populate('serviceId', 'name code category')
+      .exec();
+
+    console.log('[LAB-VENDOR] Found pricing records:', pricingRecords.length);
+
+    // Transform to flatten service data
+    const transformedPricing = pricingRecords.map((pricing) => {
+      const serviceData = pricing.serviceId as any;
+      return {
+        _id: pricing._id,
+        serviceId: serviceData._id,
+        serviceName: serviceData.name,
+        serviceCode: serviceData.code,
+        category: serviceData.category,
+        actualPrice: pricing.actualPrice,
+        discountedPrice: pricing.discountedPrice,
+        homeCollectionCharges: pricing.homeCollectionCharges,
+        isActive: pricing.isActive,
+      };
+    });
+
+    return transformedPricing;
+  }
+
   async updatePricing(
     vendorId: string,
     serviceId: string,
@@ -350,16 +403,22 @@ export class LabVendorService {
    * 2. Have pricing for ALL selected tests
    */
   async getEligibleVendors(serviceIds: string[], pincode: string): Promise<any[]> {
+    console.log('[LabVendor] getEligibleVendors called with:', { serviceIds, pincode });
+
     // Convert serviceIds to ObjectIds
     const serviceObjectIds = serviceIds.map(id => new Types.ObjectId(id));
+    console.log('[LabVendor] Converted to ObjectIds:', serviceObjectIds);
 
     // Find vendors that serve this pincode
     const vendorsInPincode = await this.vendorModel.find({
       isActive: true,
       serviceablePincodes: pincode,
     });
+    console.log('[LabVendor] Vendors found for pincode:', vendorsInPincode.length);
+    console.log('[LabVendor] Vendor IDs:', vendorsInPincode.map(v => ({ id: v._id, vendorId: v.vendorId, name: v.name })));
 
     if (vendorsInPincode.length === 0) {
+      console.log('[LabVendor] No vendors found for pincode:', pincode);
       return [];
     }
 
@@ -367,14 +426,20 @@ export class LabVendorService {
 
     // For each vendor, check if they have pricing for ALL selected tests
     for (const vendor of vendorsInPincode) {
+      console.log(`[LabVendor] Checking pricing for vendor ${vendor.name} (${vendor.vendorId})...`);
+
       const vendorPricing = await this.pricingModel.find({
         vendorId: vendor._id,
         serviceId: { $in: serviceObjectIds },
         isActive: true,
       }).populate('serviceId', 'name code category');
 
+      console.log(`[LabVendor] Vendor ${vendor.name}: Found ${vendorPricing.length} pricing entries (need ${serviceIds.length})`);
+      console.log(`[LabVendor] Pricing services:`, vendorPricing.map(p => ({ serviceId: (p.serviceId as any)?._id, serviceName: (p.serviceId as any)?.name })));
+
       // Vendor is eligible only if they have pricing for ALL tests
       if (vendorPricing.length === serviceIds.length) {
+        console.log(`[LabVendor] Vendor ${vendor.name} is ELIGIBLE (has all services)`);
         // Calculate total price
         const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
         const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
@@ -398,8 +463,12 @@ export class LabVendorService {
           totalDiscountedPrice,
           totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
         });
+      } else {
+        console.log(`[LabVendor] Vendor ${vendor.name} is NOT eligible (missing ${serviceIds.length - vendorPricing.length} services)`);
       }
     }
+
+    console.log(`[LabVendor] Total eligible vendors: ${eligibleVendors.length}`);
 
     // Sort by total price (cheapest first)
     eligibleVendors.sort((a, b) => a.totalDiscountedPrice - b.totalDiscountedPrice);

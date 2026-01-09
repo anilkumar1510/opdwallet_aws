@@ -89,6 +89,8 @@ export default function PaymentPage() {
       if (pendingBookingData) {
         const bookingData = JSON.parse(pendingBookingData);
         console.log('📦 [PaymentPage] Booking data:', JSON.stringify(bookingData, null, 2));
+        console.log('🔍 [PaymentPage] Service Type:', bookingData.serviceType);
+        console.log('🔍 [PaymentPage] Checking service type cases...');
 
         // Complete the dental booking creation if pending
         if (bookingData.serviceType === 'DENTAL') {
@@ -270,6 +272,87 @@ export default function PaymentPage() {
             console.log('✅ [PaymentPage] Order ID:', diagnosticOrderData.data?.orderId);
           }
         }
+        // Complete the AHC order creation if pending
+        else if (bookingData.serviceType === 'AHC') {
+          console.log('🏥 [PaymentPage] ========== AHC CASE TRIGGERED ==========');
+          console.log('🏥 [PaymentPage] Creating AHC order with booking data...');
+
+          // Verify we have all required fields for AHC order
+          // Package must always be present, and at least one of lab or diagnostic vendor must be present
+          const hasLabVendor = !!bookingData.serviceDetails?.labVendorId;
+          const hasDiagnosticVendor = !!bookingData.serviceDetails?.diagnosticVendorId;
+
+          if (!bookingData.serviceDetails?.packageId) {
+            console.error('❌ [PaymentPage] Missing packageId');
+            throw new Error('Missing package information. Please try booking again.');
+          }
+
+          if (!hasLabVendor && !hasDiagnosticVendor) {
+            console.error('❌ [PaymentPage] Missing both lab and diagnostic vendor details:', {
+              hasPackageId: !!bookingData.serviceDetails?.packageId,
+              hasLabVendorId: hasLabVendor,
+              hasDiagnosticVendorId: hasDiagnosticVendor,
+            });
+            throw new Error('Missing vendor information. Please try booking again.');
+          }
+
+          console.log('✅ [PaymentPage] AHC order validation passed:', {
+            hasPackageId: true,
+            hasLabVendor,
+            hasDiagnosticVendor,
+          });
+
+          // Build AHC order payload matching CreateAhcOrderDto
+          // Note: Lab or Diagnostic portions may be undefined if package doesn't include them
+          const ahcOrderPayload = {
+            packageId: bookingData.serviceDetails.packageId,
+
+            // Lab portion (may be undefined if package has no lab tests)
+            labVendorId: bookingData.serviceDetails.labVendorId,
+            labSlotId: bookingData.serviceDetails.labSlotId,
+            labCollectionType: bookingData.serviceDetails.labCollectionType,
+            labCollectionAddress: bookingData.serviceDetails.labCollectionAddress,
+            labCollectionDate: bookingData.serviceDetails.labDate,
+            labCollectionTime: bookingData.serviceDetails.labTime,
+
+            // Diagnostic portion (may be undefined if package has no diagnostic tests)
+            diagnosticVendorId: bookingData.serviceDetails.diagnosticVendorId,
+            diagnosticSlotId: bookingData.serviceDetails.diagnosticSlotId,
+            diagnosticAppointmentDate: bookingData.serviceDetails.diagnosticDate,
+            diagnosticAppointmentTime: bookingData.serviceDetails.diagnosticTime,
+
+            paymentAlreadyProcessed: true  // Payment was already handled by PaymentProcessor
+          };
+
+          console.log('[PaymentPage] AHC order payload (lab-only, diagnostic-only, or both):', JSON.stringify(ahcOrderPayload, null, 2));
+
+          // Create the AHC order
+          const ahcOrderResponse = await fetch('/api/member/ahc/orders', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(ahcOrderPayload)
+          });
+
+          console.log('[PaymentPage] AHC order response status:', ahcOrderResponse.status);
+
+          if (!ahcOrderResponse.ok) {
+            const errorText = await ahcOrderResponse.text();
+            console.error('[PaymentPage] Failed to create AHC order:', {
+              status: ahcOrderResponse.status,
+              statusText: ahcOrderResponse.statusText,
+              errorBody: errorText
+            });
+
+            throw new Error(`Failed to create AHC order: ${ahcOrderResponse.status} - ${errorText}`);
+          } else {
+            const ahcOrderData = await ahcOrderResponse.json();
+            console.log('[PaymentPage] AHC order created successfully:', ahcOrderData);
+            console.log('✅ [PaymentPage] Order ID:', ahcOrderData.data?.orderId);
+          }
+        }
         // Complete the appointment creation if pending
         else if (bookingData.serviceType === 'APPOINTMENT' || bookingData.serviceType === 'ONLINE_CONSULTATION') {
           console.log('📅 [PaymentPage] Creating appointment with booking data...');
@@ -345,6 +428,11 @@ export default function PaymentPage() {
             console.log('✅ [PaymentPage] Appointment ID:', appointmentData.appointmentId);
           }
         }
+        else {
+          console.warn('⚠️ [PaymentPage] Unknown serviceType:', bookingData.serviceType);
+          console.warn('⚠️ [PaymentPage] No handler found for this service type');
+          console.warn('⚠️ [PaymentPage] Proceeding to mark payment as paid without order creation');
+        }
 
         // Transaction is created automatically by the appointments service
         // No need to create it manually here
@@ -352,6 +440,15 @@ export default function PaymentPage() {
         // Clear pending booking from session only after successful appointment creation
         console.log('🧹 [PaymentPage] Clearing pending booking from session storage');
         sessionStorage.removeItem('pendingBooking');
+
+        // Clear AHC-specific booking data
+        sessionStorage.removeItem('ahc_lab_booking');
+        sessionStorage.removeItem('ahc_diagnostic_booking');
+
+        // Clear payment-specific data
+        sessionStorage.removeItem(`payment_${paymentId}`);
+
+        console.log('✅ [PaymentPage] All booking and payment session data cleared');
       } else {
         console.warn('⚠️ [PaymentPage] No pending booking found in session storage');
         console.warn('⚠️ [PaymentPage] Payment will be marked as paid without creating appointment');

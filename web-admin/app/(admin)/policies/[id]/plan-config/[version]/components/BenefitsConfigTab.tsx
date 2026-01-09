@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -10,6 +10,7 @@ import { SpecialtySelector } from './SpecialtySelector';
 import { LabCategorySelector } from './LabCategorySelector';
 import { ServiceTypeSelector } from './ServiceTypeSelector';
 import { ServiceTransactionLimitsEditor } from './ServiceTransactionLimitsEditor';
+import { AhcPackageSelector } from './AhcPackageSelector';
 
 interface BenefitsConfigTabProps {
   categories: Category[];
@@ -40,6 +41,31 @@ export function BenefitsConfigTab({
 }: BenefitsConfigTabProps) {
   const isDisabled = isReadOnly || (selectedRelationship !== 'PRIMARY' && isInheriting);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [enabledServices, setEnabledServices] = useState<{[categoryId: string]: Set<string>}>({});
+
+  // Initialize enabled services from currentBenefits
+  useEffect(() => {
+    const initialEnabled: {[categoryId: string]: Set<string>} = {};
+    categories.forEach(category => {
+      const benefit = currentBenefits[category.categoryId];
+      if (benefit?.enabled) {
+        const services = new Set<string>();
+
+        // Add AHC if package is selected
+        if (category.categoryId === 'CAT008' && benefit.ahcPackageId) {
+          services.add('AHC');
+        }
+
+        // Add other service codes
+        if (benefit.allowedServiceCodes) {
+          benefit.allowedServiceCodes.forEach((code: string) => services.add(code));
+        }
+
+        initialEnabled[category.categoryId] = services;
+      }
+    });
+    setEnabledServices(initialEnabled);
+  }, [categories, currentBenefits]);
 
   const toggleRow = (categoryId: string) => {
     const newExpanded = new Set(expandedRows);
@@ -51,6 +77,33 @@ export function BenefitsConfigTab({
     setExpandedRows(newExpanded);
   };
 
+  const handleAhcToggle = (categoryId: string, enabled: boolean) => {
+    setEnabledServices(prev => {
+      const newState = { ...prev };
+      if (!newState[categoryId]) {
+        newState[categoryId] = new Set();
+      }
+
+      if (enabled) {
+        newState[categoryId].add('AHC');
+      } else {
+        newState[categoryId].delete('AHC');
+        // Clear AHC package selection when AHC is disabled
+        onUpdateBenefit(categoryId, 'ahcPackageId', null);
+      }
+
+      return newState;
+    });
+  };
+
+  const handleAhcPackageSelect = (categoryId: string, packageId: string | null) => {
+    onUpdateBenefit(categoryId, 'ahcPackageId', packageId);
+  };
+
+  const isAhcEnabled = (categoryId: string): boolean => {
+    return enabledServices[categoryId]?.has('AHC') || false;
+  };
+
   const getCategoryType = (categoryId: string): 'specialty' | 'lab' | 'service' | 'none' => {
     if (categoryId === 'CAT001' || categoryId === 'CAT005') return 'specialty';
     if (categoryId === 'CAT003' || categoryId === 'CAT004') return 'lab';
@@ -60,14 +113,21 @@ export function BenefitsConfigTab({
 
   const getServicesCount = (categoryId: string, benefit: any): number => {
     const type = getCategoryType(categoryId);
+    let count = 0;
+
     if (type === 'specialty') {
-      return benefit?.allowedSpecialties?.length || 0;
+      count = benefit?.allowedSpecialties?.length || 0;
     } else if (type === 'lab') {
-      return benefit?.allowedLabServiceCategories?.length || 0;
+      count = benefit?.allowedLabServiceCategories?.length || 0;
     } else if (type === 'service') {
-      return benefit?.allowedServiceCodes?.length || 0;
+      count = benefit?.allowedServiceCodes?.length || 0;
+      // Add AHC if package is selected
+      if (categoryId === 'CAT008' && benefit?.ahcPackageId) {
+        count += 1;
+      }
     }
-    return 0;
+
+    return count;
   };
 
   const handleServiceSelectionChange = (categoryId: string, selection: string[]) => {
@@ -121,6 +181,56 @@ export function BenefitsConfigTab({
         />
       );
     } else if (type === 'service') {
+      // Special handling for CAT008 (Wellness Programs)
+      if (categoryId === 'CAT008') {
+        return (
+          <>
+            {/* AHC Service Toggle */}
+            <div className="mb-4 bg-white p-4 rounded-lg border border-gray-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    Annual Health Check (AHC)
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Enable AHC to allow members to select from predefined health check packages
+                  </p>
+                </div>
+                <Switch
+                  checked={isAhcEnabled(categoryId)}
+                  onCheckedChange={(checked) => handleAhcToggle(categoryId, checked)}
+                  disabled={isDisabled || !benefit?.enabled}
+                />
+              </div>
+            </div>
+
+            {/* AHC Package Selector - Show when AHC is enabled */}
+            {isAhcEnabled(categoryId) && (
+              <div className="mb-4">
+                <AhcPackageSelector
+                  selectedPackageId={benefit?.ahcPackageId || null}
+                  onPackageSelect={(packageId) => handleAhcPackageSelect(categoryId, packageId)}
+                  disabled={isDisabled || !benefit?.enabled}
+                />
+              </div>
+            )}
+
+            {/* Other Service Types from service_master */}
+            <ServiceTypeSelector
+              categoryId={categoryId}
+              categoryName={categoryName}
+              policyId={policyId}
+              version={version}
+              selectedServiceCodes={benefit?.allowedServiceCodes || []}
+              onSelectionChange={(codes) => handleServiceSelectionChange(categoryId, codes)}
+              disabled={isDisabled || !benefit?.enabled}
+              isNew={isNew}
+            />
+          </>
+        );
+      }
+
+      // Default service type selector for other categories
       return (
         <ServiceTypeSelector
           categoryId={categoryId}

@@ -26,10 +26,10 @@ interface PaymentProcessorProps {
   userId: string;
   patientId: string;
   patientName: string;
-  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC';
-  bookingId?: string; // Optional booking ID for VISION, DENTAL, LAB, and DIAGNOSTIC service types
+  serviceType: 'APPOINTMENT' | 'ONLINE_CONSULTATION' | 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC';
+  bookingId?: string; // Optional booking ID for VISION, DENTAL, LAB, DIAGNOSTIC, and AHC service types
   serviceDetails: {
-    doctorName: string;
+    doctorName?: string;
     doctorId?: string;
     appointmentId?: string;
     date?: string;
@@ -39,6 +39,21 @@ interface PaymentProcessorProps {
     serviceCode?: string;
     serviceName?: string;
     slotId?: string;
+    // AHC-specific fields
+    packageId?: string;
+    packageName?: string;
+    labVendorId?: string;
+    labVendorName?: string;
+    labSlotId?: string;
+    labDate?: string;
+    labTime?: string;
+    labCollectionType?: string;
+    labCollectionAddress?: any;
+    diagnosticVendorId?: string;
+    diagnosticVendorName?: string;
+    diagnosticSlotId?: string;
+    diagnosticDate?: string;
+    diagnosticTime?: string;
   };
   onPaymentSuccess?: (transaction: any) => void;
   onPaymentFailure?: (error: string) => void;
@@ -123,7 +138,11 @@ export default function PaymentProcessor({
     try {
       const serviceName = serviceType === 'APPOINTMENT'
         ? `In-clinic consultation with ${serviceDetails.doctorName}`
-        : `Online consultation with ${serviceDetails.doctorName}`;
+        : serviceType === 'ONLINE_CONSULTATION'
+        ? `Online consultation with ${serviceDetails.doctorName}`
+        : serviceType === 'AHC'
+        ? `AHC Package: ${serviceDetails.packageName || 'Annual Health Check'}`
+        : serviceDetails.serviceName || `${serviceType} Service`;
 
       // Calculate actual user payment amount (includes excess amount if service limit applied)
       const actualUserPayment = serviceLimit?.totalMemberPayment ?? (serviceLimit && serviceLimit.wasLimitApplied
@@ -213,6 +232,8 @@ export default function PaymentProcessor({
             ? '/member/bookings?tab=lab'
             : serviceType === 'DIAGNOSTIC'
             ? '/member/bookings?tab=diagnostic'
+            : serviceType === 'AHC'
+            ? '/member/bookings?tab=ahc'
             : '/member/online-consult';
 
           router.push(`/member/payments/${payment.paymentId}?redirect=${redirectUrl}`);
@@ -268,6 +289,8 @@ export default function PaymentProcessor({
           ? '/member/bookings?tab=lab'
           : serviceType === 'DIAGNOSTIC'
           ? '/member/bookings?tab=diagnostic'
+          : serviceType === 'AHC'
+          ? '/member/bookings?tab=ahc'
           : '/member/online-consult';
 
         router.push(`/member/payments/${payment.paymentId}?redirect=${redirectUrl}`);

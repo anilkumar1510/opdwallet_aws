@@ -6,6 +6,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { InternalUser, InternalUserDocument } from '../internal-users/schemas/internal-user.schema';
+import { Address, AddressDocument } from '../users/schemas/address.schema';
 import { UserStatus } from '@/common/constants/status.enum';
 import { UserRole } from '@/common/constants/roles.enum';
 
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(InternalUser.name) private internalUserModel: Model<InternalUserDocument>,
+    @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
@@ -126,6 +128,50 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException();
     }
-    return user;
+
+    // Convert to plain object
+    const userObj = user.toObject();
+
+    // If user doesn't have an embedded address, try to fetch from addresses collection
+    if (!userObj.address || !userObj.address.pincode) {
+      console.log('[AUTH] User has no embedded address, fetching from addresses collection...');
+
+      // Try to find default address first
+      let address = await this.addressModel.findOne({
+        userId: user._id,
+        isDefault: true,
+      });
+
+      // If no default address, get any address
+      if (!address) {
+        console.log('[AUTH] No default address found, fetching any address...');
+        address = await this.addressModel.findOne({
+          userId: user._id,
+        });
+      }
+
+      if (address) {
+        console.log('[AUTH] Address found:', {
+          addressId: address.addressId,
+          pincode: address.pincode,
+          city: address.city,
+        });
+
+        // Add address to user object (map field names to match user schema)
+        userObj.address = {
+          line1: address.addressLine1,
+          line2: address.addressLine2,
+          city: address.city,
+          state: address.state,
+          pincode: address.pincode,
+        };
+      } else {
+        console.log('[AUTH] No address found in addresses collection');
+      }
+    } else {
+      console.log('[AUTH] User has embedded address with pincode:', userObj.address.pincode);
+    }
+
+    return userObj;
   }
 }

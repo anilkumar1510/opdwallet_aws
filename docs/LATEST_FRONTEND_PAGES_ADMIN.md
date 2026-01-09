@@ -90,13 +90,22 @@ This document lists all frontend pages/routes in the Admin Portal (web-admin) fo
 
 ---
 
-**Total Pages: 23**
+## AHC Packages (Annual Health Check)
+
+| Path | Description |
+|------|-------------|
+| /admin/ahc | Manage Annual Health Check packages with lab and diagnostic tests |
+
+---
+
+**Total Pages: 24**
 
 **Key Features:**
 - Core administrative functions: users, policies, masters
 - Policy configuration and assignment management
 - Lab service and vendor administration
 - Diagnostics service and vendor administration
+- AHC (Annual Health Check) package management
 - Category and CUG management
 - Master test catalogs for both lab and diagnostics
 - Comprehensive admin dashboard

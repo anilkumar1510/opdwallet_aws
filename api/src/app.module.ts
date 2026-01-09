@@ -35,6 +35,7 @@ import { OperationsModule } from './modules/operations/operations.module';
 import { VideoConsultationModule } from './modules/video-consultation/video-consultation.module';
 import { PaymentModule } from './modules/payments/payment.module';
 import { TransactionSummaryModule } from './modules/transactions/transaction-summary.module';
+import { AhcModule } from './modules/ahc/ahc.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -106,6 +107,7 @@ import configuration from './config/configuration';
     VideoConsultationModule,
     PaymentModule,
     TransactionSummaryModule,
+    AhcModule,
   ],
 })
 export class AppModule {}

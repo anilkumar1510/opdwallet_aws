@@ -13,12 +13,14 @@ import {
   SparklesIcon,
   EyeIcon,
   DocumentArrowDownIcon,
-  HeartIcon
+  HeartIcon,
+  ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
 import { useFamily } from '@/contexts/FamilyContext'
 import InvoiceModal from '@/components/dental/InvoiceModal'
+import { AHCOrderCard } from '@/components/ahc/AHCOrderCard'
 
 interface Appointment {
   _id: string
@@ -139,6 +141,7 @@ export default function BookingsPage() {
   const [diagnosticCarts, setDiagnosticCarts] = useState<any[]>([])
   const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([])
   const [diagnosticPrescriptions, setDiagnosticPrescriptions] = useState<any[]>([])
+  const [ahcOrders, setAhcOrders] = useState<any[]>([])
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<DentalBooking | null>(null)
   const [showReportModal, setShowReportModal] = useState(false)
@@ -163,6 +166,7 @@ export default function BookingsPage() {
     fetchDiagnosticCarts()
     fetchDiagnosticOrders()
     fetchDiagnosticPrescriptions()
+    fetchAhcOrders()
   }, [viewingUserId])
 
   const fetchAppointments = async () => {
@@ -532,6 +536,42 @@ export default function BookingsPage() {
     }
   }
 
+  const fetchAhcOrders = async () => {
+    try {
+      console.log('[AHC] Fetching user data')
+      const userResponse = await fetch('/api/auth/me', {
+        credentials: 'include',
+      })
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user data')
+      }
+
+      const userData = await userResponse.json()
+
+      // PRIVACY: Use viewingUserId to fetch AHC orders for the active profile
+      const targetUserId = viewingUserId || userData._id
+      console.log('[AHC] Fetching AHC orders for profile:', { targetUserId, viewingUserId })
+
+      const response = await fetch(`/api/member/ahc/orders?userId=${targetUserId}`, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.log('[AHC] No AHC orders found or error fetching')
+        setAhcOrders([])
+        return
+      }
+
+      const data = await response.json()
+      console.log('[AHC] AHC orders received:', data)
+      setAhcOrders(data.data || [])
+    } catch (error) {
+      console.error('[AHC] Error fetching AHC orders:', error)
+      setAhcOrders([])
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const day = date.getDate()
@@ -867,6 +907,20 @@ export default function BookingsPage() {
             <div className="flex items-center gap-1.5 lg:gap-2">
               <EyeIcon className="h-4 w-4 lg:h-5 lg:w-5" />
               <span>Vision</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('ahc')}
+            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+              activeTab === 'ahc'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
+            }`}
+            style={activeTab === 'ahc' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
+          >
+            <div className="flex items-center gap-1.5 lg:gap-2">
+              <ClipboardDocumentCheckIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+              <span>AHC</span>
             </div>
           </button>
         </nav>
@@ -2236,6 +2290,49 @@ export default function BookingsPage() {
                     ))}
                   </>
                 )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* AHC Tab */}
+        {activeTab === 'ahc' && (
+          <div className="space-y-4">
+            {ahcOrders.length === 0 ? (
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #E8F5E9 66.63%, #E8F5E9 108.92%)',
+                borderColor: '#90EAA9'
+              }}>
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(144, 234, 169, 0.75) 4.4%, rgba(95, 161, 113, 0.75) 91.97%)',
+                    border: '1px solid rgba(144, 234, 169, 0.48)',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
+                  <ClipboardDocumentCheckIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#5FA171' }} />
+                </div>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No AHC orders yet</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">Book your annual health check to get started</p>
+                <button
+                  onClick={() => router.push('/member/wellness')}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)' }}
+                >
+                  Book AHC Package
+                </button>
+              </div>
+            ) : (
+              <>
+                {ahcOrders.map((order) => (
+                  <AHCOrderCard
+                    key={order._id}
+                    order={order}
+                    onViewLabReport={(reportPath, orderId) => handleViewReport(reportPath, orderId)}
+                    onViewDiagnosticReport={(reportPath, orderId) => handleViewReport(reportPath, orderId)}
+                  />
+                ))}
               </>
             )}
           </div>

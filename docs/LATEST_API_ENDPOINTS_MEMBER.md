@@ -388,4 +388,73 @@ CONFIRMED → NO_SHOW
 
 ---
 
-**Total Endpoints: ~97**
+## AHC (Annual Health Check) - Member
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /member/ahc/package | Get AHC package assigned to member's policy |
+| GET | /member/ahc/eligibility | Check if member can book AHC this policy year (once-per-year validation) |
+| GET | /member/ahc/vendors/lab | Get eligible lab vendors for AHC package (by pincode) |
+| GET | /member/ahc/vendors/diagnostic | Get eligible diagnostic vendors for AHC package (by pincode) |
+| POST | /member/ahc/orders/validate | Validate AHC order and calculate payment breakdown (uses global copay, no service limits) |
+| POST | /member/ahc/orders | Create AHC order after payment success (supports lab-only, diagnostic-only, or both) |
+| GET | /member/ahc/orders | Get member's AHC orders (supports viewingUserId for family members) |
+| GET | /member/ahc/orders/:orderId | Get specific AHC order details |
+| GET | /member/ahc/reports/:orderId/lab | Download lab report (if uploaded) |
+| GET | /member/ahc/reports/:orderId/diagnostic | Download diagnostic report (if uploaded) |
+
+**AHC Booking Flow:**
+1. Get AHC package assigned to member's policy
+2. Check eligibility (once-per-year booking limit per policy year)
+3. **If package has lab tests:**
+   - Get eligible lab vendors by pincode
+   - Select vendor, collection type (home/center), slot
+4. **If package has diagnostic tests:**
+   - Get eligible diagnostic vendors by pincode
+   - Select vendor and slot (always center visit)
+5. Validate order to get payment breakdown
+6. Process payment using PaymentProcessor
+7. Create AHC order (debits wallet, creates transaction)
+8. View orders and download reports when uploaded
+
+**Payment Calculation:**
+- Uses **global policy copay** (NOT category-specific copay)
+- **NO service transaction limits** applied to AHC
+- Payment breakdown: Total amount - Wallet deduction = Copay (member pays)
+- Wallet debit category: `CAT008` (Wellness)
+
+**Order Status Flow:**
+```
+PLACED (pending collection)
+  ↓
+CONFIRMED (collection complete)
+  ↓
+COMPLETED (all reports uploaded)
+
+OR → CANCELLED (can cancel before collection)
+```
+
+**Package Types Supported:**
+- Lab-only packages (no diagnostic tests)
+- Diagnostic-only packages (no lab tests)
+- Full packages (both lab and diagnostic tests)
+
+**Key Features:**
+- Once-per-policy-year booking limit enforced
+- Direct vendor selection (no cart creation)
+- Home collection available for lab tests
+- Diagnostic tests always center visit
+- Dual report upload (lab and diagnostic in single request)
+- Reports downloadable from member portal
+- Transaction history tracked with `AHC_ORDER` service type
+
+**Notes:**
+- Eligibility checked based on policy year (calculated from assignment effectiveFrom)
+- Vendors must support ALL services in the package to be eligible
+- Payment processed before order creation (paymentAlreadyProcessed flag)
+- Slots booked only if vendor and booking data provided
+- Reports stored in `./uploads/ahc-reports/lab/` and `./uploads/ahc-reports/diagnostic/`
+
+---
+
+**Total Endpoints: ~107**

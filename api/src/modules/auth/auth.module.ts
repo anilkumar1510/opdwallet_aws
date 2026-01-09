@@ -9,6 +9,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { InternalUser, InternalUserSchema } from '../internal-users/schemas/internal-user.schema';
+import { Address, AddressSchema } from '../users/schemas/address.schema';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { InternalUser, InternalUserSchema } from '../internal-users/schemas/inte
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: InternalUser.name, schema: InternalUserSchema },
+      { name: Address.name, schema: AddressSchema },
     ]),
   ],
   controllers: [AuthController],

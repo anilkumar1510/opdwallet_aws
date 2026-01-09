@@ -116,6 +116,7 @@ export class PlanConfig {
       serviceTransactionLimits?: { [serviceId: string]: number }; // Per-service transaction limits (service code -> limit amount)
       notes?: string;
       allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
+      ahcPackageId?: string; // AHC Package ID reference
     };
   };
 
@@ -235,6 +236,7 @@ export class PlanConfig {
           serviceTransactionLimits?: { [serviceId: string]: number }; // Per-service transaction limits
           notes?: string;
           allowedServiceCodes?: string[]; // Service-level filtering
+          ahcPackageId?: string; // AHC Package ID reference
         };
       };
       wallet?: {

@@ -282,6 +282,65 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
+## AHC (Annual Health Check) - Operations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /ops/ahc/orders | Get all AHC orders with optional status filter |
+| GET | /ops/ahc/orders/:orderId | Get specific AHC order details |
+| PATCH | /ops/ahc/orders/:orderId/complete-collection | Mark collection complete (PLACED → CONFIRMED) |
+| POST | /ops/ahc/orders/:orderId/reports/upload | Upload lab and/or diagnostic reports (dual upload in single request) |
+| POST | /ops/ahc/orders/:orderId/reports/upload-lab | Upload only lab report (alternative endpoint) |
+| POST | /ops/ahc/orders/:orderId/reports/upload-diagnostic | Upload only diagnostic report (alternative endpoint) |
+| POST | /ops/ahc/orders/:orderId/cancel | Cancel AHC order with reason |
+| PATCH | /ops/ahc/orders/:orderId/status | Update order status (manual override) |
+
+**AHC Operations Flow:**
+1. View all AHC orders in operations portal (AHC tab)
+2. Filter orders by status (PLACED, CONFIRMED, COMPLETED, CANCELLED)
+3. Mark collection as complete when lab/diagnostic tests collected
+4. Upload reports (lab and diagnostic can be uploaded together or separately)
+5. Order automatically moves to COMPLETED when all required reports uploaded
+
+**Report Upload:**
+- **Dual upload endpoint:** `/ops/ahc/orders/:orderId/reports/upload`
+  - Accepts both `labReport` and `diagnosticReport` in single request
+  - At least one file must be provided
+  - Both files optional in single request
+- **Alternative endpoints:**
+  - `/ops/ahc/orders/:orderId/reports/upload-lab` - Only lab report
+  - `/ops/ahc/orders/:orderId/reports/upload-diagnostic` - Only diagnostic report
+- **File types:** PDF, JPG, JPEG, PNG
+- **Max size:** 10MB per file
+- **Storage:** `./uploads/ahc-reports/lab/` and `./uploads/ahc-reports/diagnostic/`
+
+**Order Status:**
+- `PLACED` - Order created, pending collection
+- `CONFIRMED` - Collection complete, awaiting reports
+- `LAB_COMPLETED` - Lab report uploaded (if package has lab tests)
+- `DIAGNOSTIC_COMPLETED` - Diagnostic report uploaded (if package has diagnostic tests)
+- `COMPLETED` - All required reports uploaded
+- `CANCELLED` - Order cancelled
+
+**UI Features:**
+- AHC tab in orders page with status filters
+- Patient name, package name, vendor names displayed
+- "Mark collection complete" button for PLACED orders
+- Dual report upload modal for CONFIRMED orders
+- Conditional upload fields based on package contents
+- Report download for viewing uploaded reports
+- Cancel order with reason (before collection)
+
+**Key Notes:**
+- Orders displayed with lab and diagnostic vendor names
+- Single modal for uploading both reports (not separate modals)
+- Upload button only visible after collection marked complete
+- Order auto-completes when all required reports uploaded
+- Supports lab-only, diagnostic-only, or full packages
+- Report metadata includes fileName, originalName, filePath, uploadedAt, uploadedBy
+
+---
+
 ## Health Check
 
 | Method | Endpoint | Description |
@@ -290,7 +349,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
-**Total Endpoints: ~104**
+**Total Endpoints: ~112**
 
 **Access Control:**
 - Login page validates OPS role only

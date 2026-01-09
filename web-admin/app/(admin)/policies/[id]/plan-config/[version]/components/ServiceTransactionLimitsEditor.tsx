@@ -70,7 +70,13 @@ export function ServiceTransactionLimitsEditor({
           selectedServiceIds.includes(service.code) ||
           (service.category && selectedServiceIds.includes(service.category))
         );
-        setServices(filtered);
+
+        // EXCLUDE 'AHC' from transaction limits - it's a special service type
+        const filteredWithoutAhc = filtered.filter((service: Service) =>
+          service.code !== 'AHC' && service.name !== 'AHC'
+        );
+
+        setServices(filteredWithoutAhc);
       } else {
         toast.error('Failed to fetch services');
       }
@@ -152,6 +158,7 @@ export function ServiceTransactionLimitsEditor({
           <InformationCircleIcon className="h-5 w-5 text-yellow-600 mr-2 mt-0.5" />
           <div className="text-sm text-yellow-800">
             <strong>No services selected.</strong> Please select services above to configure transaction limits.
+            {categoryType === 'service' && ' (Note: AHC does not require transaction limits)'}
           </div>
         </div>
       </div>

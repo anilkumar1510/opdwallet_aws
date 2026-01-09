@@ -26,6 +26,7 @@ function AdminLayoutContent({
     if (pathname.startsWith('/lab') || pathname.startsWith('/admin/lab')) return 'Lab Diagnostics'
     if (pathname.startsWith('/diagnostics') || pathname.startsWith('/admin/diagnostics')) return 'Diagnostics'
     if (pathname.startsWith('/cugs') || pathname.startsWith('/admin/cugs')) return 'CUG Management'
+    if (pathname.startsWith('/ahc') || pathname.startsWith('/admin/ahc')) return 'AHC Master'
     if (pathname.startsWith('/masters') || pathname.startsWith('/admin/masters')) return 'Masters'
     return 'Admin'
   }
@@ -70,6 +71,11 @@ function AdminLayoutContent({
       name: 'CUGs',
       path: '/cugs',
       current: pathname.startsWith('/cugs') || pathname.startsWith('/admin/cugs')
+    },
+    {
+      name: 'AHC Master',
+      path: '/ahc',
+      current: pathname.startsWith('/ahc') || pathname.startsWith('/admin/ahc')
     },
     {
       name: 'Masters',
