@@ -123,6 +123,8 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | POST | /member/lab/orders | Create order with payment processing (supports wallet debit and transaction creation) |
 | GET | /member/lab/orders | Get user orders |
 | GET | /member/lab/orders/:orderId | Get order details |
+| GET | /member/lab/carts/active | Get active carts for user |
+| POST | /member/lab/orders/validate | Validate order and get payment breakdown |
 
 ---
 
@@ -143,6 +145,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /member/diagnostics/orders/:id | Get diagnostic order details |
 | POST | /member/diagnostics/orders/:id/cancel | Cancel diagnostic order |
 | GET | /member/diagnostics/orders/:id/reports | Get diagnostic order reports |
+| POST | /member/diagnostics/orders/validate | Validate diagnostic order and get payment breakdown |
 
 ---
 
@@ -163,6 +166,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /member/digital-prescriptions | Get member's digital prescriptions (filters out prescriptions already used for lab bookings) |
 | GET | /member/digital-prescriptions/:prescriptionId | Get digital prescription details |
 | GET | /member/digital-prescriptions/:prescriptionId/download-pdf | Download prescription PDF |
+| GET | /member/digital-prescriptions/:prescriptionId/signature | Get prescription doctor signature |
 
 ---
 
@@ -182,7 +186,10 @@ This document lists all API endpoints used by the Member Portal (web-member).
 |--------|----------|-------------|
 | GET | /payments | Get user payment history with filters |
 | GET | /payments/:paymentId | Get payment details by ID |
+| GET | /payments/summary/stats | Get payment summary statistics |
 | POST | /payments | Create new payment request |
+| POST | /payments/:paymentId/mark-paid | Mark payment as paid |
+| POST | /payments/:paymentId/cancel | Cancel a payment |
 
 ---
 
@@ -204,6 +211,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /notifications/unread-count | Get unread notification count |
 | PATCH | /notifications/:id/read | Mark notification as read |
 | PATCH | /notifications/mark-all-read | Mark all notifications as read |
+| DELETE | /notifications/:id | Delete notification |
 
 ---
 

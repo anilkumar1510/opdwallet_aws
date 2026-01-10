@@ -134,7 +134,7 @@ When starting a new Claude Code session, you'll see prominent warning banners an
 - ShadcN UI Components
 
 **Backend:**
-- Node.js + Express
+- NestJS (Node.js framework)
 - MongoDB (Database)
 - AWS Secrets Manager (Credentials)
 - Daily.co (Video Consultations)
@@ -147,14 +147,16 @@ When starting a new Claude Code session, you'll see prominent warning banners an
 ### Project Structure
 
 ```
-opdwallet_aws/
-├── api/                    # Backend API server (Node.js + Express)
+opdwallet/
+├── api/                    # Backend API server (NestJS)
 ├── web-member/             # Member Portal (Next.js)
 ├── web-admin/              # Admin Portal (Next.js)
 ├── web-doctor/             # Doctor Portal (Next.js)
 ├── web-tpa/                # TPA Portal (Next.js)
 ├── web-operations/         # Operations Portal (Next.js)
 ├── web-finance/            # Finance Portal (Next.js)
+├── scripts/                # Deployment and setup scripts
+├── nginx/                  # Nginx configuration files
 └── docs/                   # Documentation (you are here!)
 ```
 

@@ -78,17 +78,40 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **video_consultations** - Video consultation sessions with join URLs and status tracking
 - **doctor_prescriptions** - Prescriptions uploaded by doctors after consultations
 
-### Lab Diagnostics
-- **lab_services** - Catalog of all available lab tests with base pricing
-- **lab_vendors** - Lab service providers with locations and contact details
+### Lab Services
+- **lab_services** - Catalog of all available lab tests (category: PATHOLOGY, RADIOLOGY, CARDIOLOGY, ENDOSCOPY, OTHER)
+- **lab_vendors** - Lab service providers with locations, contact details, and serviceable pincodes
 - **lab_vendor_pricing** - Vendor-specific pricing for each lab test
 - **lab_vendor_slots** - Vendor availability schedules for sample collection
 - **lab_prescriptions** - Prescriptions uploaded by members for lab test ordering
 - **lab_carts** - Shopping carts containing lab tests to be ordered
 - **lab_orders** - Lab test orders with vendor assignment and collection slot
+- **master_test_parameters** - Master catalog of lab test parameters for standardization
+- **test_name_aliases** - Vendor-specific test name aliases for standardization
+
+### Diagnostic Services
+- **diagnostic_services** - Catalog of diagnostic services (radiology, endoscopy, etc.)
+- **diagnostic_vendors** - Diagnostic center providers with locations and pincodes
+- **diagnostic_vendor_pricing** - Vendor-specific diagnostic service pricing
+- **diagnostic_vendor_slots** - Diagnostic center appointment slots
+- **diagnostic_prescriptions** - Prescriptions for diagnostic services
+- **diagnostic_carts** - Shopping carts for diagnostic services
+- **diagnostic_orders** - Orders placed for diagnostic services
+- **diagnostic_master_tests** - Master catalog of diagnostic tests/parameters
+
+### Dental & Vision Services
+- **dental_bookings** - Dental service appointments with pricing and payment tracking
+- **dental_service_slots** - Dental clinic availability slots for appointment scheduling
+- **vision_bookings** - Vision care service appointments
+- **vision_service_slots** - Vision clinic availability slots for appointment scheduling
+- **clinic_service_pricing** - Service pricing configuration for dental/vision clinics by service code
+
+### Annual Health Check (AHC)
+- **ahc_packages** - AHC package definitions with lab and diagnostic test combinations
+- **ahc_orders** - Orders for AHC packages with dual vendor support (lab + diagnostic)
 
 ### Claims & Reimbursements
-- **memberclaims** - Reimbursement claims submitted by members with documents and processing status
+- **memberclaims** - Reimbursement claims with TPA workflow, document management, and payment tracking
 
 ### Master Data
 - **service_master** - Service types catalog like general consultation, specialist consultation
@@ -97,10 +120,19 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **cug_master** - Corporate User Group definitions for companies
 
 ### Digital Prescription System
-- **digital_prescriptions** - Digital prescriptions created by doctors with structured medicine, lab test, diagnosis, and symptom data
+- **digitalprescriptions** - Digital prescriptions with vitals, allergies, medicines, lab tests, diagnoses, and doctor signature
 - **medicine_database** - Comprehensive Indian medicine database (15,000+ medicines) with generic names, brand names, and compositions
 - **diagnosis_database** - Diagnosis database with ICD-10 codes and categories (500+ diagnoses) for autocomplete
 - **symptom_database** - Symptoms database categorized by body systems (200+ symptoms) for prescription writing
+- **prescription_templates** - Reusable prescription templates for doctors
+- **consultation_notes** - Clinical notes created during/after consultations
+
+### Doctor Calendar Management
+- **doctor_unavailabilities** - Doctor vacation/leave periods for blocking appointment slots
+
+### Category Mappings
+- **category_specialty_mapping** - Maps service categories to medical specialties
+- **category_lab_service_mapping** - Maps service categories to lab services
 
 ### User Addresses
 - **addresses** - User address management with default address support
@@ -111,9 +143,9 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **counters** - Auto-increment counters for generating sequential IDs
 
 ### Migration & Backup
-- **users_backup_pre_segregation** - Backup of users collection before user segregation migration (contains original 12 users including both members and internal users)
+- **users_backup_pre_segregation** - Backup of users collection before user segregation migration
 
-**Total Collections**: 36 (plus 1 backup collection)
+**Total Collections**: 56 (plus 1 backup collection)
 
 ---
 

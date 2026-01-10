@@ -136,13 +136,38 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 ---
 
+## Dental Services
+
+| Path | Description |
+|------|-------------|
+| /member/dental | Dental services landing with service selection |
+| /member/dental/clinics | Browse clinics offering dental services |
+| /member/dental/select-patient | Select family member for dental appointment |
+| /member/dental/select-slot | Select date and time slot for dental service |
+| /member/dental/confirm | Review and confirm dental booking with payment |
+
+---
+
+## Vision Services
+
+| Path | Description |
+|------|-------------|
+| /member/vision | Vision care services landing |
+| /member/vision/clinics | Browse clinics offering vision services |
+| /member/vision/select-patient | Select family member for vision appointment |
+| /member/vision/select-slot | Select date and time slot for vision service |
+| /member/vision/confirm | Review and confirm vision booking |
+| /member/vision/payment/[bookingId] | Complete payment for vision booking |
+
+---
+
 ## Health & Wellness
 
 | Path | Description |
 |------|-------------|
 | /member/wellness | Wellness services page with AHC package display and booking |
-| /member/dental | Dental care services (coming soon) |
-| /member/vision | Eye care and vision services (coming soon) |
+| /member/health-checkup | Health checkup services and preventive care |
+| /member/helpline | 24/7 helpline and support services |
 | /member/pharmacy | Medicine ordering service (coming soon) |
 
 ---
@@ -249,7 +274,7 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 ---
 
-**Total Pages: ~52**
+**Total Pages: 62**
 
 **Recent Updates:**
 - Added AHC (Annual Health Check) booking flow with 3 pages

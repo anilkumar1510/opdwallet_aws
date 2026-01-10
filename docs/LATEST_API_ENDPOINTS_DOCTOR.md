@@ -73,7 +73,7 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /doctor/health-records/:patientId | Get patient's complete health records (allergies, chronic conditions, medications, prescriptions, consultation history) |
+| GET | /doctor/appointments/patients/:patientId/health-records | Get patient's complete health records (allergies, chronic conditions, medications, prescriptions, consultation history) |
 
 ---
 
@@ -81,11 +81,14 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /doctor/unavailability | Create unavailability period |
-| GET | /doctor/unavailability | Get all unavailability periods |
-| GET | /doctor/unavailability/:unavailabilityId | Get unavailability details |
-| PATCH | /doctor/unavailability/:unavailabilityId | Update unavailability period |
-| DELETE | /doctor/unavailability/:unavailabilityId | Delete unavailability period |
+| POST | /doctor/calendar/unavailability | Create unavailability period |
+| GET | /doctor/calendar/unavailability | Get all unavailability periods |
+| GET | /doctor/calendar/unavailability/upcoming | Get upcoming unavailability periods |
+| GET | /doctor/calendar/unavailability/:unavailabilityId | Get unavailability details |
+| PATCH | /doctor/calendar/unavailability/:unavailabilityId | Update unavailability period |
+| DELETE | /doctor/calendar/unavailability/:unavailabilityId | Delete unavailability period |
+| GET | /doctor/calendar/unavailable-dates | Get unavailable dates for a date range |
+| GET | /doctor/calendar/check-availability | Check doctor availability for specific date/time |
 
 ---
 
