@@ -144,7 +144,7 @@ All services communicate through an internal Docker network. Only Nginx is expos
 
 ### Docker Containers
 
-**Production containers** (defined in docker-compose.production.yml):
+**Production containers** (defined in docker-compose.prod.yml):
 
 1. **opd-nginx-prod** - Nginx reverse proxy
    - Ports: 80 (HTTP), 443 (HTTPS)
@@ -260,17 +260,17 @@ All services communicate through an internal Docker network. Only Nginx is expos
 
 **Start all services**:
 ```bash
-docker-compose -f docker-compose.production.yml up -d
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 **Stop all services**:
 ```bash
-docker-compose -f docker-compose.production.yml down
+docker-compose -f docker-compose.prod.yml down
 ```
 
 **View logs**:
 ```bash
-docker-compose -f docker-compose.production.yml logs -f [container_name]
+docker-compose -f docker-compose.prod.yml logs -f [container_name]
 ```
 
 **Restart specific service**:
