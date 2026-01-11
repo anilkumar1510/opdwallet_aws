@@ -35,13 +35,10 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 | PUT | /members/:id | Update member |
 | DELETE | /members/:id | Delete member |
 | POST | /members/:id/reset-password | Reset member password |
-| POST | /members/:id/set-password | Set member password |
 | GET | /members/:id/dependents | Get member dependents (family members) |
 | GET | /members/:id/assignments | Get member policy assignments |
-| GET | /members/:id/addresses | Get member addresses |
-| POST | /members/:id/addresses | Create member address |
-| PATCH | /members/:id/addresses/:addressId/default | Set default address |
-| DELETE | /members/:id/addresses/:addressId | Delete address |
+
+**Note:** Member address management is done via `/users/:id/addresses` endpoints (see Unified Users section below).
 
 ### Internal Users (Staff)
 
@@ -51,8 +48,8 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 | GET | /internal-users | Get all internal users with pagination/filters |
 | GET | /internal-users/:id | Get internal user by ID |
 | PUT | /internal-users/:id | Update internal user |
+| DELETE | /internal-users/:id | Delete internal user |
 | POST | /internal-users/:id/reset-password | Reset internal user password |
-| POST | /internal-users/:id/set-password | Set internal user password |
 
 ### Unified Users (Deprecated - for backward compatibility)
 

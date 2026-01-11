@@ -98,7 +98,7 @@ This document lists all frontend pages/routes in the Admin Portal (web-admin) fo
 
 ---
 
-**Total Pages: 29**
+**Total Pages: 30**
 
 **Key Features:**
 - Core administrative functions: users, policies, masters

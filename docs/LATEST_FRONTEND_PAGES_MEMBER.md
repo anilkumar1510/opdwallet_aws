@@ -275,7 +275,7 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 ---
 
-**Total Pages: 63**
+**Total Pages: 64**
 
 **Recent Updates:**
 - Added AHC (Annual Health Check) booking flow with 3 pages
