@@ -34,11 +34,14 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /appointments | Create new appointment |
+| POST | /appointments/validate-booking | Pre-validate appointment booking |
 | GET | /appointments | Get all appointments with filters (admin) |
 | GET | /appointments/user/:userId | Get appointments for specific user |
+| GET | /appointments/user/:userId/ongoing | Get ongoing appointments for user |
 | GET | /appointments/:appointmentId | Get appointment details |
 | PATCH | /appointments/:appointmentId/confirm | Confirm appointment |
-| PATCH | /appointments/:appointmentId/cancel | Cancel appointment |
+| PATCH | /appointments/:appointmentId/cancel | Cancel appointment (admin) |
+| PATCH | /appointments/:appointmentId/user-cancel | User-initiated cancellation with refund |
 
 ---
 
@@ -211,9 +214,11 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | GET | /admin/vision-bookings | List all vision bookings with filters (status, clinic, service, date range, search) |
 | PATCH | /admin/vision-bookings/:bookingId/confirm | Confirm pending vision booking |
 | PATCH | /admin/vision-bookings/:bookingId/generate-bill | Generate bill for confirmed booking (admin sets service price) |
+| PATCH | /admin/vision-bookings/:bookingId/reschedule | Reschedule vision booking to different slot |
 | PATCH | /admin/vision-bookings/:bookingId/admin-cancel | Cancel booking with reason (admin action) |
 | PATCH | /admin/vision-bookings/:bookingId/no-show | Mark booking as no-show (appointment time must have passed) |
 | PATCH | /admin/vision-bookings/:bookingId/complete | Mark booking as completed |
+| GET | /admin/vision-bookings/:bookingId/invoice | Download invoice PDF for completed booking |
 
 **Query Parameters for GET /admin/vision-bookings:**
 - `status`: Filter by booking status (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW)

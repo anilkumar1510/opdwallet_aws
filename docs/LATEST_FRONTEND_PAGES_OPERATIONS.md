@@ -66,8 +66,7 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 | Path | Description |
 |------|-------------|
-| /operations/dental-services | Manage dental services at clinic level with pricing configuration |
-| /operations/dental-services/[clinicId] | Configure dental services and pricing for specific clinic |
+| /operations/dental-services | Manage dental services at clinic level with pricing configuration (clinic details accessed via modals/drawers, not separate routes) |
 
 ---
 
@@ -75,8 +74,7 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 | Path | Description |
 |------|-------------|
-| /operations/vision-services | Manage vision services at clinic level (no pricing) |
-| /operations/vision-services/[clinicId] | Configure vision services for specific clinic |
+| /operations/vision-services | Manage vision services at clinic level - no pricing (clinic details accessed via modals/drawers, not separate routes) |
 
 ---
 
@@ -137,7 +135,7 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 ---
 
-**Total Pages: 17**
+**Total Pages: 15**
 
 **Key Features:**
 - Independent authentication with `/operations` cookie path

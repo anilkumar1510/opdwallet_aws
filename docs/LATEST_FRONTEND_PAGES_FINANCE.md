@@ -28,8 +28,8 @@ This document lists all frontend pages/routes in the Finance Portal (web-finance
 
 | Path | Description |
 |------|-------------|
-| /finance/pending-payments | List approved claims awaiting payment processing |
-| /finance/payment-history | View completed payment history with filters |
+| /finance/payments/pending | List approved claims awaiting payment processing |
+| /finance/payments/history | View completed payment history with filters |
 
 ---
 

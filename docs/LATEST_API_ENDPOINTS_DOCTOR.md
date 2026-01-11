@@ -13,6 +13,7 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 | GET | /auth/doctor/profile | Get doctor profile |
 | PATCH | /auth/doctor/profile | Update doctor profile |
 | POST | /auth/doctor/profile/signature | Upload doctor signature (PNG/JPG, max 500KB) |
+| GET | /auth/doctor/profile/signature | Get doctor signature image (returns image file) |
 | GET | /auth/doctor/profile/signature/status | Get signature upload status |
 | DELETE | /auth/doctor/profile/signature | Delete uploaded signature |
 
@@ -41,6 +42,7 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 | GET | /doctor/digital-prescriptions | Get doctor's digital prescriptions |
 | GET | /doctor/digital-prescriptions/:prescriptionId | Get prescription details |
 | POST | /doctor/digital-prescriptions/:prescriptionId/generate-pdf | Generate prescription PDF |
+| GET | /doctor/digital-prescriptions/:prescriptionId/signature | Get prescription's stored doctor signature |
 | GET | /doctor/digital-prescriptions/:prescriptionId/download-pdf | Download prescription PDF |
 | DELETE | /doctor/digital-prescriptions/:prescriptionId | Delete prescription |
 

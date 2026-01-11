@@ -64,8 +64,8 @@ All services communicate through an internal Docker network. Only Nginx is expos
 ### Wallet & Financial
 - **user_wallets** - Member wallet balances organized by service categories (consultation, pharmacy, diagnostics)
 - **wallet_transactions** - Complete history of all wallet debits and credits with category tracking
-- **payments** - Payment records for appointments and services with transaction IDs
-- **transaction_summary** - Summary records of transactions for reporting
+- **payments** - Payment records for appointments and services with transaction IDs (Note: schema has no explicit collection name, uses mongoose default)
+- **transactionsummaries** - Summary records of transactions for reporting (Note: mongoose pluralizes TransactionSummary to transactionsummaries)
 
 ### Healthcare Providers
 - **doctors** - Doctor profiles with specialties, qualifications, and contact information
@@ -75,8 +75,8 @@ All services communicate through an internal Docker network. Only Nginx is expos
 
 ### Appointments & Consultations
 - **appointments** - All appointment bookings for both in-clinic visits and online consultations
-- **video_consultations** - Video consultation sessions with join URLs and status tracking
-- **doctor_prescriptions** - Prescriptions uploaded by doctors after consultations
+- **videoconsultations** - Video consultation sessions with join URLs and status tracking (Note: mongoose default naming)
+- **doctorprescriptions** - Prescriptions uploaded by doctors after consultations (Note: mongoose default naming)
 
 ### Lab Services
 - **lab_services** - Catalog of all available lab tests (category: PATHOLOGY, RADIOLOGY, CARDIOLOGY, ENDOSCOPY, OTHER)

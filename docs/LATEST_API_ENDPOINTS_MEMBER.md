@@ -138,6 +138,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /member/diagnostics/prescriptions/:id | Get diagnostic prescription details |
 | GET | /member/diagnostics/carts | Get diagnostic carts for user |
 | GET | /member/diagnostics/carts/:cartId | Get diagnostic cart by ID |
+| GET | /member/diagnostics/carts/:cartId/vendors | Get eligible vendors for cart items |
 | GET | /member/diagnostics/carts/:cartId/vendors/:vendorId/pricing | Get vendor pricing for cart items |
 | GET | /member/diagnostics/vendors/:vendorId/slots | Get available slots for diagnostic vendor |
 | POST | /member/diagnostics/orders | Create diagnostic order |
