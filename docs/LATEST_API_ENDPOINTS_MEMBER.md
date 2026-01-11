@@ -314,6 +314,8 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | GET | /vision-bookings/:bookingId | Get single vision booking details |
 | GET | /vision-bookings/:bookingId/invoice | Download invoice for completed booking |
 | PUT | /vision-bookings/:bookingId/cancel | Cancel vision booking |
+| PATCH | /vision-bookings/:bookingId/store-breakdown | Store payment breakdown before PaymentProcessor |
+| POST | /vision-bookings/:bookingId/complete-wallet-payment | Complete wallet-only payment and generate invoice |
 
 **Vision Booking Flow:**
 1. Get assigned vision services from policy (CAT007 category)

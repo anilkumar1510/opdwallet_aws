@@ -12,7 +12,7 @@ This document lists all frontend pages/routes in the Finance Portal (web-finance
 
 | Path | Description |
 |------|-------------|
-| /finance/login | Finance portal login page with role validation (FINANCE_USER only) |
+| /login | Finance portal login page with role validation (FINANCE_USER only) |
 
 ---
 

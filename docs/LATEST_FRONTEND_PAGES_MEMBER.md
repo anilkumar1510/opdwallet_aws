@@ -129,6 +129,7 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 | /member/diagnostics/upload | Upload diagnostic test prescription |
 | /member/diagnostics/cart/[id] | View and edit diagnostic test cart |
 | /member/diagnostics/cart/[id]/vendor/[vendorId] | Select diagnostic center/vendor |
+| /member/diagnostics/booking/[cartId] | Complete diagnostic booking with vendor, slot selection, and payment |
 | /member/diagnostics/orders | View all diagnostic test orders |
 | /member/diagnostics/orders/[orderId] | View diagnostic test order details |
 
@@ -274,7 +275,7 @@ This document lists all frontend pages/routes in the Member Portal (web-member).
 
 ---
 
-**Total Pages: 62**
+**Total Pages: 63**
 
 **Recent Updates:**
 - Added AHC (Annual Health Check) booking flow with 3 pages

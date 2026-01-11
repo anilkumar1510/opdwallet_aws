@@ -12,7 +12,7 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 | Path | Description |
 |------|-------------|
-| /operations/login | Operations portal login page with role validation (OPS only) |
+| /login | Operations portal login page with role validation (OPS only) |
 
 ---
 
@@ -135,7 +135,7 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 ---
 
-**Total Pages: 15**
+**Total Pages: 18**
 
 **Key Features:**
 - Independent authentication with `/operations` cookie path

@@ -12,7 +12,7 @@ This document lists all frontend pages/routes in the TPA Portal (web-tpa) for cl
 
 | Path | Description |
 |------|-------------|
-| /tpa/login | TPA portal login page with role validation (TPA_ADMIN/TPA_USER only) |
+| /login | TPA portal login page with role validation (TPA_ADMIN/TPA_USER only) |
 
 ---
 
