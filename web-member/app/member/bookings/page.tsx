@@ -14,7 +14,8 @@ import {
   EyeIcon,
   DocumentArrowDownIcon,
   HeartIcon,
-  ClipboardDocumentCheckIcon
+  ClipboardDocumentCheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
 import { emitAppointmentEvent, AppointmentEvents } from '@/lib/appointmentEvents'
@@ -147,6 +148,10 @@ export default function BookingsPage() {
   const [showReportModal, setShowReportModal] = useState(false)
   const [selectedReportUrl, setSelectedReportUrl] = useState<string>('')
   const [reportOrderId, setReportOrderId] = useState<string>('')
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [selectedPrescription, setSelectedPrescription] = useState<any>(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancellingPrescription, setCancellingPrescription] = useState(false)
 
   // Update active tab when URL changes
   useEffect(() => {
@@ -499,11 +504,8 @@ export default function BookingsPage() {
 
       const data = await response.json()
       console.log('[LabPrescriptions] Lab prescriptions received:', data)
-      // Filter to show only prescriptions in queue (UPLOADED or DIGITIZING status)
-      const inQueuePrescriptions = (data.data || []).filter((p: any) =>
-        p.status === 'UPLOADED' || p.status === 'DIGITIZING'
-      )
-      setLabPrescriptions(inQueuePrescriptions)
+      // Show all prescriptions including cancelled ones
+      setLabPrescriptions(data.data || [])
     } catch (error) {
       console.error('[LabPrescriptions] Error fetching lab prescriptions:', error)
       setLabPrescriptions([])
@@ -525,11 +527,8 @@ export default function BookingsPage() {
 
       const data = await response.json()
       console.log('[DiagnosticPrescriptions] Diagnostic prescriptions received:', data)
-      // Filter to show only prescriptions in queue (UPLOADED or DIGITIZING status)
-      const inQueuePrescriptions = (data.data || []).filter((p: any) =>
-        p.status === 'UPLOADED' || p.status === 'DIGITIZING'
-      )
-      setDiagnosticPrescriptions(inQueuePrescriptions)
+      // Show all prescriptions including cancelled ones
+      setDiagnosticPrescriptions(data.data || [])
     } catch (error) {
       console.error('[DiagnosticPrescriptions] Error fetching diagnostic prescriptions:', error)
       setDiagnosticPrescriptions([])
@@ -789,6 +788,69 @@ export default function BookingsPage() {
     } catch (error) {
       console.error('[VisionBookings] Error cancelling booking:', error)
       alert('Failed to cancel booking: ' + (error as Error).message)
+    }
+  }
+
+  const handleOpenCancelModal = (prescription: any, prescriptionType: 'lab' | 'diagnostic') => {
+    setSelectedPrescription({ ...prescription, prescriptionType })
+    setShowCancelModal(true)
+  }
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false)
+    setSelectedPrescription(null)
+    setCancelReason('')
+  }
+
+  const handleCancelPrescription = async () => {
+    if (!selectedPrescription || !cancelReason.trim()) {
+      alert('Please provide a reason for cancellation')
+      return
+    }
+
+    if (cancelReason.trim().length < 10) {
+      alert('Cancellation reason must be at least 10 characters')
+      return
+    }
+
+    setCancellingPrescription(true)
+
+    try {
+      const prescriptionType = selectedPrescription.prescriptionType || 'diagnostic'
+      const apiPath = prescriptionType === 'lab'
+        ? `/api/member/lab/prescriptions/${selectedPrescription.prescriptionId}/cancel`
+        : `/api/member/diagnostics/prescriptions/${selectedPrescription.prescriptionId}/cancel`
+
+      const response = await fetch(apiPath, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ reason: cancelReason }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to cancel prescription')
+      }
+
+      alert('Prescription cancelled successfully')
+      setShowCancelModal(false)
+      setSelectedPrescription(null)
+      setCancelReason('')
+
+      // Refresh appropriate prescriptions list
+      if (prescriptionType === 'lab') {
+        await fetchLabPrescriptions()
+      } else {
+        await fetchDiagnosticPrescriptions()
+      }
+    } catch (error: any) {
+      console.error('Error cancelling prescription:', error)
+      alert(error.message || 'Failed to cancel prescription')
+    } finally {
+      setCancellingPrescription(false)
     }
   }
 
@@ -1240,23 +1302,57 @@ export default function BookingsPage() {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                          style={{
-                            background: 'linear-gradient(261.92deg, rgba(255, 247, 223, 0.75) 4.4%, rgba(255, 235, 189, 0.75) 91.97%)',
-                            border: '1px solid #FFD88A',
-                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
-                          }}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
+                            prescription.status === 'CANCELLED'
+                              ? 'bg-gray-100'
+                              : ''
+                          }`}
+                          style={
+                            prescription.status === 'CANCELLED'
+                              ? {}
+                              : {
+                                  background: 'linear-gradient(261.92deg, rgba(255, 247, 223, 0.75) 4.4%, rgba(255, 235, 189, 0.75) 91.97%)',
+                                  border: '1px solid #FFD88A',
+                                  boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                                }
+                          }
                         >
-                          <BeakerIcon className="h-6 w-6" style={{ color: '#D97706' }} />
+                          <BeakerIcon
+                            className="h-6 w-6"
+                            style={{ color: prescription.status === 'CANCELLED' ? '#6B7280' : '#D97706' }}
+                          />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Lab Prescription</div>
-                          <div className="text-sm text-gray-600">In Queue</div>
+                          <div className="text-sm text-gray-600">
+                            {prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue'}
+                          </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        {prescription.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            prescription.status === 'UPLOADED'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : prescription.status === 'DIGITIZING'
+                              ? 'bg-blue-100 text-blue-800'
+                              : prescription.status === 'CANCELLED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {prescription.status}
+                        </span>
+                        {prescription.status === 'UPLOADED' && (
+                          <button
+                            onClick={() => handleOpenCancelModal(prescription, 'lab')}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Cancel Prescription"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2 mb-3">
@@ -1280,9 +1376,23 @@ export default function BookingsPage() {
                       <div className="text-sm text-gray-900 mb-2">
                         ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
                       </div>
-                      <div className="text-xs text-gray-600">
-                        Our team is processing your prescription. You will be notified once it's ready for ordering.
-                      </div>
+                      {prescription.status === 'CANCELLED' ? (
+                        <div className="p-3 bg-red-50 rounded-lg">
+                          <p className="text-xs text-red-800">
+                            Cancelled on {formatDate(prescription.cancelledAt)}
+                            {prescription.cancellationReason && (
+                              <>
+                                <br />
+                                Reason: {prescription.cancellationReason}
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-600">
+                          Our team is processing your prescription. You will be notified once it's ready for ordering.
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1531,17 +1641,39 @@ export default function BookingsPage() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center flex-shrink-0">
-                          <HeartIcon className="h-5 w-5 text-yellow-600" />
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          prescription.status === 'CANCELLED' ? 'bg-gray-100' : 'bg-yellow-50'
+                        }`}>
+                          <HeartIcon className={`h-5 w-5 ${
+                            prescription.status === 'CANCELLED' ? 'text-gray-600' : 'text-yellow-600'
+                          }`} />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Diagnostic Prescription</div>
-                          <div className="text-sm text-gray-600">In Queue</div>
+                          <div className="text-sm text-gray-600">
+                            {prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue'}
+                          </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        {prescription.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          prescription.status === 'UPLOADED' ? 'bg-yellow-100 text-yellow-800' :
+                          prescription.status === 'DIGITIZING' ? 'bg-blue-100 text-blue-800' :
+                          prescription.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {prescription.status}
+                        </span>
+                        {prescription.status === 'UPLOADED' && (
+                          <button
+                            onClick={() => handleOpenCancelModal(prescription, 'diagnostic')}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Cancel Prescription"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2 mb-3">
@@ -1565,9 +1697,20 @@ export default function BookingsPage() {
                       <div className="text-sm text-gray-900 mb-2">
                         ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
                       </div>
-                      <div className="text-xs text-gray-600">
-                        Our team is processing your prescription. You will be notified once it's ready for ordering.
-                      </div>
+                      {prescription.status === 'CANCELLED' ? (
+                        <div className="p-3 bg-red-50 rounded-lg">
+                          <p className="text-xs text-red-800">
+                            Cancelled on {formatDate(prescription.cancelledAt)}
+                            {prescription.cancellationReason && (
+                              <><br />Reason: {prescription.cancellationReason}</>
+                            )}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-600">
+                          Our team is processing your prescription. You will be notified once it's ready for ordering.
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2388,6 +2531,72 @@ export default function BookingsPage() {
               >
                 <DocumentArrowDownIcon className="h-5 w-5" />
                 Download Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Prescription Modal */}
+      {showCancelModal && selectedPrescription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Cancel Prescription</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Prescription ID: {selectedPrescription.prescriptionId}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseCancelModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Warning */}
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                ⚠️ This action cannot be undone. The prescription will be removed from the processing queue.
+              </p>
+            </div>
+
+            {/* Reason Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for cancellation *
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Please provide a reason (minimum 10 characters)..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows={4}
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {cancelReason.length}/500 characters (minimum 10)
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseCancelModal}
+                disabled={cancellingPrescription}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Keep Prescription
+              </button>
+              <button
+                onClick={handleCancelPrescription}
+                disabled={cancellingPrescription || cancelReason.trim().length < 10}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancellingPrescription ? 'Cancelling...' : 'Cancel Prescription'}
               </button>
             </div>
           </div>

@@ -254,11 +254,12 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /ops/lab/prescriptions/queue | Get pending prescriptions queue |
+| GET | /ops/lab/prescriptions/queue | Get pending prescriptions queue (excludes CANCELLED) |
 | GET | /ops/lab/prescriptions/:id | Get prescription by ID |
 | POST | /ops/lab/prescriptions/:id/eligible-vendors | Get eligible vendors for prescription |
 | POST | /ops/lab/prescriptions/:id/digitize | Digitize prescription and create cart |
 | PATCH | /ops/lab/prescriptions/:id/status | Update prescription status |
+| POST | /ops/lab/prescriptions/:id/cancel | Cancel lab prescription (only UPLOADED status can be cancelled) |
 | GET | /ops/lab/orders | Get all lab orders with filters |
 | GET | /ops/lab/orders/:orderId | Get order by ID |
 | PATCH | /ops/lab/orders/:orderId/status | Update order status |
@@ -273,12 +274,13 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /ops/diagnostics/prescriptions/queue | Get diagnostic prescription queue (filtered by status) |
+| GET | /ops/diagnostics/prescriptions/queue | Get diagnostic prescription queue (filtered by status, excludes CANCELLED) |
 | GET | /ops/diagnostics/prescriptions/:id | Get diagnostic prescription by ID |
 | POST | /ops/diagnostics/prescriptions/:id/eligible-vendors | Get eligible vendors for prescription services |
 | PATCH | /ops/diagnostics/prescriptions/:id/status | Update diagnostic prescription status |
 | POST | /ops/diagnostics/prescriptions/:id/delay | Mark diagnostic prescription as delayed with reason |
 | POST | /ops/diagnostics/prescriptions/:id/digitize | Digitize diagnostic prescription and create cart |
+| POST | /ops/diagnostics/prescriptions/:id/cancel | Cancel diagnostic prescription (only UPLOADED status can be cancelled) |
 | PATCH | /ops/diagnostics/carts/:cartId/display | Display cart to member for review |
 | GET | /ops/diagnostics/orders | Get all diagnostic orders with filters |
 | GET | /ops/diagnostics/orders/:id | Get diagnostic order by ID |

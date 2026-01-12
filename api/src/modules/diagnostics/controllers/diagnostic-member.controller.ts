@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
@@ -18,11 +19,12 @@ import { DiagnosticPrescriptionService, CreateDiagnosticPrescriptionDto } from '
 import { DiagnosticCartService } from '../services/diagnostic-cart.service';
 import { DiagnosticOrderService, CreateDiagnosticOrderDto } from '../services/diagnostic-order.service';
 import { DiagnosticVendorService } from '../services/diagnostic-vendor.service';
-import { PrescriptionSource } from '../schemas/diagnostic-prescription.schema';
+import { PrescriptionSource, CancelledBy as PrescriptionCancelledBy } from '../schemas/diagnostic-prescription.schema';
 import { ValidateDiagnosticOrderDto } from '../dto/validate-diagnostic-order.dto';
 import { CancelledBy } from '../schemas/diagnostic-order.schema';
 import { UploadDiagnosticPrescriptionDto } from '../dto/upload-diagnostic-prescription.dto';
 import { SubmitExistingDiagnosticPrescriptionDto } from '../dto/submit-existing-prescription.dto';
+import { CancelDiagnosticPrescriptionDto } from '../dto/cancel-diagnostic-prescription.dto';
 
 @Controller('member/diagnostics')
 @UseGuards(JwtAuthGuard)
@@ -101,6 +103,34 @@ export class DiagnosticMemberController {
     return {
       success: true,
       data: prescription,
+    };
+  }
+
+  @Post('prescriptions/:id/cancel')
+  async cancelPrescription(
+    @Param('id') prescriptionId: string,
+    @Body() cancelDto: CancelDiagnosticPrescriptionDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.userId;
+
+    // Get prescription and verify ownership
+    const prescription = await this.prescriptionService.findOne(prescriptionId);
+
+    if (prescription.userId.toString() !== userId) {
+      throw new ForbiddenException('You can only cancel your own prescriptions');
+    }
+
+    const cancelledPrescription = await this.prescriptionService.cancelPrescription(
+      prescriptionId,
+      cancelDto.reason,
+      PrescriptionCancelledBy.MEMBER,
+    );
+
+    return {
+      success: true,
+      message: 'Prescription cancelled successfully',
+      data: cancelledPrescription,
     };
   }
 

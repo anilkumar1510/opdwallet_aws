@@ -6,6 +6,7 @@ export enum PrescriptionStatus {
   DIGITIZING = 'DIGITIZING',
   DIGITIZED = 'DIGITIZED',
   DELAYED = 'DELAYED',
+  CANCELLED = 'CANCELLED',
 }
 
 export enum ServiceType {
@@ -16,6 +17,11 @@ export enum ServiceType {
 export enum PrescriptionSource {
   UPLOAD = 'UPLOAD',
   HEALTH_RECORD = 'HEALTH_RECORD',
+}
+
+export enum CancelledBy {
+  MEMBER = 'MEMBER',
+  OPERATIONS = 'OPERATIONS',
 }
 
 @Schema({ timestamps: true, collection: 'lab_prescriptions' })
@@ -89,6 +95,16 @@ export class LabPrescription extends Document {
   @Prop()
   delayReason?: string;
 
+  // Cancellation tracking
+  @Prop({ type: String, enum: CancelledBy })
+  cancelledBy?: CancelledBy;
+
+  @Prop()
+  cancelledAt?: Date;
+
+  @Prop()
+  cancellationReason?: string;
+
   // Cart reference
   @Prop({ type: Types.ObjectId, ref: 'LabCart' })
   cartId?: Types.ObjectId;
@@ -109,3 +125,5 @@ LabPrescriptionSchema.index({ userId: 1, status: 1 });
 LabPrescriptionSchema.index({ status: 1, uploadedAt: 1 });
 LabPrescriptionSchema.index({ pincode: 1, status: 1 });
 LabPrescriptionSchema.index({ serviceType: 1, status: 1 });
+LabPrescriptionSchema.index({ cancelledAt: 1 });
+LabPrescriptionSchema.index({ cancelledBy: 1 });

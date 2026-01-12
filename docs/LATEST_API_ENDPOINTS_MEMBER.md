@@ -112,6 +112,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | POST | /member/lab/prescriptions/upload | Upload prescription |
 | GET | /member/lab/prescriptions | Get user prescriptions with order status and lab tests (enhanced: includes hasOrder, orderCount, labTests from source prescription) |
 | GET | /member/lab/prescriptions/:id | Get prescription details |
+| POST | /member/lab/prescriptions/:id/cancel | Cancel lab prescription (only UPLOADED status can be cancelled) |
 | POST | /member/lab/prescriptions/submit-existing | Submit existing health record prescription for lab services |
 | GET | /member/lab/carts | Get active carts for user |
 | GET | /member/lab/carts/:cartId | Get cart by ID |
@@ -136,6 +137,7 @@ This document lists all API endpoints used by the Member Portal (web-member).
 | POST | /member/diagnostics/prescriptions/submit-existing | Submit existing health record prescription for diagnostics |
 | GET | /member/diagnostics/prescriptions | Get user diagnostic prescriptions |
 | GET | /member/diagnostics/prescriptions/:id | Get diagnostic prescription details |
+| POST | /member/diagnostics/prescriptions/:id/cancel | Cancel diagnostic prescription (only UPLOADED status can be cancelled) |
 | GET | /member/diagnostics/carts | Get diagnostic carts for user |
 | GET | /member/diagnostics/carts/:cartId | Get diagnostic cart by ID |
 | GET | /member/diagnostics/carts/:cartId/vendors | Get eligible vendors for cart items |

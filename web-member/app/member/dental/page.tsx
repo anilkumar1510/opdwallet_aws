@@ -136,30 +136,6 @@ export default function DentalPage() {
                     </p>
                   </div>
 
-                  {/* Coverage Info */}
-                  <div className="mb-4 space-y-2">
-                    <div className="flex items-center justify-between text-sm lg:text-base">
-                      <span className="text-gray-600">Coverage:</span>
-                      <span
-                        className="font-semibold"
-                        style={{ color: '#25A425' }}
-                      >
-                        {service.coveragePercentage}%
-                      </span>
-                    </div>
-                    {service.copayAmount > 0 && (
-                      <div className="flex items-center justify-between text-sm lg:text-base">
-                        <span className="text-gray-600">Co-pay:</span>
-                        <span
-                          className="font-semibold"
-                          style={{ color: '#0E51A2' }}
-                        >
-                          ₹{service.copayAmount}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
                   {/* Book Button */}
                   <CTAButton
                     variant="primary"

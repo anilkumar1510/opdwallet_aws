@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { DocumentTextIcon, EyeIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
+import { DocumentTextIcon, EyeIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 
@@ -58,6 +58,9 @@ export default function OpsPrescriptionsContent() {
   const [statusFilter, setStatusFilter] = useState('')
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancellingPrescription, setCancellingPrescription] = useState(false)
 
   const fetchPrescriptions = useCallback(async () => {
     try {
@@ -105,6 +108,8 @@ export default function OpsPrescriptionsContent() {
         return 'bg-green-100 text-green-800'
       case 'DELAYED':
         return 'bg-red-100 text-red-800'
+      case 'CANCELLED':
+        return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -125,6 +130,62 @@ export default function OpsPrescriptionsContent() {
       ? `/lab/prescriptions/${prescription.prescriptionId}/digitize`
       : `/diagnostics/prescriptions/${prescription.prescriptionId}/digitize`
     router.push(digitizePath)
+  }
+
+  const handleOpenCancelModal = (prescription: Prescription) => {
+    setSelectedPrescription(prescription)
+    setShowCancelModal(true)
+  }
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false)
+    setCancelReason('')
+  }
+
+  const handleCancelPrescription = async () => {
+    if (!selectedPrescription || !cancelReason.trim()) {
+      toast.error('Please provide a reason for cancellation')
+      return
+    }
+
+    if (cancelReason.trim().length < 10) {
+      toast.error('Cancellation reason must be at least 10 characters')
+      return
+    }
+
+    setCancellingPrescription(true)
+
+    try {
+      const apiPath = activeTab === 'lab'
+        ? `/api/ops/lab/prescriptions/${selectedPrescription.prescriptionId}/cancel`
+        : `/api/ops/diagnostics/prescriptions/${selectedPrescription.prescriptionId}/cancel`
+
+      const response = await apiFetch(apiPath, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: cancelReason }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to cancel prescription')
+      }
+
+      toast.success('Prescription cancelled successfully')
+      setShowCancelModal(false)
+      setSelectedPrescription(null)
+      setCancelReason('')
+
+      // Refresh prescriptions list
+      await fetchPrescriptions()
+    } catch (error: any) {
+      console.error('Error cancelling prescription:', error)
+      toast.error(error.message || 'Failed to cancel prescription')
+    } finally {
+      setCancellingPrescription(false)
+    }
   }
 
   return (
@@ -177,6 +238,7 @@ export default function OpsPrescriptionsContent() {
             <option value="DIGITIZING">Digitizing</option>
             <option value="DIGITIZED">Digitized</option>
             <option value="DELAYED">Delayed</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
         </div>
       </div>
@@ -246,7 +308,7 @@ export default function OpsPrescriptionsContent() {
                         View
                       </button>
 
-                      {prescription.status !== 'DIGITIZED' && (
+                      {prescription.status !== 'DIGITIZED' && prescription.status !== 'CANCELLED' && (
                         <button
                           onClick={() => handleDigitize(prescription)}
                           className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -254,6 +316,17 @@ export default function OpsPrescriptionsContent() {
                         >
                           <PencilSquareIcon className="h-4 w-4 mr-1" />
                           Digitize
+                        </button>
+                      )}
+
+                      {prescription.status === 'UPLOADED' && (
+                        <button
+                          onClick={() => handleOpenCancelModal(prescription)}
+                          className="inline-flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                          title="Cancel prescription"
+                        >
+                          <XMarkIcon className="h-4 w-4 mr-1" />
+                          Cancel
                         </button>
                       )}
                     </td>
@@ -300,6 +373,72 @@ export default function OpsPrescriptionsContent() {
                   className="w-full h-auto"
                 />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Prescription Modal */}
+      {showCancelModal && selectedPrescription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Cancel Prescription</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Prescription ID: {selectedPrescription.prescriptionId}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseCancelModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Warning */}
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                ⚠️ This action cannot be undone. The prescription will be removed from the processing queue.
+              </p>
+            </div>
+
+            {/* Reason Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for cancellation *
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Please provide a reason (minimum 10 characters)..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows={4}
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {cancelReason.length}/500 characters (minimum 10)
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseCancelModal}
+                disabled={cancellingPrescription}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Keep Prescription
+              </button>
+              <button
+                onClick={handleCancelPrescription}
+                disabled={cancellingPrescription || cancelReason.trim().length < 10}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cancellingPrescription ? 'Cancelling...' : 'Cancel Prescription'}
+              </button>
             </div>
           </div>
         </div>

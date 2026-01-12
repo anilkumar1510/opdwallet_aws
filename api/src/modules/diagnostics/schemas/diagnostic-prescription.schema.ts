@@ -6,6 +6,12 @@ export enum PrescriptionStatus {
   DIGITIZING = 'DIGITIZING',
   DIGITIZED = 'DIGITIZED',
   DELAYED = 'DELAYED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum CancelledBy {
+  MEMBER = 'MEMBER',
+  OPERATIONS = 'OPERATIONS',
 }
 
 export enum PrescriptionSource {
@@ -81,6 +87,16 @@ export class DiagnosticPrescription extends Document {
   @Prop()
   delayReason?: string;
 
+  // Cancellation tracking
+  @Prop({ type: String, enum: CancelledBy })
+  cancelledBy?: CancelledBy;
+
+  @Prop()
+  cancelledAt?: Date;
+
+  @Prop()
+  cancellationReason?: string;
+
   // Cart reference
   @Prop({ type: Types.ObjectId, ref: 'DiagnosticCart' })
   cartId?: Types.ObjectId;
@@ -100,3 +116,5 @@ DiagnosticPrescriptionSchema.index({ prescriptionId: 1 }, { unique: true });
 DiagnosticPrescriptionSchema.index({ userId: 1, status: 1 });
 DiagnosticPrescriptionSchema.index({ status: 1, uploadedAt: 1 });
 DiagnosticPrescriptionSchema.index({ pincode: 1, status: 1 });
+DiagnosticPrescriptionSchema.index({ cancelledAt: 1 });
+DiagnosticPrescriptionSchema.index({ cancelledBy: 1 });

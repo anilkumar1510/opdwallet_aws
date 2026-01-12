@@ -1,0 +1,180 @@
+# Local Development Configuration
+# This file stays on your machine and never gets deployed
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: opd-nginx-dev
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web-admin
+      - web-member
+      - web-doctor
+      - web-tpa
+      - web-operations
+      - web-finance
+    networks:
+      - opd-network
+
+  mongo:
+    image: mongo:7.0
+    container_name: opd-mongo-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: opd_wallet
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - opd-network
+
+  api:
+    image: node:20-alpine
+    container_name: opd-api-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      COOKIE_NAME: opd_session
+      PORT: 4000
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      DAILY_API_KEY: ${DAILY_API_KEY}
+    depends_on:
+      - mongo
+    volumes:
+      - ./api:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run start:dev"
+
+  web-admin:
+    image: node:20-alpine
+    container_name: opd-web-admin-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-admin:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  web-member:
+    image: node:20-alpine
+    container_name: opd-web-member-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3002:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-member:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  web-doctor:
+    image: node:20-alpine
+    container_name: opd-web-doctor-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3003:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-doctor:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  web-tpa:
+    image: node:20-alpine
+    container_name: opd-web-tpa-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3004:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-tpa:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  web-operations:
+    image: node:20-alpine
+    container_name: opd-web-operations-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3005:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-operations:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+  web-finance:
+    image: node:20-alpine
+    container_name: opd-web-finance-dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "3006:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      API_URL: http://opd-api-dev:4000/api
+      NODE_ENV: development
+    depends_on:
+      - api
+    volumes:
+      - ./web-finance:/app
+    networks:
+      - opd-network
+    command: sh -c "npm install && npm run dev"
+
+volumes:
+  mongo-data:
+
+networks:
+  opd-network:
+    driver: bridge

@@ -22,7 +22,8 @@ import { LabOrderService } from '../services/lab-order.service';
 import { LabVendorService } from '../services/lab-vendor.service';
 import { DigitizePrescriptionDto } from '../dto/digitize-prescription.dto';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
-import { PrescriptionStatus } from '../schemas/lab-prescription.schema';
+import { CancelLabPrescriptionDto } from '../dto/cancel-lab-prescription.dto';
+import { PrescriptionStatus, CancelledBy } from '../schemas/lab-prescription.schema';
 import { OrderStatus } from '../schemas/lab-order.schema';
 
 @Controller('ops/lab')
@@ -182,6 +183,25 @@ export class LabOpsController {
       success: true,
       message: 'Prescription status updated successfully',
       data: prescription,
+    };
+  }
+
+  @Post('prescriptions/:id/cancel')
+  async cancelPrescription(
+    @Param('id') prescriptionId: string,
+    @Body() cancelDto: CancelLabPrescriptionDto,
+    @Request() req: any,
+  ) {
+    const cancelledPrescription = await this.prescriptionService.cancelPrescription(
+      prescriptionId,
+      cancelDto.reason,
+      CancelledBy.OPERATIONS,
+    );
+
+    return {
+      success: true,
+      message: 'Prescription cancelled by operations',
+      data: cancelledPrescription,
     };
   }
 

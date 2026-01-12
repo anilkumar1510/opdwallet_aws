@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MapPinIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
@@ -42,7 +43,7 @@ export default function DentalClinicsPage() {
   }, [serviceCode, router])
 
   const detectLocation = async () => {
-    console.log('[DentalClinics] Detecting location via Google Maps')
+    console.log('[DentalClinics] Detecting location via backend API')
     setDetectingLocation(true)
     setError('')
 
@@ -63,30 +64,26 @@ export default function DentalClinicsPage() {
       const { latitude, longitude } = position.coords
       console.log('[DentalClinics] Location detected:', { latitude, longitude })
 
-      // Use Google Maps Geocoding API to get pincode
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
-      const geocodeResponse = await fetch(geocodeUrl)
-      const geocodeData = await geocodeResponse.json()
+      // Use backend API to get pincode via reverse geocoding
+      const geocodeUrl = `/api/location/reverse-geocode?lat=${latitude}&lng=${longitude}`
+      const geocodeResponse = await fetch(geocodeUrl, {
+        credentials: 'include',
+      })
 
+      if (!geocodeResponse.ok) {
+        throw new Error('Failed to get location data from server')
+      }
+
+      const geocodeData = await geocodeResponse.json()
       console.log('[DentalClinics] Geocode response:', geocodeData)
 
-      if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
-        // Extract pincode from address components
-        const addressComponents = geocodeData.results[0].address_components
-        const pincodeComponent = addressComponents.find((component: any) =>
-          component.types.includes('postal_code')
-        )
-
-        if (pincodeComponent) {
-          const detectedPincode = pincodeComponent.long_name
-          console.log('[DentalClinics] Pincode detected:', detectedPincode)
-          setPincode(detectedPincode)
-          searchClinics(detectedPincode)
-        } else {
-          setError('Could not detect pincode from your location')
-        }
+      if (geocodeData.pincode) {
+        const detectedPincode = geocodeData.pincode
+        console.log('[DentalClinics] Pincode detected:', detectedPincode)
+        setPincode(detectedPincode)
+        searchClinics(detectedPincode)
       } else {
-        setError('Failed to detect location. Please enter pincode manually.')
+        setError('Could not detect pincode from your location')
       }
     } catch (err: any) {
       console.error('[DentalClinics] Location detection error:', err)

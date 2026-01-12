@@ -10,6 +10,7 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -24,6 +25,8 @@ import { UploadPrescriptionDto } from '../dto/upload-prescription.dto';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { ValidateLabOrderDto } from '../dto/validate-lab-order.dto';
 import { SubmitExistingPrescriptionDto } from '../dto/submit-existing-prescription.dto';
+import { CancelLabPrescriptionDto } from '../dto/cancel-lab-prescription.dto';
+import { CancelledBy } from '../schemas/lab-prescription.schema';
 import { Types } from 'mongoose';
 
 @Controller('member/lab')
@@ -107,6 +110,34 @@ export class LabMemberController {
     return {
       success: true,
       data: prescription,
+    };
+  }
+
+  @Post('prescriptions/:id/cancel')
+  async cancelPrescription(
+    @Param('id') prescriptionId: string,
+    @Body() cancelDto: CancelLabPrescriptionDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.userId;
+
+    // Get prescription and verify ownership
+    const prescription = await this.prescriptionService.getPrescriptionById(prescriptionId);
+
+    if (prescription.userId.toString() !== userId) {
+      throw new ForbiddenException('You can only cancel your own prescriptions');
+    }
+
+    const cancelledPrescription = await this.prescriptionService.cancelPrescription(
+      prescriptionId,
+      cancelDto.reason,
+      CancelledBy.MEMBER,
+    );
+
+    return {
+      success: true,
+      message: 'Prescription cancelled successfully',
+      data: cancelledPrescription,
     };
   }
 

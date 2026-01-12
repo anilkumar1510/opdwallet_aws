@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { DiagnosticPrescription, PrescriptionStatus, PrescriptionSource } from '../schemas/diagnostic-prescription.schema';
+import { DiagnosticPrescription, PrescriptionStatus, PrescriptionSource, CancelledBy } from '../schemas/diagnostic-prescription.schema';
 import { User } from '../../users/schemas/user.schema';
 
 export interface CreateDiagnosticPrescriptionDto {
@@ -198,9 +198,18 @@ export class DiagnosticPrescriptionService {
       .exec();
   }
 
-  async findByStatus(status: PrescriptionStatus): Promise<DiagnosticPrescription[]> {
+  async findByStatus(status?: PrescriptionStatus): Promise<DiagnosticPrescription[]> {
+    const query: any = {};
+
+    if (status) {
+      query.status = status;
+    } else {
+      // Default: exclude CANCELLED
+      query.status = { $ne: PrescriptionStatus.CANCELLED };
+    }
+
     return this.diagnosticPrescriptionModel
-      .find({ status })
+      .find(query)
       .populate('userId', 'name phone email')
       .sort({ uploadedAt: 1 })
       .exec();
@@ -233,6 +242,29 @@ export class DiagnosticPrescriptionService {
     const prescription = await this.findOne(prescriptionId);
     prescription.status = PrescriptionStatus.DELAYED;
     prescription.delayReason = reason;
+    return prescription.save();
+  }
+
+  async cancelPrescription(
+    prescriptionId: string,
+    reason: string,
+    cancelledBy: CancelledBy,
+  ): Promise<DiagnosticPrescription> {
+    const prescription = await this.findOne(prescriptionId);
+
+    // Validate status - only UPLOADED prescriptions can be cancelled
+    if (prescription.status !== PrescriptionStatus.UPLOADED) {
+      throw new BadRequestException(
+        `Cannot cancel prescription in ${prescription.status} status. Only UPLOADED prescriptions can be cancelled.`,
+      );
+    }
+
+    // Update prescription
+    prescription.status = PrescriptionStatus.CANCELLED;
+    prescription.cancelledBy = cancelledBy;
+    prescription.cancelledAt = new Date();
+    prescription.cancellationReason = reason;
+
     return prescription.save();
   }
 }

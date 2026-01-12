@@ -20,8 +20,9 @@ import { DiagnosticPrescriptionService } from '../services/diagnostic-prescripti
 import { DiagnosticCartService, CreateDiagnosticCartDto } from '../services/diagnostic-cart.service';
 import { DiagnosticOrderService } from '../services/diagnostic-order.service';
 import { DiagnosticVendorService } from '../services/diagnostic-vendor.service';
-import { PrescriptionStatus } from '../schemas/diagnostic-prescription.schema';
+import { PrescriptionStatus, CancelledBy as PrescriptionCancelledBy } from '../schemas/diagnostic-prescription.schema';
 import { OrderStatus, CancelledBy } from '../schemas/diagnostic-order.schema';
+import { CancelDiagnosticPrescriptionDto } from '../dto/cancel-diagnostic-prescription.dto';
 
 @Controller('ops/diagnostics')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -108,6 +109,25 @@ export class DiagnosticOpsController {
       success: true,
       message: 'Prescription marked as delayed',
       data: prescription,
+    };
+  }
+
+  @Post('prescriptions/:id/cancel')
+  async cancelPrescription(
+    @Param('id') prescriptionId: string,
+    @Body() cancelDto: CancelDiagnosticPrescriptionDto,
+    @Req() req: any,
+  ) {
+    const cancelledPrescription = await this.prescriptionService.cancelPrescription(
+      prescriptionId,
+      cancelDto.reason,
+      PrescriptionCancelledBy.OPERATIONS,
+    );
+
+    return {
+      success: true,
+      message: 'Prescription cancelled by operations',
+      data: cancelledPrescription,
     };
   }
 

@@ -40,7 +40,7 @@ interface Doctor {
   reviewCount: number
   clinics: ClinicLocation[]
   consultationFee: number
-  availableInMinutes: number | null
+  availableInMinutes: number | null | undefined
 }
 
 function OnlineDoctorsContent() {
@@ -123,8 +123,8 @@ function OnlineDoctorsContent() {
     router.push(`/member/online-consult/confirm?${params.toString()}`)
   }
 
-  const formatAvailability = (minutes: number | null) => {
-    if (minutes === null) return null
+  const formatAvailability = (minutes: number | null | undefined) => {
+    if (minutes === null || minutes === undefined) return 'Availability on request'
     if (minutes === 0) return 'Available now'
     if (minutes <= 5) return `Available in ${minutes} min`
     return `Available in ${minutes} mins`
@@ -223,19 +223,19 @@ function OnlineDoctorsContent() {
                       <h3 className="font-semibold text-base lg:text-lg" style={{ color: '#0E51A2' }}>
                         {doctor.name}
                       </h3>
-                      {doctor.availableInMinutes !== null && (
-                        <span
-                          className="text-xs lg:text-sm px-2 py-1 rounded-lg flex items-center gap-1 flex-shrink-0 ml-2"
-                          style={
-                            doctor.availableInMinutes <= 5
-                              ? { background: '#E8F5E9', color: '#25A425' }
-                              : { background: '#F3F4F6', color: '#6B7280' }
-                          }
-                        >
-                          <ClockIcon className="h-3 w-3 lg:h-4 lg:w-4" />
-                          <span className="font-medium">{formatAvailability(doctor.availableInMinutes)}</span>
-                        </span>
-                      )}
+                      <span
+                        className="text-xs lg:text-sm px-2 py-1 rounded-lg flex items-center gap-1 flex-shrink-0 ml-2"
+                        style={
+                          doctor.availableInMinutes !== null &&
+                          doctor.availableInMinutes !== undefined &&
+                          doctor.availableInMinutes <= 5
+                            ? { background: '#E8F5E9', color: '#25A425' }
+                            : { background: '#F3F4F6', color: '#6B7280' }
+                        }
+                      >
+                        <ClockIcon className="h-3 w-3 lg:h-4 lg:w-4" />
+                        <span className="font-medium">{formatAvailability(doctor.availableInMinutes)}</span>
+                      </span>
                     </div>
                     <p className="text-xs lg:text-sm text-gray-600 mb-1">{doctor.qualifications}</p>
                     <p className="text-xs lg:text-sm text-gray-600 mb-2">{doctor.experienceYears} years experience</p>

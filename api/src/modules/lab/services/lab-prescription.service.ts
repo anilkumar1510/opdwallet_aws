@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { LabPrescription, PrescriptionStatus, ServiceType, PrescriptionSource } from '../schemas/lab-prescription.schema';
+import { LabPrescription, PrescriptionStatus, ServiceType, PrescriptionSource, CancelledBy } from '../schemas/lab-prescription.schema';
 import { UploadPrescriptionDto } from '../dto/upload-prescription.dto';
 import { User } from '../../users/schemas/user.schema';
 
@@ -214,6 +214,9 @@ export class LabPrescriptionService {
           cartId: 1,
           hasOrder: 1,
           orderCount: 1,
+          cancelledBy: 1,
+          cancelledAt: 1,
+          cancellationReason: 1,
           createdAt: 1,
           updatedAt: 1,
         },
@@ -256,7 +259,9 @@ export class LabPrescriptionService {
 
   async getPendingPrescriptions(): Promise<LabPrescription[]> {
     return this.prescriptionModel
-      .find({ status: PrescriptionStatus.UPLOADED })
+      .find({
+        status: { $ne: PrescriptionStatus.CANCELLED },
+      })
       .populate('userId', 'name phone email')
       .sort({ uploadedAt: 1 })
       .exec();
@@ -304,5 +309,28 @@ export class LabPrescriptionService {
     if (result.deletedCount === 0) {
       throw new NotFoundException(`Prescription ${prescriptionId} not found`);
     }
+  }
+
+  async cancelPrescription(
+    prescriptionId: string,
+    reason: string,
+    cancelledBy: CancelledBy,
+  ): Promise<LabPrescription> {
+    const prescription = await this.getPrescriptionById(prescriptionId);
+
+    // Validate status - only UPLOADED prescriptions can be cancelled
+    if (prescription.status !== PrescriptionStatus.UPLOADED) {
+      throw new BadRequestException(
+        `Cannot cancel prescription in ${prescription.status} status. Only UPLOADED prescriptions can be cancelled.`,
+      );
+    }
+
+    // Update prescription
+    prescription.status = PrescriptionStatus.CANCELLED;
+    prescription.cancelledBy = cancelledBy;
+    prescription.cancelledAt = new Date();
+    prescription.cancellationReason = reason;
+
+    return prescription.save();
   }
 }

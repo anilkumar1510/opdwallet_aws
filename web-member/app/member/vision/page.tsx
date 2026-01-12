@@ -129,25 +129,6 @@ export default function VisionPage() {
                     </p>
                   </div>
 
-                  <DetailCard variant="secondary" className="mb-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs lg:text-sm">
-                        <span className="text-gray-600">Coverage:</span>
-                        <span className="font-bold text-base lg:text-lg" style={{ color: '#25A425' }}>
-                          {service.coveragePercentage}%
-                        </span>
-                      </div>
-                      {service.copayAmount > 0 && (
-                        <div className="flex items-center justify-between text-xs lg:text-sm">
-                          <span className="text-gray-600">Co-pay:</span>
-                          <span className="font-semibold text-gray-900">
-                            ₹{service.copayAmount}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </DetailCard>
-
                   <CTAButton
                     onClick={() => handleBookService(service.code)}
                     variant="primary"
