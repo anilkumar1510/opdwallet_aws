@@ -115,14 +115,14 @@ export function ClaimReviewSection({
               </div>
             )}
 
-            {walletRules.perClaimLimit && (
+            {(walletRules.perClaimLimit !== undefined && walletRules.perClaimLimit > 0) && (
               <div className="rounded-xl p-4 lg:p-5 border-2 bg-white/50" style={{ borderColor: '#86ACD8' }}>
                 <p className="text-xs lg:text-sm text-gray-600 font-medium mb-2">Per Claim Cap</p>
                 <p className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>₹{walletRules.perClaimLimit.toLocaleString()}</p>
               </div>
             )}
 
-            {walletRules.partialPaymentEnabled && (
+            {walletRules.partialPaymentEnabled === true && (
               <div className="rounded-xl p-4 lg:p-5 border-2 bg-white/50" style={{ borderColor: '#86ACD8' }}>
                 <p className="text-xs lg:text-sm text-gray-600 font-medium mb-2">Partial Payment</p>
                 <p className="text-xl lg:text-2xl font-bold" style={{ color: '#0E51A2' }}>Allowed ✓</p>

@@ -885,103 +885,103 @@ export default function BookingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white px-4 lg:px-6 border-b shadow-sm max-w-[480px] mx-auto lg:max-w-full" style={{ borderColor: '#e5e7eb' }}>
-        <nav className="flex space-x-2 lg:space-x-6 overflow-x-auto scrollbar-hide">
+      <div className="bg-white border-b shadow-sm w-full" style={{ borderColor: '#e5e7eb' }}>
+        <nav className="flex space-x-4 md:space-x-6 overflow-x-auto px-4 md:px-6">
           <button
             onClick={() => setActiveTab('doctors')}
-            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'doctors'
                 ? 'border-b-4'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={activeTab === 'doctors' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <UserIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <UserIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>Doctors</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('lab')}
-            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'lab'
                 ? 'border-b-4'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={activeTab === 'lab' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <BeakerIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <BeakerIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>Lab</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('diagnostic')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'diagnostic'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-b-4'
+                : 'border-transparent hover:border-gray-300'
             }`}
-            style={activeTab === 'diagnostic' ? { borderColor: '#0a529f', color: '#0a529f' } : undefined}
+            style={activeTab === 'diagnostic' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center space-x-2">
-              <HeartIcon className="h-5 w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <HeartIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>Diagnostic</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('pharmacy')}
-            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'pharmacy'
                 ? 'border-b-4'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={activeTab === 'pharmacy' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <BuildingStorefrontIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <BuildingStorefrontIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>Pharmacy</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('dental')}
-            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'dental'
                 ? 'border-b-4'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={activeTab === 'dental' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <SparklesIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <SparklesIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>Dental</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('vision')}
-            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'vision'
                 ? 'border-b-4'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={activeTab === 'vision' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <EyeIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <EyeIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>Vision</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('ahc')}
-            className={`py-4 px-1 lg:px-2 border-b-3 font-semibold text-sm lg:text-base transition-all whitespace-nowrap ${
+            className={`py-4 px-3 md:px-4 border-b-3 font-semibold text-sm md:text-base transition-all whitespace-nowrap min-w-fit ${
               activeTab === 'ahc'
                 ? 'border-b-4'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={activeTab === 'ahc' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
-            <div className="flex items-center gap-1.5 lg:gap-2">
-              <ClipboardDocumentCheckIcon className="h-4 w-4 lg:h-5 lg:w-5" />
+            <div className="flex items-center gap-2 md:gap-2.5">
+              <ClipboardDocumentCheckIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>AHC</span>
             </div>
           </button>
