@@ -65,7 +65,12 @@ export class DiagnosticVendorService {
 
     // Process service aliases and create/update master tests
     if (createDto.serviceAliases && Object.keys(createDto.serviceAliases).length > 0) {
-      await this.processMasterTests(createDto.services || [], createDto.serviceAliases);
+      try {
+        await this.processMasterTests(createDto.services || [], createDto.serviceAliases);
+      } catch (error) {
+        console.error('[DIAGNOSTIC-VENDOR] Error processing master tests during creation:', error);
+        // Continue with vendor creation even if master test processing fails
+      }
     }
 
     return savedVendor;
@@ -158,7 +163,13 @@ export class DiagnosticVendorService {
 
       // Process service aliases and create/update master tests
       if (Object.keys(updateDto.serviceAliases).length > 0) {
-        await this.processMasterTests(vendor.services || [], updateDto.serviceAliases);
+        try {
+          await this.processMasterTests(vendor.services || [], updateDto.serviceAliases);
+        } catch (error) {
+          console.error('[DIAGNOSTIC-VENDOR] Error processing master tests:', error);
+          // Continue with vendor update even if master test processing fails
+          // This allows alias updates to succeed even if master test creation fails
+        }
       }
     }
 
@@ -534,6 +545,11 @@ export class DiagnosticVendorService {
     serviceIds: string[],
     serviceAliases: Record<string, string>,
   ): Promise<void> {
+    console.log('[DIAGNOSTIC-VENDOR] Processing master tests for service aliases:', {
+      serviceCount: serviceIds.length,
+      aliasCount: Object.keys(serviceAliases).length,
+    });
+
     // Process each service that has an alias
     for (const serviceId of serviceIds) {
       const alias = serviceAliases[serviceId];
@@ -541,33 +557,46 @@ export class DiagnosticVendorService {
         continue; // Skip if no alias provided
       }
 
-      // Fetch the diagnostic service to get its details
-      const diagnosticService = await this.diagnosticServiceModel.findOne({ serviceId: serviceId });
-      if (!diagnosticService) {
-        console.warn(`Diagnostic service ${serviceId} not found, skipping master test creation`);
-        continue;
-      }
+      try {
+        // Fetch the diagnostic service to get its details
+        const diagnosticService = await this.diagnosticServiceModel.findOne({ serviceId: serviceId });
+        if (!diagnosticService) {
+          console.warn(`[DIAGNOSTIC-VENDOR] Service ${serviceId} not found, skipping master test creation`);
+          continue;
+        }
 
-      // Check if diagnostic master test exists with this service code
-      const existingMasterTest = await this.masterTestService.getByCode(diagnosticService.code);
+        console.log(`[DIAGNOSTIC-VENDOR] Processing alias "${alias}" for service ${diagnosticService.code}`);
 
-      if (existingMasterTest) {
-        // Update synonyms: add alias if not already present
-        const currentSynonyms = existingMasterTest.synonyms || [];
-        if (!currentSynonyms.includes(alias.trim())) {
-          await this.masterTestService.update(existingMasterTest.parameterId, {
-            synonyms: [...currentSynonyms, alias.trim()],
+        // Check if diagnostic master test exists with this service code
+        const existingMasterTest = await this.masterTestService.getByCode(diagnosticService.code);
+
+        if (existingMasterTest) {
+          // Update synonyms: add alias if not already present
+          const currentSynonyms = existingMasterTest.synonyms || [];
+          if (!currentSynonyms.includes(alias.trim())) {
+            console.log(`[DIAGNOSTIC-VENDOR] Updating master test ${existingMasterTest.parameterId} with new synonym`);
+            await this.masterTestService.update(existingMasterTest.parameterId, {
+              synonyms: [...currentSynonyms, alias.trim()],
+            });
+          } else {
+            console.log(`[DIAGNOSTIC-VENDOR] Synonym already exists in master test ${existingMasterTest.parameterId}`);
+          }
+        } else {
+          // Create new diagnostic master test
+          console.log(`[DIAGNOSTIC-VENDOR] Creating new master test for code ${diagnosticService.code}`);
+          await this.masterTestService.create({
+            code: diagnosticService.code,
+            standardName: diagnosticService.name,
+            category: diagnosticService.category as any,
+            synonyms: [alias.trim()],
           });
         }
-      } else {
-        // Create new diagnostic master test
-        await this.masterTestService.create({
-          code: diagnosticService.code,
-          standardName: diagnosticService.name,
-          category: diagnosticService.category as any,
-          synonyms: [alias.trim()],
-        });
+      } catch (error) {
+        console.error(`[DIAGNOSTIC-VENDOR] Error processing master test for service ${serviceId}:`, error);
+        // Continue processing other aliases even if one fails
       }
     }
+
+    console.log('[DIAGNOSTIC-VENDOR] Finished processing master tests');
   }
 }
