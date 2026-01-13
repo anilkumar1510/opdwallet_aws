@@ -128,12 +128,91 @@ export class WalletService {
     }
   }
 
-  async getWalletTransactions(userId: string, limit: number = 50) {
+  async getWalletTransactions(
+    userId: string,
+    filters?: {
+      types?: string[]
+      categoryCodes?: string[]
+      dateFrom?: Date
+      dateTo?: Date
+      minAmount?: number
+      maxAmount?: number
+      serviceTypes?: string[]
+      includeReversed?: boolean
+      sortBy?: 'createdAt' | 'amount'
+      sortOrder?: 'asc' | 'desc'
+    },
+    limit: number = 50
+  ) {
     try {
+      // Build query object
+      const query: any = { userId };
+
+      // Apply filters if provided
+      if (filters) {
+        // Filter by transaction types
+        if (filters.types && filters.types.length > 0) {
+          query.type = { $in: filters.types };
+        }
+
+        // Filter by category codes
+        if (filters.categoryCodes && filters.categoryCodes.length > 0) {
+          query.categoryCode = { $in: filters.categoryCodes };
+        }
+
+        // Filter by date range
+        if (filters.dateFrom || filters.dateTo) {
+          query.createdAt = {};
+          if (filters.dateFrom) {
+            query.createdAt.$gte = filters.dateFrom;
+          }
+          if (filters.dateTo) {
+            query.createdAt.$lte = filters.dateTo;
+          }
+        }
+
+        // Filter by amount range
+        if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
+          query.amount = {};
+          if (filters.minAmount !== undefined) {
+            query.amount.$gte = filters.minAmount;
+          }
+          if (filters.maxAmount !== undefined) {
+            query.amount.$lte = filters.maxAmount;
+          }
+        }
+
+        // Filter by service types
+        if (filters.serviceTypes && filters.serviceTypes.length > 0) {
+          query.serviceType = { $in: filters.serviceTypes };
+        }
+
+        // Filter reversed transactions
+        if (filters.includeReversed === false) {
+          query.isReversed = { $ne: true };
+        }
+      }
+
+      // Build sort object
+      let sortField = 'createdAt';
+      let sortDirection = -1;
+
+      if (filters) {
+        if (filters.sortBy === 'amount') {
+          sortField = 'amount';
+        }
+        if (filters.sortOrder === 'asc') {
+          sortDirection = 1;
+        }
+      }
+
+      const sortObj: any = {};
+      sortObj[sortField] = sortDirection;
+
       const transactions = await this.walletTransactionModel
-        .find({ userId })
-        .select('transactionId type amount categoryCode previousBalance newBalance serviceType serviceProvider bookingId notes createdAt status')
-        .sort({ createdAt: -1 })
+        .find(query)
+        .select('transactionId type amount categoryCode categoryName previousBalance newBalance serviceType serviceProvider bookingId notes createdAt status isReversed')
+        .sort(sortObj)
         .limit(limit)
         .lean()
         .exec();

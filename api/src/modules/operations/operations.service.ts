@@ -80,7 +80,7 @@ export class OperationsService {
     const assignments = await this.assignmentsService.getUserAssignments(userId);
 
     // Get wallet transactions (last 50)
-    const transactions = await this.walletService.getWalletTransactions(userId, 50);
+    const transactions = await this.walletService.getWalletTransactions(userId, {}, 50);
 
     // Get dependents if this is a primary member
     let dependents: any[] = [];

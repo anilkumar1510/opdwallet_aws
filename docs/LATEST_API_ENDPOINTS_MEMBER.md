@@ -43,8 +43,30 @@ This document lists all API endpoints used by the Member Portal (web-member).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /wallet/transactions | Get wallet transactions with pagination |
-| GET | /wallet/balance | Get wallet balance |
+| GET | /wallet/transactions | Get wallet transactions with comprehensive filtering, sorting, and pagination |
+| GET | /wallet/balance | Get wallet balance for logged-in member or family member |
+
+**GET /wallet/transactions - Query Parameters:**
+- `userId` (optional): User ID to fetch transactions for (must be in same family)
+- `limit` (optional): Number of transactions to return (default: 15)
+- `type` (optional): Transaction types (comma-separated): DEBIT, CREDIT, REFUND, ADJUSTMENT, INITIALIZATION
+- `categoryCode` (optional): Category codes (comma-separated)
+- `dateFrom` (optional): Start date (ISO format: YYYY-MM-DD)
+- `dateTo` (optional): End date (ISO format: YYYY-MM-DD)
+- `minAmount` (optional): Minimum transaction amount
+- `maxAmount` (optional): Maximum transaction amount
+- `serviceType` (optional): Service types (comma-separated)
+- `includeReversed` (optional): Include reversed transactions (true/false, default: true)
+- `sortBy` (optional): Sort field: date or amount (default: date)
+- `sortOrder` (optional): Sort order: asc or desc (default: desc)
+
+**GET /wallet/balance - Query Parameters:**
+- `userId` (optional): User ID to fetch balance for (must be in same family)
+
+**Family Access Control:**
+- Primary members can access their own and their dependents' wallet data
+- Dependents can only access their own wallet data
+- Access verified through `verifyFamilyAccess()` method
 
 ---
 

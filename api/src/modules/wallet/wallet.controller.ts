@@ -31,14 +31,34 @@ export class WalletController {
 
   @Get('transactions')
   @Roles(UserRole.MEMBER)
-  @ApiOperation({ summary: 'Get wallet transactions for logged-in member or family member' })
+  @ApiOperation({ summary: 'Get wallet transactions for logged-in member or family member with filtering' })
   @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch transactions for (must be in same family)' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of transactions to return (default: 15)' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: 'Transaction types (comma-separated): DEBIT,CREDIT,REFUND,ADJUSTMENT,INITIALIZATION' })
+  @ApiQuery({ name: 'categoryCode', required: false, type: String, description: 'Category codes (comma-separated)' })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Start date (ISO format: YYYY-MM-DD)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'End date (ISO format: YYYY-MM-DD)' })
+  @ApiQuery({ name: 'minAmount', required: false, type: Number, description: 'Minimum transaction amount' })
+  @ApiQuery({ name: 'maxAmount', required: false, type: Number, description: 'Maximum transaction amount' })
+  @ApiQuery({ name: 'serviceType', required: false, type: String, description: 'Service types (comma-separated)' })
+  @ApiQuery({ name: 'includeReversed', required: false, type: String, description: 'Include reversed transactions (true/false, default: true)' })
+  @ApiQuery({ name: 'sortBy', required: false, type: String, description: 'Sort field: date or amount (default: date)' })
+  @ApiQuery({ name: 'sortOrder', required: false, type: String, description: 'Sort order: asc or desc (default: desc)' })
   @ApiResponse({ status: 200, description: 'Transactions fetched successfully' })
   async getTransactions(
     @Request() req: AuthRequest,
     @Query('userId') userId?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('type') type?: string,
+    @Query('categoryCode') categoryCode?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('minAmount') minAmount?: string,
+    @Query('maxAmount') maxAmount?: string,
+    @Query('serviceType') serviceType?: string,
+    @Query('includeReversed') includeReversed?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string
   ) {
     const targetUserId = userId || req.user.userId;
     const limitNum = limit ? parseInt(limit) : 15;
@@ -46,7 +66,72 @@ export class WalletController {
     // Verify family access
     await this.verifyFamilyAccess(req.user.userId, targetUserId);
 
-    const transactions = await this.walletService.getWalletTransactions(targetUserId, limitNum);
+    // Build filters object
+    const filters: any = {};
+
+    // Parse transaction types
+    if (type) {
+      filters.types = type.split(',').map(t => t.trim()).filter(t => t);
+    }
+
+    // Parse category codes
+    if (categoryCode) {
+      filters.categoryCodes = categoryCode.split(',').map(c => c.trim()).filter(c => c);
+    }
+
+    // Parse date range
+    if (dateFrom) {
+      filters.dateFrom = new Date(dateFrom);
+    }
+    if (dateTo) {
+      // Set to end of day for dateTo
+      const endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+      filters.dateTo = endDate;
+    }
+
+    // Parse amount range
+    if (minAmount) {
+      const min = parseFloat(minAmount);
+      if (!isNaN(min) && min >= 0) {
+        filters.minAmount = min;
+      }
+    }
+    if (maxAmount) {
+      const max = parseFloat(maxAmount);
+      if (!isNaN(max) && max >= 0) {
+        filters.maxAmount = max;
+      }
+    }
+
+    // Parse service types
+    if (serviceType) {
+      filters.serviceTypes = serviceType.split(',').map(s => s.trim()).filter(s => s);
+    }
+
+    // Parse includeReversed
+    if (includeReversed !== undefined) {
+      filters.includeReversed = includeReversed === 'true';
+    }
+
+    // Parse sort options
+    if (sortBy === 'amount') {
+      filters.sortBy = 'amount';
+    } else {
+      filters.sortBy = 'createdAt'; // default
+    }
+
+    if (sortOrder === 'asc') {
+      filters.sortOrder = 'asc';
+    } else {
+      filters.sortOrder = 'desc'; // default
+    }
+
+    const transactions = await this.walletService.getWalletTransactions(
+      targetUserId,
+      filters,
+      limitNum
+    );
 
     return {
       transactions,
