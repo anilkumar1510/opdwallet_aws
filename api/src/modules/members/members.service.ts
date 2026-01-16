@@ -319,9 +319,7 @@ export class MembersService {
         phoneToUpdate = updateMemberDto.phone;
       } else if (updateMemberDto.phone && typeof updateMemberDto.phone === 'object' && 'number' in updateMemberDto.phone) {
         phoneToUpdate = (updateMemberDto.phone as any).number;
-        console.log('🔍 [MEMBER-UPDATE] Extracted phone number from object:', phoneToUpdate);
       } else {
-        console.error('❌ [MEMBER-UPDATE] Invalid phone format:', updateMemberDto.phone);
         throw new BadRequestException('Invalid phone number format');
       }
     }
@@ -342,7 +340,42 @@ export class MembersService {
       updatedBy,
     };
 
-    Object.assign(member, updateData);
+    // Update fields individually to ensure Mongoose properly tracks changes
+    if (updateData.name) {
+      member.name = updateData.name;
+    }
+    if (updateData.email) {
+      member.email = updateData.email;
+    }
+    if (phoneToUpdate) {
+      member.phone = phoneToUpdate;
+    }
+    if (updateData.dob) {
+      member.dob = new Date(updateData.dob);
+    }
+    if (updateData.gender) {
+      member.gender = updateData.gender;
+    }
+    if (updateData.status) {
+      member.status = updateData.status;
+    }
+    if (updateData.relationship) {
+      member.relationship = updateData.relationship;
+    }
+    if (updateData.primaryMemberId !== undefined) {
+      member.primaryMemberId = updateData.primaryMemberId;
+    }
+    if (updateData.corporateName) {
+      member.corporateName = updateData.corporateName;
+    }
+    if (updateData.bloodGroup) {
+      member.bloodGroup = updateData.bloodGroup;
+    }
+    if (updateData.address) {
+      member.address = updateData.address;
+    }
+    member.updatedBy = updatedBy;
+
     const updated = await member.save();
 
     const { passwordHash: _, ...result } = updated.toObject();

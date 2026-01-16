@@ -237,8 +237,39 @@ export class InternalUsersService {
       }
     }
 
-    // Update user
-    Object.assign(user, updateInternalUserDto, { updatedBy });
+    // Update user fields individually to ensure Mongoose properly tracks changes
+    if (updateInternalUserDto.name) {
+      user.name = updateInternalUserDto.name;
+    }
+    if (updateInternalUserDto.email) {
+      user.email = updateInternalUserDto.email;
+    }
+    if (updateInternalUserDto.phone) {
+      user.phone = updateInternalUserDto.phone;
+    }
+    if (updateInternalUserDto.role) {
+      user.role = updateInternalUserDto.role;
+    }
+    if (updateInternalUserDto.status) {
+      user.status = updateInternalUserDto.status;
+    }
+    if (updateInternalUserDto.department) {
+      user.department = updateInternalUserDto.department;
+    }
+    if (updateInternalUserDto.designation) {
+      user.designation = updateInternalUserDto.designation;
+    }
+    if (updateInternalUserDto.reportingTo) {
+      user.reportingTo = updateInternalUserDto.reportingTo;
+    }
+    if (updateInternalUserDto.mfaEnabled !== undefined) {
+      user.mfaEnabled = updateInternalUserDto.mfaEnabled;
+    }
+    if (updateInternalUserDto.allowedIPs) {
+      user.allowedIPs = updateInternalUserDto.allowedIPs;
+    }
+    user.updatedBy = updatedBy;
+
     const updated = await user.save();
 
     const { passwordHash: _, ...result } = updated.toObject();
