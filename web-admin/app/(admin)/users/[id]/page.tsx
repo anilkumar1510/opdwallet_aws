@@ -10,6 +10,35 @@ import { DependentsTable } from './components/DependentsTable'
 import { PolicyAssignmentsTable } from './components/PolicyAssignmentsTable'
 import { AssignPolicyModal } from './components/AssignPolicyModal'
 
+// Helper function to safely extract error message from API response
+function getErrorMessage(error: any, fallback: string = 'An error occurred'): string {
+  if (!error) return fallback
+
+  // If error.message exists
+  if (error.message) {
+    // If it's already a string, return it
+    if (typeof error.message === 'string') {
+      return error.message
+    }
+    // If it's an array, join the messages
+    if (Array.isArray(error.message)) {
+      return error.message.join(', ')
+    }
+    // If it's an object, stringify it
+    if (typeof error.message === 'object') {
+      return JSON.stringify(error.message)
+    }
+  }
+
+  // Fallback to error itself if it's a string
+  if (typeof error === 'string') {
+    return error
+  }
+
+  // Last resort
+  return fallback
+}
+
 // Helper functions
 function validatePolicyAssignment(
   selectedPolicyId: string,
@@ -69,33 +98,72 @@ function buildAssignmentPayload(
   return payload
 }
 
-function buildUserUpdateData(editedUser: any) {
+function buildUserUpdateData(editedUser: any, userType: 'member' | 'internal' | null) {
+  // Base fields common to all users
   const updateData: any = {
     name: {
       firstName: editedUser.name?.firstName || '',
       lastName: editedUser.name?.lastName || ''
     },
     email: editedUser.email,
-    phone: editedUser.phone,
-    dob: editedUser.dob,
-    gender: editedUser.gender,
-    status: editedUser.status,
-    role: editedUser.role,
-    relationship: editedUser.relationship,
-    primaryMemberId: editedUser.primaryMemberId,
-    memberId: editedUser.memberId,
-    uhid: editedUser.uhid,
-    employeeId: editedUser.employeeId,
-    corporateName: editedUser.corporateName
+    status: editedUser.status
   }
 
-  if (editedUser.address) {
-    updateData.address = {
-      line1: editedUser.address.line1 || '',
-      line2: editedUser.address.line2 || '',
-      city: editedUser.address.city || '',
-      state: editedUser.address.state || '',
-      pincode: editedUser.address.pincode || ''
+  // For internal users, include role (no dob, no gender, no employeeId in update)
+  // For members, include relationship and member-specific fields
+  if (userType === 'internal') {
+    updateData.role = editedUser.role
+
+    // Internal users require phone as an object with countryCode and number
+    // IMPORTANT: Remove MongoDB _id from phone object
+    if (editedUser.phone) {
+      if (typeof editedUser.phone === 'string') {
+        // Convert string phone to object format
+        updateData.phone = {
+          countryCode: '+91',
+          number: editedUser.phone
+        }
+      } else if (editedUser.phone && typeof editedUser.phone === 'object') {
+        // Already in object format, but clean it (remove _id, etc.)
+        updateData.phone = {
+          countryCode: editedUser.phone.countryCode || '+91',
+          number: editedUser.phone.number || editedUser.phone
+        }
+      }
+    }
+
+    // Optional internal user fields
+    if (editedUser.department) updateData.department = editedUser.department
+    if (editedUser.designation) updateData.designation = editedUser.designation
+    if (editedUser.reportingTo) updateData.reportingTo = editedUser.reportingTo
+    if (editedUser.mfaEnabled !== undefined) updateData.mfaEnabled = editedUser.mfaEnabled
+    if (editedUser.allowedIPs) updateData.allowedIPs = editedUser.allowedIPs
+
+    // CRITICAL: Do NOT send these fields for internal users
+    // (explicitly not setting them, so they won't be in updateData)
+    // - dob, gender, employeeId, address, corporateName, relationship, primaryMemberId, bloodGroup
+  } else if (userType === 'member') {
+    // Members have phone as string
+    updateData.phone = editedUser.phone
+
+    // Member-specific fields
+    if (editedUser.dob) updateData.dob = editedUser.dob
+    if (editedUser.gender) updateData.gender = editedUser.gender
+    if (editedUser.corporateName) updateData.corporateName = editedUser.corporateName
+    if (editedUser.relationship) updateData.relationship = editedUser.relationship
+    if (editedUser.primaryMemberId) updateData.primaryMemberId = editedUser.primaryMemberId
+    if (editedUser.bloodGroup) updateData.bloodGroup = editedUser.bloodGroup
+    // Note: memberId, uhid, and role are NOT allowed in member updates
+
+    // Include address if provided (only for members)
+    if (editedUser.address) {
+      updateData.address = {
+        line1: editedUser.address.line1 || '',
+        line2: editedUser.address.line2 || '',
+        city: editedUser.address.city || '',
+        state: editedUser.address.state || '',
+        pincode: editedUser.address.pincode || ''
+      }
     }
   }
 
@@ -313,7 +381,7 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        toast.error(error.message || 'Failed to assign policy')
+        toast.error(getErrorMessage(error, 'Failed to assign policy'))
         return
       }
 
@@ -346,7 +414,7 @@ export default function UserDetailPage() {
         fetchAssignments()
       } else {
         const error = await response.json()
-        toast.error(error.message || 'Failed to unassign policy')
+        toast.error(getErrorMessage(error, 'Failed to unassign policy'))
       }
     } catch (error) {
       console.error('Policy unassignment error:', error)
@@ -380,7 +448,7 @@ export default function UserDetailPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const updateData = buildUserUpdateData(editedUser)
+      const updateData = buildUserUpdateData(editedUser, userType)
 
       const endpoint = userType === 'member'
         ? `/api/members/${params.id}`
@@ -393,7 +461,7 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        toast.error(error.message || 'Failed to update user')
+        toast.error(getErrorMessage(error, 'Failed to update user'))
         return
       }
 
@@ -402,7 +470,6 @@ export default function UserDetailPage() {
       resetEditingState()
       fetchUserWithDependents()
     } catch (error) {
-      console.error('User update error:', error)
       toast.error('Network error. Please try again.')
     } finally {
       setSaving(false)
@@ -486,7 +553,7 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        toast.error(error.message || 'Failed to delete user')
+        toast.error(getErrorMessage(error, 'Failed to delete user'))
         return
       }
 
