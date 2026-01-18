@@ -185,32 +185,88 @@ export default function BottomNavigation() {
       </div>
 
       {/* Bottom Navigation for Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#2B4D8C] border-t border-white/10 lg:hidden bottom-nav-shadow">
-        <div className="grid grid-cols-4 h-16 safe-area-pb">
-          {bottomNavItems.map((item) => {
-            const active = isActive(item.href)
-            const Icon = active ? item.activeIcon : item.icon
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{ height: '159px', pointerEvents: 'none' }}>
+        {/* Gradient fade effect at top */}
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{
+            background: 'linear-gradient(to top, #b8c4d0, rgba(184, 196, 208, 0))',
+            pointerEvents: 'none'
+          }}
+        />
+
+        {/* Frosted glass pill container */}
+        <div
+          className="absolute left-1/2 flex items-center gap-2 p-1.5"
+          style={{
+            bottom: '20px',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 255, 255, 0.46)',
+            border: '1px solid white',
+            borderRadius: '49px',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            pointerEvents: 'auto'
+          }}
+        >
+          {/* Non-active items container */}
+          <div
+            className="flex items-center gap-6 px-4 py-2"
+            style={{
+              background: 'rgba(184, 196, 208, 0.31)',
+              border: '1px solid rgba(184, 196, 208, 0.09)',
+              borderRadius: '26.5px'
+            }}
+          >
+            {bottomNavItems.filter(item => !isActive(item.href)).map((item) => {
+              const Icon = item.icon
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="flex flex-col items-center gap-1.5 no-underline"
+                >
+                  <Icon
+                    className="h-5 w-5"
+                    style={{
+                      color: '#034da2',
+                      stroke: '#034da2',
+                      strokeWidth: '2',
+                      fill: 'none'
+                    }}
+                  />
+                  <span
+                    className="text-sm font-semibold capitalize"
+                    style={{ color: '#034da2' }}
+                  >
+                    {item.name}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Active item */}
+          {bottomNavItems.filter(item => isActive(item.href)).map((item) => {
+            const Icon = item.activeIcon
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`
-                  flex flex-col items-center justify-center py-2 px-1
-                  transition-colors duration-200
-                  ${active
-                    ? 'text-white bg-white/15'
-                    : 'text-white/70 hover:text-white'
-                  }
-                `}
+                className="flex flex-col items-center gap-1.5 px-6 py-2.5 no-underline"
+                style={{
+                  background: '#034da2',
+                  borderRadius: '46px',
+                  boxShadow: '0px 1px 8px rgba(0, 0, 0, 0.1)'
+                }}
               >
-                <Icon
-                  className={`
-                    h-6 w-6 mb-0.5
-                    ${active ? 'text-white' : 'text-white/70'}
-                  `}
-                />
-                <span className="text-xs font-medium">
+                <Icon className="h-5 w-5" style={{ fill: 'white' }} />
+                <span
+                  className="text-sm font-semibold capitalize"
+                  style={{ color: 'white' }}
+                >
                   {item.name}
                 </span>
               </Link>
@@ -219,7 +275,7 @@ export default function BottomNavigation() {
         </div>
 
         {/* Safe area for devices with home indicator (iPhone X+) */}
-        <div className="h-safe-area-bottom bg-[#2B4D8C]" />
+        <div className="absolute bottom-0 w-full h-safe-area-bottom" style={{ pointerEvents: 'none' }} />
       </div>
     </>
   )
