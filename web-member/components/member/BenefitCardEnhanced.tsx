@@ -28,16 +28,10 @@ export default function BenefitCardEnhanced({
   // Calculate available percentage
   const availablePercentage = total > 0 ? (current / total) * 100 : 0;
 
-  // Calculate consumed amount for display
-  const consumed = total - current;
-
   // Color-coded progress bars based on remaining balance
   const getProgressColor = () => {
-    // Green: Lots of balance left (> 60%)
-    // Orange: Medium balance left (30-60%)
-    // Red: Low balance left (< 30%)
     if (availablePercentage > 60) {
-      return '#16a34a'; // Darker green - plenty left
+      return '#16a34a'; // Green - plenty left
     } else if (availablePercentage > 30) {
       return '#f97316'; // Orange - medium left
     } else {
@@ -51,61 +45,121 @@ export default function BenefitCardEnhanced({
     }).format(amount);
   };
 
+  // Format total in short form (e.g., 20000 -> 20k)
+  const formatShortCurrency = (amount: number) => {
+    if (amount >= 100000) {
+      return `${(amount / 100000).toFixed(0)}L`;
+    } else if (amount >= 1000) {
+      return `${(amount / 1000).toFixed(0)}k`;
+    }
+    return amount.toString();
+  };
+
   const amountLeft = current;
 
   return (
-    <Link
-      href={href}
-      className="flex flex-col bg-white transition-all duration-200 h-full group"
-      style={{
-        border: '1.5px solid #E5E7EB',
-        borderRadius: '16px',
-        boxShadow: '0 1px 8px 0 rgba(3, 77, 162, 0.24)',
-        minHeight: '123px',
-        padding: '18px 11px 11px 11px'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.border = '1.5px solid #0F5FDC'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.border = '1.5px solid #E5E7EB'
-      }}
-    >
-      {/* Title and Chevron */}
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="text-base font-semibold leading-tight flex-1 pr-2" style={{ color: '#034DA2', fontSize: '16px' }}>
+    <>
+      {/* Mobile View - New Design */}
+      <Link
+        href={href}
+        className="lg:hidden relative bg-white overflow-hidden transition-all duration-200 hover:-translate-y-[2px] active:translate-y-0"
+        style={{
+          width: '172px',
+          height: '78px',
+          borderRadius: '16px',
+          border: '1px solid rgba(217, 217, 217, 0.48)',
+          boxShadow: '-2px 11px 46.1px 0px rgba(0, 0, 0, 0.08)'
+        }}
+      >
+        {/* Benefit Name */}
+        <span
+          className="absolute top-[9px] left-[9px] text-base font-normal leading-none"
+          style={{ color: '#034da2' }}
+        >
           {title}
-        </h3>
-        <ChevronRightIcon className="w-[13.5px] h-[13.5px] flex-shrink-0" style={{ color: '#545454' }} />
-      </div>
-
-      {/* Amount Display */}
-      <div style={{ marginBottom: '4px' }}>
-        <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030' }}>
-          ₹{formatCurrency(current)}
         </span>
-        <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px' }}>
-          / ₹{formatCurrency(total)}
-        </span>
-      </div>
 
-      {/* Progress Bar */}
-      <div style={{ marginBottom: '4px' }}>
-        <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#F6F6F6' }}>
-          <div
-            className="h-full transition-all duration-500"
-            style={{
-              width: `${Math.min(availablePercentage, 100)}%`,
-              backgroundColor: getProgressColor()
-            }}
-          />
+        {/* Balance Info */}
+        <div className="absolute left-[9px] bottom-[12px] flex items-baseline gap-1">
+          <span className="text-base font-medium" style={{ color: '#0a3f93' }}>
+            ₹{formatCurrency(current)}
+          </span>
+          <span className="text-base font-normal" style={{ color: '#444444' }}>
+            /
+          </span>
+          <span className="text-xs font-normal" style={{ color: '#444444' }}>
+            {formatShortCurrency(total)}
+          </span>
+          <span className="text-sm font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)' }}>
+            Left
+          </span>
         </div>
-      </div>
 
-      {/* Amount Left */}
-      <div className="mt-auto" style={{ fontSize: '12px', fontWeight: 400, color: '#303030', lineHeight: '120%' }}>
-        ₹{formatCurrency(amountLeft)} left
-      </div>
-    </Link>
+        {/* Arrow Button */}
+        <div
+          className="absolute right-[6px] bottom-[6px] w-[27px] h-[27px] rounded-full flex items-center justify-center"
+          style={{ background: '#f6f6f6' }}
+        >
+          <svg width="13.5" height="13.5" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 2.5L9.5 7L5 11.5" stroke="#545454" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </Link>
+
+      {/* Desktop View - Original Design */}
+      <Link
+        href={href}
+        className="hidden lg:flex flex-col bg-white transition-all duration-200 h-full group"
+        style={{
+          border: '1.5px solid #E5E7EB',
+          borderRadius: '16px',
+          boxShadow: '0 1px 8px 0 rgba(3, 77, 162, 0.24)',
+          minHeight: '123px',
+          padding: '18px 11px 11px 11px'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.border = '1.5px solid #0F5FDC'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.border = '1.5px solid #E5E7EB'
+        }}
+      >
+        {/* Title and Chevron */}
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="text-base font-semibold leading-tight flex-1 pr-2" style={{ color: '#034DA2', fontSize: '16px' }}>
+            {title}
+          </h3>
+          <ChevronRightIcon className="w-[13.5px] h-[13.5px] flex-shrink-0" style={{ color: '#545454' }} />
+        </div>
+
+        {/* Amount Display */}
+        <div style={{ marginBottom: '4px' }}>
+          <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030' }}>
+            ₹{formatCurrency(current)}
+          </span>
+          <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px' }}>
+            / ₹{formatCurrency(total)}
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div style={{ marginBottom: '4px' }}>
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#F6F6F6' }}>
+            <div
+              className="h-full transition-all duration-500"
+              style={{
+                width: `${Math.min(availablePercentage, 100)}%`,
+                backgroundColor: getProgressColor()
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Amount Left */}
+        <div className="mt-auto" style={{ fontSize: '12px', fontWeight: 400, color: '#303030', lineHeight: '120%' }}>
+          ₹{formatCurrency(amountLeft)} left
+        </div>
+      </Link>
+    </>
   );
 }
