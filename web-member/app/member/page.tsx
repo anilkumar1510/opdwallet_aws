@@ -111,26 +111,29 @@ const MORE_SERVICES = [
   {
     id: 'helpline',
     label: '24/7 Helpline',
+    labelHighlight: '24/7',
     icon: <ChatBubbleLeftRightIcon className="w-6 h-6 text-brand-600" />,
     href: '/member/helpline'
   },
   {
-    id: 'wellness',
-    label: 'Wellness Programs',
-    icon: <SparklesIcon className="w-6 h-6 text-brand-600" />,
-    href: '/member/wellness'
+    id: 'claims',
+    label: 'Claims',
+    icon: <ClipboardDocumentCheckIcon className="w-6 h-6 text-brand-600" />,
+    href: '/member/claims'
   },
   {
     id: 'health-records',
     label: 'Health Records',
+    labelHighlight: 'Health',
     icon: <FolderOpenIcon className="w-6 h-6 text-brand-600" />,
     href: '/member/health-records'
   },
   {
-    id: 'claims',
-    label: 'File Claims',
-    icon: <DocumentPlusIcon className="w-6 h-6 text-brand-600" />,
-    href: '/member/claims/new'
+    id: 'transactions',
+    label: 'Transaction History',
+    labelHighlight: 'Transaction',
+    icon: <BanknotesIcon className="w-6 h-6 text-brand-600" />,
+    href: '/member/transactions'
   }
 ]
 
