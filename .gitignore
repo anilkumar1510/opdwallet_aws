@@ -80,3 +80,21 @@ logs/
 **/report-task.txt
 *.pdf
 *.jpg
+
+
+ # System Files (macOS)                                                                                                                                                                                                                                       
+ .DS_Store                                                                                                                                                                                                                                                    
+ .DS_Store?                                                                                                                                                                                                                                                   
+ ._*                                                                                                                                                                                                                                                          
+ .Spotlight-V100                                                                                                                                                                                                                                              
+ .Trashes                                                                                                                                                                                                                                                     
+                                                                                                                                                                                                                                                              
+ # Archives & Backups (prevent accidental commits)                                                                                                                                                                                                            
+ *.tar.gz                                                                                                                                                                                                                                                     
+ *.zip                                                                                                                                                                                                                                                        
+ *.tar                                                                                                                                                                                                                                                        
+ *.7z                                                                                                                                                                                                                                                         
+ *-backup-*.tar.gz                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                              
+ # Test artifacts                                                                                                                                                                                                                                             
+ test-*.html 

@@ -287,20 +287,6 @@ export class VisionBookingsController {
   }
 
   /**
-   * PATCH /api/vision-bookings/:bookingId/store-breakdown
-   * Store payment breakdown on booking before PaymentProcessor runs
-   */
-  @Patch('vision-bookings/:bookingId/store-breakdown')
-  @UseGuards(JwtAuthGuard)
-  async storePaymentBreakdown(
-    @Param('bookingId') bookingId: string,
-    @Body() breakdown: any,
-  ) {
-    console.log('[VisionBookings] PATCH /api/vision-bookings/:bookingId/store-breakdown -', bookingId);
-    return this.visionBookingsService.storePaymentBreakdown(bookingId, breakdown);
-  }
-
-  /**
    * POST /api/vision-bookings/:bookingId/complete-wallet-payment
    * Complete wallet-only payment (updates status and generates invoice)
    */

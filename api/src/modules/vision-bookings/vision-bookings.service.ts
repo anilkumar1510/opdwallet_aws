@@ -1155,39 +1155,6 @@ export class VisionBookingsService {
   }
 
   /**
-   * @deprecated This method is no longer needed as payment breakdown is now calculated
-   * during bill generation (generateBill method). Keeping for backward compatibility only.
-   *
-   * Store payment breakdown on booking
-   * Called before PaymentProcessor to ensure breakdown data is available for handlePaymentComplete
-   */
-  async storePaymentBreakdown(bookingId: string, breakdown: any) {
-    console.warn('[VisionBookings] [DEPRECATED] storePaymentBreakdown called - this is no longer needed');
-    console.log('[VisionBookings] Storing payment breakdown for:', bookingId);
-
-    const booking = await this.visionBookingModel.findOne({ bookingId });
-
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    // Store all payment breakdown fields
-    booking.copayAmount = breakdown.copayAmount;
-    booking.insuranceEligibleAmount = breakdown.insuranceEligibleAmount;
-    booking.serviceTransactionLimit = breakdown.serviceTransactionLimit || 0;
-    booking.insurancePayment = breakdown.insurancePayment;
-    booking.excessAmount = breakdown.excessAmount;
-    booking.totalMemberPayment = breakdown.totalMemberPayment;
-    booking.walletDebitAmount = breakdown.walletDebitAmount;
-
-    await booking.save();
-
-    console.log('[VisionBookings] Payment breakdown stored successfully');
-
-    return booking;
-  }
-
-  /**
    * Complete wallet-only payment
    * Called after PaymentProcessor handles wallet debit for wallet-only payments
    * Just updates booking status and generates invoice
