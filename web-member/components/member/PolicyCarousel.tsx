@@ -29,7 +29,7 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const scrollLeft = container.scrollLeft;
-      const cardWidth = 320 + 12; // Card width + gap
+      const cardWidth = 246 + 16; // Card width + gap (mobile: 246px + 16px gap)
       const newIndex = Math.round(scrollLeft / cardWidth);
       setActiveIndex(newIndex);
 
@@ -60,7 +60,7 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
 
   const scrollToCard = (index: number) => {
     if (scrollContainerRef.current) {
-      const cardWidth = 320 + 12; // Card width + gap
+      const cardWidth = 350 + 16; // Card width + gap (mobile: 350px + 16px gap)
       scrollContainerRef.current.scrollTo({
         left: index * cardWidth,
         behavior: 'smooth',
@@ -79,7 +79,7 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex gap-3 lg:gap-5 overflow-x-auto scrollbar-hide pb-2"
+          className="flex gap-4 lg:gap-5 overflow-x-auto scrollbar-hide pb-2"
         >
           {policies.map((policy, index) => (
             <PolicyCardEnhanced

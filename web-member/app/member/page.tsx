@@ -581,7 +581,7 @@ export default function DashboardPage() {
           <div className="relative group px-4 lg:px-6">
             <div
               ref={benefitsScrollRef}
-              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-[6px] lg:gap-4"
+              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4"
             >
               {walletCategories.map((category: any) => (
                 <BenefitCardEnhanced
