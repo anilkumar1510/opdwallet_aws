@@ -62,13 +62,13 @@ export default function BenefitCardEnhanced({
       {/* Mobile View - New Design */}
       <Link
         href={href}
-        className="lg:hidden relative bg-white overflow-hidden transition-all duration-200 hover:-translate-y-[2px] active:translate-y-0"
+        className="lg:hidden relative bg-white overflow-hidden transition-all duration-200 hover:-translate-y-[2px] active:translate-y-0 w-full"
         style={{
-          width: '172px',
-          height: '78px',
+          minHeight: '78px',
           borderRadius: '16px',
           border: '1px solid rgba(217, 217, 217, 0.48)',
-          boxShadow: '-2px 11px 46.1px 0px rgba(0, 0, 0, 0.08)'
+          boxShadow: '-2px 11px 46.1px 0px rgba(0, 0, 0, 0.08)',
+          aspectRatio: '172 / 78'
         }}
       >
         {/* Benefit Name */}
