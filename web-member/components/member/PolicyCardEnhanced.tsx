@@ -38,13 +38,15 @@ export default function PolicyCardEnhanced({
 
   return (
     <>
-      {/* Mobile View - Exact Specifications */}
+      {/* Mobile View - Responsive */}
       <Link
         href={href}
         className="lg:hidden flex-shrink-0 relative overflow-hidden transition-all duration-200 hover:scale-[1.02]"
         style={{
-          width: '246px',
-          height: '137px',
+          width: 'calc(100vw - 60px)',
+          maxWidth: '280px',
+          minWidth: '220px',
+          minHeight: '137px',
           borderRadius: '16px',
           background: 'linear-gradient(-3.81deg, rgba(228, 235, 254, 1) 0.81%, rgba(205, 220, 254, 1) 94.71%)',
           border: '1px solid rgba(164, 191, 254, 0.48)',

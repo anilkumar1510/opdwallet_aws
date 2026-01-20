@@ -64,10 +64,9 @@ export default function BenefitCardEnhanced({
       {/* Mobile View - Figma Design */}
       <Link
         href={href}
-        className="lg:hidden relative overflow-hidden transition-all duration-200 border border-[rgba(217,217,217,0.48)] active:border-[#0366de]"
+        className="lg:hidden flex flex-col justify-between overflow-hidden transition-all duration-200 border border-[rgba(217,217,217,0.48)] active:border-[#0366de] w-full p-[9px] pb-[10px]"
         style={{
-          width: '172px',
-          height: '78px',
+          minHeight: '78px',
           borderRadius: '16px',
           boxShadow: '-2px 11px 46.1px 0px rgba(0, 0, 0, 0.08)',
           backgroundColor: '#ffffff'
@@ -75,36 +74,38 @@ export default function BenefitCardEnhanced({
       >
         {/* Benefit Name */}
         <span
-          className="absolute top-[9px] left-[9px] text-[16px] font-normal leading-none"
+          className="text-[14px] sm:text-[16px] font-normal leading-tight"
           style={{ color: '#034da2', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
         >
           {title}
         </span>
 
-        {/* Balance Info */}
-        <div className="absolute left-[9px] bottom-[12px] flex items-baseline">
-          <span className="text-[16px] font-medium" style={{ color: '#0a3f93', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
-            ₹{formatCurrency(current)}
-          </span>
-          <span className="text-[16px] font-normal ml-[8px]" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
-            /
-          </span>
-          <span className="text-[12px] font-normal" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
-            {formatShortCurrency(total)}
-          </span>
-          <span className="text-[14px] font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
-            Left
-          </span>
-        </div>
+        {/* Balance Info Row */}
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-baseline flex-wrap">
+            <span className="text-[14px] sm:text-[16px] font-medium" style={{ color: '#0a3f93', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+              ₹{formatCurrency(current)}
+            </span>
+            <span className="text-[14px] sm:text-[16px] font-normal ml-1" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+              /
+            </span>
+            <span className="text-[11px] sm:text-[12px] font-normal" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+              {formatShortCurrency(total)}
+            </span>
+            <span className="text-[12px] sm:text-[14px] font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+              Left
+            </span>
+          </div>
 
-        {/* Arrow Button */}
-        <div
-          className="absolute right-[6px] bottom-[6px] w-[27px] h-[27px] rounded-full flex items-center justify-center"
-          style={{ background: '#f6f6f6' }}
-        >
-          <svg width="13.5" height="13.5" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 2.5L9.5 7L5 11.5" stroke="#545454" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          {/* Arrow Button */}
+          <div
+            className="w-[24px] h-[24px] sm:w-[27px] sm:h-[27px] rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: '#f6f6f6' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 2.5L9.5 7L5 11.5" stroke="#545454" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
         </div>
       </Link>
 

@@ -29,7 +29,9 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const scrollLeft = container.scrollLeft;
-      const cardWidth = 246 + 16; // Card width + gap (mobile: 246px + 16px gap)
+      // Get the first card's actual width for accurate calculation
+      const firstCard = container.firstElementChild as HTMLElement;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 260; // Card width + gap
       const newIndex = Math.round(scrollLeft / cardWidth);
       setActiveIndex(newIndex);
 
@@ -60,8 +62,10 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
 
   const scrollToCard = (index: number) => {
     if (scrollContainerRef.current) {
-      const cardWidth = 350 + 16; // Card width + gap (mobile: 350px + 16px gap)
-      scrollContainerRef.current.scrollTo({
+      const container = scrollContainerRef.current;
+      const firstCard = container.firstElementChild as HTMLElement;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : 260; // Card width + gap
+      container.scrollTo({
         left: index * cardWidth,
         behavior: 'smooth',
       });

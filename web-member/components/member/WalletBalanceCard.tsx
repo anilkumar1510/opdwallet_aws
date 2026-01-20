@@ -26,14 +26,11 @@ export default function WalletBalanceCard({
       {/* Mobile View - Figma Design */}
       <Link
         href="/member/transactions"
-        className="lg:hidden block relative overflow-hidden transition-all duration-300 active:scale-[0.98]"
+        className="lg:hidden block relative overflow-hidden transition-all duration-300 active:scale-[0.98] w-full"
         style={{
           background: 'linear-gradient(180deg, #5CA3FA 0%, #2266B6 100%)',
-          height: '95px',
-          borderRadius: '16px',
-          width: '350px',
-          marginLeft: 'auto',
-          marginRight: 'auto'
+          minHeight: '95px',
+          borderRadius: '16px'
         }}
       >
         <div className="relative z-10 p-[15px]">
