@@ -178,13 +178,12 @@ export default function BottomNavigation() {
           }}
         />
 
-        {/* Frosted glass pill container - W:246 H:63 */}
+        {/* Frosted glass pill container - H:63, auto width with padding */}
         <div
-          className="absolute left-1/2 flex items-center justify-center gap-[4px] p-[4px]"
+          className="absolute left-1/2 flex items-center justify-center gap-[4px] px-[6px] py-[4px]"
           style={{
             bottom: '20px',
             transform: 'translateX(-50%)',
-            width: '246px',
             height: '63px',
             background: 'rgba(255, 255, 255, 0.46)',
             border: '1px solid white',
@@ -196,12 +195,11 @@ export default function BottomNavigation() {
         >
           {/* Non-active items container */}
           <div
-            className="flex items-center justify-center gap-3 px-3 h-full"
+            className="flex items-center justify-center gap-4 px-4 h-full"
             style={{
               background: 'rgba(184, 196, 208, 0.31)',
               border: '1px solid rgba(184, 196, 208, 0.09)',
-              borderRadius: '26.5px',
-              flex: 1
+              borderRadius: '26.5px'
             }}
           >
             {bottomNavItems.filter(item => !isActive(item.href)).map((item) => {
@@ -209,7 +207,7 @@ export default function BottomNavigation() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex flex-col items-center gap-[2px] no-underline"
+                  className="flex flex-col items-center gap-[3px] no-underline"
                 >
                   <img
                     src={item.mobileIconSrc}
@@ -219,7 +217,7 @@ export default function BottomNavigation() {
                     className="object-contain"
                   />
                   <span
-                    className="text-[11px] font-semibold capitalize"
+                    className="text-[12px] font-semibold capitalize whitespace-nowrap"
                     style={{ color: '#034da2', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
                   >
                     {item.name}
@@ -235,7 +233,7 @@ export default function BottomNavigation() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex flex-col items-center justify-center gap-[2px] px-4 h-[55px] no-underline"
+                className="flex flex-col items-center justify-center gap-[3px] px-5 h-[55px] no-underline"
                 style={{
                   background: '#034da2',
                   borderRadius: '46px',
@@ -250,7 +248,7 @@ export default function BottomNavigation() {
                   className="object-contain brightness-0 invert"
                 />
                 <span
-                  className="text-[11px] font-semibold capitalize"
+                  className="text-[12px] font-semibold capitalize whitespace-nowrap"
                   style={{ color: 'white', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
                 >
                   {item.name}
