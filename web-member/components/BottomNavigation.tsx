@@ -25,6 +25,7 @@ interface NavItem {
   href: string
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   activeIcon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  mobileIconSrc: string
 }
 
 const bottomNavItems: NavItem[] = [
@@ -33,24 +34,28 @@ const bottomNavItems: NavItem[] = [
     href: '/member',
     icon: HomeIcon,
     activeIcon: HomeIconSolid,
+    mobileIconSrc: '/images/icons/home-icon.svg',
   },
   {
     name: 'Claims',
     href: '/member/claims',
     icon: DocumentTextIcon,
     activeIcon: DocumentTextIconSolid,
+    mobileIconSrc: '/images/icons/claim-icon.svg',
   },
   {
     name: 'Bookings',
     href: '/member/bookings',
     icon: CalendarDaysIcon,
     activeIcon: CalendarDaysIconSolid,
+    mobileIconSrc: '/images/icons/bookings-icon.svg',
   },
   {
     name: 'Wallet',
     href: '/member/wallet',
     icon: WalletIcon,
     activeIcon: WalletIconSolid,
+    mobileIconSrc: '/images/icons/wallet-icon.svg',
   },
 ]
 
@@ -109,28 +114,6 @@ export default function BottomNavigation() {
 
   return (
     <>
-      {/* Top Header for Mobile - Logo, Profile, and Notifications */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md overflow-visible">
-        <div className="flex items-center justify-between h-14 px-3 overflow-visible">
-          {/* Left: Profile Dropdown */}
-          <div className="flex-shrink-0 overflow-visible">
-            <ProfileDropdown user={user} theme="dark" />
-          </div>
-
-          {/* Center: Logo */}
-          <div className="flex-1 flex justify-center px-2">
-            <div style={{ width: '10rem' }}>
-              <Logo variant="white" size="full" />
-            </div>
-          </div>
-
-          {/* Right: Notification Bell */}
-          <div className="flex-shrink-0">
-            <NotificationBell theme="dark" />
-          </div>
-        </div>
-      </div>
-
       {/* Top Navigation for Desktop */}
       <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -184,20 +167,20 @@ export default function BottomNavigation() {
         </div>
       </div>
 
-      {/* Bottom Navigation for Mobile */}
+      {/* Bottom Navigation for Mobile - Figma Design */}
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{ height: '159px', pointerEvents: 'none' }}>
-        {/* Gradient fade effect at top */}
+        {/* Gradient fade effect */}
         <div
-          className="absolute top-0 left-0 w-full h-full"
+          className="absolute top-0 left-0 w-full h-full scale-y-[-1]"
           style={{
-            background: 'linear-gradient(to top, #b8c4d0, rgba(184, 196, 208, 0))',
+            background: 'linear-gradient(to bottom, #b8c4d0, rgba(184, 196, 208, 0))',
             pointerEvents: 'none'
           }}
         />
 
         {/* Frosted glass pill container */}
         <div
-          className="absolute left-1/2 flex items-center gap-2 p-1.5"
+          className="absolute left-1/2 flex items-center gap-[6px] p-[6px]"
           style={{
             bottom: '20px',
             transform: 'translateX(-50%)',
@@ -219,26 +202,22 @@ export default function BottomNavigation() {
             }}
           >
             {bottomNavItems.filter(item => !isActive(item.href)).map((item) => {
-              const Icon = item.icon
-
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex flex-col items-center gap-1.5 no-underline"
+                  className="flex flex-col items-center gap-[6px] no-underline"
                 >
-                  <Icon
-                    className="h-5 w-5"
-                    style={{
-                      color: '#034da2',
-                      stroke: '#034da2',
-                      strokeWidth: '2',
-                      fill: 'none'
-                    }}
+                  <img
+                    src={item.mobileIconSrc}
+                    alt={item.name}
+                    width={20}
+                    height={20}
+                    className="object-contain"
                   />
                   <span
-                    className="text-sm font-semibold capitalize"
-                    style={{ color: '#034da2' }}
+                    className="text-[14px] font-semibold capitalize"
+                    style={{ color: '#034da2', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
                   >
                     {item.name}
                   </span>
@@ -249,23 +228,27 @@ export default function BottomNavigation() {
 
           {/* Active item */}
           {bottomNavItems.filter(item => isActive(item.href)).map((item) => {
-            const Icon = item.activeIcon
-
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex flex-col items-center gap-1.5 px-6 py-2.5 no-underline"
+                className="flex flex-col items-center gap-[6px] px-6 py-[10px] no-underline"
                 style={{
                   background: '#034da2',
                   borderRadius: '46px',
                   boxShadow: '0px 1px 8px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <Icon className="h-5 w-5" style={{ fill: 'white' }} />
+                <img
+                  src={item.mobileIconSrc}
+                  alt={item.name}
+                  width={20}
+                  height={20}
+                  className="object-contain brightness-0 invert"
+                />
                 <span
-                  className="text-sm font-semibold capitalize"
-                  style={{ color: 'white' }}
+                  className="text-[14px] font-semibold capitalize"
+                  style={{ color: 'white', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
                 >
                   {item.name}
                 </span>

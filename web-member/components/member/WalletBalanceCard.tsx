@@ -19,119 +19,108 @@ export default function WalletBalanceCard({
   };
 
   return (
-    <div className="px-4 lg:px-6 max-w-[480px] mx-auto lg:max-w-full">
-      <h2 className="text-lg lg:text-xl font-bold text-black mb-4 lg:mb-6">Your Wallet Balance</h2>
+    <div className="px-5 lg:px-6 max-w-[480px] mx-auto lg:max-w-full">
+      {/* Desktop only header */}
+      <h2 className="hidden lg:block text-xl font-bold text-black mb-6">Your Wallet Balance</h2>
 
-      {/* Mobile View - New Design */}
+      {/* Mobile View - Figma Design */}
       <Link
         href="/member/transactions"
-        className="lg:hidden block relative overflow-hidden rounded-2xl transition-all duration-300 active:scale-[0.98]"
+        className="lg:hidden block relative overflow-hidden transition-all duration-300 active:scale-[0.98]"
         style={{
-          background: 'linear-gradient(180deg, #5ca3fa 50.07%, #2266b6 154.04%)',
-          height: '95px'
+          background: 'linear-gradient(180deg, #5CA3FA 0%, #2266B6 100%)',
+          height: '95px',
+          borderRadius: '16px',
+          width: '350px',
+          marginLeft: 'auto',
+          marginRight: 'auto'
         }}
       >
-        <div className="relative z-10 p-4">
+        <div className="relative z-10 p-[15px]">
           {/* Text Content */}
           <div className="relative">
-            <p className="text-sm font-medium mb-1" style={{ color: '#f4f9ff' }}>
+            {/* Title */}
+            <p
+              className="text-[14px] font-medium"
+              style={{
+                color: '#FFFFFF',
+                fontFamily: 'SF Pro Display, system-ui, sans-serif',
+                lineHeight: '120%'
+              }}
+            >
               Total Available Balance
             </p>
 
-            <div className="flex items-center gap-0.5 mb-2">
-              <span className="text-lg font-semibold text-white">
+            {/* Balance Row */}
+            <div className="flex items-center gap-[2px] mt-[2px]">
+              <span
+                className="text-[18px] font-semibold text-white"
+                style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
+              >
                 ₹{formatCurrency(currentBalance)}
               </span>
-              <span className="text-base" style={{ color: 'rgba(255, 255, 255, 0.63)' }}>
+              <span
+                className="text-[16px]"
+                style={{
+                  color: 'rgba(255, 255, 255, 0.63)',
+                  fontFamily: 'SF Pro Display, system-ui, sans-serif'
+                }}
+              >
                 /
               </span>
-              <span className="text-sm" style={{ color: '#f4f9ff' }}>
+              <span
+                className="text-[14px]"
+                style={{
+                  color: '#FFFFFF',
+                  fontFamily: 'SF Pro Display, system-ui, sans-serif',
+                  lineHeight: '120%'
+                }}
+              >
                 {formatCurrency(totalLimit)}
+              </span>
+              <span
+                className="text-[12px] ml-[2px]"
+                style={{
+                  color: '#B1D2FC',
+                  fontFamily: 'SF Pro Display, system-ui, sans-serif'
+                }}
+              >
+                Left
               </span>
             </div>
 
-            <span
-              className="absolute text-xs"
+            {/* Subtitle */}
+            <p
+              className="text-[12px] mt-[8px] whitespace-nowrap"
               style={{
-                color: '#b1d2fc',
-                top: '24px',
-                left: '145px'
+                color: '#B1D2FC',
+                fontFamily: 'SF Pro Display, system-ui, sans-serif',
+                lineHeight: '120%'
               }}
             >
-              Avail. Bal.
-            </span>
-
-            <p className="text-xs mt-2" style={{ color: '#d4e4f7' }}>
               Your total usage cannot exceed this amount
             </p>
           </div>
         </div>
 
-        {/* Wallet Illustration */}
+        {/* Wallet Illustration from Figma */}
         <div
-          className="absolute z-0"
+          className="absolute"
           style={{
-            right: '-10px',
+            right: '15px',
             top: '50%',
             transform: 'translateY(-50%)',
-            width: '120px',
-            height: '80px'
+            width: '80px',
+            height: '70px',
+            zIndex: 1
           }}
         >
-          {/* Main wallet */}
           <img
-            src="/images/wallet/wallet-main.svg"
-            alt=""
-            className="absolute"
-            style={{
-              width: '96.5px',
-              height: '55.4px',
-              right: '0',
-              top: '50%',
-              transform: 'translateY(-50%) rotate(180deg) scaleY(-1)'
-            }}
-          />
-
-          {/* Sparkle 1 */}
-          <img
-            src="/images/wallet/sparkle-1.svg"
-            alt=""
-            className="absolute"
-            style={{
-              width: '14.67px',
-              height: '14.66px',
-              top: '15px',
-              right: '45px',
-              transform: 'rotate(212.34deg) scaleY(-1)'
-            }}
-          />
-
-          {/* Sparkle 2 */}
-          <img
-            src="/images/wallet/sparkle-2.svg"
-            alt=""
-            className="absolute"
-            style={{
-              width: '10.92px',
-              height: '10.92px',
-              top: '8px',
-              right: '55px',
-              transform: 'rotate(212.34deg) scaleY(-1)'
-            }}
-          />
-
-          {/* Sparkle 3 */}
-          <img
-            src="/images/wallet/sparkle-3.svg"
-            alt=""
-            className="absolute"
-            style={{
-              width: '8.78px',
-              height: '8.77px',
-              top: '12px',
-              right: '70px',
-              transform: 'rotate(212.34deg) scaleY(-1)'
-            }}
+            src="/images/icons/wallet-illustration.svg"
+            alt="Wallet"
+            width={80}
+            height={70}
+            className="object-contain opacity-90"
           />
         </div>
       </Link>

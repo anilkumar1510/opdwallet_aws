@@ -18,13 +18,13 @@ interface MoreServicesProps {
 export default function MoreServices({ services }: MoreServicesProps) {
   const renderLabel = (label: string, highlight?: string) => {
     if (!highlight) {
-      return <span className="text-sm font-medium" style={{ color: '#000000' }}>{label}</span>;
+      return <span className="text-[14px] font-medium" style={{ color: '#000000', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>{label}</span>;
     }
 
     // Split label by the highlight word and wrap it in blue color
     const parts = label.split(highlight);
     return (
-      <span className="text-sm font-medium" style={{ color: '#000000' }}>
+      <span className="text-[14px] font-medium" style={{ color: '#000000', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
         {parts[0]}
         <span style={{ color: '#034DA2' }}>{highlight}</span>
         {parts[1]}
@@ -33,18 +33,21 @@ export default function MoreServices({ services }: MoreServicesProps) {
   };
 
   return (
-    <section className="px-4 lg:px-6 pt-4 lg:pt-6 pb-0 max-w-[480px] mx-auto lg:max-w-full">
+    <section className="px-5 lg:px-6 pt-4 lg:pt-6 pb-0 max-w-[480px] mx-auto lg:max-w-full">
       {/* Header */}
-      <h2 className="text-lg lg:text-xl font-bold text-black mb-3 lg:mb-6">More Services</h2>
+      <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-3 lg:mb-6" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
+        More Services
+      </h2>
 
-      {/* Mobile: Horizontal scrollable button layout */}
+      {/* Mobile: Horizontal scrollable button layout - Figma Design */}
       <div className="lg:hidden flex gap-[10px] overflow-x-auto pb-2 scrollbar-hide">
         {services.map((service) => (
           <Link
             key={service.id}
             href={service.href}
-            className="flex items-center justify-center gap-3 h-[50px] px-4 bg-white rounded-2xl transition-all duration-200 hover:-translate-y-[2px] hover:shadow-[0px_14px_50px_0px_rgba(0,0,0,0.12)] active:translate-y-0 flex-shrink-0"
+            className="flex items-center justify-center gap-[12px] h-[50px] px-4 bg-white transition-all duration-200 hover:-translate-y-[2px] active:translate-y-0 flex-shrink-0"
             style={{
+              borderRadius: '16px',
               border: '1px solid rgba(217, 217, 217, 0.48)',
               boxShadow: '-2px 11px 46.1px 0px rgba(0, 0, 0, 0.08)'
             }}

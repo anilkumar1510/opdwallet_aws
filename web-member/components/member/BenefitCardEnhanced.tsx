@@ -11,6 +11,7 @@ interface BenefitCardEnhancedProps {
   totalAmount: number;
   href: string;
   icon?: React.ComponentType<{ className?: string }>;
+  isHighlighted?: boolean; // For first card blue border
 }
 
 export default function BenefitCardEnhanced({
@@ -20,6 +21,7 @@ export default function BenefitCardEnhanced({
   totalAmount = 0,
   href,
   icon: Icon,
+  isHighlighted = false,
 }: BenefitCardEnhancedProps) {
   // Ensure values are numbers
   const current = Number(currentAmount) || 0;
@@ -59,38 +61,38 @@ export default function BenefitCardEnhanced({
 
   return (
     <>
-      {/* Mobile View - New Design */}
+      {/* Mobile View - Figma Design */}
       <Link
         href={href}
-        className="lg:hidden relative bg-white overflow-hidden transition-all duration-200 hover:-translate-y-[2px] active:translate-y-0 w-full"
+        className="lg:hidden relative overflow-hidden transition-all duration-200 border border-[rgba(217,217,217,0.48)] active:border-[#0366de]"
         style={{
-          minHeight: '78px',
+          width: '172px',
+          height: '78px',
           borderRadius: '16px',
-          border: '1px solid rgba(217, 217, 217, 0.48)',
           boxShadow: '-2px 11px 46.1px 0px rgba(0, 0, 0, 0.08)',
-          aspectRatio: '172 / 78'
+          backgroundColor: '#ffffff'
         }}
       >
         {/* Benefit Name */}
         <span
-          className="absolute top-[9px] left-[9px] text-base font-normal leading-none"
-          style={{ color: '#034da2' }}
+          className="absolute top-[9px] left-[9px] text-[16px] font-normal leading-none"
+          style={{ color: '#034da2', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
         >
           {title}
         </span>
 
         {/* Balance Info */}
-        <div className="absolute left-[9px] bottom-[12px] flex items-baseline gap-1">
-          <span className="text-base font-medium" style={{ color: '#0a3f93' }}>
+        <div className="absolute left-[9px] bottom-[12px] flex items-baseline">
+          <span className="text-[16px] font-medium" style={{ color: '#0a3f93', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
             ₹{formatCurrency(current)}
           </span>
-          <span className="text-base font-normal" style={{ color: '#444444' }}>
+          <span className="text-[16px] font-normal ml-[8px]" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
             /
           </span>
-          <span className="text-xs font-normal" style={{ color: '#444444' }}>
+          <span className="text-[12px] font-normal" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
             {formatShortCurrency(total)}
           </span>
-          <span className="text-sm font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)' }}>
+          <span className="text-[14px] font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
             Left
           </span>
         </div>

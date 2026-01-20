@@ -112,27 +112,27 @@ const MORE_SERVICES = [
     id: 'helpline',
     label: '24/7 Helpline',
     labelHighlight: '24/7',
-    icon: <ChatBubbleLeftRightIcon className="w-6 h-6 text-brand-600" />,
+    icon: <img src="/images/icons/helpline-icon.svg" alt="24/7 Helpline" width={24} height={24} className="object-contain" />,
     href: '/member/helpline'
   },
   {
     id: 'claims',
     label: 'Claims',
-    icon: <ClipboardDocumentCheckIcon className="w-6 h-6 text-brand-600" />,
+    icon: <img src="/images/icons/claims-service.svg" alt="Claims" width={24} height={24} className="object-contain" />,
     href: '/member/claims'
   },
   {
     id: 'health-records',
     label: 'Health Records',
     labelHighlight: 'Health',
-    icon: <FolderOpenIcon className="w-6 h-6 text-brand-600" />,
+    icon: <img src="/images/icons/health-records-service.svg" alt="Health Records" width={24} height={24} className="object-contain" />,
     href: '/member/health-records'
   },
   {
     id: 'transactions',
     label: 'Transaction History',
     labelHighlight: 'Transaction',
-    icon: <BanknotesIcon className="w-6 h-6 text-brand-600" />,
+    icon: <img src="/images/icons/transaction-history.svg" alt="Transaction History" width={24} height={24} className="object-contain" />,
     href: '/member/transactions'
   }
 ]
@@ -551,7 +551,7 @@ export default function DashboardPage() {
   const policies = preparePolicies()
 
   return (
-    <div className="min-h-screen animate-fadeIn">
+    <div className="min-h-screen animate-fadeIn" style={{ backgroundColor: '#f7f7fc' }}>
       {/* User Greeting Section */}
       <UserGreeting
         userName={`${activeMember?.name?.firstName || ''} ${activeMember?.name?.lastName || ''}`.trim()}
@@ -563,27 +563,29 @@ export default function DashboardPage() {
         {/* Policy Carousel Section */}
         <PolicyCarousel policies={policies} />
 
+        {/* Quick Links Section - Before Wallet on mobile per Figma */}
+        <QuickLinks />
+
         {/* Wallet Balance Card Section */}
         <WalletBalanceCard
           currentBalance={totalAvailableBalance}
           totalLimit={totalWalletBalance}
         />
 
-        {/* Quick Links Section */}
-        <QuickLinks />
-
         {/* Health Benefits Section */}
-        <section className="py-6 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
+        <section className="pt-6 pb-4 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
           {/* Header */}
-          <h2 className="text-lg lg:text-xl font-bold text-black mb-4 lg:mb-6 px-4 lg:px-6">Health Benefits</h2>
+          <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-4 lg:mb-6 px-5 lg:px-6" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
+            Health Benefits
+          </h2>
 
-          {/* Benefits Grid */}
-          <div className="relative group px-4 lg:px-6">
+          {/* Benefits Grid - Figma: 2x2 grid with 6px gap on mobile */}
+          <div className="relative group px-5 lg:px-6">
             <div
               ref={benefitsScrollRef}
-              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4"
+              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-[6px] lg:gap-4"
             >
-              {walletCategories.map((category: any) => (
+              {walletCategories.map((category: any, index: number) => (
                 <BenefitCardEnhanced
                   key={category.categoryCode}
                   benefitId={category.categoryCode}
@@ -592,6 +594,7 @@ export default function DashboardPage() {
                   totalAmount={category.total}
                   href={benefitUIConfig[category.categoryCode]?.href || '/member/benefits'}
                   icon={getCategoryIcon(category.categoryCode)}
+                  isHighlighted={index === 0}
                 />
               ))}
             </div>
