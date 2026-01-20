@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { PlanConfig, PlanConfigDocument } from './schemas/plan-config.schema';
 import { CreatePlanConfigDto } from './dto/create-plan-config.dto';
 import { UpdatePlanConfigDto } from './dto/update-plan-config.dto';
@@ -166,19 +166,23 @@ export class PlanConfigService {
       throw new NotFoundException('Configuration not found');
     }
 
-    // Check if configuration is current and has user assignments
-    if (config.isCurrent) {
-      console.log('🟡 [PLAN CONFIG SERVICE] Configuration is current, checking for user assignments...');
+    // Check if published configuration has user assignments
+    if (config.status === 'PUBLISHED') {
+      console.log('🟡 [PLAN CONFIG SERVICE] Configuration is published, checking for user assignments...');
+      console.log('🟡 [PLAN CONFIG SERVICE] Checking for assignments with planConfigId:', config._id);
 
+      // Check if any assignments are using this specific plan config
       const activeAssignments = await this.assignmentModel.countDocuments({
-        policyId: policyId,
+        planConfigId: config._id,
         isActive: true,
       });
 
+      console.log('🟡 [PLAN CONFIG SERVICE] Active assignments using this plan config:', activeAssignments);
+
       if (activeAssignments > 0) {
         throw new ConflictException(
-          `Cannot delete current plan configuration. This policy is assigned to ${activeAssignments} user(s). ` +
-          `Please unassign all users from this policy or set a different plan configuration as current before deleting.`
+          `This policy configuration version is already assigned to a user so cannot be deleted. ` +
+          `Please unassign the policy first before deletion.`
         );
       }
     }

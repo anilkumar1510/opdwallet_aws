@@ -140,6 +140,18 @@ export const planConfigApi = {
     const response = await apiFetch(`/api/policies/${policyId}/config/${version}/publish`, {
       method: 'POST',
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      let errorMessage = 'Failed to publish configuration';
+      if (typeof errorData.message === 'object' && errorData.message.message) {
+        errorMessage = errorData.message.message;
+      } else if (typeof errorData.message === 'string') {
+        errorMessage = errorData.message;
+      }
+      throw new Error(errorMessage);
+    }
+
     return response.json();
   },
 
@@ -148,6 +160,18 @@ export const planConfigApi = {
     const response = await apiFetch(`/api/policies/${policyId}/config/${version}/set-current`, {
       method: 'POST',
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      let errorMessage = 'Failed to set configuration as current';
+      if (typeof errorData.message === 'object' && errorData.message.message) {
+        errorMessage = errorData.message.message;
+      } else if (typeof errorData.message === 'string') {
+        errorMessage = errorData.message;
+      }
+      throw new Error(errorMessage);
+    }
+
     return response.json();
   },
 
@@ -156,6 +180,22 @@ export const planConfigApi = {
     const response = await apiFetch(`/api/policies/${policyId}/config/${version}`, {
       method: 'DELETE',
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Delete config error:', errorData);
+
+      // Extract the error message from nested structure
+      let errorMessage = 'Failed to delete configuration';
+      if (typeof errorData.message === 'object' && errorData.message.message) {
+        errorMessage = errorData.message.message;
+      } else if (typeof errorData.message === 'string') {
+        errorMessage = errorData.message;
+      }
+
+      throw new Error(errorMessage);
+    }
+
     return response.json();
   },
 };

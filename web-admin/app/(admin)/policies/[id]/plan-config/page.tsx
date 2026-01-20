@@ -78,8 +78,10 @@ export default function PlanConfigList() {
       await planConfigApi.publish(policyId, version);
       toast.success('Configuration published successfully');
       loadConfigs();
-    } catch (error) {
-      toast.error('Failed to publish configuration');
+    } catch (error: any) {
+      console.error('Publish error:', error);
+      const errorMessage = error?.message || 'Failed to publish configuration';
+      toast.error(errorMessage);
     }
   };
 
@@ -88,8 +90,10 @@ export default function PlanConfigList() {
       await planConfigApi.setCurrent(policyId, version);
       toast.success('Configuration set as current');
       loadConfigs();
-    } catch (error) {
-      toast.error('Failed to set as current');
+    } catch (error: any) {
+      console.error('Set current error:', error);
+      const errorMessage = error?.message || 'Failed to set as current';
+      toast.error(errorMessage);
     }
   };
 
@@ -103,14 +107,20 @@ export default function PlanConfigList() {
       loadConfigs();
     } catch (error: any) {
       console.error('Delete error:', error);
+      setDeleteConfig(null); // Close the dialog
 
-      // Check if it's a conflict error (assignment check failed)
-      if (error?.message?.includes('assigned to') || error?.message?.includes('Cannot delete')) {
-        toast.error(error.message || 'Cannot delete configuration - it is assigned to users');
-      } else if (error?.message?.includes('current configuration')) {
-        toast.error('Cannot delete current configuration that has active user assignments');
+      // Extract error message
+      const errorMessage = error?.message || 'Failed to delete configuration';
+
+      // Show specific error messages based on the error content
+      if (errorMessage.includes('published configuration that is current')) {
+        toast.error('Cannot delete a published configuration that is current. Please set another version as current first.');
+      } else if (errorMessage.includes('assigned') || errorMessage.includes('user(s)')) {
+        toast.error('This policy configuration version is already assigned to a user so cannot be deleted. Please unassign the policy first before deletion.');
+      } else if (errorMessage.includes('Cannot delete')) {
+        toast.error(errorMessage);
       } else {
-        toast.error('Failed to delete configuration');
+        toast.error(errorMessage);
       }
     }
   };
