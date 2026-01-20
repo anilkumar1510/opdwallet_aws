@@ -21,6 +21,7 @@
     "seed:lab": "ts-node -r tsconfig-paths/register scripts/seed/seed-lab.ts",
     "admin:update-password": "ts-node -r tsconfig-paths/register scripts/utilities/update-admin-password.ts",
     "db:init": "node scripts/init/init-mongo.js",
+    "db:fix-cug-index": "node scripts/utilities/fix-cug-index.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "type-check": "tsc --noEmit",

@@ -64,6 +64,9 @@ npm run admin:update-password
 # Initialize MongoDB with authentication
 npm run db:init
 
+# Fix CUG master collection index (removes old 'code_1' index)
+npm run db:fix-cug-index
+
 # Reset doctor password (direct script)
 node scripts/utilities/reset-doctor-password.js
 
