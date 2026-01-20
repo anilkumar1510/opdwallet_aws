@@ -46,13 +46,23 @@ export default function LabServicesPage() {
 
       const response = await apiFetch(`/api/admin/lab/services?${params}`)
 
-      if (!response.ok) throw new Error('Failed to fetch services')
+      if (!response.ok) {
+        let errorMessage = 'Failed to fetch services'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch {
+          // If parsing fails, use default message
+        }
+        throw new Error(errorMessage)
+      }
 
       const data = await response.json()
       setServices(data.data || [])
     } catch (error) {
       console.error('Error fetching services:', error)
-      toast.error('Failed to fetch services')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch services'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -77,7 +87,39 @@ export default function LabServicesPage() {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Failed to save service')
+      if (!response.ok) {
+        // Parse the error response to get the actual error message
+        let errorMessage = 'Failed to save service'
+
+        try {
+          const errorData = await response.json()
+          console.log('Error response:', errorData) // Debug log
+
+          // Extract message from different possible error structures
+          if (typeof errorData === 'string') {
+            errorMessage = errorData
+          } else if (errorData.message) {
+            // Check if message is an object (nested structure)
+            if (typeof errorData.message === 'object' && errorData.message.message) {
+              errorMessage = errorData.message.message
+            } else if (typeof errorData.message === 'string') {
+              errorMessage = errorData.message
+            }
+          } else if (errorData.error) {
+            errorMessage = typeof errorData.error === 'string' ? errorData.error : errorData.error.message
+          }
+
+          // Handle 409 Conflict specifically if we still don't have a good message
+          if (response.status === 409 && errorMessage === 'Failed to save service') {
+            errorMessage = `Service with code ${formData.code} already exists`
+          }
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError)
+          errorMessage = `Failed to save service (Status: ${response.status})`
+        }
+
+        throw new Error(errorMessage)
+      }
 
       const data = await response.json()
       toast.success(data.message)
@@ -88,7 +130,9 @@ export default function LabServicesPage() {
       fetchServices()
     } catch (error) {
       console.error('Error saving service:', error)
-      toast.error('Failed to save service')
+      // Show the specific error message from the API
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save service'
+      toast.error(errorMessage)
     }
   }
 
@@ -111,14 +155,24 @@ export default function LabServicesPage() {
         method: 'DELETE',
       })
 
-      if (!response.ok) throw new Error('Failed to delete service')
+      if (!response.ok) {
+        let errorMessage = 'Failed to delete service'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorMessage
+        } catch {
+          // If parsing fails, use default message
+        }
+        throw new Error(errorMessage)
+      }
 
       const data = await response.json()
       toast.success(data.message)
       fetchServices()
     } catch (error) {
       console.error('Error deleting service:', error)
-      toast.error('Failed to delete service')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete service'
+      toast.error(errorMessage)
     }
   }
 
