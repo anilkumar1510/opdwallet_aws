@@ -64,9 +64,6 @@ npm run admin:update-password
 # Initialize MongoDB with authentication
 npm run db:init
 
-# Fix CUG master collection index (removes old 'code_1' index)
-npm run db:fix-cug-index
-
 # Reset doctor password (direct script)
 node scripts/utilities/reset-doctor-password.js
 
@@ -105,6 +102,10 @@ The `archive/` directory contains:
 - `fix-relationship-data.js` - Corrected relationship data ✅ COMPLETED
 - `fix-prescription-ids.js` - Fixed prescription ID issues ✅ COMPLETED
 - `fix-doctor-names.js` - Corrected doctor name formatting ✅ COMPLETED
+- `fix-cug-index.js` - Removed orphaned 'code_1' index from cug_master ✅ COMPLETED (2026-01-20)
+  - **Issue:** E11000 duplicate key error on CUG creation
+  - **Solution:** `docker exec -it opd-mongodb-prod mongosh opd_wallet --eval 'db.cug_master.dropIndex("code_1")'`
+  - **Script:** Comprehensive fix script available for reference
 
 ### `archive/legacy-seeders/` - Replaced by seed-all-collections.ts
 - `seed-aws-data.js` - AWS deployment master data (16KB)
