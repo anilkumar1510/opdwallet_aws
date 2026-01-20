@@ -40,15 +40,18 @@ export class AssignmentsService {
       throw new BadRequestException('Invalid policyId format');
     }
 
-    // Check if user is already assigned to this policy
-    const existingAssignment = await this.assignmentModel.findOne({
+    // Single Policy per User Constraint: Check if user has ANY active policy assignment
+    const existingActiveAssignment = await this.assignmentModel.findOne({
       userId: new Types.ObjectId(userId),
-      policyId: new Types.ObjectId(policyId),
       isActive: true,
-    });
+    }).populate('policyId', 'name');
 
-    if (existingAssignment) {
-      throw new ConflictException('User is already assigned to this policy');
+    if (existingActiveAssignment) {
+      const existingPolicyName = (existingActiveAssignment.policyId as any)?.name || 'Unknown Policy';
+      throw new ConflictException(
+        `User already has an active policy assignment (${existingPolicyName}). ` +
+        `Please unassign the current policy before assigning a new one.`
+      );
     }
 
     // Generate unique assignment ID

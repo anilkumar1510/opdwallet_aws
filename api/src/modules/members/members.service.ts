@@ -253,7 +253,7 @@ export class MembersService {
       this.userModel
         .find(filter)
         .select(
-          'userId memberId uhid name email phone role status relationship primaryMemberId cugId corporateName createdAt updatedAt',
+          'userId memberId uhid employeeId name email phone role status relationship primaryMemberId cugId corporateName createdAt updatedAt',
         )
         .skip(skip)
         .limit(limit)
@@ -274,11 +274,23 @@ export class MembersService {
   async findOne(id: string) {
     const member = await this.userModel
       .findById(id)
+      .populate('cugId', 'companyName shortCode')
       .select('-passwordHash')
       .lean();
 
     if (!member || member.role !== UserRole.MEMBER) {
       throw new NotFoundException('Member not found');
+    }
+
+    console.log('👤 [MEMBER SERVICE] findOne - corporateName:', member.corporateName, 'dob:', member.dob, 'cugId:', member.cugId);
+
+    // If cugId is populated but corporateName is missing, sync it
+    if (member.cugId && typeof member.cugId === 'object' && !member.corporateName) {
+      const cugData = member.cugId as any;
+      if (cugData.companyName) {
+        console.log('🔄 [MEMBER SERVICE] Syncing corporateName from CUG:', cugData.companyName);
+        member.corporateName = cugData.companyName;
+      }
     }
 
     return member;

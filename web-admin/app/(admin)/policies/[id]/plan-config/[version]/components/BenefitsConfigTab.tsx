@@ -357,7 +357,13 @@ export function BenefitsConfigTab({
                             disabled={isDisabled || !benefit?.enabled}
                             placeholder="0"
                             className="w-full text-sm"
+                            required={benefit?.enabled}
                           />
+                          {benefit?.enabled && !benefit?.annualLimit && (
+                            <div className="text-xs text-red-600 mt-1">
+                              Required
+                            </div>
+                          )}
                         </td>
                         {/* Per Claim Limit */}
                         <td className="px-4 py-3">

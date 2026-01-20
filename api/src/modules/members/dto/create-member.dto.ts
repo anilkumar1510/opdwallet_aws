@@ -67,6 +67,14 @@ export class CreateMemberDto {
   @IsNotEmpty()
   memberId!: string;
 
+  @ApiProperty({
+    description: 'Employee ID (can be shared between primary member and dependents)',
+    example: 'EMP-0001',
+  })
+  @IsString()
+  @IsNotEmpty()
+  employeeId!: string;
+
   @ApiPropertyOptional({
     description:
       'Relationship code (e.g., REL001 for Self, REL002 for Spouse) - Can be assigned later during policy assignment',

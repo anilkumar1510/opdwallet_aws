@@ -181,8 +181,7 @@ export class PlanConfigService {
 
       if (activeAssignments > 0) {
         throw new ConflictException(
-          `This policy configuration version is already assigned to a user so cannot be deleted. ` +
-          `Please unassign the policy first before deletion.`
+          `Unable to delete this policy version because it is currently assigned to one or more users. Please unassign the version before deleting`
         );
       }
     }

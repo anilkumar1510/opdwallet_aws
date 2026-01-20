@@ -35,8 +35,7 @@ export class User {
   memberId!: string;
 
   @Prop({
-    unique: true,
-    sparse: true,
+    required: false,
   })
   employeeId?: string;
 

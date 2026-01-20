@@ -150,6 +150,12 @@ export default function UserDetailPage() {
 
       if (userRes.ok) {
         const userData = await userRes.json()
+        console.log('👤 [USER DETAILS] Fetched user data:', {
+          corporateName: userData.corporateName,
+          dob: userData.dob,
+          cugId: userData.cugId,
+          name: userData.name
+        })
         setUser(userData)
         setEditedUser(userData)
       }
@@ -281,6 +287,14 @@ export default function UserDetailPage() {
   }
 
   const handleAssignPolicy = async () => {
+    // Check for existing active assignments - Single Policy per User Constraint
+    const activeAssignments = assignments.filter(a => a.isActive)
+    if (activeAssignments.length > 0) {
+      const currentPolicyName = activeAssignments[0].policyId?.name || 'Unknown Policy'
+      toast.error(`This user already has an active policy assignment (${currentPolicyName}). Please unassign the current policy before assigning a new one.`)
+      return
+    }
+
     const validationError = validatePolicyAssignment(
       selectedPolicyId,
       selectedRelationshipId,

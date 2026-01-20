@@ -115,8 +115,8 @@ export default function PlanConfigList() {
       // Show specific error messages based on the error content
       if (errorMessage.includes('published configuration that is current')) {
         toast.error('Cannot delete a published configuration that is current. Please set another version as current first.');
-      } else if (errorMessage.includes('assigned') || errorMessage.includes('user(s)')) {
-        toast.error('This policy configuration version is already assigned to a user so cannot be deleted. Please unassign the policy first before deletion.');
+      } else if (errorMessage.includes('assigned') || errorMessage.includes('user(s)') || errorMessage.includes('users')) {
+        toast.error('Unable to delete this policy version because it is currently assigned to one or more users. Please unassign the version before deleting.');
       } else if (errorMessage.includes('Cannot delete')) {
         toast.error(errorMessage);
       } else {
@@ -196,7 +196,42 @@ export default function PlanConfigList() {
                         ? `₹${config.wallet.totalAnnualAmount.toLocaleString()}`
                         : 'Not set'}
                     </TableCell>
-                    <TableCell>{(config as any).enabledServices?.length || 0}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        let count = 0;
+                        const benefits = config.benefits || {};
+
+                        // Count allowed specialties in consultation categories
+                        if ((benefits as any).CAT001?.allowedSpecialties?.length) {
+                          count += (benefits as any).CAT001.allowedSpecialties.length;
+                        }
+                        if ((benefits as any).CAT005?.allowedSpecialties?.length) {
+                          count += (benefits as any).CAT005.allowedSpecialties.length;
+                        }
+
+                        // Count allowed lab service categories
+                        if ((benefits as any).CAT003?.allowedLabServiceCategories?.length) {
+                          count += (benefits as any).CAT003.allowedLabServiceCategories.length;
+                        }
+                        if ((benefits as any).CAT004?.allowedLabServiceCategories?.length) {
+                          count += (benefits as any).CAT004.allowedLabServiceCategories.length;
+                        }
+
+                        // Count dental, vision, wellness
+                        if ((benefits as any).CAT006?.allowedServiceCodes?.length) {
+                          count += (benefits as any).CAT006.allowedServiceCodes.length;
+                        }
+                        if ((benefits as any).CAT007?.allowedServiceCodes?.length) {
+                          count += (benefits as any).CAT007.allowedServiceCodes.length;
+                        }
+                        // CAT008 (wellness) uses ahcPackageId instead of allowedServiceCodes
+                        if ((benefits as any).CAT008?.enabled && (benefits as any).CAT008?.ahcPackageId) {
+                          count += 1;
+                        }
+
+                        return count || 0;
+                      })()}
+                    </TableCell>
                     <TableCell>
                       {new Date(config.updatedAt || '').toLocaleDateString()}
                     </TableCell>

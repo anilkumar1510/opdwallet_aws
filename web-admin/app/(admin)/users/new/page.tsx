@@ -44,6 +44,7 @@ function NewUserForm() {
     const dummyData = {
       uhid: `UHID${timestamp}`,
       memberId: `MEM${timestamp}`,
+      employeeId: `EMP${timestamp}`,
       email: `user${timestamp}@example.com`,
       phone: '+919876543210',
       password: 'Password@123',
@@ -68,6 +69,7 @@ function NewUserForm() {
     console.log('Timestamp:', timestamp)
     console.log('Generated UHID:', dummyData.uhid)
     console.log('Generated Member ID:', dummyData.memberId)
+    console.log('Generated Employee ID:', dummyData.employeeId)
     console.log('Generated Email:', dummyData.email)
     console.log('Full Dummy Data:', JSON.stringify(dummyData, null, 2))
     console.groupEnd()
@@ -170,10 +172,11 @@ function NewUserForm() {
       requiredFields.role = formData.role
       console.log('Internal User - Requiring: email, password, firstName, lastName, phone, employeeId, role')
     } else {
-      // Members (external users) require uhid and memberId
+      // Members (external users) require uhid, memberId, and employeeId
       requiredFields.uhid = formData.uhid
       requiredFields.memberId = formData.memberId
-      console.log('External User (Member) - Requiring: email, password, firstName, lastName, phone, uhid, memberId')
+      requiredFields.employeeId = formData.employeeId
+      console.log('External User (Member) - Requiring: email, password, firstName, lastName, phone, uhid, memberId, employeeId')
     }
 
     console.log('Checking required fields:')
@@ -193,7 +196,7 @@ function NewUserForm() {
 
       const errorMessage = isInternalUser
         ? 'Please fill in all required fields: Email, Password, First Name, Last Name, Phone, Employee ID, and Role'
-        : 'Please fill in all required fields: Email, Password, First Name, Last Name, Phone, UHID, and Member ID'
+        : 'Please fill in all required fields: Email, Password, First Name, Last Name, Phone, UHID, Member ID, and Employee ID'
 
       setErrors([errorMessage])
       return false
@@ -276,6 +279,7 @@ function NewUserForm() {
       // Add fields specific to members (external users)
       payload.uhid = formData.uhid
       payload.memberId = formData.memberId
+      payload.employeeId = formData.employeeId
       payload.cugId = formData.cugId || undefined
       payload.corporateName = formData.corporateName || undefined
       payload.dob = formData.dateOfBirth || undefined
@@ -697,6 +701,22 @@ function NewUserForm() {
                     onChange={handleInputChange}
                     className="input"
                     placeholder="MEM001"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="employeeId" className="label">
+                    Employee ID *
+                  </label>
+                  <input
+                    type="text"
+                    id="employeeId"
+                    name="employeeId"
+                    required
+                    value={formData.employeeId}
+                    onChange={handleInputChange}
+                    className="input"
+                    placeholder="EMP001"
                   />
                 </div>
 

@@ -358,13 +358,56 @@ export default function PlanConfigEdit() {
     return { valid: true };
   };
 
+  const validateBenefits = (): { valid: boolean; message?: string } => {
+    // Validate that enabled categories have annual limits
+    const benefits = config.benefits || {};
+    const missingLimits: string[] = [];
+
+    Object.entries(benefits).forEach(([categoryId, benefit]: [string, any]) => {
+      if (benefit?.enabled && (!benefit.annualLimit || benefit.annualLimit <= 0)) {
+        const category = categories.find(c => c.categoryId === categoryId);
+        missingLimits.push(category?.name || categoryId);
+      }
+    });
+
+    // Also check member-specific benefits
+    const memberConfigs = config.memberConfigs || {};
+    Object.entries(memberConfigs).forEach(([relationshipCode, memberConfig]: [string, any]) => {
+      if (!memberConfig.inheritFromPrimary && memberConfig.benefits) {
+        Object.entries(memberConfig.benefits).forEach(([categoryId, benefit]: [string, any]) => {
+          if (benefit?.enabled && (!benefit.annualLimit || benefit.annualLimit <= 0)) {
+            const category = categories.find(c => c.categoryId === categoryId);
+            const relationship = relationships.find(r => r.relationshipCode === relationshipCode);
+            missingLimits.push(`${category?.name || categoryId} (${relationship?.displayName || relationshipCode})`);
+          }
+        });
+      }
+    });
+
+    if (missingLimits.length > 0) {
+      return {
+        valid: false,
+        message: `Annual Limit is required for enabled categories: ${missingLimits.join(', ')}`
+      };
+    }
+
+    return { valid: true };
+  };
+
   const handleSave = async () => {
     logSaveAttempt();
 
     // Validate floater configuration
-    const validation = validateFloaterConfig();
-    if (!validation.valid) {
-      toast.error(validation.message);
+    const floaterValidation = validateFloaterConfig();
+    if (!floaterValidation.valid) {
+      toast.error(floaterValidation.message);
+      return;
+    }
+
+    // Validate benefits configuration
+    const benefitsValidation = validateBenefits();
+    if (!benefitsValidation.valid) {
+      toast.error(benefitsValidation.message);
       return;
     }
 
