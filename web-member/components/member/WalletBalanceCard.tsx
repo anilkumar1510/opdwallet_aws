@@ -33,12 +33,12 @@ export default function WalletBalanceCard({
           borderRadius: '16px'
         }}
       >
-        <div className="relative z-10 p-[15px]">
-          {/* Text Content */}
+        <div className="relative z-10 p-[12px] pr-[100px]">
+          {/* Text Content - with right padding for wallet icon */}
           <div className="relative">
             {/* Title */}
             <p
-              className="text-[14px] font-medium"
+              className="text-[13px] font-medium whitespace-nowrap"
               style={{
                 color: '#FFFFFF',
                 fontFamily: 'SF Pro Display, system-ui, sans-serif',
@@ -49,15 +49,15 @@ export default function WalletBalanceCard({
             </p>
 
             {/* Balance Row */}
-            <div className="flex items-center gap-[2px] mt-[2px]">
+            <div className="flex items-center gap-[2px] mt-[2px] flex-wrap">
               <span
-                className="text-[18px] font-semibold text-white"
+                className="text-[16px] font-semibold text-white whitespace-nowrap"
                 style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
               >
                 ₹{formatCurrency(currentBalance)}
               </span>
               <span
-                className="text-[16px]"
+                className="text-[14px]"
                 style={{
                   color: 'rgba(255, 255, 255, 0.63)',
                   fontFamily: 'SF Pro Display, system-ui, sans-serif'
@@ -66,7 +66,7 @@ export default function WalletBalanceCard({
                 /
               </span>
               <span
-                className="text-[14px]"
+                className="text-[12px]"
                 style={{
                   color: '#FFFFFF',
                   fontFamily: 'SF Pro Display, system-ui, sans-serif',
@@ -76,7 +76,7 @@ export default function WalletBalanceCard({
                 {formatCurrency(totalLimit)}
               </span>
               <span
-                className="text-[12px] ml-[2px]"
+                className="text-[11px] ml-[2px]"
                 style={{
                   color: '#B1D2FC',
                   fontFamily: 'SF Pro Display, system-ui, sans-serif'
@@ -88,7 +88,7 @@ export default function WalletBalanceCard({
 
             {/* Subtitle */}
             <p
-              className="text-[12px] mt-[8px] whitespace-nowrap"
+              className="text-[10px] mt-[6px] whitespace-nowrap"
               style={{
                 color: '#B1D2FC',
                 fontFamily: 'SF Pro Display, system-ui, sans-serif',
@@ -104,19 +104,19 @@ export default function WalletBalanceCard({
         <div
           className="absolute"
           style={{
-            right: '15px',
+            right: '10px',
             top: '50%',
             transform: 'translateY(-50%)',
-            width: '80px',
-            height: '70px',
+            width: '75px',
+            height: '65px',
             zIndex: 1
           }}
         >
           <img
             src="/images/icons/wallet-illustration.svg"
             alt="Wallet"
-            width={80}
-            height={70}
+            width={75}
+            height={65}
             className="object-contain opacity-90"
           />
         </div>

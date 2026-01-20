@@ -136,21 +136,21 @@ export default function UserGreeting({ userName, familyMembers = [] }: UserGreet
                 onClick={() => setShowDropdown(!showDropdown)}
               >
                 <div className="flex items-center gap-[5px]">
-                  <span className="text-[18px] font-medium leading-[1.2]" style={{ color: '#000000', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+                  <span className="text-[16px] font-medium leading-[1.2] whitespace-nowrap" style={{ color: '#000000', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
                     Hi {firstName}!
                   </span>
                   {/* Dropdown Arrow */}
                   <svg
-                    width="16"
-                    height="16"
+                    width="14"
+                    height="14"
                     viewBox="0 0 16 16"
                     fill="none"
-                    className={`transition-transform duration-200 ${showDropdown ? 'rotate-180' : 'rotate-90'}`}
+                    className={`flex-shrink-0 transition-transform duration-200 ${showDropdown ? 'rotate-180' : 'rotate-90'}`}
                   >
                     <path d="M6 3L10.5 8L6 13" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
-                <span className="text-[14px] font-normal leading-normal" style={{ color: '#656565', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+                <span className="text-[12px] font-normal leading-normal whitespace-nowrap" style={{ color: '#656565', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
                   welcome to OPD Wallet
                 </span>
               </button>
