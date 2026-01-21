@@ -648,14 +648,14 @@ export default function WalletPage() {
 
           {/* Transactions Tab */}
           {activeTab === 'transactions' && (
-            <div className="p-5 lg:p-6">
+            <div className="p-5 lg:p-6 overflow-hidden">
               {/* Filter Buttons Row */}
-              <div className="mb-4">
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <div className="mb-4 -mx-5 px-5 lg:-mx-6 lg:px-6">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {/* Transaction Type Filter */}
                   <button
                     onClick={(e) => openPopup('transactionType', e.currentTarget)}
-                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
                       selectedTypes.length > 0
                         ? 'text-white'
                         : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
@@ -674,7 +674,7 @@ export default function WalletPage() {
                   {/* Date Range Filter */}
                   <button
                     onClick={(e) => openPopup('dateRange', e.currentTarget)}
-                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
                       (dateFrom || dateTo)
                         ? 'text-white'
                         : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
@@ -693,7 +693,7 @@ export default function WalletPage() {
                   {/* Amount Range Filter */}
                   <button
                     onClick={(e) => openPopup('amountRange', e.currentTarget)}
-                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
                       (minAmount || maxAmount)
                         ? 'text-white'
                         : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
@@ -713,7 +713,7 @@ export default function WalletPage() {
                   {walletData?.categories && walletData.categories.length > 0 && (
                     <button
                       onClick={(e) => openPopup('category', e.currentTarget)}
-                      className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
                         selectedCategories.length > 0
                           ? 'text-white'
                           : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
@@ -734,7 +734,7 @@ export default function WalletPage() {
                   {availableServiceTypes.length > 0 && (
                     <button
                       onClick={(e) => openPopup('serviceType', e.currentTarget)}
-                      className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
                         selectedServiceTypes.length > 0
                           ? 'text-white'
                           : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
@@ -754,7 +754,7 @@ export default function WalletPage() {
                   {/* Sort By Filter */}
                   <button
                     onClick={(e) => openPopup('sortBy', e.currentTarget)}
-                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold transition-all shadow-sm whitespace-nowrap ${
                       (sortBy !== 'date' || sortOrder !== 'desc')
                         ? 'text-white'
                         : 'bg-white/60 backdrop-blur-sm hover:bg-white border-2'
@@ -774,7 +774,7 @@ export default function WalletPage() {
                   {activeFilterCount > 0 && (
                     <button
                       onClick={clearAllFilters}
-                      className="flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold text-white transition-all shadow-sm whitespace-nowrap hover:opacity-90"
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-sm font-semibold text-white transition-all shadow-sm whitespace-nowrap hover:opacity-90"
                       style={{ backgroundColor: '#ef4444' }}
                     >
                       Clear All ({activeFilterCount})

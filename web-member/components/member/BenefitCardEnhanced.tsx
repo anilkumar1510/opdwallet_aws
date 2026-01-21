@@ -86,14 +86,14 @@ export default function BenefitCardEnhanced({
             <span className="text-[14px] sm:text-[16px] font-medium" style={{ color: '#0a3f93', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
               ₹{formatCurrency(current)}
             </span>
-            <span className="text-[14px] sm:text-[16px] font-normal ml-1" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+            <span className="text-[12px] sm:text-[14px] font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
+              Left
+            </span>
+            <span className="text-[14px] sm:text-[16px] font-normal" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
               /
             </span>
             <span className="text-[11px] sm:text-[12px] font-normal" style={{ color: '#444444', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
               {formatShortCurrency(total)}
-            </span>
-            <span className="text-[12px] sm:text-[14px] font-normal ml-1" style={{ color: 'rgba(0, 0, 0, 0.4)', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}>
-              Left
             </span>
           </div>
 

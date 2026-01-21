@@ -54,7 +54,16 @@ export default function WalletBalanceCard({
                 className="text-[16px] font-semibold text-white whitespace-nowrap"
                 style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
               >
-                ₹{formatCurrency(currentBalance)}
+                {formatCurrency(currentBalance)}
+              </span>
+              <span
+                className="text-[11px] ml-[2px]"
+                style={{
+                  color: '#B1D2FC',
+                  fontFamily: 'SF Pro Display, system-ui, sans-serif'
+                }}
+              >
+                Left
               </span>
               <span
                 className="text-[14px]"
@@ -74,15 +83,6 @@ export default function WalletBalanceCard({
                 }}
               >
                 {formatCurrency(totalLimit)}
-              </span>
-              <span
-                className="text-[11px] ml-[2px]"
-                style={{
-                  color: '#B1D2FC',
-                  fontFamily: 'SF Pro Display, system-ui, sans-serif'
-                }}
-              >
-                Left
               </span>
             </div>
 

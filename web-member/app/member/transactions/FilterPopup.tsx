@@ -94,8 +94,9 @@ export default function FilterPopup({
           top: `${position.top}px`,
           left: `${position.left}px`,
           border: '2px solid #86ACD8',
-          minWidth: '280px',
-          maxWidth: '400px',
+          minWidth: 'min(280px, calc(100vw - 32px))',
+          maxWidth: 'min(400px, calc(100vw - 32px))',
+          width: 'max-content',
           animation: 'slideDown 0.2s ease-out',
         }}
         onClick={(e) => e.stopPropagation()}
