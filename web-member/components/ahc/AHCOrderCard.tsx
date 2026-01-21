@@ -152,22 +152,40 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
   const hasDiagnosticTests = order.diagnosticOrder?.items && order.diagnosticOrder.items.length > 0
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div
+      className="rounded-2xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all duration-200"
+      style={{
+        background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+        borderColor: '#86ACD8'
+      }}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 lg:p-5 border-b border-gray-200">
         <div className="flex items-start justify-between mb-2">
-          <div>
-            <h3 className="text-base font-semibold" style={{ color: '#0E51A2' }}>
-              {order.packageName}
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">Order ID: {order.orderId}</p>
-            <p className="text-sm text-gray-600">Patient: {order.patientName}</p>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+              style={{
+                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                border: '1px solid #A4BFFE7A',
+                boxShadow: '-2px 11px 46.1px 0px #0000000D'
+              }}
+            >
+              <ClipboardDocumentCheckIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold" style={{ color: '#0E51A2' }}>
+                {order.packageName}
+              </h3>
+              <p className="text-sm text-gray-900 mt-1">Order ID: {order.orderId}</p>
+              <p className="text-sm text-gray-900">Patient: {order.patientName}</p>
+            </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
             {getStatusLabel(order.status)}
           </span>
         </div>
-        <p className="text-xs text-gray-500">Booked on {formatDate(order.placedAt)}</p>
+        <p className="text-xs text-gray-900 ml-15">Booked on {formatDate(order.placedAt)}</p>
       </div>
 
       {/* Lab Tests Section - Only show if there are lab tests */}
@@ -188,7 +206,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-900">
                   {order.labOrder.items.length} test{order.labOrder.items.length > 1 ? 's' : ''} • {order.labOrder.vendorName}
                 </p>
               </div>
@@ -207,7 +225,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                 <div className="flex items-center gap-2 flex-1">
                   <CalendarIcon className="w-4 h-4 text-gray-500" />
                   <div>
-                    <div className="text-xs text-gray-600">Date</div>
+                    <div className="text-xs text-gray-900">Date</div>
                     <div className="text-sm font-medium text-gray-900">
                       {formatDate(order.labOrder.collectionDate)}
                     </div>
@@ -216,7 +234,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                 <div className="flex items-center gap-2 flex-1">
                   <ClockIcon className="w-4 h-4 text-gray-500" />
                   <div>
-                    <div className="text-xs text-gray-600">Time</div>
+                    <div className="text-xs text-gray-900">Time</div>
                     <div className="text-sm font-medium text-gray-900">{order.labOrder.collectionTime}</div>
                   </div>
                 </div>
@@ -230,7 +248,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                   <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
                 )}
                 <div>
-                  <div className="text-xs text-gray-600">Collection Type</div>
+                  <div className="text-xs text-gray-900">Collection Type</div>
                   <div className="text-sm font-medium text-gray-900">
                     {order.labOrder.collectionType === 'HOME_COLLECTION' ? 'Home Collection' : 'Center Visit'}
                   </div>
@@ -242,7 +260,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                 <div className="flex items-start gap-2">
                   <MapPinIcon className="w-4 h-4 text-gray-500 mt-0.5" />
                   <div>
-                    <div className="text-xs text-gray-600">Collection Address</div>
+                    <div className="text-xs text-gray-900">Collection Address</div>
                     <div className="text-sm text-gray-900">
                       <div>{order.labOrder.collectionAddress.fullName} • {order.labOrder.collectionAddress.phone}</div>
                       <div>{order.labOrder.collectionAddress.addressLine1}</div>
@@ -260,7 +278,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
 
               {/* Tests */}
               <div>
-                <div className="text-xs text-gray-600 mb-1">Tests Included</div>
+                <div className="text-xs text-gray-900 mb-1">Tests Included</div>
                 <div className="space-y-1">
                   {order.labOrder.items.slice(0, 3).map((item, index) => (
                     <div key={index} className="flex justify-between text-xs">
@@ -277,7 +295,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
               {/* Lab Reports */}
               {hasLabReports && (
                 <div className="pt-2 border-t border-gray-200">
-                  <div className="text-xs text-gray-600 mb-2">Lab Reports</div>
+                  <div className="text-xs text-gray-900 mb-2">Lab Reports</div>
                   <div className="space-y-2">
                     {order.labOrder.reports.map((report, index) => (
                       <button
@@ -323,7 +341,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-900">
                   {order.diagnosticOrder.items.length} test{order.diagnosticOrder.items.length > 1 ? 's' : ''} •{' '}
                   {order.diagnosticOrder.vendorName}
                 </p>
@@ -343,7 +361,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                 <div className="flex items-center gap-2 flex-1">
                   <CalendarIcon className="w-4 h-4 text-gray-500" />
                   <div>
-                    <div className="text-xs text-gray-600">Date</div>
+                    <div className="text-xs text-gray-900">Date</div>
                     <div className="text-sm font-medium text-gray-900">
                       {formatDate(order.diagnosticOrder.appointmentDate)}
                     </div>
@@ -352,7 +370,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                 <div className="flex items-center gap-2 flex-1">
                   <ClockIcon className="w-4 h-4 text-gray-500" />
                   <div>
-                    <div className="text-xs text-gray-600">Time</div>
+                    <div className="text-xs text-gray-900">Time</div>
                     <div className="text-sm font-medium text-gray-900">{order.diagnosticOrder.appointmentTime}</div>
                   </div>
                 </div>
@@ -362,14 +380,14 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
               <div className="flex items-center gap-2">
                 <BuildingOfficeIcon className="w-4 h-4 text-gray-500" />
                 <div>
-                  <div className="text-xs text-gray-600">Visit Type</div>
+                  <div className="text-xs text-gray-900">Visit Type</div>
                   <div className="text-sm font-medium text-gray-900">Center Visit</div>
                 </div>
               </div>
 
               {/* Tests */}
               <div>
-                <div className="text-xs text-gray-600 mb-1">Tests Included</div>
+                <div className="text-xs text-gray-900 mb-1">Tests Included</div>
                 <div className="space-y-1">
                   {order.diagnosticOrder.items.slice(0, 3).map((item, index) => (
                     <div key={index} className="flex justify-between text-xs">
@@ -388,7 +406,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
               {/* Diagnostic Reports */}
               {hasDiagnosticReports && (
                 <div className="pt-2 border-t border-gray-200">
-                  <div className="text-xs text-gray-600 mb-2">Diagnostic Reports</div>
+                  <div className="text-xs text-gray-900 mb-2">Diagnostic Reports</div>
                   <div className="space-y-2">
                     {order.diagnosticOrder.reports.map((report, index) => (
                       <button
@@ -417,24 +435,24 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
       )}
 
       {/* Payment Summary */}
-      <div className="p-4 bg-gray-50">
-        <h4 className="text-xs font-semibold text-gray-700 mb-2">Payment Summary</h4>
+      <div className="p-4" style={{ background: 'rgba(255, 255, 255, 0.5)' }}>
+        <h4 className="text-xs font-semibold text-gray-900 mb-2">Payment Summary</h4>
         <div className="space-y-1 text-xs">
           {hasLabTests && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Lab Tests</span>
+              <span className="text-gray-900">Lab Tests</span>
               <span className="text-gray-900">₹{order.labOrder.totalDiscountedPrice.toLocaleString()}</span>
             </div>
           )}
           {hasDiagnosticTests && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Diagnostic Tests</span>
+              <span className="text-gray-900">Diagnostic Tests</span>
               <span className="text-gray-900">₹{order.diagnosticOrder.totalDiscountedPrice.toLocaleString()}</span>
             </div>
           )}
           {order.totalHomeCollectionCharges > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Home Collection Charges</span>
+              <span className="text-gray-900">Home Collection Charges</span>
               <span className="text-gray-900">₹{order.totalHomeCollectionCharges.toLocaleString()}</span>
             </div>
           )}

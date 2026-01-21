@@ -1086,7 +1086,7 @@ export default function BookingsPage() {
                           )}
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
@@ -1233,7 +1233,7 @@ export default function BookingsPage() {
                           )}
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{appointment.appointmentId}</span>
@@ -1295,36 +1295,25 @@ export default function BookingsPage() {
                     key={prescription._id}
                     className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
                     style={{
-                      background: 'linear-gradient(243.73deg, rgba(255, 247, 224, 0.48) -12.23%, rgba(255, 237, 200, 0.48) 94.15%)',
-                      borderColor: '#FFD88A'
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
                     }}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
-                            prescription.status === 'CANCELLED'
-                              ? 'bg-gray-100'
-                              : ''
-                          }`}
-                          style={
-                            prescription.status === 'CANCELLED'
-                              ? {}
-                              : {
-                                  background: 'linear-gradient(261.92deg, rgba(255, 247, 223, 0.75) 4.4%, rgba(255, 235, 189, 0.75) 91.97%)',
-                                  border: '1px solid #FFD88A',
-                                  boxShadow: '-2px 11px 46.1px 0px #0000000D'
-                                }
-                          }
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
                         >
-                          <BeakerIcon
-                            className="h-6 w-6"
-                            style={{ color: prescription.status === 'CANCELLED' ? '#6B7280' : '#D97706' }}
-                          />
+                          <BeakerIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Lab Prescription</div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-gray-900">
                             {prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue'}
                           </div>
                         </div>
@@ -1361,18 +1350,18 @@ export default function BookingsPage() {
                         <span>Patient: {prescription.patientName}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <CalendarIcon className="h-4 w-4" />
                         <span>Uploaded: {formatDate(prescription.uploadedAt)}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <MapPinIcon className="h-4 w-4" />
                         <span>Pincode: {prescription.pincode}</span>
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="pt-3 border-t border-gray-200">
                       <div className="text-sm text-gray-900 mb-2">
                         ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
                       </div>
@@ -1389,7 +1378,7 @@ export default function BookingsPage() {
                           </p>
                         </div>
                       ) : (
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-gray-900">
                           Our team is processing your prescription. You will be notified once it's ready for ordering.
                         </div>
                       )}
@@ -1435,12 +1424,12 @@ export default function BookingsPage() {
                         <span>Vendor: {order.vendorName}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <CalendarIcon className="h-4 w-4" />
                         <span>{formatDate(order.collectionDate)}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <ClockIcon className="h-4 w-4" />
                         <span>{order.collectionTime}</span>
                       </div>
@@ -1460,7 +1449,7 @@ export default function BookingsPage() {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="pt-3 border-t border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-900">
                           Order ID: <span className="font-medium text-gray-900">{order.orderId}</span>
@@ -1548,7 +1537,7 @@ export default function BookingsPage() {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="pt-3 border-t border-gray-200">
                       <div className="flex items-center justify-between mb-3">
                         <div className="text-sm text-gray-900">
                           Cart ID: <span className="font-medium text-gray-900">{cart.cartId}</span>
@@ -1615,18 +1604,26 @@ export default function BookingsPage() {
         {activeTab === 'diagnostic' && (
           <div className="space-y-4">
             {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 && diagnosticPrescriptions.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center">
-                <div className="mb-4">
-                  <HeartIcon className="h-16 w-16 text-gray-300 mx-auto" />
+              <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
+              }}>
+                <div
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  style={{
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
+                    boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                  }}
+                >
+                  <HeartIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No diagnostic tests yet</h3>
-                <p className="text-gray-600 mb-4">Upload a prescription and create a cart to get started</p>
+                <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No diagnostic tests yet</h3>
+                <p className="text-gray-600 mb-6 text-sm lg:text-base">Upload a prescription and create a cart to get started</p>
                 <button
                   onClick={() => router.push('/member/diagnostics')}
-                  className="px-6 py-2 text-white rounded-lg"
-                  style={{ backgroundColor: '#0a529f' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#084080'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0a529f'}
+                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                 >
                   Go to Diagnostics
                 </button>
@@ -1637,20 +1634,27 @@ export default function BookingsPage() {
                 {diagnosticPrescriptions.map((prescription) => (
                   <div
                     key={prescription._id}
-                    className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          prescription.status === 'CANCELLED' ? 'bg-gray-100' : 'bg-yellow-50'
-                        }`}>
-                          <HeartIcon className={`h-5 w-5 ${
-                            prescription.status === 'CANCELLED' ? 'text-gray-600' : 'text-yellow-600'
-                          }`} />
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <HeartIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Diagnostic Prescription</div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-gray-900">
                             {prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue'}
                           </div>
                         </div>
@@ -1678,22 +1682,22 @@ export default function BookingsPage() {
 
                     <div className="space-y-2 mb-3">
                       <div className="flex items-center space-x-2 text-sm text-gray-900">
-                        <UserIcon className="h-4 w-4 text-gray-400" />
+                        <UserIcon className="h-4 w-4" />
                         <span>Patient: {prescription.patientName}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <CalendarIcon className="h-4 w-4 text-gray-400" />
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
+                        <CalendarIcon className="h-4 w-4" />
                         <span>Uploaded: {formatDate(prescription.uploadedAt)}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <MapPinIcon className="h-4 w-4 text-gray-400" />
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
+                        <MapPinIcon className="h-4 w-4" />
                         <span>Pincode: {prescription.pincode}</span>
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="pt-3 border-t border-gray-200">
                       <div className="text-sm text-gray-900 mb-2">
                         ID: <span className="font-medium text-gray-900">{prescription.prescriptionId}</span>
                       </div>
@@ -1707,7 +1711,7 @@ export default function BookingsPage() {
                           </p>
                         </div>
                       ) : (
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-gray-900">
                           Our team is processing your prescription. You will be notified once it's ready for ordering.
                         </div>
                       )}
@@ -1719,16 +1723,27 @@ export default function BookingsPage() {
                 {diagnosticOrders.map((order) => (
                   <div
                     key={order._id}
-                    className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+                    className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                      borderColor: '#86ACD8'
+                    }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                          <HeartIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                          style={{
+                            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                            border: '1px solid #A4BFFE7A',
+                            boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                          }}
+                        >
+                          <HeartIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900">Diagnostic Order</div>
-                          <div className="text-sm text-gray-600">{order.items?.length || 0} service(s)</div>
+                          <div className="text-sm text-gray-900">{order.items?.length || 0} service(s)</div>
                         </div>
                       </div>
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -1737,23 +1752,23 @@ export default function BookingsPage() {
                     </div>
 
                     <div className="space-y-2 mb-3">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <UserIcon className="h-4 w-4" />
                         <span>Vendor: {order.vendorName}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <CalendarIcon className="h-4 w-4" />
                         <span>{formatDate(order.appointmentDate)}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <ClockIcon className="h-4 w-4" />
                         <span>{order.timeSlot}</span>
                       </div>
 
                       {order.items && order.items.length > 0 && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           <div className="font-medium mb-1">Services:</div>
                           <ul className="list-disc list-inside text-xs space-y-1">
                             {order.items.slice(0, 3).map((item: any, idx: number) => (
@@ -1767,9 +1782,9 @@ export default function BookingsPage() {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="pt-3 border-t border-gray-200">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           Order ID: <span className="font-medium text-gray-900">{order.orderId}</span>
                         </div>
                         <div className="text-sm font-semibold" style={{ color: '#0a529f' }}>
@@ -1807,17 +1822,28 @@ export default function BookingsPage() {
                   return (
                     <div
                       key={cart._id}
-                      className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      className="rounded-2xl p-5 lg:p-6 border-2 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+                      style={{
+                        background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)',
+                        borderColor: '#86ACD8'
+                      }}
                       onClick={() => router.push(`/member/diagnostics?cartId=${cart.cartId}`)}
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 rounded-full" style={{ backgroundColor: '#e6f0fa' }}>
-                            <HeartIcon className="h-5 w-5" style={{ color: '#0a529f' }} />
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                            style={{
+                              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                              border: '1px solid #A4BFFE7A',
+                              boxShadow: '-2px 11px 46.1px 0px #0000000D'
+                            }}
+                          >
+                            <HeartIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">Diagnostic Cart</div>
-                            <div className="text-sm text-gray-600">{cart.items?.length || 0} service(s)</div>
+                            <div className="text-sm text-gray-900">{cart.items?.length || 0} service(s)</div>
                           </div>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
@@ -1826,13 +1852,13 @@ export default function BookingsPage() {
                       </div>
 
                     <div className="space-y-2 mb-3">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2 text-sm text-gray-900">
                         <UserIcon className="h-4 w-4" />
                         <span>Patient: {cart.patientName}</span>
                       </div>
 
                       {cart.items && cart.items.length > 0 && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           <div className="font-medium mb-1">Services:</div>
                           <ul className="list-disc list-inside text-xs space-y-1">
                             {cart.items.slice(0, 3).map((item: any, idx: number) => (
@@ -1846,9 +1872,9 @@ export default function BookingsPage() {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100">
+                    <div className="pt-3 border-t border-gray-200">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-900">
                           Cart ID: <span className="font-medium text-gray-900">{cart.cartId}</span>
                         </div>
                       </div>
@@ -1992,7 +2018,7 @@ export default function BookingsPage() {
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
@@ -2004,7 +2030,7 @@ export default function BookingsPage() {
 
                           {/* Payment Info */}
                           {booking.walletDebitAmount > 0 && (
-                            <div className="text-xs text-gray-600 mb-3">
+                            <div className="text-xs text-gray-900 mb-3">
                               <div className="flex justify-between">
                                 <span>Wallet Deduction:</span>
                                 <span className="font-medium">₹{booking.walletDebitAmount}</span>
@@ -2150,7 +2176,7 @@ export default function BookingsPage() {
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
@@ -2288,7 +2314,7 @@ export default function BookingsPage() {
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between mb-2">
                             <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
@@ -2409,7 +2435,7 @@ export default function BookingsPage() {
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-gray-200">
                           <div className="flex items-center justify-between mb-3">
                             <div className="text-sm text-gray-900">
                               ID: <span className="font-medium text-gray-900">{booking.bookingId}</span>
@@ -2443,25 +2469,25 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {ahcOrders.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #E8F5E9 66.63%, #E8F5E9 108.92%)',
-                borderColor: '#90EAA9'
+                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                borderColor: '#86ACD8'
               }}>
                 <div
                   className="w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center mx-auto mb-6"
                   style={{
-                    background: 'linear-gradient(261.92deg, rgba(144, 234, 169, 0.75) 4.4%, rgba(95, 161, 113, 0.75) 91.97%)',
-                    border: '1px solid rgba(144, 234, 169, 0.48)',
+                    background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                    border: '1px solid #A4BFFE7A',
                     boxShadow: '-2px 11px 46.1px 0px #0000000D'
                   }}
                 >
-                  <ClipboardDocumentCheckIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#5FA171' }} />
+                  <ClipboardDocumentCheckIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No AHC orders yet</h3>
                 <p className="text-gray-600 mb-6 text-sm lg:text-base">Book your annual health check to get started</p>
                 <button
                   onClick={() => router.push('/member/wellness')}
                   className="px-6 py-3 text-white rounded-xl font-semibold transition-all hover:shadow-lg"
-                  style={{ background: 'linear-gradient(163.02deg, #90EAA9 -37.71%, #5FA171 117.48%)' }}
+                  style={{ background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }}
                 >
                   Book AHC Package
                 </button>
