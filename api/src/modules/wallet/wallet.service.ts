@@ -1,6 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Model, Types } from 'mongoose';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { UserWallet, UserWalletDocument } from './schemas/user-wallet.schema';
 import { WalletTransaction, WalletTransactionDocument } from './schemas/wallet-transaction.schema';
 import { CategoryMaster, CategoryMasterDocument } from '../masters/schemas/category-master.schema';
@@ -15,9 +18,27 @@ export class WalletService {
     @InjectModel(CategoryMaster.name) private categoryMasterModel: Model<CategoryMasterDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private counterService: CounterService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private configService: ConfigService,
   ) {}
 
-  async getUserWallet(userId: string) {
+  async getUserWallet(userId: string): Promise<any> {
+    const cacheKey = `wallet:balance:${userId}`;
+
+    try {
+      // Check cache first
+      const cached = await this.cacheManager.get<any>(cacheKey);
+      if (cached) {
+        console.log(`[CACHE HIT] ${cacheKey}`);
+        return cached;
+      }
+
+      console.log(`[CACHE MISS] ${cacheKey}`);
+    } catch (error) {
+      console.error('[CACHE ERROR] Falling back to DB:', error);
+      // Continue to DB query on cache error
+    }
+
     try {
       // Convert string userId to ObjectId for query
       const userObjectId = new Types.ObjectId(userId);
@@ -35,6 +56,8 @@ export class WalletService {
         return null;
       }
 
+      let result: any;
+
       // If this is a dependent wallet in a floater policy, return the master wallet's balance
       if (wallet.floaterMasterWalletId) {
         console.log('🟡 [WALLET SERVICE] User has floater wallet, fetching master balance');
@@ -49,27 +72,37 @@ export class WalletService {
 
         if (masterWallet) {
           // Return master wallet with additional metadata
-          return {
+          result = {
             ...masterWallet,
             isFloater: true,
             viewingUserId: userId,
             memberConsumption: masterWallet.memberConsumption || []
           };
         }
-      }
-
-      // Check if this is a master wallet
-      if (wallet.isFloaterMaster) {
-        return {
+      } else if (wallet.isFloaterMaster) {
+        // Check if this is a master wallet
+        result = {
           ...wallet,
           isFloater: true,
           viewingUserId: userId,
           memberConsumption: wallet.memberConsumption || []
         };
+      } else {
+        // Individual wallet - return as-is
+        result = wallet;
       }
 
-      // Individual wallet - return as-is
-      return wallet;
+      // Cache with configured TTL
+      if (result) {
+        try {
+          const walletTTL = this.configService.get<number>('cache.ttl.wallet', 300000);
+          await this.cacheManager.set(cacheKey, result, walletTTL);
+        } catch (error) {
+          console.error('[CACHE ERROR] Failed to set cache:', error);
+        }
+      }
+
+      return result;
 
     } catch (error) {
       console.error('Error fetching user wallet:', error);
@@ -96,6 +129,59 @@ export class WalletService {
     } catch (error) {
       console.error('Error fetching user wallet by assignment:', error);
       return null;
+    }
+  }
+
+  /**
+   * Invalidate wallet cache for a user and cascade to floater family members if applicable
+   */
+  private async invalidateWalletCache(userId: string, walletToInvalidate: any): Promise<void> {
+    try {
+      // Always invalidate the requesting user's cache
+      const userCacheKey = `wallet:balance:${userId}`;
+      await this.cacheManager.del(userCacheKey);
+      console.log(`[CACHE DELETE] ${userCacheKey} | Reason: wallet transaction`);
+
+      // If floater wallet, invalidate master and all dependents
+      if (walletToInvalidate.isFloaterMaster || walletToInvalidate.floaterMasterWalletId) {
+        const masterWalletId = walletToInvalidate.isFloaterMaster
+          ? walletToInvalidate._id
+          : walletToInvalidate.floaterMasterWalletId;
+
+        // Find the master wallet
+        const masterWallet = await this.userWalletModel.findById(masterWalletId).lean().exec();
+        if (masterWallet) {
+          const masterUserId = masterWallet.userId.toString();
+
+          // Invalidate master wallet cache if different from requesting user
+          if (masterUserId !== userId) {
+            const masterCacheKey = `wallet:balance:${masterUserId}`;
+            await this.cacheManager.del(masterCacheKey);
+            console.log(`[CACHE DELETE] ${masterCacheKey} | Reason: floater master transaction`);
+          }
+
+          // Find and invalidate all dependent wallets
+          const dependentWallets = await this.userWalletModel
+            .find({
+              floaterMasterWalletId: masterWalletId,
+              isActive: true
+            })
+            .lean()
+            .exec();
+
+          for (const depWallet of dependentWallets) {
+            const depUserId = depWallet.userId.toString();
+            if (depUserId !== userId) {
+              const depCacheKey = `wallet:balance:${depUserId}`;
+              await this.cacheManager.del(depCacheKey);
+              console.log(`[CACHE DELETE] ${depCacheKey} | Reason: floater dependent transaction`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[CACHE ERROR] Failed to invalidate wallet cache:', error);
+      // Don't throw - cache invalidation failure shouldn't break the transaction
     }
   }
 
@@ -673,6 +759,9 @@ export class WalletService {
       // Save updated wallet
       await walletToDebit.save();
 
+      // Invalidate wallet cache for affected users
+      await this.invalidateWalletCache(userId, walletToDebit);
+
       // Create transaction record
       const transactionId = await this.counterService.generateTransactionId();
 
@@ -813,6 +902,9 @@ export class WalletService {
       // Save updated wallet
       await walletToCredit.save();
       console.log('✅ [WALLET SERVICE] Wallet balances updated');
+
+      // Invalidate wallet cache for affected users
+      await this.invalidateWalletCache(userId, walletToCredit);
 
       // Create transaction record
       const transactionId = await this.counterService.generateTransactionId();

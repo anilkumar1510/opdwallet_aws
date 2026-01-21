@@ -6,6 +6,8 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 **Port (dev):** 3005
 **Roles:** OPS
 
+**Redis Caching:** Operations that modify wallet balances (topups, appointment cancellations with refunds) trigger automatic cache invalidation in the Member Portal. See `REDIS_CACHING.md` and `LATEST_API_ENDPOINTS_OPERATIONS.md` for details.
+
 ---
 
 ## Authentication
@@ -30,6 +32,9 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 |------|-------------|
 | /operations/members | Search and browse all members with pagination |
 | /operations/members/[id] | Comprehensive member profile with wallet details and topup functionality |
+
+**Redis Cache Invalidation:**
+- **Wallet Topup** (`/operations/members/[id]`): When operations staff tops up member wallet, `wallet:balance:{userId}` cache is invalidated. Member sees updated balance immediately on next portal load. Floater wallets cascade to family members.
 
 ---
 

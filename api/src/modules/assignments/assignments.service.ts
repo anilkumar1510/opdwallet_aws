@@ -1,6 +1,8 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Assignment, AssignmentDocument } from './schemas/assignment.schema';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { WalletService } from '../wallet/wallet.service';
@@ -16,6 +18,7 @@ export class AssignmentsService {
     private userModel: Model<UserDocument>,
     private walletService: WalletService,
     private planConfigService: PlanConfigService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async createAssignment(createAssignmentDto: CreateAssignmentDto, createdBy: string) {
@@ -188,6 +191,9 @@ export class AssignmentsService {
       // Don't fail the assignment if wallet creation fails
       console.error('❌ [ASSIGNMENTS SERVICE] Failed to create wallet (assignment still created):', walletError);
     }
+
+    // Invalidate user's cached data (profile and wallet) so they see the new assignment immediately
+    await this.invalidateUserCache(userId.toString(), 'policy assigned');
 
     return savedAssignment;
   }
@@ -402,12 +408,59 @@ export class AssignmentsService {
     }));
   }
 
+  /**
+   * Invalidate cached data for a user after assignment changes
+   * Invalidates both profile and wallet caches
+   */
+  private async invalidateUserCache(userId: string, reason: string): Promise<void> {
+    try {
+      const userIdStr = userId.toString();
+
+      // Invalidate profile cache
+      const profileCacheKey = `member:profile:${userIdStr}`;
+      await this.cacheManager.del(profileCacheKey);
+      console.log(`[CACHE DELETE] ${profileCacheKey} | Reason: ${reason}`);
+
+      // Invalidate wallet cache
+      const walletCacheKey = `wallet:balance:${userIdStr}`;
+      await this.cacheManager.del(walletCacheKey);
+      console.log(`[CACHE DELETE] ${walletCacheKey} | Reason: ${reason}`);
+
+      // Also invalidate for floater family members if applicable
+      const user = await this.userModel.findById(userId).select('primaryMemberId').lean().exec();
+      if (user?.primaryMemberId) {
+        // This is a dependent, invalidate primary member's cache too
+        const primaryUser = await this.userModel.findOne({ memberId: user.primaryMemberId }).select('_id').lean().exec();
+        if (primaryUser) {
+          const primaryUserId = primaryUser._id.toString();
+          await this.cacheManager.del(`member:profile:${primaryUserId}`);
+          await this.cacheManager.del(`wallet:balance:${primaryUserId}`);
+          console.log(`[CACHE DELETE] Primary member ${primaryUserId} caches | Reason: ${reason}`);
+        }
+      } else {
+        // This might be a primary member, invalidate all dependents
+        const dependents = await this.userModel.find({ primaryMemberId: userIdStr }).select('_id').lean().exec();
+        for (const dependent of dependents) {
+          const depId = dependent._id.toString();
+          await this.cacheManager.del(`member:profile:${depId}`);
+          await this.cacheManager.del(`wallet:balance:${depId}`);
+          console.log(`[CACHE DELETE] Dependent ${depId} caches | Reason: ${reason}`);
+        }
+      }
+    } catch (error) {
+      console.error('[CACHE ERROR] Failed to invalidate user cache:', error);
+      // Don't throw - cache invalidation failure shouldn't break the operation
+    }
+  }
+
   async removeAssignment(assignmentId: string, _updatedBy: string) {
     const assignment = await this.assignmentModel.findOne({ assignmentId });
 
     if (!assignment) {
       throw new NotFoundException('Assignment not found');
     }
+
+    const userId = assignment.userId.toString();
 
     // Delete associated wallet
     try {
@@ -419,6 +472,9 @@ export class AssignmentsService {
     // Delete the assignment permanently
     await this.assignmentModel.deleteOne({ assignmentId });
     console.log('✅ [ASSIGNMENTS SERVICE] Assignment deleted:', assignmentId);
+
+    // Invalidate user's cached data
+    await this.invalidateUserCache(userId, 'assignment removed');
 
     return { message: 'Assignment removed successfully' };
   }
@@ -459,6 +515,9 @@ export class AssignmentsService {
       policyId: new Types.ObjectId(policyId),
     });
     console.log('✅ [ASSIGNMENTS SERVICE] Policy unassigned from user (deleted):', assignmentId);
+
+    // Invalidate user's cached data (profile and wallet)
+    await this.invalidateUserCache(userId, 'policy unassigned');
 
     return {
       message: 'Policy unassigned successfully',

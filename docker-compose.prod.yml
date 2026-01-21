@@ -38,6 +38,24 @@ services:
       timeout: 10s
       retries: 5
 
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: opd-redis-prod
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-prod:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    networks:
+      - opd-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   # NestJS API
   api:
     build:
@@ -58,10 +76,20 @@ services:
       COOKIE_MAX_AGE: ${COOKIE_MAX_AGE}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       DAILY_API_KEY: ${DAILY_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_TTL: ${REDIS_TTL:-3600}
+      CACHE_TTL_PROFILE: ${CACHE_TTL_PROFILE:-600}
+      CACHE_TTL_WALLET: ${CACHE_TTL_WALLET:-300}
+      CACHE_TTL_PLAN_CONFIG: ${CACHE_TTL_PLAN_CONFIG:-1800}
+      CACHE_TTL_CATEGORIES: ${CACHE_TTL_CATEGORIES:-3600}
     volumes:
       - ./api/uploads:/app/uploads
     depends_on:
       - mongodb
+      - redis
     networks:
       - opd-network
     healthcheck:
@@ -184,4 +212,6 @@ networks:
 
 volumes:
   mongo-data-prod:
+    driver: local
+  redis-data-prod:
     driver: local

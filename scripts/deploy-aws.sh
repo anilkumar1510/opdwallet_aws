@@ -142,6 +142,11 @@ ssh -i "$KEY_PATH" "$EC2_USER@$EC2_HOST" << ENDSSH
     # Check container status
     docker-compose -f docker-compose.prod.yml ps
 
+    # Verify critical services
+    echo "Verifying services..."
+    docker exec opd-redis-prod redis-cli --raw incr ping >/dev/null 2>&1 && echo "✅ Redis: Running" || echo "⚠️ Redis: Check required"
+    docker exec opd-mongodb-prod mongosh --eval "db.runCommand('ping')" --quiet >/dev/null 2>&1 && echo "✅ MongoDB: Running" || echo "⚠️ MongoDB: Check required"
+
     echo "Deployment complete!"
     echo "Access your application at:"
     echo "Member Portal: http://\$PUBLIC_IP"

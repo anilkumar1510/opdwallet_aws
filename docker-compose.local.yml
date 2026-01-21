@@ -35,6 +35,23 @@ services:
     networks:
       - opd-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: opd-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - opd-network
+
   api:
     image: node:20-alpine
     container_name: opd-api-dev
@@ -50,8 +67,18 @@ services:
       PORT: 4000
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       DAILY_API_KEY: ${DAILY_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_TTL: ${REDIS_TTL:-3600}
+      CACHE_TTL_PROFILE: ${CACHE_TTL_PROFILE:-600}
+      CACHE_TTL_WALLET: ${CACHE_TTL_WALLET:-300}
+      CACHE_TTL_PLAN_CONFIG: ${CACHE_TTL_PLAN_CONFIG:-1800}
+      CACHE_TTL_CATEGORIES: ${CACHE_TTL_CATEGORIES:-3600}
     depends_on:
       - mongo
+      - redis
     volumes:
       - ./api:/app
     networks:
@@ -174,6 +201,7 @@ services:
 
 volumes:
   mongo-data:
+  redis-data:
 
 networks:
   opd-network:

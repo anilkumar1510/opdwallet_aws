@@ -6,6 +6,8 @@ This document lists all frontend pages/routes in the TPA Portal (web-tpa) for cl
 **Port (dev):** 3004
 **Roles:** TPA_ADMIN, TPA_USER
 
+**Redis Caching:** Claim approvals that credit member wallets trigger automatic cache invalidation in the Member Portal to ensure updated balances reflect immediately. See `REDIS_CACHING.md` and `LATEST_API_ENDPOINTS_TPA.md` for details.
+
 ---
 
 ## Authentication
@@ -32,6 +34,9 @@ This document lists all frontend pages/routes in the TPA Portal (web-tpa) for cl
 | /tpa/claims/unassigned | View claims awaiting TPA reviewer assignment (TPA_ADMIN only) |
 | /tpa/claims/assigned | View claims assigned to TPA reviewers |
 | /tpa/claims/[claimId] | View full claim details with review workflow |
+
+**Redis Cache Invalidation:**
+- **Claim Approval** (`/tpa/claims/[claimId]`): When TPA approves claim (full or partial), member wallet is credited and `wallet:balance:{userId}` cache is invalidated. Member Portal shows updated balance on next page load. Floater wallets cascade to family members.
 
 ---
 

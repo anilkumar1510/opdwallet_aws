@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
 import * as mongooseLeanVirtuals from 'mongoose-lean-virtuals';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -43,6 +45,28 @@ import configuration from './config/configuration';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
+    }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const redisConfig: any = {
+          store: redisStore,
+          host: configService.get<string>('redis.host', 'localhost'),
+          port: configService.get<number>('redis.port', 6379),
+          db: configService.get<number>('redis.db', 0),
+          ttl: configService.get<number>('redis.ttl', 3600),
+        };
+
+        // Add password if configured (for production)
+        const password = configService.get<string>('redis.password');
+        if (password) {
+          redisConfig.password = password;
+        }
+
+        return redisConfig;
+      },
+      inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),

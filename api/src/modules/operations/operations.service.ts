@@ -133,7 +133,7 @@ export class OperationsService {
     }
 
     const categoryExists = wallet.categoryBalances.some(
-      cat => cat.categoryCode === categoryCode
+      (cat: any) => cat.categoryCode === categoryCode
     );
 
     if (!categoryExists) {

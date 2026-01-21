@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CategoryMaster, CategoryMasterDocument } from '../masters/schemas/category-master.schema';
 import { Assignment, AssignmentDocument } from '../assignments/schemas/assignment.schema';
@@ -18,12 +21,51 @@ export class MemberService {
     private assignmentsService: AssignmentsService,
     private walletService: WalletService,
     private planConfigService: PlanConfigService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private configService: ConfigService,
   ) {}
 
   private isSelfRelationship(relationship: string): boolean {
     return relationship === RelationshipType.SELF ||
            relationship === 'REL001' ||
            relationship === 'SELF';
+  }
+
+  /**
+   * Get categories with caching
+   * Caches all active categories and filters in-memory
+   */
+  private async getCategoriesCached(categoryIds: string[]): Promise<any[]> {
+    const cacheKey = `category:masters:active`;
+
+    try {
+      // Try to get all active categories from cache
+      let categories = await this.cacheManager.get<any[]>(cacheKey);
+
+      if (!categories) {
+        console.log(`[CACHE MISS] ${cacheKey}`);
+        categories = await this.categoryMasterModel
+          .find({ isActive: true })
+          .lean()
+          .exec();
+
+        // Cache with configured TTL - very stable reference data
+        const categoriesTTL = this.configService.get<number>('cache.ttl.categories', 3600000);
+        await this.cacheManager.set(cacheKey, categories, categoriesTTL);
+      } else {
+        console.log(`[CACHE HIT] ${cacheKey}`);
+      }
+
+      // Filter to requested IDs in-memory
+      return categories.filter(c => categoryIds.includes(c.categoryId));
+    } catch (error) {
+      console.error('[CACHE ERROR] Failed to get cached categories, falling back to DB:', error);
+      // Fallback to direct DB query
+      return this.categoryMasterModel.find({
+        categoryId: { $in: categoryIds },
+        isActive: true
+      }).lean().exec();
+    }
   }
 
   private async fetchDependents(user: any): Promise<any[]> {
@@ -82,10 +124,7 @@ export class MemberService {
 
       policyBenefits = planConfig.benefits;
       const categoryIds = Object.keys(planConfig.benefits);
-      const categories = await this.categoryMasterModel.find({
-        categoryId: { $in: categoryIds },
-        isActive: true
-      });
+      const categories = await this.getCategoriesCached(categoryIds);
 
       walletCategories = this.mapWalletCategories(categoryIds, planConfig.benefits, categories, walletData);
       healthBenefits = this.mapHealthBenefits(categoryIds, planConfig.benefits, categories, walletData);
@@ -178,6 +217,22 @@ export class MemberService {
   }
 
   async getProfile(userId: string) {
+    const cacheKey = `member:profile:${userId}`;
+
+    try {
+      // Check cache first
+      const cached = await this.cacheManager.get(cacheKey);
+      if (cached) {
+        console.log(`[CACHE HIT] ${cacheKey}`);
+        return cached;
+      }
+
+      console.log(`[CACHE MISS] ${cacheKey}`);
+    } catch (error) {
+      console.error('[CACHE ERROR] Falling back to DB:', error);
+      // Continue to DB query on cache error
+    }
+
     // userId here is actually the MongoDB _id from JWT payload
     const user = await this.userModel.findById(userId).select('-passwordHash');
     if (!user) {
@@ -219,7 +274,7 @@ export class MemberService {
     const { policyBenefits, walletCategories, healthBenefits } =
       await this.fetchPolicyBenefits(assignments, walletData);
 
-    return {
+    const response = {
       user,
       dependents,
       familyMembers,
@@ -229,6 +284,17 @@ export class MemberService {
       healthBenefits,
       policyBenefits,
     };
+
+    try {
+      // Cache with configured TTL
+      const profileTTL = this.configService.get<number>('cache.ttl.profile', 600000);
+      await this.cacheManager.set(cacheKey, response, profileTTL);
+    } catch (error) {
+      console.error('[CACHE ERROR] Failed to set cache:', error);
+      // Continue without caching on error
+    }
+
+    return response;
   }
 
   async getFamilyMembers(userId: string) {
@@ -272,6 +338,9 @@ export class MemberService {
 
     await user.save();
 
+    // Invalidate cache
+    await this.invalidateProfileCache(userId);
+
     return {
       message: 'Profile updated successfully',
       user: {
@@ -280,5 +349,19 @@ export class MemberService {
         mobile: user.phone,
       },
     };
+  }
+
+  /**
+   * Invalidate profile cache for a user
+   * Can be called by other services when user data changes
+   */
+  async invalidateProfileCache(userId: string): Promise<void> {
+    try {
+      const cacheKey = `member:profile:${userId}`;
+      await this.cacheManager.del(cacheKey);
+      console.log(`[CACHE DELETE] ${cacheKey} | Reason: profile invalidation`);
+    } catch (error) {
+      console.error('[CACHE ERROR] Failed to invalidate cache:', error);
+    }
   }
 }

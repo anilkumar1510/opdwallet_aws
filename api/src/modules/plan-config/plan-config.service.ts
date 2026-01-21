@@ -1,6 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Model, Types } from 'mongoose';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { PlanConfig, PlanConfigDocument } from './schemas/plan-config.schema';
 import { CreatePlanConfigDto } from './dto/create-plan-config.dto';
 import { UpdatePlanConfigDto } from './dto/update-plan-config.dto';
@@ -13,6 +16,8 @@ export class PlanConfigService {
     private planConfigModel: Model<PlanConfigDocument>,
     @InjectModel(Assignment.name)
     private assignmentModel: Model<AssignmentDocument>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private configService: ConfigService,
   ) {}
 
   async createConfig(policyId: string, dto: CreatePlanConfigDto, userId: string) {
@@ -50,18 +55,51 @@ export class PlanConfigService {
     return saved;
   }
 
-  async getConfig(policyId: string, version?: number) {
-    if (version) {
-      return this.planConfigModel.findOne({ policyId, version });
-    }
-    // Get current config
-    const current = await this.planConfigModel.findOne({ policyId, isCurrent: true });
-    if (current) return current;
+  async getConfig(policyId: string, version?: number): Promise<PlanConfigDocument | null> {
+    // Build cache key based on lookup type
+    const cacheKey = version
+      ? `plan:config:${policyId}:v${version}`
+      : `plan:config:${policyId}`;
 
-    // If no current, get latest published
-    return this.planConfigModel
-      .findOne({ policyId, status: 'PUBLISHED' })
-      .sort({ version: -1 });
+    try {
+      // Check cache first
+      const cached = await this.cacheManager.get<PlanConfigDocument>(cacheKey);
+      if (cached) {
+        console.log(`[CACHE HIT] ${cacheKey}`);
+        return cached;
+      }
+
+      console.log(`[CACHE MISS] ${cacheKey}`);
+    } catch (error) {
+      console.error('[CACHE ERROR] Falling back to DB:', error);
+    }
+
+    let config: PlanConfigDocument | null;
+
+    if (version) {
+      config = await this.planConfigModel.findOne({ policyId, version });
+    } else {
+      // Get current config
+      config = await this.planConfigModel.findOne({ policyId, isCurrent: true });
+      if (!config) {
+        // If no current, get latest published
+        config = await this.planConfigModel
+          .findOne({ policyId, status: 'PUBLISHED' })
+          .sort({ version: -1 });
+      }
+    }
+
+    // Cache with configured TTL
+    if (config) {
+      try {
+        const planConfigTTL = this.configService.get<number>('cache.ttl.planConfig', 1800000);
+        await this.cacheManager.set(cacheKey, config, planConfigTTL);
+      } catch (error) {
+        console.error('[CACHE ERROR] Failed to set cache:', error);
+      }
+    }
+
+    return config;
   }
 
   async getAllConfigs(policyId: string) {
@@ -69,6 +107,47 @@ export class PlanConfigService {
       .find({ policyId })
       .sort({ version: -1 })
       .exec();
+  }
+
+  /**
+   * Invalidate plan config cache and cascade to member profiles
+   */
+  private async invalidatePlanConfigCache(policyId: string, version?: number): Promise<void> {
+    try {
+      // Invalidate the specific version cache if provided
+      if (version) {
+        const versionCacheKey = `plan:config:${policyId}:v${version}`;
+        await this.cacheManager.del(versionCacheKey);
+        console.log(`[CACHE DELETE] ${versionCacheKey} | Reason: plan config update`);
+      }
+
+      // Always invalidate the current config cache
+      const currentCacheKey = `plan:config:${policyId}`;
+      await this.cacheManager.del(currentCacheKey);
+      console.log(`[CACHE DELETE] ${currentCacheKey} | Reason: plan config update`);
+
+      // Cascade: Invalidate all member profiles using this policy
+      // Find all active assignments for this policy
+      const assignments = await this.assignmentModel
+        .find({
+          'policyId': new Types.ObjectId(policyId),
+          isActive: true
+        })
+        .select('userId')
+        .lean()
+        .exec();
+
+      console.log(`[CACHE CASCADE] Invalidating ${assignments.length} member profiles affected by policy ${policyId}`);
+
+      // Invalidate each affected user's profile cache
+      for (const assignment of assignments) {
+        const userCacheKey = `member:profile:${assignment.userId}`;
+        await this.cacheManager.del(userCacheKey);
+        console.log(`[CACHE DELETE] ${userCacheKey} | Reason: policy config change`);
+      }
+    } catch (error) {
+      console.error('[CACHE ERROR] Failed to invalidate plan config cache:', error);
+    }
   }
 
   async updateConfig(policyId: string, version: number, updates: UpdatePlanConfigDto, userId: string) {
@@ -97,6 +176,10 @@ export class PlanConfigService {
       console.log('🟠 [PLAN CONFIG SERVICE] Saving config...');
       const result = await config.save();
       console.log('✅ [PLAN CONFIG SERVICE] updateConfig success');
+
+      // Invalidate cache after update
+      await this.invalidatePlanConfigCache(policyId, version);
+
       return result;
     } catch (error) {
       console.error('❌ [PLAN CONFIG SERVICE] updateConfig error:', error);
@@ -133,6 +216,9 @@ export class PlanConfigService {
 
     console.log(`[PlanConfigService] Config set as current (isCurrent: ${result.isCurrent})`);
 
+    // Invalidate cache after publishing
+    await this.invalidatePlanConfigCache(policyId, version);
+
     return result;
   }
 
@@ -154,6 +240,9 @@ export class PlanConfigService {
       { policyId, version },
       { isCurrent: true }
     );
+
+    // Invalidate cache after changing current config
+    await this.invalidatePlanConfigCache(policyId, version);
 
     return { success: true, message: `Version ${version} is now current` };
   }

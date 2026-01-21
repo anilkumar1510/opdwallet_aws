@@ -52,4 +52,19 @@ export default () => ({
     dbQueryTimeout: parseInt(process.env.DB_QUERY_TIMEOUT || '5000', 10),
     dbPoolSize: parseInt(process.env.DB_POOL_SIZE || '10', 10),
   },
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0', 10),
+    ttl: parseInt(process.env.REDIS_TTL || '3600', 10), // Default 1 hour in seconds
+  },
+  cache: {
+    ttl: {
+      profile: parseInt(process.env.CACHE_TTL_PROFILE || '600', 10) * 1000, // 10 minutes in milliseconds
+      wallet: parseInt(process.env.CACHE_TTL_WALLET || '300', 10) * 1000, // 5 minutes in milliseconds
+      planConfig: parseInt(process.env.CACHE_TTL_PLAN_CONFIG || '1800', 10) * 1000, // 30 minutes in milliseconds
+      categories: parseInt(process.env.CACHE_TTL_CATEGORIES || '3600', 10) * 1000, // 60 minutes in milliseconds
+    },
+  },
 });

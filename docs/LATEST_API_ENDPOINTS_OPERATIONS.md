@@ -6,6 +6,8 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 **Port (dev):** 3005
 **Roles:** OPS
 
+**Redis Caching:** Operations that modify wallet balances or bookings trigger automatic cache invalidation in the Member Portal. See `REDIS_CACHING.md` for details.
+
 ---
 
 ## Authentication
@@ -27,6 +29,9 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | GET | /ops/members/:id | Get member details with wallet/policy |
 | POST | /ops/members/:id/wallet/topup | Top-up member wallet |
 
+**Redis Cache Invalidation:**
+- **POST /ops/members/:id/wallet/topup**: Invalidates `wallet:balance:{userId}` cache for immediate reflection in Member Portal. If floater wallet, cascades to all family members.
+
 ---
 
 ## Appointments
@@ -42,6 +47,11 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | PATCH | /appointments/:appointmentId/confirm | Confirm appointment |
 | PATCH | /appointments/:appointmentId/cancel | Cancel appointment (admin) |
 | PATCH | /appointments/:appointmentId/user-cancel | User-initiated cancellation with refund |
+
+**Redis Cache Invalidation:**
+- **PATCH /appointments/:appointmentId/cancel**: If refund is issued, invalidates `wallet:balance:{userId}` cache
+- **PATCH /appointments/:appointmentId/user-cancel**: Triggers wallet credit for refund, invalidates `wallet:balance:{userId}` cache
+- **Floater Wallets**: Cache invalidation cascades to all family members when floater wallet is credited
 
 ---
 

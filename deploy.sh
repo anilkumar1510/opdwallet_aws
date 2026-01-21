@@ -20,6 +20,9 @@ echo "🔨 Building services (this will take 10-15 minutes)..."
 echo "Building MongoDB (pulling image)..."
 docker-compose -f docker-compose.prod.yml pull mongodb
 
+echo "Building Redis (pulling image)..."
+docker-compose -f docker-compose.prod.yml pull redis
+
 echo "Building API..."
 docker-compose -f docker-compose.prod.yml build api
 
@@ -39,6 +42,11 @@ docker-compose -f docker-compose.prod.yml up -d
 # Show status
 echo "✅ Deployment complete! Containers status:"
 docker ps
+
+echo ""
+echo "🔍 Verifying services..."
+docker exec opd-redis-prod redis-cli --raw incr ping >/dev/null 2>&1 && echo "✅ Redis: Running" || echo "⚠️ Redis: Check required"
+docker exec opd-mongodb-prod mongosh --eval "db.runCommand('ping')" --quiet >/dev/null 2>&1 && echo "✅ MongoDB: Running" || echo "⚠️ MongoDB: Check required"
 
 echo ""
 echo "🌐 Access URLs:"

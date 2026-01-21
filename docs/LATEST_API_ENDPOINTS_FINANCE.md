@@ -6,6 +6,8 @@ This document lists all API endpoints used by the Finance Portal (web-finance) f
 **Port (dev):** 3006
 **Roles:** FINANCE_USER
 
+**Redis Caching:** Payment completions that credit member wallets trigger automatic cache invalidation in the Member Portal. See `REDIS_CACHING.md` for details.
+
 ---
 
 ## Authentication
@@ -36,6 +38,12 @@ This document lists all API endpoints used by the Finance Portal (web-finance) f
 - Payment completion triggers notification to member
 - All payment actions create audit records in transaction summary
 - Integration with member wallet for fund transfers
+
+**Redis Cache Invalidation:**
+- **POST /finance/claims/:claimId/complete-payment**: When payment is completed, member wallet is credited, triggering invalidation of `wallet:balance:{userId}` cache
+- **Member Portal Impact**: Updated wallet balance reflects immediately on member's next page load or refresh
+- **Floater Wallets**: Cache invalidation cascades to all family members when floater wallet is credited
+- **Notification Integration**: Cache invalidation occurs before notification is sent, ensuring member sees updated balance when they check portal after receiving notification
 
 ---
 

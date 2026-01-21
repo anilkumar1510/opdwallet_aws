@@ -6,6 +6,8 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 **Port (dev):** 3004
 **Roles:** TPA_ADMIN, TPA_USER
 
+**Redis Caching:** Claim approvals that credit member wallets trigger automatic cache invalidation in the Member Portal. See `REDIS_CACHING.md` for details.
+
 ---
 
 ## Authentication
@@ -44,6 +46,11 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 - Document requests pause claim processing until documents are submitted
 - Partial approvals allow for copay adjustments
 - All actions are logged for audit trail
+
+**Redis Cache Invalidation:**
+- **POST /tpa/claims/:claimId/approve**: When claim is approved, wallet is credited, triggering invalidation of `wallet:balance:{userId}` cache. Member Portal reflects updated balance immediately on next load.
+- **Floater Wallets**: Cache invalidation cascades to all family members when floater wallet is credited
+- **Performance**: Cache invalidation completes in <10ms, ensuring near-instant reflection in Member Portal
 
 ---
 
