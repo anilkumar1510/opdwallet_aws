@@ -180,26 +180,54 @@ export default function BottomNavigation() {
 
         {/* Frosted glass pill container - H:63, auto width with padding */}
         <div
-          className="absolute left-1/2 flex items-center justify-center gap-[4px] px-[6px] py-[4px]"
+          className="absolute left-1/2 flex items-center justify-center gap-[4px] px-[4px] py-[4px]"
           style={{
             bottom: '20px',
             transform: 'translateX(-50%)',
             height: '63px',
-            background: 'rgba(255, 255, 255, 0.46)',
-            border: '1px solid white',
+            background: 'rgba(255, 255, 255, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.5)',
             borderRadius: '49px',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
             pointerEvents: 'auto'
           }}
         >
+          {/* Home - Always in blue circle (First position) */}
+          <Link
+            href="/member"
+            className="flex flex-col items-center justify-center gap-[3px] px-5 h-[55px] no-underline"
+            style={{
+              background: 'linear-gradient(180deg, #1a6fd4 0%, #034da2 100%)',
+              borderRadius: '46px',
+              boxShadow: '0px 4px 12px rgba(3, 77, 162, 0.3)'
+            }}
+          >
+            <img
+              src="/images/icons/home-icon.svg"
+              alt="Home"
+              width={18}
+              height={18}
+              className="object-contain brightness-0 invert"
+            />
+            <span
+              className="text-[12px] font-semibold capitalize whitespace-nowrap"
+              style={{ color: 'white', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
+            >
+              Home
+            </span>
+          </Link>
+
           {/* Fixed items container (Claims, Bookings, Wallet) */}
           <div
             className="flex items-center justify-center gap-2 px-2 h-full"
             style={{
-              background: 'rgba(184, 196, 208, 0.31)',
-              border: '1px solid rgba(184, 196, 208, 0.09)',
-              borderRadius: '26.5px'
+              background: 'rgba(255, 255, 255, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '26.5px',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)'
             }}
           >
             {bottomNavItems.filter(item => item.name !== 'Home').map((item) => {
@@ -234,31 +262,6 @@ export default function BottomNavigation() {
               )
             })}
           </div>
-
-          {/* Home - Always in blue circle */}
-          <Link
-            href="/member"
-            className="flex flex-col items-center justify-center gap-[3px] px-5 h-[55px] no-underline"
-            style={{
-              background: '#034da2',
-              borderRadius: '46px',
-              boxShadow: '0px 1px 8px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <img
-              src="/images/icons/home-icon.svg"
-              alt="Home"
-              width={18}
-              height={18}
-              className="object-contain brightness-0 invert"
-            />
-            <span
-              className="text-[12px] font-semibold capitalize whitespace-nowrap"
-              style={{ color: 'white', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
-            >
-              Home
-            </span>
-          </Link>
         </div>
 
         {/* Safe area for devices with home indicator (iPhone X+) */}

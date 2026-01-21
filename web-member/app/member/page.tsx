@@ -579,11 +579,11 @@ export default function DashboardPage() {
             Health Benefits
           </h2>
 
-          {/* Benefits Grid - Figma: 2x2 grid with 6px gap on mobile */}
+          {/* Benefits Grid - 2x2 grid with 16px gap */}
           <div className="relative group px-5 lg:px-6">
             <div
               ref={benefitsScrollRef}
-              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-[6px] lg:gap-4"
+              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4"
             >
               {walletCategories.map((category: any, index: number) => (
                 <BenefitCardEnhanced
