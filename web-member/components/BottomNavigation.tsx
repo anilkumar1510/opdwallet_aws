@@ -193,21 +193,25 @@ export default function BottomNavigation() {
             pointerEvents: 'auto'
           }}
         >
-          {/* Non-active items container */}
+          {/* Fixed items container (Claims, Bookings, Wallet) */}
           <div
-            className="flex items-center justify-center gap-4 px-4 h-full"
+            className="flex items-center justify-center gap-2 px-2 h-full"
             style={{
               background: 'rgba(184, 196, 208, 0.31)',
               border: '1px solid rgba(184, 196, 208, 0.09)',
               borderRadius: '26.5px'
             }}
           >
-            {bottomNavItems.filter(item => !isActive(item.href)).map((item) => {
+            {bottomNavItems.filter(item => item.name !== 'Home').map((item) => {
+              const active = isActive(item.href)
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex flex-col items-center gap-[3px] no-underline"
+                  className="flex flex-col items-center gap-[3px] no-underline px-3 py-1 rounded-full transition-all"
+                  style={active ? {
+                    background: 'rgba(3, 77, 162, 0.15)',
+                  } : {}}
                 >
                   <img
                     src={item.mobileIconSrc}
@@ -217,8 +221,12 @@ export default function BottomNavigation() {
                     className="object-contain"
                   />
                   <span
-                    className="text-[12px] font-semibold capitalize whitespace-nowrap"
-                    style={{ color: '#034da2', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
+                    className="text-[12px] capitalize whitespace-nowrap"
+                    style={{
+                      color: active ? '#0a3f93' : '#034da2',
+                      fontFamily: 'SF Pro Display, system-ui, sans-serif',
+                      fontWeight: active ? 700 : 600
+                    }}
                   >
                     {item.name}
                   </span>
@@ -227,35 +235,30 @@ export default function BottomNavigation() {
             })}
           </div>
 
-          {/* Active item */}
-          {bottomNavItems.filter(item => isActive(item.href)).map((item) => {
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex flex-col items-center justify-center gap-[3px] px-5 h-[55px] no-underline"
-                style={{
-                  background: '#034da2',
-                  borderRadius: '46px',
-                  boxShadow: '0px 1px 8px rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                <img
-                  src={item.mobileIconSrc}
-                  alt={item.name}
-                  width={18}
-                  height={18}
-                  className="object-contain brightness-0 invert"
-                />
-                <span
-                  className="text-[12px] font-semibold capitalize whitespace-nowrap"
-                  style={{ color: 'white', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
-                >
-                  {item.name}
-                </span>
-              </Link>
-            )
-          })}
+          {/* Home - Always in blue circle */}
+          <Link
+            href="/member"
+            className="flex flex-col items-center justify-center gap-[3px] px-5 h-[55px] no-underline"
+            style={{
+              background: '#034da2',
+              borderRadius: '46px',
+              boxShadow: '0px 1px 8px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <img
+              src="/images/icons/home-icon.svg"
+              alt="Home"
+              width={18}
+              height={18}
+              className="object-contain brightness-0 invert"
+            />
+            <span
+              className="text-[12px] font-semibold capitalize whitespace-nowrap"
+              style={{ color: 'white', fontFamily: 'SF Pro Display, system-ui, sans-serif' }}
+            >
+              Home
+            </span>
+          </Link>
         </div>
 
         {/* Safe area for devices with home indicator (iPhone X+) */}
