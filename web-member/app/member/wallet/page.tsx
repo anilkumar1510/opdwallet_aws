@@ -115,18 +115,19 @@ export default function WalletPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Local state for wallet viewing - does NOT affect global profile
+  // Local state for wallet viewing within primary member's view
+  // When viewing dependent profile globally, this follows the active profile
   const [selectedWalletMember, setSelectedWalletMember] = useState<any>(null)
 
-  // Initialize selectedWalletMember to loggedInUser
+  // Sync selectedWalletMember with activeMember when profile is switched globally
   useEffect(() => {
-    if (loggedInUser && !selectedWalletMember) {
-      setSelectedWalletMember(loggedInUser)
+    if (activeMember) {
+      setSelectedWalletMember(activeMember)
     }
-  }, [loggedInUser])
+  }, [activeMember])
 
-  // Determine effective user ID for wallet (local to this page only)
-  const effectiveUserId = selectedWalletMember?._id || loggedInUser?._id || ''
+  // Determine effective user ID for wallet
+  const effectiveUserId = selectedWalletMember?._id || activeMember?._id || loggedInUser?._id || ''
 
   // Determine if family dropdown should be shown
   const shouldShowFamilyDropdown = useMemo(() => {
