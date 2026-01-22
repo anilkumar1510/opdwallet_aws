@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useFamily } from '@/contexts/FamilyContext'
 import { Card } from '@/components/ui/Card'
 import {
   DocumentTextIcon,
@@ -46,6 +47,7 @@ interface Claim {
 }
 
 export default function ClaimsPage() {
+  const { viewingUserId } = useFamily()
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'all'>('all')
@@ -125,7 +127,15 @@ export default function ClaimsPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/member/claims?limit=100', {
+      const params = new URLSearchParams()
+      params.append('limit', '100')
+
+      // Add userId parameter if viewing a dependent
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/claims?${params.toString()}`, {
         credentials: 'include'
       })
 
@@ -163,7 +173,7 @@ export default function ClaimsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [viewingUserId])
 
   useEffect(() => {
     fetchClaims()

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useFamily } from '@/contexts/FamilyContext';
 import { Receipt, Loader2, Filter, ChevronRight, Wallet, CreditCard, DollarSign } from 'lucide-react';
 
 interface Transaction {
@@ -27,6 +28,7 @@ interface TransactionSummary {
 
 export default function OrdersPage() {
   const router = useRouter();
+  const { viewingUserId } = useFamily();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,12 @@ export default function OrdersPage() {
     try {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
+
+      // Add userId parameter if viewing dependent
+      if (viewingUserId) {
+        params.append('userId', viewingUserId);
+      }
+
       if (filterStatus !== 'ALL') params.append('status', filterStatus);
       if (filterService !== 'ALL') params.append('serviceType', filterService);
 
@@ -55,7 +63,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, filterService]);
+  }, [filterStatus, filterService, viewingUserId]);
 
   useEffect(() => {
     fetchTransactions();

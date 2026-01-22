@@ -715,9 +715,9 @@ export class MemberClaimsService {
     const query: any = {};
 
     if (userId) {
-      // Get user's own ID and all their dependent IDs
-      const userIds = await this.getUserAndDependentIds(userId);
-      query.userId = { $in: userIds };
+      // Filter by specific user only (no dependent aggregation)
+      // Family access verification is now handled in the controller
+      query.userId = new Types.ObjectId(userId);
     }
 
     if (status) {

@@ -6,12 +6,14 @@ import {
   TransactionSummary,
   TransactionSummarySchema,
 } from './schemas/transaction-summary.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { CounterModule } from '../counters/counter.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: TransactionSummary.name, schema: TransactionSummarySchema },
+      { name: User.name, schema: UserSchema },
     ]),
     CounterModule,
   ],

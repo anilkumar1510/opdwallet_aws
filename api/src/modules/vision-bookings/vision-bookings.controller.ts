@@ -11,6 +11,8 @@ import {
   Request,
   Response,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { VisionBookingsService } from './vision-bookings.service';
 import { CreateVisionBookingDto } from './dto/create-vision-booking.dto';
 import { ValidateVisionBookingDto } from './dto/validate-vision-booking.dto';
@@ -22,11 +24,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class VisionBookingsController {
-  constructor(private readonly visionBookingsService: VisionBookingsService) {}
+  constructor(
+    private readonly visionBookingsService: VisionBookingsService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {}
 
   /**
    * GET /api/member/benefits/CAT007/services
@@ -119,10 +126,14 @@ export class VisionBookingsController {
   ) {
     console.log('[VisionBookingsController] GET /api/vision-bookings/user/:userId -', userId);
 
-    // Ensure user can only access their own bookings
-    if (req.user.userId !== userId) {
-      return { bookings: [] };
-    }
+    const requestingUserId = req.user.userId;
+
+    // Verify family access - allows primary members to view dependents' data
+    await FamilyAccessHelper.verifyFamilyAccess(
+      this.userModel,
+      requestingUserId,
+      userId,
+    );
 
     return this.visionBookingsService.getUserBookings(userId, viewingUserId);
   }

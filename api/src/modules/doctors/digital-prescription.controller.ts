@@ -12,6 +12,9 @@ import {
   BadRequestException,
   Res,
 } from '@nestjs/common';
+import { ApiQuery } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
 import { DigitalPrescriptionService } from './digital-prescription.service';
@@ -23,6 +26,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 interface AuthRequest extends Request {
   user: {
@@ -503,23 +508,38 @@ export class MemberDigitalPrescriptionsController {
   constructor(
     private readonly digitalPrescriptionService: DigitalPrescriptionService,
     private readonly pdfGenerationService: PdfGenerationService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   @Get()
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch digital prescriptions for (family access verification applies)' })
   async getMemberDigitalPrescriptions(
     @Request() req: AuthRequest,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('filterUsed') filterUsed?: string,
+    @Query('userId') userId?: string,
   ) {
-    const userId = req.user.userId || req.user.id;
+    const requestingUserId = req.user.userId || req.user.id;
 
-    if (!userId) {
+    if (!requestingUserId) {
       throw new BadRequestException('User ID is required');
     }
 
+    // Determine target user ID
+    const targetUserId = userId || requestingUserId;
+
+    // Verify family access if viewing another user's data
+    if (userId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        targetUserId,
+      );
+    }
+
     const result = await this.digitalPrescriptionService.getMemberDigitalPrescriptions(
-      userId,
+      targetUserId,
       +page,
       +limit,
       filterUsed === 'true',

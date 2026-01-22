@@ -14,6 +14,9 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
+import { ApiQuery } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
@@ -26,6 +29,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
 import { prescriptionMulterConfig } from './config/prescription-multer.config';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 interface AuthRequest extends Request {
   user: {
@@ -175,23 +180,38 @@ export class MemberPrescriptionsController {
     private readonly prescriptionsService: PrescriptionsService,
     private readonly digitalPrescriptionService: DigitalPrescriptionService,
     private readonly pdfGenerationService: PdfGenerationService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   @Get()
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch prescriptions for (family access verification applies)' })
   async getMemberPrescriptions(
     @Request() req: AuthRequest,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('filterUsed') filterUsed?: string,
+    @Query('userId') userId?: string,
   ) {
-    const userId = req.user.userId || req.user.id;
+    const requestingUserId = req.user.userId || req.user.id;
 
-    if (!userId) {
+    if (!requestingUserId) {
       throw new BadRequestException('User ID is required');
     }
 
+    // Determine target user ID
+    const targetUserId = userId || requestingUserId;
+
+    // Verify family access if viewing another user's data
+    if (userId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        targetUserId,
+      );
+    }
+
     const result = await this.prescriptionsService.getMemberPrescriptions(
-      userId,
+      targetUserId,
       +page,
       +limit,
       filterUsed === 'true',

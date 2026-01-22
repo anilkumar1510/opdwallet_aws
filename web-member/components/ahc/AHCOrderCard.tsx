@@ -12,6 +12,7 @@ import {
   ChevronUpIcon,
   HomeIcon,
   BuildingOfficeIcon,
+  DocumentCheckIcon,
 } from '@heroicons/react/24/outline'
 
 interface AHCOrder {
@@ -171,7 +172,7 @@ export function AHCOrderCard({ order, onViewLabReport, onViewDiagnosticReport }:
                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
               }}
             >
-              <ClipboardDocumentCheckIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
+              <DocumentCheckIcon className="h-6 w-6" style={{ color: '#0F5FDC' }} />
             </div>
             <div>
               <h3 className="text-base font-semibold" style={{ color: '#0E51A2' }}>

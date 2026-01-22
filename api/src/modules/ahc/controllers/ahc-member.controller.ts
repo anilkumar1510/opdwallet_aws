@@ -30,6 +30,8 @@ import { DiagnosticService } from '../../diagnostics/schemas/diagnostic-service.
 import { LabVendorSlot } from '../../lab/schemas/lab-vendor-slot.schema';
 import { DiagnosticVendorSlot } from '../../diagnostics/schemas/diagnostic-vendor-slot.schema';
 import { CopayCalculator } from '../../plan-config/utils/copay-calculator';
+import { User, UserDocument } from '../../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 @Controller('member/ahc')
 @UseGuards(AuthGuard('jwt'))
@@ -48,6 +50,7 @@ export class AhcMemberController {
     @InjectModel(DiagnosticService.name) private diagnosticServiceModel: Model<DiagnosticService>,
     @InjectModel(LabVendorSlot.name) private labSlotModel: Model<LabVendorSlot>,
     @InjectModel(DiagnosticVendorSlot.name) private diagnosticSlotModel: Model<DiagnosticVendorSlot>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   /**
@@ -273,6 +276,15 @@ export class AhcMemberController {
   ) {
     const requestingUserId = (req.user as any).userId;
     const userId = viewingUserId || requestingUserId;
+
+    // Verify family access if viewing another user's data
+    if (viewingUserId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        userId,
+      );
+    }
 
     const orders = await this.ahcOrderService.getUserOrders(userId);
 

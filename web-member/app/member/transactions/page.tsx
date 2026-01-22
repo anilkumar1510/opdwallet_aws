@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useFamily } from '@/contexts/FamilyContext'
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
@@ -78,6 +79,7 @@ interface WalletBalance {
 
 export default function TransactionsPage() {
   const router = useRouter()
+  const { viewingUserId } = useFamily()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null)
   const [loading, setLoading] = useState(true)
@@ -116,7 +118,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     fetchData()
-  }, [selectedTypes, selectedCategories, dateFrom, dateTo, minAmount, maxAmount, selectedServiceTypes, includeReversed, sortBy, sortOrder])
+  }, [selectedTypes, selectedCategories, dateFrom, dateTo, minAmount, maxAmount, selectedServiceTypes, includeReversed, sortBy, sortOrder, viewingUserId])
 
   const fetchData = async () => {
     try {
@@ -125,6 +127,11 @@ export default function TransactionsPage() {
       // Build query parameters
       const params = new URLSearchParams()
       params.append('limit', '100')
+
+      // Add userId parameter if viewing dependent
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
 
       if (selectedTypes.length > 0) {
         params.append('type', selectedTypes.join(','))
@@ -153,7 +160,7 @@ export default function TransactionsPage() {
 
       const [transactionsRes, balanceRes] = await Promise.all([
         fetch(`/api/wallet/transactions?${params.toString()}`, { credentials: 'include' }),
-        fetch('/api/wallet/balance', { credentials: 'include' })
+        fetch(`/api/wallet/balance${viewingUserId ? `?userId=${viewingUserId}` : ''}`, { credentials: 'include' })
       ])
 
       if (!transactionsRes.ok || !balanceRes.ok) {

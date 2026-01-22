@@ -5,6 +5,11 @@ This document lists all API endpoints used by the Member Portal (web-member).
 **📊 Performance Note:** Critical endpoints marked with 🚀 are **Redis cached** for optimal performance.
 See [REDIS_CACHING.md](./REDIS_CACHING.md) for detailed caching implementation.
 
+**👨‍👩‍👧‍👦 Family Access Control:** Many endpoints support the `userId` query parameter to enable primary members to view their dependents' data. Access is verified through the centralized `FamilyAccessHelper` which ensures:
+- Primary members can view their own and their dependents' data
+- Dependents can only view their own data
+- Access is based on the `primaryMemberId` field matching the requesting user's `memberId`
+
 ---
 
 ## Authentication
@@ -149,10 +154,16 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 |--------|----------|-------------|
 | POST | /appointments | Create new appointment |
 | POST | /appointments/validate-booking | Validate booking and get payment breakdown with service limits |
-| GET | /appointments/user/:userId | Get appointments for specific user |
+| GET | /appointments/user/:userId | Get appointments for specific user (family access verification applies) |
 | GET | /appointments/user/:userId/ongoing | Get ongoing appointments for user |
 | GET | /appointments/:appointmentId | Get appointment details |
 | PATCH | /appointments/:appointmentId/user-cancel | Member cancels appointment |
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' appointments
+- Dependents can only view their own appointments
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
+- The `:userId` parameter in the path is verified against the requesting user's family relationship
 
 ---
 
@@ -184,7 +195,7 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 | GET | /member/claims/available-categories | Get available claim categories based on member's policy |
 | POST | /member/claims | Create new claim with documents |
 | POST | /member/claims/:claimId/submit | Submit claim |
-| GET | /member/claims | Get claims with pagination |
+| GET | /member/claims | Get claims with pagination (supports `userId` for family access) |
 | GET | /member/claims/summary | Get claims summary |
 | GET | /member/claims/:claimId/timeline | Get claim timeline |
 | GET | /member/claims/:claimId/tpa-notes | Get TPA notes for claim |
@@ -198,6 +209,15 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 | POST | /member/claims/:claimId/resubmit-documents | Resubmit documents after rejection |
 | PATCH | /member/claims/:claimId/cancel | Cancel claim |
 
+**GET /member/claims - Query Parameters:**
+- `limit` (optional): Number of claims to return (default: 100)
+- `userId` (optional): User ID to fetch claims for (family access verification applies)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' claims
+- Dependents can only view their own claims
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
+
 ---
 
 ## Lab Tests (Member)
@@ -205,11 +225,11 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /member/lab/prescriptions/upload | Upload prescription |
-| GET | /member/lab/prescriptions | Get user prescriptions with order status and lab tests (enhanced: includes hasOrder, orderCount, labTests from source prescription) |
+| GET | /member/lab/prescriptions | Get user prescriptions (supports `userId` for family access) |
 | GET | /member/lab/prescriptions/:id | Get prescription details |
 | POST | /member/lab/prescriptions/:id/cancel | Cancel lab prescription (only UPLOADED status can be cancelled) |
 | POST | /member/lab/prescriptions/submit-existing | Submit existing health record prescription for lab services |
-| GET | /member/lab/carts | Get active carts for user |
+| GET | /member/lab/carts | Get active carts for user (supports `userId` for family access) |
 | GET | /member/lab/carts/:cartId | Get cart by ID |
 | GET | /member/lab/carts/:cartId/vendors | Get vendors for cart |
 | DELETE | /member/lab/carts/:cartId | Delete cart |
@@ -217,10 +237,18 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 | GET | /member/lab/vendors/:vendorId/pricing | Get vendor pricing |
 | GET | /member/lab/vendors/:vendorId/slots | Get available slots |
 | POST | /member/lab/orders | Create order with payment processing (supports wallet debit and transaction creation) |
-| GET | /member/lab/orders | Get user orders |
+| GET | /member/lab/orders | Get user orders (supports `userId` for family access) |
 | GET | /member/lab/orders/:orderId | Get order details |
 | GET | /member/lab/carts/active | Get active carts for user |
 | POST | /member/lab/orders/validate | Validate order and get payment breakdown |
+
+**Query Parameters for Family Access:**
+- `userId` (optional): User ID to fetch data for (applies to prescriptions, carts, and orders endpoints)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' lab data
+- Dependents can only view their own lab data
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 ---
 
@@ -230,20 +258,28 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 |--------|----------|-------------|
 | POST | /member/diagnostics/prescriptions/upload | Upload diagnostic prescription |
 | POST | /member/diagnostics/prescriptions/submit-existing | Submit existing health record prescription for diagnostics |
-| GET | /member/diagnostics/prescriptions | Get user diagnostic prescriptions |
+| GET | /member/diagnostics/prescriptions | Get user diagnostic prescriptions (supports `userId` for family access) |
 | GET | /member/diagnostics/prescriptions/:id | Get diagnostic prescription details |
 | POST | /member/diagnostics/prescriptions/:id/cancel | Cancel diagnostic prescription (only UPLOADED status can be cancelled) |
-| GET | /member/diagnostics/carts | Get diagnostic carts for user |
+| GET | /member/diagnostics/carts | Get diagnostic carts for user (supports `userId` for family access) |
 | GET | /member/diagnostics/carts/:cartId | Get diagnostic cart by ID |
 | GET | /member/diagnostics/carts/:cartId/vendors | Get eligible vendors for cart items |
 | GET | /member/diagnostics/carts/:cartId/vendors/:vendorId/pricing | Get vendor pricing for cart items |
 | GET | /member/diagnostics/vendors/:vendorId/slots | Get available slots for diagnostic vendor |
 | POST | /member/diagnostics/orders | Create diagnostic order |
-| GET | /member/diagnostics/orders | Get user diagnostic orders |
+| GET | /member/diagnostics/orders | Get user diagnostic orders (supports `userId` for family access) |
 | GET | /member/diagnostics/orders/:id | Get diagnostic order details |
 | POST | /member/diagnostics/orders/:id/cancel | Cancel diagnostic order |
 | GET | /member/diagnostics/orders/:id/reports | Get diagnostic order reports |
 | POST | /member/diagnostics/orders/validate | Validate diagnostic order and get payment breakdown |
+
+**Query Parameters for Family Access:**
+- `userId` (optional): User ID to fetch data for (applies to prescriptions, carts, and orders endpoints)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' diagnostic data
+- Dependents can only view their own diagnostic data
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 ---
 
@@ -251,9 +287,17 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /member/prescriptions | Get member's PDF prescriptions (filters out prescriptions already used for lab bookings) |
+| GET | /member/prescriptions | Get member's PDF prescriptions (supports `userId` for family access) |
 | GET | /member/prescriptions/:prescriptionId | Get prescription details |
 | GET | /member/prescriptions/:prescriptionId/download | Download prescription |
+
+**Query Parameters:**
+- `userId` (optional): User ID to fetch prescriptions for (family access verification applies)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' prescriptions
+- Dependents can only view their own prescriptions
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 ---
 
@@ -261,10 +305,18 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /member/digital-prescriptions | Get member's digital prescriptions (filters out prescriptions already used for lab bookings) |
+| GET | /member/digital-prescriptions | Get member's digital prescriptions (supports `userId` for family access) |
 | GET | /member/digital-prescriptions/:prescriptionId | Get digital prescription details |
 | GET | /member/digital-prescriptions/:prescriptionId/download-pdf | Download prescription PDF |
 | GET | /member/digital-prescriptions/:prescriptionId/signature | Get prescription doctor signature |
+
+**Query Parameters:**
+- `userId` (optional): User ID to fetch digital prescriptions for (family access verification applies)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' digital prescriptions
+- Dependents can only view their own digital prescriptions
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 ---
 
@@ -272,9 +324,17 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /transactions | Get user transaction history with filters |
+| GET | /transactions | Get user transaction history with filters (supports `userId` for family access) |
 | GET | /transactions/summary | Get transaction summary statistics |
 | GET | /transactions/:transactionId | Get transaction details by ID |
+
+**Query Parameters:**
+- `userId` (optional): User ID to fetch transactions for (family access verification applies)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' transaction history
+- Dependents can only view their own transaction history
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 ---
 
@@ -339,10 +399,15 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 | GET | /dental-bookings/slots?clinicId=:id&date=:date | Get available time slots for clinic on specific date |
 | POST | /dental-bookings/validate | Pre-validate booking and return payment breakdown |
 | POST | /dental-bookings | Create dental booking with payment processing |
-| GET | /dental-bookings/user/:userId | Get all dental bookings for user |
+| GET | /dental-bookings/user/:userId | Get all dental bookings for user (family access verification applies) |
 | GET | /dental-bookings/:bookingId | Get single dental booking details |
 | PUT | /dental-bookings/:bookingId/cancel | Cancel dental booking and process refund (24 hours before appointment) |
 | GET | /dental-bookings/:bookingId/invoice | Download invoice PDF for completed booking |
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' dental bookings
+- Dependents can only view their own dental bookings
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 **Dental Booking Flow:**
 1. Get assigned dental services from policy (CAT006 category)
@@ -407,12 +472,17 @@ When a transaction occurs on a floater wallet, the cache is invalidated for:
 | POST | /vision-bookings | Create vision booking (no payment processing at booking time) |
 | POST | /vision-bookings/validate | Validate booking and get payment breakdown (used before payment) |
 | POST | /vision-bookings/:bookingId/process-payment | Process payment for booking with generated bill |
-| GET | /vision-bookings/user/:userId | Get all vision bookings for user |
+| GET | /vision-bookings/user/:userId | Get all vision bookings for user (family access verification applies) |
 | GET | /vision-bookings/:bookingId | Get single vision booking details |
 | GET | /vision-bookings/:bookingId/invoice | Download invoice for completed booking |
 | PUT | /vision-bookings/:bookingId/cancel | Cancel vision booking |
 | PATCH | /vision-bookings/:bookingId/store-breakdown | Store payment breakdown before PaymentProcessor |
 | POST | /vision-bookings/:bookingId/complete-wallet-payment | Complete wallet-only payment and generate invoice |
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' vision bookings
+- Dependents can only view their own vision bookings
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 **Vision Booking Flow:**
 1. Get assigned vision services from policy (CAT007 category)
@@ -506,10 +576,18 @@ CONFIRMED → NO_SHOW
 | GET | /member/ahc/vendors/diagnostic | Get eligible diagnostic vendors for AHC package (by pincode) |
 | POST | /member/ahc/orders/validate | Validate AHC order and calculate payment breakdown (uses global copay, no service limits) |
 | POST | /member/ahc/orders | Create AHC order after payment success (supports lab-only, diagnostic-only, or both) |
-| GET | /member/ahc/orders | Get member's AHC orders (supports viewingUserId for family members) |
+| GET | /member/ahc/orders | Get member's AHC orders (supports `userId` for family access) |
 | GET | /member/ahc/orders/:orderId | Get specific AHC order details |
 | GET | /member/ahc/reports/:orderId/lab | Download lab report (if uploaded) |
 | GET | /member/ahc/reports/:orderId/diagnostic | Download diagnostic report (if uploaded) |
+
+**Query Parameters:**
+- `userId` (optional): User ID to fetch AHC orders for (family access verification applies)
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' AHC orders
+- Dependents can only view their own AHC orders
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
 
 **AHC Booking Flow:**
 1. Get AHC package assigned to member's policy

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useFamily } from '@/contexts/FamilyContext'
 import {
   ChevronLeftIcon,
   BanknotesIcon,
@@ -106,14 +107,38 @@ const getCategoryIcon = (categoryCode: string, categoryName?: string) => {
 }
 
 export default function WalletPage() {
+  const { loggedInUser, activeMember, familyMembers, canSwitchProfiles } = useFamily()
   const [activeTab, setActiveTab] = useState<'transactions' | 'categories'>('transactions')
   const [walletData, setWalletData] = useState<any>(null)
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [familyMembers, setFamilyMembers] = useState<any[]>([])
-  const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Local state for wallet viewing - does NOT affect global profile
+  const [selectedWalletMember, setSelectedWalletMember] = useState<any>(null)
+
+  // Initialize selectedWalletMember to loggedInUser
+  useEffect(() => {
+    if (loggedInUser && !selectedWalletMember) {
+      setSelectedWalletMember(loggedInUser)
+    }
+  }, [loggedInUser])
+
+  // Determine effective user ID for wallet (local to this page only)
+  const effectiveUserId = selectedWalletMember?._id || loggedInUser?._id || ''
+
+  // Determine if family dropdown should be shown
+  const shouldShowFamilyDropdown = useMemo(() => {
+    // Show dropdown only if:
+    // 1. The currently active profile (global) is the primary member
+    // 2. Has family members to show
+    // 3. Can switch profiles
+    const currentlyViewingPrimary = activeMember?.isPrimary || activeMember?._id === loggedInUser?._id
+    const hasFamilyMembers = familyMembers.length > 1
+
+    return currentlyViewingPrimary && hasFamilyMembers && canSwitchProfiles
+  }, [activeMember, loggedInUser, familyMembers, canSwitchProfiles])
 
   // Multi-level filter state (applied filters)
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
@@ -315,17 +340,14 @@ export default function WalletPage() {
     return category?.name || categoryCode
   }
 
+  // Fetch wallet data whenever effectiveUserId, selectedWalletMember, or filters change
   useEffect(() => {
-    fetchProfileData()
-  }, [])
-
-  // Fetch wallet data (balance + transactions) whenever selectedUserId or filters change
-  useEffect(() => {
-    if (selectedUserId) {
-      fetchWalletDataForUser(selectedUserId)
+    if (effectiveUserId) {
+      fetchWalletDataForUser(effectiveUserId)
     }
   }, [
-    selectedUserId,
+    effectiveUserId,
+    selectedWalletMember,
     selectedTypes,
     selectedCategories,
     dateFrom,
@@ -337,43 +359,6 @@ export default function WalletPage() {
     sortBy,
     sortOrder
   ])
-
-  const fetchProfileData = async () => {
-    try {
-      const response = await fetch('/api/member/profile', {
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const data = await response.json()
-
-        // Build family members list
-        const members = [
-          {
-            userId: data.user._id,
-            name: `${data.user.name.firstName} ${data.user.name.lastName}`,
-            memberId: data.user.memberId,
-            isPrimary: true,
-            relationship: 'Self'
-          },
-          ...data.dependents.map((dep: any) => ({
-            userId: dep._id,
-            name: `${dep.name.firstName} ${dep.name.lastName}`,
-            memberId: dep.memberId,
-            isPrimary: false,
-            relationship: dep.relationship
-          }))
-        ]
-
-        setFamilyMembers(members)
-        // Setting selectedUserId will trigger useEffect to fetch wallet data
-        setSelectedUserId(data.user._id)
-      }
-    } catch (error) {
-      console.error('Error fetching profile data:', error)
-      setLoading(false)
-    }
-    // Don't set loading=false here - let fetchWalletDataForUser handle it
-  }
 
   // Single unified function to fetch all wallet data for a user
   const fetchWalletDataForUser = async (userId: string) => {
@@ -449,9 +434,10 @@ export default function WalletPage() {
     }
   }
 
-  const handleUserChange = (userId: string) => {
-    // Simply update the selected user - useEffect will handle fetching
-    setSelectedUserId(userId)
+  // Dropdown member selection handler - uses FamilyContext
+  // Handle wallet member selection - LOCAL to wallet page, does NOT affect global profile
+  const handleMemberSelect = (member: any) => {
+    setSelectedWalletMember(member)
     setIsDropdownOpen(false)
   }
 
@@ -510,8 +496,8 @@ export default function WalletPage() {
       </div>
 
       <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-6 lg:py-8">
-        {/* Family Member Selector */}
-        {familyMembers.length > 1 && (
+        {/* Family Member Selector - Only shown when primary member is viewing own profile */}
+        {shouldShowFamilyDropdown && loggedInUser && (
           <div
             className="rounded-2xl p-5 lg:p-6 mb-6 border-2 shadow-md"
             style={{
@@ -528,7 +514,7 @@ export default function WalletPage() {
                 style={{ borderColor: '#0F5FDC', color: '#303030' }}
               >
                 <span>
-                  {familyMembers.find(m => m.userId === selectedUserId)?.name} {familyMembers.find(m => m.userId === selectedUserId)?.isPrimary ? '(Self)' : `(${familyMembers.find(m => m.userId === selectedUserId)?.relationship})`}
+                  {selectedWalletMember?.name?.firstName} {selectedWalletMember?.name?.lastName} ({selectedWalletMember?._id === loggedInUser?._id ? 'Self' : selectedWalletMember?.relationship})
                 </span>
                 <ChevronDownIcon className={`h-5 w-5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} style={{ color: '#0F5FDC' }} />
               </button>
@@ -536,19 +522,36 @@ export default function WalletPage() {
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute z-10 w-full mt-2 bg-white border-2 rounded-xl shadow-lg overflow-hidden" style={{ borderColor: '#86ACD8' }}>
-                  {familyMembers.map((member) => (
+                  {/* Primary member option */}
+                  <button
+                    onClick={() => loggedInUser && handleMemberSelect(loggedInUser)}
+                    className={`w-full p-3 lg:p-4 text-left text-sm lg:text-base font-medium transition-all flex items-center justify-between ${
+                      selectedWalletMember?._id === loggedInUser?._id ? '' : 'hover:bg-blue-50'
+                    }`}
+                    style={selectedWalletMember?._id === loggedInUser?._id ? { background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)' } : {}}
+                  >
+                    <span style={{ color: '#303030' }}>
+                      {loggedInUser?.name?.firstName} {loggedInUser?.name?.lastName} (Self)
+                    </span>
+                    {selectedWalletMember?._id === loggedInUser?._id && (
+                      <CheckIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
+                    )}
+                  </button>
+
+                  {/* Dependent members */}
+                  {familyMembers.filter(m => m._id !== loggedInUser?._id).map((dependent: any) => (
                     <button
-                      key={member.userId}
-                      onClick={() => handleUserChange(member.userId)}
+                      key={dependent._id}
+                      onClick={() => handleMemberSelect(dependent)}
                       className={`w-full p-3 lg:p-4 text-left text-sm lg:text-base font-medium transition-all flex items-center justify-between ${
-                        selectedUserId === member.userId ? '' : 'hover:bg-blue-50'
+                        selectedWalletMember?._id === dependent._id ? '' : 'hover:bg-blue-50'
                       }`}
-                      style={selectedUserId === member.userId ? { background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)' } : {}}
+                      style={selectedWalletMember?._id === dependent._id ? { background: 'linear-gradient(243.73deg, rgba(224, 233, 255, 0.48) -12.23%, rgba(200, 216, 255, 0.48) 94.15%)' } : {}}
                     >
                       <span style={{ color: '#303030' }}>
-                        {member.name} {member.isPrimary ? '(Self)' : `(${member.relationship})`}
+                        {dependent.name?.firstName} {dependent.name?.lastName} ({dependent.relationship})
                       </span>
-                      {selectedUserId === member.userId && (
+                      {selectedWalletMember?._id === dependent._id && (
                         <CheckIcon className="h-5 w-5" style={{ color: '#0F5FDC' }} />
                       )}
                     </button>

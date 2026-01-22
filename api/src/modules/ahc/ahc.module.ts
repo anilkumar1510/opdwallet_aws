@@ -24,6 +24,7 @@ import { AssignmentsModule } from '../assignments/assignments.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { TransactionSummaryModule } from '../transactions/transaction-summary.mo
       { name: DiagnosticService.name, schema: DiagnosticServiceSchema },
       { name: LabVendorSlot.name, schema: LabVendorSlotSchema },
       { name: DiagnosticVendorSlot.name, schema: DiagnosticVendorSlotSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     // Configure Multer for dual file uploads (lab and diagnostic reports)
     MulterModule.register({

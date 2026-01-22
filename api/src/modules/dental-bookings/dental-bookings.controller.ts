@@ -11,6 +11,8 @@ import {
   Request,
   Response,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { DentalBookingsService } from './dental-bookings.service';
 import { CreateDentalBookingDto } from './dto/create-dental-booking.dto';
 import { ValidateDentalBookingDto } from './dto/validate-dental-booking.dto';
@@ -22,11 +24,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class DentalBookingsController {
-  constructor(private readonly dentalBookingsService: DentalBookingsService) {}
+  constructor(
+    private readonly dentalBookingsService: DentalBookingsService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {}
 
   /**
    * GET /api/member/benefits/CAT006/services
@@ -119,10 +126,14 @@ export class DentalBookingsController {
   ) {
     console.log('[DentalBookingsController] GET /api/dental-bookings/user/:userId -', userId);
 
-    // Ensure user can only access their own bookings
-    if (req.user.userId !== userId) {
-      return { bookings: [] };
-    }
+    const requestingUserId = req.user.userId;
+
+    // Verify family access - allows primary members to view dependents' data
+    await FamilyAccessHelper.verifyFamilyAccess(
+      this.userModel,
+      requestingUserId,
+      userId,
+    );
 
     return this.dentalBookingsService.getUserBookings(userId, viewingUserId);
   }

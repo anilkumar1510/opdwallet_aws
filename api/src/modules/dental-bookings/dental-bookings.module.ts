@@ -13,6 +13,7 @@ import { WalletModule } from '../wallet/wallet.module';
 import { PaymentModule } from '../payments/payment.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { ClinicServicePricingModule } from '../operations/dental-services/clinic-service-pricing.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ClinicServicePricingModule } from '../operations/dental-services/clinic
       { name: DentalServiceSlot.name, schema: DentalServiceSlotSchema },
       { name: Clinic.name, schema: ClinicSchema },
       { name: ServiceMaster.name, schema: ServiceMasterSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     AssignmentsModule,
     PlanConfigModule,

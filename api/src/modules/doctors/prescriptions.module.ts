@@ -44,6 +44,7 @@ import {
   Appointment,
   AppointmentSchema,
 } from '../appointments/schemas/appointment.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { CounterModule } from '../counters/counter.module';
 
 @Module({
@@ -59,6 +60,7 @@ import { CounterModule } from '../counters/counter.module';
       { name: PrescriptionTemplate.name, schema: PrescriptionTemplateSchema },
       { name: ConsultationNote.name, schema: ConsultationNoteSchema },
       { name: Appointment.name, schema: AppointmentSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

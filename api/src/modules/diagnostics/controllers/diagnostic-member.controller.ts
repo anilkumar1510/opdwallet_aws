@@ -12,8 +12,10 @@ import {
   Request,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiQuery } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DiagnosticPrescriptionService, CreateDiagnosticPrescriptionDto } from '../services/diagnostic-prescription.service';
 import { DiagnosticCartService } from '../services/diagnostic-cart.service';
@@ -25,6 +27,8 @@ import { CancelledBy } from '../schemas/diagnostic-order.schema';
 import { UploadDiagnosticPrescriptionDto } from '../dto/upload-diagnostic-prescription.dto';
 import { SubmitExistingDiagnosticPrescriptionDto } from '../dto/submit-existing-prescription.dto';
 import { CancelDiagnosticPrescriptionDto } from '../dto/cancel-diagnostic-prescription.dto';
+import { User, UserDocument } from '../../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 @Controller('member/diagnostics')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +38,7 @@ export class DiagnosticMemberController {
     private readonly cartService: DiagnosticCartService,
     private readonly orderService: DiagnosticOrderService,
     private readonly vendorService: DiagnosticVendorService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   // ============ PRESCRIPTION UPLOAD ============
@@ -86,9 +91,26 @@ export class DiagnosticMemberController {
   }
 
   @Get('prescriptions')
-  async getMyPrescriptions(@Req() req: any) {
-    const userId = req.user?.userId || req.user?.sub;
-    const prescriptions = await this.prescriptionService.findByUserId(userId);
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch prescriptions for (family access verification applies)' })
+  async getMyPrescriptions(
+    @Req() req: any,
+    @Query('userId') userId?: string,
+  ) {
+    const requestingUserId = req.user?.userId || req.user?.sub;
+
+    // Determine target user ID
+    const targetUserId = userId || requestingUserId;
+
+    // Verify family access if viewing another user's data
+    if (userId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        targetUserId,
+      );
+    }
+
+    const prescriptions = await this.prescriptionService.findByUserId(targetUserId);
 
     return {
       success: true,
@@ -137,9 +159,26 @@ export class DiagnosticMemberController {
   // ============ CART MANAGEMENT ============
 
   @Get('carts')
-  async getMyCarts(@Req() req: any) {
-    const userId = req.user?.userId || req.user?.sub;
-    const carts = await this.cartService.findByUserId(userId);
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch carts for (family access verification applies)' })
+  async getMyCarts(
+    @Req() req: any,
+    @Query('userId') userId?: string,
+  ) {
+    const requestingUserId = req.user?.userId || req.user?.sub;
+
+    // Determine target user ID
+    const targetUserId = userId || requestingUserId;
+
+    // Verify family access if viewing another user's data
+    if (userId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        targetUserId,
+      );
+    }
+
+    const carts = await this.cartService.findByUserId(targetUserId);
 
     return {
       success: true,
@@ -253,9 +292,26 @@ export class DiagnosticMemberController {
   }
 
   @Get('orders')
-  async getMyOrders(@Req() req: any) {
-    const userId = req.user?.userId || req.user?.sub;
-    const orders = await this.orderService.findByUserId(userId);
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch orders for (family access verification applies)' })
+  async getMyOrders(
+    @Req() req: any,
+    @Query('userId') userId?: string,
+  ) {
+    const requestingUserId = req.user?.userId || req.user?.sub;
+
+    // Determine target user ID
+    const targetUserId = userId || requestingUserId;
+
+    // Verify family access if viewing another user's data
+    if (userId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        targetUserId,
+      );
+    }
+
+    const orders = await this.orderService.findByUserId(targetUserId);
 
     return {
       success: true,

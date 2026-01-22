@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useFamily } from '@/contexts/FamilyContext'
 import { ArrowLeftIcon, DocumentTextIcon, CloudArrowDownIcon, MagnifyingGlassIcon, CalendarIcon, ClockIcon, MapPinIcon, VideoCameraIcon, EyeIcon, UserIcon, BeakerIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { Card } from '@/components/Card'
@@ -68,6 +69,7 @@ interface DigitalPrescription {
 }
 
 export default function HealthRecordsPage() {
+  const { viewingUserId } = useFamily()
   const [activeTab, setActiveTab] = useState('prescriptions')
   const [searchTerm, setSearchTerm] = useState('')
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
@@ -79,16 +81,23 @@ export default function HealthRecordsPage() {
     if (activeTab === 'prescriptions') {
       fetchAllPrescriptions()
     }
-  }, [activeTab])
+  }, [activeTab, viewingUserId])
 
   const fetchAllPrescriptions = async () => {
     try {
       setLoading(true)
 
+      // Build query params with userId if viewing dependent
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+      const queryString = params.toString() ? `?${params}` : ''
+
       // Fetch both PDF and digital prescriptions in parallel
       const [pdfResponse, digitalResponse] = await Promise.all([
-        fetch('/api/member/prescriptions', { credentials: 'include' }),
-        fetch('/api/member/digital-prescriptions', { credentials: 'include' })
+        fetch(`/api/member/prescriptions${queryString}`, { credentials: 'include' }),
+        fetch(`/api/member/digital-prescriptions${queryString}`, { credentials: 'include' })
       ])
 
       if (pdfResponse.ok) {

@@ -14,7 +14,7 @@ import {
   EyeIcon,
   DocumentArrowDownIcon,
   HeartIcon,
-  ClipboardDocumentCheckIcon,
+  DocumentCheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline'
 import ViewPrescriptionButton, { PrescriptionBadge } from '@/components/ViewPrescriptionButton'
@@ -403,8 +403,13 @@ export default function BookingsPage() {
 
   const fetchLabCarts = async () => {
     try {
-      console.log('[LabCarts] Fetching lab carts')
-      const response = await fetch('/api/member/lab/carts', {
+      console.log('[LabCarts] Fetching lab carts for profile:', viewingUserId)
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/lab/carts?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -425,8 +430,13 @@ export default function BookingsPage() {
 
   const fetchLabOrders = async () => {
     try {
-      console.log('[LabOrders] Fetching lab orders')
-      const response = await fetch('/api/member/lab/orders', {
+      console.log('[LabOrders] Fetching lab orders for profile:', viewingUserId)
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/lab/orders?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -447,8 +457,13 @@ export default function BookingsPage() {
 
   const fetchDiagnosticCarts = async () => {
     try {
-      console.log('[DiagnosticCarts] Fetching diagnostic carts')
-      const response = await fetch('/api/member/diagnostics/carts', {
+      console.log('[DiagnosticCarts] Fetching diagnostic carts for profile:', viewingUserId)
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/diagnostics/carts?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -469,8 +484,13 @@ export default function BookingsPage() {
 
   const fetchDiagnosticOrders = async () => {
     try {
-      console.log('[DiagnosticOrders] Fetching diagnostic orders')
-      const response = await fetch('/api/member/diagnostics/orders', {
+      console.log('[DiagnosticOrders] Fetching diagnostic orders for profile:', viewingUserId)
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/diagnostics/orders?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -491,8 +511,13 @@ export default function BookingsPage() {
 
   const fetchLabPrescriptions = async () => {
     try {
-      console.log('[LabPrescriptions] Fetching lab prescriptions')
-      const response = await fetch('/api/member/lab/prescriptions', {
+      console.log('[LabPrescriptions] Fetching lab prescriptions for profile:', viewingUserId)
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/lab/prescriptions?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -514,8 +539,13 @@ export default function BookingsPage() {
 
   const fetchDiagnosticPrescriptions = async () => {
     try {
-      console.log('[DiagnosticPrescriptions] Fetching diagnostic prescriptions')
-      const response = await fetch('/api/member/diagnostics/prescriptions', {
+      console.log('[DiagnosticPrescriptions] Fetching diagnostic prescriptions for profile:', viewingUserId)
+      const params = new URLSearchParams()
+      if (viewingUserId) {
+        params.append('userId', viewingUserId)
+      }
+
+      const response = await fetch(`/api/member/diagnostics/prescriptions?${params.toString()}`, {
         credentials: 'include',
       })
 
@@ -981,7 +1011,7 @@ export default function BookingsPage() {
             style={activeTab === 'ahc' ? { borderColor: '#0F5FDC', color: '#0E51A2' } : { color: '#6b7280' }}
           >
             <div className="flex items-center gap-2 md:gap-2.5">
-              <ClipboardDocumentCheckIcon className="h-5 w-5 md:h-5 md:w-5" />
+              <DocumentCheckIcon className="h-5 w-5 md:h-5 md:w-5" />
               <span>AHC</span>
             </div>
           </button>
@@ -2480,7 +2510,7 @@ export default function BookingsPage() {
                     boxShadow: '-2px 11px 46.1px 0px #0000000D'
                   }}
                 >
-                  <ClipboardDocumentCheckIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
+                  <DocumentCheckIcon className="h-8 w-8 lg:h-10 lg:w-10" style={{ color: '#0F5FDC' }} />
                 </div>
                 <h3 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0E51A2' }}>No AHC orders yet</h3>
                 <p className="text-gray-600 mb-6 text-sm lg:text-base">Book your annual health check to get started</p>

@@ -17,6 +17,9 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
+import { ApiQuery } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
@@ -31,6 +34,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
 import { multerConfig } from './config/multer.config';
 import { ClaimStatus } from './schemas/memberclaim.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 
 interface AuthRequest extends Request {
   user: {
@@ -43,7 +48,10 @@ interface AuthRequest extends Request {
 @Controller('member/claims')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MemberClaimsController {
-  constructor(private readonly memberClaimsService: MemberClaimsService) {}
+  constructor(
+    private readonly memberClaimsService: MemberClaimsService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {}
 
   @Post()
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
@@ -133,18 +141,32 @@ export class MemberClaimsController {
 
   @Get()
   @Roles(UserRole.MEMBER, UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.OPS_ADMIN, UserRole.OPS_USER)
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'User ID to fetch claims for (family access verification applies)' })
   async findAll(
     @Request() req: AuthRequest,
     @Query('status') status?: ClaimStatus,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Query('userId') userId?: string,
   ) {
-    const userId = req.user.role === UserRole.MEMBER
+    const requestingUserId = req.user.role === UserRole.MEMBER
       ? (req.user.userId || req.user.id)
       : undefined;
 
+    // Determine target user ID (use query param if provided, otherwise use requesting user)
+    const targetUserId = userId || requestingUserId;
+
+    // Verify family access if member is viewing another user's data
+    if (req.user.role === UserRole.MEMBER && userId && requestingUserId && targetUserId) {
+      await FamilyAccessHelper.verifyFamilyAccess(
+        this.userModel,
+        requestingUserId,
+        targetUserId,
+      );
+    }
+
     const result = await this.memberClaimsService.findAll(
-      userId,
+      targetUserId,
       status,
       +page,
       +limit,
