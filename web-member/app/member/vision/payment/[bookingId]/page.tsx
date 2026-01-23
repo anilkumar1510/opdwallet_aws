@@ -44,13 +44,13 @@ function VisionPaymentContent() {
 
       if (!bookingData.billGenerated) {
         alert('Bill has not been generated for this booking yet')
-        router.push('/member/bookings')
+        router.push('/member/bookings?tab=vision')
         return
       }
 
       if (bookingData.paymentStatus === 'COMPLETED') {
         alert('Payment has already been completed')
-        router.push('/member/bookings')
+        router.push('/member/bookings?tab=vision')
         return
       }
 
@@ -93,28 +93,49 @@ function VisionPaymentContent() {
     } catch (error) {
       console.error('[VisionPayment] Error:', error)
       alert(error.message || 'Failed to load booking details')
-      router.push('/member/bookings')
+      router.push('/member/bookings?tab=vision')
     } finally {
       setLoading(false)
     }
   }
 
-  const handlePaymentSuccess = async () => {
-    console.log('[VisionPayment] Payment successful (wallet-only), completing booking...')
+  const handlePaymentSuccess = async (transaction: any) => {
+    console.log('[VisionPayment] Payment successful, processing vision booking...')
 
-    // For wallet-only payments, just update booking status and generate invoice
-    // PaymentProcessor already handled wallet debit and transaction creation
     try {
-      await fetch(`/api/vision-bookings/${bookingId}/complete-wallet-payment`, {
+      // Call the process-payment endpoint to complete the booking
+      const response = await fetch(`/api/vision-bookings/${bookingId}/process-payment`, {
         method: 'POST',
         credentials: 'include',
       })
-    } catch (error) {
-      console.error('[VisionPayment] Error completing payment:', error)
-    }
 
-    alert('Payment completed successfully!')
-    router.push('/member/bookings')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to complete booking')
+      }
+
+      const result = await response.json()
+      console.log('[VisionPayment] Booking processed:', result)
+
+      // Check if external payment is required (copay/OOP)
+      if (result.paymentRequired && result.booking.paymentId) {
+        // Redirect to payment gateway for copay/OOP
+        router.push(`/member/payments/${result.booking.paymentId}?redirect=/member/bookings?tab=vision`)
+        return
+      }
+
+      // Wallet-only payment completed
+      alert('Payment completed successfully!')
+      router.push('/member/bookings?tab=vision')
+    } catch (error) {
+      console.error('[VisionPayment] Error completing booking:', error)
+      alert(error.message || 'Failed to complete booking. Please try again.')
+    }
+  }
+
+  const handlePaymentFailure = (error: string) => {
+    console.error('[VisionPayment] Payment failed:', error)
+    alert(`Payment failed: ${error}`)
   }
 
   if (loading) {
@@ -187,13 +208,18 @@ function VisionPaymentContent() {
               time: booking.appointmentTime
             }}
             serviceLimit={{
-              serviceTransactionLimit: paymentBreakdown.serviceTransactionLimit,
+              serviceTransactionLimit: paymentBreakdown.serviceTransactionLimit || 0,
               insuranceEligibleAmount: paymentBreakdown.insuranceEligibleAmount,
               insurancePayment: paymentBreakdown.insurancePayment,
               excessAmount: paymentBreakdown.excessAmount,
-              wasLimitApplied: paymentBreakdown.serviceTransactionLimit < paymentBreakdown.insuranceEligibleAmount
+              wasLimitApplied: paymentBreakdown.serviceTransactionLimit > 0 &&
+                               paymentBreakdown.serviceTransactionLimit < paymentBreakdown.insuranceEligibleAmount,
+              copayAmount: paymentBreakdown.copayAmount,
+              walletDebitAmount: paymentBreakdown.walletDebitAmount,
+              totalMemberPayment: paymentBreakdown.totalMemberPayment
             }}
             onPaymentSuccess={handlePaymentSuccess}
+            onPaymentFailure={handlePaymentFailure}
           />
         )}
       </div>

@@ -88,8 +88,8 @@ export default function ActiveAppointmentNudge({ variant, userId }: ActiveAppoin
     if (appointment.status === 'COMPLETED' && appointment.hasPrescription && appointment.prescriptionId) {
       window.open(`/api/member/prescriptions/${appointment.prescriptionId}/download`, '_blank')
     } else {
-      // Navigate to bookings page
-      router.push('/member/bookings')
+      // Navigate to bookings page (doctors tab)
+      router.push('/member/bookings?tab=doctors')
     }
   }
 

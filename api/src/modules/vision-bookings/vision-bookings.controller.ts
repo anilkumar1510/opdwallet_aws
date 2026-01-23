@@ -286,7 +286,7 @@ export class VisionBookingsController {
    * POST /api/vision-bookings/:bookingId/process-payment
    * Process payment for booking with generated bill
    */
-  @Post(':bookingId/process-payment')
+  @Post('vision-bookings/:bookingId/process-payment')
   @UseGuards(JwtAuthGuard)
   async processPayment(
     @Param('bookingId') bookingId: string,
