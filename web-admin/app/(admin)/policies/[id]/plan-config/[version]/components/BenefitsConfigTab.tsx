@@ -307,7 +307,6 @@ export function BenefitsConfigTab({
                             <button
                               onClick={() => toggleRow(category.categoryId)}
                               className="text-gray-500 hover:text-gray-700 transition-colors"
-                              disabled={isDisabled}
                             >
                               {isExpanded ? (
                                 <ChevronDownIcon className="h-5 w-5" />

@@ -121,7 +121,7 @@ function ConfirmBookingContent() {
       setShowSuccessModal(true)
 
       // Redirect after 3 seconds
-      setTimeout(() => router.push('/member/bookings'), 3000)
+      setTimeout(() => router.push('/member/bookings?tab=vision'), 3000)
 
     } catch (error: any) {
       console.error('[VisionConfirm] Error creating booking:', error)

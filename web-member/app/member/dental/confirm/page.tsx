@@ -181,7 +181,7 @@ function ConfirmDentalBookingContent() {
               <CTAButton
                 variant="success"
                 fullWidth
-                onClick={() => router.push('/member/bookings')}
+                onClick={() => router.push('/member/bookings?tab=dental')}
               >
                 View Bookings
               </CTAButton>
@@ -300,7 +300,7 @@ function ConfirmDentalBookingContent() {
               insuranceEligibleAmount: validationResult.breakdown.insuranceEligibleAmount,
               insurancePayment: validationResult.breakdown.insurancePayment,
               excessAmount: validationResult.breakdown.excessAmount,
-              wasLimitApplied: true
+              wasLimitApplied: validationResult.breakdown.serviceTransactionLimit > 0 && validationResult.breakdown.excessAmount > 0
             } : undefined}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentFailure={(error) => {

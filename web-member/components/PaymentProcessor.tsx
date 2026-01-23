@@ -10,8 +10,7 @@ import {
 } from '@/lib/paymentValidator';
 import {
   createTransaction,
-  createPendingPayment,
-  processWalletPayment
+  createPendingPayment
 } from '@/lib/transactions';
 import {
   CreditCard,
@@ -66,8 +65,6 @@ interface PaymentProcessorProps {
     excessAmount: number;
     wasLimitApplied: boolean;
     copayAmount?: number;
-    walletBalance?: number;
-    walletDebitAmount?: number;
     totalMemberPayment?: number;
   };
 }
@@ -151,22 +148,12 @@ export default function PaymentProcessor({
 
       // Case 1: Fully covered by wallet/insurance
       if (validationResult.paymentMethod === 'WALLET_ONLY') {
-        // Process wallet payment
-        const walletSuccess = await processWalletPayment({
-          userId,
-          patientId,
-          amount: consultationFee,
-          walletDeduction: consultationFee,
-          serviceType,
-          serviceDescription: serviceName
-        });
+        // For appointments, the /api/appointments endpoint handles wallet deduction internally
+        // No need to call processWalletPayment separately
 
-        if (!walletSuccess) {
-          throw new Error('Failed to process wallet payment');
-        }
-
-        // Create transaction record
-        const transaction = await createTransaction({
+        // Create a mock transaction object for the callback
+        const transaction = {
+          transactionId: `TXN${Date.now()}`,
           userId,
           patientId,
           serviceType,
@@ -177,8 +164,9 @@ export default function PaymentProcessor({
           selfPaidAmount: 0,
           copayAmount: 0,
           paymentMethod: 'WALLET_ONLY',
-          status: 'COMPLETED'
-        });
+          status: 'COMPLETED',
+          createdAt: new Date()
+        };
 
         onPaymentSuccess?.(transaction);
         return;
@@ -223,11 +211,11 @@ export default function PaymentProcessor({
 
           // Redirect to payment gateway
           const redirectUrl = serviceType === 'APPOINTMENT'
-            ? '/member/appointments'
+            ? '/member/bookings?tab=doctors'
             : serviceType === 'DENTAL'
-            ? '/member/bookings'
+            ? '/member/bookings?tab=dental'
             : serviceType === 'VISION'
-            ? '/member/bookings'
+            ? '/member/bookings?tab=vision'
             : serviceType === 'LAB'
             ? '/member/bookings?tab=lab'
             : serviceType === 'DIAGNOSTIC'
@@ -280,11 +268,11 @@ export default function PaymentProcessor({
 
         // Redirect to payment gateway
         const redirectUrl = serviceType === 'APPOINTMENT'
-          ? '/member/appointments'
+          ? '/member/bookings?tab=doctors'
           : serviceType === 'DENTAL'
-          ? '/member/bookings'
+          ? '/member/bookings?tab=dental'
           : serviceType === 'VISION'
-          ? '/member/bookings'
+          ? '/member/bookings?tab=vision'
           : serviceType === 'LAB'
           ? '/member/bookings?tab=lab'
           : serviceType === 'DIAGNOSTIC'
@@ -363,14 +351,14 @@ export default function PaymentProcessor({
             <span className="font-medium text-gray-900">₹{consultationFee}</span>
           </div>
 
-          {(validationResult.walletBalance > 0 || (serviceLimit && serviceLimit.walletBalance)) && (
+          {validationResult.walletBalance > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Wallet Balance</span>
-              <span className="font-medium text-gray-900">₹{serviceLimit?.walletBalance || validationResult.walletBalance}</span>
+              <span className="font-medium text-gray-900">₹{validationResult.walletBalance}</span>
             </div>
           )}
 
-          {(validationResult.copayPercentage > 0 || (serviceLimit && serviceLimit.copayAmount)) && (
+          {((validationResult.copayPercentage > 0 && validationResult.copayAmount > 0) || (serviceLimit && serviceLimit.copayAmount !== undefined && serviceLimit.copayAmount > 0)) && (
             <>
               <div className="flex justify-between text-sm text-red-600">
                 <span>Your Copay ({validationResult.copayPercentage}%)</span>
@@ -384,7 +372,7 @@ export default function PaymentProcessor({
           )}
 
           {/* Service Transaction Limit Section */}
-          {serviceLimit && serviceLimit.wasLimitApplied && (
+          {serviceLimit && serviceLimit.wasLimitApplied && serviceLimit.serviceTransactionLimit > 0 && serviceLimit.excessAmount > 0 && (
             <>
               <div className="flex items-start justify-between text-sm bg-orange-50 -mx-2 px-2 py-1.5 rounded">
                 <div className="flex items-start">
@@ -400,7 +388,7 @@ export default function PaymentProcessor({
             </>
           )}
 
-          {validationResult.copayPercentage > 0 && (
+          {((validationResult.copayPercentage > 0 && validationResult.walletCoverage > 0) || (serviceLimit && serviceLimit.insurancePayment !== undefined && serviceLimit.insurancePayment > 0)) && (
             <div className="border-t pt-2">
               <div className="flex justify-between text-sm">
                 <span className="text-green-700 font-medium">Insurance Pays</span>

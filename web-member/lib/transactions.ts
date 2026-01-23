@@ -163,44 +163,6 @@ export async function createPendingPayment(data: {
   }
 }
 
-// Process wallet payment (deduct from wallet balance)
-export async function processWalletPayment(data: {
-  userId: string;
-  patientId?: string;
-  amount: number;
-  walletDeduction: number;
-  serviceType: string;
-  serviceDescription: string;
-}): Promise<boolean> {
-  try {
-    const response = await fetch('/api/wallet/deduct', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        userId: data.patientId || data.userId,
-        amount: data.walletDeduction,
-        type: 'DEBIT',
-        serviceType: data.serviceType,
-        notes: data.serviceDescription
-      })
-    });
-
-    if (!response.ok) {
-      logger.error('Transactions', 'Failed to process wallet payment:', await response.text());
-      return false;
-    }
-
-    logger.info('Transactions', 'Wallet payment processed successfully');
-    return true;
-  } catch (error) {
-    logger.error('Transactions', 'Error processing wallet payment:', error);
-    return false;
-  }
-}
-
 // Update wallet balance after transaction
 export async function updateWalletBalance(userId: string, amount: number): Promise<boolean> {
   try {

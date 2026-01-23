@@ -1003,6 +1003,8 @@ export class VisionBookingsService {
       walletDebitAmount: booking.walletDebitAmount,
     });
 
+    console.log('[VisionBookings] Payment will be processed when member confirms booking in member portal');
+
     return booking;
   }
 
@@ -1026,20 +1028,18 @@ export class VisionBookingsService {
       throw new BadRequestException('Payment has already been completed');
     }
 
-    // Call validateBooking to get payment breakdown with the actual bill amount
-    const validation = await this.validateBooking(userId, {
-      patientId: booking.patientId,
-      clinicId: booking.clinicId,
-      serviceCode: booking.serviceCode,
-      slotId: booking.slotId.toString(),
-      price: booking.billAmount, // Use the generated bill amount
-    });
+    // Use breakdown already stored in booking (calculated at bill generation time)
+    const breakdown = {
+      copayAmount: booking.copayAmount,
+      insuranceEligibleAmount: booking.insuranceEligibleAmount,
+      serviceTransactionLimit: booking.serviceTransactionLimit,
+      insurancePayment: booking.insurancePayment,
+      excessAmount: booking.excessAmount,
+      totalMemberPayment: booking.totalMemberPayment,
+      walletDebitAmount: booking.walletDebitAmount,
+    };
 
-    if (!validation.valid || !validation.breakdown) {
-      throw new BadRequestException('Booking validation failed');
-    }
-
-    const breakdown = validation.breakdown;
+    console.log('[VisionBookings] Using payment breakdown from booking:', breakdown);
 
     // Process payment logic (wallet debit + copay handling)
     const wallet = await this.walletService.getUserWallet(userId);
@@ -1059,6 +1059,7 @@ export class VisionBookingsService {
 
       booking.paymentStatus = 'COMPLETED';
       booking.paymentMethod = 'WALLET_ONLY';
+      booking.status = 'COMPLETED'; // Update booking status to COMPLETED
     } else if (walletBalance >= breakdown.walletDebitAmount && breakdown.totalMemberPayment > 0) {
       // Wallet + Copay
       await this.walletService.debitWallet(

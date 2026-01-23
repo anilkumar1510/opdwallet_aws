@@ -500,10 +500,8 @@ export default function DiagnosticBookingPage() {
                   insuranceEligibleAmount: validationResult.breakdown.insuranceEligibleAmount,
                   insurancePayment: validationResult.breakdown.insurancePayment,
                   excessAmount: validationResult.breakdown.excessAmount,
-                  wasLimitApplied: true,
+                  wasLimitApplied: validationResult.breakdown.serviceTransactionLimit > 0 && validationResult.breakdown.excessAmount > 0,
                   copayAmount: validationResult.breakdown.copayAmount,
-                  walletBalance: validationResult.breakdown.walletBalance,
-                  walletDebitAmount: validationResult.breakdown.walletDebitAmount,
                   totalMemberPayment: validationResult.breakdown.totalMemberPayment,
                 } : undefined}
                 onPaymentSuccess={handlePaymentSuccess}

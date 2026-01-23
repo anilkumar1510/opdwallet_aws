@@ -69,4 +69,8 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsBoolean()
   useWallet?: boolean = true;
+
+  @IsOptional()
+  @IsString()
+  transactionId?: string;
 }

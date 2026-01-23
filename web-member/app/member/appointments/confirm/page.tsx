@@ -165,7 +165,7 @@ function ConfirmAppointmentContent() {
 
   const handleViewAppointments = () => {
     console.log('[ConfirmAppointment] Navigating to appointments list')
-    router.push('/member/appointments')
+    router.push('/member/bookings?tab=doctors')
   }
 
   const handleBackToDashboard = () => {
