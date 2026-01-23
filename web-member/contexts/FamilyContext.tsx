@@ -25,6 +25,7 @@ interface FamilyContextType {
   activeMember: FamilyMember | null
   viewingUserId: string | null
   loggedInUser: FamilyMember | null
+  profileData: any | null
   setActiveMember: (member: FamilyMember) => void
   isLoading: boolean
   error: string | null
@@ -38,6 +39,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const [activeMember, setActiveMember] = useState<FamilyMember | null>(null)
   const [loggedInUser, setLoggedInUser] = useState<FamilyMember | null>(null)
   const [viewingUserId, setViewingUserId] = useState<string | null>(null)
+  const [profileData, setProfileData] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [canSwitchProfiles, setCanSwitchProfiles] = useState(false)
@@ -69,6 +71,9 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
         userName: `${data.user.name?.firstName} ${data.user.name?.lastName}`,
         dependentsCount: data.dependents?.length || 0
       })
+
+      // Store full profile data for use in pages
+      setProfileData(data)
 
       // Map logged-in user
       const primaryUser: FamilyMember = {
@@ -168,6 +173,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     activeMember,
     viewingUserId,
     loggedInUser,
+    profileData,
     setActiveMember: handleSetActiveMember,
     isLoading,
     error,

@@ -145,7 +145,7 @@ export default function DashboardPage() {
   const [showRightBenefitsArrow, setShowRightBenefitsArrow] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
 
-  const { activeMember, viewingUserId } = useFamily()
+  const { activeMember, viewingUserId, profileData } = useFamily()
   const benefitsScrollRef = React.useRef<HTMLDivElement>(null)
 
   // Compact wallet cards with modern design
@@ -171,28 +171,14 @@ export default function DashboardPage() {
     try {
       logger.info('Dashboard', 'Starting fetchUserData for userId:', userId)
 
-      // Fetch profile data
-      const profileResponse = await fetch('/api/member/profile', {
-        credentials: 'include',
-      })
-
-      logger.info('Dashboard', 'Profile response status:', profileResponse.status)
-
-      if (!profileResponse.ok) {
-        logger.error('Dashboard', 'Profile fetch failed')
-        const authResponse = await fetch('/api/auth/me', {
-          credentials: 'include',
-        })
-        if (authResponse.ok) {
-          const userData = await authResponse.json()
-          setUser(userData)
-        }
+      // Use profile data from FamilyContext instead of fetching again
+      if (!profileData) {
+        logger.error('Dashboard', 'Profile data not available from context')
         setLoading(false)
         return
       }
 
-      const profileData = await profileResponse.json()
-      logger.info('Dashboard', 'Profile data received:', {
+      logger.info('Dashboard', 'Using profile data from context:', {
         hasUser: !!profileData.user,
         hasDependents: !!profileData.dependents,
         hasWallet: !!profileData.wallet,
