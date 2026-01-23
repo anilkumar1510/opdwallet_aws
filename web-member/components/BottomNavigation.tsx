@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -19,6 +19,7 @@ import {
 import NotificationBell from '@/components/NotificationBell'
 import ProfileDropdown from '@/components/ProfileDropdown'
 import { Logo } from '@/components/ui/Logo'
+import { useFamily } from '@/contexts/FamilyContext'
 
 interface NavItem {
   name: string
@@ -62,36 +63,13 @@ const bottomNavItems: NavItem[] = [
 export default function BottomNavigation() {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const { profileData } = useFamily()
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch('/api/member/profile', {
-        credentials: 'include',
-      })
-      if (response.ok) {
-        const profileData = await response.json()
-        setUser({
-          ...profileData.user,
-          dependents: profileData.dependents || [],
-        })
-      } else {
-        const authResponse = await fetch('/api/auth/me', {
-          credentials: 'include',
-        })
-        if (authResponse.ok) {
-          const userData = await authResponse.json()
-          setUser(userData)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-    }
-  }
+  // Extract user with dependents from profile data
+  const user = profileData ? {
+    ...profileData.user,
+    dependents: profileData.dependents || [],
+  } : null
 
   const isActive = (href: string) => {
     if (href === '/member') {
