@@ -124,7 +124,7 @@ export class CugsController {
   }
 
   @Patch(':id/toggle-active')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Toggle CUG active status' })
   @ApiResponse({ status: 200, description: 'CUG status toggled successfully' })
   @ApiResponse({ status: 404, description: 'CUG not found' })
@@ -137,7 +137,7 @@ export class CugsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete CUG' })
   @ApiResponse({ status: 200, description: 'CUG deleted successfully' })
   @ApiResponse({ status: 404, description: 'CUG not found' })

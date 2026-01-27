@@ -10,6 +10,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface FormData {
   code: string
@@ -21,6 +22,7 @@ interface FormData {
 }
 
 export default function SpecialtiesMasters() {
+  const { canDelete } = usePermissions()
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -238,13 +240,15 @@ export default function SpecialtiesMasters() {
                         <PencilIcon className="h-4 w-4" />
                         Edit
                       </button>
-                      <button
-                        onClick={() => handleDelete(specialty._id)}
-                        className="btn-ghost-danger text-sm inline-flex items-center gap-1"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                        Delete
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(specialty._id)}
+                          className="btn-ghost-danger text-sm inline-flex items-center gap-1"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

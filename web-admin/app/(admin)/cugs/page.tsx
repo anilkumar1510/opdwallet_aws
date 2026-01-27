@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface CUG {
   _id: string
@@ -46,6 +47,7 @@ const initialFormData: FormData = {
 
 export default function CugsPage() {
   const router = useRouter()
+  const { canDeactivate, canDelete } = usePermissions()
   const [cugs, setCugs] = useState<CUG[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -299,18 +301,22 @@ export default function CugsPage() {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleToggleActive(cug._id)}
-                      className="text-yellow-600 hover:text-yellow-900 mr-3"
-                    >
-                      {cug.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(cug._id, cug.cugId)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
+                    {canDeactivate && (
+                      <button
+                        onClick={() => handleToggleActive(cug._id)}
+                        className="text-yellow-600 hover:text-yellow-900 mr-3"
+                      >
+                        {cug.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(cug._id, cug.cugId)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

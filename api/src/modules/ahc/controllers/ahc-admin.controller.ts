@@ -74,6 +74,7 @@ export class AhcAdminController {
   }
 
   @Patch('packages/:packageId/toggle-active')
+  @Roles(UserRole.SUPER_ADMIN)
   async toggleActive(@Param('packageId') packageId: string) {
     const ahcPackage = await this.ahcPackageService.toggleActive(packageId);
 
@@ -85,6 +86,7 @@ export class AhcAdminController {
   }
 
   @Delete('packages/:packageId')
+  @Roles(UserRole.SUPER_ADMIN)
   async deletePackage(@Param('packageId') packageId: string) {
     await this.ahcPackageService.deletePackage(packageId);
 

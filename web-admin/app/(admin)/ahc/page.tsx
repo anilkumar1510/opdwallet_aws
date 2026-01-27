@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
+import { usePermissions } from '@/hooks/usePermissions'
 
 // ==================== INTERFACES ====================
 
@@ -60,6 +61,7 @@ const initialFormData: FormData = {
 
 export default function AhcMasterPage() {
   const router = useRouter()
+  const { canDeactivate, canDelete } = usePermissions()
 
   // State
   const [packages, setPackages] = useState<AhcPackage[]>([])
@@ -376,18 +378,22 @@ export default function AhcMasterPage() {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleToggleActive(pkg.packageId)}
-                      className="text-yellow-600 hover:text-yellow-900 mr-3"
-                    >
-                      {pkg.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(pkg.packageId)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
+                    {canDeactivate && (
+                      <button
+                        onClick={() => handleToggleActive(pkg.packageId)}
+                        className="text-yellow-600 hover:text-yellow-900 mr-3"
+                      >
+                        {pkg.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(pkg.packageId)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

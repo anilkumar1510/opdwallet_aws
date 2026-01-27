@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
+import { usePermissions } from '@/hooks/usePermissions'
 
 export default function UsersPage() {
   const router = useRouter()
+  const { canViewInternalUsers } = usePermissions()
   const [externalUsers, setExternalUsers] = useState<any[]>([])
   const [internalUsers, setInternalUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,6 +23,13 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers()
   }, [])
+
+  // Auto-redirect ADMIN users away from internal tab
+  useEffect(() => {
+    if (!canViewInternalUsers && activeTab === 'internal') {
+      setActiveTab('external')
+    }
+  }, [canViewInternalUsers, activeTab])
 
   const fetchUsers = async () => {
     try {
@@ -140,16 +149,18 @@ export default function UsersPage() {
         >
           External Users ({externalUsers.length})
         </button>
-        <button
-          onClick={() => setActiveTab('internal')}
-          className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-colors ${
-            activeTab === 'internal'
-              ? 'bg-white text-brand-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Internal Users ({internalUsers.length})
-        </button>
+        {canViewInternalUsers && (
+          <button
+            onClick={() => setActiveTab('internal')}
+            className={`flex-1 py-2 px-4 rounded-md font-medium text-sm transition-colors ${
+              activeTab === 'internal'
+                ? 'bg-white text-brand-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Internal Users ({internalUsers.length})
+          </button>
+        )}
       </div>
 
       {/* Page Actions */}

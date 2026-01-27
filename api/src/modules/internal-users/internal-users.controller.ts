@@ -44,7 +44,7 @@ export class InternalUsersController {
   }
 
   @Get()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Get all internal users with pagination and filtering' })
   @ApiResponse({ status: 200, description: 'Internal users retrieved successfully' })
   async findAll(@Query() query: QueryInternalUserDto) {
@@ -52,7 +52,7 @@ export class InternalUsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Get an internal user by ID' })
   @ApiResponse({ status: 200, description: 'Internal user retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Internal user not found' })

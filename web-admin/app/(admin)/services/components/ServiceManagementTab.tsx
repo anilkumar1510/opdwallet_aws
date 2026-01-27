@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface Service {
   _id: string
@@ -21,6 +22,7 @@ interface ServiceManagementTabProps {
 }
 
 export function ServiceManagementTab({ categoryId, categoryName }: ServiceManagementTabProps) {
+  const { canDelete } = usePermissions()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -293,13 +295,15 @@ export function ServiceManagementTab({ categoryId, categoryName }: ServiceManage
                     >
                       <PencilIcon className="h-5 w-5 inline" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(service._id, service.name)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete"
-                    >
-                      <TrashIcon className="h-5 w-5 inline" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(service._id, service.name)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete"
+                      >
+                        <TrashIcon className="h-5 w-5 inline" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

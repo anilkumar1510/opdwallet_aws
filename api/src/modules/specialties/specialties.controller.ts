@@ -55,7 +55,7 @@ export class SpecialtiesController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async remove(@Param('id') id: string) {
     await this.specialtiesService.remove(id);
     return { message: 'Specialty deleted successfully' };
