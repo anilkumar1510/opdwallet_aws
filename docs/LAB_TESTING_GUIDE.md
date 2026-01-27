@@ -64,7 +64,7 @@ You should see output like:
 ### PHASE 1: Upload Prescription (Member Portal)
 
 #### 2.1 Login as Member
-1. Open Member Portal: `http://localhost:3001/member` (or production URL)
+1. Open Member Portal: `http://localhost/` or `http://localhost:3002/` (or production URL)
 2. Login with your member credentials
 3. Verify you're logged in successfully
 
@@ -108,7 +108,7 @@ You should see output like:
 ### PHASE 2: Digitize Prescription (Admin Portal)
 
 #### 2.6 Login as Operations/Admin User
-1. Open Admin Portal: `http://localhost:3002/admin` (or production URL)
+1. Open Admin Portal: `http://localhost/admin` or `http://localhost:3001/admin` (or production URL)
 2. Login with admin/operations credentials
 3. Navigate to **Operations** → **Lab** → **Prescriptions**
 

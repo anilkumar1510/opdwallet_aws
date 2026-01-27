@@ -10,8 +10,15 @@ The system runs on **AWS EC2** using Docker containers with these components:
 
 1. **Nginx Reverse Proxy** - Single entry point that handles SSL and routes traffic
 2. **MongoDB Database** - Stores all application data
-3. **NestJS API Backend** - Handles all business logic
-4. **3 Next.js Web Portals** - Admin, Member, and Doctor interfaces
+3. **Redis Cache** - Session management and caching
+4. **NestJS API Backend** - Handles all business logic
+5. **6 Next.js Web Portals**:
+   - Member Portal - For patients/employees
+   - Admin Portal - For platform administrators
+   - Doctor Portal - For healthcare providers
+   - TPA Portal - For insurance claim processors
+   - Operations Portal - For operations team
+   - Finance Portal - For finance team
 
 All services communicate through an internal Docker network. Only Nginx is exposed to the internet on ports 80 (HTTP) and 443 (HTTPS).
 

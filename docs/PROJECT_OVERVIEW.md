@@ -13,7 +13,7 @@
 3. [How OPD Wallet Works](#how-opd-wallet-works)
 4. [Platform Overview](#platform-overview)
 5. [Current Platforms (Active)](#current-platforms-active)
-6. [Future Platforms (Planned)](#future-platforms-planned)
+6. [Additional Platforms (Active)](#-additional-platforms-active)
 7. [Key Features Summary](#key-features-summary)
 8. [User Journey Examples](#user-journey-examples)
 
@@ -105,24 +105,25 @@ Imagine you have a prepaid wallet (like Paytm or Google Pay) that contains your 
 
 ## 🏢 Platform Overview
 
-OPD Wallet consists of **6 integrated platforms** (3 active + 3 planned), each designed for specific users:
+OPD Wallet consists of **7 integrated platforms** (6 web portals + 1 backend API), each designed for specific users:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     OPD WALLET ECOSYSTEM                │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  Active Platforms (Currently Running):                 │
+│  User Portals (Active & Running):                      │
 │  1. Member Portal     - For employees/patients         │
 │  2. Doctor Portal     - For healthcare providers       │
 │  3. Admin Portal      - For company HR & super admins  │
 │                                                         │
-│  Backend Infrastructure:                               │
-│  4. API Backend       - Core business logic & data     │
-│                                                         │
-│  Future Platforms (In Development Pipeline):           │
-│  5. TPA Portal        - For insurance claim processors │
+│  Staff Portals (Active & Running):                     │
+│  4. TPA Portal        - For insurance claim processors │
+│  5. Operations Portal - For operations team            │
 │  6. Finance Portal    - For payment reconciliation     │
+│                                                         │
+│  Backend Infrastructure:                               │
+│  7. API Backend       - Core business logic & data     │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -420,15 +421,15 @@ OPD Wallet consists of **6 integrated platforms** (3 active + 3 planned), each d
 
 ---
 
-## 🔮 Future Platforms (Planned)
+## 🚀 Additional Platforms (Active)
 
 ### 5. 🏥 TPA Portal (Insurance Claim Processor Portal)
 
-**Who Will Use It:** Third Party Administrators (TPA), insurance company claim processors
+**Who Uses It:** Third Party Administrators (TPA), insurance company claim processors
 
 **Primary Purpose:** Process and approve insurance claims submitted by employees
 
-**Planned Features:**
+**Current Features:**
 - 📋 **Claim Queue Management**
   - View all pending claims in one dashboard
   - Priority sorting (urgent, high-value, aging claims)
@@ -485,13 +486,53 @@ OPD Wallet consists of **6 integrated platforms** (3 active + 3 planned), each d
 
 ---
 
-### 6. 💰 Finance Portal (Payment Reconciliation Portal)
+### 6. 👥 Operations Portal (Operations Team Portal)
 
-**Who Will Use It:** Finance teams (company finance, TPA finance, platform finance)
+**Who Uses It:** Operations team members managing bookings, services, and support
+
+**Primary Purpose:** Manage appointments, bookings, and operational workflows
+
+**Current Features:**
+- 📋 **Appointment Management**
+  - View all appointments across the platform
+  - Monitor appointment statuses
+  - Handle booking issues and conflicts
+  - Reschedule or cancel appointments
+  - Track appointment completion
+
+- 📋 **Service Management**
+  - Manage lab test bookings
+  - Handle diagnostic center appointments
+  - Monitor service delivery status
+  - Coordinate with service providers
+
+- 📋 **Support & Issue Resolution**
+  - Handle customer support tickets
+  - Resolve booking issues
+  - Assist with payment problems
+  - Coordinate with doctors and clinics
+
+- 📋 **Analytics Dashboard**
+  - Daily operational metrics
+  - Booking trends and patterns
+  - Service provider performance
+  - Issue resolution tracking
+
+**Future Enhancements:**
+- 🔄 Automated issue detection and alerts
+- 🔄 AI-powered support ticket routing
+- 🔄 Real-time dashboard with live updates
+- 🔄 Integration with CRM systems
+
+---
+
+### 7. 💰 Finance Portal (Payment Reconciliation Portal)
+
+**Who Uses It:** Finance teams (company finance, TPA finance, platform finance)
 
 **Primary Purpose:** Handle financial settlements, reconciliations, and payment tracking
 
-**Planned Features:**
+**Current Features:**
 - 💳 **Wallet Fund Management**
   - Load funds into company wallets
   - Track fund transfers (company → platform)
@@ -565,11 +606,11 @@ OPD Wallet consists of **6 integrated platforms** (3 active + 3 planned), each d
 | **Video Consultation** | ✅ Join Call | ✅ Conduct Call | ✅ Monitor | ❌ | ❌ |
 | **Appointments** | ✅ Book | ✅ Manage | ✅ View All | ❌ | ❌ |
 | **Prescriptions** | ✅ View & Download | ✅ Create & Upload | ✅ View | ❌ | ❌ |
-| **Claims Processing** | ✅ Submit | ❌ | ✅ Basic Review | 🔄 Full Review | ❌ |
+| **Claims Processing** | ✅ Submit | ❌ | ✅ Basic Review | ✅ Full Review | ❌ |
 | **Policy Management** | ❌ | ❌ | ✅ Full Control | ❌ | ❌ |
 | **Employee Management** | ❌ | ❌ | ✅ Full Control | ❌ | ❌ |
-| **Financial Settlements** | ❌ | ❌ | ❌ | ❌ | 🔄 Full Control |
-| **Analytics Dashboard** | ✅ Personal | ✅ Personal | ✅ Company-wide | 🔄 Claim Stats | 🔄 Financial |
+| **Financial Settlements** | ❌ | ❌ | ❌ | ❌ | ✅ Full Control |
+| **Analytics Dashboard** | ✅ Personal | ✅ Personal | ✅ Company-wide | ✅ Claim Stats | ✅ Financial |
 
 **Legend:**
 - ✅ = Available Now
@@ -699,7 +740,7 @@ OPD Wallet consists of **6 integrated platforms** (3 active + 3 planned), each d
 
 ---
 
-### Example 3: TPA Processes Claim (Future)
+### Example 3: TPA Processes Claim
 
 **Scenario:** Sunita (TPA claim processor) reviews a pharmacy claim from an employee.
 
@@ -785,14 +826,16 @@ We envision a future where:
 
 ### For Team Members:
 - Read this document to understand the business
-- Review [TECHNOLOGY_STACK.md](/docs/TECHNOLOGY_STACK.md) for technical details
-- Check [temp_automated_testing_not_implemented.md](/docs/temp_automated_testing_not_implemented.md) for testing approach
+- Review [README.md](./README.md) for documentation index and quick links
+- Check [DATABASE_AND_CONFIG.md](./DATABASE_AND_CONFIG.md) for database schema details
+- Review portal-specific documentation for your work area
+- Read [PORTAL_TESTING_GUIDE.md](./PORTAL_TESTING_GUIDE.md) for testing approach
 - Join onboarding sessions with tech lead
 
 ### For Stakeholders:
 - This document provides complete business overview
-- For demo, contact: demo@opdwallet.com
-- For partnership inquiries: partnerships@opdwallet.com
+- For technical setup, see [MANUAL_DEPLOYMENT.md](./MANUAL_DEPLOYMENT.md)
+- For API integration, refer to [API_REFERENCE.md](./API_REFERENCE.md)
 
 ---
 

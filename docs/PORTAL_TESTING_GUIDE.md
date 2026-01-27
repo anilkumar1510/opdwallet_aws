@@ -78,10 +78,10 @@ During the **testing phase**, these operations are considered safe and necessary
 
 ---
 
-## Portal 1: Member Portal (http://localhost:3001)
+## Portal 1: Member Portal (http://localhost:3002 or http://localhost/)
 
 ### Test 1.1: Member Login
-- [ ] Open http://localhost:3001
+- [ ] Open http://localhost/ (via Nginx) or http://localhost:3002 (direct)
 - [ ] Enter member credentials
 - [ ] Click "Login"
 - [ ] **Expected:** Successful login, redirected to dashboard
@@ -133,10 +133,10 @@ During the **testing phase**, these operations are considered safe and necessary
 
 ---
 
-## Portal 2: Admin Portal (http://localhost:3002)
+## Portal 2: Admin Portal (http://localhost:3001/admin or http://localhost/admin)
 
 ### Test 2.1: Admin Login
-- [ ] Open http://localhost:3002
+- [ ] Open http://localhost/admin (via Nginx) or http://localhost:3001/admin (direct)
 - [ ] Enter admin credentials
 - [ ] Click "Login"
 - [ ] **Expected:** Successful login, redirected to dashboard
@@ -292,10 +292,10 @@ Body: { employeeId, name, email, phone: {countryCode, number}, role, department,
 
 ---
 
-## Portal 3: TPA Portal (http://localhost:3003)
+## Portal 3: TPA Portal (http://localhost:3004/tpa or http://localhost/tpa)
 
 ### Test 3.1: TPA Login
-- [ ] Open http://localhost:3003
+- [ ] Open http://localhost/tpa (via Nginx) or http://localhost:3004/tpa (direct)
 - [ ] Enter TPA credentials
 - [ ] **Expected:** Successful login
 - [ ] **Browser Console:** Verify userType: 'internal'
@@ -327,10 +327,10 @@ Body: { employeeId, name, email, phone: {countryCode, number}, role, department,
 
 ---
 
-## Portal 4: Finance Portal (http://localhost:3004)
+## Portal 4: Finance Portal (http://localhost:3006/finance or http://localhost/finance)
 
 ### Test 4.1: Finance User Login
-- [ ] Open http://localhost:3004
+- [ ] Open http://localhost/finance (via Nginx) or http://localhost:3006/finance (direct)
 - [ ] Enter finance user credentials
 - [ ] **Expected:** Successful login
 - [ ] **Browser Console:** Verify userType: 'internal', role: 'FINANCE_USER'
@@ -361,10 +361,10 @@ Body: { employeeId, name, email, phone: {countryCode, number}, role, department,
 
 ---
 
-## Portal 5: Operations Portal (http://localhost:3005)
+## Portal 5: Operations Portal (http://localhost:3005/operations or http://localhost/operations)
 
 ### Test 5.1: OPS User Login
-- [ ] Open http://localhost:3005
+- [ ] Open http://localhost/operations (via Nginx) or http://localhost:3005/operations (direct)
 - [ ] Enter operations user credentials
 - [ ] **Expected:** Successful login
 - [ ] **Browser Console:** Verify userType: 'internal', role: 'OPS'
@@ -382,10 +382,10 @@ Body: { employeeId, name, email, phone: {countryCode, number}, role, department,
 
 ---
 
-## Portal 6: Doctor Portal (http://localhost:3006)
+## Portal 6: Doctor Portal (http://localhost:3003/doctor or http://localhost/doctor)
 
 ### Test 6.1: Doctor Login
-- [ ] Open http://localhost:3006
+- [ ] Open http://localhost/doctor (via Nginx) or http://localhost:3003/doctor (direct)
 - [ ] Enter doctor credentials
 - [ ] **Expected:** Successful login
 - [ ] **Browser Console:** Verify userType: 'doctor' (doctors remain in users collection)

@@ -16,13 +16,13 @@ If the IP has changed, get the new IP from AWS Console.
 
 ### 2. Navigate to Project Directory
 ```bash
-cd ~/opdwallet
+cd ~/opdwallet_aws
 ```
 
 If the directory doesn't exist, clone it:
 ```bash
-git clone https://github.com/anilkumar1510/opdwallet.git
-cd opdwallet
+git clone https://github.com/your-org/opdwallet.git opdwallet_aws
+cd opdwallet_aws
 ```
 
 ### 3. Pull Latest Code
@@ -81,21 +81,40 @@ Press Ctrl+C to exit log viewing.
 docker ps
 ```
 
-You should see 5 containers:
-- opd-nginx (Port 80)
-- opd-api (Port 4000)
-- opd-web-admin (Port 3001)
-- opd-web-member (Port 3002)
-- opd-mongodb (Port 27017)
+You should see 10 containers running:
+- opd-nginx-dev (Port 80) - Reverse proxy
+- opd-api-dev (Port 4000) - Backend API
+- opd-web-member-dev (Port 3002) - Member Portal
+- opd-web-admin-dev (Port 3001) - Admin Portal
+- opd-web-doctor-dev (Port 3003) - Doctor Portal
+- opd-web-tpa-dev (Port 3004) - TPA Portal
+- opd-web-operations-dev (Port 3005) - Operations Portal
+- opd-web-finance-dev (Port 3006) - Finance Portal
+- opd-mongo-dev (Port 27017) - MongoDB database
+- opd-redis-dev (Port 6380) - Redis cache
 
 ### 10. Test the Application
-Open in browser:
-- Member Portal: http://YOUR_SERVER_IP
+Open in browser (via Nginx):
+- Member Portal: http://YOUR_SERVER_IP/
 - Admin Portal: http://YOUR_SERVER_IP/admin
+- Doctor Portal: http://YOUR_SERVER_IP/doctor
+- TPA Portal: http://YOUR_SERVER_IP/tpa
+- Operations Portal: http://YOUR_SERVER_IP/operations
+- Finance Portal: http://YOUR_SERVER_IP/finance
+- API Health Check: http://YOUR_SERVER_IP/api/health
+
+Or access directly via ports:
+- Member: http://YOUR_SERVER_IP:3002
+- Admin: http://YOUR_SERVER_IP:3001/admin
+- Doctor: http://YOUR_SERVER_IP:3003/doctor
+- TPA: http://YOUR_SERVER_IP:3004/tpa
+- Operations: http://YOUR_SERVER_IP:3005/operations
+- Finance: http://YOUR_SERVER_IP:3006/finance
 
 Test credentials:
 - Admin: admin@opdwallet.com / Admin@123
 - Member: john.doe@company.com / Member@123
+- Doctor: doctor@example.com / Doctor@123
 
 ## Troubleshooting
 
@@ -131,6 +150,11 @@ docker system prune -af
 ## Quick Deployment Script
 You can also use the provided script:
 ```bash
-cd ~/opdwallet
+cd ~/opdwallet_aws
 ./deploy-on-aws.sh
+```
+
+Note: Make sure the script has execute permissions:
+```bash
+chmod +x deploy-on-aws.sh
 ```

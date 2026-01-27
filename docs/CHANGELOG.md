@@ -2,6 +2,103 @@
 
 All notable changes to the OPD Wallet project will be documented in this file.
 
+## [Unreleased] - 2026-01-27
+
+### Changed
+
+- **Documentation Audit and Updates**
+  - Updated `docs/README.md`:
+    - Fixed port mappings (Member Portal: 3002, Admin Portal: 3001)
+    - Added Redis and Docker Compose to technology stack
+    - Corrected project structure path from `opdwallet/` to `opdwallet_aws/`
+    - Added missing infrastructure directories (.claude/, docker-compose files)
+    - Added Nginx proxy and MongoDB/Redis ports to ports table
+  - Updated `docs/PROJECT_OVERVIEW.md`:
+    - Changed platform count from "6 platforms (3 active + 3 planned)" to "7 platforms (6 web portals + 1 backend)"
+    - Moved TPA Portal, Operations Portal, and Finance Portal from "Future Platforms" to "Active Platforms" section
+    - Added Operations Portal documentation (was completely missing)
+    - Fixed broken documentation links (removed references to non-existent files)
+    - Updated "Getting Started" section with correct documentation links
+  - Updated `docs/MANUAL_DEPLOYMENT.md`:
+    - Corrected project directory from `~/opdwallet` to `~/opdwallet_aws`
+    - Updated container count from 5 to 10 containers
+    - Added complete list of all running containers (all 6 portals + API + Nginx + MongoDB + Redis)
+    - Added all portal access URLs (Member, Admin, Doctor, TPA, Operations, Finance)
+    - Added direct port access instructions for debugging
+    - Fixed quick deployment script path references
+  - Updated `docs/DATABASE_AND_CONFIG.md`:
+    - Changed portal count from "3 Next.js Web Portals" to "6 Next.js Web Portals"
+    - Added Redis Cache to infrastructure components
+    - Listed all 6 portals with descriptions
+  - Updated `docs/API_REFERENCE.md`:
+    - Fixed incorrect port mappings (swapped Member and Admin portal ports)
+  - Updated `docs/PORTAL_TESTING_GUIDE.md`:
+    - Fixed all portal port numbers and URLs
+    - Member Portal: 3002 (was incorrectly 3001)
+    - Admin Portal: 3001/admin (was incorrectly 3002)
+    - Doctor Portal: 3003/doctor (was incorrectly 3006)
+    - TPA Portal: 3004/tpa (was incorrectly 3003)
+    - Finance Portal: 3006/finance (was incorrectly 3004)
+    - Operations Portal: 3005/operations (correct, added Nginx URL)
+    - Added Nginx proxy URLs (http://localhost/{portal}) alongside direct port access for all portals
+  - Updated `docs/LAB_TESTING_GUIDE.md`:
+    - Fixed Member Portal URL from 3001/member to / or 3002/
+    - Fixed Admin Portal URL from 3002/admin to /admin or 3001/admin
+  - All documentation now accurately reflects current system architecture with 6 active portals
+  - **API Documentation Audit (Complete)**:
+    - Audited all 6 API endpoint documentation files against actual API controllers
+    - **LATEST_API_ENDPOINTS_MEMBER.md** (646 lines): ✓ Verified accurate
+      - All auth, member profile, wallet, appointments, lab tests, diagnostics, AHC, claims, prescriptions endpoints match actual controllers
+      - Redis caching documentation accurate
+      - Family access control documentation accurate
+    - **LATEST_API_ENDPOINTS_ADMIN.md** (522 lines): ✓ Verified accurate
+      - Members, internal users, policies, plan config, assignments, doctors, clinics, master data endpoints match controllers
+      - Correct separation of member vs internal user endpoints documented
+      - Cache invalidation strategies documented
+    - **LATEST_API_ENDPOINTS_DOCTOR.md** (171 lines): ✓ Verified accurate
+      - Doctor auth, appointments, digital prescriptions, uploaded prescriptions, video consultations, patient records match controllers
+      - Prescription template and consultation notes endpoints verified
+    - **LATEST_API_ENDPOINTS_TPA.md** (70 lines): ✓ Verified accurate
+      - All 15 TPA endpoints (claims processing, assignment, approval/rejection) match tpa.controller.ts
+      - Role-based access control accurately documented
+      - Cache invalidation on claim approval documented
+    - **LATEST_API_ENDPOINTS_OPERATIONS.md** (377 lines): ✓ Verified accurate
+      - Operations member management, appointments, doctors, clinics, lab operations, diagnostics, AHC operations endpoints verified
+      - Comprehensive coverage of all operational workflows
+      - Cache invalidation triggers documented
+    - **LATEST_API_ENDPOINTS_FINANCE.md** (63 lines): ✓ Verified accurate
+      - All 9 finance endpoints (payment processing, history, analytics) match finance.controller.ts
+      - Payment completion workflow accurately documented
+      - Wallet credit cache invalidation documented
+    - **Verification Method**: Cross-referenced all documented endpoints with actual @Controller, @Get, @Post, @Put, @Patch, @Delete decorators in 54 controller files
+    - **Controllers Verified**: auth.controller, doctor-auth.controller, member.controller, wallet.controller, members.controller, internal-users.controller, tpa.controller, finance.controller, operations.controller, and related domain controllers (appointments, lab, diagnostics, AHC)
+    - **Result**: All API documentation is accurate and up-to-date with current codebase
+    - **No updates required**: All 6 API endpoint documentation files are correct
+  - **Documentation Audit Summary:**
+    - Total files audited: 32 documentation files
+    - Files updated: 7 (README.md, PROJECT_OVERVIEW.md, MANUAL_DEPLOYMENT.md, DATABASE_AND_CONFIG.md, API_REFERENCE.md, PORTAL_TESTING_GUIDE.md, LAB_TESTING_GUIDE.md)
+    - Primary fixes: Port number corrections, portal count updates, infrastructure component additions, broken link removals
+    - All port mappings now consistent across documentation
+    - All API documentation verified accurate (no changes needed)
+  - **Comprehensive Re-Audit (Complete)**:
+    - Re-audited all 32 documentation files with deep line-by-line review
+    - **Additional fixes in PROJECT_OVERVIEW.md**:
+      - Fixed Table of Contents link from "Future Platforms (Planned)" to "Additional Platforms (Active)"
+      - Updated Feature Matrix: Changed TPA Portal Claims Processing from "🔄 Full Review" to "✅ Full Review"
+      - Updated Feature Matrix: Changed Finance Portal Financial Settlements from "🔄 Full Control" to "✅ Full Control"
+      - Updated Feature Matrix: Changed Analytics Dashboard for TPA and Finance from "🔄" to "✅"
+      - Removed "(Future)" label from "Example 3: TPA Processes Claim" user journey heading
+    - **Verification Results**:
+      - All 6 portal-specific documentation files (MEMBER_PORTAL.md, ADMIN_PORTAL.md, DOCTOR_PORTAL.md, TPA Portal, Operations Portal, Finance Portal) verified accurate
+      - All 6 LATEST_FRONTEND_PAGES_*.md files verified accurate with correct portal URLs, ports, and roles
+      - All 6 LATEST_API_ENDPOINTS_*.md files re-verified accurate (no changes needed)
+      - REDIS_CACHING.md verified comprehensive and accurate
+      - All cross-references between documents validated
+    - **Total Issues Found and Fixed**: 4 (all in PROJECT_OVERVIEW.md)
+    - **Documentation Status**: All 32 documentation files now accurate and consistent
+
+---
+
 ## [Unreleased] - 2026-01-02
 
 ### Fixed

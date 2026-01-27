@@ -136,10 +136,12 @@ When starting a new Claude Code session, you'll see prominent warning banners an
 **Backend:**
 - NestJS (Node.js framework)
 - MongoDB (Database)
+- Redis (Caching & Session Management)
 - AWS Secrets Manager (Credentials)
 - Daily.co (Video Consultations)
 
 **Deployment:**
+- Docker & Docker Compose (Container orchestration)
 - AWS EC2 (API Server)
 - PM2 (Process Manager)
 - Nginx (Reverse Proxy)
@@ -147,7 +149,7 @@ When starting a new Claude Code session, you'll see prominent warning banners an
 ### Project Structure
 
 ```
-opdwallet/
+opdwallet_aws/
 ├── api/                    # Backend API server (NestJS)
 ├── web-member/             # Member Portal (Next.js)
 ├── web-admin/              # Admin Portal (Next.js)
@@ -157,20 +159,27 @@ opdwallet/
 ├── web-finance/            # Finance Portal (Next.js)
 ├── scripts/                # Deployment and setup scripts
 ├── nginx/                  # Nginx configuration files
-└── docs/                   # Documentation (you are here!)
+├── docs/                   # Documentation (you are here!)
+├── docker-compose.yml      # Docker orchestration configuration
+├── docker-compose.local.yml # Local development overrides
+├── docker-compose.prod.yml  # Production configuration
+└── .claude/                # Claude Code AI development configuration
 ```
 
 ### Ports (Development)
 
-| Service | Port | URL |
-|---------|------|-----|
-| Backend API | 4000 | http://localhost:4000 |
-| Member Portal | 3001 | http://localhost:3001 |
-| Admin Portal | 3002 | http://localhost:3002 |
-| Doctor Portal | 3003 | http://localhost:3003 |
-| TPA Portal | 3004 | http://localhost:3004 |
-| Operations Portal | 3005 | http://localhost:3005 |
-| Finance Portal | 3006 | http://localhost:3006 |
+| Service | Port (Direct) | URL (Nginx) | Direct URL |
+|---------|---------------|-------------|------------|
+| Backend API | 4000 | http://localhost/api | http://localhost:4000 |
+| Member Portal | 3002 | http://localhost/ | http://localhost:3002 |
+| Admin Portal | 3001 | http://localhost/admin | http://localhost:3001/admin |
+| Doctor Portal | 3003 | http://localhost/doctor | http://localhost:3003/doctor |
+| TPA Portal | 3004 | http://localhost/tpa | http://localhost:3004/tpa |
+| Operations Portal | 3005 | http://localhost/operations | http://localhost:3005/operations |
+| Finance Portal | 3006 | http://localhost/finance | http://localhost:3006/finance |
+| Nginx Proxy | 80 | http://localhost | - |
+| MongoDB | 27017 | - | localhost:27017 |
+| Redis | 6380 | - | localhost:6380 |
 
 ---
 

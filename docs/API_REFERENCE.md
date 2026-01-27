@@ -23,8 +23,8 @@ The OPD Wallet platform exposes REST APIs across multiple portals for different 
 
 | Portal | User Type | Base Path | Port (Dev) | Documentation |
 |--------|-----------|-----------|------------|---------------|
-| **Member Portal** | Patients/Employees (MEMBER) | `/api` | 3001 | [Member API Endpoints](./LATEST_API_ENDPOINTS_MEMBER.md) |
-| **Admin Portal** | Platform Admins (SUPER_ADMIN, ADMIN) | `/api` | 3002 | [Admin API Endpoints](./LATEST_API_ENDPOINTS_ADMIN.md) |
+| **Member Portal** | Patients/Employees (MEMBER) | `/api` | 3002 | [Member API Endpoints](./LATEST_API_ENDPOINTS_MEMBER.md) |
+| **Admin Portal** | Platform Admins (SUPER_ADMIN, ADMIN) | `/api` | 3001 | [Admin API Endpoints](./LATEST_API_ENDPOINTS_ADMIN.md) |
 | **Doctor Portal** | Healthcare Providers (DOCTOR) | `/api` | 3003 | [Doctor API Endpoints](./LATEST_API_ENDPOINTS_DOCTOR.md) |
 | **TPA Portal** | Claim Processors (TPA_ADMIN, TPA_USER) | `/api` | 3004 | [TPA API Endpoints](./LATEST_API_ENDPOINTS_TPA.md) |
 | **Operations Portal** | Operations Team (OPS) | `/api` | 3005 | [Operations API Endpoints](./LATEST_API_ENDPOINTS_OPERATIONS.md) |
