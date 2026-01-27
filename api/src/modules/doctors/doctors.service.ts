@@ -29,7 +29,14 @@ export class DoctorsService {
     const limit = parseInt(query.limit || '20');
     const skip = (page - 1) * limit;
 
-    const filter: any = { isActive: true };
+    const filter: any = {};
+
+    // Filter by isActive if provided, otherwise show all
+    if (query.isActive !== undefined) {
+      this.logger.log(`[findAll] isActive filter: ${query.isActive} (type: ${typeof query.isActive})`);
+      filter.isActive = query.isActive === 'true';
+      this.logger.log(`[findAll] Converted isActive to boolean: ${filter.isActive}`);
+    }
 
     if (query.specialtyId) {
       filter.specialtyId = query.specialtyId;
@@ -41,6 +48,8 @@ export class DoctorsService {
         { specializations: new RegExp(query.search, 'i') },
       ];
     }
+
+    this.logger.log(`[findAll] MongoDB filter: ${JSON.stringify(filter)}`);
 
     const [doctors, total] = await Promise.all([
       this.doctorModel.find(filter).skip(skip).limit(limit).exec(),

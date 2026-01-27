@@ -38,6 +38,10 @@ export class QueryDoctorsDto {
   radius?: number; // in kilometers, default 10
 
   @IsOptional()
+  @IsString()
+  isActive?: string;
+
+  @IsOptional()
   @IsNumberString()
   page?: string;
 

@@ -110,6 +110,29 @@ This document lists all frontend pages/routes in the Admin Portal (web-admin) fo
 
 ---
 
+## Network Management
+
+| Path | Description |
+|------|-------------|
+| /admin/network-management?tab=clinics | Manage clinic network with full CRUD operations |
+| /admin/network-management?tab=doctors | Manage doctor network with full CRUD operations |
+| /admin/network-management?tab=dental-services | Enable/disable dental services at clinic level |
+| /admin/network-management?tab=vision-services | Enable/disable vision services at clinic level |
+
+**Features:**
+- **Clinics Tab**: Create, view, edit, and manage clinics with full location details
+- **Doctors Tab**: Create, view, edit, and manage doctors with specialty assignments
+- **Dental Services Tab**: Toggle dental services on/off for clinics, view enabled service counts
+- **Vision Services Tab**: Toggle vision services on/off for clinics, view enabled service counts
+- Search and filter capabilities across all tabs
+- Client-side pagination (20 items per page)
+- Real-time toggle switches with success/error notifications
+- Bidirectional sync with Operations Portal
+
+**Note:** Individual service pricing and slot management are handled in Operations Portal. Admin Portal provides simplified clinic-level enable/disable functionality.
+
+---
+
 ## AHC Packages (Annual Health Check)
 
 | Path | Description |
@@ -118,11 +141,12 @@ This document lists all frontend pages/routes in the Admin Portal (web-admin) fo
 
 ---
 
-**Total Pages: 30**
+**Total Pages: 34**
 
 **Key Features:**
 - Core administrative functions: users, policies, masters
 - Policy configuration and assignment management
+- Network management: clinics, doctors, dental/vision services
 - Lab service and vendor administration
 - Diagnostics service and vendor administration
 - AHC (Annual Health Check) package management

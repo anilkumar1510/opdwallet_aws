@@ -28,7 +28,15 @@ function AdminLayoutContent({
     if (pathname.startsWith('/cugs') || pathname.startsWith('/admin/cugs')) return 'CUG Management'
     if (pathname.startsWith('/ahc') || pathname.startsWith('/admin/ahc')) return 'AHC Master'
     if (pathname.startsWith('/masters') || pathname.startsWith('/admin/masters')) return 'Masters'
+    if (pathname.startsWith('/network-management') || pathname.startsWith('/admin/network-management')) return 'Network Management'
     return 'Admin'
+  }
+
+  const getPageSubtitle = () => {
+    if (pathname.startsWith('/network-management') || pathname.startsWith('/admin/network-management')) {
+      return 'Manage your healthcare network including clinics, hospitals, and diagnostic centers'
+    }
+    return `Manage your OPD Wallet ${getPageTitle().toLowerCase()}`
   }
 
   const navigationItems = [
@@ -82,6 +90,11 @@ function AdminLayoutContent({
       path: '/masters',
       current: pathname.startsWith('/masters') || pathname.startsWith('/admin/masters')
     },
+    {
+      name: 'Network Management',
+      path: '/network-management',
+      current: pathname.startsWith('/network-management') || pathname.startsWith('/admin/network-management')
+    },
   ]
 
   // Check if on Auth routes - hide admin header if so
@@ -115,9 +128,9 @@ function AdminLayoutContent({
                 <Logo variant="white" size="full" href="/admin" />
               </div>
 
-              {/* Desktop Navigation */}
+              {/* Desktop Navigation - First Row */}
               <div className="hidden md:flex items-center gap-2 flex-1">
-                {navigationItems.map((item) => (
+                {navigationItems.slice(0, -1).map((item) => (
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
@@ -151,6 +164,21 @@ function AdminLayoutContent({
               </div>
             </div>
 
+            {/* Desktop Navigation - Second Row (Network Management) */}
+            <div className="hidden md:flex items-center pt-2 pb-2" style={{ paddingLeft: 'calc(20rem + 2rem)' }}>
+              <div className="flex items-center gap-2">
+                {navigationItems.slice(-1).map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => router.push(item.path)}
+                    className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Mobile Navigation */}
             <div className="md:hidden border-t border-white/10 pt-4 pb-2">
               <div className="flex space-x-1 overflow-x-auto">
@@ -178,7 +206,7 @@ function AdminLayoutContent({
               <div>
                 <h2 className="section-title">{getPageTitle()}</h2>
                 <p className="section-subtitle">
-                  Manage your OPD Wallet {getPageTitle().toLowerCase()}
+                  {getPageSubtitle()}
                 </p>
               </div>
             </div>

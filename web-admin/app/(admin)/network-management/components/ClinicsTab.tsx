@@ -3,11 +3,29 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
-import { useDebounce } from '@/lib/hooks/useDebounce'
+import { useDebounce } from '@/hooks/useDebounce'
 
-export default function ClinicsPage() {
+interface Clinic {
+  _id: string
+  clinicId: string
+  name: string
+  address: {
+    line1: string
+    city: string
+    state: string
+    pincode: string
+    country: string
+  }
+  contactNumber: string
+  email: string
+  isActive: boolean
+  operatingHours: any
+  facilities: string[]
+}
+
+export default function ClinicsTab() {
   const router = useRouter()
-  const [clinics, setClinics] = useState<any[]>([])
+  const [clinics, setClinics] = useState<Clinic[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     city: '',
@@ -21,7 +39,7 @@ export default function ClinicsPage() {
     pages: 0,
   })
 
-  // PERFORMANCE: Debounce filters to prevent API spam on every keystroke
+  // Debounce filters to prevent API spam on every keystroke
   const debouncedFilters = useDebounce(filters, 300)
 
   const fetchClinics = useCallback(async () => {
@@ -84,6 +102,7 @@ export default function ClinicsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Search and Filters */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <input
           type="text"
@@ -112,13 +131,14 @@ export default function ClinicsPage() {
         </select>
 
         <button
-          onClick={() => router.push('/clinics/new')}
+          onClick={() => router.push('/network-management/clinics/new')}
           className="btn btn-primary whitespace-nowrap md:col-span-2"
         >
           Add Clinic
         </button>
       </div>
 
+      {/* Clinics Table */}
       {loading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
@@ -163,7 +183,7 @@ export default function ClinicsPage() {
                       <td>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => router.push(`/clinics/${clinic.clinicId}`)}
+                            onClick={() => router.push(`/network-management/clinics/${clinic.clinicId}`)}
                             className="btn btn-sm btn-ghost"
                           >
                             Edit
