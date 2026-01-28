@@ -7,6 +7,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +23,7 @@ import {
   BuildingStorefrontIcon,
   EyeIcon,
   HeartIcon,
+  DocumentArrowDownIcon,
 } from '../../src/components/icons/InlineSVGs';
 import apiClient from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
@@ -446,6 +448,35 @@ export default function BookingsPage() {
     );
   };
 
+  const handleViewInvoice = async (booking: DentalBooking | VisionBooking) => {
+    try {
+      console.log('[Bookings] Viewing invoice for:', booking.bookingId);
+
+      // Determine booking type based on bookingId prefix
+      const isVision = booking.bookingId.startsWith('VIS-BOOK');
+      const endpoint = isVision
+        ? `/vision-bookings/${booking.bookingId}/invoice`
+        : `/dental-bookings/${booking.bookingId}/invoice`;
+
+      // Get the full URL
+      const baseURL = apiClient.defaults.baseURL || '';
+      const invoiceUrl = `${baseURL}${endpoint}`;
+
+      console.log('[Bookings] Opening invoice URL:', invoiceUrl);
+
+      // Open the invoice URL in the browser
+      const canOpen = await Linking.canOpenURL(invoiceUrl);
+      if (canOpen) {
+        await Linking.openURL(invoiceUrl);
+      } else {
+        Alert.alert('Error', 'Cannot open invoice URL');
+      }
+    } catch (error: any) {
+      console.error('[Bookings] Error viewing invoice:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to view invoice');
+    }
+  };
+
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -794,21 +825,44 @@ export default function BookingsPage() {
           )}
 
           {/* Action Buttons */}
-          {canCancel && (
-            <TouchableOpacity
-              onPress={() => handleCancelDentalBooking(booking.bookingId, booking.serviceName)}
-              style={{
-                backgroundColor: '#FEF2F2',
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
-            </TouchableOpacity>
-          )}
+          <View style={{ gap: 8 }}>
+            {canCancel && (
+              <TouchableOpacity
+                onPress={() => handleCancelDentalBooking(booking.bookingId, booking.serviceName)}
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Invoice Button - Only show when booking is completed and invoice is generated */}
+            {booking.status === 'COMPLETED' && booking.invoiceGenerated && (
+              <TouchableOpacity
+                onPress={() => handleViewInvoice(booking)}
+                style={{
+                  backgroundColor: '#EFF6FF',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+                activeOpacity={0.7}
+              >
+                <DocumentArrowDownIcon width={16} height={16} color="#2563EB" />
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#2563EB' }}>View Invoice</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </LinearGradient>
     );
@@ -971,21 +1025,44 @@ export default function BookingsPage() {
           )}
 
           {/* Action Buttons */}
-          {canCancel && (
-            <TouchableOpacity
-              onPress={() => handleCancelVisionBooking(booking.bookingId, booking.serviceName)}
-              style={{
-                backgroundColor: '#FEF2F2',
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
-            </TouchableOpacity>
-          )}
+          <View style={{ gap: 8 }}>
+            {canCancel && (
+              <TouchableOpacity
+                onPress={() => handleCancelVisionBooking(booking.bookingId, booking.serviceName)}
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Invoice Button - Only show when booking is completed and invoice is generated */}
+            {booking.status === 'COMPLETED' && booking.invoiceGenerated && (
+              <TouchableOpacity
+                onPress={() => handleViewInvoice(booking)}
+                style={{
+                  backgroundColor: '#EFF6FF',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+                activeOpacity={0.7}
+              >
+                <DocumentArrowDownIcon width={16} height={16} color="#2563EB" />
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#2563EB' }}>View Invoice</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </LinearGradient>
     );
