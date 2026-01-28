@@ -68,14 +68,14 @@ export class DoctorsController {
 
   @Patch(':doctorId/activate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async activate(@Param('doctorId') doctorId: string) {
     return this.doctorsService.activate(doctorId);
   }
 
   @Patch(':doctorId/deactivate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async deactivate(@Param('doctorId') doctorId: string) {
     return this.doctorsService.deactivate(doctorId);
   }

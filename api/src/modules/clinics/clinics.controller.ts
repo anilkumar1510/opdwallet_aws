@@ -60,7 +60,7 @@ export class ClinicsController {
 
   @Patch(':clinicId/activate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Activate a clinic' })
   async activate(@Param('clinicId') clinicId: string) {
     return this.clinicsService.activate(clinicId);
@@ -68,7 +68,7 @@ export class ClinicsController {
 
   @Patch(':clinicId/deactivate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OPS_ADMIN, UserRole.OPS_USER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.OPS_ADMIN, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Deactivate a clinic' })
   async deactivate(@Param('clinicId') clinicId: string) {
     return this.clinicsService.deactivate(clinicId);

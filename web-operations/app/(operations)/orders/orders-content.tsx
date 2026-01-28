@@ -478,7 +478,10 @@ export default function OpsOrdersContent() {
                           {order.vendorName}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {order.items.length} test{order.items.length > 1 ? 's' : ''}
+                          {activeTab === 'diagnostic'
+                            ? `${order.diagnosticItems?.length || 0} test${(order.diagnosticItems?.length || 0) > 1 ? 's' : ''}`
+                            : `${order.items?.length || 0} test${(order.items?.length || 0) > 1 ? 's' : ''}`
+                          }
                         </td>
                       </>
                     )}

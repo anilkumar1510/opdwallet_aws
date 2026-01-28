@@ -122,15 +122,91 @@ function AdminLayoutContent({
       {!hideAdminNav && (
         <nav className="header-dark">
           <div className="page-container">
-            <div className="flex items-center h-16 gap-8">
-              {/* Logo */}
-              <div className="flex-shrink-0" style={{ width: '20rem' }}>
-                <Logo variant="white" size="full" href="/admin" />
+            {/* Large screens (lg+): Natural wrapping layout */}
+            <div className="hidden lg:block py-3">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '20rem 1fr auto',
+                gap: '0.75rem 1rem',
+                alignItems: 'center'
+              }}>
+                {/* Logo - Takes column 1, row 1 */}
+                <div style={{ gridColumn: '1', gridRow: '1' }}>
+                  <Logo variant="white" size="full" href="/admin" />
+                </div>
+
+                {/* Navigation items - Column 2, can span multiple rows */}
+                <div style={{
+                  gridColumn: '2',
+                  gridRow: 'span 2',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                  alignItems: 'center'
+                }}>
+                  {navigationItems.map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => router.push(item.path)}
+                      className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* User menu - Column 3, row 2 */}
+                <div style={{
+                  gridColumn: '3',
+                  gridRow: '2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  paddingRight: '1rem'
+                }}>
+                  <span className="text-sm text-white/90 font-medium">
+                    {user?.name?.fullName || user?.email}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="btn-ghost-dark text-sm"
+                    style={{
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Medium screens (md to lg): 3-row responsive layout */}
+            <div className="hidden md:flex lg:hidden flex-col gap-3 py-3">
+              {/* Row 1: Logo + First 5 nav items */}
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0" style={{ width: '20rem' }}>
+                  <Logo variant="white" size="full" href="/admin" />
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  {navigationItems.slice(0, 5).map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => router.push(item.path)}
+                      className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Desktop Navigation - First Row */}
-              <div className="hidden md:flex items-center gap-2 flex-1">
-                {navigationItems.slice(0, -1).map((item) => (
+              {/* Row 2: Remaining 6 nav items (including Network Management) */}
+              <div className="flex items-center gap-2" style={{ paddingLeft: 'calc(20rem + 1rem)' }}>
+                {navigationItems.slice(5).map((item) => (
                   <button
                     key={item.name}
                     onClick={() => router.push(item.path)}
@@ -141,13 +217,11 @@ function AdminLayoutContent({
                 ))}
               </div>
 
-              {/* User Menu */}
-              <div className="flex items-center gap-4 flex-shrink-0">
-                <div className="hidden sm:block">
-                  <span className="text-sm text-white/90 font-medium">
-                    {user?.name?.fullName || user?.email}
-                  </span>
-                </div>
+              {/* Row 3: Username + Logout (right-aligned) */}
+              <div className="flex items-center justify-end gap-4 pr-4">
+                <span className="text-sm text-white/90 font-medium">
+                  {user?.name?.fullName || user?.email}
+                </span>
                 <button
                   onClick={handleLogout}
                   className="btn-ghost-dark text-sm"
@@ -161,21 +235,6 @@ function AdminLayoutContent({
                 >
                   Logout
                 </button>
-              </div>
-            </div>
-
-            {/* Desktop Navigation - Second Row (Network Management) */}
-            <div className="hidden md:flex items-center pt-2 pb-2" style={{ paddingLeft: 'calc(20rem + 2rem)' }}>
-              <div className="flex items-center gap-2">
-                {navigationItems.slice(-1).map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => router.push(item.path)}
-                    className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
-                  >
-                    {item.name}
-                  </button>
-                ))}
               </div>
             </div>
 

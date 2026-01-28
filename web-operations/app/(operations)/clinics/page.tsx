@@ -4,9 +4,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks/useDebounce'
+import { usePermissions } from '@/hooks/usePermissions'
 
 export default function ClinicsPage() {
   const router = useRouter()
+  const { canActivateDeactivate } = usePermissions()
   const [clinics, setClinics] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -168,12 +170,14 @@ export default function ClinicsPage() {
                           >
                             Edit
                           </button>
-                          <button
-                            onClick={() => toggleClinicStatus(clinic.clinicId, clinic.isActive)}
-                            className="btn btn-sm btn-ghost"
-                          >
-                            {clinic.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
+                          {canActivateDeactivate && (
+                            <button
+                              onClick={() => toggleClinicStatus(clinic.clinicId, clinic.isActive)}
+                              className="btn btn-sm btn-ghost"
+                            >
+                              {clinic.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { useSpecialties } from '@/lib/providers/specialties-provider'
+import { usePermissions } from '@/hooks/usePermissions'
 
 export default function DoctorsPage() {
   const router = useRouter()
+  const { canActivateDeactivate } = usePermissions()
   const [doctors, setDoctors] = useState<any[]>([])
   const { specialties } = useSpecialties() // Use cached specialties
   const [loading, setLoading] = useState(true)
@@ -183,12 +185,14 @@ export default function DoctorsPage() {
                   >
                     Manage Schedules
                   </button>
-                  <button
-                    onClick={() => toggleDoctorStatus(doctor.doctorId, doctor.isActive)}
-                    className={doctor.isActive ? 'btn-secondary text-sm' : 'btn-primary text-sm'}
-                  >
-                    {doctor.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
+                  {canActivateDeactivate && (
+                    <button
+                      onClick={() => toggleDoctorStatus(doctor.doctorId, doctor.isActive)}
+                      className={doctor.isActive ? 'btn-secondary text-sm' : 'btn-primary text-sm'}
+                    >
+                      {doctor.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
