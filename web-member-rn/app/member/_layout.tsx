@@ -27,6 +27,7 @@ export default function MemberRoutesLayout() {
           <Stack.Screen name="helpline" />
           <Stack.Screen name="pharmacy" />
           <Stack.Screen name="bookings" />
+          <Stack.Screen name="wallet" />
           <Stack.Screen name="dental" />
           <Stack.Screen name="dental/clinics" />
           <Stack.Screen name="dental/select-patient" />
