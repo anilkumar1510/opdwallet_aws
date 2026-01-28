@@ -25,7 +25,7 @@ import {
   HeartIcon,
   DocumentArrowDownIcon,
 } from '../../src/components/icons/InlineSVGs';
-import apiClient from '../../src/lib/api/client';
+import apiClient, { tokenManager } from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
 
 // ============================================================================
@@ -450,7 +450,7 @@ export default function BookingsPage() {
 
   const handleViewInvoice = async (booking: DentalBooking | VisionBooking) => {
     try {
-      console.log('[Bookings] Viewing invoice for:', booking.bookingId);
+      console.log('[Bookings] Downloading invoice for:', booking.bookingId);
 
       // Determine booking type based on bookingId prefix
       const isVision = booking.bookingId.startsWith('VIS-BOOK');
@@ -458,22 +458,63 @@ export default function BookingsPage() {
         ? `/vision-bookings/${booking.bookingId}/invoice`
         : `/dental-bookings/${booking.bookingId}/invoice`;
 
-      // Get the full URL
+      console.log('[Bookings] Fetching invoice from:', endpoint);
+
+      // Get auth token
+      const token = await tokenManager.getToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication required. Please log in again.');
+        return;
+      }
+
+      // Get base URL from apiClient
       const baseURL = apiClient.defaults.baseURL || '';
-      const invoiceUrl = `${baseURL}${endpoint}`;
+      const fullUrl = `${baseURL}${endpoint}`;
 
-      console.log('[Bookings] Opening invoice URL:', invoiceUrl);
+      console.log('[Bookings] Downloading from URL:', fullUrl);
 
-      // Open the invoice URL in the browser
-      const canOpen = await Linking.canOpenURL(invoiceUrl);
-      if (canOpen) {
-        await Linking.openURL(invoiceUrl);
+      // Use fetch with Bearer token (following Next.js pattern but with token auth)
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('[Bookings] Invoice download failed:', errorData);
+        throw new Error(errorData?.message || 'Failed to download invoice');
+      }
+
+      if (Platform.OS === 'web') {
+        // For web, create a download link (same as Next.js)
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = booking.invoiceFileName || `invoice-${booking.bookingId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        console.log('[Bookings] Invoice downloaded successfully');
       } else {
-        Alert.alert('Error', 'Cannot open invoice URL');
+        // For native mobile, show message
+        Alert.alert(
+          'Download Invoice',
+          'Invoice download on mobile app is coming soon. Please use the web version to download invoices.',
+          [{ text: 'OK' }]
+        );
       }
     } catch (error: any) {
-      console.error('[Bookings] Error viewing invoice:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to view invoice');
+      console.error('[Bookings] Error downloading invoice:', error);
+
+      let errorMessage = 'Failed to download invoice';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Error', errorMessage);
     }
   };
 
