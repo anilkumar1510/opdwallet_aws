@@ -29,7 +29,11 @@ export default function MemberLoginPage() {
       if (response.ok) {
         router.push('/member')
       } else {
-        setError(data.message || 'Invalid credentials')
+        // Handle nested message object from API error responses
+        const errorMessage = typeof data.message === 'string'
+          ? data.message
+          : data.message?.message || data.error || 'Invalid credentials'
+        setError(errorMessage)
       }
     } catch (err) {
       setError('Login failed. Please try again.')

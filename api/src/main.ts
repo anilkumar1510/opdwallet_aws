@@ -134,6 +134,10 @@ async function bootstrap() {
         'http://localhost:3004',  // TPA portal
         'http://localhost:3005',  // Operations portal
         'http://localhost:3006',  // Finance portal
+        'http://localhost:8081',  // React Native (Expo) web
+        'http://localhost:8082',  // React Native (Expo) web alt port
+        'http://localhost:8083',  // React Native (Expo) web alt port
+        'http://localhost:19006', // Expo web default port
         'http://13.60.210.156',
         'https://13.60.210.156',
       ];

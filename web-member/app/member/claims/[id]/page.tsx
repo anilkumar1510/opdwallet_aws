@@ -90,7 +90,10 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
       if (response.ok) {
         setClaim(data.claim)
       } else {
-        setError(data.message || 'Failed to load claim details')
+        const errorMessage = typeof data.message === 'string'
+          ? data.message
+          : data.message?.message || data.error || 'Failed to load claim details'
+        setError(errorMessage)
       }
     } catch (err) {
       console.error('Error fetching claim:', err)
@@ -137,7 +140,10 @@ export default function ClaimDetailPage({ params }: { params: { id: string } }) 
         router.push('/member/claims') // Redirect to claims list
       } else {
         const data = await response.json()
-        setError(data.message || 'Failed to cancel claim')
+        const errorMessage = typeof data.message === 'string'
+          ? data.message
+          : data.message?.message || data.error || 'Failed to cancel claim'
+        setError(errorMessage)
       }
     } catch (err) {
       console.error('Error cancelling claim:', err)

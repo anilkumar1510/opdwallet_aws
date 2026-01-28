@@ -55,7 +55,13 @@ export class AuthController {
       path: '/', // Ensure cookie is accessible across all paths
     });
 
-    return result.user;
+    // Return user properties at top level (backward compatible with web)
+    // and also include user object and token (for mobile clients)
+    return {
+      ...result.user,  // Spread user properties for backward compatibility
+      user: result.user,  // Also include nested user object for new clients
+      token: result.token,  // Include token for mobile clients
+    };
   }
 
   @Post('logout')

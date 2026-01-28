@@ -50,6 +50,7 @@ services:
       PORT: 4000
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       DAILY_API_KEY: ${DAILY_API_KEY}
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,http://localhost:3006,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:19006,http://localhost,http://13.60.210.156,https://13.60.210.156
     depends_on:
       - mongo
     volumes:

@@ -21,12 +21,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
+        // First try to extract from Authorization header (for mobile apps)
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        // Then try to extract from cookie (for web apps)
         (request: Request) => {
           const cookieName = this.configService.get<string>('cookie.name') || 'opd_session';
-          console.log('[JwtStrategy] Extracting JWT from cookie:', cookieName);
-          console.log('[JwtStrategy] Available cookies:', request?.cookies ? Object.keys(request.cookies) : 'none');
           const token = request?.cookies?.[cookieName];
-          console.log('[JwtStrategy] Token found:', token ? 'yes (length: ' + token.length + ')' : 'no');
           return token;
         },
       ]),
