@@ -46,10 +46,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { name: 'Home', href: '/(member)', icon: HomeIcon },
-  { name: 'Claims', href: '/(member)/claims', icon: ClaimsIcon },
-  { name: 'Bookings', href: '/(member)/bookings', icon: BookingsIcon },
-  { name: 'Wallet', href: '/(member)/wallet', icon: WalletNavIcon },
+  { name: 'Home', href: '/', icon: HomeIcon },
+  { name: 'Claims', href: '/member/claims', icon: ClaimsIcon },
+  { name: 'Bookings', href: '/member/bookings', icon: BookingsIcon },
+  { name: 'Wallet', href: '/member/wallet', icon: WalletNavIcon },
 ];
 
 export default function BottomTabBar() {
@@ -58,8 +58,8 @@ export default function BottomTabBar() {
   const insets = useSafeAreaInsets();
 
   const isActive = (href: string) => {
-    if (href === '/(member)') {
-      return pathname === '/' || pathname === '/(member)' || pathname === '/index';
+    if (href === '/') {
+      return pathname === '/' || pathname === '/index';
     }
     return pathname.startsWith(href);
   };
@@ -89,7 +89,7 @@ export default function BottomTabBar() {
           <View style={styles.pillContent}>
             {/* Home Button - Always in blue gradient circle */}
             <TouchableOpacity
-              onPress={() => handleNavigation('/(member)')}
+              onPress={() => handleNavigation('/')}
               activeOpacity={0.8}
             >
               <LinearGradient
