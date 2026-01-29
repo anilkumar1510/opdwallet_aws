@@ -9,8 +9,10 @@
 
 export interface User {
   _id: string
+  id?: string
   userId: string
   fullName: string
+  name?: MemberName
   email: string
   phoneNumber: string
   role: 'MEMBER' | 'ADMIN' | 'SUPER_ADMIN' | 'DOCTOR' | 'TPA_ADMIN' | 'TPA_USER' | 'FINANCE_USER' | 'OPS'
@@ -142,7 +144,12 @@ export interface HealthBenefit {
   description?: string
 }
 
-export interface MemberProfileResponse extends MemberProfile {
+/**
+ * API response from /member/profile endpoint
+ * Contains user data nested under 'user' property
+ */
+export interface MemberProfileResponse {
+  user: MemberProfile
   dependents: DependentProfile[]
   familyMembers?: MemberProfile[]
   assignments: PolicyAssignment[]

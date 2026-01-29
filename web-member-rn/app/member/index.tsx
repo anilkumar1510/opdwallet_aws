@@ -11,12 +11,13 @@ import {
   NativeSyntheticEvent,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle, Ellipse, G, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
+import { fetchWalletBalance, WalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -491,31 +492,109 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activePolicyIndex, setActivePolicyIndex] = useState(0);
+  const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const policyScrollRef = useRef<ScrollView>(null);
+  const lastRefreshTime = useRef<number>(0);
+  const isRefreshing = useRef<boolean>(false);
 
-  // Fetch profile on mount
-  useEffect(() => {
-    if (!profile) {
-      refreshProfile();
+  // Fetch fresh wallet data from dedicated endpoint (like Next.js does)
+  const fetchWalletData = async (userId: string) => {
+    try {
+      console.log('[Dashboard] Fetching wallet balance for userId:', userId);
+      const walletBalance = await fetchWalletBalance(userId);
+      console.log('[Dashboard] Wallet balance received:', walletBalance);
+      setWalletData(walletBalance);
+    } catch (error) {
+      console.error('[Dashboard] Failed to fetch wallet balance:', error);
     }
-  }, []);
+  };
 
-  // User data
-  const firstName = profile?.name?.firstName || user?.name?.firstName || user?.fullName?.split(' ')[0] || 'Member';
-  const lastName = profile?.name?.lastName || user?.name?.lastName || '';
+  // Fetch wallet data when user ID becomes available or changes (profile switch)
+  useEffect(() => {
+    const userId = viewingUserId || profileData?.user?._id || profile?.user?._id;
+    if (userId) {
+      console.log('[Dashboard] Fetching wallet data for userId:', userId);
+      // Clear old wallet data and fetch fresh data
+      setWalletData(null);
+      fetchWalletData(userId);
+    }
+  }, [viewingUserId]);
+
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshData = async () => {
+        // Skip if already refreshing
+        if (isRefreshing.current) return;
+
+        const now = Date.now();
+        const timeSinceLastRefresh = now - lastRefreshTime.current;
+
+        // Only refresh if more than 5 seconds have passed since last refresh
+        // This prevents 429 rate limiting while still updating data after transactions
+        if (timeSinceLastRefresh > 5000 || lastRefreshTime.current === 0) {
+          isRefreshing.current = true;
+          lastRefreshTime.current = now;
+
+          try {
+            // Fetch wallet data directly from wallet endpoint (real-time balance)
+            const userId = viewingUserId || profileData?.user?._id || profile?.user?._id;
+            if (userId) {
+              await fetchWalletData(userId);
+            }
+
+            // Also refresh profile for other data
+            await refreshProfile();
+          } catch (error) {
+            console.log('[Dashboard] Failed to refresh data:', error);
+          } finally {
+            isRefreshing.current = false;
+          }
+        }
+      };
+
+      refreshData();
+    }, [refreshProfile, viewingUserId, profileData, profile])
+  );
+
+  // User data - use profile.user from MemberProfileResponse
+  const firstName = profile?.user?.name?.firstName || user?.name?.firstName || user?.fullName?.split(' ')[0] || 'Member';
+  const lastName = profile?.user?.name?.lastName || user?.name?.lastName || '';
   const fullName = `${firstName} ${lastName}`.trim();
   const initials = `${firstName[0] || ''}${lastName[0] || 'M'}`.toUpperCase();
 
-  // Wallet data
-  const totalBalance = profile?.wallet?.totalBalance?.current || 50000;
-  const allocatedBalance = profile?.wallet?.totalBalance?.allocated || 100000;
+  // Wallet data - use fresh data from wallet endpoint, fallback to profile
+  const totalBalance = walletData?.totalBalance?.current ?? profile?.wallet?.totalBalance?.current ?? 0;
+  const allocatedBalance = walletData?.totalBalance?.allocated ?? profile?.wallet?.totalBalance?.allocated ?? 0;
 
-  // Categories from profile or mock data
-  const walletCategories = profile?.walletCategories || HEALTH_BENEFITS;
+  // Categories from wallet endpoint (real-time) or profile or mock data
+  // Map wallet categories to the format expected by the UI
+  const walletCategories = React.useMemo(() => {
+    if (walletData?.categories && walletData.categories.length > 0) {
+      return walletData.categories.map((cat: WalletCategory) => ({
+        id: cat.categoryCode,
+        categoryCode: cat.categoryCode,
+        name: cat.name,
+        available: cat.available,
+        total: cat.total,
+      }));
+    }
+    return profile?.walletCategories || HEALTH_BENEFITS;
+  }, [walletData, profile?.walletCategories]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await refreshProfile();
+    try {
+      // Fetch wallet data from dedicated endpoint for real-time balance
+      const userId = viewingUserId || profileData?.user?._id || profile?.user?._id;
+      if (userId) {
+        await fetchWalletData(userId);
+      }
+      // Also refresh profile for other data
+      await refreshProfile();
+    } catch (error) {
+      console.error('[Dashboard] Refresh failed:', error);
+    }
     setRefreshing(false);
   };
 
