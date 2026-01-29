@@ -406,6 +406,10 @@ export class MemberClaimsService {
             // Fetch plan config
             const planConfig = await this.planConfigService.getConfig(policyId.toString());
 
+            // ✅ Save policyId to claim document
+            claim.policyId = policyId;
+            console.log('✅ [CLAIMS SERVICE] Assigned policyId to claim:', policyId);
+
             if (planConfig) {
               console.log('📄 [CLAIMS SERVICE] Plan config structure:', JSON.stringify({
                 hasWallet: !!planConfig.wallet,

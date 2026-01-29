@@ -11,6 +11,8 @@ import { RejectClaimDto } from './dto/reject-claim.dto';
 import { RequestDocumentsDto } from './dto/request-documents.dto';
 import { UpdateClaimStatusDto } from './dto/update-status.dto';
 import { WalletService } from '../wallet/wallet.service';
+import { Policy, PolicyDocument } from '../policies/schemas/policy.schema';
+import { PlanConfigService } from '../plan-config/plan-config.service';
 
 // Category code mapping for wallet refunds
 // Note: CONSULTATION maps to IN_CLINIC by default (CAT001)
@@ -26,7 +28,9 @@ export class TpaService {
   constructor(
     @InjectModel(MemberClaim.name) private memberClaimModel: Model<MemberClaimDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Policy.name) private policyModel: Model<PolicyDocument>,
     private readonly walletService: WalletService,
+    private readonly planConfigService: PlanConfigService,
   ) {}
 
   // Helper method to add status history
@@ -191,6 +195,7 @@ export class TpaService {
       .populate('userId', 'name email phone memberId')
       .populate('assignedTo', 'name email')
       .populate('assignedBy', 'name email')
+      .populate('policyId')
       .exec();
 
     if (!claim) {
@@ -204,7 +209,20 @@ export class TpaService {
       }
     }
 
-    return claim;
+    // Fetch policy details if policyId exists
+    let policyDetails = null;
+    if (claim.policyId) {
+      // Handle both ObjectId and populated Policy document
+      const policyIdString = typeof claim.policyId === 'object' && claim.policyId._id
+        ? claim.policyId._id.toString()
+        : claim.policyId.toString();
+      policyDetails = await this.getPolicyDetailsForClaim(policyIdString);
+    }
+
+    return {
+      claim,
+      policyDetails,
+    };
   }
 
   /**
@@ -878,5 +896,85 @@ export class TpaService {
     };
 
     return statusDescriptions[status] || `Status changed to ${status}`;
+  }
+
+  /**
+   * Get formatted policy and plan configuration details for a claim
+   */
+  private async getPolicyDetailsForClaim(policyId: string) {
+    try {
+      // Fetch policy document
+      const policy = await this.policyModel.findById(policyId).lean();
+      if (!policy) {
+        console.warn('[TPA] Policy not found:', policyId);
+        return null;
+      }
+
+      // Fetch current plan config
+      const planConfig = await this.planConfigService.getConfig(policyId);
+
+      // Format wallet configuration
+      const walletConfig = planConfig?.wallet ? {
+        allocationType: planConfig.wallet.allocationType || 'INDIVIDUAL',
+        totalAnnualAmount: planConfig.wallet.totalAnnualAmount || 0,
+        perClaimLimit: planConfig.wallet.perClaimLimit,
+        copay: planConfig.wallet.copay || null,
+        partialPaymentEnabled: planConfig.wallet.partialPaymentEnabled || false,
+      } : null;
+
+      // Format benefits with category names
+      const benefits = [];
+      const categoryMapping = {
+        'CAT001': 'In-Clinic Consultation',
+        'CAT002': 'Pharmacy',
+        'CAT003': 'Diagnostic Services',
+        'CAT004': 'Laboratory Services',
+        'CAT005': 'Online Consultation',
+        'CAT006': 'Dental Services',
+        'CAT007': 'Vision Care',
+        'CAT008': 'Wellness Programs',
+      };
+
+      if (planConfig?.benefits) {
+        for (const [catId, catName] of Object.entries(categoryMapping)) {
+          const benefit = planConfig.benefits[catId as keyof typeof planConfig.benefits];
+          if (benefit) {
+            benefits.push({
+              categoryId: catId,
+              categoryName: catName,
+              enabled: benefit.enabled || false,
+              claimEnabled: benefit.claimEnabled || false,
+              vasEnabled: benefit.vasEnabled || false,
+              annualLimit: benefit.annualLimit || null,
+              perClaimLimit: benefit.perClaimLimit || null,
+              visitLimit: (benefit as any).visitLimit || null,
+            });
+          }
+        }
+      }
+
+      return {
+        policy: {
+          policyNumber: policy.policyNumber,
+          name: policy.name,
+          description: policy.description,
+          corporateName: policy.corporateName,
+          status: policy.status,
+          effectiveFrom: policy.effectiveFrom,
+          effectiveTo: policy.effectiveTo,
+        },
+        planConfig: planConfig ? {
+          version: planConfig.version,
+          status: planConfig.status,
+          walletConfig,
+          benefits,
+          policyDescription: planConfig.policyDescription || { inclusions: [], exclusions: [] },
+          coveredRelationships: planConfig.coveredRelationships || ['SELF'],
+        } : null,
+      };
+    } catch (error) {
+      console.error('[TPA] Error fetching policy details:', error);
+      return null;
+    }
   }
 }

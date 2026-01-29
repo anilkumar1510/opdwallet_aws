@@ -96,10 +96,11 @@ export class TpaController {
   @ApiResponse({ status: 404, description: 'Claim not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - TPA user can only view assigned claims' })
   async getClaimById(@Param('claimId') claimId: string, @Request() req: any) {
-    const claim = await this.tpaService.getClaimById(claimId, req.user.userId, req.user.role);
+    const result = await this.tpaService.getClaimById(claimId, req.user.userId, req.user.role);
     return {
       message: 'Claim retrieved successfully',
-      claim,
+      claim: result.claim,
+      policyDetails: result.policyDetails,
     };
   }
 

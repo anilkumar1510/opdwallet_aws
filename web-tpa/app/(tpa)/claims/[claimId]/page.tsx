@@ -89,6 +89,43 @@ interface Claim {
   rejectionReason?: string
   submittedAt: string
   createdAt: string
+  policyDetails?: {
+    policy: {
+      policyNumber: string
+      name: string
+      description?: string
+      corporateName?: string
+      status: string
+      effectiveFrom: string
+      effectiveTo?: string
+    }
+    planConfig?: {
+      version: number
+      status: string
+      walletConfig?: {
+        allocationType: string
+        totalAnnualAmount: number
+        perClaimLimit?: number
+        copay?: { mode: string; value: number }
+        partialPaymentEnabled: boolean
+      }
+      benefits: Array<{
+        categoryId: string
+        categoryName: string
+        enabled: boolean
+        claimEnabled: boolean
+        vasEnabled: boolean
+        annualLimit?: number
+        perClaimLimit?: number
+        visitLimit?: number
+      }>
+      policyDescription: {
+        inclusions: Array<{ headline: string; description: string }>
+        exclusions: Array<{ headline: string; description: string }>
+      }
+      coveredRelationships: string[]
+    }
+  }
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -128,7 +165,10 @@ export default function ClaimDetailPage() {
       const response = await apiFetch(`/api/tpa/claims/${claimId}`)
       if (response.ok) {
         const data = await response.json()
-        setClaim(data.claim)
+        setClaim({
+          ...data.claim,
+          policyDetails: data.policyDetails
+        })
       } else {
         console.error('Failed to fetch claim')
       }
@@ -157,6 +197,7 @@ export default function ClaimDetailPage() {
   }, [claimId, fetchClaim])
 
   const formatStatus = (status: string) => {
+    if (!status) return ''
     return status
       .split('_')
       .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
@@ -164,6 +205,7 @@ export default function ClaimDetailPage() {
   }
 
   const formatDate = (date: string) => {
+    if (!date) return 'N/A'
     return new Date(date).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -374,6 +416,190 @@ export default function ClaimDetailPage() {
             </div>
           </div>
 
+          {/* Policy Details Section */}
+          {claim.policyDetails && (
+            <div className="bg-white rounded-lg border border-gray-200">
+              <div className="p-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Policy Details</h2>
+              </div>
+              <div className="p-6 space-y-6">
+                {/* Basic Policy Info - Grid Layout */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Policy Number</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">
+                      {claim.policyDetails.policy.policyNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Policy Name</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">
+                      {claim.policyDetails.policy.name}
+                    </p>
+                  </div>
+                  {claim.policyDetails.policy.corporateName && (
+                    <div>
+                      <p className="text-sm text-gray-500">Corporate Name</p>
+                      <p className="text-sm font-medium text-gray-900 mt-1">
+                        {claim.policyDetails.policy.corporateName}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500">Policy Status</p>
+                    <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded">
+                      {claim.policyDetails.policy.status}
+                    </span>
+                  </div>
+                </div>
+
+                {claim.policyDetails.planConfig && (
+                  <>
+                    {/* Wallet Configuration - Highlighted Box */}
+                    {claim.policyDetails.planConfig.walletConfig && (
+                      <div className="pt-4 border-t border-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3">Wallet Configuration</h3>
+                        <div className="grid grid-cols-2 gap-3 bg-blue-50 p-4 rounded-lg">
+                          <div>
+                            <p className="text-xs text-gray-600">Allocation Type</p>
+                            <p className="text-sm font-medium text-gray-900 mt-1">
+                              {claim.policyDetails.planConfig.walletConfig.allocationType}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600">Total Annual Amount</p>
+                            <p className="text-sm font-bold text-green-700 mt-1">
+                              ₹{claim.policyDetails.planConfig.walletConfig.totalAnnualAmount.toLocaleString()}
+                            </p>
+                          </div>
+                          {claim.policyDetails.planConfig.walletConfig.copay && (
+                            <div>
+                              <p className="text-xs text-gray-600">Copay</p>
+                              <p className="text-sm font-medium text-gray-900 mt-1">
+                                {claim.policyDetails.planConfig.walletConfig.copay.mode === 'PERCENT'
+                                  ? `${claim.policyDetails.planConfig.walletConfig.copay.value}%`
+                                  : `₹${claim.policyDetails.planConfig.walletConfig.copay.value}`}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Benefits Grid - Color-coded Cards */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Benefit Categories</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {claim.policyDetails.planConfig.benefits
+                          .filter(b => b.enabled)
+                          .map((benefit) => (
+                            <div
+                              key={benefit.categoryId}
+                              className={`p-3 rounded-lg border ${
+                                benefit.claimEnabled
+                                  ? 'bg-green-50 border-green-200'
+                                  : 'bg-gray-50 border-gray-200'
+                              }`}
+                            >
+                              <p className="text-sm font-medium text-gray-900">
+                                {benefit.categoryName}
+                              </p>
+                              <div className="flex gap-2 mt-1">
+                                <span className={`text-xs px-2 py-0.5 rounded ${
+                                  benefit.claimEnabled
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {benefit.claimEnabled ? 'Claim Enabled' : 'Wallet Only'}
+                                </span>
+                              </div>
+                              <div className="mt-2 space-y-1">
+                                {benefit.annualLimit && (
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-600">Annual Limit:</span>
+                                    <span className="font-medium">₹{benefit.annualLimit.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {benefit.perClaimLimit && (
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-600">Per Claim Limit:</span>
+                                    <span className="font-medium">₹{benefit.perClaimLimit.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {benefit.visitLimit && (
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-gray-600">Visit Limit:</span>
+                                    <span className="font-medium">{benefit.visitLimit} visits/year</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Inclusions/Exclusions - Side-by-side */}
+                    {(claim.policyDetails.planConfig.policyDescription.inclusions.length > 0 ||
+                      claim.policyDetails.planConfig.policyDescription.exclusions.length > 0) && (
+                      <div className="pt-4 border-t border-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3">Coverage Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Inclusions Column */}
+                          {claim.policyDetails.planConfig.policyDescription.inclusions.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-green-700 mb-2">✓ INCLUSIONS</h4>
+                              <div className="space-y-2">
+                                {claim.policyDetails.planConfig.policyDescription.inclusions.map((item, idx) => (
+                                  <div key={idx} className="bg-green-50 p-3 rounded-lg">
+                                    <p className="text-xs font-medium text-gray-900">{item.headline}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Exclusions Column */}
+                          {claim.policyDetails.planConfig.policyDescription.exclusions.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-red-700 mb-2">✗ EXCLUSIONS</h4>
+                              <div className="space-y-2">
+                                {claim.policyDetails.planConfig.policyDescription.exclusions.map((item, idx) => (
+                                  <div key={idx} className="bg-red-50 p-3 rounded-lg">
+                                    <p className="text-xs font-medium text-gray-900">{item.headline}</p>
+                                    <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* No Plan Config Warning */}
+                {!claim.policyDetails.planConfig && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ No active plan configuration found for this policy.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Legacy Claims: No Policy Data */}
+          {!claim.policyDetails && (
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+              <p className="text-sm text-gray-600 text-center">
+                ℹ️ Policy information not available (legacy claim submitted before policy tracking was implemented)
+              </p>
+            </div>
+          )}
+
           {/* Documents */}
           <div className="bg-white rounded-lg border border-gray-200">
             <div className="p-4 border-b border-gray-200">
@@ -392,33 +618,21 @@ export default function ClaimDetailPage() {
                         setShowDocPreview(true)
                       }}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-3 flex-1">
-                          <div className="p-2 bg-blue-50 rounded-lg">
-                            <DocumentTextIcon className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {doc.type || (doc as any).documentType || 'Document'}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {(doc as any).fileName || 'Unknown'}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {formatDate(doc.uploadedAt)}
-                            </p>
-                          </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                          <DocumentTextIcon className="h-5 w-5 text-blue-600" />
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedDocument(doc)
-                            setShowDocPreview(true)
-                          }}
-                          className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                        >
-                          Preview
-                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {doc.type || (doc as any).documentType || 'Document'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {(doc as any).fileName || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {formatDate(doc.uploadedAt)}
+                          </p>
+                        </div>
                       </div>
                     </button>
                   ))}
