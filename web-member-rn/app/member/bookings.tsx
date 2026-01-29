@@ -449,6 +449,59 @@ export default function BookingsPage() {
     );
   };
 
+  const handleCancelAppointment = async (appointmentId: string, doctorName: string) => {
+    console.log('[Bookings] handleCancelAppointment called:', { appointmentId, doctorName });
+
+    if (!appointmentId) {
+      console.error('[Bookings] No appointmentId provided!');
+      Alert.alert('Error', 'Invalid appointment ID');
+      return;
+    }
+
+    // For web, use window.confirm as Alert may not work properly
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to cancel your appointment with ${doctorName}? Your wallet will be refunded.`);
+      if (!confirmed) return;
+
+      try {
+        console.log('[Bookings] Cancelling appointment (web):', appointmentId);
+        await apiClient.patch(`/appointments/${appointmentId}/user-cancel`);
+        window.alert('Appointment cancelled successfully. Your wallet has been refunded.');
+        fetchAppointments(); // Refresh appointments
+      } catch (error: any) {
+        console.error('[Bookings] Error cancelling appointment:', error);
+        console.error('[Bookings] Error response:', error.response?.data);
+        window.alert(error.response?.data?.message || 'Failed to cancel appointment');
+      }
+      return;
+    }
+
+    // For native platforms, use Alert
+    Alert.alert(
+      'Cancel Appointment',
+      `Are you sure you want to cancel your appointment with ${doctorName}? Your wallet will be refunded.`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('[Bookings] Cancelling appointment:', appointmentId);
+              await apiClient.patch(`/appointments/${appointmentId}/user-cancel`);
+              Alert.alert('Success', 'Appointment cancelled successfully. Your wallet has been refunded.');
+              fetchAppointments(); // Refresh appointments
+            } catch (error: any) {
+              console.error('[Bookings] Error cancelling appointment:', error);
+              console.error('[Bookings] Error response:', error.response?.data);
+              Alert.alert('Error', error.response?.data?.message || 'Failed to cancel appointment');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleViewInvoice = async (booking: DentalBooking | VisionBooking) => {
     try {
       console.log('[Bookings] Downloading invoice for:', booking.bookingId);
@@ -1287,9 +1340,7 @@ export default function BookingsPage() {
 
             {canCancel && (
               <TouchableOpacity
-                onPress={() => {
-                  Alert.alert('Cancel Appointment', 'Appointment cancellation will be implemented');
-                }}
+                onPress={() => handleCancelAppointment(appointment.appointmentId, appointment.doctorName)}
                 style={{
                   backgroundColor: '#FEF2F2',
                   paddingVertical: 8,

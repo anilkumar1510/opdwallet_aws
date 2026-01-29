@@ -25,24 +25,29 @@ import apiClient from '../../../src/lib/api/client';
 // TYPES
 // ============================================================================
 
-type ServiceType = 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC' | 'APPOINTMENT';
+type ServiceType = 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC' | 'APPOINTMENT' | 'IN_CLINIC_APPOINTMENT';
 type PaymentMethod = 'WALLET_ONLY' | 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT';
 type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 interface PaymentMetadata {
   clinicId: string;
   clinicName?: string;
-  serviceCode: string;
-  serviceName: string;
-  slotId: string;
-  appointmentDate: string;
-  appointmentTime: string;
+  clinicAddress?: string;
+  serviceCode?: string;
+  serviceName?: string;
+  slotId?: string;
+  appointmentDate?: string;
+  appointmentTime?: string;
   consultationFee?: number;
   walletCoverage?: number;
   copayAmount?: number;
   excessAmount?: number;
   serviceTransactionLimit?: number;
   insurancePayment?: number;
+  // IN_CLINIC_APPOINTMENT specific fields
+  doctorId?: string;
+  doctorName?: string;
+  specialty?: string;
 }
 
 interface PendingBookingData {
@@ -51,11 +56,16 @@ interface PendingBookingData {
     bookingId?: string; // For VISION - booking already exists
     clinicId: string;
     clinicName: string;
-    serviceCode: string;
-    serviceName: string;
+    clinicAddress?: string; // For IN_CLINIC_APPOINTMENT
+    serviceCode?: string;
+    serviceName?: string;
     slotId: string;
     date: string;
     time: string;
+    // IN_CLINIC_APPOINTMENT specific fields
+    doctorId?: string;
+    doctorName?: string;
+    specialty?: string;
   };
   patientId: string;
   patientName: string;
@@ -341,6 +351,33 @@ export default function PaymentGatewayPage() {
         createdBookingId = visionBookingId;
         // Note: complete-wallet-payment will be called AFTER mark-paid below
       }
+      // Handle IN_CLINIC_APPOINTMENT bookings - need to create appointment
+      else if (bookingData.serviceType === 'IN_CLINIC_APPOINTMENT') {
+        console.log('[PaymentGateway] Creating IN_CLINIC_APPOINTMENT...');
+
+        const appointmentPayload = {
+          userId: bookingData.userId,
+          patientId: bookingData.patientId,
+          patientName: bookingData.patientName,
+          doctorId: bookingData.serviceDetails.doctorId,
+          doctorName: bookingData.serviceDetails.doctorName,
+          specialty: bookingData.serviceDetails.specialty,
+          slotId: bookingData.serviceDetails.slotId,
+          clinicId: bookingData.serviceDetails.clinicId,
+          clinicName: bookingData.serviceDetails.clinicName,
+          clinicAddress: bookingData.serviceDetails.clinicAddress,
+          appointmentType: 'IN_CLINIC',
+          appointmentDate: bookingData.serviceDetails.date,
+          timeSlot: bookingData.serviceDetails.time,
+          consultationFee: bookingData.consultationFee,
+        };
+
+        console.log('[PaymentGateway] In-clinic appointment payload:', appointmentPayload);
+
+        const appointmentResponse = await apiClient.post('/appointments', appointmentPayload);
+        createdBookingId = appointmentResponse.data?.appointmentId || appointmentResponse.data?._id || '';
+        console.log('[PaymentGateway] In-clinic appointment created:', createdBookingId);
+      }
       // Handle other service types (LAB, DIAGNOSTIC, AHC, APPOINTMENT)
       else {
         console.warn('[PaymentGateway] Service type not yet supported for booking creation:', bookingData.serviceType);
@@ -384,18 +421,24 @@ export default function PaymentGatewayPage() {
       setProcessing(false);
       setSuccess(true);
 
-      // Step 7: Redirect to bookings page after delay
+      // Step 7: Redirect to appropriate page after delay
       setTimeout(() => {
-        const tabMap: Record<ServiceType, string> = {
-          DENTAL: 'dental',
-          VISION: 'vision',
-          LAB: 'lab',
-          DIAGNOSTIC: 'diagnostic',
-          AHC: 'ahc',
-          APPOINTMENT: 'doctors',
-        };
-        const tab = tabMap[bookingData.serviceType] || 'dental';
-        router.replace(`/member/bookings?tab=${tab}` as any);
+        // For IN_CLINIC_APPOINTMENT, redirect to in-clinic-consultation page
+        if (bookingData.serviceType === 'IN_CLINIC_APPOINTMENT') {
+          router.replace('/member/in-clinic-consultation' as any);
+        } else {
+          const tabMap: Record<ServiceType, string> = {
+            DENTAL: 'dental',
+            VISION: 'vision',
+            LAB: 'lab',
+            DIAGNOSTIC: 'diagnostic',
+            AHC: 'ahc',
+            APPOINTMENT: 'doctors',
+            IN_CLINIC_APPOINTMENT: 'doctors',
+          };
+          const tab = tabMap[bookingData.serviceType] || 'dental';
+          router.replace(`/member/bookings?tab=${tab}` as any);
+        }
       }, 2000);
     } catch (err: any) {
       console.error('[PaymentGateway] Error processing payment:', err);
@@ -669,7 +712,7 @@ export default function PaymentGatewayPage() {
     return null;
   }
 
-  const metadata = payment.metadata || {};
+  const metadata: PaymentMetadata = payment.metadata || ({} as PaymentMetadata);
   const { amount } = payment;
 
   return (
@@ -793,10 +836,14 @@ export default function PaymentGatewayPage() {
               <IconCircle icon={BanknotesIcon} size="md" />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>
-                  {metadata.serviceName || payment.description || 'Service'}
+                  {payment.serviceType === 'IN_CLINIC_APPOINTMENT'
+                    ? metadata.doctorName || payment.description || 'Doctor Consultation'
+                    : metadata.serviceName || payment.description || 'Service'}
                 </Text>
                 <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                  {payment.serviceType} Service
+                  {payment.serviceType === 'IN_CLINIC_APPOINTMENT'
+                    ? metadata.specialty || 'In-Clinic Consultation'
+                    : `${payment.serviceType} Service`}
                 </Text>
               </View>
             </View>
@@ -833,8 +880,19 @@ export default function PaymentGatewayPage() {
                 </View>
               )}
 
-              {/* Clinic */}
-              {metadata.clinicId && (
+              {/* Clinic Name (for IN_CLINIC_APPOINTMENT) */}
+              {metadata.clinicName && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: metadata.clinicId ? 12 : 0 }}>
+                  <BuildingOfficeIcon width={16} height={16} color="#6B7280" />
+                  <Text style={{ fontSize: 14, color: '#6B7280', flex: 1, marginLeft: 8 }}>Clinic:</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }} numberOfLines={1}>
+                    {metadata.clinicName}
+                  </Text>
+                </View>
+              )}
+
+              {/* Clinic ID (if no name available) */}
+              {!metadata.clinicName && metadata.clinicId && (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <BuildingOfficeIcon width={16} height={16} color="#6B7280" />
                   <Text style={{ fontSize: 14, color: '#6B7280', flex: 1, marginLeft: 8 }}>Clinic ID:</Text>

@@ -472,7 +472,7 @@ const MORE_SERVICES = [
 
 // Mock health benefits (from API in production)
 const HEALTH_BENEFITS = [
-  { id: 'CAT001', name: 'Doctor Consult', available: 15000, total: 20000, href: '/member/appointments' },
+  { id: 'CAT001', name: 'Doctor Consult', available: 15000, total: 20000, href: '/member/in-clinic-consultation' },
   { id: 'CAT005', name: 'Online Consult', available: 5000, total: 8000, href: '/member/online-consult' },
   { id: 'CAT004', name: 'Lab Tests', available: 8000, total: 10000, href: '/member/lab-tests' },
   { id: 'CAT003', name: 'Diagnostics', available: 12000, total: 15000, href: '/member/diagnostics' },
