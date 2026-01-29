@@ -16,13 +16,14 @@ export default function MemberRoutesLayout() {
   }
 
   if (!isAuthenticated) {
-    return <Redirect href="/(auth)" />;
+    return <Redirect href="/login" />;
   }
 
   return (
     <FamilyProvider>
       <View style={{ flex: 1 }}>
         <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
           <Stack.Screen name="policy-details/[policyId]" />
           <Stack.Screen name="helpline" />
           <Stack.Screen name="pharmacy" />

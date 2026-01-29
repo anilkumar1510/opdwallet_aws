@@ -168,7 +168,7 @@ export default function DashboardScreen() {
   const handleLogout = async () => {
     setShowDropdown(false);
     await logout();
-    router.replace('/(auth)');
+    router.replace('/login');
   };
 
   // User Greeting Component

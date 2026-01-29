@@ -46,7 +46,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { name: 'Home', href: '/', icon: HomeIcon },
+  { name: 'Home', href: '/member', icon: HomeIcon },
   { name: 'Claims', href: '/member/claims', icon: ClaimsIcon },
   { name: 'Bookings', href: '/member/bookings', icon: BookingsIcon },
   { name: 'Wallet', href: '/member/wallet', icon: WalletNavIcon },
@@ -58,8 +58,8 @@ export default function BottomTabBar() {
   const insets = useSafeAreaInsets();
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/' || pathname === '/index';
+    if (href === '/member') {
+      return pathname === '/member' || pathname === '/member/index';
     }
     return pathname.startsWith(href);
   };
@@ -89,7 +89,7 @@ export default function BottomTabBar() {
           <View style={styles.pillContent}>
             {/* Home Button - Always in blue gradient circle */}
             <TouchableOpacity
-              onPress={() => handleNavigation('/')}
+              onPress={() => handleNavigation('/member')}
               activeOpacity={0.8}
             >
               <LinearGradient

@@ -10,11 +10,11 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
-import { useAuth } from '../../src/contexts/AuthContext';
+import { useAuth } from '../src/contexts/AuthContext';
 
 // Eye icons for password toggle
 function EyeIcon() {
@@ -44,12 +44,26 @@ function ShieldIcon() {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#1E4A8D" />
+      </View>
+    );
+  }
+
+  // Redirect to member dashboard if already authenticated
+  if (isAuthenticated) {
+    return <Redirect href="/member" />;
+  }
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -63,7 +77,7 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        router.replace('/(member)');
+        router.replace('/member');
       } else {
         setError(result.error || 'Invalid credentials');
       }
@@ -88,7 +102,7 @@ export default function LoginScreen() {
           {/* Blue Header Strip with Logo */}
           <View className="py-3 px-4" style={{ backgroundColor: '#1E4A8D' }}>
             <Image
-              source={require('../../assets/images/habit-logo-white.png')}
+              source={require('../assets/images/habit-logo-white.png')}
               className="h-10 w-auto"
               resizeMode="contain"
               style={{ height: 40 }}
@@ -105,7 +119,7 @@ export default function LoginScreen() {
             <View className="items-center">
               {/* Member Illustration */}
               <Image
-                source={require('../../assets/images/Member.png')}
+                source={require('../assets/images/Member.png')}
                 className="w-32 h-32 mb-3"
                 resizeMode="contain"
                 style={{ width: 128, height: 128 }}

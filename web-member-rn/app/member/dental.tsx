@@ -122,7 +122,7 @@ export default function DentalPage() {
   // Handle header back button
   const handleHeaderBack = useCallback(() => {
     console.log('[Dental] Header back button pressed');
-    router.push('/(member)');
+    router.push('/member');
   }, [router]);
 
   // Handle search input change

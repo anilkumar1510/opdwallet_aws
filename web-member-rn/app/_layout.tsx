@@ -23,8 +23,9 @@ export default function RootLayout() {
           <AuthProvider>
             <StatusBar style="light" />
             <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(member)" />
+              <Stack.Screen name="index" />
+              <Stack.Screen name="login" />
+              <Stack.Screen name="member" />
             </Stack>
           </AuthProvider>
         </QueryClientProvider>
