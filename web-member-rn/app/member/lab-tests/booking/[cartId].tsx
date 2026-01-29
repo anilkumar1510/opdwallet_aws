@@ -12,6 +12,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
   UserIcon,
@@ -77,6 +78,20 @@ interface TimeSlot {
   maxBookings: number;
   currentBookings: number;
   isActive: boolean;
+}
+
+interface PaymentBreakdown {
+  billAmount: number;
+  serviceTransactionLimit?: number;
+  insuranceEligibleAmount: number;
+  insurancePayment: number;
+  copayPercentage?: number;
+  copayAmount: number;
+  excessAmount: number;
+  walletDebitAmount: number;
+  totalMemberPayment: number;
+  categoryCode?: string;
+  categoryBalance?: number;
 }
 
 // ============================================================================
@@ -317,24 +332,99 @@ export default function LabBookingPage() {
       return;
     }
 
+    const breakdown = validationResult?.breakdown as PaymentBreakdown | undefined;
+    const totalMemberPayment = breakdown?.totalMemberPayment || 0;
+    const isFullyCovered = totalMemberPayment === 0;
+
     setProcessing(true);
 
     try {
-      console.log('[LabBooking] Creating order...');
-      const bookingData = {
-        cartId: cart.cartId,
-        vendorId: selectedVendor.vendorId,
-        slotId: selectedSlot.slotId,
-        collectionType,
-        appointmentDate: selectedDate,
-        timeSlot: selectedSlot.timeSlot,
+      // CASE 1: Fully covered by wallet/insurance - process directly
+      if (isFullyCovered) {
+        console.log('[LabBooking] Fully covered by wallet - creating order directly...');
+        const bookingData = {
+          cartId: cart.cartId,
+          vendorId: selectedVendor.vendorId,
+          slotId: selectedSlot.slotId,
+          collectionType,
+          appointmentDate: selectedDate,
+          timeSlot: selectedSlot.timeSlot,
+        };
+
+        const response = await apiClient.post('/member/lab/orders', bookingData);
+        console.log('[LabBooking] Order created:', response.data);
+
+        setOrderId(response.data.data.orderId);
+        setBookingSuccess(true);
+        return;
+      }
+
+      // CASE 2: User needs to pay copay/excess - redirect to payment gateway
+      console.log('[LabBooking] User needs to pay:', totalMemberPayment);
+
+      // Create pending payment via API
+      const paymentData = {
+        amount: totalMemberPayment,
+        paymentType: (breakdown?.copayAmount || 0) > 0 ? 'COPAY' : 'OUT_OF_POCKET',
+        serviceType: 'LAB',
+        serviceReferenceId: cart.cartId,
+        description: `Lab Tests: ${cart.items.map(i => i.serviceName).join(', ')} from ${selectedVendor.name}`,
+        userId: userId,
+        patientId: cart.patientId,
+        metadata: {
+          cartId: cart.cartId,
+          vendorId: selectedVendor.vendorId,
+          vendorName: selectedVendor.name,
+          slotId: selectedSlot.slotId,
+          appointmentDate: selectedDate,
+          appointmentTime: selectedSlot.timeSlot,
+          collectionType,
+          consultationFee: getTotalAmount(),
+          walletCoverage: breakdown?.walletDebitAmount || 0,
+          copayAmount: breakdown?.copayAmount || 0,
+          excessAmount: breakdown?.excessAmount || 0,
+          serviceTransactionLimit: breakdown?.serviceTransactionLimit || 0,
+          insurancePayment: breakdown?.insurancePayment || 0,
+        },
       };
 
-      const response = await apiClient.post('/member/lab/orders', bookingData);
-      console.log('[LabBooking] Order created:', response.data);
+      console.log('[LabBooking] Creating pending payment:', paymentData);
 
-      setOrderId(response.data.data.orderId);
-      setBookingSuccess(true);
+      const paymentResponse = await apiClient.post('/payments', paymentData);
+      const paymentId = paymentResponse.data.paymentId || paymentResponse.data._id;
+      console.log('[LabBooking] Pending payment created:', paymentId);
+
+      // Store booking data in AsyncStorage for completion after payment
+      const pendingBookingData = {
+        serviceType: 'LAB',
+        serviceDetails: {
+          cartId: cart.cartId,
+          vendorId: selectedVendor.vendorId,
+          vendorName: selectedVendor.name,
+          slotId: selectedSlot.slotId,
+          date: selectedDate,
+          time: selectedSlot.timeSlot,
+          collectionType,
+        },
+        patientId: cart.patientId,
+        patientName: cart.patientName,
+        userId: userId,
+        consultationFee: getTotalAmount(),
+        walletCoverage: breakdown?.walletDebitAmount || 0,
+        copayAmount: breakdown?.copayAmount || 0,
+        excessAmount: breakdown?.excessAmount || 0,
+        serviceTransactionLimit: breakdown?.serviceTransactionLimit || 0,
+        insurancePayment: breakdown?.insurancePayment || 0,
+        paymentId: paymentId,
+      };
+
+      console.log('[LabBooking] Storing pending booking in AsyncStorage:', pendingBookingData);
+      await AsyncStorage.setItem('pendingBooking', JSON.stringify(pendingBookingData));
+
+      // Redirect to payment gateway
+      const redirectUrl = '/member/bookings?tab=lab';
+      console.log('[LabBooking] Redirecting to payment gateway:', paymentId);
+      router.push(`/member/payments/${paymentId}?redirect=${encodeURIComponent(redirectUrl)}` as any);
     } catch (error: any) {
       console.error('[LabBooking] Error creating order:', error);
       showAlert('Error', error.response?.data?.message || 'Failed to create booking');
@@ -939,31 +1029,121 @@ export default function LabBookingPage() {
                   borderColor: '#F7DCAF',
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>Payment Details</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <BanknotesIcon width={20} height={20} color="#0F5FDC" />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>Payment Breakdown</Text>
+                </View>
 
-                <View style={{ gap: 12 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 14, color: '#6B7280' }}>Test Amount</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>₹{selectedVendor.totalDiscountedPrice}</Text>
+                {validating ? (
+                  <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#0F5FDC" />
+                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 8 }}>Calculating payment...</Text>
                   </View>
-
-                  {collectionType === 'HOME_COLLECTION' && (
+                ) : validationResult?.breakdown ? (
+                  <View style={{ gap: 12 }}>
+                    {/* Bill Amount */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 14, color: '#6B7280' }}>Home Collection Charges</Text>
+                      <Text style={{ fontSize: 14, color: '#6B7280' }}>Bill Amount</Text>
                       <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
-                        ₹{selectedVendor.homeCollectionCharges || 100}
+                        ₹{validationResult.breakdown.billAmount || getTotalAmount()}
                       </Text>
                     </View>
-                  )}
 
-                  {/* Divider */}
-                  <View style={{ height: 1, backgroundColor: '#F7DCAF', marginVertical: 4 }} />
+                    {/* Service Transaction Limit (if applicable) */}
+                    {validationResult.breakdown.serviceTransactionLimit !== undefined &&
+                     validationResult.breakdown.serviceTransactionLimit > 0 && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 14, color: '#6B7280' }}>Per Transaction Limit</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#F97316' }}>
+                          ₹{validationResult.breakdown.serviceTransactionLimit}
+                        </Text>
+                      </View>
+                    )}
 
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>Total Amount</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>₹{getTotalAmount()}</Text>
+                    {/* Insurance Coverage */}
+                    {validationResult.breakdown.insurancePayment > 0 && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 14, color: '#6B7280' }}>Insurance Coverage</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#25A425' }}>
+                          -₹{validationResult.breakdown.insurancePayment}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Copay */}
+                    {validationResult.breakdown.copayAmount > 0 && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                          Co-pay {validationResult.breakdown.copayPercentage ? `(${validationResult.breakdown.copayPercentage}%)` : ''}
+                        </Text>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#F97316' }}>
+                          ₹{validationResult.breakdown.copayAmount}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Excess Amount */}
+                    {validationResult.breakdown.excessAmount > 0 && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 14, color: '#6B7280' }}>Excess Amount</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#F97316' }}>
+                          ₹{validationResult.breakdown.excessAmount}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Divider */}
+                    <View style={{ height: 1, backgroundColor: '#F7DCAF', marginVertical: 4 }} />
+
+                    {/* Wallet Deduction */}
+                    {validationResult.breakdown.walletDebitAmount > 0 && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 14, color: '#6B7280' }}>Wallet Deduction</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#25A425' }}>
+                          -₹{validationResult.breakdown.walletDebitAmount}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Total You Pay */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 8 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>Total You Pay</Text>
+                      <Text style={{
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: validationResult.breakdown.totalMemberPayment === 0 ? '#25A425' : '#0E51A2'
+                      }}>
+                        {validationResult.breakdown.totalMemberPayment === 0
+                          ? 'Fully Covered'
+                          : `₹${validationResult.breakdown.totalMemberPayment}`}
+                      </Text>
+                    </View>
                   </View>
-                </View>
+                ) : (
+                  // Fallback - show simple breakdown
+                  <View style={{ gap: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 14, color: '#6B7280' }}>Test Amount</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>₹{selectedVendor.totalDiscountedPrice}</Text>
+                    </View>
+
+                    {collectionType === 'HOME_COLLECTION' && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 14, color: '#6B7280' }}>Home Collection Charges</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
+                          ₹{selectedVendor.homeCollectionCharges || 100}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={{ height: 1, backgroundColor: '#F7DCAF', marginVertical: 4 }} />
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>Total Amount</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>₹{getTotalAmount()}</Text>
+                    </View>
+                  </View>
+                )}
               </LinearGradient>
 
               {/* Wallet Balance Card */}
@@ -983,17 +1163,39 @@ export default function LabBookingPage() {
                   <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>Wallet Balance</Text>
                 </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Available Balance</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#25A425' }}>₹{walletBalance}</Text>
+                <View style={{ gap: 8 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 14, color: '#6B7280' }}>Current Balance</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>₹{walletBalance}</Text>
+                  </View>
+
+                  {validationResult?.breakdown?.walletDebitAmount > 0 && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 14, color: '#6B7280' }}>After Payment</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#25A425' }}>
+                        ₹{Math.max(0, walletBalance - (validationResult.breakdown.walletDebitAmount || 0))}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </LinearGradient>
 
-              {/* Validating */}
-              {validating && (
-                <View style={{ paddingVertical: 24, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-                  <ActivityIndicator size="small" color="#0F5FDC" />
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Validating order...</Text>
+              {/* Validation Warnings */}
+              {!validating && validationResult?.warnings && validationResult.warnings.length > 0 && (
+                <View
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    backgroundColor: '#FEF3C7',
+                    borderWidth: 1,
+                    borderColor: '#FDE68A',
+                  }}
+                >
+                  {validationResult.warnings.map((warning: string, idx: number) => (
+                    <Text key={idx} style={{ fontSize: 12, color: '#92400E', lineHeight: 18, textAlign: 'center' }}>
+                      ⚠️ {warning}
+                    </Text>
+                  ))}
                 </View>
               )}
 
@@ -1018,43 +1220,84 @@ export default function LabBookingPage() {
               )}
 
               {/* Confirm Button */}
-              {!validating && (
-                <TouchableOpacity onPress={handleConfirmBooking} disabled={processing} activeOpacity={0.8}>
-                  <LinearGradient
-                    colors={processing ? ['#9ca3af', '#9ca3af'] : ['#1F63B4', '#5DA4FB']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{
-                      paddingVertical: 14,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      gap: 8,
-                    }}
+              {!validating && validationResult?.valid && (() => {
+                const breakdown = validationResult?.breakdown as PaymentBreakdown | undefined;
+                const totalMemberPayment = breakdown?.totalMemberPayment || 0;
+                const isFullyCovered = totalMemberPayment === 0;
+
+                return (
+                  <TouchableOpacity
+                    onPress={handleConfirmBooking}
+                    disabled={processing}
+                    activeOpacity={0.8}
                   >
-                    {processing && <ActivityIndicator size="small" color="#FFFFFF" />}
-                    <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
-                      {processing ? 'Processing...' : 'Confirm Booking'}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
+                    <LinearGradient
+                      colors={processing ? ['#9ca3af', '#9ca3af'] : isFullyCovered ? ['#16a34a', '#22c55e'] : ['#1F63B4', '#5DA4FB']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={{
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        gap: 8,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: processing ? 0 : 0.2,
+                        shadowRadius: 8,
+                        elevation: processing ? 0 : 4,
+                      }}
+                    >
+                      {processing && <ActivityIndicator size="small" color="#FFFFFF" />}
+                      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                        {processing
+                          ? 'Processing...'
+                          : isFullyCovered
+                          ? 'Confirm Booking (Fully Covered)'
+                          : `Pay ₹${totalMemberPayment} & Confirm`}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              })()}
 
               {/* Payment Note */}
-              <View
-                style={{
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: '#FEF1E7',
-                  borderWidth: 1,
-                  borderColor: '#F9B376',
-                }}
-              >
-                <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 18, textAlign: 'center' }}>
-                  Payment will be processed from your wallet after confirmation.
-                </Text>
-              </View>
+              {!validating && validationResult?.valid && (() => {
+                const breakdown = validationResult?.breakdown as PaymentBreakdown | undefined;
+                const totalMemberPayment = breakdown?.totalMemberPayment || 0;
+                const isFullyCovered = totalMemberPayment === 0;
+
+                return isFullyCovered ? (
+                  <View
+                    style={{
+                      padding: 12,
+                      borderRadius: 8,
+                      backgroundColor: '#DCFCE7',
+                      borderWidth: 1,
+                      borderColor: '#BBF7D0',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, color: '#166534', lineHeight: 18, textAlign: 'center' }}>
+                      ✓ Your booking is fully covered by your wallet balance. No additional payment required.
+                    </Text>
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      padding: 12,
+                      borderRadius: 8,
+                      backgroundColor: '#FEF3C7',
+                      borderWidth: 1,
+                      borderColor: '#FDE68A',
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, color: '#92400E', lineHeight: 18, textAlign: 'center' }}>
+                      🧪 You will be redirected to a dummy payment gateway for testing
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
           )}
         </View>

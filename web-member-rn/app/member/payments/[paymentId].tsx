@@ -30,7 +30,7 @@ type PaymentMethod = 'WALLET_ONLY' | 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT';
 type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 interface PaymentMetadata {
-  clinicId: string;
+  clinicId?: string;
   clinicName?: string;
   clinicAddress?: string;
   serviceCode?: string;
@@ -48,14 +48,19 @@ interface PaymentMetadata {
   doctorId?: string;
   doctorName?: string;
   specialty?: string;
+  // LAB specific fields
+  cartId?: string;
+  vendorId?: string;
+  vendorName?: string;
+  collectionType?: string;
 }
 
 interface PendingBookingData {
   serviceType: ServiceType;
   serviceDetails: {
     bookingId?: string; // For VISION - booking already exists
-    clinicId: string;
-    clinicName: string;
+    clinicId?: string;
+    clinicName?: string;
     clinicAddress?: string; // For IN_CLINIC_APPOINTMENT
     serviceCode?: string;
     serviceName?: string;
@@ -66,6 +71,11 @@ interface PendingBookingData {
     doctorId?: string;
     doctorName?: string;
     specialty?: string;
+    // LAB specific fields
+    cartId?: string;
+    vendorId?: string;
+    vendorName?: string;
+    collectionType?: 'IN_CLINIC' | 'HOME_COLLECTION';
   };
   patientId: string;
   patientName: string;
@@ -378,7 +388,27 @@ export default function PaymentGatewayPage() {
         createdBookingId = appointmentResponse.data?.appointmentId || appointmentResponse.data?._id || '';
         console.log('[PaymentGateway] In-clinic appointment created:', createdBookingId);
       }
-      // Handle other service types (LAB, DIAGNOSTIC, AHC, APPOINTMENT)
+      // Handle LAB bookings - need to create lab order
+      else if (bookingData.serviceType === 'LAB') {
+        console.log('[PaymentGateway] Creating LAB order...');
+
+        const labOrderPayload = {
+          cartId: bookingData.serviceDetails.cartId,
+          vendorId: bookingData.serviceDetails.vendorId,
+          slotId: bookingData.serviceDetails.slotId,
+          collectionType: bookingData.serviceDetails.collectionType,
+          appointmentDate: bookingData.serviceDetails.date,
+          timeSlot: bookingData.serviceDetails.time,
+          paymentAlreadyProcessed: true, // Payment is being processed now
+        };
+
+        console.log('[PaymentGateway] Lab order payload:', labOrderPayload);
+
+        const labOrderResponse = await apiClient.post('/member/lab/orders', labOrderPayload);
+        createdBookingId = labOrderResponse.data?.data?.orderId || labOrderResponse.data?.orderId || '';
+        console.log('[PaymentGateway] Lab order created:', createdBookingId);
+      }
+      // Handle other service types (DIAGNOSTIC, AHC, APPOINTMENT)
       else {
         console.warn('[PaymentGateway] Service type not yet supported for booking creation:', bookingData.serviceType);
         // For now, just mark payment as paid without creating booking
