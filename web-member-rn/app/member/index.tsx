@@ -528,9 +528,23 @@ export default function DashboardScreen() {
   // Helper function to convert category name to route path
   const getCategoryRoute = (categoryName: string) => {
     if (!categoryName) return '/member/benefits';
-    // Convert category name to kebab-case route
-    const route = categoryName
-      .toLowerCase()
+
+    // Map specific category names to their routes
+    const routeMapping: { [key: string]: string } = {
+      'dental services': '/member/dental',
+      'dental': '/member/dental',
+      'vision care': '/member/vision',
+      'laboratory services': '/member/lab-tests',
+      'diagnostic services': '/member/diagnostics',
+    };
+
+    const lowerName = categoryName.toLowerCase();
+    if (routeMapping[lowerName]) {
+      return routeMapping[lowerName];
+    }
+
+    // Default: Convert category name to kebab-case route
+    const route = lowerName
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '');
     return `/member/${route}`;
