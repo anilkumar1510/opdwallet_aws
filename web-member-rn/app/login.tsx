@@ -219,7 +219,11 @@ export default function LoginScreen() {
           {/* Blue Header Strip with Logo */}
           <View style={{ backgroundColor: '#1E4A8D', paddingVertical: 16, paddingHorizontal: 24 }}>
             <Image
-              source={require('../assets/images/habit-logo-white.png')}
+              source={
+                Platform.OS === 'web'
+                  ? { uri: '/logos/habit-logo-white.png' }
+                  : require('../assets/images/habit-logo-white.png')
+              }
               resizeMode="contain"
               style={{ height: 48 }}
             />
@@ -459,7 +463,11 @@ export default function LoginScreen() {
             }}
           >
             <Image
-              source={require('../assets/images/habit-logo-white.png')}
+              source={
+                Platform.OS === 'web'
+                  ? { uri: '/logos/habit-logo-white.png' }
+                  : require('../assets/images/habit-logo-white.png')
+              }
               resizeMode="contain"
               style={{ height: isTablet ? 48 : 40 }}
             />
