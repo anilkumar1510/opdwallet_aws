@@ -930,9 +930,10 @@ export default function DashboardScreen() {
   // ============================================================================
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f7fc' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
       <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#034DA2" />
