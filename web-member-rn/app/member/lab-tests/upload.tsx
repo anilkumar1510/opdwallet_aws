@@ -890,6 +890,22 @@ export default function UploadPrescriptionPage() {
                       </Text>
                     </View>
                   )}
+
+                  {/* Add New Address Button */}
+                  <TouchableOpacity
+                    onPress={() => setShowAddAddressModal(true)}
+                    style={{
+                      marginTop: 12,
+                      paddingVertical: 10,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#0F5FDC' }}>
+                      + Add New Address
+                    </Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
