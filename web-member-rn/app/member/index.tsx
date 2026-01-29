@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   RefreshControl,
   useWindowDimensions,
   NativeScrollEvent,
@@ -18,8 +17,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle, Ellipse, G, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -548,7 +545,7 @@ export default function DashboardScreen() {
   // Handle policy scroll for pagination
   const handlePolicyScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
-    const cardWidth = Math.min(SCREEN_WIDTH - 60, 280) + 16; // card width + margin
+    const cardWidth = Math.min(width - 60, 280) + 16; // card width + margin
     const index = Math.round(scrollPosition / cardWidth);
     setActivePolicyIndex(index);
   };
@@ -701,13 +698,16 @@ export default function DashboardScreen() {
   );
 
   // Policy Card - Figma exact design
+  // Calculate policy card width dynamically
+  const policyCardWidth = Math.min(width - 60, 280);
+
   const renderPolicyCard = (policy: any) => (
     <TouchableOpacity
       key={policy.policyId}
       activeOpacity={0.9}
       onPress={() => handleNavigation(`/member/policy-details/${policy.policyId}`)}
       style={{
-        width: Math.min(SCREEN_WIDTH - 60, 280),
+        width: policyCardWidth,
         minWidth: 220,
         minHeight: 137,
         borderRadius: 16,
@@ -850,13 +850,17 @@ export default function DashboardScreen() {
   );
 
   // Benefit Card - Figma exact design
+  // Calculate card width dynamically based on screen width
+  // Using reactive width from useWindowDimensions for all screen sizes
+  const benefitCardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap = 48
+
   const renderBenefitCard = (benefit: any) => (
     <TouchableOpacity
       key={benefit.id}
       onPress={() => handleNavigation(benefit.href)}
       activeOpacity={0.9}
       style={{
-        width: (SCREEN_WIDTH - 48) / 2,
+        width: benefitCardWidth,
         minHeight: 78,
         backgroundColor: '#ffffff',
         borderRadius: 16,
@@ -975,7 +979,7 @@ export default function DashboardScreen() {
             onScroll={handlePolicyScroll}
             scrollEventThrottle={16}
             pagingEnabled={false}
-            snapToInterval={Math.min(SCREEN_WIDTH - 60, 280) + 16}
+            snapToInterval={policyCardWidth + 16}
             decelerationRate="fast"
           >
             {policies.map(renderPolicyCard)}
