@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -939,16 +940,24 @@ export default function DashboardScreen() {
   // MAIN RENDER
   // ============================================================================
 
+  // Web-specific wrapper to avoid SafeAreaView issues
+  const ContainerComponent = Platform.OS === 'web' ? View : SafeAreaView;
+  const containerStyle = Platform.OS === 'web'
+    ? { flex: 1, backgroundColor: '#f7f7fc', paddingTop: 0 }
+    : { flex: 1, backgroundColor: '#f7f7fc' };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <ContainerComponent style={containerStyle}>
       <ScrollView
+        key={`dashboard-${viewingUserId || user?.id || 'default'}`}
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingTop: 0 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#034DA2" />
         }
         scrollEnabled={!showDropdown}
+        nestedScrollEnabled={true}
       >
         {/* User Greeting */}
         {renderUserGreeting()}
@@ -1101,6 +1110,6 @@ export default function DashboardScreen() {
           </View>
         </>
       )}
-    </SafeAreaView>
+    </ContainerComponent>
   );
 }
