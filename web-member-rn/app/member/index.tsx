@@ -527,6 +527,17 @@ export default function DashboardScreen() {
     router.replace('/login');
   };
 
+  // Helper function to convert category name to route path
+  const getCategoryRoute = (categoryName: string) => {
+    if (!categoryName) return '/member/benefits';
+    // Convert category name to kebab-case route
+    const route = categoryName
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+    return `/member/${route}`;
+  };
+
   const handleNavigation = (href: string) => {
     if (href && href !== '#') {
       router.push(href as any);
@@ -1008,7 +1019,7 @@ export default function DashboardScreen() {
               name: benefit.name,
               available: benefit.available ?? benefit.amount ?? 0,
               total: benefit.total ?? 0,
-              href: benefit.href || '/member/benefits',
+              href: benefit.href || getCategoryRoute(benefit.name),
             }))}
           </View>
         </View>
