@@ -2128,14 +2128,19 @@ export default function BookingsPage() {
 
           {/* Lab Tab */}
           {activeTab === 'lab' && (() => {
-              // Filter out prescriptions that already have carts created
-              // The cart's prescriptionId field contains the MongoDB _id of the prescription
+              // Filter out prescriptions that already have carts OR orders created
+              // Both cart.prescriptionId and order.prescriptionId contain the MongoDB _id of the prescription
               const prescriptionIdsWithCarts = new Set(
                 labCarts.map((cart: any) => cart.prescriptionId).filter(Boolean)
               );
+              const prescriptionIdsWithOrders = new Set(
+                labOrders.map((order: any) => order.prescriptionId).filter(Boolean)
+              );
 
               const filteredPrescriptions = labPrescriptions.filter(
-                (prescription: any) => !prescriptionIdsWithCarts.has(prescription._id)
+                (prescription: any) =>
+                  !prescriptionIdsWithCarts.has(prescription._id) &&
+                  !prescriptionIdsWithOrders.has(prescription._id)
               );
 
               return (
