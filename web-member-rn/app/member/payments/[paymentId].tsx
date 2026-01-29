@@ -48,6 +48,7 @@ interface PaymentMetadata {
 interface PendingBookingData {
   serviceType: ServiceType;
   serviceDetails: {
+    bookingId?: string; // For VISION - booking already exists
     clinicId: string;
     clinicName: string;
     serviceCode: string;
@@ -66,6 +67,7 @@ interface PendingBookingData {
   serviceTransactionLimit?: number;
   insurancePayment?: number;
   paymentId: string;
+  bookingId?: string; // For VISION - booking already exists
 }
 
 interface Payment {
@@ -294,7 +296,7 @@ export default function PaymentGatewayPage() {
       let createdBookingId = '';
 
       // Step 2: Create booking based on service type
-      // Handle DENTAL bookings
+      // Handle DENTAL bookings - initial booking flow, need to create booking
       if (bookingData.serviceType === 'DENTAL') {
         console.log('[PaymentGateway] Creating DENTAL booking...');
 
@@ -316,27 +318,28 @@ export default function PaymentGatewayPage() {
         createdBookingId = bookingResponse.data?.bookingId || bookingResponse.data?._id || '';
         console.log('[PaymentGateway] Dental booking created:', createdBookingId);
       }
-      // Handle VISION bookings
+      // Handle VISION bookings - booking already exists (created during initial booking)
+      // Operations team generates bill, member pays here
       else if (bookingData.serviceType === 'VISION') {
-        console.log('[PaymentGateway] Creating VISION booking...');
+        console.log('[PaymentGateway] Vision booking payment - will complete after mark-paid');
+        console.log('[PaymentGateway] Service Reference ID (booking ID):', payment.serviceReferenceId);
+        console.log('[PaymentGateway] Booking data bookingId:', bookingData.bookingId);
+        console.log('[PaymentGateway] Service details bookingId:', bookingData.serviceDetails?.bookingId);
 
-        const visionBookingPayload = {
-          patientId: bookingData.patientId,
-          clinicId: bookingData.serviceDetails.clinicId,
-          serviceCode: bookingData.serviceDetails.serviceCode,
-          serviceName: bookingData.serviceDetails.serviceName,
-          slotId: bookingData.serviceDetails.slotId,
-          price: bookingData.consultationFee,
-          appointmentDate: bookingData.serviceDetails.date,
-          appointmentTime: bookingData.serviceDetails.time,
-          paymentAlreadyProcessed: true,
-        };
+        // Get the vision booking ID
+        const visionBookingId =
+          bookingData.bookingId ||
+          bookingData.serviceDetails?.bookingId ||
+          payment.serviceReferenceId ||
+          '';
 
-        console.log('[PaymentGateway] Vision booking payload:', visionBookingPayload);
+        if (!visionBookingId) {
+          console.error('[PaymentGateway] No vision booking ID found!');
+          throw new Error('Vision booking ID not found. Please try again.');
+        }
 
-        const bookingResponse = await apiClient.post('/vision-bookings', visionBookingPayload);
-        createdBookingId = bookingResponse.data?.bookingId || bookingResponse.data?._id || '';
-        console.log('[PaymentGateway] Vision booking created:', createdBookingId);
+        createdBookingId = visionBookingId;
+        // Note: complete-wallet-payment will be called AFTER mark-paid below
       }
       // Handle other service types (LAB, DIAGNOSTIC, AHC, APPOINTMENT)
       else {
@@ -351,18 +354,37 @@ export default function PaymentGatewayPage() {
       });
       console.log('[PaymentGateway] Payment marked as paid:', markPaidResponse.data);
 
-      // Step 4: Clear AsyncStorage
+      // Step 4: For VISION bookings, ensure booking status is updated
+      // The backend's mark-paid should call handlePaymentComplete, but as a fallback
+      // we also call complete-wallet-payment directly to ensure the booking is updated
+      if (bookingData.serviceType === 'VISION' && createdBookingId) {
+        console.log('[PaymentGateway] Calling complete-wallet-payment for VISION booking:', createdBookingId);
+        try {
+          const completeResponse = await apiClient.post(`/vision-bookings/${createdBookingId}/complete-wallet-payment`);
+          console.log('[PaymentGateway] Vision booking payment completed:', completeResponse.data);
+        } catch (completeError: any) {
+          // Log the error but don't fail - the mark-paid might have already handled it
+          const errorMsg = completeError.response?.data?.message || completeError.message;
+          console.warn('[PaymentGateway] complete-wallet-payment warning:', errorMsg);
+          // If the error is "Payment has already been completed", that's fine
+          if (!errorMsg?.toLowerCase().includes('already')) {
+            console.error('[PaymentGateway] Failed to complete vision booking payment:', completeError);
+          }
+        }
+      }
+
+      // Step 5: Clear AsyncStorage
       console.log('[PaymentGateway] Clearing pending booking from AsyncStorage...');
       await AsyncStorage.removeItem('pendingBooking');
 
-      // Step 5: Set success state
+      // Step 6: Set success state
       if (createdBookingId) {
         setBookingId(createdBookingId);
       }
       setProcessing(false);
       setSuccess(true);
 
-      // Step 6: Redirect to bookings page after delay
+      // Step 7: Redirect to bookings page after delay
       setTimeout(() => {
         const tabMap: Record<ServiceType, string> = {
           DENTAL: 'dental',

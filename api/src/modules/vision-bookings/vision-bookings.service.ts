@@ -1169,8 +1169,10 @@ export class VisionBookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    // Update payment status
+    // Update both payment status AND booking status
     booking.paymentStatus = 'COMPLETED';
+    booking.status = 'COMPLETED';
+    booking.completedAt = new Date();
     await booking.save();
 
     // Generate invoice

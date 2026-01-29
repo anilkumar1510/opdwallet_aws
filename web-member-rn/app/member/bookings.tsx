@@ -24,6 +24,7 @@ import {
   EyeIcon,
   HeartIcon,
   DocumentArrowDownIcon,
+  CheckCircleIcon,
 } from '../../src/components/icons/InlineSVGs';
 import apiClient, { tokenManager } from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
@@ -911,6 +912,7 @@ export default function BookingsPage() {
 
   const renderVisionBookingCard = (booking: VisionBooking, isUpcoming: boolean) => {
     // Determine if booking can be cancelled
+    // Can cancel if pending confirmation or confirmed but no bill generated yet
     const bookingDateObj = new Date(booking.appointmentDate);
     const timeParts = booking.appointmentTime.match(/(\d+):(\d+)/);
     if (timeParts) {
@@ -922,7 +924,8 @@ export default function BookingsPage() {
     const now = new Date();
     const isFuture = bookingDateObj > now;
     const canCancel =
-      (booking.status === 'PENDING_CONFIRMATION' || booking.status === 'CONFIRMED') && isFuture;
+      (booking.status === 'PENDING_CONFIRMATION' ||
+       (booking.status === 'CONFIRMED' && !booking.billGenerated)) && isFuture;
 
     return (
       <LinearGradient
@@ -1067,29 +1070,37 @@ export default function BookingsPage() {
 
           {/* Action Buttons */}
           <View style={{ gap: 8 }}>
-            {canCancel && (
+            {/* View and Pay Bill - Show when bill generated but payment pending */}
+            {booking.billGenerated && booking.paymentStatus === 'PENDING' && (
               <TouchableOpacity
-                onPress={() => handleCancelVisionBooking(booking.bookingId, booking.serviceName)}
-                style={{
-                  backgroundColor: '#FEF2F2',
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                }}
-                activeOpacity={0.7}
+                onPress={() => router.push(`/member/vision/payment/${booking.bookingId}` as any)}
+                activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
+                <LinearGradient
+                  colors={['#1F63B4', '#5DA4FB']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
+                    View and Pay Bill
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
 
-            {/* Invoice Button - Only show when booking is completed and invoice is generated */}
-            {booking.status === 'COMPLETED' && booking.invoiceGenerated && (
+            {/* Invoice Button - Show when payment completed and invoice generated */}
+            {booking.paymentStatus === 'COMPLETED' && booking.invoiceGenerated && (
               <TouchableOpacity
                 onPress={() => handleViewInvoice(booking)}
                 style={{
-                  backgroundColor: '#EFF6FF',
-                  paddingVertical: 8,
+                  backgroundColor: '#DCFCE7',
+                  paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
@@ -1099,8 +1110,44 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <DocumentArrowDownIcon width={16} height={16} color="#2563EB" />
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#2563EB' }}>View Invoice</Text>
+                <DocumentArrowDownIcon width={16} height={16} color="#166534" />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#166534' }}>View/Download Invoice</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Payment Complete - Show when payment completed but invoice not yet generated */}
+            {booking.paymentStatus === 'COMPLETED' && !booking.invoiceGenerated && (
+              <View
+                style={{
+                  backgroundColor: '#DCFCE7',
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <CheckCircleIcon width={16} height={16} color="#166534" />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#166534' }}>Payment Complete</Text>
+              </View>
+            )}
+
+            {/* Cancel Button - Show when pending or confirmed but no bill yet */}
+            {canCancel && (
+              <TouchableOpacity
+                onPress={() => handleCancelVisionBooking(booking.bookingId, booking.serviceName)}
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
               </TouchableOpacity>
             )}
           </View>
