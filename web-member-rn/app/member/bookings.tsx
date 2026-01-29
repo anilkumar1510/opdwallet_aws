@@ -2127,14 +2127,25 @@ export default function BookingsPage() {
           )}
 
           {/* Lab Tab */}
-          {activeTab === 'lab' && (
+          {activeTab === 'lab' && (() => {
+              // Filter out prescriptions that already have carts created
+              // The cart's prescriptionId field contains the MongoDB _id of the prescription
+              const prescriptionIdsWithCarts = new Set(
+                labCarts.map((cart: any) => cart.prescriptionId).filter(Boolean)
+              );
+
+              const filteredPrescriptions = labPrescriptions.filter(
+                (prescription: any) => !prescriptionIdsWithCarts.has(prescription._id)
+              );
+
+              return (
             <View>
-              {labCarts.length === 0 && labOrders.length === 0 && labPrescriptions.length === 0 ? (
+              {labCarts.length === 0 && labOrders.length === 0 && filteredPrescriptions.length === 0 ? (
                 renderEmptyState('lab')
               ) : (
                 <View>
-                  {/* Lab Prescriptions (In Queue) */}
-                  {labPrescriptions.length > 0 && (
+                  {/* Lab Prescriptions (In Queue) - only show if no cart created yet */}
+                  {filteredPrescriptions.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                       <Text
                         style={{
@@ -2146,7 +2157,7 @@ export default function BookingsPage() {
                       >
                         Prescriptions In Queue
                       </Text>
-                      {labPrescriptions.map((prescription) => (
+                      {filteredPrescriptions.map((prescription: any) => (
                         <View key={prescription._id}>{renderLabPrescriptionCard(prescription)}</View>
                       ))}
                     </View>
@@ -2192,7 +2203,8 @@ export default function BookingsPage() {
                 </View>
               )}
             </View>
-          )}
+              );
+            })()}
 
           {/* Diagnostic Tab */}
           {activeTab === 'diagnostic' && renderEmptyState('diagnostic')}
