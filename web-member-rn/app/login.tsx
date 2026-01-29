@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +17,50 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../src/contexts/AuthContext';
 
-// Eye icons for password toggle
+// ============================================================================
+// SVG ICONS
+// ============================================================================
+
+// Shield icon for OPD Coverage
+function ShieldIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}>
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+      />
+    </Svg>
+  );
+}
+
+// Dollar/Circle icon for Easy Claims
+function DollarIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}>
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </Svg>
+  );
+}
+
+// Users icon for Family Coverage
+function UsersIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}>
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+      />
+    </Svg>
+  );
+}
+
+// Eye icon (password visible)
 function EyeIcon() {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth={2}>
@@ -25,6 +69,7 @@ function EyeIcon() {
   );
 }
 
+// Eye off icon (password hidden)
 function EyeOffIcon() {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth={2}>
@@ -33,28 +78,83 @@ function EyeOffIcon() {
   );
 }
 
-// Shield icon for feature card
-function ShieldIcon() {
+// ============================================================================
+// FEATURE CARD COMPONENT
+// ============================================================================
+
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5}>
-      <Path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </Svg>
+    <View
+      style={{
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.4)',
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        shadowColor: 'rgba(199, 210, 254, 0.3)',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 1,
+        shadowRadius: 40,
+        elevation: 8,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 12,
+            backgroundColor: 'rgba(255, 255, 255, 0.35)',
+          }}
+        >
+          {icon}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: 'white', fontWeight: '700', fontSize: 14 }}>{title}</Text>
+          <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 13, marginTop: 2 }}>
+            {description}
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 }
+
+// ============================================================================
+// MAIN LOGIN SCREEN
+// ============================================================================
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { width } = useWindowDimensions();
+
+  // State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  // Responsive breakpoints (matching Tailwind: sm=640, lg=1024)
+  const isTablet = width >= 640;
+  const isDesktop = width >= 1024;
 
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
         <ActivityIndicator size="large" color="#1E4A8D" />
       </View>
     );
@@ -88,24 +188,280 @@ export default function LoginScreen() {
     }
   };
 
+  // Input style helper
+  const getInputStyle = (isFocused: boolean) => ({
+    width: '100%' as const,
+    paddingHorizontal: 16,
+    paddingVertical: isTablet ? 14 : 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: isFocused ? '#1E4A8D' : '#d1d5db',
+    backgroundColor: 'white',
+    fontSize: isTablet ? 16 : 14,
+    color: '#111827',
+    minHeight: isTablet ? 52 : 48,
+    ...(isFocused && Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+      boxShadow: '0 0 0 3px rgba(30, 74, 141, 0.1)',
+    }),
+  });
+
+  // ============================================================================
+  // RENDER: Desktop Layout (side by side)
+  // ============================================================================
+  if (isDesktop) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          {/* Blue Header Strip with Logo */}
+          <View style={{ backgroundColor: '#1E4A8D', paddingVertical: 16, paddingHorizontal: 24 }}>
+            <Image
+              source={require('../assets/images/habit-logo-white.png')}
+              resizeMode="contain"
+              style={{ height: 48 }}
+            />
+          </View>
+
+          {/* Main Content - Side by Side */}
+          <View style={{ flex: 1, flexDirection: 'row' }}>
+            {/* Left Section - Form */}
+            <View style={{ flex: 1, backgroundColor: '#f9fafb', justifyContent: 'center', paddingHorizontal: 48 }}>
+              <View style={{ maxWidth: 448, width: '100%', alignSelf: 'center' }}>
+                {/* Form Header */}
+                <View style={{ marginBottom: 32 }}>
+                  <Text style={{ fontSize: 30, fontWeight: '700', color: '#111827', marginBottom: 8 }}>
+                    Welcome Member
+                  </Text>
+                  <Text style={{ fontSize: 16, color: '#4b5563' }}>
+                    Sign in to access your benefits portal
+                  </Text>
+                </View>
+
+                {/* Email Field */}
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
+                    Email
+                  </Text>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Enter your email"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    editable={!loading}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                    style={getInputStyle(emailFocused)}
+                  />
+                </View>
+
+                {/* Password Field */}
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
+                    Password
+                  </Text>
+                  <View style={{ position: 'relative' }}>
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoComplete="password"
+                      editable={!loading}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                      style={{
+                        ...getInputStyle(passwordFocused),
+                        paddingRight: 48,
+                      }}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: 0,
+                        bottom: 0,
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Error Message */}
+                {error ? (
+                  <View
+                    style={{
+                      marginBottom: 24,
+                      padding: 16,
+                      borderRadius: 8,
+                      backgroundColor: '#fef2f2',
+                      borderWidth: 1,
+                      borderColor: '#fecaca',
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, color: '#dc2626' }}>{error}</Text>
+                  </View>
+                ) : null}
+
+                {/* Submit Button */}
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                  style={{
+                    width: '100%',
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: loading ? '#6B7280' : '#1E4A8D',
+                    minHeight: 52,
+                  }}
+                >
+                  {loading ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text style={{ color: 'white', fontWeight: '600', fontSize: 16, marginLeft: 8 }}>
+                        Signing in...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Sign In</Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Contact Support */}
+                <View style={{ marginTop: 24 }}>
+                  <Text style={{ textAlign: 'center', fontSize: 14, color: '#4b5563' }}>
+                    Need help?{' '}
+                    <Text style={{ fontWeight: '600', color: '#111827' }}>Contact Support</Text>
+                  </Text>
+                </View>
+
+                {/* Demo Credentials */}
+                <View
+                  style={{
+                    marginTop: 24,
+                    padding: 16,
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(30, 74, 141, 0.1)',
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#1E4A8D' }}>
+                    Demo Credentials:
+                  </Text>
+                  <Text style={{ fontSize: 14, marginTop: 4, color: '#2563A8' }}>
+                    Email: john.doe@company.com{'\n'}
+                    Password: Member@123
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Right Section - Brand */}
+            <LinearGradient
+              colors={['#1E4A8D', '#2563A8', '#1E4A8D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 40 }}
+            >
+              <View style={{ maxWidth: 512, width: '100%', alignSelf: 'center' }}>
+                {/* Member Illustration */}
+                <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                  <Image
+                    source={require('../assets/images/Member.png')}
+                    resizeMode="contain"
+                    style={{ width: 320, height: 320 }}
+                  />
+                </View>
+
+                {/* Heading */}
+                <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                  <Text
+                    style={{
+                      fontSize: 36,
+                      fontWeight: '900',
+                      color: 'white',
+                      textAlign: 'center',
+                      marginBottom: 12,
+                    }}
+                  >
+                    Member Portal
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Your complete healthcare benefits platform
+                  </Text>
+                </View>
+
+                {/* Feature Cards */}
+                <View style={{ gap: 12 }}>
+                  <FeatureCard
+                    icon={<ShieldIcon />}
+                    title="OPD Coverage"
+                    description="Complete outpatient care benefits"
+                  />
+                  <FeatureCard
+                    icon={<DollarIcon />}
+                    title="Easy Claims"
+                    description="Quick and hassle-free claim process"
+                  />
+                  <FeatureCard
+                    icon={<UsersIcon />}
+                    title="Family Coverage"
+                    description="Manage family health benefits"
+                  />
+                </View>
+              </View>
+            </LinearGradient>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
+  // ============================================================================
+  // RENDER: Mobile/Tablet Layout (stacked)
+  // ============================================================================
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Blue Header Strip with Logo */}
-          <View className="py-3 px-4" style={{ backgroundColor: '#1E4A8D' }}>
+          <View
+            style={{
+              backgroundColor: '#1E4A8D',
+              paddingVertical: isTablet ? 16 : 12,
+              paddingHorizontal: isTablet ? 24 : 16,
+            }}
+          >
             <Image
               source={require('../assets/images/habit-logo-white.png')}
-              className="h-10 w-auto"
               resizeMode="contain"
-              style={{ height: 40 }}
+              style={{ height: isTablet ? 48 : 40 }}
             />
           </View>
 
@@ -114,66 +470,122 @@ export default function LoginScreen() {
             colors={['#1E4A8D', '#2563A8', '#1E4A8D']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="py-6 px-4"
+            style={{
+              paddingVertical: isTablet ? 32 : 12,
+              paddingHorizontal: isTablet ? 24 : 16,
+            }}
           >
-            <View className="items-center">
+            <View style={{ alignItems: 'center' }}>
               {/* Member Illustration */}
               <Image
                 source={require('../assets/images/Member.png')}
-                className="w-32 h-32 mb-3"
                 resizeMode="contain"
-                style={{ width: 128, height: 128 }}
+                style={{
+                  width: isTablet ? 256 : 128,
+                  height: isTablet ? 256 : 128,
+                  marginBottom: isTablet ? 24 : 8,
+                }}
               />
 
               {/* Heading */}
-              <Text className="text-2xl font-black text-white text-center mb-1">
-                Member Portal
-              </Text>
-              <Text className="text-sm text-white/90 text-center mb-4">
-                Your complete healthcare benefits platform
-              </Text>
-
-              {/* Feature Card */}
-              <View
-                className="w-full p-4 rounded-xl border border-white/40"
+              <Text
                 style={{
-                  backgroundColor: 'rgba(255,255,255,0.25)',
+                  fontSize: isTablet ? 30 : 20,
+                  fontWeight: '900',
+                  color: 'white',
+                  textAlign: 'center',
+                  marginBottom: isTablet ? 12 : 4,
                 }}
               >
-                <View className="flex-row items-center">
-                  <View
-                    className="w-11 h-11 rounded-xl items-center justify-center mr-3"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}
-                  >
-                    <ShieldIcon />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-white font-bold text-base">OPD Coverage</Text>
-                    <Text className="text-white/90 text-sm mt-0.5">
-                      Complete outpatient care benefits
-                    </Text>
-                  </View>
-                </View>
+                Member Portal
+              </Text>
+
+              {/* Subtitle - hidden on mobile */}
+              {isTablet && (
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    textAlign: 'center',
+                    marginBottom: 24,
+                  }}
+                >
+                  Your complete healthcare benefits platform
+                </Text>
+              )}
+
+              {/* Feature Cards */}
+              <View style={{ width: '100%', gap: isTablet ? 12 : 6 }}>
+                {/* OPD Coverage - always visible */}
+                <FeatureCard
+                  icon={<ShieldIcon />}
+                  title="OPD Coverage"
+                  description="Complete outpatient care benefits"
+                />
+
+                {/* Easy Claims - hidden on mobile */}
+                {isTablet && (
+                  <FeatureCard
+                    icon={<DollarIcon />}
+                    title="Easy Claims"
+                    description="Quick and hassle-free claim process"
+                  />
+                )}
+
+                {/* Family Coverage - hidden on mobile */}
+                {isTablet && (
+                  <FeatureCard
+                    icon={<UsersIcon />}
+                    title="Family Coverage"
+                    description="Manage family health benefits"
+                  />
+                )}
               </View>
             </View>
           </LinearGradient>
 
           {/* Login Form Section */}
-          <View className="flex-1 bg-gray-50 px-4 py-6">
-            <View className="w-full max-w-md mx-auto">
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: '#f9fafb',
+              paddingHorizontal: isTablet ? 24 : 16,
+              paddingVertical: isTablet ? 32 : 12,
+            }}
+          >
+            <View style={{ maxWidth: 448, width: '100%', alignSelf: 'center' }}>
               {/* Form Header */}
-              <View className="mb-6">
-                <Text className="text-2xl font-bold text-gray-900 mb-1">
+              <View style={{ marginBottom: isTablet ? 32 : 12 }}>
+                <Text
+                  style={{
+                    fontSize: isTablet ? 30 : 20,
+                    fontWeight: '700',
+                    color: '#111827',
+                    marginBottom: isTablet ? 8 : 4,
+                  }}
+                >
                   Welcome Member
                 </Text>
-                <Text className="text-base text-gray-600">
-                  Sign in to access your benefits portal
-                </Text>
+                {/* Subtitle - hidden on mobile */}
+                {isTablet && (
+                  <Text style={{ fontSize: 16, color: '#4b5563' }}>
+                    Sign in to access your benefits portal
+                  </Text>
+                )}
               </View>
 
               {/* Email Field */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-gray-700 mb-2">Email</Text>
+              <View style={{ marginBottom: isTablet ? 24 : 12 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: 8,
+                  }}
+                >
+                  Email
+                </Text>
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -183,15 +595,25 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoComplete="email"
                   editable={!loading}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-base text-gray-900"
-                  style={{ minHeight: 48 }}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  style={getInputStyle(emailFocused)}
                 />
               </View>
 
               {/* Password Field */}
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-gray-700 mb-2">Password</Text>
-                <View className="relative">
+              <View style={{ marginBottom: isTablet ? 24 : 12 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: 8,
+                  }}
+                >
+                  Password
+                </Text>
+                <View style={{ position: 'relative' }}>
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
@@ -201,12 +623,22 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     autoComplete="password"
                     editable={!loading}
-                    className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-200 bg-white text-base text-gray-900"
-                    style={{ minHeight: 48 }}
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                    style={{
+                      ...getInputStyle(passwordFocused),
+                      paddingRight: 48,
+                    }}
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-0 bottom-0 justify-center"
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      top: 0,
+                      bottom: 0,
+                      justifyContent: 'center',
+                    }}
                   >
                     {showPassword ? <EyeIcon /> : <EyeOffIcon />}
                   </TouchableOpacity>
@@ -215,8 +647,17 @@ export default function LoginScreen() {
 
               {/* Error Message */}
               {error ? (
-                <View className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
-                  <Text className="text-sm text-red-600">{error}</Text>
+                <View
+                  style={{
+                    marginBottom: isTablet ? 24 : 12,
+                    padding: isTablet ? 16 : 12,
+                    borderRadius: 8,
+                    backgroundColor: '#fef2f2',
+                    borderWidth: 1,
+                    borderColor: '#fecaca',
+                  }}
+                >
+                  <Text style={{ fontSize: isTablet ? 14 : 12, color: '#dc2626' }}>{error}</Text>
                 </View>
               ) : null}
 
@@ -224,46 +665,68 @@ export default function LoginScreen() {
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={loading}
-                className="w-full py-3 px-4 rounded-lg items-center justify-center"
-                style={{
-                  backgroundColor: loading ? '#6B7280' : '#1E4A8D',
-                  minHeight: 48,
-                }}
                 activeOpacity={0.8}
+                style={{
+                  width: '100%',
+                  paddingVertical: isTablet ? 14 : 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: loading ? '#6B7280' : '#1E4A8D',
+                  minHeight: isTablet ? 52 : 48,
+                }}
               >
                 {loading ? (
-                  <View className="flex-row items-center">
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text className="text-white font-semibold text-base ml-2">
+                    <Text
+                      style={{
+                        color: 'white',
+                        fontWeight: '600',
+                        fontSize: isTablet ? 16 : 14,
+                        marginLeft: 8,
+                      }}
+                    >
                       Signing in...
                     </Text>
                   </View>
                 ) : (
-                  <Text className="text-white font-semibold text-base">Sign In</Text>
+                  <Text style={{ color: 'white', fontWeight: '600', fontSize: isTablet ? 16 : 14 }}>
+                    Sign In
+                  </Text>
                 )}
               </TouchableOpacity>
 
-              {/* Contact Support */}
-              <View className="mt-6">
-                <Text className="text-center text-sm text-gray-600">
-                  Need help?{' '}
-                  <Text className="font-semibold text-gray-900">Contact Support</Text>
-                </Text>
-              </View>
+              {/* Contact Support - hidden on mobile */}
+              {isTablet && (
+                <View style={{ marginTop: 24 }}>
+                  <Text style={{ textAlign: 'center', fontSize: 14, color: '#4b5563' }}>
+                    Need help?{' '}
+                    <Text style={{ fontWeight: '600', color: '#111827' }}>Contact Support</Text>
+                  </Text>
+                </View>
+              )}
 
-              {/* Demo Credentials */}
-              <View
-                className="mt-6 p-4 rounded-lg"
-                style={{ backgroundColor: 'rgba(30, 74, 141, 0.1)' }}
-              >
-                <Text className="text-sm font-medium" style={{ color: '#1E4A8D' }}>
-                  Demo Credentials:
-                </Text>
-                <Text className="text-sm mt-1" style={{ color: '#2563A8' }}>
-                  Email: rajesh.kumar@tcs.com{'\n'}
-                  Password: Member@123
-                </Text>
-              </View>
+              {/* Demo Credentials - hidden on mobile */}
+              {isTablet && (
+                <View
+                  style={{
+                    marginTop: 24,
+                    padding: 16,
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(30, 74, 141, 0.1)',
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#1E4A8D' }}>
+                    Demo Credentials:
+                  </Text>
+                  <Text style={{ fontSize: 14, marginTop: 4, color: '#2563A8' }}>
+                    Email: john.doe@company.com{'\n'}
+                    Password: Member@123
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </ScrollView>
