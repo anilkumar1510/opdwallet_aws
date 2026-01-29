@@ -844,13 +844,12 @@ export default function DashboardScreen() {
       onPress={() => handleNavigation(benefit.href)}
       activeOpacity={0.9}
       style={{
-        width: (SCREEN_WIDTH - 56) / 2,
+        width: (SCREEN_WIDTH - 48) / 2,
         minHeight: 78,
         backgroundColor: '#ffffff',
         borderRadius: 16,
         padding: 9,
         paddingBottom: 10,
-        marginBottom: 16,
         borderWidth: 1,
         borderColor: 'rgba(217, 217, 217, 0.48)',
         shadowColor: '#000',
@@ -999,11 +998,11 @@ export default function DashboardScreen() {
         </View>
 
         {/* Health Benefits */}
-        <View style={{ paddingTop: 24, paddingHorizontal: 20 }}>
+        <View style={{ paddingTop: 24, paddingHorizontal: 16 }}>
           <Text style={{ fontSize: 18, fontWeight: '500', color: '#1c1c1c', marginBottom: 16 }}>
             Health Benefits
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
             {walletCategories.map((benefit: any) => renderBenefitCard({
               id: benefit.id || benefit.categoryCode,
               name: benefit.name,
