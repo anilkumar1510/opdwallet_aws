@@ -10,6 +10,7 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ import Svg, { Path, Rect, Circle, Ellipse, G, Defs, ClipPath } from 'react-nativ
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { fetchWalletBalance, WalletBalance, WalletCategory } from '../../src/lib/api/wallet';
+import { usePolicyPDF } from '../../src/hooks/usePolicyPDF';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -456,11 +458,11 @@ function TransactionHistoryIcon() {
 // ============================================================================
 
 const QUICK_LINKS = [
-  { id: 'health-records', label: 'Health Records', icon: HealthRecordsIcon, href: '/member/health-records' },
-  { id: 'bookings', label: 'My Bookings', icon: BookingsIcon, href: '/member/bookings' },
-  { id: 'claims', label: 'Claims', icon: ClaimsIcon, href: '/member/claims' },
-  { id: 'download-policy', label: 'Download Policy', icon: DownloadIcon, href: '#' },
-  { id: 'transactions', label: 'Transaction History', icon: TransactionsIcon, href: '/member/transactions' },
+  { id: 'health-records', label: 'Health Records', icon: HealthRecordsIcon, href: '/member/health-records', isAction: false },
+  { id: 'bookings', label: 'My Bookings', icon: BookingsIcon, href: '/member/bookings', isAction: false },
+  { id: 'claims', label: 'Claims', icon: ClaimsIcon, href: '/member/claims', isAction: false },
+  { id: 'download-policy', label: 'Download Policy', icon: DownloadIcon, href: '#', isAction: true },
+  { id: 'transactions', label: 'Transaction History', icon: TransactionsIcon, href: '/member/transactions', isAction: false },
 ];
 
 const MORE_SERVICES = [
@@ -489,6 +491,7 @@ export default function DashboardScreen() {
   const { user, profile, logout, refreshProfile } = useAuth();
   const { familyMembers, activeMember, viewingUserId, loggedInUser, profileData } = useFamily();
   const { width } = useWindowDimensions();
+  const { generatePDF, isGenerating: isPdfGenerating } = usePolicyPDF();
   const [refreshing, setRefreshing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activePolicyIndex, setActivePolicyIndex] = useState(0);
@@ -853,15 +856,30 @@ export default function DashboardScreen() {
     </TouchableOpacity>
   );
 
+  // Handle quick link press
+  const handleQuickLinkPress = (link: any) => {
+    if (link.id === 'download-policy') {
+      // Generate PDF with current profile and wallet data
+      generatePDF(profileData as any, walletData);
+    } else {
+      handleNavigation(link.href);
+    }
+  };
+
   // Quick Link Item - Figma exact design
   const renderQuickLink = (link: any) => {
     const IconComponent = link.icon;
+    const isDownloadPolicy = link.id === 'download-policy';
+    const isDisabled = isDownloadPolicy && isPdfGenerating;
+    const displayLabel = isDownloadPolicy && isPdfGenerating ? 'Generating...' : link.label;
+
     return (
       <TouchableOpacity
         key={link.id}
-        onPress={() => handleNavigation(link.href)}
+        onPress={() => handleQuickLinkPress(link)}
         activeOpacity={0.8}
-        style={{ marginRight: 8 }}
+        disabled={isDisabled}
+        style={{ marginRight: 8, opacity: isDisabled ? 0.5 : 1 }}
       >
         <LinearGradient
           colors={['#ffffff', '#f3f4f5']}
@@ -883,9 +901,13 @@ export default function DashboardScreen() {
             elevation: 2,
           }}
         >
-          <IconComponent />
+          {isDownloadPolicy && isPdfGenerating ? (
+            <ActivityIndicator size="small" color="#383838" />
+          ) : (
+            <IconComponent />
+          )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontSize: 16, color: '#383838' }}>{link.label}</Text>
+            <Text style={{ fontSize: 16, color: '#383838' }}>{displayLabel}</Text>
             <ArrowForwardIcon />
           </View>
         </LinearGradient>
