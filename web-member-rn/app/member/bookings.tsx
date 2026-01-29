@@ -705,54 +705,112 @@ export default function BookingsPage() {
     }
   };
 
-  const handleViewLabReport = async (reportPath: string, orderId: string) => {
+  const handleViewLabReport = async (order: any) => {
     try {
-      console.log('[Bookings] Viewing lab report for order:', orderId);
+      console.log('[Bookings] Downloading lab report for order:', order.orderId);
+      console.log('[Bookings] Report URL from order:', order.reportUrl);
 
+      // Get the backend base URL
+      const baseURL = apiClient.defaults.baseURL || '';
+
+      // If order has a direct reportUrl, use it
+      if (order.reportUrl) {
+        // Construct full URL - reportUrl might be relative (e.g., /api/uploads/...)
+        let fullReportUrl = order.reportUrl;
+        if (order.reportUrl.startsWith('/')) {
+          // It's a relative path, need to construct full URL
+          // baseURL is like "http://localhost:5001/api"
+          // reportUrl is like "/api/uploads/lab-reports/..."
+          // We need to avoid double /api
+
+          // Get the origin (protocol + host) from baseURL
+          const urlObj = new URL(baseURL);
+          const origin = urlObj.origin; // e.g., "http://localhost:5001"
+
+          fullReportUrl = `${origin}${order.reportUrl}`;
+        }
+
+        console.log('[Bookings] Opening report URL:', fullReportUrl);
+
+        if (Platform.OS === 'web') {
+          // Open the report URL in a new tab
+          window.open(fullReportUrl, '_blank');
+        } else {
+          // For native, open the URL
+          Linking.openURL(fullReportUrl);
+        }
+        return;
+      }
+
+      // Fallback: Try to fetch from API endpoint
       const token = await tokenManager.getToken();
       if (!token) {
         Alert.alert('Error', 'Authentication required. Please log in again.');
         return;
       }
 
-      const baseURL = apiClient.defaults.baseURL || '';
-      const reportUrl = `${baseURL}/member/lab/orders/${orderId}/report`;
+      const endpoint = `/member/lab/orders/${order.orderId}/report`;
+      const fullUrl = `${baseURL}${endpoint}`;
+
+      console.log('[Bookings] Downloading report from URL:', fullUrl);
+
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('[Bookings] Report download failed:', errorData);
+
+        // Extract error message - handle nested message structures
+        let errorMsg = 'Failed to download report. The report may not be available yet.';
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            errorMsg = errorData;
+          } else if (typeof errorData.message === 'string') {
+            errorMsg = errorData.message;
+          } else if (errorData.message && typeof errorData.message.message === 'string') {
+            errorMsg = errorData.message.message;
+          } else if (typeof errorData.error === 'string') {
+            errorMsg = errorData.error;
+          }
+        }
+        throw new Error(errorMsg);
+      }
 
       if (Platform.OS === 'web') {
-        const response = await fetch(reportUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to download report');
-        }
-
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `lab-report-${orderId}.pdf`;
+        link.download = order.reportFileName || `lab-report-${order.orderId}.pdf`;
         document.body.appendChild(link);
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
+        console.log('[Bookings] Report downloaded successfully');
       } else {
-        // For native, open in browser or show message
-        if (reportPath) {
-          Linking.openURL(reportPath);
-        } else {
-          Alert.alert(
-            'Download Report',
-            'Report download on mobile app is coming soon. Please use the web version to download reports.',
-            [{ text: 'OK' }]
-          );
-        }
+        Alert.alert(
+          'Download Report',
+          'Report download on mobile app is coming soon. Please use the web version to download reports.',
+          [{ text: 'OK' }]
+        );
       }
     } catch (error: any) {
-      console.error('[Bookings] Error viewing report:', error);
-      Alert.alert('Error', error.message || 'Failed to view report');
+      console.error('[Bookings] Error downloading report:', error);
+
+      let errorMessage = 'Failed to download report';
+      if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
+
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
@@ -1778,9 +1836,10 @@ export default function BookingsPage() {
             </Text>
           </View>
 
-          {order.reportUrl && (
+          {/* Report Button - Show when report is generated/available */}
+          {(order.reportGenerated || order.reportUrl) && (
             <TouchableOpacity
-              onPress={() => handleViewLabReport(order.reportUrl, order.orderId)}
+              onPress={() => handleViewLabReport(order)}
               activeOpacity={0.8}
             >
               <LinearGradient
@@ -1797,10 +1856,27 @@ export default function BookingsPage() {
                   gap: 8,
                 }}
               >
-                <EyeIcon width={16} height={16} color="#FFFFFF" />
+                <DocumentArrowDownIcon width={16} height={16} color="#FFFFFF" />
                 <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
               </LinearGradient>
             </TouchableOpacity>
+          )}
+
+          {/* Status - Show when report not yet available */}
+          {!order.reportGenerated && !order.reportUrl && order.status !== 'CANCELLED' && (
+            <View
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                backgroundColor: '#FEF3C7',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#92400E' }}>
+                Report will be available after sample collection
+              </Text>
+            </View>
           )}
         </View>
       </LinearGradient>
