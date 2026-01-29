@@ -203,6 +203,11 @@ export default function BookingsPage() {
   const [upcomingVisionBookings, setUpcomingVisionBookings] = useState<VisionBooking[]>([]);
   const [pastVisionBookings, setPastVisionBookings] = useState<VisionBooking[]>([]);
 
+  // Lab Bookings
+  const [labCarts, setLabCarts] = useState<any[]>([]);
+  const [labOrders, setLabOrders] = useState<any[]>([]);
+  const [labPrescriptions, setLabPrescriptions] = useState<any[]>([]);
+
   // ============================================================================
   // FETCH DATA ON MOUNT AND WHEN viewingUserId CHANGES
   // ============================================================================
@@ -212,6 +217,9 @@ export default function BookingsPage() {
     fetchAppointments();
     fetchDentalBookings();
     fetchVisionBookings();
+    fetchLabCarts();
+    fetchLabOrders();
+    fetchLabPrescriptions();
   }, [viewingUserId]);
 
   // Update active tab when URL changes
@@ -395,6 +403,84 @@ export default function BookingsPage() {
     }
   };
 
+  const fetchLabCarts = async () => {
+    try {
+      console.log('[LabCarts] Fetching lab carts for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[LabCarts] No viewingUserId, skipping lab carts fetch');
+        return;
+      }
+
+      const response = await apiClient.get(`/member/lab/carts?patientId=${viewingUserId}`);
+      const data = response.data;
+
+      if (!data || !data.data) {
+        console.log('[LabCarts] No lab carts found or error fetching');
+        setLabCarts([]);
+        return;
+      }
+
+      console.log('[LabCarts] Lab carts received:', data.data);
+      setLabCarts(data.data || []);
+    } catch (error: any) {
+      console.error('[LabCarts] Error fetching lab carts:', error);
+      setLabCarts([]);
+    }
+  };
+
+  const fetchLabOrders = async () => {
+    try {
+      console.log('[LabOrders] Fetching lab orders for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[LabOrders] No viewingUserId, skipping lab orders fetch');
+        return;
+      }
+
+      const response = await apiClient.get(`/member/lab/orders?patientId=${viewingUserId}`);
+      const data = response.data;
+
+      if (!data || !data.data) {
+        console.log('[LabOrders] No lab orders found or error fetching');
+        setLabOrders([]);
+        return;
+      }
+
+      console.log('[LabOrders] Lab orders received:', data.data);
+      setLabOrders(data.data || []);
+    } catch (error: any) {
+      console.error('[LabOrders] Error fetching lab orders:', error);
+      setLabOrders([]);
+    }
+  };
+
+  const fetchLabPrescriptions = async () => {
+    try {
+      console.log('[LabPrescriptions] Fetching lab prescriptions for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[LabPrescriptions] No viewingUserId, skipping lab prescriptions fetch');
+        return;
+      }
+
+      const response = await apiClient.get(`/member/lab/prescriptions?patientId=${viewingUserId}`);
+      const data = response.data;
+
+      if (!data || !data.data) {
+        console.log('[LabPrescriptions] No lab prescriptions found or error fetching');
+        setLabPrescriptions([]);
+        return;
+      }
+
+      console.log('[LabPrescriptions] Lab prescriptions received:', data.data);
+      setLabPrescriptions(data.data || []);
+    } catch (error: any) {
+      console.error('[LabPrescriptions] Error fetching lab prescriptions:', error);
+      setLabPrescriptions([]);
+    }
+  };
+
   // ============================================================================
   // HANDLERS
   // ============================================================================
@@ -572,6 +658,104 @@ export default function BookingsPage() {
     }
   };
 
+  const handleCancelLabPrescription = async (prescription: any) => {
+    const confirmCancel = () => {
+      return new Promise<boolean>((resolve) => {
+        if (Platform.OS === 'web') {
+          const confirmed = window.confirm(
+            `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`
+          );
+          resolve(confirmed);
+        } else {
+          Alert.alert(
+            'Cancel Prescription',
+            `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`,
+            [
+              { text: 'No', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Yes, Cancel', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        }
+      });
+    };
+
+    const confirmed = await confirmCancel();
+    if (!confirmed) return;
+
+    try {
+      console.log('[Bookings] Cancelling lab prescription:', prescription.prescriptionId);
+      await apiClient.post(`/member/lab/prescriptions/${prescription.prescriptionId}/cancel`);
+
+      if (Platform.OS === 'web') {
+        window.alert('Prescription cancelled successfully');
+      } else {
+        Alert.alert('Success', 'Prescription cancelled successfully');
+      }
+
+      fetchLabPrescriptions();
+    } catch (error: any) {
+      console.error('[Bookings] Error cancelling prescription:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to cancel prescription';
+
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
+
+  const handleViewLabReport = async (reportPath: string, orderId: string) => {
+    try {
+      console.log('[Bookings] Viewing lab report for order:', orderId);
+
+      const token = await tokenManager.getToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication required. Please log in again.');
+        return;
+      }
+
+      const baseURL = apiClient.defaults.baseURL || '';
+      const reportUrl = `${baseURL}/member/lab/orders/${orderId}/report`;
+
+      if (Platform.OS === 'web') {
+        const response = await fetch(reportUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to download report');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `lab-report-${orderId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        // For native, open in browser or show message
+        if (reportPath) {
+          Linking.openURL(reportPath);
+        } else {
+          Alert.alert(
+            'Download Report',
+            'Report download on mobile app is coming soon. Please use the web version to download reports.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    } catch (error: any) {
+      console.error('[Bookings] Error viewing report:', error);
+      Alert.alert('Error', error.message || 'Failed to view report');
+    }
+  };
+
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -673,9 +857,9 @@ export default function BookingsPage() {
       },
       lab: {
         title: 'No lab tests yet',
-        description: 'Add your first lab test to get started',
-        buttonText: 'Browse Lab Tests',
-        route: '/member/lab',
+        description: 'Upload a prescription to get started',
+        buttonText: 'Go to Lab Tests',
+        route: '/member/lab-tests',
       },
       diagnostic: {
         title: 'No diagnostic tests yet',
@@ -1359,6 +1543,407 @@ export default function BookingsPage() {
     );
   };
 
+  const renderLabPrescriptionCard = (prescription: any) => {
+    const statusColors: Record<string, { backgroundColor: string; color: string }> = {
+      UPLOADED: { backgroundColor: '#FEF3C7', color: '#92400E' },
+      DIGITIZING: { backgroundColor: '#DBEAFE', color: '#1E40AF' },
+      CANCELLED: { backgroundColor: '#FEE2E2', color: '#991B1B' },
+      READY: { backgroundColor: '#DCFCE7', color: '#166534' },
+    };
+
+    const statusColor = statusColors[prescription.status] || { backgroundColor: '#F3F4F6', color: '#374151' };
+    const statusText = prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue';
+
+    return (
+      <LinearGradient
+        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 16,
+          padding: 20,
+          borderWidth: 2,
+          borderColor: '#86ACD8',
+          marginBottom: 16,
+        }}
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                borderWidth: 1,
+                borderColor: 'rgba(164, 191, 254, 0.48)',
+              }}
+            >
+              <BeakerIcon width={24} height={24} color="#0F5FDC" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                Lab Prescription
+              </Text>
+              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                {statusText}
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 9999,
+              ...statusColor,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
+              {prescription.status}
+            </Text>
+          </View>
+        </View>
+
+        {/* Details */}
+        <View style={{ gap: 8, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <UserIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {prescription.patientName}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CalendarIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Uploaded: {formatDate(prescription.uploadedAt)}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <MapPinIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Pincode: {prescription.pincode}</Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <View
+          style={{
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: '#E5E7EB',
+          }}
+        >
+          <Text style={{ fontSize: 13, color: '#111827', marginBottom: 8 }}>
+            ID: <Text style={{ fontWeight: '500' }}>{prescription.prescriptionId}</Text>
+          </Text>
+
+          {prescription.status === 'CANCELLED' ? (
+            <View style={{ backgroundColor: '#FEF2F2', padding: 12, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, color: '#991B1B' }}>
+                Cancelled on {formatDate(prescription.cancelledAt)}
+                {prescription.cancellationReason && `\nReason: ${prescription.cancellationReason}`}
+              </Text>
+            </View>
+          ) : (
+            <View style={{ backgroundColor: '#DBEAFE', padding: 12, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, color: '#1E40AF' }}>
+                Our team is processing your prescription. You will be notified once it's ready for ordering.
+              </Text>
+            </View>
+          )}
+
+          {prescription.status === 'UPLOADED' && (
+            <TouchableOpacity
+              onPress={() => handleCancelLabPrescription(prescription)}
+              style={{
+                backgroundColor: '#FEF2F2',
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                alignItems: 'center',
+                marginTop: 8,
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Prescription</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
+    );
+  };
+
+  const renderLabOrderCard = (order: any) => {
+    return (
+      <LinearGradient
+        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 16,
+          padding: 20,
+          borderWidth: 2,
+          borderColor: '#86ACD8',
+          marginBottom: 16,
+        }}
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                borderWidth: 1,
+                borderColor: 'rgba(164, 191, 254, 0.48)',
+              }}
+            >
+              <BeakerIcon width={24} height={24} color="#0F5FDC" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                Lab Test Order
+              </Text>
+              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                {order.items?.length || 0} test(s)
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 9999,
+              backgroundColor: '#DCFCE7',
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '500', color: '#166534' }}>
+              Paid
+            </Text>
+          </View>
+        </View>
+
+        {/* Details */}
+        <View style={{ gap: 8, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <UserIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Vendor: {order.vendorName}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CalendarIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(order.collectionDate)}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ClockIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>{order.collectionTime}</Text>
+          </View>
+
+          {order.items && order.items.length > 0 && (
+            <View style={{ marginTop: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Tests:</Text>
+              {order.items.slice(0, 3).map((item: any, idx: number) => (
+                <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                  • {item.serviceName}
+                </Text>
+              ))}
+              {order.items.length > 3 && (
+                <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                  +{order.items.length - 3} more
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        <View
+          style={{
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: '#E5E7EB',
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#111827' }}>
+              Order ID: <Text style={{ fontWeight: '500' }}>{order.orderId}</Text>
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+              ₹{order.finalAmount}
+            </Text>
+          </View>
+
+          {order.reportUrl && (
+            <TouchableOpacity
+              onPress={() => handleViewLabReport(order.reportUrl, order.orderId)}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#1F63B4', '#5DA4FB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <EyeIcon width={16} height={16} color="#FFFFFF" />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
+    );
+  };
+
+  const renderLabCartCard = (cart: any) => {
+    const hasVendorsAssigned = cart.selectedVendorIds && cart.selectedVendorIds.length > 0;
+    const displayStatus = hasVendorsAssigned ? 'Payment Pending' : cart.status;
+    const statusColor = hasVendorsAssigned
+      ? { backgroundColor: '#FEF3C7', color: '#92400E' }
+      : cart.status === 'ACTIVE'
+      ? { backgroundColor: '#DBEAFE', color: '#1E40AF' }
+      : { backgroundColor: '#F3F4F6', color: '#374151' };
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => router.push(`/member/lab-tests?cartId=${cart.cartId}` as any)}
+      >
+        <LinearGradient
+          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            borderRadius: 16,
+            padding: 20,
+            borderWidth: 2,
+            borderColor: '#86ACD8',
+            marginBottom: 16,
+          }}
+        >
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(164, 191, 254, 0.48)',
+                }}
+              >
+                <BeakerIcon width={24} height={24} color="#0F5FDC" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                  Lab Test Cart
+                </Text>
+                <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                  {cart.items?.length || 0} test(s)
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: 9999,
+                ...statusColor,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
+                {displayStatus}
+              </Text>
+            </View>
+          </View>
+
+          {/* Details */}
+          <View style={{ gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <UserIcon width={16} height={16} color="#111827" />
+              <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {cart.patientName}</Text>
+            </View>
+
+            {cart.items && cart.items.length > 0 && (
+              <View style={{ marginTop: 4 }}>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Tests:</Text>
+                {cart.items.slice(0, 3).map((item: any, idx: number) => (
+                  <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                    • {item.serviceName}
+                  </Text>
+                ))}
+                {cart.items.length > 3 && (
+                  <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                    +{cart.items.length - 3} more
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View
+            style={{
+              paddingTop: 12,
+              borderTopWidth: 1,
+              borderTopColor: '#E5E7EB',
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={{ fontSize: 13, color: '#111827' }}>
+                Cart ID: <Text style={{ fontWeight: '500' }}>{cart.cartId}</Text>
+              </Text>
+            </View>
+
+            {hasVendorsAssigned ? (
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 12, color: '#166534' }}>✓ Vendors assigned by operations team</Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/member/lab-tests/booking/${cart.cartId}` as any)}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#1F63B4', '#5DA4FB']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Select Vendor & Book</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#0F5FDC' }}>
+                View Details →
+              </Text>
+            )}
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
   // ============================================================================
   // LOADING STATE
   // ============================================================================
@@ -1542,7 +2127,72 @@ export default function BookingsPage() {
           )}
 
           {/* Lab Tab */}
-          {activeTab === 'lab' && renderEmptyState('lab')}
+          {activeTab === 'lab' && (
+            <View>
+              {labCarts.length === 0 && labOrders.length === 0 && labPrescriptions.length === 0 ? (
+                renderEmptyState('lab')
+              ) : (
+                <View>
+                  {/* Lab Prescriptions (In Queue) */}
+                  {labPrescriptions.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: 12,
+                        }}
+                      >
+                        Prescriptions In Queue
+                      </Text>
+                      {labPrescriptions.map((prescription) => (
+                        <View key={prescription._id}>{renderLabPrescriptionCard(prescription)}</View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Lab Orders (Paid) */}
+                  {labOrders.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: 12,
+                        }}
+                      >
+                        Lab Test Orders
+                      </Text>
+                      {labOrders.map((order) => (
+                        <View key={order._id}>{renderLabOrderCard(order)}</View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Lab Carts (Active) */}
+                  {labCarts.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: 12,
+                        }}
+                      >
+                        Active Carts
+                      </Text>
+                      {labCarts.map((cart) => (
+                        <View key={cart._id}>{renderLabCartCard(cart)}</View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Diagnostic Tab */}
           {activeTab === 'diagnostic' && renderEmptyState('diagnostic')}
