@@ -208,6 +208,11 @@ export default function BookingsPage() {
   const [labOrders, setLabOrders] = useState<any[]>([]);
   const [labPrescriptions, setLabPrescriptions] = useState<any[]>([]);
 
+  // Diagnostic Bookings
+  const [diagnosticCarts, setDiagnosticCarts] = useState<any[]>([]);
+  const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([]);
+  const [diagnosticPrescriptions, setDiagnosticPrescriptions] = useState<any[]>([]);
+
   // ============================================================================
   // FETCH DATA ON MOUNT AND WHEN viewingUserId CHANGES
   // ============================================================================
@@ -220,6 +225,9 @@ export default function BookingsPage() {
     fetchLabCarts();
     fetchLabOrders();
     fetchLabPrescriptions();
+    fetchDiagnosticCarts();
+    fetchDiagnosticOrders();
+    fetchDiagnosticPrescriptions();
   }, [viewingUserId]);
 
   // Update active tab when URL changes
@@ -478,6 +486,84 @@ export default function BookingsPage() {
     } catch (error: any) {
       console.error('[LabPrescriptions] Error fetching lab prescriptions:', error);
       setLabPrescriptions([]);
+    }
+  };
+
+  const fetchDiagnosticCarts = async () => {
+    try {
+      console.log('[DiagnosticCarts] Fetching diagnostic carts for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[DiagnosticCarts] No viewingUserId, skipping diagnostic carts fetch');
+        return;
+      }
+
+      const response = await apiClient.get(`/member/diagnostics/carts?patientId=${viewingUserId}`);
+      const data = response.data;
+
+      if (!data || !data.data) {
+        console.log('[DiagnosticCarts] No diagnostic carts found or error fetching');
+        setDiagnosticCarts([]);
+        return;
+      }
+
+      console.log('[DiagnosticCarts] Diagnostic carts received:', data.data);
+      setDiagnosticCarts(data.data || []);
+    } catch (error: any) {
+      console.error('[DiagnosticCarts] Error fetching diagnostic carts:', error);
+      setDiagnosticCarts([]);
+    }
+  };
+
+  const fetchDiagnosticOrders = async () => {
+    try {
+      console.log('[DiagnosticOrders] Fetching diagnostic orders for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[DiagnosticOrders] No viewingUserId, skipping diagnostic orders fetch');
+        return;
+      }
+
+      const response = await apiClient.get(`/member/diagnostics/orders?patientId=${viewingUserId}`);
+      const data = response.data;
+
+      if (!data || !data.data) {
+        console.log('[DiagnosticOrders] No diagnostic orders found or error fetching');
+        setDiagnosticOrders([]);
+        return;
+      }
+
+      console.log('[DiagnosticOrders] Diagnostic orders received:', data.data);
+      setDiagnosticOrders(data.data || []);
+    } catch (error: any) {
+      console.error('[DiagnosticOrders] Error fetching diagnostic orders:', error);
+      setDiagnosticOrders([]);
+    }
+  };
+
+  const fetchDiagnosticPrescriptions = async () => {
+    try {
+      console.log('[DiagnosticPrescriptions] Fetching diagnostic prescriptions for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[DiagnosticPrescriptions] No viewingUserId, skipping diagnostic prescriptions fetch');
+        return;
+      }
+
+      const response = await apiClient.get(`/member/diagnostics/prescriptions?patientId=${viewingUserId}`);
+      const data = response.data;
+
+      if (!data || !data.data) {
+        console.log('[DiagnosticPrescriptions] No diagnostic prescriptions found or error fetching');
+        setDiagnosticPrescriptions([]);
+        return;
+      }
+
+      console.log('[DiagnosticPrescriptions] Diagnostic prescriptions received:', data.data);
+      setDiagnosticPrescriptions(data.data || []);
+    } catch (error: any) {
+      console.error('[DiagnosticPrescriptions] Error fetching diagnostic prescriptions:', error);
+      setDiagnosticPrescriptions([]);
     }
   };
 
@@ -814,6 +900,155 @@ export default function BookingsPage() {
     }
   };
 
+  const handleCancelDiagnosticPrescription = async (prescription: any) => {
+    const confirmCancel = () => {
+      return new Promise<boolean>((resolve) => {
+        if (Platform.OS === 'web') {
+          const confirmed = window.confirm(
+            `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`
+          );
+          resolve(confirmed);
+        } else {
+          Alert.alert(
+            'Cancel Prescription',
+            `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`,
+            [
+              { text: 'No', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Yes, Cancel', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        }
+      });
+    };
+
+    const confirmed = await confirmCancel();
+    if (!confirmed) return;
+
+    try {
+      console.log('[Bookings] Cancelling diagnostic prescription:', prescription.prescriptionId);
+      await apiClient.post(`/member/diagnostics/prescriptions/${prescription.prescriptionId}/cancel`);
+
+      if (Platform.OS === 'web') {
+        window.alert('Prescription cancelled successfully');
+      } else {
+        Alert.alert('Success', 'Prescription cancelled successfully');
+      }
+
+      fetchDiagnosticPrescriptions();
+    } catch (error: any) {
+      console.error('[Bookings] Error cancelling prescription:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to cancel prescription';
+
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
+
+  const handleViewDiagnosticReport = async (order: any) => {
+    try {
+      console.log('[Bookings] Downloading diagnostic report for order:', order.orderId);
+      console.log('[Bookings] Report URL from order:', order.reportUrl);
+
+      // Get the backend base URL
+      const baseURL = apiClient.defaults.baseURL || '';
+
+      // If order has a direct reportUrl, use it
+      if (order.reportUrl) {
+        // Construct full URL - reportUrl might be relative (e.g., /api/uploads/...)
+        let fullReportUrl = order.reportUrl;
+        if (order.reportUrl.startsWith('/')) {
+          // It's a relative path, need to construct full URL
+          // Get the origin (protocol + host) from baseURL
+          const urlObj = new URL(baseURL);
+          const origin = urlObj.origin;
+
+          fullReportUrl = `${origin}${order.reportUrl}`;
+        }
+
+        console.log('[Bookings] Opening report URL:', fullReportUrl);
+
+        if (Platform.OS === 'web') {
+          window.open(fullReportUrl, '_blank');
+        } else {
+          Linking.openURL(fullReportUrl);
+        }
+        return;
+      }
+
+      // Fallback: Try to fetch from API endpoint
+      const token = await tokenManager.getToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication required. Please log in again.');
+        return;
+      }
+
+      const endpoint = `/member/diagnostics/orders/${order.orderId}/report`;
+      const fullUrl = `${baseURL}${endpoint}`;
+
+      console.log('[Bookings] Downloading report from URL:', fullUrl);
+
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error('[Bookings] Report download failed:', errorData);
+
+        let errorMsg = 'Failed to download report. The report may not be available yet.';
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            errorMsg = errorData;
+          } else if (typeof errorData.message === 'string') {
+            errorMsg = errorData.message;
+          } else if (errorData.message && typeof errorData.message.message === 'string') {
+            errorMsg = errorData.message.message;
+          } else if (typeof errorData.error === 'string') {
+            errorMsg = errorData.error;
+          }
+        }
+        throw new Error(errorMsg);
+      }
+
+      if (Platform.OS === 'web') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = order.reportFileName || `diagnostic-report-${order.orderId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        console.log('[Bookings] Report downloaded successfully');
+      } else {
+        Alert.alert(
+          'Download Report',
+          'Report download on mobile app is coming soon. Please use the web version to download reports.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error: any) {
+      console.error('[Bookings] Error downloading report:', error);
+
+      let errorMessage = 'Failed to download report';
+      if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
+
+      if (Platform.OS === 'web') {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
+
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -921,9 +1156,9 @@ export default function BookingsPage() {
       },
       diagnostic: {
         title: 'No diagnostic tests yet',
-        description: 'Add your first diagnostic test to get started',
-        buttonText: 'Browse Diagnostic Tests',
-        route: '/member/diagnostic',
+        description: 'Upload a prescription to book diagnostic services',
+        buttonText: 'Go to Diagnostics',
+        route: '/member/diagnostics',
       },
       pharmacy: {
         title: 'No pharmacy orders yet',
@@ -2020,6 +2255,425 @@ export default function BookingsPage() {
     );
   };
 
+  const renderDiagnosticPrescriptionCard = (prescription: any) => {
+    const statusColors: Record<string, { backgroundColor: string; color: string }> = {
+      UPLOADED: { backgroundColor: '#FEF3C7', color: '#92400E' },
+      DIGITIZING: { backgroundColor: '#DBEAFE', color: '#1E40AF' },
+      CANCELLED: { backgroundColor: '#FEE2E2', color: '#991B1B' },
+      READY: { backgroundColor: '#DCFCE7', color: '#166534' },
+    };
+
+    const statusColor = statusColors[prescription.status] || { backgroundColor: '#F3F4F6', color: '#374151' };
+    const statusText = prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue';
+
+    return (
+      <LinearGradient
+        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 16,
+          padding: 20,
+          borderWidth: 2,
+          borderColor: '#86ACD8',
+          marginBottom: 16,
+        }}
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                borderWidth: 1,
+                borderColor: 'rgba(164, 191, 254, 0.48)',
+              }}
+            >
+              <BeakerIcon width={24} height={24} color="#0F5FDC" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                Diagnostic Prescription
+              </Text>
+              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                {statusText}
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 9999,
+              ...statusColor,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
+              {prescription.status}
+            </Text>
+          </View>
+        </View>
+
+        {/* Details */}
+        <View style={{ gap: 8, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <UserIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {prescription.patientName}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CalendarIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Uploaded: {formatDate(prescription.uploadedAt)}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <MapPinIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Pincode: {prescription.pincode}</Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <View
+          style={{
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: '#E5E7EB',
+          }}
+        >
+          <Text style={{ fontSize: 13, color: '#111827', marginBottom: 8 }}>
+            ID: <Text style={{ fontWeight: '500' }}>{prescription.prescriptionId}</Text>
+          </Text>
+
+          {prescription.status === 'CANCELLED' ? (
+            <View style={{ backgroundColor: '#FEF2F2', padding: 12, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, color: '#991B1B' }}>
+                Cancelled on {formatDate(prescription.cancelledAt)}
+                {prescription.cancellationReason && `\nReason: ${prescription.cancellationReason}`}
+              </Text>
+            </View>
+          ) : (
+            <View style={{ backgroundColor: '#DBEAFE', padding: 12, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, color: '#1E40AF' }}>
+                Our team is processing your prescription. You will be notified once it's ready for booking.
+              </Text>
+            </View>
+          )}
+
+          {prescription.status === 'UPLOADED' && (
+            <TouchableOpacity
+              onPress={() => handleCancelDiagnosticPrescription(prescription)}
+              style={{
+                backgroundColor: '#FEF2F2',
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                alignItems: 'center',
+                marginTop: 8,
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Prescription</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
+    );
+  };
+
+  const renderDiagnosticOrderCard = (order: any) => {
+    return (
+      <LinearGradient
+        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 16,
+          padding: 20,
+          borderWidth: 2,
+          borderColor: '#86ACD8',
+          marginBottom: 16,
+        }}
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                borderWidth: 1,
+                borderColor: 'rgba(164, 191, 254, 0.48)',
+              }}
+            >
+              <BeakerIcon width={24} height={24} color="#0F5FDC" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                Diagnostic Order
+              </Text>
+              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                {order.items?.length || 0} service(s)
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 9999,
+              backgroundColor: '#DCFCE7',
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '500', color: '#166534' }}>
+              Paid
+            </Text>
+          </View>
+        </View>
+
+        {/* Details */}
+        <View style={{ gap: 8, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <UserIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>Center: {order.vendorName}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <CalendarIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(order.appointmentDate || order.collectionDate)}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ClockIcon width={16} height={16} color="#111827" />
+            <Text style={{ fontSize: 13, color: '#111827' }}>{order.appointmentTime || order.collectionTime}</Text>
+          </View>
+
+          {order.items && order.items.length > 0 && (
+            <View style={{ marginTop: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Services:</Text>
+              {order.items.slice(0, 3).map((item: any, idx: number) => (
+                <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                  • {item.serviceName}
+                </Text>
+              ))}
+              {order.items.length > 3 && (
+                <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                  +{order.items.length - 3} more
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        <View
+          style={{
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: '#E5E7EB',
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#111827' }}>
+              Order ID: <Text style={{ fontWeight: '500' }}>{order.orderId}</Text>
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+              ₹{order.finalAmount}
+            </Text>
+          </View>
+
+          {/* Report Button - Show when report is generated/available */}
+          {(order.reportGenerated || order.reportUrl) && (
+            <TouchableOpacity
+              onPress={() => handleViewDiagnosticReport(order)}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#1F63B4', '#5DA4FB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <DocumentArrowDownIcon width={16} height={16} color="#FFFFFF" />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {/* Status - Show when report not yet available */}
+          {!order.reportGenerated && !order.reportUrl && order.status !== 'CANCELLED' && (
+            <View
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                backgroundColor: '#FEF3C7',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#92400E' }}>
+                Report will be available after your appointment
+              </Text>
+            </View>
+          )}
+        </View>
+      </LinearGradient>
+    );
+  };
+
+  const renderDiagnosticCartCard = (cart: any) => {
+    const hasVendorsAssigned = cart.selectedVendorIds && cart.selectedVendorIds.length > 0;
+    const displayStatus = hasVendorsAssigned ? 'Payment Pending' : cart.status;
+    const statusColor = hasVendorsAssigned
+      ? { backgroundColor: '#FEF3C7', color: '#92400E' }
+      : cart.status === 'ACTIVE'
+      ? { backgroundColor: '#DBEAFE', color: '#1E40AF' }
+      : { backgroundColor: '#F3F4F6', color: '#374151' };
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => router.push(`/member/diagnostics?cartId=${cart.cartId}` as any)}
+      >
+        <LinearGradient
+          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            borderRadius: 16,
+            padding: 20,
+            borderWidth: 2,
+            borderColor: '#86ACD8',
+            marginBottom: 16,
+          }}
+        >
+          {/* Header */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(164, 191, 254, 0.48)',
+                }}
+              >
+                <BeakerIcon width={24} height={24} color="#0F5FDC" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                  Diagnostic Cart
+                </Text>
+                <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                  {cart.items?.length || 0} service(s)
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: 9999,
+                ...statusColor,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
+                {displayStatus}
+              </Text>
+            </View>
+          </View>
+
+          {/* Details */}
+          <View style={{ gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <UserIcon width={16} height={16} color="#111827" />
+              <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {cart.patientName}</Text>
+            </View>
+
+            {cart.items && cart.items.length > 0 && (
+              <View style={{ marginTop: 4 }}>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Services:</Text>
+                {cart.items.slice(0, 3).map((item: any, idx: number) => (
+                  <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                    • {item.serviceName}
+                  </Text>
+                ))}
+                {cart.items.length > 3 && (
+                  <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                    +{cart.items.length - 3} more
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View
+            style={{
+              paddingTop: 12,
+              borderTopWidth: 1,
+              borderTopColor: '#E5E7EB',
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={{ fontSize: 13, color: '#111827' }}>
+                Cart ID: <Text style={{ fontWeight: '500' }}>{cart.cartId}</Text>
+              </Text>
+            </View>
+
+            {hasVendorsAssigned ? (
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 12, color: '#166534' }}>✓ Centers assigned by operations team</Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/member/diagnostics/booking/${cart.cartId}` as any)}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#1F63B4', '#5DA4FB']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Select Center & Book</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#0F5FDC' }}>
+                View Details →
+              </Text>
+            )}
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
   // ============================================================================
   // LOADING STATE
   // ============================================================================
@@ -2288,7 +2942,88 @@ export default function BookingsPage() {
             })()}
 
           {/* Diagnostic Tab */}
-          {activeTab === 'diagnostic' && renderEmptyState('diagnostic')}
+          {activeTab === 'diagnostic' && (() => {
+              // Filter out prescriptions that already have carts OR orders created
+              const prescriptionIdsWithCarts = new Set(
+                diagnosticCarts.map((cart: any) => cart.prescriptionId).filter(Boolean)
+              );
+              const prescriptionIdsWithOrders = new Set(
+                diagnosticOrders.map((order: any) => order.prescriptionId).filter(Boolean)
+              );
+
+              const filteredPrescriptions = diagnosticPrescriptions.filter(
+                (prescription: any) =>
+                  !prescriptionIdsWithCarts.has(prescription._id) &&
+                  !prescriptionIdsWithOrders.has(prescription._id)
+              );
+
+              return (
+            <View>
+              {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 && filteredPrescriptions.length === 0 ? (
+                renderEmptyState('diagnostic')
+              ) : (
+                <View>
+                  {/* Diagnostic Prescriptions (In Queue) - only show if no cart created yet */}
+                  {filteredPrescriptions.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: 12,
+                        }}
+                      >
+                        Prescriptions In Queue
+                      </Text>
+                      {filteredPrescriptions.map((prescription: any) => (
+                        <View key={prescription._id}>{renderDiagnosticPrescriptionCard(prescription)}</View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Diagnostic Orders (Paid) */}
+                  {diagnosticOrders.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: 12,
+                        }}
+                      >
+                        Diagnostic Orders
+                      </Text>
+                      {diagnosticOrders.map((order) => (
+                        <View key={order._id}>{renderDiagnosticOrderCard(order)}</View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Diagnostic Carts (Active) */}
+                  {diagnosticCarts.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '600',
+                          color: '#111827',
+                          marginBottom: 12,
+                        }}
+                      >
+                        Active Carts
+                      </Text>
+                      {diagnosticCarts.map((cart) => (
+                        <View key={cart._id}>{renderDiagnosticCartCard(cart)}</View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+              );
+            })()}
 
           {/* Pharmacy Tab */}
           {activeTab === 'pharmacy' && renderEmptyState('pharmacy')}

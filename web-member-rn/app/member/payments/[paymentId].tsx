@@ -408,7 +408,27 @@ export default function PaymentGatewayPage() {
         createdBookingId = labOrderResponse.data?.data?.orderId || labOrderResponse.data?.orderId || '';
         console.log('[PaymentGateway] Lab order created:', createdBookingId);
       }
-      // Handle other service types (DIAGNOSTIC, AHC, APPOINTMENT)
+      // Handle DIAGNOSTIC bookings - need to create diagnostic order
+      else if (bookingData.serviceType === 'DIAGNOSTIC') {
+        console.log('[PaymentGateway] Creating DIAGNOSTIC order...');
+
+        const diagnosticOrderPayload = {
+          cartId: bookingData.serviceDetails.cartId,
+          vendorId: bookingData.serviceDetails.vendorId,
+          slotId: bookingData.serviceDetails.slotId,
+          collectionType: bookingData.serviceDetails.collectionType,
+          appointmentDate: bookingData.serviceDetails.date,
+          timeSlot: bookingData.serviceDetails.time,
+          paymentAlreadyProcessed: true, // Payment is being processed now
+        };
+
+        console.log('[PaymentGateway] Diagnostic order payload:', diagnosticOrderPayload);
+
+        const diagnosticOrderResponse = await apiClient.post('/member/diagnostics/orders', diagnosticOrderPayload);
+        createdBookingId = diagnosticOrderResponse.data?.data?.orderId || diagnosticOrderResponse.data?.orderId || '';
+        console.log('[PaymentGateway] Diagnostic order created:', createdBookingId);
+      }
+      // Handle other service types (AHC, APPOINTMENT)
       else {
         console.warn('[PaymentGateway] Service type not yet supported for booking creation:', bookingData.serviceType);
         // For now, just mark payment as paid without creating booking
