@@ -59,6 +59,16 @@ function OperationsLayoutContent({
       current: pathname.startsWith('/appointments')
     },
     {
+      name: 'Lab',
+      path: '/lab',
+      current: pathname.startsWith('/lab')
+    },
+    {
+      name: 'Diagnostics',
+      path: '/diagnostics',
+      current: pathname.startsWith('/diagnostics')
+    },
+    {
       name: 'Dental Services',
       path: '/dental-services',
       current: pathname.startsWith('/dental-services')

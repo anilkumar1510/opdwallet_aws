@@ -18,6 +18,7 @@ const protectedRoutes = [
   '/dental-services',
   '/vision-services',
   '/lab',
+  '/diagnostics',
 ]
 
 // Public routes that don't require authentication (WITHOUT base path prefix)
