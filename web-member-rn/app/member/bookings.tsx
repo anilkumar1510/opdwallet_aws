@@ -222,6 +222,9 @@ export default function BookingsPage() {
   // Covered benefits (from wallet categories)
   const [coveredBenefits, setCoveredBenefits] = useState<Set<string>>(new Set());
 
+  // AHC eligibility (checked separately via eligibility endpoint)
+  const [ahcCovered, setAhcCovered] = useState<boolean>(false);
+
   // Map tab names to category codes
   const tabToCategoryCode: Record<string, string> = {
     doctors: 'CAT001',      // Doctor Consult / In-Clinic Appointments
@@ -230,7 +233,7 @@ export default function BookingsPage() {
     lab: 'CAT004',          // Lab Tests
     diagnostic: 'CAT003',   // Diagnostic Services
     pharmacy: 'CAT002',     // Pharmacy
-    ahc: 'CAT008',          // Annual Health Check (or check if it exists)
+    // Note: AHC is checked separately via ahcCovered state
   };
 
   // ============================================================================
@@ -271,15 +274,34 @@ export default function BookingsPage() {
         console.log('[Bookings] Covered benefits:', Array.from(covered));
         setCoveredBenefits(covered);
       }
+
+      // Check AHC eligibility separately (it's not in wallet categories)
+      try {
+        const ahcResponse = await apiClient.get('/member/ahc/package');
+        // If we get a package, AHC is covered
+        const hasAhcPackage = ahcResponse.data?.data?.packageId || ahcResponse.data?.data?.id;
+        console.log('[Bookings] AHC package available:', !!hasAhcPackage);
+        setAhcCovered(!!hasAhcPackage);
+      } catch (ahcError: any) {
+        // If 404 or error, AHC is not covered
+        console.log('[Bookings] AHC not covered or error:', ahcError?.response?.status);
+        setAhcCovered(false);
+      }
     } catch (error) {
       console.error('[Bookings] Error fetching covered benefits:', error);
       // On error, allow all benefits (fail-open)
-      setCoveredBenefits(new Set(['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT006', 'CAT007', 'CAT008']));
+      setCoveredBenefits(new Set(['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT006', 'CAT007']));
+      setAhcCovered(false);
     }
   };
 
   // Check if a benefit type is covered
   const isBenefitCovered = (tabType: string): boolean => {
+    // AHC is checked separately
+    if (tabType === 'ahc') {
+      return ahcCovered;
+    }
+
     const categoryCode = tabToCategoryCode[tabType];
     if (!categoryCode) return true; // Unknown tabs are allowed
     return coveredBenefits.has(categoryCode);
@@ -3607,7 +3629,44 @@ export default function BookingsPage() {
           {/* AHC Tab */}
           {activeTab === 'ahc' && (
             <View>
-              {ahcOrders.length === 0 ? (
+              {!isBenefitCovered('ahc') ? (
+                /* AHC not covered under policy */
+                <LinearGradient
+                  colors={['#F3F4F6', '#E5E7EB', '#E5E7EB']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    borderRadius: 16,
+                    padding: 48,
+                    alignItems: 'center',
+                    borderWidth: 2,
+                    borderColor: '#D1D5DB',
+                  }}
+                >
+                  <IconCircle icon={SparklesIcon} size="lg" />
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: '700',
+                      color: '#6B7280',
+                      marginTop: 24,
+                      marginBottom: 8,
+                      textAlign: 'center',
+                    }}
+                  >
+                    Annual Health Check
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: '#6B7280',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Annual Health Check is not covered under your policy
+                  </Text>
+                </LinearGradient>
+              ) : ahcOrders.length === 0 ? (
                 renderEmptyState('ahc')
               ) : (
                 <View>
@@ -3625,29 +3684,27 @@ export default function BookingsPage() {
                     <View key={order._id}>{renderAhcOrderCard(order)}</View>
                   ))}
 
-                  {/* Book Another CTA - only show if AHC is covered */}
-                  {isBenefitCovered('ahc') && (
-                    <TouchableOpacity
-                      onPress={() => router.push('/member/wellness-programs' as any)}
-                      activeOpacity={0.8}
-                      style={{ marginTop: 8 }}
+                  {/* Book Another CTA */}
+                  <TouchableOpacity
+                    onPress={() => router.push('/member/wellness-programs' as any)}
+                    activeOpacity={0.8}
+                    style={{ marginTop: 8 }}
+                  >
+                    <LinearGradient
+                      colors={['#90EAA9', '#5FA171']}
+                      start={{ x: 0.5, y: 0 }}
+                      end={{ x: 0.5, y: 1 }}
+                      style={{
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
                     >
-                      <LinearGradient
-                        colors={['#90EAA9', '#5FA171']}
-                        start={{ x: 0.5, y: 0 }}
-                        end={{ x: 0.5, y: 1 }}
-                        style={{
-                          paddingVertical: 14,
-                          borderRadius: 12,
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                          View Wellness Packages
-                        </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  )}
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                        View Wellness Packages
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
