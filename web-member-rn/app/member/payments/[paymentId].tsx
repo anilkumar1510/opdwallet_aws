@@ -428,7 +428,94 @@ export default function PaymentGatewayPage() {
         createdBookingId = diagnosticOrderResponse.data?.data?.orderId || diagnosticOrderResponse.data?.orderId || '';
         console.log('[PaymentGateway] Diagnostic order created:', createdBookingId);
       }
-      // Handle other service types (AHC, APPOINTMENT)
+      // Handle AHC bookings - Annual Health Check
+      else if (bookingData.serviceType === 'AHC') {
+        console.log('[PaymentGateway] Creating AHC order...');
+
+        // Map serviceDetails to the expected CreateAhcOrderDto format
+        const sd = bookingData.serviceDetails;
+
+        // Transform lab collection address to match backend DTO format
+        // Only include for HOME_COLLECTION and when all required fields are present
+        let formattedLabAddress = undefined;
+        if (sd.labCollectionType === 'HOME_COLLECTION' && sd.labCollectionAddress) {
+          const addr = sd.labCollectionAddress;
+          const addressLine1 = addr.addressLine1 || addr.line1 || '';
+          const city = addr.city || '';
+          const pincode = addr.pincode || '';
+          const state = addr.state || 'N/A'; // Default state if not provided
+          const fullName = addr.fullName || bookingData.patientName || 'Member';
+          const phone = addr.phone || '0000000000'; // Default phone if not provided
+
+          // Only include address if we have the essential fields
+          if (addressLine1 && city && pincode) {
+            formattedLabAddress = {
+              fullName,
+              phone,
+              addressLine1,
+              addressLine2: addr.addressLine2 || addr.line2 || '',
+              pincode,
+              city,
+              state,
+            };
+          }
+        }
+
+        const ahcOrderPayload = {
+          packageId: sd.packageId,
+          // Lab portion
+          labVendorId: sd.labVendorId,
+          labSlotId: sd.labSlotId,
+          labCollectionType: sd.labCollectionType,
+          labCollectionDate: sd.labDate,
+          labCollectionTime: sd.labTime,
+          labCollectionAddress: formattedLabAddress,
+          // Diagnostic portion
+          diagnosticVendorId: sd.diagnosticVendorId,
+          diagnosticSlotId: sd.diagnosticSlotId,
+          diagnosticAppointmentDate: sd.diagnosticDate,
+          diagnosticAppointmentTime: sd.diagnosticTime,
+          // Payment flag
+          paymentAlreadyProcessed: true,
+        };
+
+        console.log('[PaymentGateway] AHC order payload:', ahcOrderPayload);
+
+        const ahcBookingResponse = await apiClient.post('/member/ahc/orders', ahcOrderPayload);
+        createdBookingId = ahcBookingResponse.data?.data?.orderId || ahcBookingResponse.data?.orderId || ahcBookingResponse.data?.data?._id || ahcBookingResponse.data?._id || '';
+        console.log('[PaymentGateway] AHC booking created:', createdBookingId);
+
+        // Store completed booking for display on bookings page
+        const completedBooking = {
+          _id: ahcBookingResponse.data?.data?._id || ahcBookingResponse.data?._id || `ahc-${Date.now()}`,
+          orderId: createdBookingId || `AHC-${Date.now()}`,
+          packageName: bookingData.serviceDetails?.packageName || 'Annual Health Check',
+          status: 'PLACED',
+          createdAt: new Date().toISOString(),
+          labPortion: bookingData.serviceDetails?.labVendorId ? {
+            vendorId: bookingData.serviceDetails.labVendorId,
+            vendorName: bookingData.serviceDetails.labVendorName,
+            collectionDate: bookingData.serviceDetails.labDate,
+            timeSlot: bookingData.serviceDetails.labTime,
+            collectionType: bookingData.serviceDetails.labCollectionType,
+            collectionAddress: bookingData.serviceDetails.labCollectionAddress,
+          } : null,
+          diagnosticPortion: bookingData.serviceDetails?.diagnosticVendorId ? {
+            vendorId: bookingData.serviceDetails.diagnosticVendorId,
+            vendorName: bookingData.serviceDetails.diagnosticVendorName,
+            collectionDate: bookingData.serviceDetails.diagnosticDate,
+            timeSlot: bookingData.serviceDetails.diagnosticTime,
+            collectionType: 'CENTER_VISIT',
+          } : null,
+          totalAmount: bookingData.consultationFee,
+          walletDeduction: bookingData.walletCoverage,
+          copayAmount: bookingData.copayAmount,
+        };
+
+        console.log('[PaymentGateway] Storing AHC completed booking:', completedBooking);
+        await AsyncStorage.setItem('ahc_completed_booking', JSON.stringify(completedBooking));
+      }
+      // Handle other service types (APPOINTMENT)
       else {
         console.warn('[PaymentGateway] Service type not yet supported for booking creation:', bookingData.serviceType);
         // For now, just mark payment as paid without creating booking
@@ -463,6 +550,12 @@ export default function PaymentGatewayPage() {
       // Step 5: Clear AsyncStorage
       console.log('[PaymentGateway] Clearing pending booking from AsyncStorage...');
       await AsyncStorage.removeItem('pendingBooking');
+
+      // For AHC bookings, also clear the session-specific data
+      if (bookingData.serviceType === 'AHC') {
+        console.log('[PaymentGateway] Clearing AHC session data...');
+        await AsyncStorage.multiRemove(['ahc_package', 'ahc_booking_data', 'ahc_diagnostic_booking']);
+      }
 
       // Step 6: Set success state
       if (createdBookingId) {

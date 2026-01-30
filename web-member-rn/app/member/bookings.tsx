@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -213,6 +215,9 @@ export default function BookingsPage() {
   const [diagnosticOrders, setDiagnosticOrders] = useState<any[]>([]);
   const [diagnosticPrescriptions, setDiagnosticPrescriptions] = useState<any[]>([]);
 
+  // AHC (Annual Health Check) Orders
+  const [ahcOrders, setAhcOrders] = useState<any[]>([]);
+
   // ============================================================================
   // FETCH DATA ON MOUNT AND WHEN viewingUserId CHANGES
   // ============================================================================
@@ -228,6 +233,7 @@ export default function BookingsPage() {
     fetchDiagnosticCarts();
     fetchDiagnosticOrders();
     fetchDiagnosticPrescriptions();
+    fetchAhcOrders();
   }, [viewingUserId]);
 
   // Update active tab when URL changes
@@ -566,6 +572,86 @@ export default function BookingsPage() {
       setDiagnosticPrescriptions([]);
     }
   };
+
+  const fetchAhcOrders = async () => {
+    try {
+      console.log('[AhcOrders] Fetching AHC orders for profile:', viewingUserId);
+
+      if (!viewingUserId) {
+        console.log('[AhcOrders] No viewingUserId, skipping AHC orders fetch');
+        return;
+      }
+
+      // Try fetching from /member/ahc/orders first
+      let ordersData: any[] = [];
+
+      try {
+        const response = await apiClient.get(`/member/ahc/orders?userId=${viewingUserId}`);
+        const data = response.data;
+        console.log('[AhcOrders] Orders API response:', data);
+
+        if (data?.data && Array.isArray(data.data)) {
+          ordersData = data.data;
+        } else if (Array.isArray(data)) {
+          ordersData = data;
+        }
+      } catch (ordersError: any) {
+        console.log('[AhcOrders] /member/ahc/orders failed, trying /member/ahc/bookings...');
+
+        // Try alternative endpoint
+        try {
+          const altResponse = await apiClient.get(`/member/ahc/bookings?userId=${viewingUserId}`);
+          const altData = altResponse.data;
+          console.log('[AhcOrders] Bookings API response:', altData);
+
+          if (altData?.data && Array.isArray(altData.data)) {
+            ordersData = altData.data;
+          } else if (Array.isArray(altData)) {
+            ordersData = altData;
+          }
+        } catch (bookingsError) {
+          console.log('[AhcOrders] Both endpoints failed');
+        }
+      }
+
+      // Also check for pending booking in AsyncStorage (recently created)
+      try {
+        const pendingBooking = await AsyncStorage.getItem('ahc_completed_booking');
+        if (pendingBooking) {
+          const completedBooking = JSON.parse(pendingBooking);
+          console.log('[AhcOrders] Found completed booking in AsyncStorage:', completedBooking);
+
+          // Check if this booking is already in the orders list
+          const alreadyExists = ordersData.some(
+            (order) => order._id === completedBooking._id || order.orderId === completedBooking.orderId
+          );
+
+          if (!alreadyExists && completedBooking.packageName) {
+            ordersData.unshift(completedBooking);
+          }
+        }
+      } catch (storageError) {
+        console.log('[AhcOrders] Error reading AsyncStorage:', storageError);
+      }
+
+      console.log('[AhcOrders] Final AHC orders:', ordersData.length);
+      setAhcOrders(ordersData);
+    } catch (error: any) {
+      console.error('[AhcOrders] Error fetching AHC orders:', error);
+      setAhcOrders([]);
+    }
+  };
+
+  // Re-fetch AHC orders when page gains focus (important for returning from payment)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Bookings] Page focused, checking for AHC updates...');
+      // Only re-fetch if on AHC tab or navigating to AHC tab
+      if (activeTab === 'ahc' || params.tab === 'ahc') {
+        fetchAhcOrders();
+      }
+    }, [viewingUserId, activeTab, params.tab])
+  );
 
   // ============================================================================
   // HANDLERS
@@ -1223,8 +1309,8 @@ export default function BookingsPage() {
       ahc: {
         title: 'No health checkups yet',
         description: 'Book your annual health checkup',
-        buttonText: 'Browse AHC Packages',
-        route: '/member/ahc',
+        buttonText: 'Book Annual Health Check',
+        route: '/member/wellness-programs',
       },
     };
 
@@ -1292,6 +1378,72 @@ export default function BookingsPage() {
         </TouchableOpacity>
       </LinearGradient>
     );
+  };
+
+  // Handle downloading AHC reports
+  const handleDownloadReport = async (report: any, type: 'lab' | 'diagnostic', orderId: string) => {
+    try {
+      console.log(`[Bookings] Downloading ${type} report for order ${orderId}:`, report);
+
+      // Get the file URL from the report
+      const fileUrl = report.filePath || report.url;
+
+      if (!fileUrl) {
+        Alert.alert('Error', 'Report file not available');
+        return;
+      }
+
+      // Construct the full URL
+      // apiClient.defaults.baseURL is like "http://localhost:3001/api"
+      // Static files are served at /api/uploads (per ServeStaticModule config)
+      // filePath in DB is like "uploads/ahc-reports/lab/filename.pdf"
+      let fullUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        const baseUrl = apiClient.defaults.baseURL || '';
+        // Ensure fileUrl starts with / for proper concatenation
+        const normalizedPath = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+        fullUrl = `${baseUrl}${normalizedPath}`;
+      }
+
+      console.log(`[Bookings] Download URL: ${fullUrl}`);
+
+      // For web, open in new tab
+      if (Platform.OS === 'web') {
+        // Try to get the file with auth token
+        try {
+          const token = await tokenManager.getToken();
+          const response = await fetch(fullUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = report.originalName || report.fileName || `${type}_report_${orderId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          } else {
+            // Fallback: open URL directly
+            window.open(fullUrl, '_blank');
+          }
+        } catch (fetchError) {
+          // Fallback: open URL directly
+          window.open(fullUrl, '_blank');
+        }
+      } else {
+        // For native, use Linking
+        await Linking.openURL(fullUrl);
+      }
+    } catch (error) {
+      console.error('[Bookings] Error downloading report:', error);
+      Alert.alert('Error', 'Failed to download report. Please try again.');
+    }
   };
 
   const renderDentalBookingCard = (booking: DentalBooking, isUpcoming: boolean) => {
@@ -2728,6 +2880,239 @@ export default function BookingsPage() {
     );
   };
 
+  const renderAhcOrderCard = (order: any) => {
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'PLACED':
+          return { backgroundColor: '#FEF3C7', color: '#92400E' };
+        case 'CONFIRMED':
+          return { backgroundColor: '#DBEAFE', color: '#1E40AF' };
+        case 'LAB_COMPLETED':
+        case 'DIAGNOSTIC_COMPLETED':
+          return { backgroundColor: '#D1FAE5', color: '#065F46' };
+        case 'COMPLETED':
+          return { backgroundColor: '#DCFCE7', color: '#166534' };
+        case 'CANCELLED':
+          return { backgroundColor: '#FEE2E2', color: '#991B1B' };
+        default:
+          return { backgroundColor: '#F3F4F6', color: '#374151' };
+      }
+    };
+
+    const statusColor = getStatusColor(order.status);
+
+    // Handle both API format (labOrder/diagnosticOrder) and AsyncStorage format (labPortion/diagnosticPortion)
+    const labData = order.labOrder || order.labPortion;
+    const diagnosticData = order.diagnosticOrder || order.diagnosticPortion;
+
+    const hasLabPortion = labData && (labData.items?.length > 0 || labData.vendorId || labData.vendorName);
+    const hasDiagnosticPortion = diagnosticData && (diagnosticData.items?.length > 0 || diagnosticData.vendorId || diagnosticData.vendorName);
+
+    // Check for reports
+    const labReports = labData?.reports || [];
+    const diagnosticReports = diagnosticData?.reports || [];
+
+    return (
+      <LinearGradient
+        colors={['rgba(144, 234, 169, 0.15)', 'rgba(95, 161, 113, 0.15)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 16,
+          padding: 20,
+          borderWidth: 2,
+          borderColor: 'rgba(95, 161, 113, 0.3)',
+          marginBottom: 16,
+        }}
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(95, 161, 113, 0.2)',
+                borderWidth: 1,
+                borderColor: 'rgba(95, 161, 113, 0.3)',
+              }}
+            >
+              <SparklesIcon width={24} height={24} color="#5FA171" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                {order.packageName || 'Annual Health Check'}
+              </Text>
+              <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                {hasLabPortion && hasDiagnosticPortion
+                  ? 'Lab + Diagnostic Tests'
+                  : hasLabPortion
+                  ? 'Lab Tests'
+                  : 'Diagnostic Tests'}
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 9999,
+              ...statusColor,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
+              {order.status.replace(/_/g, ' ')}
+            </Text>
+          </View>
+        </View>
+
+        {/* Lab Portion */}
+        {hasLabPortion && (
+          <View style={{ marginBottom: 12, padding: 12, backgroundColor: '#FFFFFF', borderRadius: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
+              Lab Tests {labData.items?.length ? `(${labData.items.length})` : ''}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <CalendarIcon width={14} height={14} color="#6B7280" />
+              <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                {labData.collectionDate ? formatDate(labData.collectionDate) : 'Not scheduled'}
+              </Text>
+            </View>
+            {labData.vendorName && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <BuildingStorefrontIcon width={14} height={14} color="#6B7280" />
+                <Text style={{ fontSize: 12, color: '#6B7280' }}>{labData.vendorName}</Text>
+              </View>
+            )}
+            {/* Lab Reports */}
+            {labReports.length > 0 && (
+              <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#059669', marginBottom: 6 }}>
+                  Reports Available ({labReports.length})
+                </Text>
+                {labReports.map((report: any, index: number) => (
+                  <TouchableOpacity
+                    key={report._id || index}
+                    onPress={() => handleDownloadReport(report, 'lab', order.orderId)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      backgroundColor: '#ECFDF5',
+                      borderRadius: 6,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <DocumentArrowDownIcon width={16} height={16} color="#059669" />
+                    <Text style={{ fontSize: 12, color: '#059669', flex: 1 }} numberOfLines={1}>
+                      {report.originalName || report.fileName || `Lab Report ${index + 1}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Diagnostic Portion */}
+        {hasDiagnosticPortion && (
+          <View style={{ marginBottom: 12, padding: 12, backgroundColor: '#FFFFFF', borderRadius: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
+              Diagnostic Tests {diagnosticData.items?.length ? `(${diagnosticData.items.length})` : ''}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <CalendarIcon width={14} height={14} color="#6B7280" />
+              <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                {diagnosticData.appointmentDate || diagnosticData.collectionDate ? formatDate(diagnosticData.appointmentDate || diagnosticData.collectionDate) : 'Not scheduled'}
+              </Text>
+            </View>
+            {diagnosticData.vendorName && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <BuildingStorefrontIcon width={14} height={14} color="#6B7280" />
+                <Text style={{ fontSize: 12, color: '#6B7280' }}>{diagnosticData.vendorName}</Text>
+              </View>
+            )}
+            {/* Diagnostic Reports */}
+            {diagnosticReports.length > 0 && (
+              <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#059669', marginBottom: 6 }}>
+                  Reports Available ({diagnosticReports.length})
+                </Text>
+                {diagnosticReports.map((report: any, index: number) => (
+                  <TouchableOpacity
+                    key={report._id || index}
+                    onPress={() => handleDownloadReport(report, 'diagnostic', order.orderId)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingVertical: 6,
+                      paddingHorizontal: 10,
+                      backgroundColor: '#ECFDF5',
+                      borderRadius: 6,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <DocumentArrowDownIcon width={16} height={16} color="#059669" />
+                    <Text style={{ fontSize: 12, color: '#059669', flex: 1 }} numberOfLines={1}>
+                      {report.originalName || report.fileName || `Diagnostic Report ${index + 1}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Footer */}
+        <View
+          style={{
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: 'rgba(95, 161, 113, 0.2)',
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#111827' }}>
+              Order ID: <Text style={{ fontWeight: '500' }}>{order.orderId}</Text>
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#5FA171' }}>
+              ₹{order.finalAmount || 0}
+            </Text>
+          </View>
+
+          {/* Payment Status */}
+          {order.paymentStatus && (
+            <View
+              style={{
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                backgroundColor: order.paymentStatus === 'COMPLETED' ? '#DCFCE7' : '#FEF3C7',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '500',
+                  color: order.paymentStatus === 'COMPLETED' ? '#166534' : '#92400E',
+                }}
+              >
+                Payment {order.paymentStatus === 'COMPLETED' ? 'Completed' : 'Pending'}
+              </Text>
+            </View>
+          )}
+        </View>
+      </LinearGradient>
+    );
+  };
+
   // ============================================================================
   // LOADING STATE
   // ============================================================================
@@ -3161,7 +3546,51 @@ export default function BookingsPage() {
           )}
 
           {/* AHC Tab */}
-          {activeTab === 'ahc' && renderEmptyState('ahc')}
+          {activeTab === 'ahc' && (
+            <View>
+              {ahcOrders.length === 0 ? (
+                renderEmptyState('ahc')
+              ) : (
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '600',
+                      color: '#111827',
+                      marginBottom: 12,
+                    }}
+                  >
+                    Your Health Check Orders
+                  </Text>
+                  {ahcOrders.map((order) => (
+                    <View key={order._id}>{renderAhcOrderCard(order)}</View>
+                  ))}
+
+                  {/* Book Another CTA */}
+                  <TouchableOpacity
+                    onPress={() => router.push('/member/wellness-programs' as any)}
+                    activeOpacity={0.8}
+                    style={{ marginTop: 8 }}
+                  >
+                    <LinearGradient
+                      colors={['#90EAA9', '#5FA171']}
+                      start={{ x: 0.5, y: 0 }}
+                      end={{ x: 0.5, y: 1 }}
+                      style={{
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                        View Wellness Packages
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
