@@ -30,6 +30,7 @@ import {
 } from '../../src/components/icons/InlineSVGs';
 import apiClient, { tokenManager } from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
+import { fetchWalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 
 // ============================================================================
 // TYPES
@@ -218,12 +219,27 @@ export default function BookingsPage() {
   // AHC (Annual Health Check) Orders
   const [ahcOrders, setAhcOrders] = useState<any[]>([]);
 
+  // Covered benefits (from wallet categories)
+  const [coveredBenefits, setCoveredBenefits] = useState<Set<string>>(new Set());
+
+  // Map tab names to category codes
+  const tabToCategoryCode: Record<string, string> = {
+    doctors: 'CAT001',      // Doctor Consult / In-Clinic Appointments
+    dental: 'CAT006',       // Dental Services
+    vision: 'CAT007',       // Vision Care
+    lab: 'CAT004',          // Lab Tests
+    diagnostic: 'CAT003',   // Diagnostic Services
+    pharmacy: 'CAT002',     // Pharmacy
+    ahc: 'CAT008',          // Annual Health Check (or check if it exists)
+  };
+
   // ============================================================================
   // FETCH DATA ON MOUNT AND WHEN viewingUserId CHANGES
   // ============================================================================
 
   useEffect(() => {
     console.log('[Bookings] Component mounted or viewingUserId changed:', viewingUserId);
+    fetchCoveredBenefits();
     fetchAppointments();
     fetchDentalBookings();
     fetchVisionBookings();
@@ -235,6 +251,39 @@ export default function BookingsPage() {
     fetchDiagnosticPrescriptions();
     fetchAhcOrders();
   }, [viewingUserId]);
+
+  // Fetch covered benefits from wallet categories
+  const fetchCoveredBenefits = async () => {
+    try {
+      if (!viewingUserId) return;
+
+      console.log('[Bookings] Fetching covered benefits for:', viewingUserId);
+      const walletData = await fetchWalletBalance(viewingUserId);
+
+      if (walletData?.categories) {
+        // A benefit is covered if it exists in categories and has total > 0
+        const covered = new Set<string>();
+        walletData.categories.forEach((cat: WalletCategory) => {
+          if (cat.total > 0) {
+            covered.add(cat.categoryCode);
+          }
+        });
+        console.log('[Bookings] Covered benefits:', Array.from(covered));
+        setCoveredBenefits(covered);
+      }
+    } catch (error) {
+      console.error('[Bookings] Error fetching covered benefits:', error);
+      // On error, allow all benefits (fail-open)
+      setCoveredBenefits(new Set(['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT006', 'CAT007', 'CAT008']));
+    }
+  };
+
+  // Check if a benefit type is covered
+  const isBenefitCovered = (tabType: string): boolean => {
+    const categoryCode = tabToCategoryCode[tabType];
+    if (!categoryCode) return true; // Unknown tabs are allowed
+    return coveredBenefits.has(categoryCode);
+  };
 
   // Update active tab when URL changes
   useEffect(() => {
@@ -1273,52 +1322,60 @@ export default function BookingsPage() {
       doctors: {
         title: 'No appointments yet',
         description: 'Book your first appointment to get started',
+        notCoveredDescription: 'Doctor consultations are not covered under your policy',
         buttonText: 'Book Appointment',
         route: '/member/appointments',
       },
       dental: {
         title: 'No dental bookings yet',
         description: 'Book your first dental service to get started',
+        notCoveredDescription: 'Dental services are not covered under your policy',
         buttonText: 'Browse Dental Services',
         route: '/member/dental',
       },
       vision: {
         title: 'No vision bookings yet',
         description: 'Book your first vision service to get started',
+        notCoveredDescription: 'Vision care is not covered under your policy',
         buttonText: 'Browse Vision Services',
         route: '/member/vision',
       },
       lab: {
         title: 'No lab tests yet',
         description: 'Upload a prescription to get started',
+        notCoveredDescription: 'Lab tests are not covered under your policy',
         buttonText: 'Go to Lab Tests',
         route: '/member/lab-tests',
       },
       diagnostic: {
         title: 'No diagnostic tests yet',
         description: 'Upload a prescription to book diagnostic services',
+        notCoveredDescription: 'Diagnostic services are not covered under your policy',
         buttonText: 'Go to Diagnostics',
         route: '/member/diagnostics',
       },
       pharmacy: {
         title: 'No pharmacy orders yet',
         description: 'Place your first order to get started',
+        notCoveredDescription: 'Pharmacy benefits are not covered under your policy',
         buttonText: 'Browse Medicines',
         route: '/member/pharmacy',
       },
       ahc: {
         title: 'No health checkups yet',
         description: 'Book your annual health checkup',
+        notCoveredDescription: 'Annual health check is not covered under your policy',
         buttonText: 'Book Annual Health Check',
         route: '/member/wellness-programs',
       },
     };
 
     const config = emptyConfig[type as keyof typeof emptyConfig] || emptyConfig.doctors;
+    const isCovered = isBenefitCovered(type);
 
     return (
       <LinearGradient
-        colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
+        colors={isCovered ? ['#EFF4FF', '#FEF3E9', '#FEF3E9'] : ['#F3F4F6', '#E5E7EB', '#E5E7EB']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -1326,7 +1383,7 @@ export default function BookingsPage() {
           padding: 48,
           alignItems: 'center',
           borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderColor: isCovered ? '#86ACD8' : '#D1D5DB',
         }}
       >
         <IconCircle icon={SparklesIcon} size="lg" />
@@ -1334,7 +1391,7 @@ export default function BookingsPage() {
           style={{
             fontSize: 20,
             fontWeight: '700',
-            color: '#0E51A2',
+            color: isCovered ? '#0E51A2' : '#6B7280',
             marginTop: 24,
             marginBottom: 8,
             textAlign: 'center',
@@ -1346,36 +1403,38 @@ export default function BookingsPage() {
           style={{
             fontSize: 14,
             color: '#6B7280',
-            marginBottom: 24,
+            marginBottom: isCovered ? 24 : 0,
             textAlign: 'center',
           }}
         >
-          {config.description}
+          {isCovered ? config.description : config.notCoveredDescription}
         </Text>
-        <TouchableOpacity
-          onPress={() => router.push(config.route as any)}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={['#1F63B4', '#5DA4FB']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              paddingHorizontal: 24,
-              paddingVertical: 12,
-              borderRadius: 12,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.2,
-              shadowRadius: 8,
-              elevation: 4,
-            }}
+        {isCovered && (
+          <TouchableOpacity
+            onPress={() => router.push(config.route as any)}
+            activeOpacity={0.8}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
-              {config.buttonText}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={['#1F63B4', '#5DA4FB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 12,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                {config.buttonText}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </LinearGradient>
     );
   };
@@ -3566,27 +3625,29 @@ export default function BookingsPage() {
                     <View key={order._id}>{renderAhcOrderCard(order)}</View>
                   ))}
 
-                  {/* Book Another CTA */}
-                  <TouchableOpacity
-                    onPress={() => router.push('/member/wellness-programs' as any)}
-                    activeOpacity={0.8}
-                    style={{ marginTop: 8 }}
-                  >
-                    <LinearGradient
-                      colors={['#90EAA9', '#5FA171']}
-                      start={{ x: 0.5, y: 0 }}
-                      end={{ x: 0.5, y: 1 }}
-                      style={{
-                        paddingVertical: 14,
-                        borderRadius: 12,
-                        alignItems: 'center',
-                      }}
+                  {/* Book Another CTA - only show if AHC is covered */}
+                  {isBenefitCovered('ahc') && (
+                    <TouchableOpacity
+                      onPress={() => router.push('/member/wellness-programs' as any)}
+                      activeOpacity={0.8}
+                      style={{ marginTop: 8 }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                        View Wellness Packages
-                      </Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                      <LinearGradient
+                        colors={['#90EAA9', '#5FA171']}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 1 }}
+                        style={{
+                          paddingVertical: 14,
+                          borderRadius: 12,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                          View Wellness Packages
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
