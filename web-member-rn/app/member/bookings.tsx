@@ -745,32 +745,43 @@ export default function BookingsPage() {
   };
 
   const handleCancelLabPrescription = async (prescription: any) => {
-    const confirmCancel = () => {
-      return new Promise<boolean>((resolve) => {
+    const getCancellationReason = (): Promise<string | null> => {
+      return new Promise((resolve) => {
         if (Platform.OS === 'web') {
-          const confirmed = window.confirm(
-            `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`
+          const reason = window.prompt(
+            `Please provide a reason for cancelling prescription ${prescription.prescriptionId} (minimum 10 characters):`,
+            'I no longer need this prescription'
           );
-          resolve(confirmed);
+          resolve(reason);
         } else {
+          // For native, use a default reason since Alert.prompt is iOS only
           Alert.alert(
             'Cancel Prescription',
             `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`,
             [
-              { text: 'No', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Yes, Cancel', style: 'destructive', onPress: () => resolve(true) },
+              { text: 'No', style: 'cancel', onPress: () => resolve(null) },
+              { text: 'Yes, Cancel', style: 'destructive', onPress: () => resolve('User requested cancellation from mobile app') },
             ]
           );
         }
       });
     };
 
-    const confirmed = await confirmCancel();
-    if (!confirmed) return;
+    const reason = await getCancellationReason();
+    if (!reason) return;
+
+    if (reason.length < 10) {
+      if (Platform.OS === 'web') {
+        window.alert('Cancellation reason must be at least 10 characters');
+      } else {
+        Alert.alert('Error', 'Cancellation reason must be at least 10 characters');
+      }
+      return;
+    }
 
     try {
       console.log('[Bookings] Cancelling lab prescription:', prescription.prescriptionId);
-      await apiClient.post(`/member/lab/prescriptions/${prescription.prescriptionId}/cancel`);
+      await apiClient.post(`/member/lab/prescriptions/${prescription.prescriptionId}/cancel`, { reason });
 
       if (Platform.OS === 'web') {
         window.alert('Prescription cancelled successfully');
@@ -917,32 +928,43 @@ export default function BookingsPage() {
   };
 
   const handleCancelDiagnosticPrescription = async (prescription: any) => {
-    const confirmCancel = () => {
-      return new Promise<boolean>((resolve) => {
+    const getCancellationReason = (): Promise<string | null> => {
+      return new Promise((resolve) => {
         if (Platform.OS === 'web') {
-          const confirmed = window.confirm(
-            `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`
+          const reason = window.prompt(
+            `Please provide a reason for cancelling prescription ${prescription.prescriptionId} (minimum 10 characters):`,
+            'I no longer need this prescription'
           );
-          resolve(confirmed);
+          resolve(reason);
         } else {
+          // For native, use a default reason since Alert.prompt is iOS only
           Alert.alert(
             'Cancel Prescription',
             `Are you sure you want to cancel prescription ${prescription.prescriptionId}? This action cannot be undone.`,
             [
-              { text: 'No', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Yes, Cancel', style: 'destructive', onPress: () => resolve(true) },
+              { text: 'No', style: 'cancel', onPress: () => resolve(null) },
+              { text: 'Yes, Cancel', style: 'destructive', onPress: () => resolve('User requested cancellation from mobile app') },
             ]
           );
         }
       });
     };
 
-    const confirmed = await confirmCancel();
-    if (!confirmed) return;
+    const reason = await getCancellationReason();
+    if (!reason) return;
+
+    if (reason.length < 10) {
+      if (Platform.OS === 'web') {
+        window.alert('Cancellation reason must be at least 10 characters');
+      } else {
+        Alert.alert('Error', 'Cancellation reason must be at least 10 characters');
+      }
+      return;
+    }
 
     try {
       console.log('[Bookings] Cancelling diagnostic prescription:', prescription.prescriptionId);
-      await apiClient.post(`/member/diagnostics/prescriptions/${prescription.prescriptionId}/cancel`);
+      await apiClient.post(`/member/diagnostics/prescriptions/${prescription.prescriptionId}/cancel`, { reason });
 
       if (Platform.OS === 'web') {
         window.alert('Prescription cancelled successfully');
