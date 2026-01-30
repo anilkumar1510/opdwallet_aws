@@ -781,7 +781,23 @@ export default function BookingsPage() {
       fetchLabPrescriptions();
     } catch (error: any) {
       console.error('[Bookings] Error cancelling prescription:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to cancel prescription';
+
+      // Extract error message - handle nested message structures
+      let errorMessage = 'Failed to cancel prescription';
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (typeof data.message === 'string') {
+          errorMessage = data.message;
+        } else if (data.message && typeof data.message.message === 'string') {
+          errorMessage = data.message.message;
+        } else if (typeof data.error === 'string') {
+          errorMessage = data.error;
+        }
+      } else if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
 
       if (Platform.OS === 'web') {
         window.alert(errorMessage);
@@ -937,7 +953,23 @@ export default function BookingsPage() {
       fetchDiagnosticPrescriptions();
     } catch (error: any) {
       console.error('[Bookings] Error cancelling prescription:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to cancel prescription';
+
+      // Extract error message - handle nested message structures
+      let errorMessage = 'Failed to cancel prescription';
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (typeof data.message === 'string') {
+          errorMessage = data.message;
+        } else if (data.message && typeof data.message.message === 'string') {
+          errorMessage = data.message.message;
+        } else if (typeof data.error === 'string') {
+          errorMessage = data.error;
+        }
+      } else if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      }
 
       if (Platform.OS === 'web') {
         window.alert(errorMessage);
