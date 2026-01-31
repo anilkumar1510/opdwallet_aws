@@ -56,6 +56,7 @@ interface PaymentMetadata {
   // ONLINE_CONSULTATION specific fields
   contactNumber?: string;
   callPreference?: 'VOICE' | 'VIDEO' | 'BOTH';
+  patientName?: string;
 }
 
 interface PendingBookingData {
@@ -167,6 +168,7 @@ export default function PaymentGatewayPage() {
 
   // State
   const [payment, setPayment] = useState<Payment | null>(null);
+  const [pendingBookingData, setPendingBookingData] = useState<PendingBookingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -194,6 +196,19 @@ export default function PaymentGatewayPage() {
     const fetchPaymentDetails = async () => {
       try {
         console.log('[PaymentGateway] Fetching payment details...');
+
+        // Also load pending booking data from AsyncStorage for display
+        try {
+          const bookingDataString = await AsyncStorage.getItem('pendingBooking');
+          if (bookingDataString) {
+            const bookingData: PendingBookingData = JSON.parse(bookingDataString);
+            console.log('[PaymentGateway] Pending booking data loaded:', bookingData);
+            setPendingBookingData(bookingData);
+          }
+        } catch (storageErr) {
+          console.warn('[PaymentGateway] Error loading pending booking data:', storageErr);
+        }
+
         const response = await apiClient.get<Payment>(`/payments/${paymentId}`);
         const paymentData = response.data;
 
@@ -1034,9 +1049,9 @@ export default function PaymentGatewayPage() {
               {/* Patient */}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <UserIcon width={16} height={16} color="#6B7280" />
-                <Text style={{ fontSize: 14, color: '#6B7280', flex: 1, marginLeft: 8 }}>Patient ID:</Text>
+                <Text style={{ fontSize: 14, color: '#6B7280', flex: 1, marginLeft: 8 }}>Patient:</Text>
                 <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>
-                  {payment.patientId?.slice(-8) || 'N/A'}
+                  {metadata.patientName || pendingBookingData?.patientName || 'N/A'}
                 </Text>
               </View>
 

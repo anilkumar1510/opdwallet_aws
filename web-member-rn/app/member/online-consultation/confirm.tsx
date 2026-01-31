@@ -479,6 +479,7 @@ export default function OnlineConfirmPage() {
           insurancePayment,
           contactNumber,
           callPreference,
+          patientName: selectedPatient.name,
         },
       };
 
