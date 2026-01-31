@@ -675,3 +675,35 @@ export const ExclamationTriangleIcon: React.FC<IconProps> = ({ width = 24, heigh
     />
   </Svg>
 );
+
+/**
+ * Video Camera Icon - Used in Online Consultation
+ * 24x24px Heroicons outline
+ */
+export const VideoCameraIcon: React.FC<IconProps> = ({ width = 24, height = 24, color = '#0F5FDC' }) => (
+  <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+/**
+ * X Mark Icon - Used for Close/Dismiss buttons
+ * 24x24px Heroicons outline
+ */
+export const XMarkIcon: React.FC<IconProps> = ({ width = 24, height = 24, color = '#6B7280' }) => (
+  <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6 18L18 6M6 6l12 12"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);

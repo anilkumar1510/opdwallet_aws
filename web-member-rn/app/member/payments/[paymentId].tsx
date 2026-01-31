@@ -25,7 +25,7 @@ import apiClient from '../../../src/lib/api/client';
 // TYPES
 // ============================================================================
 
-type ServiceType = 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC' | 'APPOINTMENT' | 'IN_CLINIC_APPOINTMENT';
+type ServiceType = 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC' | 'APPOINTMENT' | 'IN_CLINIC_APPOINTMENT' | 'ONLINE_CONSULTATION';
 type PaymentMethod = 'WALLET_ONLY' | 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT';
 type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
@@ -53,6 +53,9 @@ interface PaymentMetadata {
   vendorId?: string;
   vendorName?: string;
   collectionType?: string;
+  // ONLINE_CONSULTATION specific fields
+  contactNumber?: string;
+  callPreference?: 'VOICE' | 'VIDEO' | 'BOTH';
 }
 
 interface PendingBookingData {
@@ -76,6 +79,9 @@ interface PendingBookingData {
     vendorId?: string;
     vendorName?: string;
     collectionType?: 'IN_CLINIC' | 'HOME_COLLECTION';
+    // ONLINE_CONSULTATION specific fields
+    contactNumber?: string;
+    callPreference?: 'VOICE' | 'VIDEO' | 'BOTH';
   };
   patientId: string;
   patientName: string;
@@ -515,6 +521,35 @@ export default function PaymentGatewayPage() {
         console.log('[PaymentGateway] Storing AHC completed booking:', completedBooking);
         await AsyncStorage.setItem('ahc_completed_booking', JSON.stringify(completedBooking));
       }
+      // Handle ONLINE_CONSULTATION bookings - need to create appointment
+      else if (bookingData.serviceType === 'ONLINE_CONSULTATION') {
+        console.log('[PaymentGateway] Creating ONLINE_CONSULTATION appointment...');
+
+        const onlineAppointmentPayload = {
+          userId: bookingData.userId,
+          patientId: bookingData.patientId,
+          patientName: bookingData.patientName,
+          doctorId: bookingData.serviceDetails.doctorId,
+          doctorName: bookingData.serviceDetails.doctorName,
+          specialty: bookingData.serviceDetails.specialty,
+          slotId: bookingData.serviceDetails.slotId,
+          clinicId: '', // No clinic for online consultation
+          clinicName: '',
+          clinicAddress: '',
+          appointmentType: 'ONLINE',
+          appointmentDate: bookingData.serviceDetails.date,
+          timeSlot: bookingData.serviceDetails.time,
+          consultationFee: bookingData.consultationFee,
+          contactNumber: bookingData.serviceDetails.contactNumber,
+          callPreference: bookingData.serviceDetails.callPreference,
+        };
+
+        console.log('[PaymentGateway] Online consultation payload:', onlineAppointmentPayload);
+
+        const appointmentResponse = await apiClient.post('/appointments', onlineAppointmentPayload);
+        createdBookingId = appointmentResponse.data?.appointmentId || appointmentResponse.data?._id || '';
+        console.log('[PaymentGateway] Online consultation appointment created:', createdBookingId);
+      }
       // Handle other service types (APPOINTMENT)
       else {
         console.warn('[PaymentGateway] Service type not yet supported for booking creation:', bookingData.serviceType);
@@ -569,6 +604,9 @@ export default function PaymentGatewayPage() {
         // For IN_CLINIC_APPOINTMENT, redirect to in-clinic-consultation page
         if (bookingData.serviceType === 'IN_CLINIC_APPOINTMENT') {
           router.replace('/member/in-clinic-consultation' as any);
+        } else if (bookingData.serviceType === 'ONLINE_CONSULTATION') {
+          // For ONLINE_CONSULTATION, redirect to online-consultation page
+          router.replace('/member/online-consultation' as any);
         } else {
           const tabMap: Record<ServiceType, string> = {
             DENTAL: 'dental',
@@ -578,6 +616,7 @@ export default function PaymentGatewayPage() {
             AHC: 'ahc',
             APPOINTMENT: 'doctors',
             IN_CLINIC_APPOINTMENT: 'doctors',
+            ONLINE_CONSULTATION: 'doctors',
           };
           const tab = tabMap[bookingData.serviceType] || 'dental';
           router.replace(`/member/bookings?tab=${tab}` as any);

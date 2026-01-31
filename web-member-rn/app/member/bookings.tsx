@@ -27,6 +27,7 @@ import {
   HeartIcon,
   DocumentArrowDownIcon,
   CheckCircleIcon,
+  VideoCameraIcon,
 } from '../../src/components/icons/InlineSVGs';
 import apiClient, { tokenManager } from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
@@ -349,7 +350,10 @@ export default function BookingsPage() {
         const appointmentDate = new Date(appointment.appointmentDate);
         appointmentDate.setHours(0, 0, 0, 0);
 
-        if (appointmentDate >= today) {
+        // COMPLETED and CANCELLED appointments always go to past, regardless of date
+        if (appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED') {
+          past.push(appointment);
+        } else if (appointmentDate >= today) {
           upcoming.push(appointment);
         } else {
           past.push(appointment);
@@ -2008,19 +2012,23 @@ export default function BookingsPage() {
                 borderRadius: 24,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
+                backgroundColor: appointment.appointmentType === 'ONLINE' ? 'rgba(37, 164, 37, 0.15)' : 'rgba(223, 232, 255, 0.75)',
                 borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
+                borderColor: appointment.appointmentType === 'ONLINE' ? 'rgba(37, 164, 37, 0.3)' : 'rgba(164, 191, 254, 0.48)',
               }}
             >
-              <HeartIcon width={24} height={24} color="#0F5FDC" />
+              {appointment.appointmentType === 'ONLINE' ? (
+                <VideoCameraIcon width={24} height={24} color="#25A425" />
+              ) : (
+                <HeartIcon width={24} height={24} color="#0F5FDC" />
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
                 Dr. {appointment.doctorName}
               </Text>
               <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
-                {appointment.specialty}
+                {appointment.specialty} {appointment.appointmentType === 'ONLINE' && <Text style={{ color: '#25A425', fontWeight: '500' }}>(Online)</Text>}
               </Text>
             </View>
           </View>
@@ -2059,8 +2067,8 @@ export default function BookingsPage() {
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <MapPinIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }} numberOfLines={1}>
-              {appointment.clinicName}
+            <Text style={{ fontSize: 13, color: appointment.appointmentType === 'ONLINE' ? '#0F5FDC' : '#111827', fontWeight: appointment.appointmentType === 'ONLINE' ? '500' : 'normal' }} numberOfLines={1}>
+              {appointment.appointmentType === 'ONLINE' ? 'Online Consultation' : appointment.clinicName}
             </Text>
           </View>
         </View>
