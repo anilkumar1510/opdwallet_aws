@@ -621,6 +621,38 @@ export default function OnlineConsultationPage() {
                     </View>
                   )}
 
+                  {/* Join Call Button - Only for confirmed appointments without prescription */}
+                  {appointment.status === 'CONFIRMED' && !appointment.hasPrescription && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        console.log('[OnlineConsultation] Join Call clicked:', appointment._id);
+                        router.push(`/member/consultations/${appointment._id}` as any);
+                      }}
+                      activeOpacity={0.8}
+                      style={{ marginBottom: 12 }}
+                    >
+                      <LinearGradient
+                        colors={['#16a34a', '#22c55e']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          borderRadius: 12,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        <VideoCameraIcon width={20} height={20} color="#FFFFFF" />
+                        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                          Join Call
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+
                   {/* Cancel Button */}
                   {canCancelAppointment(appointment) && (
                     <TouchableOpacity

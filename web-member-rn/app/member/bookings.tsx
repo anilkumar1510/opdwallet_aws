@@ -2110,6 +2110,30 @@ export default function BookingsPage() {
               </TouchableOpacity>
             )}
 
+            {/* Join Call Button - Only for confirmed online appointments without prescription */}
+            {appointment.appointmentType === 'ONLINE' && appointment.status === 'CONFIRMED' && !appointment.hasPrescription && (
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[Bookings] Join Call clicked:', appointment._id);
+                  router.push(`/member/consultations/${appointment._id}` as any);
+                }}
+                style={{
+                  backgroundColor: '#25A425',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+                activeOpacity={0.7}
+              >
+                <VideoCameraIcon width={16} height={16} color="#FFFFFF" />
+                <Text style={{ fontSize: 13, fontWeight: '500', color: '#FFFFFF' }}>Join Call</Text>
+              </TouchableOpacity>
+            )}
+
             {canCancel && (
               <TouchableOpacity
                 onPress={() => handleCancelAppointment(appointment.appointmentId, appointment.doctorName)}
