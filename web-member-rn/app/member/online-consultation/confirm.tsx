@@ -408,7 +408,15 @@ export default function OnlineConfirmPage() {
     setLoading(true);
 
     try {
-      const appointmentDate = timeChoice === 'NOW' ? new Date().toISOString().split('T')[0] : selectedDate;
+      // Get local date in YYYY-MM-DD format (not UTC)
+      const getLocalDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const appointmentDate = timeChoice === 'NOW' ? getLocalDateString(new Date()) : selectedDate;
       const appointmentTime = timeChoice === 'NOW' ? 'Immediate' : selectedTime;
       const slotId =
         timeChoice === 'LATER' && selectedSlotId
@@ -530,10 +538,14 @@ export default function OnlineConfirmPage() {
   // ============================================================================
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr || dateStr === new Date().toISOString().split('T')[0]) {
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    if (!dateStr || dateStr === todayStr) {
       return 'Today';
     }
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'T00:00:00'); // Parse as local time
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
@@ -554,7 +566,10 @@ export default function OnlineConfirmPage() {
   // ============================================================================
 
   if (bookingSuccess) {
-    const successDate = timeChoice === 'NOW' ? new Date().toISOString().split('T')[0] : selectedDate;
+    // Get local date in YYYY-MM-DD format (not UTC)
+    const now = new Date();
+    const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const successDate = timeChoice === 'NOW' ? localDateStr : selectedDate;
     const successTime = timeChoice === 'NOW' ? 'Immediate' : selectedTime;
 
     return (
@@ -1154,7 +1169,11 @@ export default function OnlineConfirmPage() {
                 {[0, 1, 2].map((dayOffset) => {
                   const date = new Date();
                   date.setDate(date.getDate() + dayOffset);
-                  const dateStr = date.toISOString().split('T')[0];
+                  // Use local date format instead of UTC
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const dateStr = `${year}-${month}-${day}`;
                   const dayName = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'long' });
 
                   return (
