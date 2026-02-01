@@ -234,28 +234,21 @@ const services: Service[] = [
     category: 'Core',
   },
   {
-    name: 'Benefits',
-    description: 'Explore all your healthcare benefits',
-    href: '/member/benefits',
-    icon: SparklesIcon,
-    category: 'Core',
-  },
-  {
     name: 'Profile',
     description: 'View and edit your profile information',
     href: '/member/profile',
     icon: UserCircleIcon,
     category: 'Core',
   },
+  {
+    name: 'Transactions',
+    description: 'View all wallet transactions',
+    href: '/member/transactions',
+    icon: ChartIcon,
+    category: 'Core',
+  },
 
   // Claims & Reimbursements
-  {
-    name: 'Reimbursements',
-    description: 'File and track reimbursement claims',
-    href: '/member/reimbursements',
-    icon: CurrencyIcon,
-    category: 'Claims',
-  },
   {
     name: 'Claims History',
     description: 'View all your past claims',
@@ -274,9 +267,9 @@ const services: Service[] = [
 
   // Healthcare Services
   {
-    name: 'In-Clinic Appointments',
+    name: 'In-Clinic Consultation',
     description: 'Schedule doctor appointments at clinics',
-    href: '/member/appointments',
+    href: '/member/in-clinic-consultation',
     icon: CalendarIcon,
     category: 'Healthcare',
   },
@@ -295,6 +288,13 @@ const services: Service[] = [
     category: 'Healthcare',
   },
   {
+    name: 'Diagnostics',
+    description: 'Book diagnostic tests and scans',
+    href: '/member/diagnostics',
+    icon: ClipboardIcon,
+    category: 'Healthcare',
+  },
+  {
     name: 'Health Records',
     description: 'Access your medical records and prescriptions',
     href: '/member/health-records',
@@ -308,52 +308,51 @@ const services: Service[] = [
     icon: ClipboardIcon,
     category: 'Healthcare',
   },
-
-  // Family & Account
   {
-    name: 'Family Hub',
-    description: 'Manage family members and dependents',
-    href: '/member/family',
-    icon: UsersIcon,
-    category: 'Family',
+    name: 'Dental Services',
+    description: 'Book dental appointments and checkups',
+    href: '/member/dental',
+    icon: SparklesIcon,
+    category: 'Healthcare',
+  },
+  {
+    name: 'Vision Care',
+    description: 'Eye checkups and vision services',
+    href: '/member/vision',
+    icon: SparklesIcon,
+    category: 'Healthcare',
   },
 
-  // Transactions & Reports
+  // Wellness
   {
-    name: 'Transactions',
-    description: 'View all wallet transactions',
-    href: '/member/transactions',
-    icon: ChartIcon,
-    category: 'Finance',
+    name: 'Wellness Programs',
+    description: 'Health and wellness programs',
+    href: '/member/wellness-programs',
+    icon: SparklesIcon,
+    category: 'Wellness',
   },
   {
-    name: 'Orders',
-    description: 'Track all your orders and payments',
-    href: '/member/orders',
-    icon: ShoppingBagIcon,
-    category: 'Finance',
+    name: 'Annual Health Checkup',
+    description: 'Book your annual health checkup',
+    href: '/member/ahc',
+    icon: BeakerIcon,
+    category: 'Wellness',
+    badge: 'AHC',
   },
 
-  // Support & Settings
+  // Support
   {
-    name: 'Notifications',
-    description: 'Manage your notification preferences',
-    href: '/member/notifications',
-    icon: BellIcon,
-    category: 'Support',
-  },
-  {
-    name: 'Help & Support',
+    name: 'Helpline',
     description: 'Get help and contact support',
-    href: '/member/help',
+    href: '/member/helpline',
     icon: QuestionIcon,
     category: 'Support',
   },
   {
-    name: 'Settings',
-    description: 'Manage your account settings',
-    href: '/member/settings',
-    icon: CogIcon,
+    name: 'Pharmacy',
+    description: 'Order medicines and pharmacy services',
+    href: '/member/pharmacy',
+    icon: ShoppingBagIcon,
     category: 'Support',
   },
 ];
