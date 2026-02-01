@@ -489,11 +489,12 @@ const HEALTH_BENEFITS = [
 export default function DashboardScreen() {
   const router = useRouter();
   const { user, profile, logout, refreshProfile } = useAuth();
-  const { familyMembers, activeMember, viewingUserId, loggedInUser, profileData } = useFamily();
+  const { familyMembers, activeMember, viewingUserId, loggedInUser, profileData, setActiveMember, canSwitchProfiles } = useFamily();
   const { width } = useWindowDimensions();
   const { generatePDF, isGenerating: isPdfGenerating } = usePolicyPDF();
   const [refreshing, setRefreshing] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [activePolicyIndex, setActivePolicyIndex] = useState(0);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const policyScrollRef = useRef<ScrollView>(null);
@@ -605,6 +606,48 @@ export default function DashboardScreen() {
     setShowDropdown(false);
     await logout();
     router.replace('/login');
+  };
+
+  const handleSwitchProfiles = () => {
+    setShowDropdown(false);
+    setShowSwitchModal(true);
+  };
+
+  const handleViewProfile = () => {
+    setShowDropdown(false);
+    router.push('/member/profile' as any);
+  };
+
+  const handleViewServices = () => {
+    setShowDropdown(false);
+    router.push('/member/services' as any);
+  };
+
+  const handleSelectMember = async (member: any) => {
+    if (member._id === activeMember?._id) {
+      setShowSwitchModal(false);
+      return;
+    }
+
+    setActiveMember(member);
+    setShowSwitchModal(false);
+
+    // Reload the page to fetch new data
+    if (Platform.OS === 'web') {
+      window.location.reload();
+    }
+  };
+
+  const getRelationshipLabel = (relationship: string) => {
+    const map: { [key: string]: string } = {
+      'REL001': 'Primary Member',
+      'SELF': 'Primary Member',
+      'REL002': 'Spouse',
+      'REL003': 'Child',
+      'REL004': 'Parent',
+      'REL005': 'Other',
+    };
+    return map[relationship] || relationship || 'Dependent';
   };
 
   // Helper function to convert category name to route path
@@ -1204,21 +1247,24 @@ export default function DashboardScreen() {
               shadowRadius: 24,
             }}
           >
+            {/* Switch Profile - Only show if user can switch profiles */}
+            {canSwitchProfiles && (
+              <TouchableOpacity
+                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+                onPress={handleSwitchProfiles}
+              >
+                <Text style={{ fontSize: 14, color: '#383838' }}>Switch Profile</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-              onPress={() => setShowDropdown(false)}
-            >
-              <Text style={{ fontSize: 14, color: '#383838' }}>Switch Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-              onPress={() => setShowDropdown(false)}
+              onPress={handleViewProfile}
             >
               <Text style={{ fontSize: 14, color: '#383838' }}>Profile</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-              onPress={() => setShowDropdown(false)}
+              onPress={handleViewServices}
             >
               <Text style={{ fontSize: 14, color: '#383838' }}>All Services</Text>
             </TouchableOpacity>
@@ -1226,6 +1272,150 @@ export default function DashboardScreen() {
             <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 12 }} onPress={handleLogout}>
               <Text style={{ fontSize: 14, color: '#EF4444' }}>Log Out</Text>
             </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {/* Switch Profile Modal */}
+      {showSwitchModal && (
+        <>
+          {/* Backdrop */}
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1000,
+            }}
+            activeOpacity={1}
+            onPress={() => setShowSwitchModal(false)}
+          />
+
+          {/* Modal */}
+          <View
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: [{ translateX: -160 }, { translateY: -200 }],
+              width: 320,
+              maxHeight: 400,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              zIndex: 1001,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.25,
+              shadowRadius: 20,
+              elevation: 20,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingVertical: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: '#E5E7EB',
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>Switch Profile</Text>
+              <TouchableOpacity
+                onPress={() => setShowSwitchModal(false)}
+                style={{ padding: 4, borderRadius: 8 }}
+              >
+                <Text style={{ fontSize: 20, color: '#6B7280' }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Member List */}
+            <ScrollView style={{ maxHeight: 280, padding: 16 }}>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
+                Select a family member to view their profile and wallet information
+              </Text>
+
+              <View style={{ gap: 12 }}>
+                {familyMembers.map((member) => {
+                  const isActive = member._id === activeMember?._id;
+                  const initials = `${member.name?.firstName?.charAt(0) || ''}${member.name?.lastName?.charAt(0) || ''}`.toUpperCase() || 'U';
+                  const fullName = `${member.name?.firstName || ''} ${member.name?.lastName || ''}`.trim() || 'User';
+
+                  return (
+                    <TouchableOpacity
+                      key={member._id}
+                      onPress={() => handleSelectMember(member)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: 12,
+                        borderRadius: 12,
+                        backgroundColor: isActive ? 'rgba(14, 81, 162, 0.08)' : '#F9FAFB',
+                        borderWidth: 2,
+                        borderColor: isActive ? '#0E51A2' : 'transparent',
+                      }}
+                    >
+                      {/* Avatar */}
+                      <View style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        backgroundColor: isActive ? '#0E51A2' : '#9CA3AF',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}>
+                        <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 16 }}>{initials}</Text>
+                      </View>
+
+                      {/* Info */}
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={{ fontWeight: '600', color: '#111827', fontSize: 15 }}>{fullName}</Text>
+                          {isActive && (
+                            <View style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: 9,
+                              backgroundColor: '#0E51A2',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}>
+                              <Text style={{ color: '#FFFFFF', fontSize: 12 }}>✓</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
+                          {getRelationshipLabel(member.relationship)}
+                        </Text>
+                        {member.memberId && (
+                          <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+                            ID: {member.memberId}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={{
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              borderTopWidth: 1,
+              borderTopColor: '#E5E7EB',
+              backgroundColor: '#F9FAFB',
+            }}>
+              <Text style={{ fontSize: 11, color: '#6B7280', textAlign: 'center' }}>
+                The page will reload to show the selected member's data
+              </Text>
+            </View>
           </View>
         </>
       )}
