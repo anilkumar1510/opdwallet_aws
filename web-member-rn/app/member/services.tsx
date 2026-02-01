@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,13 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  Alert,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFamily } from '../../src/contexts/FamilyContext';
+import { fetchWalletBalance } from '../../src/lib/api/wallet';
 import {
   ArrowLeftIcon,
   HomeIcon,
@@ -215,7 +219,18 @@ interface Service {
   icon: React.FC<{ width?: number; height?: number; color?: string }>;
   category: string;
   badge?: string;
+  categoryCode?: string; // Maps to benefit category codes like CAT001, CAT002, etc.
 }
+
+// Category codes mapping:
+// CAT001: In-Clinic Consultation
+// CAT002: Pharmacy
+// CAT003: Diagnostic Services
+// CAT004: Laboratory Services
+// CAT005: Online Consultation
+// CAT006: Dental Services
+// CAT007: Vision Care
+// CAT008: Wellness Programs
 
 const services: Service[] = [
   // Core Services
@@ -272,6 +287,7 @@ const services: Service[] = [
     href: '/member/in-clinic-consultation',
     icon: CalendarIcon,
     category: 'Healthcare',
+    categoryCode: 'CAT001',
   },
   {
     name: 'Online Consultations',
@@ -279,6 +295,7 @@ const services: Service[] = [
     href: '/member/online-consultation',
     icon: VideoCameraIcon,
     category: 'Healthcare',
+    categoryCode: 'CAT005',
   },
   {
     name: 'Lab Tests',
@@ -286,6 +303,7 @@ const services: Service[] = [
     href: '/member/lab-tests',
     icon: BeakerIcon,
     category: 'Healthcare',
+    categoryCode: 'CAT004',
   },
   {
     name: 'Diagnostics',
@@ -293,6 +311,7 @@ const services: Service[] = [
     href: '/member/diagnostics',
     icon: ClipboardIcon,
     category: 'Healthcare',
+    categoryCode: 'CAT003',
   },
   {
     name: 'Health Records',
@@ -314,6 +333,7 @@ const services: Service[] = [
     href: '/member/dental',
     icon: SparklesIcon,
     category: 'Healthcare',
+    categoryCode: 'CAT006',
   },
   {
     name: 'Vision Care',
@@ -321,6 +341,7 @@ const services: Service[] = [
     href: '/member/vision',
     icon: SparklesIcon,
     category: 'Healthcare',
+    categoryCode: 'CAT007',
   },
 
   // Wellness
@@ -330,6 +351,7 @@ const services: Service[] = [
     href: '/member/wellness-programs',
     icon: SparklesIcon,
     category: 'Wellness',
+    categoryCode: 'CAT008',
   },
   {
     name: 'Annual Health Checkup',
@@ -338,6 +360,7 @@ const services: Service[] = [
     icon: BeakerIcon,
     category: 'Wellness',
     badge: 'AHC',
+    categoryCode: 'CAT008',
   },
 
   // Support
@@ -354,6 +377,7 @@ const services: Service[] = [
     href: '/member/pharmacy',
     icon: ShoppingBagIcon,
     category: 'Support',
+    categoryCode: 'CAT002',
   },
 ];
 
@@ -363,8 +387,43 @@ const services: Service[] = [
 
 export default function ServicesPage() {
   const router = useRouter();
+  const { activeMember } = useFamily();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [coveredCategories, setCoveredCategories] = useState<Set<string>>(new Set());
+  const [isLoadingBenefits, setIsLoadingBenefits] = useState(true);
+  const [showNotCoveredModal, setShowNotCoveredModal] = useState(false);
+  const [notCoveredService, setNotCoveredService] = useState<Service | null>(null);
+
+  // Fetch wallet balance to determine covered benefits
+  useEffect(() => {
+    const loadCoveredBenefits = async () => {
+      if (!activeMember?._id) {
+        setIsLoadingBenefits(false);
+        return;
+      }
+
+      try {
+        const walletData = await fetchWalletBalance(activeMember._id);
+        // Extract category codes that have available balance > 0
+        const covered = new Set<string>();
+        walletData.categories?.forEach((cat) => {
+          if (cat.available > 0) {
+            covered.add(cat.categoryCode);
+          }
+        });
+        setCoveredCategories(covered);
+      } catch (error) {
+        console.error('Failed to load covered benefits:', error);
+        // On error, allow all services (don't block navigation)
+        setCoveredCategories(new Set());
+      } finally {
+        setIsLoadingBenefits(false);
+      }
+    };
+
+    loadCoveredBenefits();
+  }, [activeMember?._id]);
 
   const categories = ['All', ...Array.from(new Set(services.map((s) => s.category)))];
 
@@ -384,8 +443,23 @@ export default function ServicesPage() {
     return acc;
   }, {} as Record<string, Service[]>);
 
-  const handleServicePress = (href: string) => {
-    router.push(href as any);
+  const handleServicePress = (service: Service) => {
+    // If service requires a benefit category, check if it's covered
+    if (service.categoryCode && !isLoadingBenefits) {
+      const isCovered = coveredCategories.has(service.categoryCode);
+      if (!isCovered) {
+        // Show not covered modal
+        setNotCoveredService(service);
+        setShowNotCoveredModal(true);
+        return;
+      }
+    }
+    router.push(service.href as any);
+  };
+
+  const closeNotCoveredModal = () => {
+    setShowNotCoveredModal(false);
+    setNotCoveredService(null);
   };
 
   return (
@@ -493,10 +567,11 @@ export default function ServicesPage() {
               <View style={{ gap: 12 }}>
                 {categoryServices.map((service) => {
                   const IconComponent = service.icon;
+                  const isCovered = !service.categoryCode || coveredCategories.has(service.categoryCode);
                   return (
                     <TouchableOpacity
                       key={service.href}
-                      onPress={() => handleServicePress(service.href)}
+                      onPress={() => handleServicePress(service)}
                       activeOpacity={0.7}
                       style={{
                         backgroundColor: '#FFFFFF',
@@ -547,6 +622,22 @@ export default function ServicesPage() {
                                   </Text>
                                 </View>
                               )}
+                              {service.categoryCode && !isLoadingBenefits && !isCovered && (
+                                <View style={{
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 2,
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                  borderRadius: 10,
+                                }}>
+                                  <Text style={{
+                                    fontSize: 11,
+                                    fontWeight: '600',
+                                    color: '#DC2626',
+                                  }}>
+                                    Not Covered
+                                  </Text>
+                                </View>
+                              )}
                             </View>
                             <Text style={{
                               fontSize: 13,
@@ -567,6 +658,124 @@ export default function ServicesPage() {
           ))
         )}
       </ScrollView>
+
+      {/* Not Under Policy Modal */}
+      <Modal
+        visible={showNotCoveredModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeNotCoveredModal}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 24,
+        }}>
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 24,
+            width: '100%',
+            maxWidth: 340,
+            alignItems: 'center',
+          }}>
+            {/* Warning Icon */}
+            <View style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}>
+              {Platform.OS === 'web' ? (
+                <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              ) : (
+                <Text style={{ fontSize: 32 }}>⚠️</Text>
+              )}
+            </View>
+
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: '#111827',
+              marginBottom: 8,
+              textAlign: 'center',
+            }}>
+              Not Under Your Policy
+            </Text>
+
+            <Text style={{
+              fontSize: 14,
+              color: '#6B7280',
+              textAlign: 'center',
+              marginBottom: 8,
+              lineHeight: 20,
+            }}>
+              {notCoveredService?.name || 'This service'} is not included in your current benefits policy.
+            </Text>
+
+            <Text style={{
+              fontSize: 13,
+              color: '#9CA3AF',
+              textAlign: 'center',
+              marginBottom: 24,
+              lineHeight: 18,
+            }}>
+              Please contact your HR or our support team for more information about adding this benefit to your plan.
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+              <TouchableOpacity
+                onPress={() => {
+                  closeNotCoveredModal();
+                  router.push('/member/helpline' as any);
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#374151',
+                }}>
+                  Contact Support
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={closeNotCoveredModal}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 10,
+                  backgroundColor: '#0E51A2',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                }}>
+                  Got It
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
