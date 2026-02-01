@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Platform, Alert } from 'react-native';
-import { generatePolicyPDF } from '../lib/utils/pdfGenerator';
-import apiClient from '../lib/api/client';
+// Note: pdfGenerator is imported dynamically only on web to avoid native crashes
 
 interface WalletCategory {
   categoryCode: string;
@@ -164,6 +163,9 @@ export function usePolicyPDF() {
       const copayDetails = policy?.copayPercentage
         ? `Co-pay: ${policy.copayPercentage}% of transaction amount`
         : undefined;
+
+      // Dynamically import pdfGenerator only on web
+      const { generatePolicyPDF } = await import('../lib/utils/pdfGenerator');
 
       // Generate PDF
       generatePolicyPDF({
