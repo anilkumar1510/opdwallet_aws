@@ -840,9 +840,9 @@ export default function DashboardScreen() {
   // Calculate policy card width dynamically
   const policyCardWidth = Math.min(width - 60, 280);
 
-  const renderPolicyCard = (policy: any) => (
+  const renderPolicyCard = (policy: any, index: number) => (
     <TouchableOpacity
-      key={policy.policyId}
+      key={`${policy.policyHolderId}-${index}`}
       activeOpacity={0.9}
       onPress={() => handleNavigation(`/member/policy-details/${policy.policyId}`)}
       style={{
@@ -1012,9 +1012,9 @@ export default function DashboardScreen() {
   // Using reactive width from useWindowDimensions for all screen sizes
   const benefitCardWidth = (width - 48) / 2; // 16px padding on each side + 16px gap = 48
 
-  const renderBenefitCard = (benefit: any) => (
+  const renderBenefitCard = (benefit: any, index: number) => (
     <TouchableOpacity
-      key={benefit.id}
+      key={`benefit-${benefit.id}-${index}`}
       onPress={() => handleNavigation(benefit.href)}
       activeOpacity={0.9}
       style={{
@@ -1185,13 +1185,13 @@ export default function DashboardScreen() {
             Health Benefits
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
-            {walletCategories.map((benefit: any) => renderBenefitCard({
+            {walletCategories.map((benefit: any, index: number) => renderBenefitCard({
               id: benefit.id || benefit.categoryCode,
               name: benefit.name,
               available: benefit.available ?? benefit.amount ?? 0,
               total: benefit.total ?? 0,
               href: benefit.href || getCategoryRoute(benefit.name),
-            }))}
+            }, index))}
           </View>
         </View>
 
@@ -1340,14 +1340,14 @@ export default function DashboardScreen() {
               </Text>
 
               <View style={{ gap: 12 }}>
-                {familyMembers.map((member) => {
+                {familyMembers.map((member, index) => {
                   const isActive = member._id === activeMember?._id;
                   const initials = `${member.name?.firstName?.charAt(0) || ''}${member.name?.lastName?.charAt(0) || ''}`.toUpperCase() || 'U';
                   const fullName = `${member.name?.firstName || ''} ${member.name?.lastName || ''}`.trim() || 'User';
 
                   return (
                     <TouchableOpacity
-                      key={member._id}
+                      key={`${member._id}-${index}`}
                       onPress={() => handleSelectMember(member)}
                       style={{
                         flexDirection: 'row',
