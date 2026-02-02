@@ -6,6 +6,7 @@ import { DoctorCalendarService } from './doctor-calendar.service';
 import { DoctorCalendarController } from './doctor-calendar.controller';
 import { DoctorSlot, DoctorSlotSchema } from './schemas/doctor-slot.schema';
 import { DoctorUnavailability, DoctorUnavailabilitySchema } from './schemas/doctor-unavailability.schema';
+import { Clinic, ClinicSchema } from '../clinics/schemas/clinic.schema';
 import { CounterModule } from '../counters/counter.module';
 import { DoctorClinicAssignmentsModule } from '../doctor-clinic-assignments/doctor-clinic-assignments.module';
 
@@ -14,6 +15,7 @@ import { DoctorClinicAssignmentsModule } from '../doctor-clinic-assignments/doct
     MongooseModule.forFeature([
       { name: DoctorSlot.name, schema: DoctorSlotSchema },
       { name: DoctorUnavailability.name, schema: DoctorUnavailabilitySchema },
+      { name: Clinic.name, schema: ClinicSchema },
     ]),
     CounterModule,
     forwardRef(() => DoctorClinicAssignmentsModule),

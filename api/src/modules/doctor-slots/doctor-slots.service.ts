@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef,
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DoctorSlot, DoctorSlotDocument } from './schemas/doctor-slot.schema';
+import { Clinic, ClinicDocument } from '../clinics/schemas/clinic.schema';
 import { CreateSlotConfigDto } from './dto/create-slot-config.dto';
 import { UpdateSlotConfigDto } from './dto/update-slot-config.dto';
 import { CounterService } from '../counters/counter.service';
@@ -14,6 +15,7 @@ export class DoctorSlotsService {
 
   constructor(
     @InjectModel(DoctorSlot.name) private slotModel: Model<DoctorSlotDocument>,
+    @InjectModel(Clinic.name) private clinicModel: Model<ClinicDocument>,
     private readonly counterService: CounterService,
     @Inject(forwardRef(() => DoctorCalendarService))
     private readonly calendarService: DoctorCalendarService,
@@ -52,7 +54,7 @@ export class DoctorSlotsService {
     return savedSlot;
   }
 
-  async findAll(query?: any): Promise<DoctorSlot[]> {
+  async findAll(query?: any): Promise<any[]> {
     const filter: any = {};
 
     if (query?.doctorId) {
@@ -75,7 +77,61 @@ export class DoctorSlotsService {
       filter.isActive = query.isActive === 'true';
     }
 
-    return this.slotModel.find(filter).sort({ dayOfWeek: 1, startTime: 1 }).exec();
+    // STEP 1: Fetch slots based on filters
+    const slots = await this.slotModel
+      .find(filter)
+      .sort({ dayOfWeek: 1, startTime: 1 })
+      .lean()
+      .exec();
+
+    if (slots.length === 0) {
+      return [];
+    }
+
+    // STEP 2: Collect unique clinic IDs
+    const clinicIds = new Set<string>();
+    slots.forEach(slot => {
+      if (slot.clinicId) {
+        clinicIds.add(slot.clinicId);
+      }
+    });
+
+    // STEP 3: Batch fetch all clinics in ONE query (prevents N+1 problem)
+    const clinicsArray = await this.clinicModel
+      .find({ clinicId: { $in: Array.from(clinicIds) } })
+      .select('clinicId name address.city')
+      .lean()
+      .exec();
+
+    // STEP 4: Build clinic lookup map for O(1) access
+    const clinicMap = new Map();
+    clinicsArray.forEach(clinic => {
+      clinicMap.set(clinic.clinicId, {
+        clinicId: clinic.clinicId,
+        name: clinic.name,
+        city: clinic.address?.city || '',
+      });
+    });
+
+    // STEP 5: Merge clinic data into slots
+    let enrichedSlots = slots.map(slot => ({
+      ...slot,
+      clinic: clinicMap.get(slot.clinicId) || {
+        clinicId: slot.clinicId,
+        name: 'Unknown Clinic',
+        city: '',
+      },
+    }));
+
+    // STEP 6: Filter by clinic name if search query provided (backend search)
+    if (query?.clinicName) {
+      const searchLower = query.clinicName.toLowerCase();
+      enrichedSlots = enrichedSlots.filter(slot =>
+        slot.clinic.name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return enrichedSlots;
   }
 
   async findOne(slotId: string): Promise<DoctorSlot> {

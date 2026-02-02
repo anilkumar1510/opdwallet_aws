@@ -28,6 +28,7 @@ export default function DoctorSchedulesPage() {
     maxAppointments: 20,
   })
   const [submitting, setSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchDoctor = useCallback(async () => {
     try {
@@ -64,7 +65,14 @@ export default function DoctorSchedulesPage() {
   const fetchSlots = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await apiFetch(`/api/doctor-slots?doctorId=${doctorId}`)
+
+      // Build query parameters
+      const params = new URLSearchParams({ doctorId })
+      if (searchQuery.trim()) {
+        params.append('clinicName', searchQuery.trim())
+      }
+
+      const response = await apiFetch(`/api/doctor-slots?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
         setSlots(data)
@@ -74,7 +82,7 @@ export default function DoctorSchedulesPage() {
     } finally {
       setLoading(false)
     }
-  }, [doctorId])
+  }, [doctorId, searchQuery])
 
   useEffect(() => {
     console.log('=== CLINICS DEBUG: useEffect running ===')
@@ -83,6 +91,13 @@ export default function DoctorSchedulesPage() {
     fetchClinics()
     fetchSlots()
   }, [doctorId, fetchDoctor, fetchSlots])
+
+  // Re-fetch slots when search query changes
+  useEffect(() => {
+    if (doctorId) {
+      fetchSlots()
+    }
+  }, [searchQuery, fetchSlots])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -142,23 +157,9 @@ export default function DoctorSchedulesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">{doctor?.name} - Schedules</h1>
-          <p className="text-gray-600">{doctorId}</p>
-        </div>
-        <button
-          onClick={() => {
-            console.log('=== CLINICS DEBUG: Add Schedule button clicked ===')
-            console.log('=== CLINICS DEBUG: Current showForm:', showForm)
-            console.log('=== CLINICS DEBUG: Current clinics state:', clinics)
-            console.log('=== CLINICS DEBUG: Is clinics array?', Array.isArray(clinics))
-            setShowForm(!showForm)
-          }}
-          className="btn btn-primary"
-        >
-          {showForm ? 'Cancel' : 'Add Schedule'}
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold">{doctor?.name} - Schedules</h1>
+        <p className="text-gray-600">{doctorId}</p>
       </div>
 
       {showForm && (
@@ -303,6 +304,51 @@ export default function DoctorSchedulesPage() {
         </form>
       )}
 
+      {/* Search Filter and Actions */}
+      {!showForm && (
+        <div className="flex gap-4 items-center mb-4">
+          <input
+            type="text"
+            placeholder="Search by clinic name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input w-96 text-base"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="btn btn-secondary whitespace-nowrap text-base px-6"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            onClick={() => {
+              console.log('=== CLINICS DEBUG: Add Schedule button clicked ===')
+              console.log('=== CLINICS DEBUG: Current showForm:', showForm)
+              console.log('=== CLINICS DEBUG: Current clinics state:', clinics)
+              console.log('=== CLINICS DEBUG: Is clinics array?', Array.isArray(clinics))
+              setShowForm(!showForm)
+            }}
+            className="btn btn-primary text-base px-6 ml-auto"
+          >
+            Add Schedule
+          </button>
+        </div>
+      )}
+
+      {/* Cancel button when form is shown */}
+      {showForm && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setShowForm(false)}
+            className="btn btn-secondary text-base px-6"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
@@ -312,7 +358,8 @@ export default function DoctorSchedulesPage() {
               <thead>
                 <tr>
                   <th>Slot ID</th>
-                  <th>Clinic</th>
+                  <th>Clinic ID</th>
+                  <th>Clinic Name</th>
                   <th>Day</th>
                   <th>Time</th>
                   <th>Duration</th>
@@ -325,15 +372,19 @@ export default function DoctorSchedulesPage() {
               <tbody>
                 {slots.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-8 text-gray-500">
-                      No schedules configured
+                    <td colSpan={10} className="text-center py-8 text-gray-500">
+                      {searchQuery
+                        ? `No schedules found matching "${searchQuery}"`
+                        : 'No schedules configured'
+                      }
                     </td>
                   </tr>
                 ) : (
                   slots.map((slot) => (
                     <tr key={slot.slotId}>
                       <td className="font-mono text-sm">{slot.slotId}</td>
-                      <td>{slot.clinicId}</td>
+                      <td className="font-mono text-sm">{slot.clinicId}</td>
+                      <td className="font-medium">{slot.clinic?.name || 'Unknown Clinic'}</td>
                       <td>{slot.dayOfWeek}</td>
                       <td>
                         {slot.startTime} - {slot.endTime}
