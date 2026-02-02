@@ -198,6 +198,23 @@ interface Transaction {
   };
 }
 
+// Self payment (out of pocket / copay) from payment gateway
+interface SelfPayment {
+  _id: string;
+  paymentId: string;
+  amount: number;
+  paymentType: 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT' | 'PARTIAL_PAYMENT' | 'TOP_UP';
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  serviceType: string;
+  serviceReferenceId?: string;
+  description?: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paidAt?: string;
+  createdAt: string;
+  notes?: string;
+}
+
 // ============================================================================
 // FILTER DROPDOWN COMPONENT
 // ============================================================================
@@ -356,6 +373,10 @@ export default function TransactionsScreen() {
   // Pagination state
   const [visibleCount, setVisibleCount] = useState(5);
 
+  // Tab state - 'wallet' for wallet transactions, 'self' for out of pocket
+  const [activeTab, setActiveTab] = useState<'wallet' | 'self'>('wallet');
+  const [selfPayments, setSelfPayments] = useState<SelfPayment[]>([]);
+
   // ============================================================================
   // DATA FETCHING
   // ============================================================================
@@ -391,15 +412,25 @@ export default function TransactionsScreen() {
     return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   };
 
-  // Get visible transactions (paginated)
+  // Get visible wallet transactions (paginated)
   const visibleTransactions = useMemo(() => {
     return transactions.slice(0, visibleCount);
   }, [transactions, visibleCount]);
 
-  // Check if there are more transactions to load
-  const hasMoreTransactions = transactions.length > visibleCount;
+  // Get visible self payments (paginated)
+  const visibleSelfPayments = useMemo(() => {
+    return selfPayments.slice(0, visibleCount);
+  }, [selfPayments, visibleCount]);
 
-  // Group visible transactions by month and calculate totals
+  // Check if there are more items to load
+  const hasMoreTransactions = useMemo(() => {
+    if (activeTab === 'wallet') {
+      return transactions.length > visibleCount;
+    }
+    return selfPayments.length > visibleCount;
+  }, [transactions, selfPayments, visibleCount, activeTab]);
+
+  // Group visible wallet transactions by month and calculate totals
   const groupedTransactions = useMemo(() => {
     const groups: { [key: string]: { transactions: Transaction[]; totalSpent: number } } = {};
     visibleTransactions.forEach((t) => {
@@ -414,6 +445,21 @@ export default function TransactionsScreen() {
     });
     return groups;
   }, [visibleTransactions]);
+
+  // Group visible self payments by month and calculate totals
+  const groupedSelfPayments = useMemo(() => {
+    const groups: { [key: string]: { payments: SelfPayment[]; totalPaid: number } } = {};
+    visibleSelfPayments.forEach((p) => {
+      const dateStr = p.paidAt || p.createdAt;
+      const monthKey = formatMonthYear(dateStr);
+      if (!groups[monthKey]) {
+        groups[monthKey] = { payments: [], totalPaid: 0 };
+      }
+      groups[monthKey].payments.push(p);
+      groups[monthKey].totalPaid += p.amount;
+    });
+    return groups;
+  }, [visibleSelfPayments]);
 
   // Load more transactions
   const handleLoadMore = () => {
@@ -541,6 +587,24 @@ export default function TransactionsScreen() {
         // Extract unique service types
         const serviceTypes = [...new Set(txns.map((t: Transaction) => t.serviceType).filter(Boolean))] as string[];
         setAvailableServiceTypes(serviceTypes);
+
+        // Fetch self payments (out of pocket / copay) from payment gateway
+        try {
+          const selfParams: any = {
+            limit: '100',
+            status: 'COMPLETED', // Only show completed payments
+          };
+          if (selectedServiceTypes.length > 0) {
+            selfParams.serviceType = selectedServiceTypes[0]; // API accepts single value
+          }
+
+          const selfResponse = await apiClient.get('/payments', { params: selfParams });
+          const payments = selfResponse.data?.payments || selfResponse.data || [];
+          setSelfPayments(Array.isArray(payments) ? payments : []);
+        } catch (selfError) {
+          console.log('[Transactions] Self payments not available:', selfError);
+          setSelfPayments([]);
+        }
       } catch (error) {
         console.error('[Transactions] Error fetching data:', error);
         setWalletData({
@@ -752,6 +816,68 @@ export default function TransactionsScreen() {
             {activeCategoryName ? `${activeCategoryName} Transactions` : 'Transaction History'}
           </Text>
 
+          {/* Wallet / Self Tabs */}
+          <View
+            style={{
+              flexDirection: 'row',
+              backgroundColor: COLORS.white,
+              borderRadius: 12,
+              padding: 4,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                setActiveTab('wallet');
+                setVisibleCount(5);
+              }}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: activeTab === 'wallet' ? COLORS.primary : 'transparent',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: activeTab === 'wallet' ? COLORS.white : COLORS.textGray,
+                }}
+              >
+                Wallet
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setActiveTab('self');
+                setVisibleCount(5);
+              }}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                paddingHorizontal: 16,
+                borderRadius: 8,
+                backgroundColor: activeTab === 'self' ? COLORS.primary : 'transparent',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: activeTab === 'self' ? COLORS.white : COLORS.textGray,
+                }}
+              >
+                Self
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Filter Pills - Figma Style */}
           <ScrollView
             horizontal
@@ -848,16 +974,17 @@ export default function TransactionsScreen() {
             </TouchableOpacity>
           </ScrollView>
 
-          {/* Transaction List */}
-          {Object.keys(groupedTransactions).length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-              <WalletIcon size={48} color={COLORS.textLight} />
-              <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 12 }}>
-                No transactions yet
-              </Text>
-            </View>
-          ) : (
-            Object.entries(groupedTransactions).map(([month, { transactions: monthTransactions, totalSpent }]) => (
+          {/* Transaction List - Wallet Tab */}
+          {activeTab === 'wallet' && (
+            Object.keys(groupedTransactions).length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+                <WalletIcon size={48} color={COLORS.textLight} />
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 12 }}>
+                  No wallet transactions yet
+                </Text>
+              </View>
+            ) : (
+              Object.entries(groupedTransactions).map(([month, { transactions: monthTransactions, totalSpent }]) => (
               <View key={month} style={{ marginBottom: 24 }}>
                 {/* Month Header */}
                 <View
@@ -970,7 +1097,157 @@ export default function TransactionsScreen() {
                   })}
                 </View>
               </View>
-            ))
+              ))
+            )
+          )}
+
+          {/* Transaction List - Self Tab (Out of Pocket / Copay) */}
+          {activeTab === 'self' && (
+            Object.keys(groupedSelfPayments).length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+                <WalletIcon size={48} color={COLORS.textLight} />
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 12 }}>
+                  No out of pocket payments yet
+                </Text>
+              </View>
+            ) : (
+              Object.entries(groupedSelfPayments).map(([month, { payments: monthPayments, totalPaid }]) => (
+                <View key={month} style={{ marginBottom: 24 }}>
+                  {/* Month Header */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                      {month}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+                      Total Paid{' '}
+                      <Text style={{ fontWeight: '600', color: COLORS.textDark }}>
+                        ₹{totalPaid.toLocaleString('en-IN')}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  {/* Payment Items */}
+                  <View
+                    style={{
+                      backgroundColor: COLORS.white,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {monthPayments.map((payment, index) => {
+                      const isLast = index === monthPayments.length - 1;
+                      const isAbsoluteLastPayment = payment._id === visibleSelfPayments[visibleSelfPayments.length - 1]?._id;
+                      const showLoadMore = isAbsoluteLastPayment && hasMoreTransactions;
+
+                      // Format payment type label
+                      const paymentTypeLabel = payment.paymentType === 'COPAY' ? 'Copay' :
+                        payment.paymentType === 'OUT_OF_POCKET' ? 'Out of Pocket' :
+                        payment.paymentType === 'FULL_PAYMENT' ? 'Full Payment' :
+                        payment.paymentType === 'PARTIAL_PAYMENT' ? 'Partial Payment' : 'Payment';
+
+                      // Format service type label
+                      const serviceTypeLabel = payment.serviceType === 'APPOINTMENT' ? 'Consultation' :
+                        payment.serviceType === 'LAB_ORDER' ? 'Lab Test' :
+                        payment.serviceType === 'PHARMACY' ? 'Pharmacy' :
+                        payment.serviceType === 'DENTAL' ? 'Dental' :
+                        payment.serviceType === 'VISION' ? 'Vision' :
+                        payment.serviceType || 'Service';
+
+                      const formatPaymentDate = (dateString: string) => {
+                        const date = new Date(dateString);
+                        const today = new Date();
+                        const isToday = date.toDateString() === today.toDateString();
+                        if (isToday) {
+                          return `Paid Today, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+                        }
+                        return `Paid ${date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+                      };
+
+                      return (
+                        <View
+                          key={payment._id}
+                          style={{
+                            position: 'relative',
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              paddingHorizontal: 16,
+                              paddingVertical: 12,
+                              borderBottomWidth: isLast ? 0 : 1,
+                              borderBottomColor: COLORS.border,
+                            }}
+                          >
+                            {/* Left - Payment Details */}
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: '400', color: COLORS.textDark, marginBottom: 2 }}>
+                                {payment.description || serviceTypeLabel}
+                              </Text>
+                              <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }}>
+                                {paymentTypeLabel} • {serviceTypeLabel}
+                              </Text>
+                              <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                                ID: {payment.paymentId || payment._id.slice(-8).toUpperCase()}
+                              </Text>
+                            </View>
+
+                            {/* Right - Amount & Date */}
+                            <View style={{ alignItems: 'flex-end' }}>
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: '500',
+                                  color: COLORS.debit,
+                                  marginBottom: 2,
+                                }}
+                              >
+                                -₹{payment.amount.toLocaleString('en-IN')}
+                              </Text>
+                              <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                                {formatPaymentDate(payment.paidAt || payment.createdAt)}
+                              </Text>
+                            </View>
+                          </View>
+
+                          {/* Load More Overlay on Last Payment */}
+                          {showLoadMore && (
+                            <TouchableOpacity
+                              onPress={handleLoadMore}
+                              style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                height: 40,
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderBottomLeftRadius: 12,
+                                borderBottomRightRadius: 12,
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.primary }}>
+                                Load More
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))
+            )
           )}
 
         </View>
