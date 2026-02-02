@@ -29,10 +29,27 @@ import { fetchWalletBalance } from '../../../src/lib/api/wallet';
 import apiClient, { storage } from '../../../src/lib/api/client';
 
 // ============================================================================
-// SVG ICONS - Extracted exactly from Next.js/Heroicons
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  orange: '#F5821E',
+  textDark: '#303030',
+  textGray: '#545454',
+  textLight: '#6b7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  success: '#16a34a',
+  error: '#ef4444',
+  warning: '#f59e0b',
+};
+
+// ============================================================================
+// SVG ICONS - Updated with Home Page Style (Blue + Orange accents)
 // ============================================================================
 
-function ArrowLeftIcon({ size = 24, color = '#0E51A2' }: { size?: number; color?: string }) {
+function ArrowLeftIcon({ size = 24, color = COLORS.primary }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
@@ -461,8 +478,18 @@ export default function NewClaimPage() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageUri, setPreviewImageUri] = useState<string>('');
+  const [previewImageName, setPreviewImageName] = useState<string>('');
 
   const scrollRef = useRef<ScrollView>(null);
+
+  // Handle viewing an image
+  const handleViewImage = (uri: string, name: string) => {
+    setPreviewImageUri(uri);
+    setPreviewImageName(name);
+    setShowImagePreview(true);
+  };
 
   // ============================================================================
   // DATA FETCHING
@@ -903,86 +930,77 @@ export default function NewClaimPage() {
     ];
 
     return (
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+      <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingBottom: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
           {steps.map((step, index) => (
             <React.Fragment key={step.number}>
               <View style={{ alignItems: 'center' }}>
                 {step.completed ? (
-                  <LinearGradient
-                    colors={['#90EAA9', '#5FA171']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
+                  <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: COLORS.success,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: 'rgba(95, 161, 113, 0.3)',
                     }}
                   >
-                    <CheckCircleIcon size={20} color="#FFFFFF" />
-                  </LinearGradient>
+                    <CheckCircleIcon size={18} color={COLORS.white} />
+                  </View>
                 ) : currentStep === step.number ? (
-                  <LinearGradient
-                    colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+                  <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: COLORS.primary,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: '#A4BFFE7A',
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#0F5FDC' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.white }}>
                       {step.number}
                     </Text>
-                  </LinearGradient>
+                  </View>
                 ) : (
                   <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: '#F3F4F6',
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: COLORS.white,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: '#E5E7EB',
+                      borderWidth: 2,
+                      borderColor: COLORS.border,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#9CA3AF' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textLight }}>
                       {step.number}
                     </Text>
                   </View>
                 )}
                 <Text
                   style={{
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: '500',
-                    color: step.completed || currentStep === step.number ? '#0E51A2' : '#9CA3AF',
-                    marginTop: 8,
+                    color: step.completed ? COLORS.success : currentStep === step.number ? COLORS.primary : COLORS.textLight,
+                    marginTop: 6,
                   }}
                 >
                   {step.title}
                 </Text>
               </View>
               {index < steps.length - 1 && (
-                <View style={{ flex: 1, marginHorizontal: 8 }}>
-                  {step.completed ? (
-                    <LinearGradient
-                      colors={['#90EAA9', '#5FA171']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={{ height: 4, borderRadius: 2 }}
-                    />
-                  ) : (
-                    <View style={{ height: 4, backgroundColor: '#E5E7EB', borderRadius: 2 }} />
-                  )}
+                <View style={{ flex: 1, marginHorizontal: 8, marginBottom: 20 }}>
+                  <View
+                    style={{
+                      height: 3,
+                      backgroundColor: step.completed ? COLORS.success : COLORS.border,
+                      borderRadius: 2,
+                    }}
+                  />
                 </View>
               )}
             </React.Fragment>
@@ -1018,91 +1036,43 @@ export default function NewClaimPage() {
   // ============================================================================
 
   const renderStep1 = () => (
-    <View style={{ gap: 20 }}>
-      {/* Header Card */}
-      <LinearGradient
-        colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-        locations={[0.2, 0.67, 1]}
-        style={{
-          borderRadius: 16,
-          padding: 24,
-          alignItems: 'center',
-          borderWidth: 2,
-          borderColor: '#F7DCAF',
-        }}
-      >
-        <LinearGradient
-          colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: '#A4BFFE7A',
-          }}
-        >
-          <SparklesIcon size={32} color="#0F5FDC" />
-        </LinearGradient>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 8 }}>
-          Treatment Details
-        </Text>
-        <Text style={{ fontSize: 14, color: '#374151', textAlign: 'center' }}>
-          Provide information about your treatment
-        </Text>
-      </LinearGradient>
-
+    <View style={{ gap: 16 }}>
       {/* Family Member Selection */}
       {familyMembers.length > 0 && (
         <View
           style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 20,
+            backgroundColor: COLORS.white,
+            borderRadius: 16,
+            padding: 16,
             borderWidth: 1,
-            borderColor: '#F3F4F6',
+            borderColor: 'rgba(217, 217, 217, 0.48)',
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
-                backgroundColor: '#DBEAFE',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <UserGroupIcon size={20} color="#2563EB" />
-            </View>
-            <View>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
-                Select Family Member
-              </Text>
-              <Text style={{ fontSize: 12, color: '#6B7280' }}>Who is the treatment for?</Text>
-            </View>
-          </View>
-
+          <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 10 }}>
+            Family Member
+          </Text>
           <TouchableOpacity
             onPress={() => setShowMemberPicker(true)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              backgroundColor: '#F9FAFB',
+              backgroundColor: COLORS.background,
               borderWidth: 1,
-              borderColor: '#E5E7EB',
+              borderColor: COLORS.border,
               borderRadius: 12,
-              padding: 16,
+              padding: 14,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '500', color: '#111827' }}>
+            <Text style={{ fontSize: 15, fontWeight: '500', color: COLORS.textDark }}>
               {familyMembers.find((m) => m.userId === selectedUserId)?.name || 'Select member'}
             </Text>
-            <ChevronDownIcon size={20} color="#6B7280" />
+            <ChevronDownIcon size={18} color={COLORS.textLight} />
           </TouchableOpacity>
         </View>
       )}
@@ -1110,160 +1080,100 @@ export default function NewClaimPage() {
       {/* Category Selection */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 12,
-          padding: 20,
+          backgroundColor: COLORS.white,
+          borderRadius: 16,
+          padding: 16,
           borderWidth: 1,
-          borderColor: '#F3F4F6',
+          borderColor: 'rgba(217, 217, 217, 0.48)',
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              backgroundColor: '#DBEAFE',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <TagIcon size={20} color="#2563EB" />
-          </View>
-          <View>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
-              Claim Category <Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>Select the type of treatment</Text>
-          </View>
-        </View>
-
+        <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 10 }}>
+          Claim Category <Text style={{ color: COLORS.error }}>*</Text>
+        </Text>
         <TouchableOpacity
           onPress={() => setShowCategoryPicker(true)}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: errors.category ? '#FEF2F2' : '#F9FAFB',
+            backgroundColor: errors.category ? '#FEF2F2' : COLORS.background,
             borderWidth: 1,
-            borderColor: errors.category ? '#FECACA' : '#E5E7EB',
+            borderColor: errors.category ? '#FECACA' : COLORS.border,
             borderRadius: 12,
-            padding: 16,
+            padding: 14,
           }}
         >
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: '500',
-              color: formData.category ? '#111827' : '#9CA3AF',
+              color: formData.category ? COLORS.textDark : COLORS.textLight,
             }}
           >
             {availableCategories.find((c) => c.categoryId === formData.category)?.name ||
               'Select a category'}
           </Text>
-          <ChevronDownIcon size={20} color="#6B7280" />
+          <ChevronDownIcon size={18} color={COLORS.textLight} />
         </TouchableOpacity>
 
         {errors.category && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              backgroundColor: '#FEF2F2',
-              padding: 12,
-              borderRadius: 8,
-              marginTop: 12,
-            }}
-          >
-            <ExclamationTriangleIcon size={20} color="#DC2626" />
-            <Text style={{ fontSize: 14, fontWeight: '500', color: '#DC2626' }}>
-              {errors.category}
-            </Text>
-          </View>
+          <Text style={{ fontSize: 13, color: COLORS.error, marginTop: 8 }}>
+            {errors.category}
+          </Text>
         )}
 
         {/* Available Balance */}
         {formData.category && walletData && (
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          <View
             style={{
-              marginTop: 16,
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              marginTop: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: 'rgba(3, 77, 162, 0.05)',
+              borderRadius: 10,
+              padding: 12,
             }}
           >
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: '#A4BFFE7A',
-                  }}
-                >
-                  <ShieldCheckIcon size={20} color="#0F5FDC" />
-                </LinearGradient>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>
-                  Available Balance
-                </Text>
-              </View>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2' }}>
-                ₹{getAvailableBalance().toLocaleString()}
-              </Text>
-            </View>
-          </LinearGradient>
+            <Text style={{ fontSize: 13, color: COLORS.textGray }}>Available Balance</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary }}>
+              ₹{getAvailableBalance().toLocaleString()}
+            </Text>
+          </View>
         )}
       </View>
 
       {/* Billing Date */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 12,
-          padding: 20,
+          backgroundColor: COLORS.white,
+          borderRadius: 16,
+          padding: 16,
           borderWidth: 1,
-          borderColor: '#F3F4F6',
+          borderColor: 'rgba(217, 217, 217, 0.48)',
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              backgroundColor: '#DBEAFE',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CalendarIcon size={20} color="#2563EB" />
-          </View>
-          <View>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
-              Billing Date <Text style={{ color: '#EF4444' }}>*</Text>
-            </Text>
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>When did you receive treatment?</Text>
-          </View>
-        </View>
-
+        <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 10 }}>
+          Billing Date <Text style={{ color: COLORS.error }}>*</Text>
+        </Text>
         <TouchableOpacity
           onPress={() => setShowDatePicker(true)}
           style={{
-            backgroundColor: errors.treatmentDate ? '#FEF2F2' : '#F9FAFB',
+            backgroundColor: errors.treatmentDate ? '#FEF2F2' : COLORS.background,
             borderWidth: 1,
-            borderColor: errors.treatmentDate ? '#FECACA' : '#E5E7EB',
+            borderColor: errors.treatmentDate ? '#FECACA' : COLORS.border,
             borderRadius: 12,
-            padding: 16,
+            padding: 14,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -1271,14 +1181,14 @@ export default function NewClaimPage() {
         >
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: '500',
-              color: formData.treatmentDate ? '#111827' : '#9CA3AF',
+              color: formData.treatmentDate ? COLORS.textDark : COLORS.textLight,
             }}
           >
             {formData.treatmentDate ? formatDate(formData.treatmentDate) : 'Select date'}
           </Text>
-          <CalendarIcon size={20} color="#6B7280" />
+          <CalendarIcon size={18} color={COLORS.textLight} />
         </TouchableOpacity>
 
         {/* Date Picker - Platform specific */}
@@ -1310,7 +1220,7 @@ export default function NewClaimPage() {
               />
               <View
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: COLORS.white,
                   borderRadius: 16,
                   padding: 24,
                   width: '90%',
@@ -1318,7 +1228,7 @@ export default function NewClaimPage() {
                   zIndex: 10,
                 }}
               >
-                <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.textDark, marginBottom: 16 }}>
                   Select Billing Date
                 </Text>
                 <View style={{ marginBottom: 16 }}>
@@ -1332,21 +1242,21 @@ export default function NewClaimPage() {
                       }
                     }}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={COLORS.textLight}
                     keyboardType="numbers-and-punctuation"
                     maxLength={10}
                     style={{
-                      backgroundColor: '#F9FAFB',
+                      backgroundColor: COLORS.background,
                       borderWidth: 1,
-                      borderColor: '#E5E7EB',
+                      borderColor: COLORS.border,
                       borderRadius: 12,
                       padding: 16,
                       fontSize: 16,
                       fontWeight: '500',
-                      color: '#111827',
+                      color: COLORS.textDark,
                     }}
                   />
-                  <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 8 }}>
                     Format: YYYY-MM-DD (e.g., 2025-01-15)
                   </Text>
                 </View>
@@ -1359,13 +1269,13 @@ export default function NewClaimPage() {
                       setFormData((prev) => ({ ...prev, treatmentDate: dateStr }));
                     }}
                     style={{
-                      backgroundColor: '#DBEAFE',
+                      backgroundColor: 'rgba(3, 77, 162, 0.1)',
                       paddingHorizontal: 12,
                       paddingVertical: 8,
                       borderRadius: 8,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#1D4ED8' }}>Today</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>Today</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
@@ -1375,13 +1285,13 @@ export default function NewClaimPage() {
                       setFormData((prev) => ({ ...prev, treatmentDate: dateStr }));
                     }}
                     style={{
-                      backgroundColor: '#DBEAFE',
+                      backgroundColor: 'rgba(3, 77, 162, 0.1)',
                       paddingHorizontal: 12,
                       paddingVertical: 8,
                       borderRadius: 8,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#1D4ED8' }}>Yesterday</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>Yesterday</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
@@ -1391,13 +1301,13 @@ export default function NewClaimPage() {
                       setFormData((prev) => ({ ...prev, treatmentDate: dateStr }));
                     }}
                     style={{
-                      backgroundColor: '#DBEAFE',
+                      backgroundColor: 'rgba(3, 77, 162, 0.1)',
                       paddingHorizontal: 12,
                       paddingVertical: 8,
                       borderRadius: 8,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#1D4ED8' }}>Last Week</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>Last Week</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -1405,25 +1315,27 @@ export default function NewClaimPage() {
                     onPress={() => setShowDatePicker(false)}
                     style={{
                       flex: 1,
-                      backgroundColor: '#F3F4F6',
+                      backgroundColor: COLORS.background,
                       padding: 14,
                       borderRadius: 10,
                       alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
                     }}
                   >
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151' }}>Cancel</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textGray }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setShowDatePicker(false)}
                     style={{
                       flex: 1,
-                      backgroundColor: '#0E51A2',
+                      backgroundColor: COLORS.primary,
                       padding: 14,
                       borderRadius: 10,
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>Done</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.white }}>Done</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1454,94 +1366,54 @@ export default function NewClaimPage() {
         )}
 
         {errors.treatmentDate && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              backgroundColor: '#FEF2F2',
-              padding: 12,
-              borderRadius: 8,
-              marginTop: 12,
-            }}
-          >
-            <ExclamationTriangleIcon size={20} color="#DC2626" />
-            <Text style={{ fontSize: 14, fontWeight: '500', color: '#DC2626' }}>
-              {errors.treatmentDate}
-            </Text>
-          </View>
+          <Text style={{ fontSize: 13, color: COLORS.error, marginTop: 8 }}>
+            {errors.treatmentDate}
+          </Text>
         )}
       </View>
 
       {/* Bill Amount & Bill Number Row */}
-      <View style={{ flexDirection: 'row', gap: 16 }}>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
         {/* Bill Amount */}
         <View
           style={{
             flex: 1,
-            backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 20,
+            backgroundColor: COLORS.white,
+            borderRadius: 16,
+            padding: 16,
             borderWidth: 1,
-            borderColor: '#F3F4F6',
+            borderColor: 'rgba(217, 217, 217, 0.48)',
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
-                backgroundColor: '#FFEDD5',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CurrencyRupeeIcon size={20} color="#EA580C" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                Bill Amount <Text style={{ color: '#EF4444' }}>*</Text>
-              </Text>
-              <Text style={{ fontSize: 11, color: '#6B7280' }}>Total bill value</Text>
-            </View>
-          </View>
-
+          <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 10 }}>
+            Bill Amount <Text style={{ color: COLORS.error }}>*</Text>
+          </Text>
           <TextInput
             value={formData.billAmount}
             onChangeText={(text) => setFormData((prev) => ({ ...prev, billAmount: text }))}
-            placeholder="0"
-            placeholderTextColor="#9CA3AF"
+            placeholder="₹ 0"
+            placeholderTextColor={COLORS.textLight}
             keyboardType="numeric"
             style={{
-              backgroundColor: errors.billAmount ? '#FEF2F2' : '#F9FAFB',
+              backgroundColor: errors.billAmount ? '#FEF2F2' : COLORS.background,
               borderWidth: 1,
-              borderColor: errors.billAmount ? '#FECACA' : '#E5E7EB',
+              borderColor: errors.billAmount ? '#FECACA' : COLORS.border,
               borderRadius: 12,
-              padding: 16,
-              fontSize: 18,
+              padding: 14,
+              fontSize: 16,
               fontWeight: '600',
-              color: '#111827',
+              color: COLORS.textDark,
             }}
           />
-
           {errors.billAmount && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                backgroundColor: '#FEF2F2',
-                padding: 8,
-                borderRadius: 8,
-                marginTop: 12,
-              }}
-            >
-              <ExclamationTriangleIcon size={16} color="#DC2626" />
-              <Text style={{ fontSize: 11, fontWeight: '500', color: '#DC2626', flex: 1 }}>
-                {errors.billAmount}
-              </Text>
-            </View>
+            <Text style={{ fontSize: 12, color: COLORS.error, marginTop: 8 }}>
+              {errors.billAmount}
+            </Text>
           )}
         </View>
 
@@ -1549,46 +1421,35 @@ export default function NewClaimPage() {
         <View
           style={{
             flex: 1,
-            backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 20,
+            backgroundColor: COLORS.white,
+            borderRadius: 16,
+            padding: 16,
             borderWidth: 1,
-            borderColor: '#F3F4F6',
+            borderColor: 'rgba(217, 217, 217, 0.48)',
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
-                backgroundColor: '#DBEAFE',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <DocumentTextIcon size={20} color="#2563EB" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Bill Number</Text>
-              <Text style={{ fontSize: 11, color: '#6B7280' }}>Invoice reference</Text>
-            </View>
-          </View>
-
+          <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 10 }}>
+            Bill Number
+          </Text>
           <TextInput
             value={formData.billNumber}
             onChangeText={(text) => setFormData((prev) => ({ ...prev, billNumber: text }))}
             placeholder="INV-12345"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={COLORS.textLight}
             style={{
-              backgroundColor: '#F9FAFB',
+              backgroundColor: COLORS.background,
               borderWidth: 1,
-              borderColor: '#E5E7EB',
+              borderColor: COLORS.border,
               borderRadius: 12,
-              padding: 16,
-              fontSize: 16,
+              padding: 14,
+              fontSize: 15,
               fontWeight: '500',
-              color: '#111827',
+              color: COLORS.textDark,
             }}
           />
         </View>
@@ -1603,76 +1464,55 @@ export default function NewClaimPage() {
           const approvedAmount = Math.min(billAmount, categoryLimit);
 
           return (
-            <View style={{ gap: 16 }}>
-              {/* Warning Card */}
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(217, 217, 217, 0.48)',
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+              }}
+            >
+              {/* Warning row */}
               <View
                 style={{
-                  backgroundColor: '#F97316',
-                  borderRadius: 12,
-                  padding: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  backgroundColor: '#FEF3C7',
+                  borderRadius: 8,
+                  marginBottom: 12,
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 10,
-                      backgroundColor: '#FFFFFF',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <ExclamationTriangleIcon size={24} color="#F97316" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 }}>
-                      Amount Will Be Capped
-                    </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#FFFFFF', lineHeight: 20 }}>
-                      Your bill amount of ₹{billAmount.toLocaleString()} exceeds the per-claim limit.
-                      The claim will be automatically capped to ₹{categoryLimit.toLocaleString()}.
-                    </Text>
-                  </View>
-                </View>
+                <Text style={{ fontSize: 13, color: '#92400E', flex: 1 }}>
+                  Bill amount exceeds per-claim limit (₹{categoryLimit.toLocaleString()})
+                </Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#92400E' }}>
+                  -₹{(billAmount - categoryLimit).toLocaleString()}
+                </Text>
               </View>
 
-              {/* Approved Amount Card */}
+              {/* Approved amount */}
               <View
                 style={{
-                  backgroundColor: '#F0FDF4',
-                  borderRadius: 12,
-                  padding: 20,
-                  borderWidth: 2,
-                  borderColor: '#BBF7D0',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 10,
-                      backgroundColor: '#16A34A',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <CheckCircleIcon size={24} color="#FFFFFF" />
-                  </View>
-                  <View>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
-                      Amount Submitted for Approval
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#6B7280' }}>Maximum claimable amount</Text>
-                  </View>
-                </View>
-
-                <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-                  <Text style={{ fontSize: 48, fontWeight: '700', color: '#16A34A' }}>
-                    ₹{approvedAmount.toLocaleString()}
-                  </Text>
-                </View>
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>
+                  Amount for Approval
+                </Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.success }}>
+                  ₹{approvedAmount.toLocaleString()}
+                </Text>
               </View>
             </View>
           );
@@ -1683,52 +1523,39 @@ export default function NewClaimPage() {
       {/* Treatment Description */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 12,
-          padding: 20,
+          backgroundColor: COLORS.white,
+          borderRadius: 16,
+          padding: 16,
           borderWidth: 1,
-          borderColor: '#F3F4F6',
+          borderColor: 'rgba(217, 217, 217, 0.48)',
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              backgroundColor: '#DBEAFE',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <DocumentTextIcon size={20} color="#2563EB" />
-          </View>
-          <View>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
-              Treatment Description
-            </Text>
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>Brief details about the treatment</Text>
-          </View>
-        </View>
-
+        <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 10 }}>
+          Treatment Description <Text style={{ fontSize: 12, color: COLORS.textLight }}>(optional)</Text>
+        </Text>
         <TextInput
           value={formData.treatmentDescription}
           onChangeText={(text) => setFormData((prev) => ({ ...prev, treatmentDescription: text }))}
-          placeholder="Describe the treatment you received..."
-          placeholderTextColor="#9CA3AF"
+          placeholder="Brief details about the treatment..."
+          placeholderTextColor={COLORS.textLight}
           multiline
-          numberOfLines={4}
+          numberOfLines={3}
           textAlignVertical="top"
           style={{
-            backgroundColor: '#F9FAFB',
+            backgroundColor: COLORS.background,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: COLORS.border,
             borderRadius: 12,
-            padding: 16,
-            fontSize: 16,
+            padding: 14,
+            fontSize: 15,
             fontWeight: '500',
-            color: '#111827',
-            minHeight: 120,
+            color: COLORS.textDark,
+            minHeight: 80,
           }}
         />
       </View>
@@ -1747,106 +1574,67 @@ export default function NewClaimPage() {
     isGreen: boolean = false,
     error?: string
   ) => (
-    <LinearGradient
-      colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-      locations={[0.2, 0.67, 1]}
+    <View
       style={{
+        backgroundColor: COLORS.white,
         borderRadius: 16,
-        padding: 24,
-        borderWidth: 2,
-        borderColor: '#F7DCAF',
+        padding: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(217, 217, 217, 0.48)',
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-        <LinearGradient
-          colors={isGreen ? ['#90EAA9', '#5FA171'] : ['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+      <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 4 }}>
+        {title} <Text style={{ color: COLORS.error }}>*</Text>
+      </Text>
+      <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 12 }}>{subtitle}</Text>
+
+      {/* Upload buttons */}
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+        <TouchableOpacity
+          onPress={() => pickDocument(target)}
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
+            flex: 1,
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: isGreen ? 'rgba(95, 161, 113, 0.3)' : '#A4BFFE7A',
+            gap: 8,
+            paddingVertical: 12,
+            backgroundColor: COLORS.primary,
+            borderRadius: 10,
           }}
         >
-          <DocumentTextIcon size={24} color={isGreen ? '#FFFFFF' : '#0F5FDC'} />
-        </LinearGradient>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: '#0E51A2' }}>{title}</Text>
-          <Text style={{ fontSize: 14, color: '#374151' }}>
-            {subtitle} <Text style={{ color: '#EF4444' }}>*</Text>
-          </Text>
-        </View>
-      </View>
+          <DocumentPlusIcon size={18} color={COLORS.white} />
+          <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>Choose Files</Text>
+        </TouchableOpacity>
 
-      {/* Upload Area */}
-      <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-        <LinearGradient
-          colors={isGreen ? ['#90EAA9', '#5FA171'] : ['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+        <TouchableOpacity
+          onPress={() => takePhoto(target)}
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: 32,
+            flex: 1,
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 16,
+            gap: 8,
+            paddingVertical: 12,
             borderWidth: 1,
-            borderColor: isGreen ? 'rgba(95, 161, 113, 0.3)' : '#A4BFFE7A',
+            borderColor: COLORS.primary,
+            borderRadius: 10,
+            backgroundColor: COLORS.white,
           }}
         >
-          <CloudArrowUpIcon size={32} color={isGreen ? '#FFFFFF' : '#0F5FDC'} />
-        </LinearGradient>
-
-        <Text style={{ fontSize: 14, color: '#374151', fontWeight: '500', marginBottom: 24 }}>
-          Tap to upload documents
-        </Text>
-
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity
-            onPress={() => pickDocument(target)}
-            style={{ overflow: 'hidden', borderRadius: 12 }}
-          >
-            <LinearGradient
-              colors={isGreen ? ['#90EAA9', '#5FA171'] : ['#1F63B4', '#5DA4FB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                paddingHorizontal: 24,
-                paddingVertical: 14,
-              }}
-            >
-              <DocumentPlusIcon size={20} color="#FFFFFF" />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>Choose Files</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => takePhoto(target)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              paddingHorizontal: 24,
-              paddingVertical: 14,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
-              borderRadius: 12,
-              backgroundColor: 'rgba(255, 255, 255, 0.5)',
-            }}
-          >
-            <CameraIcon size={20} color="#374151" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>Camera</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '500', marginTop: 16 }}>
-          PDF, JPG, PNG up to 5MB each
-        </Text>
+          <CameraIcon size={18} color={COLORS.primary} />
+          <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary }}>Camera</Text>
+        </TouchableOpacity>
       </View>
+
+      <Text style={{ fontSize: 11, color: COLORS.textLight, textAlign: 'center' }}>
+        PDF, JPG, PNG up to 5MB each
+      </Text>
 
       {/* Error */}
       {error && (
@@ -1856,25 +1644,21 @@ export default function NewClaimPage() {
             alignItems: 'center',
             gap: 8,
             backgroundColor: '#FEF2F2',
-            padding: 12,
+            padding: 10,
             borderRadius: 8,
-            marginTop: 16,
+            marginTop: 12,
           }}
         >
-          <ExclamationTriangleIcon size={20} color="#DC2626" />
-          <Text style={{ fontSize: 14, fontWeight: '500', color: '#DC2626' }}>{error}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>{error}</Text>
         </View>
       )}
 
       {/* File Previews */}
       {files.length > 0 && (
-        <View style={{ marginTop: 20, gap: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CheckCircleIcon size={20} color="#16A34A" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-              {files.length} file(s) uploaded
-            </Text>
-          </View>
+        <View style={{ marginTop: 12, gap: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
+            {files.length} file(s) uploaded
+          </Text>
 
           {files.map((doc) => (
             <View
@@ -1882,81 +1666,81 @@ export default function NewClaimPage() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 16,
-                backgroundColor: '#F9FAFB',
-                borderRadius: 12,
-                padding: 16,
+                gap: 12,
+                backgroundColor: COLORS.background,
+                borderRadius: 10,
+                padding: 10,
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: COLORS.border,
               }}
             >
               {doc.type === 'image' ? (
                 <Image
                   source={{ uri: doc.uri }}
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 8,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 6,
                     borderWidth: 1,
-                    borderColor: '#E5E7EB',
+                    borderColor: COLORS.border,
                   }}
                 />
               ) : (
                 <View
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 8,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 6,
                     backgroundColor: '#FEE2E2',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: '#FECACA',
                   }}
                 >
-                  <DocumentTextIcon size={28} color="#DC2626" />
+                  <DocumentTextIcon size={20} color={COLORS.error} />
                 </View>
               )}
 
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
-                  style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}
+                  style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}
                   numberOfLines={1}
                   ellipsizeMode="middle"
                 >
                   {doc.name}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                <Text style={{ fontSize: 11, color: COLORS.textGray }}>
                   {(doc.size / 1024).toFixed(1)} KB
                 </Text>
               </View>
 
-              <TouchableOpacity
-                onPress={() => removeFile(doc.id, target)}
-                style={{ padding: 8, borderRadius: 8, flexShrink: 0 }}
-              >
-                <XMarkIcon size={20} color="#DC2626" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 6, flexShrink: 0 }}>
+                {doc.type === 'image' && (
+                  <TouchableOpacity
+                    onPress={() => handleViewImage(doc.uri, doc.name)}
+                    style={{ padding: 6, borderRadius: 6, backgroundColor: 'rgba(3, 77, 162, 0.1)' }}
+                  >
+                    <EyeIcon size={18} color={COLORS.primary} />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => removeFile(doc.id, target)}
+                  style={{ padding: 6, borderRadius: 6, backgroundColor: '#FEF2F2' }}
+                >
+                  <XMarkIcon size={18} color={COLORS.error} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>
       )}
-    </LinearGradient>
+    </View>
   );
 
   const renderStep2 = () => {
     const isConsult = formData.category === 'CAT001' || formData.category === 'CAT005';
 
     return (
-      <View style={{ gap: 20 }}>
-        <View style={{ alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 8 }}>
-            Upload Documents
-          </Text>
-          <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
-            {isConsult ? 'Upload prescription and bills separately' : 'Add bills and reports'}
-          </Text>
-        </View>
+      <View style={{ gap: 16 }}>
 
         {isConsult ? (
           <>
@@ -1978,97 +1762,69 @@ export default function NewClaimPage() {
             )}
           </>
         ) : (
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            locations={[0.2, 0.67, 1]}
+          <View
             style={{
+              backgroundColor: COLORS.white,
               borderRadius: 16,
-              padding: 24,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              padding: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(217, 217, 217, 0.48)',
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <View style={{ alignItems: 'center' }}>
-              <LinearGradient
-                colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+            <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 4 }}>
+              Upload Documents <Text style={{ color: COLORS.error }}>*</Text>
+            </Text>
+            <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 12 }}>
+              Add bills and reports
+            </Text>
+
+            {/* Upload buttons */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+              <TouchableOpacity
+                onPress={() => pickDocument('document')}
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
+                  flex: 1,
+                  flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 24,
-                  borderWidth: 1,
-                  borderColor: '#A4BFFE7A',
+                  gap: 8,
+                  paddingVertical: 12,
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 10,
                 }}
               >
-                <PhotoIcon size={40} color="#0F5FDC" />
-              </LinearGradient>
+                <DocumentPlusIcon size={18} color={COLORS.white} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>Choose Files</Text>
+              </TouchableOpacity>
 
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 12 }}>
-                Upload Documents
-              </Text>
-              <Text
+              <TouchableOpacity
+                onPress={() => takePhoto('document')}
                 style={{
-                  fontSize: 14,
-                  color: '#374151',
-                  textAlign: 'center',
-                  marginBottom: 32,
-                  paddingHorizontal: 16,
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  paddingVertical: 12,
+                  borderWidth: 1,
+                  borderColor: COLORS.primary,
+                  borderRadius: 10,
+                  backgroundColor: COLORS.white,
                 }}
               >
-                Drag and drop your bills and reports here, or tap to browse
-              </Text>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
-                <TouchableOpacity
-                  onPress={() => pickDocument('document')}
-                  style={{ overflow: 'hidden', borderRadius: 12 }}
-                >
-                  <LinearGradient
-                    colors={['#1F63B4', '#5DA4FB']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 10,
-                      paddingHorizontal: 24,
-                      paddingVertical: 14,
-                    }}
-                  >
-                    <DocumentPlusIcon size={20} color="#FFFFFF" />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>
-                      Choose Files
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => takePhoto('document')}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    paddingHorizontal: 24,
-                    paddingVertical: 14,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    borderRadius: 12,
-                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                  }}
-                >
-                  <CameraIcon size={20} color="#374151" />
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151' }}>
-                    Take Photo
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '500', marginTop: 24 }}>
-                Supports PDF, JPG, PNG • Maximum 5MB per file
-              </Text>
+                <CameraIcon size={18} color={COLORS.primary} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary }}>Camera</Text>
+              </TouchableOpacity>
             </View>
+
+            <Text style={{ fontSize: 11, color: COLORS.textLight, textAlign: 'center' }}>
+              PDF, JPG, PNG up to 5MB each
+            </Text>
 
             {/* Error */}
             {errors.documents && (
@@ -2078,13 +1834,12 @@ export default function NewClaimPage() {
                   alignItems: 'center',
                   gap: 8,
                   backgroundColor: '#FEF2F2',
-                  padding: 12,
+                  padding: 10,
                   borderRadius: 8,
-                  marginTop: 24,
+                  marginTop: 12,
                 }}
               >
-                <ExclamationTriangleIcon size={20} color="#DC2626" />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#DC2626' }}>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>
                   {errors.documents}
                 </Text>
               </View>
@@ -2092,13 +1847,10 @@ export default function NewClaimPage() {
 
             {/* File Previews */}
             {documentPreviews.length > 0 && (
-              <View style={{ marginTop: 24, gap: 16 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8 }}>
-                  <CheckCircleIcon size={24} color="#16A34A" />
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
-                    Uploaded Documents ({documentPreviews.length})
-                  </Text>
-                </View>
+              <View style={{ marginTop: 12, gap: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
+                  {documentPreviews.length} file(s) uploaded
+                </Text>
 
                 {documentPreviews.map((doc) => (
                   <View
@@ -2106,75 +1858,74 @@ export default function NewClaimPage() {
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 16,
-                      backgroundColor: '#F9FAFB',
-                      borderRadius: 12,
-                      padding: 20,
+                      gap: 12,
+                      backgroundColor: COLORS.background,
+                      borderRadius: 10,
+                      padding: 10,
                       borderWidth: 1,
-                      borderColor: '#E5E7EB',
+                      borderColor: COLORS.border,
                     }}
                   >
                     {doc.type === 'image' ? (
                       <Image
                         source={{ uri: doc.uri }}
                         style={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: 8,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 6,
                           borderWidth: 1,
-                          borderColor: '#E5E7EB',
+                          borderColor: COLORS.border,
                         }}
                       />
                     ) : (
                       <View
                         style={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: 8,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 6,
                           backgroundColor: '#FEE2E2',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          borderWidth: 1,
-                          borderColor: '#FECACA',
                         }}
                       >
-                        <DocumentTextIcon size={32} color="#DC2626" />
+                        <DocumentTextIcon size={20} color={COLORS.error} />
                       </View>
                     )}
 
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text
-                        style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 4 }}
+                        style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}
                         numberOfLines={1}
                         ellipsizeMode="middle"
                       >
                         {doc.name}
                       </Text>
-                      <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                      <Text style={{ fontSize: 11, color: COLORS.textGray }}>
                         {(doc.size / 1024).toFixed(1)} KB
                       </Text>
                     </View>
 
-                    <View style={{ flexDirection: 'row', gap: 8, flexShrink: 0 }}>
+                    <View style={{ flexDirection: 'row', gap: 6, flexShrink: 0 }}>
                       {doc.type === 'image' && (
                         <TouchableOpacity
-                          style={{ padding: 12, borderRadius: 8, backgroundColor: '#EFF6FF' }}
+                          onPress={() => handleViewImage(doc.uri, doc.name)}
+                          style={{ padding: 6, borderRadius: 6, backgroundColor: 'rgba(3, 77, 162, 0.1)' }}
                         >
-                          <EyeIcon size={20} color="#2563EB" />
+                          <EyeIcon size={18} color={COLORS.primary} />
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity
                         onPress={() => removeFile(doc.id, 'document')}
-                        style={{ padding: 12, borderRadius: 8, backgroundColor: '#FEF2F2' }}
+                        style={{ padding: 6, borderRadius: 6, backgroundColor: '#FEF2F2' }}
                       >
-                        <XMarkIcon size={20} color="#DC2626" />
+                        <XMarkIcon size={18} color={COLORS.error} />
                       </TouchableOpacity>
                     </View>
                   </View>
                 ))}
               </View>
             )}
-          </LinearGradient>
+          </View>
         )}
       </View>
     );
@@ -2190,508 +1941,156 @@ export default function NewClaimPage() {
       ? prescriptionFiles.length + billFiles.length
       : documentPreviews.length;
 
+    const billAmount = parseFloat(formData.billAmount || '0');
+    const categoryLimit = walletRules?.categoryLimits?.[formData.category]?.perClaimLimit;
+    const availableBalance = getAvailableBalance();
+    const isCapped = categoryLimit && billAmount > categoryLimit;
+    const approvedAmount = isCapped ? Math.min(billAmount, categoryLimit) : billAmount;
+    const walletDeduction = Math.min(approvedAmount, availableBalance);
+    const outOfPocket = approvedAmount - walletDeduction;
+
     return (
-      <View style={{ gap: 20 }}>
-        {/* Header */}
-        <LinearGradient
-          colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-          locations={[0.2, 0.67, 1]}
+      <View style={{ gap: 16 }}>
+        {/* Claim Details Card */}
+        <View
           style={{
+            backgroundColor: COLORS.white,
             borderRadius: 16,
-            padding: 24,
-            alignItems: 'center',
-            borderWidth: 2,
-            borderColor: '#F7DCAF',
+            padding: 16,
+            borderWidth: 1,
+            borderColor: 'rgba(217, 217, 217, 0.48)',
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
-          <LinearGradient
-            colors={['#90EAA9', '#5FA171']}
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: 'rgba(95, 161, 113, 0.3)',
-            }}
-          >
-            <DocumentCheckIcon size={32} color="#FFFFFF" />
-          </LinearGradient>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 8 }}>
-            Review & Submit
+          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+            Claim Details
           </Text>
-          <Text style={{ fontSize: 14, color: '#374151', textAlign: 'center' }}>
-            Please verify all details before submitting
-          </Text>
-        </LinearGradient>
 
-        {/* Claim Summary */}
-        <LinearGradient
-          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-          style={{
-            borderRadius: 16,
-            padding: 24,
-            borderWidth: 2,
-            borderColor: '#86ACD8',
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 24,
-              paddingBottom: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: '#86ACD8',
-            }}
-          >
-            <LinearGradient
-              colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#A4BFFE7A',
-              }}
-            >
-              <SparklesIcon size={24} color="#0F5FDC" />
-            </LinearGradient>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2' }}>Claim Summary</Text>
+          {/* Details rows */}
+          <View style={{ gap: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>Category</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark, maxWidth: '60%', textAlign: 'right' }} numberOfLines={1}>
+                {availableCategories.find((c) => c.categoryId === formData.category)?.name || '-'}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>Billing Date</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>
+                {formData.treatmentDate ? formatDate(formData.treatmentDate) : '-'}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>Bill Number</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>
+                {formData.billNumber || '-'}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>Documents</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
+                {totalDocuments} file{totalDocuments !== 1 ? 's' : ''} uploaded
+              </Text>
+            </View>
           </View>
+        </View>
 
-          <View style={{ gap: 16 }}>
-            {/* Claim Type */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 16,
-                backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#86ACD8',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: '#A4BFFE7A',
-                  }}
-                >
-                  <TagIcon size={20} color="#0F5FDC" />
-                </LinearGradient>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Claim Type</Text>
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2', textTransform: 'capitalize' }}>
-                Reimbursement
+        {/* Payment Summary Card */}
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderRadius: 16,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: 'rgba(217, 217, 217, 0.48)',
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+            Payment Summary
+          </Text>
+
+          <View style={{ gap: 10 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>Bill Amount</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>
+                ₹{billAmount.toLocaleString()}
               </Text>
             </View>
 
-            {/* Category */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 16,
-                backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#86ACD8',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: '#A4BFFE7A',
-                  }}
-                >
-                  <TagIcon size={20} color="#0F5FDC" />
-                </LinearGradient>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Category</Text>
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>
-                {availableCategories.find((c) => c.categoryId === formData.category)?.name ||
-                  'Not selected'}
-              </Text>
-            </View>
-
-            {/* Billing Date */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 16,
-                backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#86ACD8',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: '#A4BFFE7A',
-                  }}
-                >
-                  <CalendarIcon size={20} color="#0F5FDC" />
-                </LinearGradient>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Billing Date</Text>
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>
-                {formData.treatmentDate ? formatDate(formData.treatmentDate) : 'Not selected'}
-              </Text>
-            </View>
-
-            {/* Payment Breakdown */}
-            {(() => {
-              const billAmount = parseFloat(formData.billAmount || '0');
-              const categoryLimit = walletRules?.categoryLimits?.[formData.category]?.perClaimLimit;
-              const availableBalance = getAvailableBalance();
-              const isCapped = categoryLimit && billAmount > categoryLimit;
-              const approvedAmount = isCapped ? Math.min(billAmount, categoryLimit) : billAmount;
-              const walletDeduction = Math.min(approvedAmount, availableBalance);
-              const outOfPocket = approvedAmount - walletDeduction;
-
-              return (
-                <View
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
-                    padding: 20,
-                    borderWidth: 2,
-                    borderColor: '#E5E7EB',
-                  }}
-                >
-                  {/* Header */}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                      marginBottom: 20,
-                      paddingBottom: 16,
-                      borderBottomWidth: 1,
-                      borderBottomColor: '#E5E7EB',
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        backgroundColor: '#FEF3C7',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <CurrencyRupeeIcon size={22} color="#D97706" />
-                    </View>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                      Payment Breakdown
-                    </Text>
-                  </View>
-
-                  {/* Breakdown Items */}
-                  <View style={{ gap: 12 }}>
-                    {/* Original Bill Amount */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, color: '#6B7280' }}>Original Bill Amount</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                        ₹{billAmount.toLocaleString()}
-                      </Text>
-                    </View>
-
-                    {/* Per-Claim Limit - only show if capped */}
-                    {isCapped && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          paddingVertical: 8,
-                          backgroundColor: '#FEF3C7',
-                          marginHorizontal: -12,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <ExclamationTriangleIcon size={16} color="#D97706" />
-                          <Text style={{ fontSize: 14, color: '#92400E' }}>Per-Claim Limit Applied</Text>
-                        </View>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#92400E' }}>
-                          -₹{(billAmount - categoryLimit).toLocaleString()}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Divider */}
-                    <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 8 }} />
-
-                    {/* Amount Submitted for Approval */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 12,
-                        backgroundColor: '#F0FDF4',
-                        marginHorizontal: -12,
-                        paddingHorizontal: 12,
-                        borderRadius: 8,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <CheckCircleIcon size={18} color="#16A34A" />
-                        <Text style={{ fontSize: 15, fontWeight: '600', color: '#166534' }}>
-                          Amount for Approval
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 18, fontWeight: '700', color: '#16A34A' }}>
-                        ₹{approvedAmount.toLocaleString()}
-                      </Text>
-                    </View>
-
-                    {/* Divider */}
-                    <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 8 }} />
-
-                    {/* Wallet Balance Available */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, color: '#6B7280' }}>Available Wallet Balance</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>
-                        ₹{availableBalance.toLocaleString()}
-                      </Text>
-                    </View>
-
-                    {/* Wallet Deduction */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        paddingVertical: 12,
-                        backgroundColor: '#DBEAFE',
-                        marginHorizontal: -12,
-                        paddingHorizontal: 12,
-                        borderRadius: 8,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <WalletIcon size={18} color="#1D4ED8" />
-                        <Text style={{ fontSize: 15, fontWeight: '600', color: '#1E40AF' }}>
-                          Wallet Deduction
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 18, fontWeight: '700', color: '#1D4ED8' }}>
-                        ₹{walletDeduction.toLocaleString()}
-                      </Text>
-                    </View>
-
-                    {/* Out of Pocket - only show if there's any */}
-                    {outOfPocket > 0 && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          paddingVertical: 12,
-                          backgroundColor: '#FEF2F2',
-                          marginHorizontal: -12,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          marginTop: 4,
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <ExclamationTriangleIcon size={18} color="#DC2626" />
-                          <Text style={{ fontSize: 15, fontWeight: '600', color: '#991B1B' }}>
-                            Not Covered (Out of Pocket)
-                          </Text>
-                        </View>
-                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#DC2626' }}>
-                          ₹{outOfPocket.toLocaleString()}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Info Note */}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'flex-start',
-                      gap: 8,
-                      marginTop: 16,
-                      padding: 12,
-                      backgroundColor: '#F9FAFB',
-                      borderRadius: 8,
-                    }}
-                  >
-                    <InformationCircleIcon size={18} color="#6B7280" />
-                    <Text style={{ fontSize: 12, color: '#6B7280', flex: 1, lineHeight: 18 }}>
-                      Final approved amount may vary based on document verification and policy terms.
-                      Wallet will be debited only after claim approval.
-                    </Text>
-                  </View>
-                </View>
-              );
-            })()}
-
-            {/* Documents */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 16,
-                backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#86ACD8',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: '#A4BFFE7A',
-                  }}
-                >
-                  <DocumentCheckIcon size={20} color="#0F5FDC" />
-                </LinearGradient>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Documents</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <CheckCircleIcon size={20} color="#5FA171" />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>
-                  {totalDocuments} file{totalDocuments !== 1 ? 's' : ''} uploaded
+            {isCapped && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, paddingHorizontal: 10, backgroundColor: '#FEF3C7', borderRadius: 6, marginHorizontal: -4 }}>
+                <Text style={{ fontSize: 12, color: '#92400E' }}>Per-claim limit applied</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#92400E' }}>
+                  -₹{(billAmount - categoryLimit).toLocaleString()}
                 </Text>
               </View>
-            </View>
-          </View>
-        </LinearGradient>
+            )}
 
-        {/* Terms */}
-        <LinearGradient
-          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-          style={{
-            borderRadius: 16,
-            padding: 20,
-            borderWidth: 2,
-            borderColor: '#86ACD8',
-          }}
-        >
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <LinearGradient
-              colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#A4BFFE7A',
-              }}
-            >
-              <ShieldCheckIcon size={24} color="#0F5FDC" />
-            </LinearGradient>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
-                Verification & Terms
-              </Text>
-              <Text style={{ fontSize: 14, color: '#374151', lineHeight: 20 }}>
-                By submitting this claim, you confirm that all information provided is accurate and
-                complete. False claims may result in policy termination.
+            <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 4 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}>Amount for Approval</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.success }}>
+                ₹{approvedAmount.toLocaleString()}
               </Text>
             </View>
-          </View>
-        </LinearGradient>
 
-        {/* Processing Time */}
-        <LinearGradient
-          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>Wallet Balance</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary }}>
+                ₹{availableBalance.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}>Wallet Deduction</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: COLORS.primary }}>
+                ₹{walletDeduction.toLocaleString()}
+              </Text>
+            </View>
+
+            {outOfPocket > 0 && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, paddingHorizontal: 10, backgroundColor: '#FEF2F2', borderRadius: 6, marginHorizontal: -4 }}>
+                <Text style={{ fontSize: 12, color: COLORS.error }}>Not Covered</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.error }}>
+                  ₹{outOfPocket.toLocaleString()}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Terms Card */}
+        <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 16,
+            backgroundColor: COLORS.white,
             borderRadius: 16,
-            padding: 20,
-            borderWidth: 2,
-            borderColor: '#86ACD8',
+            padding: 16,
+            borderWidth: 1,
+            borderColor: 'rgba(217, 217, 217, 0.48)',
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
-          <LinearGradient
-            colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: '#A4BFFE7A',
-            }}
-          >
-            <ClockIcon size={24} color="#0F5FDC" />
-          </LinearGradient>
-          <View>
-            <Text style={{ fontSize: 14, color: '#374151' }}>
-              <Text style={{ fontWeight: '600', color: '#0E51A2' }}>Expected processing time:</Text>
-              <Text style={{ fontWeight: '600', color: '#0F5FDC' }}> 3-5 business days</Text>
-            </Text>
-          </View>
-        </LinearGradient>
+          <Text style={{ fontSize: 12, color: COLORS.textGray, lineHeight: 18 }}>
+            By submitting, you confirm all information is accurate. Expected processing: <Text style={{ fontWeight: '600', color: COLORS.orange }}>3-5 business days</Text>
+          </Text>
+        </View>
       </View>
     );
   };
@@ -2716,7 +2115,7 @@ export default function NewClaimPage() {
       >
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLORS.white,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             maxHeight: '70%',
@@ -2729,12 +2128,12 @@ export default function NewClaimPage() {
               justifyContent: 'space-between',
               padding: 20,
               borderBottomWidth: 1,
-              borderBottomColor: '#E5E7EB',
+              borderBottomColor: COLORS.border,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>{title}</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.textDark }}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <XMarkIcon size={24} color="#6B7280" />
+              <XMarkIcon size={24} color={COLORS.textLight} />
             </TouchableOpacity>
           </View>
 
@@ -2750,9 +2149,9 @@ export default function NewClaimPage() {
                   padding: 16,
                   borderRadius: 12,
                   marginBottom: 8,
-                  backgroundColor: selectedValue === option.value ? '#EFF6FF' : '#F9FAFB',
+                  backgroundColor: selectedValue === option.value ? 'rgba(3, 77, 162, 0.1)' : COLORS.background,
                   borderWidth: 1,
-                  borderColor: selectedValue === option.value ? '#3B82F6' : '#E5E7EB',
+                  borderColor: selectedValue === option.value ? COLORS.primary : COLORS.border,
                 }}
               >
                 <View style={{ flex: 1 }}>
@@ -2760,19 +2159,19 @@ export default function NewClaimPage() {
                     style={{
                       fontSize: 16,
                       fontWeight: '500',
-                      color: selectedValue === option.value ? '#1D4ED8' : '#111827',
+                      color: selectedValue === option.value ? COLORS.primary : COLORS.textDark,
                     }}
                   >
                     {option.label}
                   </Text>
                   {option.subtitle && (
-                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>
                       {option.subtitle}
                     </Text>
                   )}
                 </View>
                 {selectedValue === option.value && (
-                  <CheckCircleIcon size={24} color="#3B82F6" />
+                  <CheckCircleIcon size={24} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -2791,60 +2190,47 @@ export default function NewClaimPage() {
   const ContainerComponent = Platform.OS === 'web' ? View : SafeAreaView;
 
   return (
-    <ContainerComponent style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
-      {/* Header */}
+    <ContainerComponent style={{ flex: 1, backgroundColor: COLORS.background }}>
+      {/* Header - Matching Home Page Style */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 4,
-          elevation: 2,
+          borderBottomColor: COLORS.border,
         }}
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingVertical: 16,
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-          >
-            <View style={{ padding: 8, borderRadius: 12 }}>
-              <ArrowLeftIcon size={24} color="#0E51A2" />
+        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{ padding: 8, borderRadius: 12 }}
+              activeOpacity={0.7}
+            >
+              <ArrowLeftIcon size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                New Claim
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                Step {currentStep} of 3
+              </Text>
             </View>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>Back</Text>
-          </TouchableOpacity>
-
-          <View style={{ alignItems: 'center' }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>New Claim</Text>
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>Step {currentStep} of 3</Text>
-          </View>
-
-          <View style={{ width: 80 }}>
             {isDraftSaved && (
-              <LinearGradient
-                colors={['#90EAA9', '#5FA171']}
+              <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 4,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(22, 163, 74, 0.1)',
                 }}
               >
-                <CheckCircleIcon size={16} color="#FFFFFF" />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>Saved</Text>
-              </LinearGradient>
+                <CheckCircleIcon size={14} color={COLORS.success} />
+                <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.success }}>Saved</Text>
+              </View>
             )}
           </View>
         </View>
@@ -2860,30 +2246,33 @@ export default function NewClaimPage() {
         <ScrollView
           ref={scrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 20, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         >
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+            {currentStep === 1 && renderStep1()}
+            {currentStep === 2 && renderStep2()}
+            {currentStep === 3 && renderStep3()}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Bottom Navigation */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
-          padding: 16,
+          borderTopColor: COLORS.border,
+          paddingVertical: 16,
+          paddingHorizontal: 16,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
           elevation: 10,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <TouchableOpacity
             onPress={handlePrevious}
             disabled={currentStep === 1}
@@ -2894,16 +2283,18 @@ export default function NewClaimPage() {
               paddingHorizontal: 20,
               paddingVertical: 14,
               borderRadius: 12,
-              backgroundColor: currentStep === 1 ? '#F3F4F6' : '#F3F4F6',
+              backgroundColor: COLORS.white,
+              borderWidth: 1,
+              borderColor: currentStep === 1 ? COLORS.border : COLORS.primary,
               opacity: currentStep === 1 ? 0.5 : 1,
             }}
           >
-            <ArrowLeftIcon size={20} color={currentStep === 1 ? '#9CA3AF' : '#374151'} />
+            <ArrowLeftIcon size={20} color={currentStep === 1 ? COLORS.textLight : COLORS.primary} />
             <Text
               style={{
                 fontSize: 14,
                 fontWeight: '600',
-                color: currentStep === 1 ? '#9CA3AF' : '#374151',
+                color: currentStep === 1 ? COLORS.textLight : COLORS.primary,
               }}
             >
               Previous
@@ -2913,7 +2304,7 @@ export default function NewClaimPage() {
           {currentStep < 3 ? (
             <TouchableOpacity onPress={handleNext} style={{ overflow: 'hidden', borderRadius: 12 }}>
               <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
+                colors={[COLORS.primary, '#5DA4FB']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{
@@ -2924,8 +2315,8 @@ export default function NewClaimPage() {
                   paddingVertical: 14,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>Next Step</Text>
-                <ArrowRightIcon size={20} color="#FFFFFF" />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.white }}>Next Step</Text>
+                <ArrowRightIcon size={20} color={COLORS.white} />
               </LinearGradient>
             </TouchableOpacity>
           ) : (
@@ -2935,29 +2326,28 @@ export default function NewClaimPage() {
               style={{ overflow: 'hidden', borderRadius: 12, opacity: isSubmitting ? 0.7 : 1 }}
             >
               <LinearGradient
-                colors={isSubmitting ? ['#9CA3AF', '#9CA3AF'] : ['#90EAA9', '#5FA171']}
+                colors={isSubmitting ? [COLORS.textLight, COLORS.textLight] : [COLORS.primary, '#5DA4FB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 8,
                   paddingHorizontal: 32,
                   paddingVertical: 14,
                 }}
               >
                 {isSubmitting ? (
                   <>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.white }}>
                       Submitting...
                     </Text>
                   </>
                 ) : (
-                  <>
-                    <CheckCircleIcon size={24} color="#FFFFFF" />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                      Submit Claim
-                    </Text>
-                  </>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.white }}>
+                    Submit Claim
+                  </Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -2990,6 +2380,69 @@ export default function NewClaimPage() {
         formData.category,
         handleCategoryChange
       )}
+
+      {/* Image Preview Modal */}
+      <Modal
+        visible={showImagePreview}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImagePreview(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {/* Close Button */}
+          <TouchableOpacity
+            onPress={() => setShowImagePreview(false)}
+            style={{
+              position: 'absolute',
+              top: 50,
+              right: 20,
+              zIndex: 10,
+              padding: 12,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: 24,
+            }}
+          >
+            <XMarkIcon size={24} color={COLORS.white} />
+          </TouchableOpacity>
+
+          {/* Image Name */}
+          <View
+            style={{
+              position: 'absolute',
+              top: 50,
+              left: 20,
+              right: 80,
+              zIndex: 10,
+            }}
+          >
+            <Text
+              style={{ fontSize: 16, fontWeight: '600', color: COLORS.white }}
+              numberOfLines={1}
+            >
+              {previewImageName}
+            </Text>
+          </View>
+
+          {/* Image */}
+          {previewImageUri ? (
+            <Image
+              source={{ uri: previewImageUri }}
+              style={{
+                width: '90%',
+                height: '70%',
+                resizeMode: 'contain',
+              }}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </ContainerComponent>
   );
 }

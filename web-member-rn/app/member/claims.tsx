@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -307,11 +307,13 @@ export default function ClaimsPage() {
     }
   }, [viewingUserId]);
 
-  // Fetch claims on mount and when viewingUserId changes
-  useEffect(() => {
-    console.log('[Claims] Fetching data, viewingUserId:', viewingUserId);
-    fetchClaims();
-  }, [fetchClaims]);
+  // Refetch claims when screen gains focus (including initial mount and after submitting a new claim)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Claims] Screen focused, fetching claims. viewingUserId:', viewingUserId);
+      fetchClaims();
+    }, [fetchClaims, viewingUserId])
+  );
 
   // Calculate statistics from real data
   const stats = useMemo(() => {
