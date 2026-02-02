@@ -5,12 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Platform,
   RefreshControl,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import apiClient from '../../../src/lib/api/client';
 
@@ -31,7 +29,7 @@ const COLORS = {
 };
 
 // ============================================================================
-// SVG ICONS - Matching Home Page Style (Blue + Orange accents)
+// SVG ICONS
 // ============================================================================
 
 // Back Arrow Icon
@@ -49,7 +47,37 @@ function BackArrowIcon() {
   );
 }
 
-// Shield Check Icon - Blue with orange accent
+// Chevron Down Icon
+function ChevronDownIcon({ size = 20, color = COLORS.textGray }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 9l6 6 6-6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Chevron Up Icon
+function ChevronUpIcon({ size = 20, color = COLORS.textGray }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18 15l-6-6-6 6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Shield Check Icon
 function ShieldCheckIcon({ size = 24 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -71,7 +99,7 @@ function ShieldCheckIcon({ size = 24 }: { size?: number }) {
   );
 }
 
-// Document Icon - Blue with orange accent
+// Document Icon
 function DocumentTextIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -100,7 +128,7 @@ function DocumentTextIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-// Building Office Icon - Blue with orange accent
+// Building Office Icon
 function BuildingOfficeIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -121,7 +149,7 @@ function BuildingOfficeIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-// Calendar Icon - Blue with orange accent
+// Calendar Icon
 function CalendarIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -145,20 +173,20 @@ function CalendarIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-// Check Circle Icon - Green
-function CheckCircleIcon({ size = 24 }: { size?: number }) {
+// Check Circle Icon - Blue with orange accent (matching home page style)
+function CheckCircleIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle
         cx="12"
         cy="12"
         r="10"
-        stroke={COLORS.success}
+        stroke={COLORS.primary}
         strokeWidth={1.5}
       />
       <Path
         d="M9 12l2 2 4-4"
-        stroke={COLORS.success}
+        stroke={COLORS.orange}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -167,20 +195,20 @@ function CheckCircleIcon({ size = 24 }: { size?: number }) {
   );
 }
 
-// X Circle Icon - Red
-function XCircleIcon({ size = 24 }: { size?: number }) {
+// X Circle Icon - Blue with orange accent (matching home page style)
+function XCircleIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle
         cx="12"
         cy="12"
         r="10"
-        stroke={COLORS.error}
+        stroke={COLORS.primary}
         strokeWidth={1.5}
       />
       <Path
         d="M15 9l-6 6M9 9l6 6"
-        stroke={COLORS.error}
+        stroke={COLORS.orange}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -192,6 +220,8 @@ function XCircleIcon({ size = 24 }: { size?: number }) {
 // ============================================================================
 // TYPES
 // ============================================================================
+
+type TabType = 'overview' | 'coverage' | 'exclusions';
 
 interface PolicyDescriptionEntry {
   headline: string;
@@ -210,6 +240,79 @@ interface PolicyData {
 }
 
 // ============================================================================
+// ACCORDION ITEM COMPONENT
+// ============================================================================
+
+interface AccordionItemProps {
+  title: string;
+  description: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  type: 'inclusion' | 'exclusion';
+}
+
+function AccordionItem({ title, description, isExpanded, onToggle, type }: AccordionItemProps) {
+  return (
+    <View
+      style={{
+        backgroundColor: COLORS.background,
+        borderRadius: 12,
+        overflow: 'hidden',
+      }}
+    >
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 14,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: COLORS.textDark,
+            flex: 1,
+          }}
+        >
+          {title}
+        </Text>
+        {isExpanded ? (
+          <ChevronUpIcon size={20} color={COLORS.textGray} />
+        ) : (
+          <ChevronDownIcon size={20} color={COLORS.textGray} />
+        )}
+      </TouchableOpacity>
+
+      {isExpanded && (
+        <View
+          style={{
+            paddingHorizontal: 14,
+            paddingBottom: 14,
+            borderTopWidth: 1,
+            borderTopColor: COLORS.border,
+            paddingTop: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              color: COLORS.textGray,
+              lineHeight: 20,
+            }}
+          >
+            {description}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -222,6 +325,21 @@ export default function PolicyDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Toggle accordion item
+  const toggleItem = useCallback((itemId: string) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  }, []);
 
   // Fetch policy details from API
   const fetchPolicyDetails = useCallback(async (isRefresh = false) => {
@@ -279,6 +397,13 @@ export default function PolicyDetailsPage() {
   const handleRetry = useCallback(() => {
     fetchPolicyDetails();
   }, [fetchPolicyDetails]);
+
+  // Tab configuration
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'overview', label: 'OVERVIEW' },
+    { id: 'coverage', label: 'COVERAGE' },
+    { id: 'exclusions', label: 'EXCLUSIONS' },
+  ];
 
   // ============================================================================
   // LOADING STATE
@@ -385,12 +510,10 @@ export default function PolicyDetailsPage() {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        {/* Header with Back Button */}
+        {/* Header */}
         <View
           style={{
             backgroundColor: COLORS.white,
-            borderBottomWidth: 1,
-            borderBottomColor: COLORS.border,
           }}
         >
           <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -405,16 +528,55 @@ export default function PolicyDetailsPage() {
               >
                 <BackArrowIcon />
               </TouchableOpacity>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
-                  Policy Details
+                  {policy.policyName || 'Policy Details'}
                 </Text>
-                {policy.policyName && (
-                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
-                    {policy.policyName}
-                  </Text>
-                )}
               </View>
+              {/* Spacer for centering */}
+              <View style={{ width: 40 }} />
+            </View>
+          </View>
+        </View>
+
+        {/* Tabs */}
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+          }}
+        >
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+            <View style={{ flexDirection: 'row' }}>
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <TouchableOpacity
+                    key={tab.id}
+                    onPress={() => setActiveTab(tab.id)}
+                    activeOpacity={0.7}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 14,
+                      alignItems: 'center',
+                      borderBottomWidth: 3,
+                      borderBottomColor: isActive ? COLORS.primary : 'transparent',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: isActive ? COLORS.primary : COLORS.textGray,
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      {tab.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </View>
@@ -423,8 +585,6 @@ export default function PolicyDetailsPage() {
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingVertical: 20,
             paddingBottom: 100,
           }}
           refreshControl={
@@ -437,295 +597,330 @@ export default function PolicyDetailsPage() {
           }
           showsVerticalScrollIndicator={false}
         >
-          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 20 }}>
-            {/* Policy Summary Card */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                borderRadius: 16,
-                padding: 20,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-              }}
-            >
-              {/* Header with Icon */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    backgroundColor: COLORS.white,
-                    borderRadius: 22,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <ShieldCheckIcon size={24} />
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
-                  Policy Summary
-                </Text>
-              </View>
-
-              {/* Policy Details */}
-              <View style={{ gap: 12 }}>
-                {/* Policy Number */}
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <View style={{ paddingTop: 20, paddingHorizontal: 16 }}>
+                {/* Policy Summary Card */}
                 <View
                   style={{
                     backgroundColor: COLORS.white,
-                    borderRadius: 12,
-                    padding: 14,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 14,
+                    borderRadius: 16,
+                    padding: 20,
                     borderWidth: 1,
                     borderColor: 'rgba(217, 217, 217, 0.48)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
+                    elevation: 3,
                   }}
                 >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      backgroundColor: 'rgba(3, 77, 162, 0.08)',
-                      borderRadius: 18,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <DocumentTextIcon size={18} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }}>
-                      Policy Number
-                    </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }} numberOfLines={1}>
-                      {policy.policyNumber}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Corporate Name */}
-                <View
-                  style={{
-                    backgroundColor: COLORS.white,
-                    borderRadius: 12,
-                    padding: 14,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 14,
-                    borderWidth: 1,
-                    borderColor: 'rgba(217, 217, 217, 0.48)',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      backgroundColor: 'rgba(3, 77, 162, 0.08)',
-                      borderRadius: 18,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <BuildingOfficeIcon size={18} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }}>
-                      Corporate Name
-                    </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }} numberOfLines={1}>
-                      {policy.corporateName || 'N/A'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Valid Till */}
-                <View
-                  style={{
-                    backgroundColor: COLORS.white,
-                    borderRadius: 12,
-                    padding: 14,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 14,
-                    borderWidth: 1,
-                    borderColor: 'rgba(217, 217, 217, 0.48)',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      backgroundColor: 'rgba(3, 77, 162, 0.08)',
-                      borderRadius: 18,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <CalendarIcon size={18} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }}>
-                      Valid Till
-                    </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }} numberOfLines={1}>
-                      {policy.validTill}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </LinearGradient>
-
-            {/* Inclusions Section */}
-            {hasInclusions && (
-              <LinearGradient
-                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 16,
-                  padding: 20,
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                }}
-              >
-                {/* Section Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      backgroundColor: COLORS.white,
-                      borderRadius: 22,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <CheckCircleIcon size={24} />
-                  </View>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
-                    What's Covered
-                  </Text>
-                </View>
-
-                {/* Inclusion Items */}
-                <View style={{ gap: 12 }}>
-                  {policy.policyDescription!.inclusions!.map((item, index) => (
+                  {/* Header with Icon */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                     <View
-                      key={index}
                       style={{
-                        backgroundColor: COLORS.white,
-                        borderRadius: 12,
-                        padding: 14,
-                        borderWidth: 1,
-                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        width: 44,
+                        height: 44,
+                        backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                        borderRadius: 22,
+                        justifyContent: 'center',
+                        alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 6 }}>
-                        {item.headline}
-                      </Text>
-                      <Text style={{ fontSize: 13, color: COLORS.textGray, lineHeight: 20 }}>
-                        {item.description}
-                      </Text>
+                      <ShieldCheckIcon size={24} />
                     </View>
-                  ))}
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
+                      Policy Summary
+                    </Text>
+                  </View>
+
+                  {/* Policy Details */}
+                  <View style={{ gap: 16 }}>
+                    {/* Policy Number */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                      <View
+                        style={{
+                          width: 36,
+                          height: 36,
+                          backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                          borderRadius: 18,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <DocumentTextIcon size={18} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 2 }}>
+                          Policy Number
+                        </Text>
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
+                          {policy.policyNumber}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Corporate Name */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                      <View
+                        style={{
+                          width: 36,
+                          height: 36,
+                          backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                          borderRadius: 18,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <BuildingOfficeIcon size={18} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 2 }}>
+                          Corporate Name
+                        </Text>
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
+                          {policy.corporateName || 'N/A'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Valid Till */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                      <View
+                        style={{
+                          width: 36,
+                          height: 36,
+                          backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                          borderRadius: 18,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <CalendarIcon size={18} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 2 }}>
+                          Valid Till
+                        </Text>
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
+                          {policy.validTill}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Policy Name */}
+                    {policy.policyName && (
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                            borderRadius: 18,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <ShieldCheckIcon size={18} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 2 }}>
+                            Policy Name
+                          </Text>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
+                            {policy.policyName}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </LinearGradient>
+              </View>
             )}
 
-            {/* Exclusions Section */}
-            {hasExclusions && (
-              <LinearGradient
-                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 16,
-                  padding: 20,
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                }}
-              >
-                {/* Section Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            {/* Coverage Tab (Inclusions) */}
+            {activeTab === 'coverage' && (
+              <View style={{ paddingTop: 20, paddingHorizontal: 16 }}>
+                {/* Accordion Items */}
+                {hasInclusions ? (
                   <View
                     style={{
-                      width: 44,
-                      height: 44,
                       backgroundColor: COLORS.white,
-                      borderRadius: 22,
-                      justifyContent: 'center',
-                      alignItems: 'center',
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: 'rgba(217, 217, 217, 0.48)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
+                      elevation: 3,
                     }}
                   >
-                    <XCircleIcon size={24} />
-                  </View>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
-                    What's Not Covered
-                  </Text>
-                </View>
-
-                {/* Exclusion Items */}
-                <View style={{ gap: 12 }}>
-                  {policy.policyDescription!.exclusions!.map((item, index) => (
-                    <View
-                      key={index}
-                      style={{
-                        backgroundColor: COLORS.white,
-                        borderRadius: 12,
-                        padding: 14,
-                        borderWidth: 1,
-                        borderColor: 'rgba(217, 217, 217, 0.48)',
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 6 }}>
-                        {item.headline}
-                      </Text>
-                      <Text style={{ fontSize: 13, color: COLORS.textGray, lineHeight: 20 }}>
-                        {item.description}
+                    {/* Section Header */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                          borderRadius: 22,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <CheckCircleIcon size={24} />
+                      </View>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
+                        Included in your coverage
                       </Text>
                     </View>
-                  ))}
-                </View>
-              </LinearGradient>
+
+                    {/* Accordion Items */}
+                    <View style={{ gap: 10 }}>
+                      {policy.policyDescription!.inclusions!.map((item, index) => (
+                        <AccordionItem
+                          key={`inclusion-${index}`}
+                          title={item.headline}
+                          description={item.description}
+                          isExpanded={expandedItems.has(`inclusion-${index}`)}
+                          onToggle={() => toggleItem(`inclusion-${index}`)}
+                          type="inclusion"
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      backgroundColor: COLORS.white,
+                      borderRadius: 16,
+                      padding: 32,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: 'rgba(217, 217, 217, 0.48)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
+                      elevation: 3,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 56,
+                        height: 56,
+                        backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                        borderRadius: 28,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 16,
+                      }}
+                    >
+                      <DocumentTextIcon size={28} />
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 8, textAlign: 'center' }}>
+                      No Coverage Details Available
+                    </Text>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', lineHeight: 20 }}>
+                      Coverage information has not been configured for this policy yet.
+                    </Text>
+                  </View>
+                )}
+              </View>
             )}
 
-            {/* No Description Available */}
-            {!hasInclusions && !hasExclusions && (
-              <LinearGradient
-                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  borderRadius: 16,
-                  padding: 32,
-                  alignItems: 'center',
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                }}
-              >
-                <View
-                  style={{
-                    width: 64,
-                    height: 64,
-                    backgroundColor: COLORS.white,
-                    borderRadius: 32,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 16,
-                  }}
-                >
-                  <DocumentTextIcon size={32} />
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary, marginBottom: 8, textAlign: 'center' }}>
-                  Policy Description Not Available
-                </Text>
-                <Text style={{ fontSize: 13, color: COLORS.textGray, textAlign: 'center', lineHeight: 20 }}>
-                  Detailed policy inclusions and exclusions have not been configured yet. Please contact your administrator for more information.
-                </Text>
-              </LinearGradient>
+            {/* Exclusions Tab */}
+            {activeTab === 'exclusions' && (
+              <View style={{ paddingTop: 20, paddingHorizontal: 16 }}>
+                {/* Accordion Items */}
+                {hasExclusions ? (
+                  <View
+                    style={{
+                      backgroundColor: COLORS.white,
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: 'rgba(217, 217, 217, 0.48)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
+                      elevation: 3,
+                    }}
+                  >
+                    {/* Section Header */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                          borderRadius: 22,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <XCircleIcon size={24} />
+                      </View>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>
+                        Not covered by your policy
+                      </Text>
+                    </View>
+
+                    {/* Accordion Items */}
+                    <View style={{ gap: 10 }}>
+                      {policy.policyDescription!.exclusions!.map((item, index) => (
+                        <AccordionItem
+                          key={`exclusion-${index}`}
+                          title={item.headline}
+                          description={item.description}
+                          isExpanded={expandedItems.has(`exclusion-${index}`)}
+                          onToggle={() => toggleItem(`exclusion-${index}`)}
+                          type="exclusion"
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      backgroundColor: COLORS.white,
+                      borderRadius: 16,
+                      padding: 32,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: 'rgba(217, 217, 217, 0.48)',
+                      shadowColor: '#000',
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
+                      elevation: 3,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 56,
+                        height: 56,
+                        backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                        borderRadius: 28,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 16,
+                      }}
+                    >
+                      <DocumentTextIcon size={28} />
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 8, textAlign: 'center' }}>
+                      No Exclusion Details Available
+                    </Text>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', lineHeight: 20 }}>
+                      Exclusion information has not been configured for this policy yet.
+                    </Text>
+                  </View>
+                )}
+              </View>
             )}
           </View>
         </ScrollView>
