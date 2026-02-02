@@ -329,7 +329,7 @@ export default function ProfilePage() {
           {error || 'Failed to load profile'}
         </Text>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.push('/member')}
           style={{
             backgroundColor: '#0E51A2',
             paddingHorizontal: 24,
@@ -366,7 +366,7 @@ export default function ProfilePage() {
         gap: 12,
       }}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.push('/member')}
           style={{
             padding: 8,
             borderRadius: 8,

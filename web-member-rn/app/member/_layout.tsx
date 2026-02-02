@@ -1,4 +1,4 @@
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, usePathname } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { FamilyProvider } from '../../src/contexts/FamilyContext';
 import { View, ActivityIndicator } from 'react-native';
@@ -6,6 +6,10 @@ import BottomTabBar from '../../src/components/navigation/BottomTabBar';
 
 export default function MemberRoutesLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  // Only show bottom nav on the main member page (dashboard)
+  const showBottomNav = pathname === '/member' || pathname === '/member/index';
 
   if (isLoading) {
     return (
@@ -40,7 +44,7 @@ export default function MemberRoutesLayout() {
           <Stack.Screen name="dental/confirm" />
           <Stack.Screen name="payments/[paymentId]" />
         </Stack>
-        <BottomTabBar />
+        {showBottomNav && <BottomTabBar />}
       </View>
     </FamilyProvider>
   );

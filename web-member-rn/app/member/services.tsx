@@ -475,7 +475,7 @@ export default function ServicesPage() {
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.push('/member')}
             style={{ padding: 8, borderRadius: 8 }}
           >
             <ArrowLeftIcon width={20} height={20} color="#374151" />

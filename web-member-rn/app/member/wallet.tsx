@@ -593,7 +593,7 @@ export default function WalletScreen() {
           <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
-                onPress={() => router.back()}
+                onPress={() => router.push('/member')}
                 style={{
                   padding: 8,
                   borderRadius: 12,

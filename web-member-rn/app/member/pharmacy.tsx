@@ -158,7 +158,7 @@ export default function PharmacyPage() {
 
   const handleBackToDashboard = useCallback(() => {
     console.log('[Pharmacy] Navigating back to dashboard');
-    router.back();
+    router.push('/member');
   }, [router]);
 
   const handleHeaderBack = useCallback(() => {

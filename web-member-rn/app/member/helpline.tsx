@@ -114,7 +114,7 @@ export default function HelplinePage() {
 
   const handleBackToDashboard = useCallback(() => {
     console.log('[Helpline] Navigating back to dashboard');
-    router.back();
+    router.push('/member');
   }, [router]);
 
   const handleHeaderBack = useCallback(() => {

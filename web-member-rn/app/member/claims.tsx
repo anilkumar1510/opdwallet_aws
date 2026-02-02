@@ -409,7 +409,7 @@ export default function ClaimsPage() {
         <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => router.push('/member')}
               style={{
                 padding: 8,
                 borderRadius: 12,

@@ -3276,7 +3276,7 @@ export default function BookingsPage() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
               <TouchableOpacity
-                onPress={() => router.back()}
+                onPress={() => router.push('/member')}
                 style={{
                   padding: 8,
                   borderRadius: 8,
