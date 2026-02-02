@@ -16,7 +16,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import apiClient from '../../../src/lib/api/client';
@@ -528,76 +528,74 @@ export default function ClaimDetailPage() {
     setViewingDocId(doc._id);
     setPdfLoading(true);
 
-    try {
-      const fileUrl = `/member/claims/files/${claim.userId}/${doc.fileName}`;
-      const response = await apiClient.get(fileUrl, { responseType: 'blob' });
-      const blob = response.data;
-      const isPdf = doc.fileName.toLowerCase().endsWith('.pdf') || blob.type === 'application/pdf';
+    const ext = doc.fileName.toLowerCase().split('.').pop();
+    const isPdf = ext === 'pdf';
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
 
+    try {
       if (Platform.OS === 'web') {
-        // On web, open in new tab
+        // On web, fetch as blob and open in new tab
+        const fileUrl = `/member/claims/files/${claim.userId}/${doc.fileName}`;
+        const response = await apiClient.get(fileUrl, { responseType: 'blob' });
+        const blob = response.data;
         const blobUrl = URL.createObjectURL(blob);
         window.open(blobUrl, '_blank');
         setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
         setViewingDocId(null);
         setPdfLoading(false);
-      } else if (isPdf) {
-        // For PDFs on native, save to file system and open with system viewer
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          try {
-            const base64Data = (reader.result as string).split(',')[1];
-            const fileUri = `${FileSystem.cacheDirectory}${doc.fileName}`;
-
-            await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-
-            const canShare = await Sharing.isAvailableAsync();
-            if (canShare) {
-              await Sharing.shareAsync(fileUri, {
-                mimeType: 'application/pdf',
-                dialogTitle: 'View Document',
-                UTI: 'com.adobe.pdf',
-              });
-            } else {
-              Alert.alert('Error', 'Sharing is not available on this device');
-            }
-          } catch (shareErr) {
-            console.error('Error sharing PDF:', shareErr);
-            Alert.alert('Error', 'Failed to open PDF');
-          } finally {
-            setViewingDocId(null);
-            setPdfLoading(false);
-          }
-        };
-        reader.onerror = () => {
-          Alert.alert('Error', 'Failed to load document');
-          setViewingDocId(null);
-          setPdfLoading(false);
-        };
-        reader.readAsDataURL(blob);
       } else {
-        // For images, show in WebView modal
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Data = reader.result as string;
-          setPdfUrl(base64Data);
+        // On native, use FileSystem to download with auth header
+        const { tokenManager } = await import('../../../src/lib/api/client');
+        const token = await tokenManager.getToken();
+        const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const fullUrl = `${baseUrl}/member/claims/files/${claim.userId}/${doc.fileName}`;
+        const fileUri = `${FileSystem.cacheDirectory}${doc.fileName}`;
+
+        // Download file with auth header
+        const downloadResult = await FileSystem.downloadAsync(fullUrl, fileUri, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (downloadResult.status !== 200) {
+          throw new Error(`Download failed with status ${downloadResult.status}`);
+        }
+
+        if (isImage) {
+          // For images, read as base64 and show in modal
+          const base64 = await FileSystem.readAsStringAsync(downloadResult.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          let mimeType = 'image/jpeg';
+          if (ext === 'png') mimeType = 'image/png';
+          else if (ext === 'gif') mimeType = 'image/gif';
+          else if (ext === 'webp') mimeType = 'image/webp';
+
+          setPdfUrl(`data:${mimeType};base64,${base64}`);
           setPdfName(doc.documentType || doc.fileName);
           setShowPdfViewer(true);
-          setViewingDocId(null);
-          setPdfLoading(false);
-        };
-        reader.onerror = () => {
-          Alert.alert('Error', 'Failed to load document');
-          setViewingDocId(null);
-          setPdfLoading(false);
-        };
-        reader.readAsDataURL(blob);
+        } else {
+          // For PDFs and other files, open with system viewer via share
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(downloadResult.uri, {
+              mimeType: isPdf ? 'application/pdf' : 'application/octet-stream',
+              dialogTitle: 'Open Document',
+              UTI: isPdf ? 'com.adobe.pdf' : 'public.data',
+            });
+          } else {
+            Alert.alert('Error', 'Cannot open this file on your device');
+          }
+        }
+
+        setViewingDocId(null);
+        setPdfLoading(false);
       }
     } catch (err: any) {
       console.error('Error viewing document:', err);
-      const errorMsg = err.response?.data?.message || 'Failed to open document';
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to open document';
       if (Platform.OS === 'web') {
         window.alert(`Error: ${errorMsg}`);
       } else {
@@ -1121,38 +1119,28 @@ export default function ClaimDetailPage() {
                       html, body {
                         width: 100%;
                         height: 100%;
-                        background: #f7f7fc;
+                        background: #1a1a1a;
                         display: flex;
                         justify-content: center;
                         align-items: center;
-                      }
-                      .container {
-                        width: 100%;
-                        padding: 16px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
+                        overflow: auto;
                       }
                       img {
                         max-width: 100%;
-                        max-height: 90vh;
+                        max-height: 100%;
                         object-fit: contain;
-                        border-radius: 8px;
-                        box-shadow: 0 2px 12px rgba(0,0,0,0.15);
                       }
                     </style>
                   </head>
                   <body>
-                    <div class="container">
-                      <img src="${pdfUrl}" alt="Document" />
-                    </div>
+                    <img src="${pdfUrl}" alt="Document" />
                   </body>
                   </html>
                 `,
               }}
-              style={{ flex: 1, backgroundColor: COLORS.background }}
+              style={{ flex: 1, backgroundColor: '#1a1a1a' }}
               startInLoadingState={true}
-              scalesPageToFit={true}
+              originWhitelist={['*']}
               javaScriptEnabled={true}
               renderLoading={() => (
                 <View
@@ -1164,11 +1152,11 @@ export default function ClaimDetailPage() {
                     bottom: 0,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    backgroundColor: COLORS.background,
+                    backgroundColor: '#1a1a1a',
                   }}
                 >
                   <ActivityIndicator size="large" color={COLORS.primary} />
-                  <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.textGray }}>
+                  <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.white }}>
                     Loading image...
                   </Text>
                 </View>
