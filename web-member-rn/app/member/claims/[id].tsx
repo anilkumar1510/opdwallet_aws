@@ -15,20 +15,39 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { WebView } from 'react-native-webview';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import apiClient from '../../../src/lib/api/client';
 
 // ============================================================================
-// SVG ICONS
+// COLORS - Matching Dashboard
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  orange: '#F5821E',
+  textDark: '#303030',
+  textGray: '#545454',
+  textLight: '#6b7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  success: '#16a34a',
+  error: '#ef4444',
+  warning: '#f59e0b',
+};
+
+// ============================================================================
+// SVG ICONS - Matching Dashboard Style (Blue + Orange accents)
 // ============================================================================
 
-function ArrowLeftIcon({ size = 24, color = '#0E51A2' }: { size?: number; color?: string }) {
+function BackArrowIcon() {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M19 12H5M5 12L12 19M5 12L12 5"
-        stroke={color}
+        d="M15 18L9 12L15 6"
+        stroke={COLORS.primary}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -37,12 +56,95 @@ function ArrowLeftIcon({ size = 24, color = '#0E51A2' }: { size?: number; color?
   );
 }
 
-function DocumentTextIcon({ size = 24, color = '#2563EB' }: { size?: number; color?: string }) {
+function DocumentIcon({ size = 24 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z"
-        stroke={color}
+        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M14 2v6h6"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M16 13H8M16 17H8M10 9H8"
+        stroke={COLORS.orange}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function CalendarIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect
+        x="3"
+        y="4"
+        width="18"
+        height="18"
+        rx="2"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+      />
+      <Path
+        d="M16 2v4M8 2v4M3 10h18"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <Circle cx="12" cy="15" r="2" fill={COLORS.orange} />
+    </Svg>
+  );
+}
+
+function UserIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="7" r="4" stroke={COLORS.primary} strokeWidth={1.5} />
+      <Circle cx="12" cy="7" r="1.5" fill={COLORS.orange} />
+    </Svg>
+  );
+}
+
+function CurrencyIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={COLORS.primary} strokeWidth={1.5} />
+      <Path
+        d="M8 12h8M8 8h4a4 4 0 010 8H8"
+        stroke={COLORS.orange}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function CheckCircleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={COLORS.primary} strokeWidth={1.5} />
+      <Path
+        d="M9 12l2 2 4-4"
+        stroke={COLORS.orange}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -51,12 +153,13 @@ function DocumentTextIcon({ size = 24, color = '#2563EB' }: { size?: number; col
   );
 }
 
-function CalendarIcon({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) {
+function XCircleIcon({ size = 20, color }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={color || COLORS.primary} strokeWidth={1.5} />
       <Path
-        d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z"
-        stroke={color}
+        d="M15 9l-6 6M9 9l6 6"
+        stroke={color || COLORS.orange}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -65,12 +168,13 @@ function CalendarIcon({ size = 24, color = '#6B7280' }: { size?: number; color?:
   );
 }
 
-function CurrencyRupeeIcon({ size = 24, color = '#9333EA' }: { size?: number; color?: string }) {
+function ClockIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={COLORS.primary} strokeWidth={1.5} />
       <Path
-        d="M9 8H15M9 12H15M9 16L15 22M9 12V22"
-        stroke={color}
+        d="M12 6v6l4 2"
+        stroke={COLORS.orange}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -79,12 +183,13 @@ function CurrencyRupeeIcon({ size = 24, color = '#9333EA' }: { size?: number; co
   );
 }
 
-function UserIcon({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) {
+function AlertIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={COLORS.primary} strokeWidth={1.5} />
       <Path
-        d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z"
-        stroke={color}
+        d="M12 8v4M12 16h.01"
+        stroke={COLORS.orange}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -93,12 +198,27 @@ function UserIcon({ size = 24, color = '#6B7280' }: { size?: number; color?: str
   );
 }
 
-function ClockIcon({ size = 24, color = '#F59E0B' }: { size?: number; color?: string }) {
+function EyeIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M12 6V12L16 14M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z"
-        stroke={color}
+        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="12" r="3" stroke={COLORS.orange} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+function ChevronDownIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 9l6 6 6-6"
+        stroke={COLORS.textGray}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -107,117 +227,12 @@ function ClockIcon({ size = 24, color = '#F59E0B' }: { size?: number; color?: st
   );
 }
 
-function CheckCircleIcon({ size = 24, color = '#16A34A' }: { size?: number; color?: string }) {
+function ChevronUpIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function XCircleIcon({ size = 24, color = '#DC2626' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M10 14L12 12M12 12L14 10M12 12L10 10M12 12L14 14M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function ExclamationCircleIcon({ size = 24, color = '#F97316' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function PhoneIcon({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3 5C3 3.89543 3.89543 3 5 3H8.27924C8.70967 3 9.09181 3.27543 9.22792 3.68377L10.7257 8.17721C10.8831 8.64932 10.6694 9.16531 10.2243 9.38787L7.96701 10.5165C9.06925 12.9612 11.0388 14.9308 13.4835 16.033L14.6121 13.7757C14.8347 13.3306 15.3507 13.1169 15.8228 13.2743L20.3162 14.7721C20.7246 14.9082 21 15.2903 21 15.7208V19C21 20.1046 20.1046 21 19 21H18C9.71573 21 3 14.2843 3 6V5Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function EnvelopeIcon({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3 8L10.8906 13.2604C11.5624 13.7083 12.4376 13.7083 13.1094 13.2604L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function EyeIcon({ size = 24, color = '#2563EB' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M2.458 12C3.732 7.943 7.523 5 12 5C16.478 5 20.268 7.943 21.542 12C20.268 16.057 16.478 19 12 19C7.523 19 3.732 16.057 2.458 12Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function CloudArrowUpIcon({ size = 24, color = '#FFFFFF' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 16V8M12 8L9 11M12 8L15 11M6.5 20C4.01472 20 2 17.9853 2 15.5C2 13.5 3.2 11.7 5 11C5 7.13401 8.13401 4 12 4C15.866 4 19 7.13401 19 11C20.8 11.7 22 13.5 22 15.5C22 17.9853 19.9853 20 17.5 20H6.5Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function InformationCircleIcon({ size = 24, color = '#2563EB' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-        stroke={color}
+        d="M18 15l-6-6-6 6"
+        stroke={COLORS.textGray}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -272,8 +287,6 @@ interface Claim {
   updatedAt: string;
   claimType?: string;
   isUrgent?: boolean;
-  requiresPreAuth?: boolean;
-  preAuthNumber?: string;
 }
 
 interface TimelineEntry {
@@ -284,90 +297,142 @@ interface TimelineEntry {
   reason?: string;
 }
 
-interface TPANote {
-  type: string;
-  message: string;
-  timestamp?: string;
-  documents?: Array<{ documentType: string; reason: string }>;
-}
-
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-const getStatusColor = (status: string) => {
+const getStatusConfig = (status: string) => {
   switch (status) {
     case 'APPROVED':
     case 'PARTIALLY_APPROVED':
     case 'PAYMENT_COMPLETED':
-      return { background: '#E8F5E9', color: '#25A425', borderColor: '#25A425' };
+      return { label: 'Approved', color: COLORS.success, bg: '#E8F5E9' };
     case 'REJECTED':
-      return { background: '#FFEBEE', color: '#E53535', borderColor: '#E53535' };
+      return { label: 'Rejected', color: COLORS.error, bg: '#FFEBEE' };
     case 'CANCELLED':
-      return { background: '#F3F4F6', color: '#6B7280', borderColor: '#6B7280' };
+      return { label: 'Cancelled', color: COLORS.textGray, bg: '#F3F4F6' };
     case 'DOCUMENTS_REQUIRED':
+      return { label: 'Documents Required', color: COLORS.warning, bg: '#FEF3C7' };
     case 'UNDER_REVIEW':
     case 'ASSIGNED':
-      return { background: '#FEF1E7', color: '#E67E22', borderColor: '#E67E22' };
+      return { label: 'Under Review', color: COLORS.orange, bg: '#FEF1E7' };
     case 'PAYMENT_PENDING':
     case 'PAYMENT_PROCESSING':
-      return { background: '#F3E8FF', color: '#9333EA', borderColor: '#9333EA' };
+      return { label: 'Payment Processing', color: COLORS.primary, bg: '#EFF4FF' };
     default:
-      return { background: '#EFF4FF', color: '#0F5FDC', borderColor: '#0F5FDC' };
+      return { label: 'Submitted', color: COLORS.primary, bg: '#EFF4FF' };
   }
-};
-
-const getStatusIcon = (status: string, size = 20) => {
-  switch (status) {
-    case 'APPROVED':
-    case 'PARTIALLY_APPROVED':
-    case 'PAYMENT_COMPLETED':
-      return <CheckCircleIcon size={size} color="#25A425" />;
-    case 'REJECTED':
-      return <XCircleIcon size={size} color="#E53535" />;
-    case 'CANCELLED':
-      return <XCircleIcon size={size} color="#6B7280" />;
-    case 'DOCUMENTS_REQUIRED':
-      return <ExclamationCircleIcon size={size} color="#E67E22" />;
-    case 'UNDER_REVIEW':
-    case 'ASSIGNED':
-      return <ClockIcon size={size} color="#E67E22" />;
-    case 'PAYMENT_PENDING':
-    case 'PAYMENT_PROCESSING':
-      return <CurrencyRupeeIcon size={size} color="#9333EA" />;
-    default:
-      return <DocumentTextIcon size={size} color="#0F5FDC" />;
-  }
-};
-
-const formatStatusName = (status: string) => {
-  return status
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
 };
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-IN', {
     day: '2-digit',
-    month: 'short',
+    month: 'long',
     year: 'numeric',
-  });
-};
-
-const formatDateTime = (dateString: string) => {
-  return new Date(dateString).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 };
 
 const formatCurrency = (amount: number) => {
   return `₹${amount.toLocaleString('en-IN')}`;
 };
+
+// ============================================================================
+// DETAIL ROW COMPONENT
+// ============================================================================
+
+interface DetailRowProps {
+  label: string;
+  value: string;
+  isLast?: boolean;
+}
+
+function DetailRow({ label, value, isLast = false }: DetailRowProps) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: COLORS.border,
+      }}
+    >
+      <Text style={{ fontSize: 13, color: COLORS.textGray }}>{label}</Text>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>{value}</Text>
+    </View>
+  );
+}
+
+// ============================================================================
+// EXPANDABLE SECTION COMPONENT
+// ============================================================================
+
+interface ExpandableSectionProps {
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
+}
+
+function ExpandableSection({ title, count, children, defaultExpanded = false }: ExpandableSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  return (
+    <View
+      style={{
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(217, 217, 217, 0.48)',
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
+        overflow: 'hidden',
+      }}
+    >
+      <TouchableOpacity
+        onPress={() => setIsExpanded(!isExpanded)}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: 16,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.textDark, letterSpacing: 0.5 }}>
+            {title.toUpperCase()}
+          </Text>
+          {count !== undefined && (
+            <View
+              style={{
+                backgroundColor: COLORS.primary,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 10,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.white }}>{count}</Text>
+            </View>
+          )}
+        </View>
+        {isExpanded ? <ChevronUpIcon size={20} /> : <ChevronDownIcon size={20} />}
+      </TouchableOpacity>
+
+      {isExpanded && (
+        <View style={{ borderTopWidth: 1, borderTopColor: COLORS.border }}>
+          {children}
+        </View>
+      )}
+    </View>
+  );
+}
+
 
 // ============================================================================
 // MAIN COMPONENT
@@ -377,12 +442,16 @@ export default function ClaimDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [claim, setClaim] = useState<Claim | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
-  const [tpaNotes, setTpaNotes] = useState<TPANote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [viewingDocId, setViewingDocId] = useState<string | null>(null);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string>('');
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // Fetch claim details
   const fetchClaimDetails = useCallback(async () => {
@@ -411,45 +480,27 @@ export default function ClaimDetailPage() {
     }
   }, [id]);
 
-  // Fetch TPA notes
-  const fetchTPANotes = useCallback(async () => {
-    if (!id) return;
-    try {
-      const response = await apiClient.get(`/member/claims/${id}/tpa-notes`);
-      setTpaNotes(response.data.notes || []);
-    } catch (err) {
-      console.error('Error fetching TPA notes:', err);
-    }
-  }, [id]);
-
   useEffect(() => {
     fetchClaimDetails();
     fetchTimeline();
-    fetchTPANotes();
-  }, [id, fetchClaimDetails, fetchTimeline, fetchTPANotes]);
+  }, [id, fetchClaimDetails, fetchTimeline]);
 
   const canCancelClaim = () => {
     if (!claim) return false;
     const nonCancellableStatuses = [
-      'APPROVED',
-      'PARTIALLY_APPROVED',
-      'REJECTED',
-      'CANCELLED',
-      'PAYMENT_COMPLETED',
-      'PAYMENT_PROCESSING',
+      'APPROVED', 'PARTIALLY_APPROVED', 'REJECTED', 'CANCELLED',
+      'PAYMENT_COMPLETED', 'PAYMENT_PROCESSING',
     ];
     return !nonCancellableStatuses.includes(claim.status);
   };
 
   const handleCancelClaim = async () => {
     if (!claim) return;
-
     setCancelling(true);
     try {
       await apiClient.patch(`/member/claims/${claim.claimId}/cancel`, {
         reason: cancelReason || 'Cancelled by member',
       });
-
       setShowCancelModal(false);
       if (Platform.OS === 'web') {
         window.alert('Claim cancelled successfully');
@@ -472,36 +523,75 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const [viewingDocId, setViewingDocId] = useState<string | null>(null);
-
   const handleViewDocument = async (doc: ClaimDocument) => {
     if (!claim) return;
-
     setViewingDocId(doc._id);
+    setPdfLoading(true);
 
     try {
       const fileUrl = `/member/claims/files/${claim.userId}/${doc.fileName}`;
-
-      // Fetch with auth headers
-      const response = await apiClient.get(fileUrl, {
-        responseType: 'blob',
-      });
-
+      const response = await apiClient.get(fileUrl, { responseType: 'blob' });
       const blob = response.data;
+      const isPdf = doc.fileName.toLowerCase().endsWith('.pdf') || blob.type === 'application/pdf';
 
       if (Platform.OS === 'web') {
-        // For web: create blob URL and open in new tab
+        // On web, open in new tab
         const blobUrl = URL.createObjectURL(blob);
         window.open(blobUrl, '_blank');
-        // Clean up blob URL after a delay
         setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        setViewingDocId(null);
+        setPdfLoading(false);
+      } else if (isPdf) {
+        // For PDFs on native, save to file system and open with system viewer
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const base64Data = (reader.result as string).split(',')[1];
+            const fileUri = `${FileSystem.cacheDirectory}${doc.fileName}`;
+
+            await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+
+            const canShare = await Sharing.isAvailableAsync();
+            if (canShare) {
+              await Sharing.shareAsync(fileUri, {
+                mimeType: 'application/pdf',
+                dialogTitle: 'View Document',
+                UTI: 'com.adobe.pdf',
+              });
+            } else {
+              Alert.alert('Error', 'Sharing is not available on this device');
+            }
+          } catch (shareErr) {
+            console.error('Error sharing PDF:', shareErr);
+            Alert.alert('Error', 'Failed to open PDF');
+          } finally {
+            setViewingDocId(null);
+            setPdfLoading(false);
+          }
+        };
+        reader.onerror = () => {
+          Alert.alert('Error', 'Failed to load document');
+          setViewingDocId(null);
+          setPdfLoading(false);
+        };
+        reader.readAsDataURL(blob);
       } else {
-        // For native: convert to base64 and open
+        // For images, show in WebView modal
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64Data = reader.result as string;
-          // Open using data URI for native
-          Linking.openURL(base64Data);
+          setPdfUrl(base64Data);
+          setPdfName(doc.documentType || doc.fileName);
+          setShowPdfViewer(true);
+          setViewingDocId(null);
+          setPdfLoading(false);
+        };
+        reader.onerror = () => {
+          Alert.alert('Error', 'Failed to load document');
+          setViewingDocId(null);
+          setPdfLoading(false);
         };
         reader.readAsDataURL(blob);
       }
@@ -513,17 +603,23 @@ export default function ClaimDetailPage() {
       } else {
         Alert.alert('Error', errorMsg);
       }
-    } finally {
       setViewingDocId(null);
+      setPdfLoading(false);
     }
+  };
+
+  const closePdfViewer = () => {
+    setShowPdfViewer(false);
+    setPdfUrl(null);
+    setPdfName('');
   };
 
   // Loading state
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F7F7FC', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0E51A2" />
-        <Text style={{ marginTop: 16, color: '#6B7280' }}>Loading claim details...</Text>
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={{ marginTop: 16, fontSize: 13, color: COLORS.textGray }}>Loading claim details...</Text>
       </View>
     );
   }
@@ -531,723 +627,330 @@ export default function ClaimDetailPage() {
   // Error state
   if (error || !claim) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F7F7FC', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-        <XCircleIcon size={48} color="#DC2626" />
-        <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827', marginTop: 16 }}>
-          Error Loading Claim
-        </Text>
-        <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center' }}>
-          {error || 'Claim not found'}
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.replace('/member/claims')}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#0E51A2',
-            paddingHorizontal: 24,
-            paddingVertical: 12,
-            borderRadius: 12,
-            marginTop: 24,
-          }}
-        >
-          <ArrowLeftIcon size={20} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF', fontWeight: '600', marginLeft: 8 }}>Back to Claims</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <SafeAreaView edges={['top']} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: 28,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <XCircleIcon size={28} />
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 8 }}>
+            Error Loading Claim
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textGray, textAlign: 'center', marginBottom: 24 }}>
+            {error || 'Claim not found'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/member/claims')}
+            style={{
+              backgroundColor: COLORS.primary,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 12,
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontSize: 13, fontWeight: '600' }}>Back to Claims</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
       </View>
     );
   }
 
-  const statusColors = getStatusColor(claim.status);
-  const ContainerComponent = Platform.OS === 'web' ? View : SafeAreaView;
+  const statusConfig = getStatusConfig(claim.status);
 
   return (
-    <ContainerComponent style={{ flex: 1, backgroundColor: '#F7F7FC' }}>
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
-          paddingHorizontal: 16,
-          paddingVertical: 16,
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => router.push('/member/claims')}
-          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
-        >
-          <ArrowLeftIcon size={20} color="#0E51A2" />
-          <Text style={{ color: '#0E51A2', fontWeight: '500', marginLeft: 8 }}>Back to Claims</Text>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 22, fontWeight: '700', color: '#111827' }}>
-              Claim {claim.claimId}
-            </Text>
-            <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
-              Submitted on {formatDate(claim.submittedAt)}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 8,
-              borderWidth: 2,
-              borderColor: statusColors.borderColor,
-              backgroundColor: statusColors.background,
-            }}
-          >
-            {getStatusIcon(claim.status, 18)}
-            <Text style={{ color: statusColors.color, fontWeight: '600', marginLeft: 6, fontSize: 13 }}>
-              {formatStatusName(claim.status)}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {/* Cancel Claim Button */}
-        {canCancelClaim() && (
-          <TouchableOpacity
-            onPress={() => setShowCancelModal(true)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderWidth: 2,
-              borderColor: '#FECACA',
-              borderRadius: 12,
-              backgroundColor: '#FEF2F2',
-              marginBottom: 16,
-            }}
-          >
-            <XCircleIcon size={20} color="#DC2626" />
-            <Text style={{ color: '#DC2626', fontWeight: '600', marginLeft: 8 }}>Cancel Claim</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Documents Required Alert */}
-        {(claim.status === 'DOCUMENTS_REQUIRED' || claim.status === 'RESUBMISSION_REQUIRED') && (
-          <View
-            style={{
-              backgroundColor: '#FFF7ED',
-              borderWidth: 2,
-              borderColor: '#FDBA74',
-              borderRadius: 12,
-              padding: 16,
-              marginBottom: 16,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-              <ExclamationCircleIcon size={24} color="#EA580C" />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#9A3412', marginBottom: 8 }}>
-                  Additional Documents Required
-                </Text>
-                {claim.documentsRequiredReason && (
-                  <Text style={{ fontSize: 14, color: '#C2410C', marginBottom: 8 }}>
-                    <Text style={{ fontWeight: '600' }}>Reason: </Text>
-                    {claim.documentsRequiredReason}
-                  </Text>
-                )}
-                {claim.requiredDocumentsList && claim.requiredDocumentsList.length > 0 && (
-                  <View style={{ marginBottom: 12 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#C2410C', marginBottom: 4 }}>
-                      Required Documents:
-                    </Text>
-                    {claim.requiredDocumentsList.map((doc, idx) => (
-                      <Text key={idx} style={{ fontSize: 14, color: '#C2410C', marginLeft: 8 }}>
-                        • {doc}
-                      </Text>
-                    ))}
-                  </View>
-                )}
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        {/* Header */}
+        <View style={{ backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <TouchableOpacity
+                onPress={() => router.push('/member/claims')}
+                style={{ padding: 8, borderRadius: 12 }}
+                activeOpacity={0.7}
+              >
+                <BackArrowIcon />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark }}>
+                Claim Details
+              </Text>
+              {canCancelClaim() ? (
                 <TouchableOpacity
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: '#EA580C',
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    alignSelf: 'flex-start',
-                  }}
+                  onPress={() => setShowCancelModal(true)}
+                  style={{ padding: 8 }}
+                  activeOpacity={0.7}
                 >
-                  <CloudArrowUpIcon size={18} color="#FFFFFF" />
-                  <Text style={{ color: '#FFFFFF', fontWeight: '600', marginLeft: 8 }}>
-                    Upload Documents
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.orange }}>
+                    Cancel Claim
                   </Text>
                 </TouchableOpacity>
-              </View>
+              ) : (
+                <View style={{ width: 90 }} />
+              )}
             </View>
           </View>
-        )}
+        </View>
 
-        {/* Claim Summary Card */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            marginBottom: 16,
-            overflow: 'hidden',
-          }}
+        {/* Main Content */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>Claim Summary</Text>
-          </View>
-          <View style={{ padding: 16 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-              {/* Patient Name */}
-              <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Patient Name
-                </Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {claim.patientName || claim.memberName}
-                </Text>
-              </View>
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+            {/* Claim Summary Title */}
+            <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.textDark, textAlign: 'center' }}>
+                My Claim Summary
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.textGray, textAlign: 'center', marginTop: 6 }}>
+                Treatment Date: {formatDate(claim.treatmentDate)}
+              </Text>
+            </View>
 
-              {/* Relationship */}
-              <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Relationship
-                </Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {claim.relationToMember || 'SELF'}
-                </Text>
-              </View>
-
-              {/* Treatment Date */}
-              <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Treatment Date
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <CalendarIcon size={16} color="#6B7280" />
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', marginLeft: 6 }}>
-                    {formatDate(claim.treatmentDate)}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Bill Amount */}
-              <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Bill Amount
-                </Text>
-                {claim.wasAutoCapped && claim.originalBillAmount ? (
-                  <View>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                      {formatCurrency(claim.originalBillAmount)}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                      <ExclamationCircleIcon size={12} color="#D97706" />
-                      <Text style={{ fontSize: 11, color: '#D97706', marginLeft: 4 }}>
-                        Capped to {formatCurrency(claim.billAmount)}
-                      </Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                    {formatCurrency(claim.billAmount)}
-                  </Text>
+            {/* Claim Details Card */}
+            <View style={{ paddingHorizontal: 16 }}>
+              <View
+                style={{
+                  backgroundColor: COLORS.white,
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: 'rgba(217, 217, 217, 0.48)',
+                  shadowColor: '#000',
+                  shadowOffset: { width: -2, height: 11 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 23,
+                  elevation: 3,
+                }}
+              >
+                <DetailRow label="Claim ID" value={claim.claimId} />
+                <DetailRow label="Patient Name" value={claim.patientName || claim.memberName} />
+                <DetailRow label="Relationship" value={claim.relationToMember || 'Self'} />
+                <DetailRow label="Category" value={claim.category} />
+                <DetailRow label="Provider" value={claim.providerName} />
+                <DetailRow label="Bill Amount" value={formatCurrency(claim.billAmount)} />
+                {claim.approvedAmount !== undefined && claim.approvedAmount > 0 && (
+                  <DetailRow label="Approved Amount" value={formatCurrency(claim.approvedAmount)} />
                 )}
+                <DetailRow
+                  label="Status"
+                  value={statusConfig.label}
+                  isLast
+                />
               </View>
 
-              {/* Amount Submitted */}
-              <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Amount for Approval
-                </Text>
-                {claim.wasAutoCapped && claim.perClaimLimitApplied ? (
-                  <View>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#16A34A' }}>
-                      {formatCurrency(claim.billAmount)}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                      <CheckCircleIcon size={12} color="#16A34A" />
-                      <Text style={{ fontSize: 11, color: '#16A34A', marginLeft: 4 }}>
-                        Limit: {formatCurrency(claim.perClaimLimitApplied)}
-                      </Text>
-                    </View>
-                  </View>
+              {/* Status Badge */}
+              <View
+                style={{
+                  backgroundColor: statusConfig.bg,
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                {claim.status.includes('APPROVED') || claim.status === 'PAYMENT_COMPLETED' ? (
+                  <CheckCircleIcon size={20} />
+                ) : claim.status === 'REJECTED' || claim.status === 'CANCELLED' ? (
+                  <XCircleIcon size={20} />
+                ) : claim.status === 'DOCUMENTS_REQUIRED' ? (
+                  <AlertIcon size={20} />
                 ) : (
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                    {formatCurrency(claim.billAmount)}
-                  </Text>
+                  <ClockIcon size={20} />
                 )}
-              </View>
-
-              {/* Approved Amount */}
-              {claim.approvedAmount !== undefined && claim.approvedAmount > 0 && (
-                <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                    Approved Amount
-                  </Text>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#16A34A' }}>
-                    {formatCurrency(claim.approvedAmount)}
-                  </Text>
-                </View>
-              )}
-
-              {/* Category */}
-              <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Category
-                </Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {claim.category}
+                <Text style={{ fontSize: 14, fontWeight: '600', color: statusConfig.color }}>
+                  {statusConfig.label}
                 </Text>
               </View>
 
-              {/* Bill Number */}
-              {claim.billNumber && (
-                <View style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                    Bill Number
-                  </Text>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                    {claim.billNumber}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Provider & Treatment Details */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            marginBottom: 16,
-            overflow: 'hidden',
-          }}
-        >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>
-              Provider & Treatment Details
-            </Text>
-          </View>
-          <View style={{ padding: 16 }}>
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                Provider Name
-              </Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                {claim.providerName}
-              </Text>
-            </View>
-
-            {claim.providerLocation && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Provider Location
-                </Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {claim.providerLocation}
-                </Text>
-              </View>
-            )}
-
-            {claim.treatmentDescription && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Treatment Description
-                </Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {claim.treatmentDescription}
-                </Text>
-              </View>
-            )}
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-              <View style={{ width: '50%', paddingHorizontal: 8 }}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                  Claim Type
-                </Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {claim.claimType || 'REIMBURSEMENT'}
-                </Text>
-              </View>
-
-              {claim.isUrgent && (
-                <View style={{ width: '50%', paddingHorizontal: 8 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#6B7280', marginBottom: 4 }}>
-                    Priority
-                  </Text>
-                  <View
-                    style={{
-                      backgroundColor: '#FEE2E2',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 12,
-                      alignSelf: 'flex-start',
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#991B1B' }}>Urgent</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Uploaded Documents */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            marginBottom: 16,
-            overflow: 'hidden',
-          }}
-        >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>Uploaded Documents</Text>
-          </View>
-          <View style={{ padding: 16 }}>
-            {claim.documents && claim.documents.length > 0 ? (
-              <View style={{ gap: 12 }}>
-                {claim.documents.map((doc) => (
-                  <View
-                    key={doc._id}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: 12,
-                      borderWidth: 1,
-                      borderColor: '#E5E7EB',
-                      borderRadius: 12,
-                      backgroundColor: '#F9FAFB',
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                      <DocumentTextIcon size={32} color="#2563EB" />
-                      <View style={{ marginLeft: 12, flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                          {doc.documentType}
-                        </Text>
-                        <Text
-                          style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}
-                          numberOfLines={1}
-                        >
-                          {doc.fileName}
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleViewDocument(doc)}
-                      disabled={viewingDocId === doc._id}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        opacity: viewingDocId === doc._id ? 0.6 : 1,
-                      }}
-                    >
-                      {viewingDocId === doc._id ? (
-                        <ActivityIndicator size="small" color="#2563EB" />
-                      ) : (
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#2563EB' }}>View</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', paddingVertical: 16 }}>
-                No documents uploaded yet
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Status Timeline */}
-        {timeline.length > 0 && (
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-              marginBottom: 16,
-              overflow: 'hidden',
-            }}
-          >
-            <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>
-                Claim Status Timeline
-              </Text>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
-                Track your claim's progress
-              </Text>
-            </View>
-            <View style={{ padding: 16 }}>
-              <View style={{ position: 'relative' }}>
-                {/* Vertical Line */}
+              {/* Documents Required Alert */}
+              {claim.status === 'DOCUMENTS_REQUIRED' && (
                 <View
                   style={{
-                    position: 'absolute',
-                    left: 15,
-                    top: 0,
-                    bottom: 0,
-                    width: 2,
-                    backgroundColor: '#E5E7EB',
+                    backgroundColor: '#FEF3C7',
+                    borderRadius: 12,
+                    padding: 14,
+                    marginBottom: 16,
+                    borderWidth: 1,
+                    borderColor: '#FCD34D',
                   }}
-                />
-
-                {timeline.map((entry, index) => {
-                  const isLatest = index === 0;
-                  const entryStatusColors = getStatusColor(entry.status);
-
-                  return (
-                    <View key={index} style={{ flexDirection: 'row', marginBottom: index < timeline.length - 1 ? 16 : 0 }}>
-                      {/* Icon */}
-                      <View
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          borderWidth: 2,
-                          borderColor: entryStatusColors.borderColor,
-                          backgroundColor: entryStatusColors.background,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          zIndex: 1,
-                        }}
-                      >
-                        {getStatusIcon(entry.status, 16)}
-                      </View>
-
-                      {/* Content */}
-                      <View
-                        style={{
-                          flex: 1,
-                          marginLeft: 12,
-                          padding: 12,
-                          borderRadius: 12,
-                          borderWidth: isLatest ? 2 : 1,
-                          borderColor: isLatest ? entryStatusColors.borderColor : '#E5E7EB',
-                          backgroundColor: isLatest ? entryStatusColors.background : '#F9FAFB',
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                            {formatStatusName(entry.status)}
-                          </Text>
-                          {isLatest && (
-                            <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: '#1D4ED8' }}>Current</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                          <Text style={{ fontWeight: '600' }}>By:</Text> {entry.changedBy}
-                          {entry.changedByRole && ` (${entry.changedByRole})`}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#92400E', marginBottom: 6 }}>
+                    Additional Documents Required
+                  </Text>
+                  {claim.documentsRequiredReason && (
+                    <Text style={{ fontSize: 12, color: '#A16207', marginBottom: 6 }}>
+                      {claim.documentsRequiredReason}
+                    </Text>
+                  )}
+                  {claim.requiredDocumentsList && claim.requiredDocumentsList.length > 0 && (
+                    <View>
+                      {claim.requiredDocumentsList.map((doc, idx) => (
+                        <Text key={idx} style={{ fontSize: 12, color: '#A16207' }}>
+                          • {doc}
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                          <Text style={{ fontWeight: '600' }}>When:</Text> {formatDateTime(entry.changedAt)}
-                        </Text>
-                        {entry.reason && (
-                          <Text style={{ fontSize: 12, color: '#374151', marginTop: 6 }}>
-                            <Text style={{ fontWeight: '600' }}>Note:</Text> {entry.reason}
-                          </Text>
-                        )}
-                      </View>
+                      ))}
                     </View>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        )}
+                  )}
+                </View>
+              )}
 
-        {/* TPA Notes */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            marginBottom: 16,
-            overflow: 'hidden',
-          }}
-        >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>Notes from TPA</Text>
-            <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
-              Important information from your claim reviewer
-            </Text>
-          </View>
-          <View style={{ padding: 16 }}>
-            {tpaNotes.length > 0 ? (
-              <View style={{ gap: 12 }}>
-                {tpaNotes.map((note, index) => {
-                  const noteColors =
-                    note.type === 'approval'
-                      ? { bg: '#F0FDF4', border: '#BBF7D0' }
-                      : note.type === 'rejection'
-                      ? { bg: '#FEF2F2', border: '#FECACA' }
-                      : note.type === 'documents_required'
-                      ? { bg: '#FFF7ED', border: '#FDBA74' }
-                      : { bg: '#EFF6FF', border: '#BFDBFE' };
+              {/* Documents Section */}
+              <ExpandableSection
+                title="Documents"
+                count={claim.documents?.length || 0}
+                defaultExpanded={true}
+              >
+                <View style={{ padding: 16 }}>
+                  {claim.documents && claim.documents.length > 0 ? (
+                    <View style={{ gap: 12 }}>
+                      {claim.documents.map((doc) => (
+                        <View
+                          key={doc._id}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: 12,
+                            backgroundColor: COLORS.background,
+                            borderRadius: 12,
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}>
+                            <View
+                              style={{
+                                width: 40,
+                                height: 40,
+                                backgroundColor: 'rgba(3, 77, 162, 0.08)',
+                                borderRadius: 20,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <DocumentIcon size={20} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>
+                                {doc.documentType}
+                              </Text>
+                              <Text style={{ fontSize: 11, color: COLORS.textGray }} numberOfLines={1}>
+                                {doc.fileName}
+                              </Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleViewDocument(doc)}
+                            disabled={viewingDocId === doc._id}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 4,
+                              opacity: viewingDocId === doc._id ? 0.6 : 1,
+                            }}
+                          >
+                            {viewingDocId === doc._id ? (
+                              <ActivityIndicator size="small" color={COLORS.primary} />
+                            ) : (
+                              <>
+                                <EyeIcon size={14} />
+                                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.primary }}>View</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={{ fontSize: 12, color: COLORS.textGray, textAlign: 'center', paddingVertical: 16 }}>
+                      No documents uploaded
+                    </Text>
+                  )}
+                </View>
+              </ExpandableSection>
 
-                  return (
-                    <View
-                      key={index}
-                      style={{
-                        padding: 16,
-                        borderRadius: 12,
-                        borderWidth: 2,
-                        borderColor: noteColors.border,
-                        backgroundColor: noteColors.bg,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                        {note.type === 'approval' && <CheckCircleIcon size={24} color="#16A34A" />}
-                        {note.type === 'rejection' && <XCircleIcon size={24} color="#DC2626" />}
-                        {note.type === 'documents_required' && <DocumentTextIcon size={24} color="#EA580C" />}
-                        {!['approval', 'rejection', 'documents_required'].includes(note.type) && (
-                          <InformationCircleIcon size={24} color="#2563EB" />
-                        )}
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                              {note.type === 'approval'
-                                ? 'Claim Approved'
-                                : note.type === 'rejection'
-                                ? 'Claim Rejected'
-                                : note.type === 'documents_required'
-                                ? 'Additional Documents Required'
-                                : 'Note from TPA'}
+              {/* Timeline Section */}
+              {timeline.length > 0 && (
+                <ExpandableSection title="Status Timeline" defaultExpanded={false}>
+                  <View style={{ padding: 16 }}>
+                    {timeline.map((entry, index) => {
+                      const entryStatus = getStatusConfig(entry.status);
+                      return (
+                        <View
+                          key={index}
+                          style={{
+                            flexDirection: 'row',
+                            marginBottom: index < timeline.length - 1 ? 16 : 0,
+                          }}
+                        >
+                          <View style={{ alignItems: 'center', marginRight: 12 }}>
+                            <View
+                              style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: 6,
+                                backgroundColor: index === 0 ? COLORS.primary : COLORS.border,
+                              }}
+                            />
+                            {index < timeline.length - 1 && (
+                              <View
+                                style={{
+                                  width: 2,
+                                  flex: 1,
+                                  backgroundColor: COLORS.border,
+                                  marginTop: 4,
+                                }}
+                              />
+                            )}
+                          </View>
+                          <View style={{ flex: 1, paddingBottom: 8 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>
+                              {entryStatus.label}
                             </Text>
-                            {note.timestamp && (
-                              <Text style={{ fontSize: 11, color: '#6B7280' }}>
-                                {formatDateTime(note.timestamp)}
+                            <Text style={{ fontSize: 11, color: COLORS.textGray, marginTop: 2 }}>
+                              {formatDate(entry.changedAt)}
+                            </Text>
+                            {entry.reason && (
+                              <Text style={{ fontSize: 11, color: COLORS.textGray, marginTop: 4 }}>
+                                {entry.reason}
                               </Text>
                             )}
                           </View>
-                          <Text style={{ fontSize: 14, color: '#374151' }}>{note.message}</Text>
                         </View>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            ) : (
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', paddingVertical: 16 }}>
-                No notes from TPA yet
-              </Text>
-            )}
-          </View>
-        </View>
+                      );
+                    })}
+                  </View>
+                </ExpandableSection>
+              )}
 
-        {/* Claim Stats */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            marginBottom: 16,
-            overflow: 'hidden',
-          }}
-        >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>Claim Stats</Text>
-          </View>
-          <View style={{ padding: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 13, color: '#6B7280' }}>Documents</Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                {claim.documents?.length || 0}
-              </Text>
+              {/* Treatment Details */}
+              {claim.treatmentDescription && (
+                <ExpandableSection title="Treatment Details" defaultExpanded={false}>
+                  <View style={{ padding: 16 }}>
+                    <Text style={{ fontSize: 13, color: COLORS.textGray, lineHeight: 20 }}>
+                      {claim.treatmentDescription}
+                    </Text>
+                  </View>
+                </ExpandableSection>
+              )}
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 13, color: '#6B7280' }}>Submitted</Text>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                {formatDate(claim.submittedAt)}
-              </Text>
-            </View>
-            {claim.reviewedAt && (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, color: '#6B7280' }}>Reviewed</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  {formatDate(claim.reviewedAt)}
-                </Text>
-              </View>
-            )}
           </View>
-        </View>
+        </ScrollView>
 
-        {/* Need Help */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            overflow: 'hidden',
-          }}
-        >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>Need Help?</Text>
-          </View>
-          <View style={{ padding: 16 }}>
-            <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
-              If you have questions about your claim, our support team is here to help.
-            </Text>
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 12,
-                borderWidth: 1,
-                borderColor: '#E5E7EB',
-                borderRadius: 12,
-                marginBottom: 12,
-              }}
-            >
-              <PhoneIcon size={18} color="#6B7280" />
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 8 }}>
-                Call Support
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 12,
-                borderWidth: 1,
-                borderColor: '#E5E7EB',
-                borderRadius: 12,
-              }}
-            >
-              <EnvelopeIcon size={18} color="#6B7280" />
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginLeft: 8 }}>
-                Email Support
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+      </SafeAreaView>
 
       {/* Cancel Claim Modal */}
       <Modal visible={showCancelModal} transparent animationType="fade">
@@ -1262,52 +965,53 @@ export default function ClaimDetailPage() {
         >
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.white,
               borderRadius: 16,
               padding: 24,
               width: '100%',
               maxWidth: 400,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 }}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
               <View
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: '#FEE2E2',
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  marginBottom: 12,
                 }}
               >
-                <XCircleIcon size={24} color="#DC2626" />
+                <XCircleIcon size={24} />
               </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>Cancel Claim</Text>
-                <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
-                  Are you sure you want to cancel this claim? This action cannot be undone.
-                </Text>
-              </View>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.textDark, marginBottom: 6 }}>
+                Cancel Claim
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.textGray, textAlign: 'center' }}>
+                Are you sure you want to cancel this claim? This action cannot be undone.
+              </Text>
             </View>
 
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                Reason for Cancellation (Optional)
+              <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textDark, marginBottom: 6 }}>
+                Reason (Optional)
               </Text>
               <TextInput
                 value={cancelReason}
                 onChangeText={setCancelReason}
-                placeholder="Please provide a reason for cancelling this claim..."
-                placeholderTextColor="#9CA3AF"
+                placeholder="Please provide a reason..."
+                placeholderTextColor={COLORS.textLight}
                 multiline
                 numberOfLines={3}
                 style={{
                   borderWidth: 1,
-                  borderColor: '#E5E7EB',
+                  borderColor: COLORS.border,
                   borderRadius: 12,
                   padding: 12,
-                  fontSize: 14,
-                  color: '#111827',
+                  fontSize: 13,
+                  color: COLORS.textDark,
                   textAlignVertical: 'top',
                   minHeight: 80,
                 }}
@@ -1323,23 +1027,22 @@ export default function ClaimDetailPage() {
                 disabled={cancelling}
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
+                  paddingVertical: 12,
                   borderWidth: 1,
-                  borderColor: '#E5E7EB',
+                  borderColor: COLORS.border,
                   borderRadius: 12,
                   alignItems: 'center',
-                  opacity: cancelling ? 0.5 : 1,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>Keep Claim</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark }}>Keep Claim</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCancelClaim}
                 disabled={cancelling}
                 style={{
                   flex: 1,
-                  paddingVertical: 14,
-                  backgroundColor: '#DC2626',
+                  paddingVertical: 12,
+                  backgroundColor: COLORS.error,
                   borderRadius: 12,
                   alignItems: 'center',
                   flexDirection: 'row',
@@ -1347,8 +1050,8 @@ export default function ClaimDetailPage() {
                   opacity: cancelling ? 0.7 : 1,
                 }}
               >
-                {cancelling && <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />}
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                {cancelling && <ActivityIndicator size="small" color={COLORS.white} style={{ marginRight: 8 }} />}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>
                   {cancelling ? 'Cancelling...' : 'Cancel Claim'}
                 </Text>
               </TouchableOpacity>
@@ -1356,6 +1059,144 @@ export default function ClaimDetailPage() {
           </View>
         </View>
       </Modal>
-    </ContainerComponent>
+
+      {/* PDF Viewer Modal */}
+      <Modal visible={showPdfViewer} animationType="slide" onRequestClose={closePdfViewer}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+          {/* PDF Viewer Header */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: COLORS.border,
+              backgroundColor: COLORS.white,
+            }}
+          >
+            <TouchableOpacity
+              onPress={closePdfViewer}
+              style={{ padding: 8, borderRadius: 12 }}
+              activeOpacity={0.7}
+            >
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke={COLORS.textDark}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 16,
+                fontWeight: '600',
+                color: COLORS.textDark,
+                textAlign: 'center',
+                marginHorizontal: 12,
+              }}
+              numberOfLines={1}
+            >
+              {pdfName}
+            </Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          {/* Image Content */}
+          {pdfUrl ? (
+            <WebView
+              source={{
+                html: `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=4.0, user-scalable=yes">
+                    <style>
+                      * { margin: 0; padding: 0; box-sizing: border-box; }
+                      html, body {
+                        width: 100%;
+                        height: 100%;
+                        background: #f7f7fc;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                      }
+                      .container {
+                        width: 100%;
+                        padding: 16px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                      }
+                      img {
+                        max-width: 100%;
+                        max-height: 90vh;
+                        object-fit: contain;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      <img src="${pdfUrl}" alt="Document" />
+                    </div>
+                  </body>
+                  </html>
+                `,
+              }}
+              style={{ flex: 1, backgroundColor: COLORS.background }}
+              startInLoadingState={true}
+              scalesPageToFit={true}
+              javaScriptEnabled={true}
+              renderLoading={() => (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: COLORS.background,
+                  }}
+                >
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.textGray }}>
+                    Loading image...
+                  </Text>
+                </View>
+              )}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error('WebView error:', nativeEvent);
+                Alert.alert('Error', 'Failed to display image');
+                closePdfViewer();
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: COLORS.background,
+              }}
+            >
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.textGray }}>
+                Loading document...
+              </Text>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
+    </View>
   );
 }
