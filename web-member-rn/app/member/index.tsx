@@ -937,11 +937,6 @@ export default function DashboardScreen() {
             borderRadius: 16,
             borderWidth: 1,
             borderColor: 'rgba(3, 77, 162, 0.11)',
-            shadowColor: '#000',
-            shadowOffset: { width: -2, height: 11 },
-            shadowOpacity: 0.05,
-            shadowRadius: 23,
-            elevation: 2,
           }}
         >
           {isDownloadPolicy && isPdfGenerating ? (
@@ -1084,11 +1079,6 @@ export default function DashboardScreen() {
           borderRadius: 16,
           borderWidth: 1,
           borderColor: 'rgba(217, 217, 217, 0.48)',
-          shadowColor: '#000',
-          shadowOffset: { width: -2, height: 11 },
-          shadowOpacity: 0.08,
-          shadowRadius: 23,
-          elevation: 3,
           marginRight: 10,
         }}
       >
