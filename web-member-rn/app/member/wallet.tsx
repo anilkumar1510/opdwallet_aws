@@ -184,11 +184,14 @@ interface Category {
 
 interface Transaction {
   _id: string;
+  transactionId?: string;
   type: 'DEBIT' | 'CREDIT' | 'REFUND' | 'ADJUSTMENT';
   amount: number;
   notes: string;
   serviceType: string;
   serviceProvider: string;
+  categoryCode?: string;
+  categoryName?: string;
   createdAt: string;
   newBalance: {
     total: number;
@@ -860,46 +863,81 @@ export default function WalletScreen() {
                   {monthTransactions.map((transaction, index) => {
                     const isDebit = transaction.type === 'DEBIT';
                     const isLast = index === monthTransactions.length - 1;
+                    // Check if this is the absolute last visible transaction
+                    const isAbsoluteLastTransaction = transaction._id === visibleTransactions[visibleTransactions.length - 1]?._id;
+                    const showLoadMore = isAbsoluteLastTransaction && hasMoreTransactions;
 
                     return (
                       <View
                         key={transaction._id}
                         style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          paddingHorizontal: 16,
-                          paddingVertical: 14,
-                          borderBottomWidth: isLast ? 0 : 1,
-                          borderBottomColor: COLORS.border,
+                          position: 'relative',
                         }}
                       >
-                        {/* Left - Transaction Details */}
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark, marginBottom: 2 }}>
-                            {transaction.notes || transaction.serviceType || 'Transaction'}
-                          </Text>
-                          <Text style={{ fontSize: 12, color: COLORS.textGray }}>
-                            {transaction.serviceProvider || 'Service Provider'}
-                          </Text>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            paddingHorizontal: 16,
+                            paddingVertical: 12,
+                            borderBottomWidth: isLast ? 0 : 1,
+                            borderBottomColor: COLORS.border,
+                          }}
+                        >
+                          {/* Left - Transaction Details */}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '400', color: COLORS.textDark, marginBottom: 2 }}>
+                              {transaction.notes || transaction.serviceType || 'Transaction'}
+                            </Text>
+                            <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }}>
+                              {transaction.categoryName || transaction.serviceType || 'General'}
+                            </Text>
+                            <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                              ID: {transaction.transactionId || transaction._id.slice(-8).toUpperCase()}
+                            </Text>
+                          </View>
+
+                          {/* Right - Amount & Date */}
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: '500',
+                                color: isDebit ? COLORS.debit : COLORS.credit,
+                                marginBottom: 2,
+                              }}
+                            >
+                              {isDebit ? '-' : '+'}₹{transaction.amount.toLocaleString('en-IN')}
+                            </Text>
+                            <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                              {formatDate(transaction.createdAt)}
+                            </Text>
+                          </View>
                         </View>
 
-                        {/* Right - Amount & Date */}
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text
+                        {/* Load More Overlay on Last Transaction */}
+                        {showLoadMore && (
+                          <TouchableOpacity
+                            onPress={handleLoadMore}
                             style={{
-                              fontSize: 14,
-                              fontWeight: '600',
-                              color: isDebit ? COLORS.debit : COLORS.credit,
-                              marginBottom: 2,
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              height: 40,
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              borderBottomLeftRadius: 12,
+                              borderBottomRightRadius: 12,
                             }}
                           >
-                            {isDebit ? '-' : '+'}₹{transaction.amount.toLocaleString('en-IN')}
-                          </Text>
-                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>
-                            {formatDate(transaction.createdAt)}
-                          </Text>
-                        </View>
+                            <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.primary }}>
+                              Load More
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     );
                   })}
@@ -908,25 +946,6 @@ export default function WalletScreen() {
             ))
           )}
 
-          {/* Load More Button */}
-          {hasMoreTransactions && (
-            <TouchableOpacity
-              onPress={handleLoadMore}
-              style={{
-                backgroundColor: COLORS.white,
-                borderRadius: 12,
-                paddingVertical: 14,
-                alignItems: 'center',
-                marginTop: 8,
-                borderWidth: 1,
-                borderColor: COLORS.border,
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                Load More ({transactions.length - visibleCount} remaining)
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </ScrollView>
       </SafeAreaView>
