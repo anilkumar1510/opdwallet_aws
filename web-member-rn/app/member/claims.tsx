@@ -9,15 +9,46 @@ import {
   Modal,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import apiClient from '../../src/lib/api/client';
 
 // ============================================================================
-// ICONS
+// COLORS - Matching Home Page
 // ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  orange: '#F5821E',
+  textDark: '#303030',
+  textGray: '#545454',
+  textLight: '#6b7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  success: '#16a34a',
+};
+
+// ============================================================================
+// ICONS - Matching Home Page Style (Blue + Orange accents)
+// ============================================================================
+
+// Back Arrow Icon
+function BackArrowIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 18L9 12L15 6"
+        stroke={COLORS.primary}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 const ChevronLeftIcon = ({ width = 24, height = 24, color = '#000' }) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2}>
@@ -392,818 +423,773 @@ export default function ClaimsPage() {
   );
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
-        }}
-      >
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity
-              onPress={() => router.push('/member')}
-              style={{
-                padding: 8,
-                borderRadius: 12,
-              }}
-            >
-              <ChevronLeftIcon width={24} height={24} color="#0E51A2" />
-            </TouchableOpacity>
-            <View style={{ flex: 1, flexShrink: 1, minWidth: 0 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }} numberOfLines={1}>
-                Claims History
-              </Text>
-              <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }} numberOfLines={1}>
-                Track and manage your medical claims
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => router.push('/member/claims/new')}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 3,
-                flexShrink: 0,
-              }}
-            >
-              <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  borderRadius: 12,
-                }}
-              />
-              <DocumentTextIcon width={16} height={16} color="#FFFFFF" />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>New</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      <View style={{ paddingHorizontal: 16, paddingVertical: 24 }}>
-        {/* Quick Stats */}
-        {loading ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
-            {[...Array(4)].map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  width: '48%',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                }}
-              >
-                <ActivityIndicator size="small" color="#0F5FDC" />
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Animated.View
-            entering={FadeInDown.duration(300)}
-            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}
-          >
-            {/* Approved Card */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: '48%',
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(164, 191, 254, 0.48)',
-                  }}
-                >
-                  <CheckCircleIcon width={20} height={20} color="#0F5FDC" />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#111827' }}>{stats.approved}</Text>
-                  <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Approved</Text>
-                </View>
-              </View>
-            </LinearGradient>
-
-            {/* Processing Card */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: '48%',
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(164, 191, 254, 0.48)',
-                  }}
-                >
-                  <ClockIcon width={20} height={20} color="#0F5FDC" />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#111827' }}>{stats.processing}</Text>
-                  <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Processing</Text>
-                </View>
-              </View>
-            </LinearGradient>
-
-            {/* Under Review Card */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: '48%',
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(164, 191, 254, 0.48)',
-                  }}
-                >
-                  <ExclamationCircleIcon width={20} height={20} color="#0F5FDC" />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#111827' }}>{stats.underReview}</Text>
-                  <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Under Review</Text>
-                </View>
-              </View>
-            </LinearGradient>
-
-            {/* Total Amount Card */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: '48%',
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                <LinearGradient
-                  colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: 'rgba(164, 191, 254, 0.48)',
-                  }}
-                >
-                  <DocumentTextIcon width={20} height={20} color="#0F5FDC" />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ fontSize: 20, fontWeight: '700', color: '#111827' }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    ₹{stats.totalAmount.toLocaleString()}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Total Claims</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        )}
-
-        {/* Controls Bar */}
-        <Animated.View
-          entering={FadeInDown.duration(300).delay(100)}
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        {/* Header with Back Button */}
+        <View
           style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#e5e7eb',
-            marginBottom: 24,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
           }}
         >
-          <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
-            {/* Search */}
-            <View style={{ position: 'relative', marginBottom: 12 }}>
-              <View style={{ position: 'absolute', left: 12, top: 12, zIndex: 1 }}>
-                <MagnifyingGlassIcon width={20} height={20} color="#9ca3af" />
-              </View>
-              <TextInput
-                placeholder="Search claims..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={{
-                  width: '100%',
-                  paddingLeft: 40,
-                  paddingRight: 16,
-                  paddingVertical: 12,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 12,
-                  fontSize: 14,
-                  color: '#111827',
-                }}
-                placeholderTextColor="#9ca3af"
-              />
-            </View>
-
-            {/* Status Filter & View Toggle */}
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-              <View style={{ flex: 1 }}>
-                <View
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#e5e7eb',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', padding: 12 }}>
-                    Status: {statusFilter === 'all' ? 'All' : statusFilter.replace('_', ' ')}
-                  </Text>
-                </View>
-              </View>
-
-              {/* View Mode Toggle */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  backgroundColor: '#f3f4f6',
-                  borderRadius: 12,
-                  padding: 4,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => setViewMode('table')}
-                  style={{
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: viewMode === 'table' ? '#FFFFFF' : 'transparent',
-                  }}
-                >
-                  <TableCellsIcon width={16} height={16} color={viewMode === 'table' ? '#0F5FDC' : '#6b7280'} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setViewMode('cards')}
-                  style={{
-                    padding: 8,
-                    borderRadius: 8,
-                    backgroundColor: viewMode === 'cards' ? '#FFFFFF' : 'transparent',
-                  }}
-                >
-                  <Squares2X2Icon width={16} height={16} color={viewMode === 'cards' ? '#0F5FDC' : '#6b7280'} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Filters & Export Row */}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
-                onPress={() => setShowFilters(!showFilters)}
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  paddingVertical: 10,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                }}
-              >
-                <FunnelIcon width={16} height={16} color="#111827" />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Filters</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={exportData}
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  paddingVertical: 10,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                }}
-              >
-                <ArrowDownTrayIcon width={16} height={16} color="#111827" />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Export</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Advanced Filters */}
-          {showFilters && (
-            <View style={{ padding: 16, backgroundColor: '#f9fafb', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
-              <View style={{ gap: 12 }}>
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 8 }}>
-                    Date Range
-                  </Text>
-                  <View
-                    style={{
-                      borderWidth: 1,
-                      borderColor: '#e5e7eb',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, color: '#111827' }}>All Time</Text>
-                  </View>
-                </View>
-
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Category</Text>
-                  <View
-                    style={{
-                      borderWidth: 1,
-                      borderColor: '#e5e7eb',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, color: '#111827' }}>All Categories</Text>
-                  </View>
-                </View>
-
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 8 }}>
-                    Amount Range
-                  </Text>
-                  <View
-                    style={{
-                      borderWidth: 1,
-                      borderColor: '#e5e7eb',
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, color: '#111827' }}>All Amounts</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Error State */}
-        {error && (
-          <View
-            style={{
-              backgroundColor: '#fef2f2',
-              borderWidth: 1,
-              borderColor: '#fecaca',
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 24,
-            }}
-          >
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <XCircleIcon width={20} height={20} color="#dc2626" />
-              <Text style={{ color: '#b91c1c', fontWeight: '600', flex: 1 }}>Failed to load claims: {error}</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/member')}
+                style={{
+                  padding: 8,
+                  borderRadius: 12,
+                }}
+                activeOpacity={0.7}
+              >
+                <BackArrowIcon />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                  Claims History
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                  Track and manage your medical claims
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/member/claims/new')}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 12,
+                }}
+                activeOpacity={0.8}
+              >
+                <DocumentTextIcon width={16} height={16} color={COLORS.white} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>New</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        )}
+        </View>
 
-        {/* Content */}
-        {loading ? (
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              borderRadius: 16,
-              padding: 48,
-              alignItems: 'center',
-              borderWidth: 2,
-              borderColor: '#86ACD8',
-            }}
-          >
-            <ActivityIndicator size="large" color="#0F5FDC" />
-            <Text style={{ color: '#111827', fontWeight: '600', marginTop: 16 }}>Loading claims...</Text>
-          </LinearGradient>
-        ) : viewMode === 'cards' ? (
-          // Card View
-          <Animated.View entering={FadeInDown.duration(300).delay(200)} style={{ gap: 16 }}>
-            {paginatedClaims.map((claim) => {
-              const statusColors = getStatusColor(claim.status);
-              return (
-                <TouchableOpacity
-                  key={claim.id}
-                  onPress={() => router.push(`/member/claims/${claim.id}`)}
-                  activeOpacity={0.7}
-                >
+        {/* Main Content */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 20,
+            paddingBottom: 100,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+            {/* Quick Stats */}
+            {loading ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+                {[...Array(4)].map((_, i) => (
                   <LinearGradient
+                    key={i}
                     colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={{
+                      width: '48%',
                       borderRadius: 16,
-                      padding: 20,
+                      padding: 16,
                       borderWidth: 2,
                       borderColor: '#86ACD8',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
-                      elevation: 2,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: 80,
                     }}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <View>
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>{claim.claimNumber}</Text>
-                        <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                          {new Date(claim.date).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 6,
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
-                          borderRadius: 999,
-                          backgroundColor: statusColors.background,
-                        }}
-                      >
-                        {getStatusIcon(claim.status)}
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: statusColors.color, textTransform: 'capitalize' }}>
-                          {claim.status.replace('_', ' ')}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={{ gap: 12, marginBottom: 16 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>{claim.provider}</Text>
-                      <Text style={{ fontSize: 14, color: '#6b7280' }} numberOfLines={2}>
-                        {claim.description}
-                      </Text>
-
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingTop: 12,
-                          borderTopWidth: 1,
-                          borderTopColor: 'rgba(107, 114, 128, 0.2)',
-                        }}
-                      >
-                        <View
-                          style={{
-                            paddingHorizontal: 12,
-                            paddingVertical: 4,
-                            borderRadius: 999,
-                            backgroundColor: '#dbeafe',
-                          }}
-                        >
-                          <Text style={{ fontSize: 12, fontWeight: '600', color: '#1d4ed8' }}>{claim.type}</Text>
-                        </View>
-                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
-                          ₹{claim.amount.toLocaleString()}
-                        </Text>
-                      </View>
-                    </View>
-
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  </LinearGradient>
+                ))}
+              </View>
+            ) : (
+              <Animated.View
+                entering={FadeInDown.duration(300)}
+                style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}
+              >
+                {/* Approved Card */}
+                <LinearGradient
+                  colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: '48%',
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 2,
+                    borderColor: '#86ACD8',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                     <View
                       style={{
-                        flexDirection: 'row',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        paddingTop: 16,
-                        borderTopWidth: 1,
-                        borderTopColor: '#e5e7eb',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.white,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
                       }}
                     >
-                      <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '600' }}>
-                        {claim.documents} document{claim.documents !== 1 ? 's' : ''}
-                      </Text>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F5FDC' }}>View Details →</Text>
+                      <CheckCircleIcon width={20} height={20} color={COLORS.primary} />
                     </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              );
-            })}
-          </Animated.View>
-        ) : (
-          // Table View (simplified for mobile)
-          <Animated.View entering={FadeInDown.duration(300).delay(200)}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 24, fontWeight: '700', color: COLORS.textDark }}>{stats.approved}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>Approved</Text>
+                    </View>
+                  </View>
+                </LinearGradient>
+
+                {/* Processing Card */}
+                <LinearGradient
+                  colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: '48%',
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 2,
+                    borderColor: '#86ACD8',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.white,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                      }}
+                    >
+                      <ClockIcon width={20} height={20} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 24, fontWeight: '700', color: COLORS.textDark }}>{stats.processing}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>Processing</Text>
+                    </View>
+                  </View>
+                </LinearGradient>
+
+                {/* Under Review Card */}
+                <LinearGradient
+                  colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: '48%',
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 2,
+                    borderColor: '#86ACD8',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.white,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                      }}
+                    >
+                      <ExclamationCircleIcon width={20} height={20} color={COLORS.orange} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 24, fontWeight: '700', color: COLORS.textDark }}>{stats.underReview}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>Under Review</Text>
+                    </View>
+                  </View>
+                </LinearGradient>
+
+                {/* Total Amount Card */}
+                <LinearGradient
+                  colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: '48%',
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 2,
+                    borderColor: '#86ACD8',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.white,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                      }}
+                    >
+                      <DocumentTextIcon width={20} height={20} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{ fontSize: 20, fontWeight: '700', color: COLORS.textDark }}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        ₹{stats.totalAmount.toLocaleString()}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>Total Claims</Text>
+                    </View>
+                  </View>
+                </LinearGradient>
+              </Animated.View>
+            )}
+
+            {/* Controls Bar */}
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: COLORS.white,
                 borderRadius: 16,
                 borderWidth: 1,
-                borderColor: '#e5e7eb',
-                overflow: 'hidden',
-              }}
-            >
-              {paginatedClaims.map((claim, index) => {
-                const statusColors = getStatusColor(claim.status);
-                return (
-                  <TouchableOpacity
-                    key={claim.id}
-                    onPress={() => router.push(`/member/claims/${claim.id}`)}
-                    style={{
-                      padding: 16,
-                      borderBottomWidth: index < paginatedClaims.length - 1 ? 1 : 0,
-                      borderBottomColor: '#f3f4f6',
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>{claim.claimNumber}</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>
-                        ₹{claim.amount.toLocaleString()}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>{claim.provider}</Text>
-                        <Text style={{ fontSize: 11, color: '#9ca3af' }}>
-                          {new Date(claim.date).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 4,
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          borderRadius: 999,
-                          backgroundColor: statusColors.background,
-                        }}
-                      >
-                        {getStatusIcon(claim.status)}
-                        <Text
-                          style={{ fontSize: 10, fontWeight: '600', color: statusColors.color, textTransform: 'capitalize' }}
-                        >
-                          {claim.status.replace('_', ' ')}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Animated.View
-            entering={FadeInDown.duration(300).delay(300)}
-            style={{
-              marginTop: 24,
-              gap: 16,
-            }}
-          >
-            <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '600', textAlign: 'center' }}>
-              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-              {Math.min(currentPage * itemsPerPage, filteredAndSortedClaims.length)} of {filteredAndSortedClaims.length}{' '}
-              claims
-            </Text>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                style={{
-                  padding: 8,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  opacity: currentPage === 1 ? 0.5 : 1,
-                }}
-              >
-                <ChevronLeftIcon width={16} height={16} color="#111827" />
-              </TouchableOpacity>
-
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page = i + Math.max(1, currentPage - 2);
-                return page <= totalPages ? (
-                  <TouchableOpacity
-                    key={page}
-                    onPress={() => setCurrentPage(page)}
-                    style={{
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 12,
-                      backgroundColor: currentPage === page ? '#0F5FDC' : 'transparent',
-                      borderWidth: 1,
-                      borderColor: currentPage === page ? '#0F5FDC' : '#e5e7eb',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: '600',
-                        color: currentPage === page ? '#FFFFFF' : '#374151',
-                      }}
-                    >
-                      {page}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null;
-              })}
-
-              <TouchableOpacity
-                onPress={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                style={{
-                  padding: 8,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  opacity: currentPage === totalPages ? 0.5 : 1,
-                }}
-              >
-                <ChevronRightIcon width={16} height={16} color="#111827" />
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Empty State */}
-        {!loading && filteredAndSortedClaims.length === 0 && (
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              borderRadius: 16,
-              padding: 48,
-              alignItems: 'center',
-              borderWidth: 2,
-              borderColor: '#86ACD8',
-            }}
-          >
-            <LinearGradient
-              colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                alignItems: 'center',
-                justifyContent: 'center',
+                borderColor: 'rgba(217, 217, 217, 0.48)',
                 marginBottom: 24,
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
-              }}
-            >
-              <DocumentTextIcon width={32} height={32} color="#0F5FDC" />
-            </LinearGradient>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 8 }}>No claims found</Text>
-            <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 24, maxWidth: 280 }}>
-              {claims.length === 0
-                ? 'You have not submitted any claims yet. Create your first claim to get started.'
-                : 'Try adjusting your search or filters to find claims.'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push('/member/claims/new')}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                borderRadius: 12,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
                 elevation: 3,
               }}
             >
-              <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+              <View style={{ padding: 16 }}>
+                {/* Search */}
+                <View style={{ position: 'relative', marginBottom: 12 }}>
+                  <View style={{ position: 'absolute', left: 12, top: 12, zIndex: 1 }}>
+                    <MagnifyingGlassIcon width={20} height={20} color={COLORS.textGray} />
+                  </View>
+                  <TextInput
+                    placeholder="Search claims..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    style={{
+                      width: '100%',
+                      paddingLeft: 40,
+                      paddingRight: 16,
+                      paddingVertical: 12,
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                      backgroundColor: COLORS.white,
+                      borderRadius: 12,
+                      fontSize: 14,
+                      color: COLORS.textDark,
+                    }}
+                    placeholderTextColor={COLORS.textGray}
+                  />
+                </View>
+
+                {/* Status Filter & View Toggle */}
+                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <View
+                      style={{
+                        borderWidth: 1,
+                        borderColor: COLORS.border,
+                        backgroundColor: COLORS.white,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.textDark, padding: 12 }}>
+                        Status: {statusFilter === 'all' ? 'All' : statusFilter.replace('_', ' ')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* View Mode Toggle */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      backgroundColor: COLORS.background,
+                      borderRadius: 12,
+                      padding: 4,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => setViewMode('table')}
+                      style={{
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor: viewMode === 'table' ? COLORS.white : 'transparent',
+                      }}
+                    >
+                      <TableCellsIcon width={16} height={16} color={viewMode === 'table' ? COLORS.primary : COLORS.textGray} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setViewMode('cards')}
+                      style={{
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor: viewMode === 'cards' ? COLORS.white : 'transparent',
+                      }}
+                    >
+                      <Squares2X2Icon width={16} height={16} color={viewMode === 'cards' ? COLORS.primary : COLORS.textGray} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Filters & Export Row */}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => setShowFilters(!showFilters)}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      paddingVertical: 10,
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <FunnelIcon width={16} height={16} color={COLORS.primary} />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>Filters</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={exportData}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      paddingVertical: 10,
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <ArrowDownTrayIcon width={16} height={16} color={COLORS.primary} />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>Export</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Advanced Filters */}
+              {showFilters && (
+                <View style={{ padding: 16, backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+                  <View style={{ gap: 12 }}>
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.textDark, marginBottom: 8 }}>
+                        Date Range
+                      </Text>
+                      <View
+                        style={{
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                          backgroundColor: COLORS.white,
+                          borderRadius: 12,
+                          padding: 12,
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, color: COLORS.textDark }}>All Time</Text>
+                      </View>
+                    </View>
+
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.textDark, marginBottom: 8 }}>Category</Text>
+                      <View
+                        style={{
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                          backgroundColor: COLORS.white,
+                          borderRadius: 12,
+                          padding: 12,
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, color: COLORS.textDark }}>All Categories</Text>
+                      </View>
+                    </View>
+
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.textDark, marginBottom: 8 }}>
+                        Amount Range
+                      </Text>
+                      <View
+                        style={{
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                          backgroundColor: COLORS.white,
+                          borderRadius: 12,
+                          padding: 12,
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, color: COLORS.textDark }}>All Amounts</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {/* Error State */}
+            {error && (
+              <View
                 style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  borderRadius: 12,
+                  backgroundColor: '#fef2f2',
+                  borderWidth: 1,
+                  borderColor: '#fecaca',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 24,
                 }}
-              />
-              <DocumentTextIcon width={20} height={20} color="#FFFFFF" />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                {claims.length === 0 ? 'Create First Claim' : 'New Claim'}
-              </Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        )}
-      </View>
-    </ScrollView>
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <XCircleIcon width={20} height={20} color="#dc2626" />
+                  <Text style={{ color: '#b91c1c', fontWeight: '600', flex: 1 }}>Failed to load claims: {error}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Content */}
+            {loading ? (
+              <LinearGradient
+                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 16,
+                  padding: 48,
+                  alignItems: 'center',
+                  borderWidth: 2,
+                  borderColor: '#86ACD8',
+                }}
+              >
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={{ color: COLORS.textDark, fontWeight: '600', marginTop: 16 }}>Loading claims...</Text>
+              </LinearGradient>
+            ) : viewMode === 'cards' ? (
+              // Card View - Compact design matching Health Benefits boxes
+              <Animated.View entering={FadeInDown.duration(300).delay(200)} style={{ gap: 12 }}>
+                {paginatedClaims.map((claim) => {
+                  const statusColors = getStatusColor(claim.status);
+                  return (
+                    <TouchableOpacity
+                      key={claim.id}
+                      onPress={() => router.push(`/member/claims/${claim.id}`)}
+                      activeOpacity={0.9}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 12,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      {/* Top Row: Claim Number, Type Badge, Status */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>{claim.claimNumber}</Text>
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 12,
+                              backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                            }}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.primary }}>{claim.type}</Text>
+                          </View>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 12,
+                            backgroundColor: statusColors.background,
+                          }}
+                        >
+                          {getStatusIcon(claim.status)}
+                          <Text style={{ fontSize: 10, fontWeight: '600', color: statusColors.color, textTransform: 'capitalize' }}>
+                            {claim.status.replace('_', ' ')}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Middle Row: Provider & Description */}
+                      <View style={{ marginBottom: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }} numberOfLines={1}>
+                          {claim.provider}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: COLORS.textGray, marginTop: 2 }} numberOfLines={1}>
+                          {claim.description}
+                        </Text>
+                      </View>
+
+                      {/* Bottom Row: Amount, Date, Documents */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            ₹{claim.amount.toLocaleString()}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                            {new Date(claim.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={{ fontSize: 10, color: COLORS.textGray }}>
+                            {claim.documents} doc{claim.documents !== 1 ? 's' : ''}
+                          </Text>
+                          <View
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: 10,
+                              backgroundColor: '#f6f6f6',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <ChevronRightIcon width={12} height={12} color={COLORS.textGray} />
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </Animated.View>
+            ) : (
+              // Table View (compact list matching wallet transactions)
+              <Animated.View entering={FadeInDown.duration(300).delay(200)}>
+                <View
+                  style={{
+                    backgroundColor: COLORS.white,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: 'rgba(217, 217, 217, 0.48)',
+                    overflow: 'hidden',
+                    shadowColor: '#000',
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
+                    elevation: 3,
+                  }}
+                >
+                  {paginatedClaims.map((claim, index) => {
+                    const statusColors = getStatusColor(claim.status);
+                    return (
+                      <TouchableOpacity
+                        key={claim.id}
+                        onPress={() => router.push(`/member/claims/${claim.id}`)}
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          borderBottomWidth: index < paginatedClaims.length - 1 ? 1 : 0,
+                          borderBottomColor: COLORS.border,
+                        }}
+                      >
+                        {/* Left - Claim Details */}
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary }}>{claim.claimNumber}</Text>
+                            <View
+                              style={{
+                                paddingHorizontal: 6,
+                                paddingVertical: 1,
+                                borderRadius: 8,
+                                backgroundColor: statusColors.background,
+                              }}
+                            >
+                              <Text style={{ fontSize: 9, fontWeight: '600', color: statusColors.color, textTransform: 'capitalize' }}>
+                                {claim.status.replace('_', ' ')}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }} numberOfLines={1}>
+                            {claim.provider}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                            {claim.type} • {claim.documents} doc{claim.documents !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+
+                        {/* Right - Amount & Date */}
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.textDark, marginBottom: 2 }}>
+                            ₹{claim.amount.toLocaleString()}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: COLORS.textLight }}>
+                            {new Date(claim.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Animated.View
+                entering={FadeInDown.duration(300).delay(300)}
+                style={{
+                  marginTop: 24,
+                  gap: 16,
+                }}
+              >
+                <Text style={{ fontSize: 14, color: COLORS.textGray, fontWeight: '600', textAlign: 'center' }}>
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                  {Math.min(currentPage * itemsPerPage, filteredAndSortedClaims.length)} of {filteredAndSortedClaims.length}{' '}
+                  claims
+                </Text>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: 8,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                      opacity: currentPage === 1 ? 0.5 : 1,
+                    }}
+                  >
+                    <ChevronLeftIcon width={16} height={16} color={COLORS.textDark} />
+                  </TouchableOpacity>
+
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = i + Math.max(1, currentPage - 2);
+                    return page <= totalPages ? (
+                      <TouchableOpacity
+                        key={page}
+                        onPress={() => setCurrentPage(page)}
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 8,
+                          borderRadius: 12,
+                          backgroundColor: currentPage === page ? COLORS.primary : 'transparent',
+                          borderWidth: 1,
+                          borderColor: currentPage === page ? COLORS.primary : COLORS.border,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: currentPage === page ? COLORS.white : COLORS.textDark,
+                          }}
+                        >
+                          {page}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null;
+                  })}
+
+                  <TouchableOpacity
+                    onPress={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: 8,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                      opacity: currentPage === totalPages ? 0.5 : 1,
+                    }}
+                  >
+                    <ChevronRightIcon width={16} height={16} color={COLORS.textDark} />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* Empty State */}
+            {!loading && filteredAndSortedClaims.length === 0 && (
+              <LinearGradient
+                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 16,
+                  padding: 48,
+                  alignItems: 'center',
+                  borderWidth: 2,
+                  borderColor: '#86ACD8',
+                }}
+              >
+                <View
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 24,
+                    backgroundColor: COLORS.white,
+                    borderWidth: 1,
+                    borderColor: 'rgba(217, 217, 217, 0.48)',
+                  }}
+                >
+                  <DocumentTextIcon width={40} height={40} color={COLORS.primary} />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.primary, marginBottom: 8 }}>No claims found</Text>
+                <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', marginBottom: 24, maxWidth: 280, lineHeight: 22 }}>
+                  {claims.length === 0
+                    ? 'You have not submitted any claims yet. Create your first claim to get started.'
+                    : 'Try adjusting your search or filters to find claims.'}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/member/claims/new')}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    backgroundColor: COLORS.primary,
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <DocumentTextIcon width={20} height={20} color={COLORS.white} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.white }}>
+                    {claims.length === 0 ? 'Create First Claim' : 'New Claim'}
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
