@@ -342,6 +342,9 @@ export default function WalletScreen() {
   const [tempDateTo, setTempDateTo] = useState<string>('');
   const [tempServiceTypes, setTempServiceTypes] = useState<string[]>([]);
 
+  // Pagination state
+  const [visibleCount, setVisibleCount] = useState(5);
+
   // Sync selectedWalletMember with activeMember
   useEffect(() => {
     if (activeMember) {
@@ -374,10 +377,18 @@ export default function WalletScreen() {
     return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   };
 
-  // Group transactions by month and calculate totals
+  // Get visible transactions (paginated)
+  const visibleTransactions = useMemo(() => {
+    return transactions.slice(0, visibleCount);
+  }, [transactions, visibleCount]);
+
+  // Check if there are more transactions to load
+  const hasMoreTransactions = transactions.length > visibleCount;
+
+  // Group visible transactions by month and calculate totals
   const groupedTransactions = useMemo(() => {
     const groups: { [key: string]: { transactions: Transaction[]; totalSpent: number } } = {};
-    transactions.forEach((t) => {
+    visibleTransactions.forEach((t) => {
       const monthKey = formatMonthYear(t.createdAt);
       if (!groups[monthKey]) {
         groups[monthKey] = { transactions: [], totalSpent: 0 };
@@ -388,7 +399,12 @@ export default function WalletScreen() {
       }
     });
     return groups;
-  }, [transactions]);
+  }, [visibleTransactions]);
+
+  // Load more transactions
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 5);
+  };
 
   const handleMemberSelect = (member: any) => {
     setSelectedWalletMember(member);
@@ -489,6 +505,7 @@ export default function WalletScreen() {
 
   const fetchWalletDataForUser = async (userId: string) => {
     setLoading(true);
+    setVisibleCount(5); // Reset pagination when fetching new data
     try {
       const params: any = { userId, limit: 100 };
       if (selectedTypes.length > 0) params.type = selectedTypes.join(',');
@@ -889,6 +906,26 @@ export default function WalletScreen() {
                 </View>
               </View>
             ))
+          )}
+
+          {/* Load More Button */}
+          {hasMoreTransactions && (
+            <TouchableOpacity
+              onPress={handleLoadMore}
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: 'center',
+                marginTop: 8,
+                borderWidth: 1,
+                borderColor: COLORS.border,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                Load More ({transactions.length - visibleCount} remaining)
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>
