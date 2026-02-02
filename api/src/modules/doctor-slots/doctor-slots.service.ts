@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DoctorSlot, DoctorSlotDocument } from './schemas/doctor-slot.schema';
@@ -6,14 +6,19 @@ import { CreateSlotConfigDto } from './dto/create-slot-config.dto';
 import { UpdateSlotConfigDto } from './dto/update-slot-config.dto';
 import { CounterService } from '../counters/counter.service';
 import { DoctorCalendarService } from './doctor-calendar.service';
+import { DoctorClinicAssignmentsService } from '../doctor-clinic-assignments/doctor-clinic-assignments.service';
 
 @Injectable()
 export class DoctorSlotsService {
+  private readonly logger = new Logger(DoctorSlotsService.name);
+
   constructor(
     @InjectModel(DoctorSlot.name) private slotModel: Model<DoctorSlotDocument>,
     private readonly counterService: CounterService,
     @Inject(forwardRef(() => DoctorCalendarService))
     private readonly calendarService: DoctorCalendarService,
+    @Inject(forwardRef(() => DoctorClinicAssignmentsService))
+    private readonly assignmentsService: DoctorClinicAssignmentsService,
   ) {}
 
   async create(createSlotDto: CreateSlotConfigDto): Promise<DoctorSlot> {
@@ -27,7 +32,24 @@ export class DoctorSlotsService {
     };
 
     const slot = new this.slotModel(slotData);
-    return slot.save();
+    const savedSlot = await slot.save();
+
+    // Auto-assign clinic to doctor if the schedule is active and has a clinicId
+    if (savedSlot.isActive && savedSlot.clinicId && savedSlot.consultationType === 'IN_CLINIC') {
+      try {
+        await this.assignmentsService.assignClinic(
+          savedSlot.doctorId,
+          savedSlot.clinicId,
+          'SYSTEM_AUTO_ASSIGN'
+        );
+        this.logger.log(`Auto-assigned clinic ${savedSlot.clinicId} to doctor ${savedSlot.doctorId} after schedule creation`);
+      } catch (error) {
+        // If clinic is already assigned or assignment fails, just log it (don't fail schedule creation)
+        this.logger.warn(`Could not auto-assign clinic ${savedSlot.clinicId} to doctor ${savedSlot.doctorId}: ${error.message}`);
+      }
+    }
+
+    return savedSlot;
   }
 
   async findAll(query?: any): Promise<DoctorSlot[]> {
@@ -93,7 +115,24 @@ export class DoctorSlotsService {
     }
 
     slot.isActive = true;
-    return slot.save();
+    const savedSlot = await slot.save();
+
+    // Auto-assign clinic to doctor when activating a schedule
+    if (savedSlot.clinicId && savedSlot.consultationType === 'IN_CLINIC') {
+      try {
+        await this.assignmentsService.assignClinic(
+          savedSlot.doctorId,
+          savedSlot.clinicId,
+          'SYSTEM_AUTO_ASSIGN'
+        );
+        this.logger.log(`Auto-assigned clinic ${savedSlot.clinicId} to doctor ${savedSlot.doctorId} after schedule activation`);
+      } catch (error) {
+        // If clinic is already assigned, just log it
+        this.logger.warn(`Could not auto-assign clinic ${savedSlot.clinicId} to doctor ${savedSlot.doctorId}: ${error.message}`);
+      }
+    }
+
+    return savedSlot;
   }
 
   async deactivate(slotId: string): Promise<DoctorSlot> {
@@ -102,8 +141,32 @@ export class DoctorSlotsService {
       throw new NotFoundException(`Slot with ID ${slotId} not found`);
     }
 
+    const doctorId = slot.doctorId;
+    const clinicId = slot.clinicId;
+
     slot.isActive = false;
-    return slot.save();
+    const savedSlot = await slot.save();
+
+    // Auto-unassign clinic if no active schedules remain for this doctor-clinic combination
+    if (clinicId && savedSlot.consultationType === 'IN_CLINIC') {
+      const remainingActiveSlots = await this.slotModel.countDocuments({
+        doctorId,
+        clinicId,
+        isActive: true,
+      });
+
+      if (remainingActiveSlots === 0) {
+        try {
+          await this.assignmentsService.unassignClinic(doctorId, clinicId, 'SYSTEM_AUTO_UNASSIGN');
+          this.logger.log(`Auto-unassigned clinic ${clinicId} from doctor ${doctorId} as no active schedules remain`);
+        } catch (error) {
+          // If unassignment fails, just log it
+          this.logger.warn(`Could not auto-unassign clinic ${clinicId} from doctor ${doctorId}: ${error.message}`);
+        }
+      }
+    }
+
+    return savedSlot;
   }
 
   async remove(slotId: string): Promise<void> {

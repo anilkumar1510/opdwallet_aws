@@ -82,4 +82,9 @@ export class CounterService {
     const seq = await this.getNextSequence('consultation-note');
     return `NOTE${String(seq).padStart(6, '0')}`;
   }
+
+  async generateAssignmentId(): Promise<string> {
+    const seq = await this.getNextSequence('doctor-clinic-assignment');
+    return `ASSIGN${String(seq).padStart(6, '0')}`;
+  }
 }

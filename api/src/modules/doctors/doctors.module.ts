@@ -19,6 +19,7 @@ import { ConsultationNote, ConsultationNoteSchema } from './schemas/consultation
 import { CounterModule } from '../counters/counter.module';
 import { PrescriptionsModule } from './prescriptions.module';
 import { LocationModule } from '../location/location.module';
+import { DoctorClinicAssignmentsModule } from '../doctor-clinic-assignments/doctor-clinic-assignments.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { LocationModule } from '../location/location.module';
     CounterModule, // Added for proper ID generation
     PrescriptionsModule, // Added for DoctorAuthService
     LocationModule, // Added for location-based filtering
+    DoctorClinicAssignmentsModule, // Added for clinic assignments
   ],
   controllers: [DoctorsController, DoctorAppointmentsController, DoctorAuthController, ConsultationNoteController],
   providers: [DoctorsService, DoctorAuthService, HealthRecordsService, ConsultationNoteService],

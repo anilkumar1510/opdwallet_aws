@@ -38,6 +38,7 @@ import { VideoConsultationModule } from './modules/video-consultation/video-cons
 import { PaymentModule } from './modules/payments/payment.module';
 import { TransactionSummaryModule } from './modules/transactions/transaction-summary.module';
 import { AhcModule } from './modules/ahc/ahc.module';
+import { DoctorClinicAssignmentsModule } from './modules/doctor-clinic-assignments/doctor-clinic-assignments.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -132,6 +133,7 @@ import configuration from './config/configuration';
     PaymentModule,
     TransactionSummaryModule,
     AhcModule,
+    DoctorClinicAssignmentsModule,
   ],
 })
 export class AppModule {}

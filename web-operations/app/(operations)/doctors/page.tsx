@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { useSpecialties } from '@/lib/providers/specialties-provider'
 import { usePermissions } from '@/hooks/usePermissions'
+import ManageClinicsModal from '@/components/operations/doctors/ManageClinicsModal'
 
 export default function DoctorsPage() {
   const router = useRouter()
@@ -23,6 +24,8 @@ export default function DoctorsPage() {
     total: 0,
     pages: 0,
   })
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null)
+  const [showManageClinicsModal, setShowManageClinicsModal] = useState(false)
 
   // PERFORMANCE: Debounce search to prevent API spam
   const debouncedFilters = useDebounce(filters, 300)
@@ -178,6 +181,15 @@ export default function DoctorsPage() {
                   </button>
                   <button
                     onClick={() => {
+                      setSelectedDoctor(doctor)
+                      setShowManageClinicsModal(true)
+                    }}
+                    className="btn-secondary text-sm"
+                  >
+                    Manage Clinics
+                  </button>
+                  <button
+                    onClick={() => {
                       console.log('[ManageSchedules] Navigating to schedules for doctor:', doctor.doctorId)
                       router.push(`/doctors/${doctor.doctorId}/schedules`)
                     }}
@@ -257,6 +269,22 @@ export default function DoctorsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Manage Clinics Modal */}
+      {selectedDoctor && (
+        <ManageClinicsModal
+          isOpen={showManageClinicsModal}
+          onClose={() => {
+            setShowManageClinicsModal(false)
+            setSelectedDoctor(null)
+          }}
+          doctorId={selectedDoctor.doctorId}
+          doctorName={selectedDoctor.name}
+          onSuccess={() => {
+            fetchDoctors()
+          }}
+        />
       )}
     </div>
   )

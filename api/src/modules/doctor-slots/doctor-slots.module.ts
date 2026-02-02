@@ -7,6 +7,7 @@ import { DoctorCalendarController } from './doctor-calendar.controller';
 import { DoctorSlot, DoctorSlotSchema } from './schemas/doctor-slot.schema';
 import { DoctorUnavailability, DoctorUnavailabilitySchema } from './schemas/doctor-unavailability.schema';
 import { CounterModule } from '../counters/counter.module';
+import { DoctorClinicAssignmentsModule } from '../doctor-clinic-assignments/doctor-clinic-assignments.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CounterModule } from '../counters/counter.module';
       { name: DoctorUnavailability.name, schema: DoctorUnavailabilitySchema },
     ]),
     CounterModule,
+    forwardRef(() => DoctorClinicAssignmentsModule),
   ],
   controllers: [DoctorSlotsController, DoctorCalendarController],
   providers: [DoctorSlotsService, DoctorCalendarService],

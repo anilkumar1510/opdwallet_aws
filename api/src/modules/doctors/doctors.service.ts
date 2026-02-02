@@ -10,6 +10,7 @@ import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { CounterService } from '../counters/counter.service';
 import { LocationService } from '../location/location.service';
+import { DoctorClinicAssignmentsService } from '../doctor-clinic-assignments/doctor-clinic-assignments.service';
 
 @Injectable()
 export class DoctorsService {
@@ -22,6 +23,7 @@ export class DoctorsService {
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
     private counterService: CounterService,
     private locationService: LocationService,
+    private doctorClinicAssignmentsService: DoctorClinicAssignmentsService,
   ) {}
 
   async findAll(query: QueryDoctorsDto): Promise<any> {
@@ -304,7 +306,27 @@ export class DoctorsService {
     };
 
     const doctor = new this.doctorModel(doctorData);
-    return doctor.save();
+    await doctor.save();
+
+    // AUTO-CREATE JUNCTION RECORDS: For each clinic in createDoctorDto.clinics
+    if (createDoctorDto.clinics && createDoctorDto.clinics.length > 0) {
+      try {
+        for (const clinic of createDoctorDto.clinics) {
+          await this.doctorClinicAssignmentsService.assignClinic(
+            doctorId,
+            clinic.clinicId,
+            'SYSTEM_AUTO_ASSIGN'
+          );
+        }
+        this.logger.log(`Auto-assigned ${createDoctorDto.clinics.length} clinics to doctor ${doctorId}`);
+      } catch (error) {
+        this.logger.error(`Failed to auto-assign clinics for doctor ${doctorId}:`, error);
+        // Don't fail doctor creation if junction record creation fails
+        // Junction records can be created later via "Manage Clinics" UI
+      }
+    }
+
+    return doctor;
   }
 
   async update(doctorId: string, updateDoctorDto: UpdateDoctorDto): Promise<Doctor> {

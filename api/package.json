@@ -20,6 +20,7 @@
     "seed:symptoms": "ts-node -r tsconfig-paths/register scripts/seed/seed-symptoms.ts",
     "seed:lab": "ts-node -r tsconfig-paths/register scripts/seed/seed-lab.ts",
     "admin:update-password": "ts-node -r tsconfig-paths/register scripts/utilities/update-admin-password.ts",
+    "migrate:doctor-clinics": "ts-node -r tsconfig-paths/register src/modules/doctor-clinic-assignments/migration/migrate-doctor-clinics.ts",
     "db:init": "node scripts/init/init-mongo.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

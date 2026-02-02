@@ -62,7 +62,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | GET | /doctors | Get all doctors with filters |
 | GET | /doctors/:doctorId | Get doctor details |
 | GET | /doctors/:doctorId/slots | Get doctor slots by clinic/date |
-| POST | /doctors | Create new doctor |
+| POST | /doctors | Create new doctor (auto-assigns primary clinic) |
 | POST | /doctors/:doctorId/photo | Upload doctor photo |
 | PUT | /doctors/:doctorId | Update doctor |
 | PATCH | /doctors/:doctorId/activate | Activate doctor |
@@ -71,18 +71,58 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
+## Doctor-Clinic Assignments
+
+**Junction table for managing which clinics are assigned to each doctor. Schedules can only be created for assigned clinics.**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /doctor-clinic-assignments/doctor/:doctorId | Get all assigned clinics for a doctor (active only) |
+| POST | /doctor-clinic-assignments | Assign a clinic to a doctor |
+| DELETE | /doctor-clinic-assignments/:doctorId/:clinicId | Unassign a clinic from a doctor (blocked if active schedules exist) |
+| PUT | /doctor-clinic-assignments/doctor/:doctorId/sync | Bulk sync clinic assignments (replaces all assignments) |
+
+**Request Body Examples:**
+
+```json
+// POST /doctor-clinic-assignments
+{
+  "doctorId": "DOC10001",
+  "clinicId": "CLN00001",
+  "assignedBy": "USR-2024-0001" // optional
+}
+
+// PUT /doctor-clinic-assignments/doctor/:doctorId/sync
+{
+  "clinicIds": ["CLN00001", "CLN00002", "CLN00003"],
+  "assignedBy": "USR-2024-0001" // optional
+}
+```
+
+**Automatic Assignment Rules:**
+- **On Doctor Creation**: Primary clinic is automatically assigned
+- **On Schedule Activation**: Clinic is automatically assigned if not already assigned
+- **On Schedule Deactivation**: Clinic is automatically unassigned if no active schedules remain
+
+**Validation:**
+- Cannot unassign clinic if doctor has active schedules at that clinic
+- Doctor and clinic must exist and be active
+- Duplicate assignments are prevented by unique index
+
+---
+
 ## Doctor Slots
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /doctor-slots | Create slot configuration |
+| POST | /doctor-slots | Create slot configuration (auto-assigns clinic to doctor if active) |
 | GET | /doctor-slots | Get all slot configurations |
 | GET | /doctor-slots/clinic/:clinicId | Get slots by clinic |
 | GET | /doctor-slots/:slotId | Get slot configuration by ID |
 | GET | /doctor-slots/:slotId/generate/:date | Generate time slots for date |
 | PUT | /doctor-slots/:slotId | Update slot configuration |
-| PATCH | /doctor-slots/:slotId/activate | Activate slot configuration |
-| PATCH | /doctor-slots/:slotId/deactivate | Deactivate slot configuration |
+| PATCH | /doctor-slots/:slotId/activate | Activate slot configuration (auto-assigns clinic to doctor) |
+| PATCH | /doctor-slots/:slotId/deactivate | Deactivate slot configuration (auto-unassigns clinic if last active schedule) |
 | PATCH | /doctor-slots/:slotId/block-date | Block date for slots |
 | PATCH | /doctor-slots/:slotId/unblock-date | Unblock date for slots |
 | DELETE | /doctor-slots/:slotId | Delete slot configuration |

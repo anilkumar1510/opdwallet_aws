@@ -43,34 +43,20 @@ export default function DoctorSchedulesPage() {
 
   const fetchClinics = async () => {
     try {
-      console.log('=== CLINICS DEBUG: Starting fetchClinics ===')
-      const response = await apiFetch('/api/clinics?isActive=true')
-      console.log('=== CLINICS DEBUG: Response status:', response.status)
-      console.log('=== CLINICS DEBUG: Response ok:', response.ok)
+      // Fetch assigned clinics for this doctor
+      const response = await apiFetch(`/api/doctor-clinic-assignments/doctor/${doctorId}`)
 
       if (response.ok) {
         const result = await response.json()
-        console.log('=== CLINICS DEBUG: Raw API result:', result)
-        console.log('=== CLINICS DEBUG: Type of result:', typeof result)
-        console.log('=== CLINICS DEBUG: Is result an array?', Array.isArray(result))
-        console.log('=== CLINICS DEBUG: result.data exists?', result?.data !== undefined)
-        console.log('=== CLINICS DEBUG: result.data value:', result?.data)
-        console.log('=== CLINICS DEBUG: Is result.data an array?', Array.isArray(result?.data))
-
-        // API returns { data: [...], page, limit, total, pages }
+        // API returns { success, data: Clinic[], count }
         const clinicsArray = Array.isArray(result.data) ? result.data : []
-        console.log('=== CLINICS DEBUG: Setting clinics to:', clinicsArray)
-        console.log('=== CLINICS DEBUG: Clinics array length:', clinicsArray.length)
         setClinics(clinicsArray)
       } else {
-        console.error('=== CLINICS DEBUG: Response not OK, status:', response.status)
-        const errorText = await response.text()
-        console.error('=== CLINICS DEBUG: Error response:', errorText)
+        console.error('Failed to fetch assigned clinics, status:', response.status)
         setClinics([])
       }
     } catch (error) {
-      console.error('=== CLINICS DEBUG: Exception caught:', error)
-      console.error('=== CLINICS DEBUG: Error stack:', error instanceof Error ? error.stack : 'No stack')
+      console.error('Failed to fetch assigned clinics:', error)
       setClinics([])
     }
   }
@@ -187,30 +173,24 @@ export default function DoctorSchedulesPage() {
                 value={formData.clinicId}
                 onChange={(e) => setFormData({ ...formData, clinicId: e.target.value })}
                 className="input w-full"
+                disabled={formData.consultationType === 'IN_CLINIC' && clinics.length === 0}
               >
-                <option value="">Select Clinic</option>
-                {(() => {
-                  console.log('=== CLINICS DEBUG: About to render clinics dropdown ===')
-                  console.log('=== CLINICS DEBUG: clinics value:', clinics)
-                  console.log('=== CLINICS DEBUG: Type of clinics:', typeof clinics)
-                  console.log('=== CLINICS DEBUG: Is clinics an array?', Array.isArray(clinics))
-                  console.log('=== CLINICS DEBUG: clinics.length:', clinics?.length)
-
-                  if (!Array.isArray(clinics)) {
-                    console.error('=== CLINICS DEBUG: ERROR! clinics is NOT an array!')
-                    return null
-                  }
-
-                  return clinics.map((clinic) => {
-                    console.log('=== CLINICS DEBUG: Mapping clinic:', clinic)
-                    return (
-                      <option key={clinic.clinicId} value={clinic.clinicId}>
-                        {clinic.name} - {clinic.address?.city}
-                      </option>
-                    )
-                  })
-                })()}
+                <option value="">
+                  {clinics.length === 0 && formData.consultationType === 'IN_CLINIC'
+                    ? 'No clinics assigned'
+                    : 'Select Clinic'}
+                </option>
+                {Array.isArray(clinics) && clinics.map((clinic) => (
+                  <option key={clinic.clinicId} value={clinic.clinicId}>
+                    {clinic.name} - {clinic.address?.city || 'N/A'}
+                  </option>
+                ))}
               </select>
+              {formData.consultationType === 'IN_CLINIC' && clinics.length === 0 && (
+                <p className="text-sm text-red-600 mt-1">
+                  No clinics assigned to this doctor. Please use 'Manage Clinics' to assign clinics first.
+                </p>
+              )}
             </div>
 
             <div>
@@ -307,7 +287,16 @@ export default function DoctorSchedulesPage() {
           </div>
 
           <div className="flex gap-4">
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submitting || (formData.consultationType === 'IN_CLINIC' && clinics.length === 0)}
+              title={
+                formData.consultationType === 'IN_CLINIC' && clinics.length === 0
+                  ? 'Please assign clinics to this doctor first'
+                  : ''
+              }
+            >
               {submitting ? 'Creating...' : 'Create Schedule'}
             </button>
           </div>

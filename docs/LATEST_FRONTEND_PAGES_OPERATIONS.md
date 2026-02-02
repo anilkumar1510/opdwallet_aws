@@ -50,10 +50,30 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 | Path | Description |
 |------|-------------|
-| /operations/doctors | Manage doctor profiles with activation/deactivation |
+| /operations/doctors | Manage doctor profiles with activation/deactivation and clinic assignments |
 | /operations/doctors/new | Create new doctor profile with specialization |
 | /operations/doctors/[id] | Edit existing doctor profile details |
-| /operations/doctors/[id]/schedules | Manage doctor appointment schedules and slot configurations |
+| /operations/doctors/[id]/schedules | Manage doctor appointment schedules and slot configurations (filtered by assigned clinics) |
+
+**New Features:**
+- **Manage Clinics Button**: Available on `/operations/doctors` page for each doctor
+  - Opens `ManageClinicsModal` component
+  - Search and filter clinics by name, city, or address
+  - Bulk select/deselect clinics with checkbox interface
+  - Shows "X of Y clinics selected" counter
+  - Toast notifications for success/error
+  - Prevents unassignment of clinics with active schedules (shows error message)
+
+- **Schedule Form Filtering**: `/operations/doctors/[id]/schedules`
+  - Clinic dropdown now shows **only assigned clinics** (not all clinics)
+  - Empty state handling: Shows warning message if no clinics assigned
+  - Disabled state: Submit button and clinic dropdown disabled when no clinics available for IN_CLINIC consultations
+  - Consistent filtering for both IN_CLINIC and ONLINE consultation types
+
+**Automatic Assignment Behavior:**
+- Creating a doctor with a primary clinic automatically assigns that clinic
+- Activating a schedule automatically assigns the clinic to the doctor
+- Deactivating the last schedule at a clinic automatically unassigns that clinic
 
 ---
 
