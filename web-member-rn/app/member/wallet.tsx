@@ -457,77 +457,75 @@ export default function WalletScreen() {
                 <TouchableOpacity
                   key={category.categoryCode}
                   onPress={() => handleCategoryPress(category.categoryCode)}
-                  activeOpacity={0.7}
-                  style={{ width: '48%' }}
+                  activeOpacity={0.9}
+                  style={{
+                    width: '48%',
+                    backgroundColor: '#ffffff',
+                    borderRadius: 16,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: 'rgba(217, 217, 217, 0.48)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
+                    elevation: 3,
+                  }}
                 >
-                  <LinearGradient
-                    colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  {/* Category Name */}
+                  <Text style={{ fontSize: 14, color: '#034da2', marginBottom: 8 }} numberOfLines={2}>
+                    {category.name}
+                  </Text>
+
+                  {/* Balance Info - Format: Y Left / X */}
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 10 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#0a3f93' }}>
+                      ₹{category.available.toLocaleString('en-IN')}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: 'rgba(0, 0, 0, 0.4)', marginLeft: 4 }}>
+                      Left
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#444444' }}>/</Text>
+                    <Text style={{ fontSize: 11, color: '#444444' }}>
+                      {category.total.toLocaleString('en-IN')}
+                    </Text>
+                  </View>
+
+                  {/* Used Amount Row with Arrow */}
+                  <View
                     style={{
-                      borderRadius: 16,
-                      padding: 12,
-                      borderWidth: 2,
-                      borderColor: '#86ACD8',
-                      minHeight: 160,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: '#f6f6f6',
+                      borderRadius: 8,
+                      paddingVertical: 8,
+                      paddingHorizontal: 10,
                     }}
                   >
-                    {/* Category Icon & Name */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                      <View
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          backgroundColor: COLORS.white,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          marginRight: 8,
-                        }}
-                      >
-                        {getCategoryIcon(category.categoryCode, category.name, 16)}
-                      </View>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textDark, flex: 1 }} numberOfLines={2}>
-                        {category.name}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <WalletIcon size={12} color="#0a3f93" />
+                      <Text style={{ fontSize: 10, color: '#666666', marginLeft: 4 }}>
+                        Used
                       </Text>
-                    </View>
-
-                    {/* Balance Info - Format: Y Left / X */}
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 10 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }}>
-                        ₹{category.available.toLocaleString('en-IN')}
-                      </Text>
-                      <Text style={{ fontSize: 10, color: COLORS.textGray }}>
-                        {' '}Left
-                      </Text>
-                      <Text style={{ fontSize: 10, color: COLORS.textGray }}>
-                        {' '}/ {category.total.toLocaleString('en-IN')}
-                      </Text>
-                    </View>
-
-                    {/* Total Money Used Bar */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        backgroundColor: COLORS.white,
-                        borderRadius: 6,
-                        paddingVertical: 8,
-                        paddingHorizontal: 8,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                        <WalletIcon size={12} color={COLORS.orange} />
-                        <Text style={{ fontSize: 9, color: COLORS.textGray, marginLeft: 4 }}>
-                          Used
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.orange }}>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#0a3f93', marginLeft: 4 }}>
                         ₹{category.consumed.toLocaleString('en-IN')}
                       </Text>
                     </View>
-                  </LinearGradient>
+                    {/* Arrow Button */}
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        backgroundColor: '#ffffff',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <ChevronRightIcon width={12} height={12} color="#545454" />
+                    </View>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
