@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,33 +8,161 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
 import {
-  ChevronLeftIcon,
-  BanknotesIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon,
   ChevronDownIcon,
   CheckIcon,
-  SparklesIcon,
-  FunnelIcon,
-  CalendarIcon,
-  TagIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  BeakerIcon,
-  BuildingStorefrontIcon,
-  EyeIcon,
-  HeartIcon,
+  XCircleIcon,
 } from '../../src/components/icons/InlineSVGs';
 import apiClient from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
-import { fetchWalletBalance, WalletBalance as APIWalletBalance, WalletCategory } from '../../src/lib/api/wallet';
+import { fetchWalletBalance } from '../../src/lib/api/wallet';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  orange: '#F5821E',
+  textDark: '#303030',
+  textGray: '#545454',
+  textLight: '#6b7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  debit: '#FD524F',
+  credit: '#40B15C',
+};
+
+// ============================================================================
+// SVG ICONS - Matching Home Page Style
+// ============================================================================
+
+// Wallet Icon (matches home page)
+function WalletIcon({ size = 18, color = COLORS.primary }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 7H3C2.45 7 2 7.45 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 7.45 21.55 7 21 7ZM20 18H4V9H20V18ZM17 14C17 13.45 17.45 13 18 13C18.55 13 19 13.45 19 14C19 14.55 18.55 15 18 15C17.45 15 17 14.55 17 14Z"
+        fill={color}
+      />
+      <Path d="M20 4H4C2.9 4 2 4.9 2 6V7H22V6C22 4.9 21.1 4 20 4Z" fill={color} />
+    </Svg>
+  );
+}
+
+// Back Arrow Icon
+function BackArrowIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 18L9 12L15 6"
+        stroke={COLORS.primary}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Transaction Type Icon - Blue stroke with orange accent (matching home page style)
+function TransactionTypeIcon({ color = COLORS.primary }: { color?: string }) {
+  const isWhite = color === COLORS.white || color === '#FFFFFF';
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      {/* Arrows up and down - blue stroke */}
+      <Path
+        d="M4 10L4 3M4 3L1.5 5.5M4 3L6.5 5.5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 6L12 13M12 13L9.5 10.5M12 13L14.5 10.5"
+        stroke={isWhite ? color : COLORS.orange}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Category Icon (grid) - Blue stroke with orange filled square
+function CategoryIcon({ color = COLORS.primary }: { color?: string }) {
+  const isWhite = color === COLORS.white || color === '#FFFFFF';
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <Rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke={color} strokeWidth={1.5} />
+      <Rect x="9.5" y="1.5" width="5" height="5" rx="1" stroke={color} strokeWidth={1.5} />
+      <Rect x="1.5" y="9.5" width="5" height="5" rx="1" stroke={color} strokeWidth={1.5} />
+      {/* Orange filled square */}
+      <Rect x="9.5" y="9.5" width="5" height="5" rx="1" fill={isWhite ? color : COLORS.orange} />
+    </Svg>
+  );
+}
+
+// Service Icon - Clock/time based (matching home page style)
+function ServiceIcon({ color = COLORS.primary }: { color?: string }) {
+  const isWhite = color === COLORS.white || color === '#FFFFFF';
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      {/* Circle outline - blue stroke */}
+      <Circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth={1.5} />
+      {/* Clock hands - orange accent */}
+      <Path
+        d="M8 4.5V8L10.5 10.5"
+        stroke={isWhite ? color : COLORS.orange}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Date Icon (calendar) - Blue stroke with orange accent
+function DateIcon({ color = COLORS.primary }: { color?: string }) {
+  const isWhite = color === COLORS.white || color === '#FFFFFF';
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      {/* Calendar outline - blue stroke */}
+      <Rect x="1.5" y="3" width="13" height="11" rx="1.5" stroke={color} strokeWidth={1.5} />
+      <Path d="M1.5 6.5H14.5" stroke={color} strokeWidth={1.5} />
+      <Path d="M5 1V4" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M11 1V4" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      {/* Orange checkmark */}
+      <Path
+        d="M5 9.5L7 11.5L11 8.5"
+        stroke={isWhite ? color : COLORS.orange}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Small Chevron Down
+function SmallChevronDown({ color = COLORS.textGray }: { color?: string }) {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+      <Path
+        d="M3 4.5L6 7.5L9 4.5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -68,60 +196,10 @@ interface Transaction {
 }
 
 // ============================================================================
-// ICON MAPPING
+// FILTER DROPDOWN COMPONENT
 // ============================================================================
 
-const getCategoryIcon = (categoryCode: string, categoryName?: string) => {
-  const code = categoryCode?.toUpperCase() || '';
-  const name = categoryName?.toUpperCase() || '';
-  const combined = `${code} ${name}`;
-
-  // Lab/Diagnostics
-  if (
-    code === 'CAT003' ||
-    code === 'DIAGNOSTICS' ||
-    code === 'LAB' ||
-    combined.includes('LABORATORY') ||
-    combined.includes('DIAGNOSTIC') ||
-    combined.includes('LAB TEST') ||
-    combined.includes('PATHOLOGY') ||
-    combined.includes('RADIOLOGY')
-  ) {
-    return BeakerIcon;
-  }
-
-  // Pharmacy/Medicine
-  if (
-    code === 'CAT002' ||
-    code === 'PHARMACY' ||
-    code === 'MEDICINE' ||
-    combined.includes('PHARMACY') ||
-    combined.includes('MEDICINE')
-  ) {
-    return BuildingStorefrontIcon;
-  }
-
-  // Dental/Vision
-  if (
-    code === 'CAT004' ||
-    code === 'DENTAL' ||
-    code === 'VISION' ||
-    combined.includes('DENTAL') ||
-    combined.includes('VISION') ||
-    combined.includes('EYE CARE')
-  ) {
-    return EyeIcon;
-  }
-
-  // Default
-  return HeartIcon;
-};
-
-// ============================================================================
-// FILTER POPUP COMPONENT
-// ============================================================================
-
-interface FilterPopupProps {
+interface FilterDropdownProps {
   visible: boolean;
   title: string;
   onClose: () => void;
@@ -129,7 +207,7 @@ interface FilterPopupProps {
   children: React.ReactNode;
 }
 
-const FilterPopup: React.FC<FilterPopupProps> = ({
+const FilterDropdown: React.FC<FilterDropdownProps> = ({
   visible,
   title,
   onClose,
@@ -141,10 +219,10 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
       <TouchableOpacity
         style={{
           flex: 1,
-          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 16,
+          padding: 20,
         }}
         activeOpacity={1}
         onPress={onClose}
@@ -152,78 +230,73 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
         <TouchableOpacity
           activeOpacity={1}
           style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            borderWidth: 2,
-            borderColor: '#86ACD8',
-            minWidth: 280,
+            backgroundColor: COLORS.white,
+            borderRadius: 12,
+            minWidth: 300,
             maxWidth: 400,
             width: '100%',
-            maxHeight: '80%',
+            maxHeight: '70%',
           }}
           onPress={(e) => e.stopPropagation()}
         >
-          {/* Header */}
           <View
             style={{
               paddingHorizontal: 16,
-              paddingVertical: 12,
+              paddingVertical: 14,
               borderBottomWidth: 1,
-              borderBottomColor: '#e5e7eb',
+              borderBottomColor: COLORS.border,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark }}>
               {title}
             </Text>
+            <TouchableOpacity onPress={onClose}>
+              <XCircleIcon width={20} height={20} color={COLORS.textGray} />
+            </TouchableOpacity>
           </View>
 
-          {/* Content */}
-          <ScrollView
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 16,
-              maxHeight: 400,
-            }}
-          >
+          <ScrollView style={{ paddingHorizontal: 16, paddingVertical: 12, maxHeight: 300 }}>
             {children}
           </ScrollView>
 
-          {/* Actions */}
           <View
             style={{
               paddingHorizontal: 16,
               paddingVertical: 12,
               borderTopWidth: 1,
-              borderTopColor: '#e5e7eb',
+              borderTopColor: COLORS.border,
               flexDirection: 'row',
               justifyContent: 'flex-end',
-              gap: 8,
+              gap: 10,
             }}
           >
             <TouchableOpacity
               onPress={onClose}
               style={{
-                paddingHorizontal: 20,
+                paddingHorizontal: 16,
                 paddingVertical: 8,
-                borderRadius: 8,
+                borderRadius: 6,
                 backgroundColor: '#f3f4f6',
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#6b7280' }}>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textGray }}>
                 Cancel
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onConfirm}
               style={{
-                paddingHorizontal: 20,
+                paddingHorizontal: 16,
                 paddingVertical: 8,
-                borderRadius: 8,
-                backgroundColor: '#0F5FDC',
+                borderRadius: 6,
+                backgroundColor: COLORS.primary,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                Confirm
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.white }}>
+                Apply
               </Text>
             </TouchableOpacity>
           </View>
@@ -242,7 +315,6 @@ export default function WalletScreen() {
   const { familyMembers, activeMember, viewingUserId, loggedInUser, canSwitchProfiles } = useFamily();
 
   // State
-  const [activeTab, setActiveTab] = useState<'transactions' | 'categories'>('transactions');
   const [walletData, setWalletData] = useState<{
     totalBalance: TotalBalance;
     categories: Category[];
@@ -257,28 +329,18 @@ export default function WalletScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
-  const [minAmount, setMinAmount] = useState<string>('');
-  const [maxAmount, setMaxAmount] = useState<string>('');
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
-  const [includeReversed, setIncludeReversed] = useState<boolean>(true);
-  const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
 
   // Popup state
   const [activePopup, setActivePopup] = useState<string | null>(null);
 
-  // Temp filter states (for popup editing)
+  // Temp filter states
   const [tempTypes, setTempTypes] = useState<string[]>([]);
   const [tempCategories, setTempCategories] = useState<string[]>([]);
   const [tempDateFrom, setTempDateFrom] = useState<string>('');
   const [tempDateTo, setTempDateTo] = useState<string>('');
-  const [tempMinAmount, setTempMinAmount] = useState<string>('');
-  const [tempMaxAmount, setTempMaxAmount] = useState<string>('');
   const [tempServiceTypes, setTempServiceTypes] = useState<string[]>([]);
-  const [tempSortBy, setTempSortBy] = useState<'date' | 'amount'>('date');
-  const [tempSortOrder, setTempSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [tempIncludeReversed, setTempIncludeReversed] = useState<boolean>(true);
 
   // Sync selectedWalletMember with activeMember
   useEffect(() => {
@@ -287,61 +349,54 @@ export default function WalletScreen() {
     }
   }, [activeMember]);
 
-  // Determine effective user ID for wallet (local selection or global active member)
   const effectiveUserId = selectedWalletMember?._id || viewingUserId || activeMember?._id || loggedInUser?._id || '';
 
-  // Determine if family dropdown should be shown
   const shouldShowFamilyDropdown = useMemo(() => {
-    // Show dropdown only if:
-    // 1. The currently active profile (global) is the primary member
-    // 2. Has family members to show
-    // 3. Can switch profiles
     const currentlyViewingPrimary = activeMember?.isPrimary || activeMember?._id === loggedInUser?._id;
     const hasFamilyMembers = familyMembers.length > 1;
     return currentlyViewingPrimary && hasFamilyMembers && canSwitchProfiles;
   }, [activeMember, loggedInUser, familyMembers, canSwitchProfiles]);
 
-  // Count active filters
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (selectedTypes.length > 0) count++;
-    if (selectedCategories.length > 0) count++;
-    if (dateFrom || dateTo) count++;
-    if (minAmount || maxAmount) count++;
-    if (selectedServiceTypes.length > 0) count++;
-    if (!includeReversed) count++;
-    if (sortBy !== 'date' || sortOrder !== 'desc') count++;
-    return count;
-  }, [
-    selectedTypes,
-    selectedCategories,
-    dateFrom,
-    dateTo,
-    minAmount,
-    maxAmount,
-    selectedServiceTypes,
-    includeReversed,
-    sortBy,
-    sortOrder,
-  ]);
-
   // Helper functions
-  const clearAllFilters = () => {
-    setSelectedTypes([]);
-    setSelectedCategories([]);
-    setDateFrom('');
-    setDateTo('');
-    setMinAmount('');
-    setMaxAmount('');
-    setSelectedServiceTypes([]);
-    setIncludeReversed(true);
-    setSortBy('date');
-    setSortOrder('desc');
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+
+    if (isToday) {
+      return `Paid Today, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    }
+    return `Paid ${date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+  };
+
+  const formatMonthYear = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  };
+
+  // Group transactions by month and calculate totals
+  const groupedTransactions = useMemo(() => {
+    const groups: { [key: string]: { transactions: Transaction[]; totalSpent: number } } = {};
+    transactions.forEach((t) => {
+      const monthKey = formatMonthYear(t.createdAt);
+      if (!groups[monthKey]) {
+        groups[monthKey] = { transactions: [], totalSpent: 0 };
+      }
+      groups[monthKey].transactions.push(t);
+      if (t.type === 'DEBIT') {
+        groups[monthKey].totalSpent += t.amount;
+      }
+    });
+    return groups;
+  }, [transactions]);
+
+  const handleMemberSelect = (member: any) => {
+    setSelectedWalletMember(member);
+    setIsDropdownOpen(false);
   };
 
   const openPopup = (popupName: string) => {
     setActivePopup(popupName);
-
     switch (popupName) {
       case 'transactionType':
         setTempTypes([...selectedTypes]);
@@ -353,17 +408,8 @@ export default function WalletScreen() {
         setTempDateFrom(dateFrom);
         setTempDateTo(dateTo);
         break;
-      case 'amountRange':
-        setTempMinAmount(minAmount);
-        setTempMaxAmount(maxAmount);
-        break;
       case 'serviceType':
         setTempServiceTypes([...selectedServiceTypes]);
-        break;
-      case 'sortBy':
-        setTempSortBy(sortBy);
-        setTempSortOrder(sortOrder);
-        setTempIncludeReversed(includeReversed);
         break;
     }
   };
@@ -380,17 +426,8 @@ export default function WalletScreen() {
         setDateFrom(tempDateFrom);
         setDateTo(tempDateTo);
         break;
-      case 'amountRange':
-        setMinAmount(tempMinAmount);
-        setMaxAmount(tempMaxAmount);
-        break;
       case 'serviceType':
         setSelectedServiceTypes([...tempServiceTypes]);
-        break;
-      case 'sortBy':
-        setSortBy(tempSortBy);
-        setSortOrder(tempSortOrder);
-        setIncludeReversed(tempIncludeReversed);
         break;
     }
     setActivePopup(null);
@@ -401,33 +438,20 @@ export default function WalletScreen() {
   };
 
   const toggleTempType = (type: string) => {
-    if (tempTypes.includes(type)) {
-      setTempTypes(tempTypes.filter((t) => t !== type));
-    } else {
-      setTempTypes([...tempTypes, type]);
-    }
+    setTempTypes(tempTypes.includes(type) ? tempTypes.filter((t) => t !== type) : [...tempTypes, type]);
   };
 
   const toggleTempCategory = (category: string) => {
-    if (tempCategories.includes(category)) {
-      setTempCategories(tempCategories.filter((c) => c !== category));
-    } else {
-      setTempCategories([...tempCategories, category]);
-    }
+    setTempCategories(tempCategories.includes(category) ? tempCategories.filter((c) => c !== category) : [...tempCategories, category]);
   };
 
   const toggleTempServiceType = (serviceType: string) => {
-    if (tempServiceTypes.includes(serviceType)) {
-      setTempServiceTypes(tempServiceTypes.filter((st) => st !== serviceType));
-    } else {
-      setTempServiceTypes([...tempServiceTypes, serviceType]);
-    }
+    setTempServiceTypes(tempServiceTypes.includes(serviceType) ? tempServiceTypes.filter((st) => st !== serviceType) : [...tempServiceTypes, serviceType]);
   };
 
   const setQuickDateRange = (range: 'today' | '7days' | '30days' | '90days') => {
     const today = new Date();
     const toDate = today.toISOString().split('T')[0];
-
     let fromDate = '';
     switch (range) {
       case 'today':
@@ -449,138 +473,49 @@ export default function WalletScreen() {
         fromDate = ninetyDaysAgo.toISOString().split('T')[0];
         break;
     }
-
     setTempDateFrom(fromDate);
     setTempDateTo(toDate);
-  };
-
-  const toggleType = (type: string) => {
-    setSelectedTypes(selectedTypes.filter((t) => t !== type));
-  };
-
-  const toggleCategory = (categoryCode: string) => {
-    setSelectedCategories(selectedCategories.filter((c) => c !== categoryCode));
-  };
-
-  const toggleServiceType = (serviceType: string) => {
-    setSelectedServiceTypes(selectedServiceTypes.filter((st) => st !== serviceType));
-  };
-
-  const getCategoryName = (categoryCode: string) => {
-    const category = walletData?.categories?.find((cat) => cat.categoryCode === categoryCode);
-    return category?.name || categoryCode;
-  };
-
-  const handleMemberSelect = (member: any) => {
-    setSelectedWalletMember(member);
-    setIsDropdownOpen(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
   // ============================================================================
   // DATA FETCHING
   // ============================================================================
 
-  // Fetch wallet data whenever effectiveUserId or filters change
   useEffect(() => {
     if (effectiveUserId) {
-      console.log('[Wallet] Fetching wallet data for userId:', effectiveUserId);
       fetchWalletDataForUser(effectiveUserId);
     }
-  }, [
-    effectiveUserId,
-    selectedTypes,
-    selectedCategories,
-    dateFrom,
-    dateTo,
-    minAmount,
-    maxAmount,
-    selectedServiceTypes,
-    includeReversed,
-    sortBy,
-    sortOrder,
-  ]);
+  }, [effectiveUserId, selectedTypes, selectedCategories, dateFrom, dateTo, selectedServiceTypes]);
 
-  // Single unified function to fetch all wallet data for a user
   const fetchWalletDataForUser = async (userId: string) => {
     setLoading(true);
-
     try {
-      // Build query parameters for transactions
-      const params: any = {
-        userId,
-        limit: 100, // Fetch more transactions for better filtering
-      };
+      const params: any = { userId, limit: 100 };
+      if (selectedTypes.length > 0) params.type = selectedTypes.join(',');
+      if (selectedCategories.length > 0) params.categoryCode = selectedCategories.join(',');
+      if (dateFrom) params.dateFrom = dateFrom;
+      if (dateTo) params.dateTo = dateTo;
+      if (selectedServiceTypes.length > 0) params.serviceType = selectedServiceTypes.join(',');
 
-      if (selectedTypes.length > 0) {
-        params.type = selectedTypes.join(',');
-      }
-      if (selectedCategories.length > 0) {
-        params.categoryCode = selectedCategories.join(',');
-      }
-      if (dateFrom) {
-        params.dateFrom = dateFrom;
-      }
-      if (dateTo) {
-        params.dateTo = dateTo;
-      }
-      if (minAmount) {
-        params.minAmount = minAmount;
-      }
-      if (maxAmount) {
-        params.maxAmount = maxAmount;
-      }
-      if (selectedServiceTypes.length > 0) {
-        params.serviceType = selectedServiceTypes.join(',');
-      }
-      params.includeReversed = includeReversed.toString();
-      params.sortBy = sortBy;
-      params.sortOrder = sortOrder;
-
-      console.log('[Wallet] Fetching with params:', params);
-
-      // Fetch both wallet balance AND transactions in parallel
       const [balanceResponse, transactionsResponse] = await Promise.all([
         fetchWalletBalance(userId),
         apiClient.get('/wallet/transactions', { params }),
       ]);
 
-      console.log('[Wallet] Balance response:', balanceResponse);
-      console.log('[Wallet] Transactions response:', transactionsResponse.data);
-
-      // Set wallet balance
       setWalletData({
         totalBalance: balanceResponse.totalBalance,
         categories: balanceResponse.categories,
       });
 
-      // Set transactions
       const transactionData = transactionsResponse.data.transactions || [];
       setTransactions(transactionData);
 
-      // Extract unique service types
       const uniqueServiceTypes = Array.from(
-        new Set(
-          transactionData
-            .map((t: any) => t.serviceType)
-            .filter((st: string | undefined) => st)
-        )
+        new Set(transactionData.map((t: any) => t.serviceType).filter((st: string | undefined) => st))
       ) as string[];
       setAvailableServiceTypes(uniqueServiceTypes);
     } catch (error: any) {
       console.error('[Wallet] Error fetching wallet data:', error);
-      console.error('[Wallet] Error details:', error.response?.data);
-
-      // Set empty data on error
       setWalletData({
         totalBalance: { allocated: 0, current: 0, consumed: 0 },
         categories: [],
@@ -595,15 +530,8 @@ export default function WalletScreen() {
   // Loading state
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: '#f7f7fc',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -612,119 +540,78 @@ export default function WalletScreen() {
   const categories = walletData?.categories || [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
-          ...Platform.select({
-            web: {
-              position: 'sticky' as any,
-              top: 0,
-              zIndex: 10,
-            },
-          }),
-        }}
-      >
-        <SafeAreaView edges={['top']}>
-          <View
-            style={{
-              maxWidth: 480,
-              marginHorizontal: 'auto',
-              width: '100%',
-              paddingHorizontal: 16,
-              paddingVertical: 16,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        {/* Header with Back Button */}
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+          }}
+        >
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={() => router.back()}
-                style={{ padding: 8, borderRadius: 12 }}
-                activeOpacity={0.7}
+                style={{
+                  padding: 8,
+                  borderRadius: 12,
+                }}
               >
-                <ChevronLeftIcon width={24} height={24} color="#0E51A2" />
+                <BackArrowIcon />
               </TouchableOpacity>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
-                  My Wallet
-                </Text>
-                <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                  Manage your health benefits
-                </Text>
-              </View>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                OPD Wallet
+              </Text>
             </View>
           </View>
-        </SafeAreaView>
-      </View>
+        </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingVertical: 24,
-          paddingBottom: 80,
-        }}
-      >
-        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 24 }}>
-          {/* Family Member Selector */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingTop: 16 }}>
+
+          {/* View Wallet For - Family Selector */}
           {shouldShowFamilyDropdown && (
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                borderRadius: 16,
-                padding: 20,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2', marginBottom: 12 }}>
-                View Wallet For:
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textGray, marginBottom: 8 }}>
+                View Wallet For
               </Text>
               <TouchableOpacity
                 onPress={() => setIsDropdownOpen(!isDropdownOpen)}
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  paddingHorizontal: 16,
+                  backgroundColor: COLORS.white,
+                  paddingHorizontal: 14,
                   paddingVertical: 12,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: '#0F5FDC',
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: COLORS.border,
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#303030' }}>
-                  {selectedWalletMember?.name?.firstName} {selectedWalletMember?.name?.lastName} ({selectedWalletMember?.isPrimary ? 'Self' : selectedWalletMember?.relationship})
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
+                  {selectedWalletMember?.name?.firstName} {selectedWalletMember?.name?.lastName}
+                  {selectedWalletMember?.isPrimary ? ' (Self)' : ` (${selectedWalletMember?.relationship})`}
                 </Text>
-                <ChevronDownIcon
-                  width={20}
-                  height={20}
-                  color="#0F5FDC"
-                  style={{
-                    transform: [{ rotate: isDropdownOpen ? '180deg' : '0deg' }],
-                  }}
-                />
+                <View style={{ transform: [{ rotate: isDropdownOpen ? '180deg' : '0deg' }] }}>
+                  <ChevronDownIcon width={18} height={18} color={COLORS.textGray} />
+                </View>
               </TouchableOpacity>
 
-              {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <View
                   style={{
-                    marginTop: 8,
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    borderRadius: 12,
+                    marginTop: 4,
+                    backgroundColor: COLORS.white,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
+                    borderRadius: 8,
                     overflow: 'hidden',
                   }}
                 >
@@ -735,967 +622,287 @@ export default function WalletScreen() {
                         key={member._id}
                         onPress={() => handleMemberSelect(member)}
                         style={{
-                          paddingHorizontal: 16,
+                          paddingHorizontal: 14,
                           paddingVertical: 12,
-                          backgroundColor: isSelected
-                            ? 'rgba(224, 233, 255, 0.48)'
-                            : '#FFFFFF',
+                          backgroundColor: isSelected ? '#f0f7ff' : COLORS.white,
                           flexDirection: 'row',
                           alignItems: 'center',
                           justifyContent: 'space-between',
+                          borderBottomWidth: 1,
+                          borderBottomColor: COLORS.border,
                         }}
                       >
-                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#303030' }}>
-                          {member.name.firstName} {member.name.lastName} ({member.isPrimary ? 'Self' : member.relationship})
+                        <Text style={{ fontSize: 14, fontWeight: isSelected ? '600' : '400', color: COLORS.textDark }}>
+                          {member.name.firstName} {member.name.lastName}
+                          {member.isPrimary ? ' (Self)' : ` (${member.relationship})`}
                         </Text>
-                        {isSelected && <CheckIcon width={20} height={20} color="#0F5FDC" />}
+                        {isSelected && <CheckIcon width={16} height={16} color={COLORS.primary} />}
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               )}
-            </LinearGradient>
+            </View>
           )}
 
-          {/* Balance Card */}
+          {/* Balance Card - Matching Bookings Page Blue Card Style */}
           <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
+            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
               borderRadius: 16,
-              padding: 20,
+              padding: 16,
+              marginBottom: 20,
               borderWidth: 2,
-              borderColor: '#F7DCAF',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
+              borderColor: '#86ACD8',
             }}
           >
-            {/* Icon */}
-            <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <LinearGradient
-                colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: 'rgba(164, 191, 254, 0.48)',
-                }}
-              >
-                <BanknotesIcon width={28} height={28} color="#0F5FDC" />
-              </LinearGradient>
-            </View>
+            {/* Total Available Balance Label */}
+            <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+              Total Available Balance
+            </Text>
 
-            {/* Total Balance */}
-            <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
-                Available Balance
+            {/* Balance Amount - Format: ₹Y / X Left */}
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 14 }}>
+              <Text style={{ fontSize: 22, fontWeight: '700', color: '#0E51A2' }}>
+                ₹{totalBalance.current.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                <Text style={{ fontSize: 28, fontWeight: '700', color: '#0E51A2' }}>
-                  ₹{totalBalance.current.toLocaleString()}
-                </Text>
-                <Text style={{ fontSize: 14, color: '#6b7280' }}>
-                  / ₹{totalBalance.allocated.toLocaleString()}
-                </Text>
-              </View>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+                {' '}/ {totalBalance.allocated.toLocaleString('en-IN')}
+              </Text>
+              <Text style={{ fontSize: 11, color: COLORS.textGray }}>
+                {' '}Left
+              </Text>
             </View>
 
-            {/* Stats Grid */}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <LinearGradient
-                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  flex: 1,
-                  borderRadius: 12,
-                  padding: 12,
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
-                  Total Allocated
-                </Text>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }}>
-                  ₹{totalBalance.allocated.toLocaleString()}
-                </Text>
-              </LinearGradient>
-
-              <LinearGradient
-                colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  flex: 1,
-                  borderRadius: 12,
-                  padding: 12,
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>
-                  Total Used
-                </Text>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }}>
-                  ₹{totalBalance.consumed.toLocaleString()}
-                </Text>
-              </LinearGradient>
-            </View>
-          </LinearGradient>
-
-          {/* Tabs */}
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              borderWidth: 2,
-              borderColor: '#e5e7eb',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
-              overflow: 'hidden',
-            }}
-          >
-            {/* Tab Headers */}
+            {/* Total Money Used Bar */}
             <View
               style={{
                 flexDirection: 'row',
-                borderBottomWidth: 2,
-                borderBottomColor: '#e5e7eb',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: COLORS.white,
+                borderRadius: 8,
+                paddingVertical: 10,
+                paddingHorizontal: 12,
               }}
             >
-              <TouchableOpacity
-                onPress={() => setActiveTab('transactions')}
-                style={{
-                  flex: 1,
-                  paddingVertical: 16,
-                  borderBottomWidth: activeTab === 'transactions' ? 4 : 0,
-                  borderBottomColor: '#0F5FDC',
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: activeTab === 'transactions' ? '#0E51A2' : '#6b7280',
-                  }}
-                >
-                  Transactions
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <WalletIcon size={16} color={COLORS.orange} />
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
+                  Total Money Used
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setActiveTab('categories')}
-                style={{
-                  flex: 1,
-                  paddingVertical: 16,
-                  borderBottomWidth: activeTab === 'categories' ? 4 : 0,
-                  borderBottomColor: '#0F5FDC',
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: activeTab === 'categories' ? '#0E51A2' : '#6b7280',
-                  }}
-                >
-                  Categories
-                </Text>
-              </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.orange }}>
+                {totalBalance.consumed.toLocaleString('en-IN')} /-
+              </Text>
             </View>
+          </LinearGradient>
 
-            {/* Tab Content */}
-            <View style={{ padding: 20 }}>
-              {/* Transactions Tab */}
-              {activeTab === 'transactions' && (
-                <View>
-                  {/* Filter Buttons Row */}
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={{ marginBottom: 16, marginHorizontal: -20 }}
-                    contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-                  >
-                    {/* Transaction Type Filter */}
-                    <TouchableOpacity
-                      onPress={() => openPopup('transactionType')}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: selectedTypes.length > 0 ? '#0F5FDC' : 'rgba(255, 255, 255, 0.6)',
-                        borderWidth: 2,
-                        borderColor: selectedTypes.length > 0 ? '#0F5FDC' : '#86ACD8',
-                        gap: 6,
-                      }}
-                    >
-                      <FunnelIcon
-                        width={14}
-                        height={14}
-                        color={selectedTypes.length > 0 ? '#FFFFFF' : '#0E51A2'}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: selectedTypes.length > 0 ? '#FFFFFF' : '#0E51A2',
-                        }}
-                      >
-                        Type
-                      </Text>
-                      {selectedTypes.length > 0 && (
-                        <View
-                          style={{
-                            paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
-                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          }}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>
-                            {selectedTypes.length}
-                          </Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+          {/* Transaction History Section */}
+          <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 16 }}>
+            Transaction History
+          </Text>
 
-                    {/* Date Range Filter */}
-                    <TouchableOpacity
-                      onPress={() => openPopup('dateRange')}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: (dateFrom || dateTo) ? '#0F5FDC' : 'rgba(255, 255, 255, 0.6)',
-                        borderWidth: 2,
-                        borderColor: (dateFrom || dateTo) ? '#0F5FDC' : '#86ACD8',
-                        gap: 6,
-                      }}
-                    >
-                      <CalendarIcon
-                        width={14}
-                        height={14}
-                        color={(dateFrom || dateTo) ? '#FFFFFF' : '#0E51A2'}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: (dateFrom || dateTo) ? '#FFFFFF' : '#0E51A2',
-                        }}
-                      >
-                        Date
-                      </Text>
-                      {(dateFrom || dateTo) && (
-                        <View
-                          style={{
-                            paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
-                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          }}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>✓</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+          {/* Filter Pills - Figma Style */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 20, marginHorizontal: -16 }}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+          >
+            {/* Transaction Type Filter */}
+            <TouchableOpacity
+              onPress={() => openPopup('transactionType')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: selectedTypes.length > 0 ? COLORS.primary : COLORS.white,
+                borderWidth: 1,
+                borderColor: selectedTypes.length > 0 ? COLORS.primary : COLORS.border,
+                gap: 6,
+              }}
+            >
+              <TransactionTypeIcon color={selectedTypes.length > 0 ? COLORS.white : COLORS.textGray} />
+              <Text style={{ fontSize: 13, fontWeight: '500', color: selectedTypes.length > 0 ? COLORS.white : COLORS.textGray }}>
+                Transaction Type
+              </Text>
+              <SmallChevronDown color={selectedTypes.length > 0 ? COLORS.white : COLORS.textGray} />
+            </TouchableOpacity>
 
-                    {/* Amount Range Filter */}
-                    <TouchableOpacity
-                      onPress={() => openPopup('amountRange')}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: (minAmount || maxAmount) ? '#0F5FDC' : 'rgba(255, 255, 255, 0.6)',
-                        borderWidth: 2,
-                        borderColor: (minAmount || maxAmount) ? '#0F5FDC' : '#86ACD8',
-                        gap: 6,
-                      }}
-                    >
-                      <BanknotesIcon
-                        width={14}
-                        height={14}
-                        color={(minAmount || maxAmount) ? '#FFFFFF' : '#0E51A2'}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: (minAmount || maxAmount) ? '#FFFFFF' : '#0E51A2',
-                        }}
-                      >
-                        Amount
-                      </Text>
-                      {(minAmount || maxAmount) && (
-                        <View
-                          style={{
-                            paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
-                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          }}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>✓</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+            {/* Category Filter */}
+            <TouchableOpacity
+              onPress={() => openPopup('category')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: selectedCategories.length > 0 ? COLORS.primary : COLORS.white,
+                borderWidth: 1,
+                borderColor: selectedCategories.length > 0 ? COLORS.primary : COLORS.border,
+                gap: 6,
+              }}
+            >
+              <CategoryIcon color={selectedCategories.length > 0 ? COLORS.white : COLORS.textGray} />
+              <Text style={{ fontSize: 13, fontWeight: '500', color: selectedCategories.length > 0 ? COLORS.white : COLORS.textGray }}>
+                Category
+              </Text>
+              <SmallChevronDown color={selectedCategories.length > 0 ? COLORS.white : COLORS.textGray} />
+            </TouchableOpacity>
 
-                    {/* Category Filter */}
-                    {categories.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => openPopup('category')}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          paddingHorizontal: 12,
-                          paddingVertical: 10,
-                          borderRadius: 12,
-                          backgroundColor: selectedCategories.length > 0 ? '#0F5FDC' : 'rgba(255, 255, 255, 0.6)',
-                          borderWidth: 2,
-                          borderColor: selectedCategories.length > 0 ? '#0F5FDC' : '#86ACD8',
-                          gap: 6,
-                        }}
-                      >
-                        <TagIcon
-                          width={14}
-                          height={14}
-                          color={selectedCategories.length > 0 ? '#FFFFFF' : '#0E51A2'}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontWeight: '600',
-                            color: selectedCategories.length > 0 ? '#FFFFFF' : '#0E51A2',
-                          }}
-                        >
-                          Category
-                        </Text>
-                        {selectedCategories.length > 0 && (
-                          <View
-                            style={{
-                              paddingHorizontal: 6,
-                              paddingVertical: 2,
-                              borderRadius: 999,
-                              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                            }}
-                          >
-                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>
-                              {selectedCategories.length}
-                            </Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    )}
+            {/* Service Filter */}
+            <TouchableOpacity
+              onPress={() => openPopup('serviceType')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: selectedServiceTypes.length > 0 ? COLORS.primary : COLORS.white,
+                borderWidth: 1,
+                borderColor: selectedServiceTypes.length > 0 ? COLORS.primary : COLORS.border,
+                gap: 6,
+              }}
+            >
+              <ServiceIcon color={selectedServiceTypes.length > 0 ? COLORS.white : COLORS.textGray} />
+              <Text style={{ fontSize: 13, fontWeight: '500', color: selectedServiceTypes.length > 0 ? COLORS.white : COLORS.textGray }}>
+                Service
+              </Text>
+              <SmallChevronDown color={selectedServiceTypes.length > 0 ? COLORS.white : COLORS.textGray} />
+            </TouchableOpacity>
 
-                    {/* Service Type Filter */}
-                    {availableServiceTypes.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => openPopup('serviceType')}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          paddingHorizontal: 12,
-                          paddingVertical: 10,
-                          borderRadius: 12,
-                          backgroundColor: selectedServiceTypes.length > 0 ? '#0F5FDC' : 'rgba(255, 255, 255, 0.6)',
-                          borderWidth: 2,
-                          borderColor: selectedServiceTypes.length > 0 ? '#0F5FDC' : '#86ACD8',
-                          gap: 6,
-                        }}
-                      >
-                        <TagIcon
-                          width={14}
-                          height={14}
-                          color={selectedServiceTypes.length > 0 ? '#FFFFFF' : '#0E51A2'}
-                        />
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontWeight: '600',
-                            color: selectedServiceTypes.length > 0 ? '#FFFFFF' : '#0E51A2',
-                          }}
-                        >
-                          Service
-                        </Text>
-                        {selectedServiceTypes.length > 0 && (
-                          <View
-                            style={{
-                              paddingHorizontal: 6,
-                              paddingVertical: 2,
-                              borderRadius: 999,
-                              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                            }}
-                          >
-                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>
-                              {selectedServiceTypes.length}
-                            </Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    )}
+            {/* Date Filter */}
+            <TouchableOpacity
+              onPress={() => openPopup('dateRange')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: (dateFrom || dateTo) ? COLORS.primary : COLORS.white,
+                borderWidth: 1,
+                borderColor: (dateFrom || dateTo) ? COLORS.primary : COLORS.border,
+                gap: 6,
+              }}
+            >
+              <DateIcon color={(dateFrom || dateTo) ? COLORS.white : COLORS.textGray} />
+              <Text style={{ fontSize: 13, fontWeight: '500', color: (dateFrom || dateTo) ? COLORS.white : COLORS.textGray }}>
+                Date
+              </Text>
+              <SmallChevronDown color={(dateFrom || dateTo) ? COLORS.white : COLORS.textGray} />
+            </TouchableOpacity>
+          </ScrollView>
 
-                    {/* Sort By Filter */}
-                    <TouchableOpacity
-                      onPress={() => openPopup('sortBy')}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: (sortBy !== 'date' || sortOrder !== 'desc') ? '#0F5FDC' : 'rgba(255, 255, 255, 0.6)',
-                        borderWidth: 2,
-                        borderColor: (sortBy !== 'date' || sortOrder !== 'desc') ? '#0F5FDC' : '#86ACD8',
-                        gap: 6,
-                      }}
-                    >
-                      {sortOrder === 'desc' ? (
-                        <ArrowDownIcon
-                          width={14}
-                          height={14}
-                          color={(sortBy !== 'date' || sortOrder !== 'desc') ? '#FFFFFF' : '#0E51A2'}
-                        />
-                      ) : (
-                        <ArrowUpIcon
-                          width={14}
-                          height={14}
-                          color={(sortBy !== 'date' || sortOrder !== 'desc') ? '#FFFFFF' : '#0E51A2'}
-                        />
-                      )}
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: (sortBy !== 'date' || sortOrder !== 'desc') ? '#FFFFFF' : '#0E51A2',
-                        }}
-                      >
-                        Sort
-                      </Text>
-                      {(sortBy !== 'date' || sortOrder !== 'desc') && (
-                        <View
-                          style={{
-                            paddingHorizontal: 6,
-                            paddingVertical: 2,
-                            borderRadius: 999,
-                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                          }}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#FFFFFF' }}>✓</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-
-                    {/* Clear All Filters */}
-                    {activeFilterCount > 0 && (
-                      <TouchableOpacity
-                        onPress={clearAllFilters}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          paddingHorizontal: 12,
-                          paddingVertical: 10,
-                          borderRadius: 12,
-                          backgroundColor: '#ef4444',
-                          gap: 6,
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>
-                          Clear All ({activeFilterCount})
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </ScrollView>
-
-                  {/* Active Filter Tags */}
-                  {activeFilterCount > 0 && (
-                    <View style={{ marginBottom: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      {/* Transaction Type Tags */}
-                      {selectedTypes.map((type) => (
-                        <View
-                          key={type}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#DBEAFE',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <TagIcon width={12} height={12} color="#1E40AF" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#1E40AF' }}>
-                            {type.charAt(0) + type.slice(1).toLowerCase()}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => toggleType(type)}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#1E40AF" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-
-                      {/* Category Tags */}
-                      {selectedCategories.map((catCode) => (
-                        <View
-                          key={catCode}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#D1FAE5',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <TagIcon width={12} height={12} color="#047857" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#047857' }}>
-                            {getCategoryName(catCode)}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => toggleCategory(catCode)}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#047857" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-
-                      {/* Date Range Tags */}
-                      {dateFrom && (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#E9D5FF',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <CalendarIcon width={12} height={12} color="#6B21A8" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B21A8' }}>
-                            From: {new Date(dateFrom).toLocaleDateString()}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => setDateFrom('')}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#6B21A8" />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                      {dateTo && (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#E9D5FF',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <CalendarIcon width={12} height={12} color="#6B21A8" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B21A8' }}>
-                            To: {new Date(dateTo).toLocaleDateString()}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => setDateTo('')}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#6B21A8" />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-
-                      {/* Amount Range Tags */}
-                      {minAmount && (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#FED7AA',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <BanknotesIcon width={12} height={12} color="#9A3412" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#9A3412' }}>
-                            Min: ₹{minAmount}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => setMinAmount('')}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#9A3412" />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                      {maxAmount && (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#FED7AA',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <BanknotesIcon width={12} height={12} color="#9A3412" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#9A3412' }}>
-                            Max: ₹{maxAmount}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => setMaxAmount('')}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#9A3412" />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-
-                      {/* Service Type Tags */}
-                      {selectedServiceTypes.map((st) => (
-                        <View
-                          key={st}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            backgroundColor: '#C7D2FE',
-                            borderRadius: 8,
-                            gap: 6,
-                          }}
-                        >
-                          <TagIcon width={12} height={12} color="#3730A3" />
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#3730A3' }}>
-                            {st}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => toggleServiceType(st)}
-                            style={{
-                              padding: 2,
-                              borderRadius: 999,
-                            }}
-                          >
-                            <XCircleIcon width={14} height={14} color="#3730A3" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Transaction List or Empty State */}
-                  {transactions.length === 0 ? (
-                    <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-                      <LinearGradient
-                        colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: 32,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          borderWidth: 1,
-                          borderColor: 'rgba(164, 191, 254, 0.48)',
-                          marginBottom: 16,
-                        }}
-                      >
-                        <ClockIcon width={32} height={32} color="#0F5FDC" />
-                      </LinearGradient>
-                      <Text style={{ fontSize: 14, color: '#6b7280' }}>No transactions yet</Text>
-                    </View>
-                  ) : (
-                    <View style={{ gap: 12 }}>
-                      {/* Transaction Cards */}
-                      {transactions.map((transaction) => (
-                        <LinearGradient
-                          key={transaction._id}
-                          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={{
-                            borderRadius: 12,
-                            padding: 16,
-                            borderWidth: 2,
-                            borderColor: '#86ACD8',
-                          }}
-                        >
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <View style={{ flex: 1 }}>
-                              <Text
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: '600',
-                                  color: '#0E51A2',
-                                  marginBottom: 4,
-                                }}
-                              >
-                                {transaction.notes || transaction.serviceType}
-                              </Text>
-                              <Text style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
-                                {transaction.serviceProvider}
-                              </Text>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <View
-                                  style={{
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 4,
-                                    borderRadius: 8,
-                                    backgroundColor:
-                                      transaction.type === 'DEBIT' ? '#FEE2E2' : '#D1FAE5',
-                                  }}
-                                >
-                                  <Text
-                                    style={{
-                                      fontSize: 11,
-                                      fontWeight: '600',
-                                      color: transaction.type === 'DEBIT' ? '#991B1B' : '#065F46',
-                                    }}
-                                  >
-                                    {transaction.type}
-                                  </Text>
-                                </View>
-                                <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
-                                  {formatDate(transaction.createdAt)} • {formatTime(transaction.createdAt)}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={{ alignItems: 'flex-end', marginLeft: 16 }}>
-                              <Text
-                                style={{
-                                  fontSize: 16,
-                                  fontWeight: '700',
-                                  color: transaction.type === 'DEBIT' ? '#DC2626' : '#059669',
-                                }}
-                              >
-                                {transaction.type === 'DEBIT' ? '-' : '+'}₹
-                                {transaction.amount.toLocaleString()}
-                              </Text>
-                              <Text style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
-                                Bal: ₹{transaction.newBalance.total.toLocaleString()}
-                              </Text>
-                            </View>
-                          </View>
-                        </LinearGradient>
-                      ))}
-
-                      {/* View All Transactions CTA */}
-                      <TouchableOpacity
-                        onPress={() => router.push('/member/transactions' as any)}
-                        style={{
-                          marginTop: 8,
-                          borderRadius: 12,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <LinearGradient
-                          colors={['#1F63B4', '#5DA4FB']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={{
-                            paddingVertical: 12,
-                            alignItems: 'center',
-                          }}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                            View All Transactions →
-                          </Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+          {/* Transaction List */}
+          {Object.keys(groupedTransactions).length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+              <WalletIcon size={48} color={COLORS.textLight} />
+              <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 12 }}>
+                No transactions yet
+              </Text>
+            </View>
+          ) : (
+            Object.entries(groupedTransactions).map(([month, { transactions: monthTransactions, totalSpent }]) => (
+              <View key={month} style={{ marginBottom: 24 }}>
+                {/* Month Header */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                    {month}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+                    Total Spent{' '}
+                    <Text style={{ fontWeight: '600', color: COLORS.textDark }}>
+                      ₹{totalSpent.toLocaleString('en-IN')}
+                    </Text>
+                  </Text>
                 </View>
-              )}
 
-              {/* Categories Tab */}
-              {activeTab === 'categories' && (
-                <View style={{ gap: 16 }}>
-                  {categories.map((category) => {
-                    const Icon = getCategoryIcon(category.categoryCode, category.name);
-                    const availablePercentage =
-                      category.total > 0 ? (category.available / category.total) * 100 : 0;
+                {/* Transaction Items */}
+                <View
+                  style={{
+                    backgroundColor: COLORS.white,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {monthTransactions.map((transaction, index) => {
+                    const isDebit = transaction.type === 'DEBIT';
+                    const isLast = index === monthTransactions.length - 1;
 
                     return (
-                      <LinearGradient
-                        key={category.categoryCode}
-                        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
+                      <View
+                        key={transaction._id}
                         style={{
-                          borderRadius: 12,
-                          padding: 16,
-                          borderWidth: 2,
-                          borderColor: '#86ACD8',
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          paddingHorizontal: 16,
+                          paddingVertical: 14,
+                          borderBottomWidth: isLast ? 0 : 1,
+                          borderBottomColor: COLORS.border,
                         }}
                       >
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            marginBottom: 12,
-                            gap: 12,
-                          }}
-                        >
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 12,
-                              flex: 1,
-                            }}
-                          >
-                            <LinearGradient
-                              colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 24,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderWidth: 1,
-                                borderColor: 'rgba(164, 191, 254, 0.48)',
-                              }}
-                            >
-                              <Icon width={24} height={24} color="#0F5FDC" />
-                            </LinearGradient>
-                            <View style={{ flex: 1 }}>
-                              <Text
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: '600',
-                                  color: '#0E51A2',
-                                  marginBottom: 4,
-                                }}
-                              >
-                                {category.name}
-                              </Text>
-                              <Text style={{ fontSize: 12, color: '#6b7280' }}>
-                                {category.isUnlimited
-                                  ? 'Unlimited'
-                                  : `Limit: ₹${category.total.toLocaleString()}`}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
-                              ₹{category.available.toLocaleString()}
-                            </Text>
-                            <Text style={{ fontSize: 11, color: '#6b7280' }}>Available</Text>
-                          </View>
+                        {/* Left - Transaction Details */}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark, marginBottom: 2 }}>
+                            {transaction.notes || transaction.serviceType || 'Transaction'}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: COLORS.textGray }}>
+                            {transaction.serviceProvider || 'Service Provider'}
+                          </Text>
                         </View>
 
-                        {!category.isUnlimited && (
-                          <>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                marginBottom: 8,
-                              }}
-                            >
-                              <Text style={{ fontSize: 12, color: '#6b7280' }}>
-                                Used: ₹{category.consumed.toLocaleString()}
-                              </Text>
-                              <Text style={{ fontSize: 12, fontWeight: '600', color: '#6b7280' }}>
-                                {availablePercentage.toFixed(0)}% Available
-                              </Text>
-                            </View>
-                            <View
-                              style={{
-                                width: '100%',
-                                height: 10,
-                                backgroundColor: '#E5E7EB',
-                                borderRadius: 999,
-                                overflow: 'hidden',
-                              }}
-                            >
-                              <View
-                                style={{
-                                  width: `${Math.min(availablePercentage, 100)}%`,
-                                  height: '100%',
-                                  backgroundColor: '#22C55E',
-                                  borderRadius: 999,
-                                }}
-                              />
-                            </View>
-                          </>
-                        )}
-                      </LinearGradient>
+                        {/* Right - Amount & Date */}
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: '600',
+                              color: isDebit ? COLORS.debit : COLORS.credit,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {isDebit ? '-' : '+'}₹{transaction.amount.toLocaleString('en-IN')}
+                          </Text>
+                          <Text style={{ fontSize: 11, color: COLORS.textLight }}>
+                            {formatDate(transaction.createdAt)}
+                          </Text>
+                        </View>
+                      </View>
                     );
                   })}
                 </View>
-              )}
-            </View>
-          </View>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
+      </SafeAreaView>
 
       {/* Filter Popups */}
       {/* Transaction Type Popup */}
-      <FilterPopup
+      <FilterDropdown
         visible={activePopup === 'transactionType'}
         title="Transaction Type"
         onClose={cancelPopup}
         onConfirm={() => confirmPopup('transactionType')}
       >
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: 8 }}>
           {['DEBIT', 'CREDIT', 'REFUND', 'ADJUSTMENT'].map((type) => (
             <TouchableOpacity
               key={type}
@@ -1703,95 +910,167 @@ export default function WalletScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingHorizontal: 12,
                 paddingVertical: 10,
-                borderRadius: 8,
                 gap: 12,
               }}
             >
               <View
                 style={{
-                  width: 16,
-                  height: 16,
+                  width: 20,
+                  height: 20,
                   borderRadius: 4,
                   borderWidth: 2,
-                  borderColor: '#86ACD8',
-                  backgroundColor: tempTypes.includes(type) ? '#0F5FDC' : '#FFFFFF',
+                  borderColor: tempTypes.includes(type) ? COLORS.primary : COLORS.border,
+                  backgroundColor: tempTypes.includes(type) ? COLORS.primary : COLORS.white,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                {tempTypes.includes(type) && <CheckIcon width={12} height={12} color="#FFFFFF" />}
+                {tempTypes.includes(type) && <CheckIcon width={12} height={12} color={COLORS.white} />}
               </View>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textDark }}>
                 {type.charAt(0) + type.slice(1).toLowerCase()}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-      </FilterPopup>
+      </FilterDropdown>
+
+      {/* Category Popup */}
+      <FilterDropdown
+        visible={activePopup === 'category'}
+        title="Category"
+        onClose={cancelPopup}
+        onConfirm={() => confirmPopup('category')}
+      >
+        <View style={{ gap: 8 }}>
+          {categories.length === 0 ? (
+            <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', paddingVertical: 16 }}>
+              No categories available
+            </Text>
+          ) : (
+            categories.map((category) => (
+              <TouchableOpacity
+                key={category.categoryCode}
+                onPress={() => toggleTempCategory(category.categoryCode)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 10,
+                  gap: 12,
+                }}
+              >
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    borderWidth: 2,
+                    borderColor: tempCategories.includes(category.categoryCode) ? COLORS.primary : COLORS.border,
+                    backgroundColor: tempCategories.includes(category.categoryCode) ? COLORS.primary : COLORS.white,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {tempCategories.includes(category.categoryCode) && <CheckIcon width={12} height={12} color={COLORS.white} />}
+                </View>
+                <Text style={{ fontSize: 14, color: COLORS.textDark }}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </FilterDropdown>
+
+      {/* Service Type Popup */}
+      <FilterDropdown
+        visible={activePopup === 'serviceType'}
+        title="Service"
+        onClose={cancelPopup}
+        onConfirm={() => confirmPopup('serviceType')}
+      >
+        <View style={{ gap: 8 }}>
+          {availableServiceTypes.length === 0 ? (
+            <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', paddingVertical: 16 }}>
+              No services available
+            </Text>
+          ) : (
+            availableServiceTypes.map((serviceType) => (
+              <TouchableOpacity
+                key={serviceType}
+                onPress={() => toggleTempServiceType(serviceType)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 10,
+                  gap: 12,
+                }}
+              >
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    borderWidth: 2,
+                    borderColor: tempServiceTypes.includes(serviceType) ? COLORS.primary : COLORS.border,
+                    backgroundColor: tempServiceTypes.includes(serviceType) ? COLORS.primary : COLORS.white,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {tempServiceTypes.includes(serviceType) && <CheckIcon width={12} height={12} color={COLORS.white} />}
+                </View>
+                <Text style={{ fontSize: 14, color: COLORS.textDark }}>
+                  {serviceType}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </FilterDropdown>
 
       {/* Date Range Popup */}
-      <FilterPopup
+      <FilterDropdown
         visible={activePopup === 'dateRange'}
         title="Date Range"
         onClose={cancelPopup}
         onConfirm={() => confirmPopup('dateRange')}
       >
         <View style={{ gap: 16 }}>
-          {/* Quick Presets */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <TouchableOpacity
-              onPress={() => setQuickDateRange('today')}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: '#f3f4f6',
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2' }}>Today</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setQuickDateRange('7days')}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: '#f3f4f6',
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2' }}>Last 7 Days</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setQuickDateRange('30days')}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: '#f3f4f6',
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2' }}>Last 30 Days</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setQuickDateRange('90days')}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: '#f3f4f6',
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2' }}>Last 90 Days</Text>
-            </TouchableOpacity>
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textGray, marginBottom: 10 }}>
+              Quick Select
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                { label: 'Today', value: 'today' },
+                { label: 'Last 7 Days', value: '7days' },
+                { label: 'Last 30 Days', value: '30days' },
+                { label: 'Last 90 Days', value: '90days' },
+              ].map((preset) => (
+                <TouchableOpacity
+                  key={preset.value}
+                  onPress={() => setQuickDateRange(preset.value as any)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
+                    backgroundColor: '#f3f4f6',
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.primary }}>
+                    {preset.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
-          {/* Custom Date Inputs - Platform specific */}
-          {Platform.OS === 'web' ? (
+          {Platform.OS === 'web' && (
             <View style={{ gap: 12 }}>
               <View>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2', marginBottom: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textGray, marginBottom: 6 }}>
                   From Date
                 </Text>
                 <TextInput
@@ -1800,16 +1079,17 @@ export default function WalletScreen() {
                   placeholder="YYYY-MM-DD"
                   style={{
                     paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
+                    paddingVertical: 10,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
                     fontSize: 14,
+                    backgroundColor: COLORS.white,
                   }}
                 />
               </View>
               <View>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2', marginBottom: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textGray, marginBottom: 6 }}>
                   To Date
                 </Text>
                 <TextInput
@@ -1818,287 +1098,19 @@ export default function WalletScreen() {
                   placeholder="YYYY-MM-DD"
                   style={{
                     paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
+                    paddingVertical: 10,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
                     fontSize: 14,
+                    backgroundColor: COLORS.white,
                   }}
                 />
               </View>
             </View>
-          ) : (
-            <Text style={{ fontSize: 12, color: '#6b7280', textAlign: 'center' }}>
-              Use quick presets above
-            </Text>
           )}
         </View>
-      </FilterPopup>
-
-      {/* Amount Range Popup */}
-      <FilterPopup
-        visible={activePopup === 'amountRange'}
-        title="Amount Range"
-        onClose={cancelPopup}
-        onConfirm={() => confirmPopup('amountRange')}
-      >
-        <View style={{ gap: 12 }}>
-          <View>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2', marginBottom: 6 }}>
-              Minimum Amount (₹)
-            </Text>
-            <TextInput
-              value={tempMinAmount}
-              onChangeText={setTempMinAmount}
-              placeholder="0"
-              keyboardType="numeric"
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 8,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                fontSize: 14,
-              }}
-            />
-          </View>
-          <View>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2', marginBottom: 6 }}>
-              Maximum Amount (₹)
-            </Text>
-            <TextInput
-              value={tempMaxAmount}
-              onChangeText={setTempMaxAmount}
-              placeholder="No limit"
-              keyboardType="numeric"
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 8,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                fontSize: 14,
-              }}
-            />
-          </View>
-        </View>
-      </FilterPopup>
-
-      {/* Category Popup */}
-      <FilterPopup
-        visible={activePopup === 'category'}
-        title="Category"
-        onClose={cancelPopup}
-        onConfirm={() => confirmPopup('category')}
-      >
-        <View style={{ gap: 12 }}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.categoryCode}
-              onPress={() => toggleTempCategory(category.categoryCode)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 8,
-                gap: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 4,
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                  backgroundColor: tempCategories.includes(category.categoryCode)
-                    ? '#0F5FDC'
-                    : '#FFFFFF',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {tempCategories.includes(category.categoryCode) && (
-                  <CheckIcon width={12} height={12} color="#FFFFFF" />
-                )}
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </FilterPopup>
-
-      {/* Service Type Popup */}
-      <FilterPopup
-        visible={activePopup === 'serviceType'}
-        title="Service Type"
-        onClose={cancelPopup}
-        onConfirm={() => confirmPopup('serviceType')}
-      >
-        <View style={{ gap: 12 }}>
-          {availableServiceTypes.map((serviceType) => (
-            <TouchableOpacity
-              key={serviceType}
-              onPress={() => toggleTempServiceType(serviceType)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 8,
-                gap: 12,
-              }}
-            >
-              <View
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 4,
-                  borderWidth: 2,
-                  borderColor: '#86ACD8',
-                  backgroundColor: tempServiceTypes.includes(serviceType) ? '#0F5FDC' : '#FFFFFF',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {tempServiceTypes.includes(serviceType) && (
-                  <CheckIcon width={12} height={12} color="#FFFFFF" />
-                )}
-              </View>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
-                {serviceType}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </FilterPopup>
-
-      {/* Sort By Popup */}
-      <FilterPopup
-        visible={activePopup === 'sortBy'}
-        title="Sort By"
-        onClose={cancelPopup}
-        onConfirm={() => confirmPopup('sortBy')}
-      >
-        <View style={{ gap: 16 }}>
-          {/* Sort Field */}
-          <View>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
-              Sort Field
-            </Text>
-            <View style={{ gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => setTempSortBy('date')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  gap: 12,
-                }}
-              >
-                <View
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    backgroundColor: tempSortBy === 'date' ? '#0F5FDC' : '#FFFFFF',
-                  }}
-                />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>Date</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setTempSortBy('amount')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  gap: 12,
-                }}
-              >
-                <View
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    backgroundColor: tempSortBy === 'amount' ? '#0F5FDC' : '#FFFFFF',
-                  }}
-                />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>Amount</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Sort Order */}
-          <View>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
-              Sort Order
-            </Text>
-            <View style={{ gap: 8 }}>
-              <TouchableOpacity
-                onPress={() => setTempSortOrder('desc')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  gap: 12,
-                }}
-              >
-                <View
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    backgroundColor: tempSortOrder === 'desc' ? '#0F5FDC' : '#FFFFFF',
-                  }}
-                />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
-                  Newest First (Descending)
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setTempSortOrder('asc')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  gap: 12,
-                }}
-              >
-                <View
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    backgroundColor: tempSortOrder === 'asc' ? '#0F5FDC' : '#FFFFFF',
-                  }}
-                />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
-                  Oldest First (Ascending)
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </FilterPopup>
+      </FilterDropdown>
     </View>
   );
 }
