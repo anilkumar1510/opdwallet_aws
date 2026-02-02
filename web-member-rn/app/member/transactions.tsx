@@ -710,16 +710,16 @@ export default function TransactionsScreen() {
               {activeCategory ? `${activeCategory.name} Balance` : 'Total Available Balance'}
             </Text>
 
-            {/* Balance Amount - Format: ₹Y / X Left */}
+            {/* Balance Amount - Format: ₹Y Left / X */}
             <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 14 }}>
               <Text style={{ fontSize: 22, fontWeight: '700', color: '#0E51A2' }}>
                 ₹{(activeCategory ? activeCategory.available : totalBalance.current).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
-              <Text style={{ fontSize: 13, color: COLORS.textGray }}>
-                {' '}/ {(activeCategory ? activeCategory.total : totalBalance.allocated).toLocaleString('en-IN')}
-              </Text>
               <Text style={{ fontSize: 11, color: COLORS.textGray }}>
                 {' '}Left
+              </Text>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+                {' '}/ {(activeCategory ? activeCategory.total : totalBalance.allocated).toLocaleString('en-IN')}
               </Text>
             </View>
 
