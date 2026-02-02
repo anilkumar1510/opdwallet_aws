@@ -98,12 +98,22 @@ export default function SelectSlotPage() {
 
       console.log('[SelectSlot] Slots received:', response.data?.length || 0, 'days');
 
-      const processedSlots: DaySlot[] = (response.data || []).map((day: any) => ({
-        date: new Date(day.date),
-        dateStr: day.date,
-        dayName: getDayName(new Date(day.date)),
-        slots: day.slots,
-      }));
+      // Get today's date string in YYYY-MM-DD format for comparison
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
+      const processedSlots: DaySlot[] = (response.data || [])
+        .filter((day: any) => {
+          // Compare date strings to avoid timezone issues
+          const slotDateStr = day.date.split('T')[0]; // Handle both "2026-02-02" and "2026-02-02T00:00:00" formats
+          return slotDateStr >= todayStr; // Only include today and future dates
+        })
+        .map((day: any) => ({
+          date: new Date(day.date),
+          dateStr: day.date,
+          dayName: getDayName(new Date(day.date)),
+          slots: day.slots,
+        }));
 
       setDaySlots(processedSlots);
 
