@@ -9,7 +9,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
@@ -315,6 +315,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { category: categoryParam } = useLocalSearchParams<{ category?: string }>();
   const { familyMembers, activeMember, viewingUserId, loggedInUser, canSwitchProfiles } = useFamily();
 
   // State
@@ -327,13 +328,20 @@ export default function TransactionsScreen() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedWalletMember, setSelectedWalletMember] = useState<any>(null);
 
-  // Filter state
+  // Filter state - Initialize with category from URL if provided
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(categoryParam ? [categoryParam] : []);
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
   const [availableServiceTypes, setAvailableServiceTypes] = useState<string[]>([]);
+
+  // Update category filter when URL param changes
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    }
+  }, [categoryParam]);
 
   // Popup state
   const [activePopup, setActivePopup] = useState<string | null>(null);
@@ -548,6 +556,20 @@ export default function TransactionsScreen() {
     fetchData();
   }, [effectiveUserId, selectedTypes, selectedCategories, dateFrom, dateTo, selectedServiceTypes]);
 
+  // Computed values (must be before any early returns)
+  const totalBalance = walletData?.totalBalance || { allocated: 0, current: 0, consumed: 0 };
+  const categories = walletData?.categories || [];
+
+  // Get active category data for header and balance card
+  const activeCategory = useMemo(() => {
+    if (categoryParam && categories.length > 0) {
+      return categories.find(c => c.categoryCode === categoryParam) || null;
+    }
+    return null;
+  }, [categoryParam, categories]);
+
+  const activeCategoryName = activeCategory?.name || null;
+
   // Loading state
   if (loading) {
     return (
@@ -556,9 +578,6 @@ export default function TransactionsScreen() {
       </View>
     );
   }
-
-  const totalBalance = walletData?.totalBalance || { allocated: 0, current: 0, consumed: 0 };
-  const categories = walletData?.categories || [];
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
@@ -582,9 +601,16 @@ export default function TransactionsScreen() {
               >
                 <BackArrowIcon />
               </TouchableOpacity>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
-                Transaction History
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                  {activeCategoryName ? activeCategoryName : 'Transaction History'}
+                </Text>
+                {activeCategoryName && (
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                    Transaction History
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
         </View>
@@ -666,7 +692,7 @@ export default function TransactionsScreen() {
             </View>
           )}
 
-          {/* Balance Card - Matching Bookings Page Blue Card Style */}
+          {/* Balance Card - Shows category-specific balance when filtering by category */}
           <LinearGradient
             colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
             start={{ x: 0, y: 0 }}
@@ -679,25 +705,25 @@ export default function TransactionsScreen() {
               borderColor: '#86ACD8',
             }}
           >
-            {/* Total Available Balance Label */}
+            {/* Balance Label */}
             <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
-              Total Available Balance
+              {activeCategory ? `${activeCategory.name} Balance` : 'Total Available Balance'}
             </Text>
 
             {/* Balance Amount - Format: ₹Y / X Left */}
             <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 14 }}>
               <Text style={{ fontSize: 22, fontWeight: '700', color: '#0E51A2' }}>
-                ₹{totalBalance.current.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{(activeCategory ? activeCategory.available : totalBalance.current).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
               <Text style={{ fontSize: 13, color: COLORS.textGray }}>
-                {' '}/ {totalBalance.allocated.toLocaleString('en-IN')}
+                {' '}/ {(activeCategory ? activeCategory.total : totalBalance.allocated).toLocaleString('en-IN')}
               </Text>
               <Text style={{ fontSize: 11, color: COLORS.textGray }}>
                 {' '}Left
               </Text>
             </View>
 
-            {/* Total Money Used Bar */}
+            {/* Money Used Bar */}
             <View
               style={{
                 flexDirection: 'row',
@@ -712,18 +738,18 @@ export default function TransactionsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <WalletIcon size={16} color={COLORS.orange} />
                 <Text style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
-                  Total Money Used
+                  {activeCategory ? 'Category Used' : 'Total Money Used'}
                 </Text>
               </View>
               <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.orange }}>
-                {totalBalance.consumed.toLocaleString('en-IN')} /-
+                {(activeCategory ? activeCategory.consumed : totalBalance.consumed).toLocaleString('en-IN')} /-
               </Text>
             </View>
           </LinearGradient>
 
           {/* Transaction History Section */}
           <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 16 }}>
-            Transaction History
+            {activeCategoryName ? `${activeCategoryName} Transactions` : 'Transaction History'}
           </Text>
 
           {/* Filter Pills - Figma Style */}
