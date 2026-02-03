@@ -34,7 +34,7 @@ const COLORS = {
   background: '#f7f7fc',
   white: '#FFFFFF',
   border: '#E5E7EB',
-  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  cardBorder: '#E5E7EB',
   success: '#16a34a',
   error: '#DC2626',
   selectedBorder: '#86ACD8',
@@ -117,7 +117,7 @@ export default function InClinicConsultationPage() {
     try {
       console.log('[InClinicConsultation] Fetching IN_CLINIC appointments for user:', targetUserId);
       const response = await apiClient.get<Appointment[]>(
-        `/appointments?userId=${targetUserId}&type=IN_CLINIC`
+        `/appointments/user/${targetUserId}?type=IN_CLINIC`
       );
       console.log('[InClinicConsultation] Appointments received:', response.data?.length || 0);
       setAppointments(response.data || []);
