@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
@@ -22,6 +22,24 @@ import {
   ExclamationTriangleIcon,
 } from '../../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  warning: '#F59E0B',
+};
 
 // Types
 interface AHCPackage {
@@ -84,48 +102,62 @@ function BookingSummaryCard({ type, booking }: BookingSummaryProps) {
   const labBooking = booking as LabBookingData;
 
   return (
-    <View style={styles.summaryCard}>
-      <View style={styles.summaryHeader}>
-        <View style={styles.checkBadge}>
+    <View
+      style={{
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.success, justifyContent: 'center', alignItems: 'center' }}>
           <CheckCircleIcon width={16} height={16} color="#FFF" />
         </View>
-        <Text style={styles.summaryTitle}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
           {isLab ? 'Lab Tests' : 'Diagnostic Tests'}
         </Text>
       </View>
 
-      <View style={styles.summaryDetails}>
-        <Text style={styles.vendorName}>{booking.vendorName}</Text>
+      <View style={{ paddingLeft: 32 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 8 }}>{booking.vendorName}</Text>
 
-        <View style={styles.detailRow}>
-          <CalendarIcon width={14} height={14} color="#666" />
-          <Text style={styles.detailText}>{booking.slotDate}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <CalendarIcon width={14} height={14} color={COLORS.textGray} />
+          <Text style={{ fontSize: 13, color: COLORS.textGray }}>{booking.slotDate}</Text>
         </View>
 
-        <View style={styles.detailRow}>
-          <ClockIcon width={14} height={14} color="#666" />
-          <Text style={styles.detailText}>{booking.slotTime}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <ClockIcon width={14} height={14} color={COLORS.textGray} />
+          <Text style={{ fontSize: 13, color: COLORS.textGray }}>{booking.slotTime}</Text>
         </View>
 
-        <View style={styles.detailRow}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {(booking as LabBookingData).collectionType === 'HOME_COLLECTION' ? (
             <>
-              <HomeIcon width={14} height={14} color="#5FA171" />
-              <Text style={[styles.detailText, { color: '#5FA171' }]}>Home Collection</Text>
+              <HomeIcon width={14} height={14} color={COLORS.primary} />
+              <Text style={{ fontSize: 13, color: COLORS.primary }}>Home Collection</Text>
             </>
           ) : (
             <>
-              <BuildingOfficeIcon width={14} height={14} color="#5FA171" />
-              <Text style={[styles.detailText, { color: '#5FA171' }]}>Center Visit</Text>
+              <BuildingOfficeIcon width={14} height={14} color={COLORS.primary} />
+              <Text style={{ fontSize: 13, color: COLORS.primary }}>Center Visit</Text>
             </>
           )}
         </View>
 
         {isLab && labBooking.collectionType === 'HOME_COLLECTION' && labBooking.address && (
-          <View style={styles.addressSection}>
-            <MapPinIcon width={14} height={14} color="#666" />
-            <Text style={styles.addressText} numberOfLines={2}>
-              {labBooking.address.line1}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+            <MapPinIcon width={14} height={14} color={COLORS.textGray} />
+            <Text style={{ fontSize: 13, color: COLORS.textGray, flex: 1 }} numberOfLines={2}>
+              {labBooking.address.line1 || labBooking.address.addressLine1}
               {labBooking.address.city && `, ${labBooking.address.city}`}
               {labBooking.address.pincode && ` - ${labBooking.address.pincode}`}
             </Text>
@@ -133,9 +165,9 @@ function BookingSummaryCard({ type, booking }: BookingSummaryProps) {
         )}
       </View>
 
-      <View style={styles.priceRow}>
-        <Text style={styles.priceLabel}>Amount</Text>
-        <Text style={styles.priceValue}>₹{booking.price || (booking as any).totalDiscountedPrice || 0}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+        <Text style={{ fontSize: 14, color: COLORS.textGray }}>Amount</Text>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primary }}>₹{booking.price || (booking as any).totalDiscountedPrice || 0}</Text>
       </View>
     </View>
   );
@@ -292,8 +324,6 @@ export default function AHCPaymentPage() {
     setProcessing(true);
 
     try {
-      // apiClient imported at top
-
       // Format lab collection address to match backend DTO
       const formattedLabAddress = labBooking?.address ? {
         fullName: patientName,
@@ -440,17 +470,34 @@ export default function AHCPaymentPage() {
   // ============ LOADING STATE ============
   if (loading) {
     return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#90EAA9', '#5FA171']} style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeftIcon width={24} height={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Payment Summary</Text>
-          <View style={styles.headerSpacer} />
-        </LinearGradient>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5FA171" />
-          <Text style={styles.loadingText}>Loading payment details...</Text>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+            ...Platform.select({
+              web: { position: 'sticky' as any, top: 0, zIndex: 10 },
+            }),
+          }}
+        >
+          <SafeAreaView edges={['top']}>
+            <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, borderRadius: 12 }} activeOpacity={0.7}>
+                  <ArrowLeftIcon width={20} height={20} color="#374151" />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Payment Summary</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>Review and confirm</Text>
+                </View>
+              </View>
+            </View>
+          </SafeAreaView>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ marginTop: 12, fontSize: 16, color: COLORS.textGray }}>Loading payment details...</Text>
         </View>
       </View>
     );
@@ -459,28 +506,43 @@ export default function AHCPaymentPage() {
   // ============ SUCCESS STATE ============
   if (paymentSuccess) {
     return (
-      <View style={styles.container}>
-        <View style={styles.successContainer}>
-          <View style={styles.successCard}>
-            <View style={styles.successIconContainer}>
-              <CheckCircleIcon width={48} height={48} color="#5FA171" />
-            </View>
-            <Text style={styles.successTitle}>Booking Confirmed!</Text>
-            <Text style={styles.successSubtitle}>
-              Your Annual Health Check has been booked successfully.
-            </Text>
-            {ahcPackage && (
-              <Text style={styles.successPackage}>{ahcPackage.name}</Text>
-            )}
-            {pricing.walletDeduction > 0 && (
-              <Text style={styles.successWallet}>
-                ₹{pricing.walletDeduction} deducted from wallet
-              </Text>
-            )}
-            <TouchableOpacity style={styles.viewBookingsButton} onPress={handleViewBookings}>
-              <Text style={styles.viewBookingsText}>View Bookings</Text>
-            </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderRadius: 16,
+            padding: 32,
+            alignItems: 'center',
+            width: '100%',
+            maxWidth: 400,
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
+          }}
+        >
+          <View style={{ marginBottom: 20 }}>
+            <CheckCircleIcon width={48} height={48} color={COLORS.success} />
           </View>
+          <Text style={{ fontSize: 24, fontWeight: '700', color: COLORS.success, marginBottom: 8 }}>Booking Confirmed!</Text>
+          <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', marginBottom: 8 }}>
+            Your Annual Health Check has been booked successfully.
+          </Text>
+          {ahcPackage && (
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 8 }}>{ahcPackage.name}</Text>
+          )}
+          {pricing.walletDeduction > 0 && (
+            <Text style={{ fontSize: 14, color: COLORS.primary, marginBottom: 24 }}>
+              ₹{pricing.walletDeduction} deducted from wallet
+            </Text>
+          )}
+          <TouchableOpacity
+            style={{ backgroundColor: COLORS.primary, paddingVertical: 14, paddingHorizontal: 40, borderRadius: 12 }}
+            onPress={handleViewBookings}
+          >
+            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>View Bookings</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -490,133 +552,213 @@ export default function AHCPaymentPage() {
   const isFullyCovered = pricing.finalPayable === 0;
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* Header */}
-      <LinearGradient colors={['#90EAA9', '#5FA171']} style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeftIcon width={24} height={24} color="#FFF" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Payment Summary</Text>
-          <Text style={styles.headerSubtitle}>Review & Pay</Text>
-        </View>
-        <View style={styles.headerSpacer} />
-      </LinearGradient>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Package Info */}
-        {ahcPackage && (
-          <View style={styles.packageCard}>
-            <Text style={styles.packageName}>{ahcPackage.name}</Text>
-            <Text style={styles.packageDetails}>
-              Annual Health Check Package
-            </Text>
+      <View
+        style={{
+          backgroundColor: COLORS.white,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
+          ...Platform.select({
+            web: { position: 'sticky' as any, top: 0, zIndex: 10 },
+          }),
+        }}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, borderRadius: 12 }} activeOpacity={0.7}>
+                <ArrowLeftIcon width={20} height={20} color="#374151" />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Payment Summary</Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>Review & Pay</Text>
+              </View>
+            </View>
           </View>
-        )}
+        </SafeAreaView>
+      </View>
 
-        {/* Booking Summaries */}
-        {labBooking && (
-          <BookingSummaryCard type="lab" booking={labBooking} />
-        )}
-        {diagnosticBooking && (
-          <BookingSummaryCard type="diagnostic" booking={diagnosticBooking} />
-        )}
-
-        {/* Payment Breakdown */}
-        <View style={styles.breakdownCard}>
-          <Text style={styles.breakdownTitle}>Payment Breakdown</Text>
-
-          {labBooking && (
-            <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Lab Tests</Text>
-              <Text style={styles.breakdownValue}>₹{pricing.labTotal}</Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+          {/* Package Info */}
+          {ahcPackage && (
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 16,
+                borderWidth: 2,
+                borderColor: COLORS.selectedBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>{ahcPackage.name}</Text>
+              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>Annual Health Check Package</Text>
             </View>
           )}
 
-          {diagnosticBooking && (
-            <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Diagnostic Tests</Text>
-              <Text style={styles.breakdownValue}>₹{pricing.diagnosticTotal}</Text>
+          {/* Booking Summaries */}
+          {labBooking && <BookingSummaryCard type="lab" booking={labBooking} />}
+          {diagnosticBooking && <BookingSummaryCard type="diagnostic" booking={diagnosticBooking} />}
+
+          {/* Payment Breakdown */}
+          <View
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 16 }}>Payment Breakdown</Text>
+
+            {labBooking && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>Lab Tests</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>₹{pricing.labTotal}</Text>
+              </View>
+            )}
+
+            {diagnosticBooking && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>Diagnostic Tests</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>₹{pricing.diagnosticTotal}</Text>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border, marginTop: 4 }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray }}>Subtotal</Text>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>₹{pricing.subtotal}</Text>
             </View>
-          )}
 
-          <View style={[styles.breakdownRow, styles.subtotalRow]}>
-            <Text style={styles.breakdownLabel}>Subtotal</Text>
-            <Text style={styles.breakdownValue}>₹{pricing.subtotal}</Text>
-          </View>
-
-          <View style={styles.breakdownRow}>
-            <Text style={styles.breakdownLabel}>Wallet Deduction</Text>
-            <Text style={[styles.breakdownValue, styles.greenText]}>-₹{pricing.walletDeduction}</Text>
-          </View>
-
-          {pricing.copayAmount > 0 && (
-            <View style={styles.breakdownRow}>
-              <Text style={styles.breakdownLabel}>Copay (20%)</Text>
-              <Text style={[styles.breakdownValue, styles.orangeText]}>₹{pricing.copayAmount}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray }}>Wallet Deduction</Text>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.success }}>-₹{pricing.walletDeduction}</Text>
             </View>
-          )}
 
-          <View style={styles.divider} />
+            {pricing.copayAmount > 0 && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>Copay (20%)</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.warning }}>₹{pricing.copayAmount}</Text>
+              </View>
+            )}
 
-          <View style={styles.breakdownRow}>
-            <Text style={styles.totalLabel}>Total Payable</Text>
-            <Text style={[styles.totalValue, isFullyCovered && styles.greenText]}>
-              {isFullyCovered ? 'Fully Covered' : `₹${pricing.finalPayable}`}
-            </Text>
+            <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 12 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark }}>Total Payable</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: isFullyCovered ? COLORS.success : COLORS.textDark }}>
+                {isFullyCovered ? 'Fully Covered' : `₹${pricing.finalPayable}`}
+              </Text>
+            </View>
+          </View>
+
+          {/* Wallet Balance */}
+          <View
+            style={{
+              backgroundColor: 'rgba(3, 77, 162, 0.05)',
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: COLORS.selectedBorder,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 12 }}>Wallet Balance</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray }}>Current Balance</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.textDark }}>₹{walletBalance}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray }}>After Payment</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.success }}>
+                ₹{Math.max(0, walletBalance - pricing.walletDeduction)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Important Info */}
+          <View
+            style={{
+              backgroundColor: '#FEF3C7',
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: '#FDE68A',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <ExclamationTriangleIcon width={18} height={18} color={COLORS.warning} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#92400E' }}>Important Information</Text>
+            </View>
+            <View style={{ gap: 4 }}>
+              <Text style={{ fontSize: 13, color: '#92400E', lineHeight: 18 }}>• This is a one-time annual health check benefit</Text>
+              <Text style={{ fontSize: 13, color: '#92400E', lineHeight: 18 }}>• Once booked, you cannot cancel or modify the booking</Text>
+              <Text style={{ fontSize: 13, color: '#92400E', lineHeight: 18 }}>• Please ensure all details are correct before proceeding</Text>
+              <Text style={{ fontSize: 13, color: '#92400E', lineHeight: 18 }}>• Lab reports will be shared within 24-48 hours</Text>
+            </View>
           </View>
         </View>
-
-        {/* Wallet Balance */}
-        <View style={styles.walletCard}>
-          <Text style={styles.walletTitle}>Wallet Balance</Text>
-          <View style={styles.walletRow}>
-            <Text style={styles.walletLabel}>Current Balance</Text>
-            <Text style={styles.walletValue}>₹{walletBalance}</Text>
-          </View>
-          <View style={styles.walletRow}>
-            <Text style={styles.walletLabel}>After Payment</Text>
-            <Text style={[styles.walletValue, styles.greenText]}>
-              ₹{Math.max(0, walletBalance - pricing.walletDeduction)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Important Info */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoHeader}>
-            <ExclamationTriangleIcon width={18} height={18} color="#F59E0B" />
-            <Text style={styles.infoTitle}>Important Information</Text>
-          </View>
-          <View style={styles.infoList}>
-            <Text style={styles.infoItem}>• This is a one-time annual health check benefit</Text>
-            <Text style={styles.infoItem}>• Once booked, you cannot cancel or modify the booking</Text>
-            <Text style={styles.infoItem}>• Please ensure all details are correct before proceeding</Text>
-            <Text style={styles.infoItem}>• Lab reports will be shared within 24-48 hours</Text>
-          </View>
-        </View>
-
-        {/* Bottom spacing */}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Bottom Bar */}
-      <View style={styles.bottomBar}>
-        <View style={styles.bottomPriceInfo}>
-          <Text style={styles.bottomPriceLabel}>Total Payable</Text>
-          <Text style={[styles.bottomPriceValue, isFullyCovered && styles.greenText]}>
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: COLORS.white,
+          padding: 16,
+          paddingBottom: 32,
+          borderTopWidth: 1,
+          borderTopColor: COLORS.border,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 5,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 12, color: COLORS.textGray }}>Total Payable</Text>
+          <Text style={{ fontSize: 22, fontWeight: '700', color: isFullyCovered ? COLORS.success : COLORS.textDark }}>
             {isFullyCovered ? 'Fully Covered' : `₹${pricing.finalPayable}`}
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.payButton, processing && styles.payButtonDisabled]}
+          style={{
+            backgroundColor: processing ? '#CCC' : COLORS.primary,
+            paddingVertical: 14,
+            paddingHorizontal: 32,
+            borderRadius: 12,
+            minWidth: 140,
+            alignItems: 'center',
+          }}
           onPress={handleProcessPayment}
           disabled={processing}
         >
           {processing ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <Text style={styles.payButtonText}>
+            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>
               {isFullyCovered ? 'Confirm Booking' : `Pay ₹${pricing.finalPayable}`}
             </Text>
           )}
@@ -625,384 +767,3 @@ export default function AHCPaymentPage() {
     </View>
   );
 }
-
-// ============ STYLES ============
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerContent: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 4,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-
-  // Package Card
-  packageCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#5FA171',
-  },
-  packageName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#5FA171',
-  },
-  packageDetails: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 4,
-  },
-
-  // Summary Card
-  summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  checkBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#5FA171',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  summaryDetails: {
-    paddingLeft: 32,
-  },
-  vendorName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  detailText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  addressSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  addressText: {
-    fontSize: 13,
-    color: '#666',
-    flex: 1,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  priceLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  priceValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#5FA171',
-  },
-
-  // Breakdown Card
-  breakdownCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  breakdownTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  subtotalRow: {
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    marginTop: 4,
-  },
-  breakdownLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  breakdownValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-  },
-  greenText: {
-    color: '#5FA171',
-  },
-  orangeText: {
-    color: '#F59E0B',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 12,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-  },
-
-  // Wallet Card
-  walletCard: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#A5D6A7',
-  },
-  walletTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  walletRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  walletLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  walletValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-
-  // Info Card
-  infoCard: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#92400E',
-  },
-  infoList: {
-    gap: 4,
-  },
-  infoItem: {
-    fontSize: 13,
-    color: '#92400E',
-    lineHeight: 18,
-  },
-
-  // Bottom Bar
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFF',
-    padding: 16,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  bottomPriceInfo: {
-    flex: 1,
-  },
-  bottomPriceLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  bottomPriceValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-  },
-  payButton: {
-    backgroundColor: '#5FA171',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    minWidth: 140,
-    alignItems: 'center',
-  },
-  payButtonDisabled: {
-    backgroundColor: '#CCC',
-  },
-  payButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  // Success State
-  successContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  successCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  successIconContainer: {
-    marginBottom: 20,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#5FA171',
-    marginBottom: 8,
-  },
-  successSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  successPackage: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  successWallet: {
-    fontSize: 14,
-    color: '#5FA171',
-    marginBottom: 24,
-  },
-  viewBookingsButton: {
-    backgroundColor: '#5FA171',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 8,
-  },
-  viewBookingsText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

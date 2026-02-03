@@ -10,16 +10,64 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Svg, { Path, Circle } from 'react-native-svg';
 import {
   ArrowLeftIcon,
-  SparklesIcon,
-  BeakerIcon,
   CalendarIcon,
   CheckCircleIcon,
 } from '../../src/components/icons/InlineSVGs';
 import apiClient from '../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  warning: '#EAB308',
+};
+
+// ============================================================================
+// ICONS
+// ============================================================================
+
+function SparklesIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3L14.5 8.5L20 9.5L16 14L17 20L12 17L7 20L8 14L4 9.5L9.5 8.5L12 3Z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function BeakerIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 3H15M9 3V7.4C9 7.96 8.74 8.49 8.28 8.84L4.29 11.84C3.68 12.3 3.27 12.97 3.27 13.7V17.5C3.27 19.43 4.84 21 6.77 21H17.23C19.16 21 20.73 19.43 20.73 17.5V13.7C20.73 12.97 20.32 12.3 19.71 11.84L15.72 8.84C15.26 8.49 15 7.96 15 7.4V3M9 3H15"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -59,12 +107,11 @@ interface Eligibility {
 // ============================================================================
 
 interface IconCircleProps {
-  icon: React.ComponentType<{ width?: number; height?: number; color?: string }>;
+  icon: React.ComponentType<{ size?: number }>;
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'blue' | 'green' | 'white';
 }
 
-const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md', variant = 'blue' }) => {
+const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const sizeMap = {
     sm: { container: 40, icon: 20 },
     md: { container: 48, icon: 24 },
@@ -73,73 +120,19 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md', varian
 
   const dimensions = sizeMap[size];
 
-  if (variant === 'green') {
-    return (
-      <LinearGradient
-        colors={['#90EAA9', '#5FA171']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={{
-          width: dimensions.container,
-          height: dimensions.container,
-          borderRadius: dimensions.container / 2,
-          justifyContent: 'center',
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: 'rgba(95, 161, 113, 0.3)',
-          shadowColor: '#000',
-          shadowOffset: { width: -2, height: 11 },
-          shadowOpacity: 0.05,
-          shadowRadius: 46.1,
-          elevation: 4,
-        }}
-      >
-        <Icon width={dimensions.icon} height={dimensions.icon} color="#FFFFFF" />
-      </LinearGradient>
-    );
-  }
-
-  if (variant === 'white') {
-    return (
-      <View
-        style={{
-          width: dimensions.container,
-          height: dimensions.container,
-          borderRadius: dimensions.container / 2,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          borderWidth: 2,
-          borderColor: 'rgba(255, 255, 255, 0.3)',
-        }}
-      >
-        <Icon width={dimensions.icon} height={dimensions.icon} color="#FFFFFF" />
-      </View>
-    );
-  }
-
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: 'rgba(3, 77, 162, 0.1)',
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon size={dimensions.icon} />
+    </View>
   );
 };
 
@@ -175,95 +168,98 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
   };
 
   return (
-    <LinearGradient
-      colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-      start={{ x: 0, y: 0.2 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
+        backgroundColor: COLORS.white,
         borderRadius: 16,
         overflow: 'hidden',
-        borderWidth: 2,
-        borderColor: '#86ACD8',
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
       }}
     >
-      {/* Green Header */}
-      <LinearGradient
-        colors={['#90EAA9', '#5FA171']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
+      {/* Header */}
+      <View
         style={{
-          padding: 24,
+          backgroundColor: COLORS.primary,
+          padding: 20,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <IconCircle icon={SparklesIcon} size="lg" variant="white" />
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <SparklesIcon size={28} />
+          </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 }}>
               {ahcPackage.name}
             </Text>
-            <Text style={{ fontSize: 14, color: 'rgba(255, 255, 255, 0.9)' }}>
+            <Text style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.9)' }}>
               Annual Health Check Package
             </Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Content */}
-      <View style={{ padding: 24, gap: 20 }}>
+      <View style={{ padding: 20, gap: 16 }}>
         {/* Stats Row */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
           {/* Total Tests Card */}
-          <LinearGradient
-            colors={['rgba(144, 234, 169, 0.15)', 'rgba(95, 161, 113, 0.15)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
               flex: 1,
               borderRadius: 12,
-              padding: 16,
-              borderWidth: 2,
-              borderColor: 'rgba(95, 161, 113, 0.3)',
+              padding: 14,
+              backgroundColor: 'rgba(3, 77, 162, 0.05)',
+              borderWidth: 1,
+              borderColor: 'rgba(3, 77, 162, 0.1)',
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <BeakerIcon width={24} height={24} color="#5FA171" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <BeakerIcon size={22} />
               <View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 22, fontWeight: '700', color: COLORS.primary }}>
                   {ahcPackage.totalTests}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>Total Tests</Text>
+                <Text style={{ fontSize: 11, color: COLORS.textGray }}>Total Tests</Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* Validity Card */}
-          <LinearGradient
-            colors={['rgba(14, 81, 162, 0.1)', 'rgba(14, 81, 162, 0.05)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
               flex: 1,
               borderRadius: 12,
-              padding: 16,
-              borderWidth: 2,
-              borderColor: 'rgba(14, 81, 162, 0.2)',
+              padding: 14,
+              backgroundColor: 'rgba(3, 77, 162, 0.05)',
+              borderWidth: 1,
+              borderColor: 'rgba(3, 77, 162, 0.1)',
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <CalendarIcon width={24} height={24} color="#0E51A2" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <CalendarIcon width={22} height={22} color={COLORS.primary} />
               <View>
-                <Text style={{ fontSize: 11, fontWeight: '500', color: '#6B7280' }}>Valid Until</Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 11, fontWeight: '500', color: COLORS.textGray }}>Valid Until</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.primary }}>
                   {formatDate(ahcPackage.effectiveTo)}
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Test Categories */}
@@ -274,28 +270,28 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
               style={{
                 flex: 1,
                 borderRadius: 12,
-                padding: 16,
-                backgroundColor: '#FFFFFF',
+                padding: 14,
+                backgroundColor: COLORS.white,
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: COLORS.border,
               }}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary, marginBottom: 8 }}>
                 Lab Tests ({ahcPackage.totalLabTests})
               </Text>
-              <View style={{ gap: 6, maxHeight: 128 }}>
+              <View style={{ gap: 6, maxHeight: 120 }}>
                 {ahcPackage.labServices.slice(0, 5).map((service) => (
                   <View key={service._id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
                     <View style={{ marginTop: 2 }}>
-                      <CheckCircleIcon width={14} height={14} color="#5FA171" />
+                      <CheckCircleIcon width={14} height={14} color={COLORS.success} />
                     </View>
-                    <Text style={{ fontSize: 11, color: '#374151', flex: 1 }} numberOfLines={1}>
+                    <Text style={{ fontSize: 11, color: COLORS.textDark, flex: 1 }} numberOfLines={1}>
                       {service.name}
                     </Text>
                   </View>
                 ))}
                 {ahcPackage.labServices.length > 5 && (
-                  <Text style={{ fontSize: 11, color: '#6B7280', fontStyle: 'italic' }}>
+                  <Text style={{ fontSize: 11, color: COLORS.textGray, fontStyle: 'italic' }}>
                     +{ahcPackage.labServices.length - 5} more tests
                   </Text>
                 )}
@@ -309,28 +305,28 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
               style={{
                 flex: 1,
                 borderRadius: 12,
-                padding: 16,
-                backgroundColor: '#FFFFFF',
+                padding: 14,
+                backgroundColor: COLORS.white,
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: COLORS.border,
               }}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary, marginBottom: 8 }}>
                 Diagnostic Tests ({ahcPackage.totalDiagnosticTests})
               </Text>
-              <View style={{ gap: 6, maxHeight: 128 }}>
+              <View style={{ gap: 6, maxHeight: 120 }}>
                 {ahcPackage.diagnosticServices.slice(0, 5).map((service) => (
                   <View key={service._id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
                     <View style={{ marginTop: 2 }}>
-                      <CheckCircleIcon width={14} height={14} color="#5FA171" />
+                      <CheckCircleIcon width={14} height={14} color={COLORS.success} />
                     </View>
-                    <Text style={{ fontSize: 11, color: '#374151', flex: 1 }} numberOfLines={1}>
+                    <Text style={{ fontSize: 11, color: COLORS.textDark, flex: 1 }} numberOfLines={1}>
                       {service.name}
                     </Text>
                   </View>
                 ))}
                 {ahcPackage.diagnosticServices.length > 5 && (
-                  <Text style={{ fontSize: 11, color: '#6B7280', fontStyle: 'italic' }}>
+                  <Text style={{ fontSize: 11, color: COLORS.textGray, fontStyle: 'italic' }}>
                     +{ahcPackage.diagnosticServices.length - 5} more tests
                   </Text>
                 )}
@@ -341,15 +337,13 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
 
         {/* Warning if already booked */}
         {!canBook && lastBooking && (
-          <LinearGradient
-            colors={['rgba(255, 193, 7, 0.1)', 'rgba(255, 152, 0, 0.1)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
               borderRadius: 12,
-              padding: 16,
-              borderWidth: 2,
-              borderColor: 'rgba(255, 193, 7, 0.3)',
+              padding: 14,
+              backgroundColor: '#FEF3C7',
+              borderWidth: 1,
+              borderColor: '#FDE68A',
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
@@ -358,7 +352,7 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
                   width: 20,
                   height: 20,
                   borderRadius: 10,
-                  backgroundColor: '#EAB308',
+                  backgroundColor: COLORS.warning,
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}
@@ -366,23 +360,23 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
                 <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>!</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827', marginBottom: 4 }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark, marginBottom: 4 }}>
                   Already Booked This Year
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 8 }}>
                   You have already booked your annual health check for this policy year.
                 </Text>
                 <TouchableOpacity
                   onPress={() => router.push('/member/bookings?tab=ahc' as any)}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.primary }}>
                     View Your Booking →
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         )}
 
         {/* Book Button */}
@@ -390,37 +384,27 @@ const AHCPackageCard: React.FC<AHCPackageCardProps> = ({
           onPress={onBookClick}
           disabled={!canBook}
           activeOpacity={0.8}
+          style={{
+            backgroundColor: canBook ? COLORS.primary : '#9CA3AF',
+            paddingVertical: 14,
+            paddingHorizontal: 24,
+            borderRadius: 12,
+            alignItems: 'center',
+            opacity: canBook ? 1 : 0.7,
+          }}
         >
-          <LinearGradient
-            colors={canBook ? ['#90EAA9', '#5FA171'] : ['#9CA3AF', '#9CA3AF']}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={{
-              paddingVertical: 14,
-              paddingHorizontal: 24,
-              borderRadius: 12,
-              alignItems: 'center',
-              opacity: canBook ? 1 : 0.7,
-              shadowColor: canBook ? '#000' : 'transparent',
-              shadowOffset: { width: -2, height: 11 },
-              shadowOpacity: canBook ? 0.05 : 0,
-              shadowRadius: 46.1,
-              elevation: canBook ? 4 : 0,
-            }}
-          >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>
-              {canBook ? 'Book Your Annual Health Check Today' : 'Cannot Book - Already Booked This Year'}
-            </Text>
-          </LinearGradient>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>
+            {canBook ? 'Book Your Annual Health Check Today' : 'Cannot Book - Already Booked This Year'}
+          </Text>
         </TouchableOpacity>
 
         {/* Info Note */}
-        <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', lineHeight: 18 }}>
+        <Text style={{ fontSize: 12, color: COLORS.textGray, textAlign: 'center', lineHeight: 18 }}>
           This package can be booked <Text style={{ fontWeight: '600' }}>once per policy year</Text>.
           {canBook && ' Book now to avail your wellness benefit!'}
         </Text>
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 
@@ -554,18 +538,13 @@ export default function WellnessProgramsPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
         {/* Header */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLORS.white,
             borderBottomWidth: 1,
-            borderBottomColor: '#e5e7eb',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 2,
+            borderBottomColor: COLORS.border,
             ...Platform.select({
               web: {
                 position: 'sticky' as any,
@@ -582,22 +561,22 @@ export default function WellnessProgramsPage() {
                 marginHorizontal: 'auto',
                 width: '100%',
                 paddingHorizontal: 16,
-                paddingVertical: 16,
+                paddingVertical: 12,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => router.back()}
-                  style={{ padding: 8, borderRadius: 8 }}
+                  style={{ padding: 8, borderRadius: 12 }}
                   activeOpacity={0.7}
                 >
                   <ArrowLeftIcon width={20} height={20} color="#374151" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                     Wellness Services
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                     Access wellness and preventive care services
                   </Text>
                 </View>
@@ -608,7 +587,7 @@ export default function WellnessProgramsPage() {
 
         {/* Loading Spinner */}
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-          <ActivityIndicator size="large" color="#5FA171" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       </View>
     );
@@ -620,18 +599,13 @@ export default function WellnessProgramsPage() {
 
   if (error || !ahcPackage) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
         {/* Header */}
         <View
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: COLORS.white,
             borderBottomWidth: 1,
-            borderBottomColor: '#e5e7eb',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 2,
+            borderBottomColor: COLORS.border,
             ...Platform.select({
               web: {
                 position: 'sticky' as any,
@@ -648,22 +622,22 @@ export default function WellnessProgramsPage() {
                 marginHorizontal: 'auto',
                 width: '100%',
                 paddingHorizontal: 16,
-                paddingVertical: 16,
+                paddingVertical: 12,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => router.back()}
-                  style={{ padding: 8, borderRadius: 8 }}
+                  style={{ padding: 8, borderRadius: 12 }}
                   activeOpacity={0.7}
                 >
                   <ArrowLeftIcon width={20} height={20} color="#374151" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                     Wellness Services
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                     Access wellness and preventive care services
                   </Text>
                 </View>
@@ -681,32 +655,30 @@ export default function WellnessProgramsPage() {
           }}
         >
           <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
-            <LinearGradient
-              colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-              start={{ x: 0, y: 0.2 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
+                backgroundColor: COLORS.white,
                 borderRadius: 16,
                 padding: 32,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
                 alignItems: 'center',
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
               {/* Icon */}
-              <IconCircle icon={SparklesIcon} size="lg" variant="green" />
+              <IconCircle icon={SparklesIcon} size="lg" />
 
               {/* Message */}
               <Text
                 style={{
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: '700',
-                  color: '#0E51A2',
+                  color: COLORS.primary,
                   marginTop: 24,
                   marginBottom: 12,
                   textAlign: 'center',
@@ -719,7 +691,7 @@ export default function WellnessProgramsPage() {
               <Text
                 style={{
                   fontSize: 14,
-                  color: '#374151',
+                  color: COLORS.textGray,
                   textAlign: 'center',
                   lineHeight: 22,
                   marginBottom: 24,
@@ -731,26 +703,19 @@ export default function WellnessProgramsPage() {
               </Text>
 
               {/* Retry Button */}
-              <TouchableOpacity onPress={fetchAhcData} activeOpacity={0.8}>
-                <LinearGradient
-                  colors={['#90EAA9', '#5FA171']}
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
-                  style={{
-                    paddingHorizontal: 24,
-                    paddingVertical: 12,
-                    borderRadius: 12,
-                    shadowColor: '#000',
-                    shadowOffset: { width: -2, height: 11 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 46.1,
-                    elevation: 4,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>Retry</Text>
-                </LinearGradient>
+              <TouchableOpacity
+                onPress={fetchAhcData}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>Retry</Text>
               </TouchableOpacity>
-            </LinearGradient>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -762,18 +727,13 @@ export default function WellnessProgramsPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
+          borderBottomColor: COLORS.border,
           ...Platform.select({
             web: {
               position: 'sticky' as any,
@@ -790,22 +750,22 @@ export default function WellnessProgramsPage() {
               marginHorizontal: 'auto',
               width: '100%',
               paddingHorizontal: 16,
-              paddingVertical: 16,
+              paddingVertical: 12,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={() => router.back()}
-                style={{ padding: 8, borderRadius: 8 }}
+                style={{ padding: 8, borderRadius: 12 }}
                 activeOpacity={0.7}
               >
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                   Wellness Services
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Access wellness and preventive care services
                 </Text>
               </View>
@@ -819,9 +779,10 @@ export default function WellnessProgramsPage() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingVertical: 32,
+          paddingVertical: 20,
           paddingBottom: 100,
         }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
           <AHCPackageCard

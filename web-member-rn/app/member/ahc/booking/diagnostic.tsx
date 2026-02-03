@@ -2,25 +2,40 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
+  Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
-  MapPinIcon,
   BuildingOfficeIcon,
   CheckCircleIcon,
   ClockIcon,
-  CalendarIcon,
 } from '../../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  warning: '#EAB308',
+};
 
 // ============================================================================
 // TYPES
@@ -313,17 +328,34 @@ export default function AHCDiagnosticBookingPage() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#90EAA9', '#5FA171']} style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeftIcon width={24} height={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Book Diagnostic Tests</Text>
-          <View style={styles.headerSpacer} />
-        </LinearGradient>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#5FA171" />
-          <Text style={styles.loadingText}>Loading...</Text>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+            ...Platform.select({
+              web: { position: 'sticky' as any, top: 0, zIndex: 10 },
+            }),
+          }}
+        >
+          <SafeAreaView edges={['top']}>
+            <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, borderRadius: 12 }} activeOpacity={0.7}>
+                  <ArrowLeftIcon width={20} height={20} color="#374151" />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Book Diagnostic Tests</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>Select center and time slot</Text>
+                </View>
+              </View>
+            </View>
+          </SafeAreaView>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ marginTop: 12, fontSize: 14, color: COLORS.textGray }}>Loading...</Text>
         </View>
       </View>
     );
@@ -331,18 +363,38 @@ export default function AHCDiagnosticBookingPage() {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#90EAA9', '#5FA171']} style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeftIcon width={24} height={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Book Diagnostic Tests</Text>
-          <View style={styles.headerSpacer} />
-        </LinearGradient>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadInitialData}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        <View
+          style={{
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+            ...Platform.select({
+              web: { position: 'sticky' as any, top: 0, zIndex: 10 },
+            }),
+          }}
+        >
+          <SafeAreaView edges={['top']}>
+            <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, borderRadius: 12 }} activeOpacity={0.7}>
+                  <ArrowLeftIcon width={20} height={20} color="#374151" />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Book Diagnostic Tests</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>Select center and time slot</Text>
+                </View>
+              </View>
+            </View>
+          </SafeAreaView>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 16, color: COLORS.error, textAlign: 'center', marginBottom: 16 }}>{error}</Text>
+          <TouchableOpacity
+            onPress={loadInitialData}
+            style={{ backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 32, borderRadius: 12 }}
+          >
+            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>Retry</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -354,793 +406,355 @@ export default function AHCDiagnosticBookingPage() {
   // ============================================================================
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* Header */}
-      <LinearGradient colors={['#90EAA9', '#5FA171']} style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeftIcon width={24} height={24} color="#FFF" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Book Diagnostic Tests</Text>
-          {ahcPackage && (
-            <Text style={styles.headerSubtitle}>{ahcPackage.name}</Text>
-          )}
-        </View>
-        <View style={styles.headerSpacer} />
-      </LinearGradient>
+      <View
+        style={{
+          backgroundColor: COLORS.white,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
+          ...Platform.select({
+            web: { position: 'sticky' as any, top: 0, zIndex: 10 },
+          }),
+        }}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity onPress={() => router.back()} style={{ padding: 8, borderRadius: 12 }} activeOpacity={0.7}>
+                <ArrowLeftIcon width={20} height={20} color="#374151" />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Book Diagnostic Tests</Text>
+                {ahcPackage && <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>{ahcPackage.name}</Text>}
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
 
       {/* Progress Steps */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressRow}>
-          <View style={styles.stepContainer}>
-            <View style={[styles.stepCircle, step >= 1 && styles.stepCircleActive]}>
-              <Text style={[styles.stepNumber, step >= 1 && styles.stepNumberActive]}>1</Text>
+      <View style={{ backgroundColor: COLORS.white, paddingVertical: 16, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', maxWidth: 320, marginHorizontal: 'auto' }}>
+          <View style={{ alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: step >= 1 ? COLORS.primary : '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: step >= 1 ? '#FFF' : '#9CA3AF' }}>1</Text>
             </View>
-            <Text style={[styles.stepLabel, step >= 1 && styles.stepLabelActive]}>Center</Text>
+            <Text style={{ fontSize: 12, color: step >= 1 ? COLORS.primary : '#9CA3AF' }}>Center</Text>
           </View>
-          <View style={[styles.stepLine, step >= 2 && styles.stepLineActive]} />
-          <View style={styles.stepContainer}>
-            <View style={[styles.stepCircle, step >= 2 && styles.stepCircleActive]}>
-              <Text style={[styles.stepNumber, step >= 2 && styles.stepNumberActive]}>2</Text>
+          <View style={{ flex: 1, height: 4, backgroundColor: step >= 2 ? COLORS.primary : '#E5E7EB', marginHorizontal: 8, marginBottom: 20 }} />
+          <View style={{ alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: step >= 2 ? COLORS.primary : '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: step >= 2 ? '#FFF' : '#9CA3AF' }}>2</Text>
             </View>
-            <Text style={[styles.stepLabel, step >= 2 && styles.stepLabelActive]}>Slot</Text>
+            <Text style={{ fontSize: 12, color: step >= 2 ? COLORS.primary : '#9CA3AF' }}>Slot</Text>
           </View>
-          <View style={[styles.stepLine, step >= 3 && styles.stepLineActive]} />
-          <View style={styles.stepContainer}>
-            <View style={[styles.stepCircle, step >= 3 && styles.stepCircleActive]}>
-              <Text style={[styles.stepNumber, step >= 3 && styles.stepNumberActive]}>3</Text>
+          <View style={{ flex: 1, height: 4, backgroundColor: step >= 3 ? COLORS.primary : '#E5E7EB', marginHorizontal: 8, marginBottom: 20 }} />
+          <View style={{ alignItems: 'center' }}>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: step >= 3 ? COLORS.primary : '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: step >= 3 ? '#FFF' : '#9CA3AF' }}>3</Text>
             </View>
-            <Text style={[styles.stepLabel, step >= 3 && styles.stepLabelActive]}>Confirm</Text>
+            <Text style={{ fontSize: 12, color: step >= 3 ? COLORS.primary : '#9CA3AF' }}>Confirm</Text>
           </View>
         </View>
       </View>
 
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5FA171']} />
-        }
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 96 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Lab Booking Summary */}
-        {labBooking && (
-          <View style={styles.labBookingCard}>
-            <View style={styles.labBookingHeader}>
-              <View style={styles.checkCircle}>
-                <CheckCircleIcon width={16} height={16} color="#FFF" />
+        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+          {/* Lab Booking Summary */}
+          {labBooking && (
+            <View
+              style={{
+                backgroundColor: 'rgba(3, 77, 162, 0.05)',
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: COLORS.selectedBorder,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.success, justifyContent: 'center', alignItems: 'center' }}>
+                  <CheckCircleIcon width={16} height={16} color="#FFF" />
+                </View>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.success }}>Lab Tests Booked</Text>
               </View>
-              <Text style={styles.labBookingTitle}>Lab Tests Booked</Text>
+              <Text style={{ fontSize: 13, color: COLORS.textDark, marginBottom: 4 }}>
+                {labBooking.vendorName} • {formatDate(labBooking.slotDate)} • {labBooking.slotTime}
+              </Text>
+              <Text style={{ fontSize: 12, color: COLORS.textGray }}>
+                {labBooking.collectionType === 'HOME_COLLECTION' ? 'Home Collection' : 'Lab Visit'}
+              </Text>
             </View>
-            <Text style={styles.labBookingDetails}>
-              {labBooking.vendorName} • {formatDate(labBooking.slotDate)} • {labBooking.slotTime}
-            </Text>
-            <Text style={styles.labBookingType}>
-              {labBooking.collectionType === 'HOME_COLLECTION' ? 'Home Collection' : 'Lab Visit'}
+          )}
+
+          {/* Info Note */}
+          <View
+            style={{
+              backgroundColor: '#FEF3C7',
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: '#FDE68A',
+            }}
+          >
+            <Text style={{ fontSize: 13, color: COLORS.textGray, lineHeight: 18 }}>
+              <Text style={{ fontWeight: '600', color: COLORS.textDark }}>Note: </Text>
+              Diagnostic tests require a center visit. Home collection is not available.
             </Text>
           </View>
-        )}
 
-        {/* Info Note */}
-        <View style={styles.infoNote}>
-          <Text style={styles.infoNoteText}>
-            <Text style={styles.infoNoteBold}>Note: </Text>
-            Diagnostic tests require a center visit. Home collection is not available.
-          </Text>
-        </View>
+          {/* STEP 1: Vendor Selection */}
+          {step === 1 && (
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark, marginBottom: 12 }}>Select Diagnostic Center ({vendors.length})</Text>
 
-        {/* STEP 1: Vendor Selection */}
-        {step === 1 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Diagnostic Center ({vendors.length})</Text>
-
-            {vendors.length === 0 ? (
-              <View style={styles.noVendorsCard}>
-                <Text style={styles.noVendorsText}>No diagnostic centers available in your area for pincode {pincode}</Text>
-              </View>
-            ) : (
-              vendors.map((vendor) => (
-                <View key={vendor._id} style={styles.vendorCard}>
-                  {/* Vendor Header */}
-                  <View style={styles.vendorHeader}>
-                    <View style={styles.vendorInfo}>
-                      <Text style={styles.vendorName}>{vendor.name}</Text>
-                      <View style={styles.vendorCodeBadge}>
-                        <Text style={styles.vendorCodeText}>{vendor.code}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.vendorPriceContainer}>
-                      <Text style={styles.vendorPrice}>₹{vendor.totalDiscountedPrice}</Text>
-                      {vendor.totalActualPrice > vendor.totalDiscountedPrice && (
-                        <Text style={styles.vendorMrp}>₹{vendor.totalActualPrice}</Text>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Test Pricing Breakdown */}
-                  {vendor.pricing && vendor.pricing.length > 0 && (
-                    <View style={styles.pricingSection}>
-                      <Text style={styles.pricingTitle}>Test Pricing:</Text>
-                      {vendor.pricing.map((item, idx) => (
-                        <View key={idx} style={styles.pricingRow}>
-                          <Text style={styles.pricingServiceName}>{item.serviceName}</Text>
-                          <Text style={styles.pricingServicePrice}>₹{item.discountedPrice}</Text>
+              {vendors.length === 0 ? (
+                <View style={{ backgroundColor: COLORS.white, borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.cardBorder }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>No diagnostic centers available in your area for pincode {pincode}</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 12 }}>
+                  {vendors.map((vendor) => (
+                    <View
+                      key={vendor._id}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: COLORS.cardBorder,
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      {/* Vendor Header */}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary, marginBottom: 4 }}>{vendor.name}</Text>
+                          <View style={{ backgroundColor: 'rgba(3, 77, 162, 0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start' }}>
+                            <Text style={{ fontSize: 11, fontWeight: '500', color: COLORS.primary }}>{vendor.code}</Text>
+                          </View>
                         </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>₹{vendor.totalDiscountedPrice}</Text>
+                          {vendor.totalActualPrice > vendor.totalDiscountedPrice && (
+                            <Text style={{ fontSize: 13, color: '#999', textDecorationLine: 'line-through' }}>₹{vendor.totalActualPrice}</Text>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Test Pricing Breakdown */}
+                      {vendor.pricing && vendor.pricing.length > 0 && (
+                        <View style={{ borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12, marginBottom: 12 }}>
+                          <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textGray, marginBottom: 8 }}>Test Pricing:</Text>
+                          {vendor.pricing.map((item, idx) => (
+                            <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <Text style={{ fontSize: 12, color: COLORS.textGray, flex: 1 }}>{item.serviceName}</Text>
+                              <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textDark }}>₹{item.discountedPrice}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Center Visit Badge */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(3, 77, 162, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4, alignSelf: 'flex-start', marginBottom: 12 }}>
+                        <BuildingOfficeIcon width={14} height={14} color={COLORS.primary} />
+                        <Text style={{ fontSize: 12, color: COLORS.primary }}>Center Visit Only</Text>
+                      </View>
+
+                      {/* Select Button */}
+                      <TouchableOpacity
+                        onPress={() => handleVendorSelect(vendor)}
+                        style={{ backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+                      >
+                        <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '600' }}>Select This Center</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* STEP 2: Slot Selection */}
+          {step === 2 && selectedVendor && (
+            <View style={{ marginBottom: 24 }}>
+              <TouchableOpacity onPress={() => setStep(1)} style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, color: COLORS.primary }}>← Change Center</Text>
+              </TouchableOpacity>
+
+              <View
+                style={{
+                  backgroundColor: COLORS.white,
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: COLORS.cardBorder,
+                  shadowColor: '#000',
+                  shadowOffset: { width: -2, height: 11 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 23,
+                  elevation: 3,
+                }}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>Selected: {selectedVendor.name}</Text>
+
+                {/* Date Selection */}
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textGray, marginBottom: 12 }}>Select Date</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      {dateOptions.map((date) => (
+                        <TouchableOpacity
+                          key={date.value}
+                          onPress={() => {
+                            setSelectedDate(date.value);
+                            setSelectedSlot(null);
+                          }}
+                          style={{
+                            width: 70,
+                            paddingVertical: 12,
+                            borderRadius: 12,
+                            borderWidth: 2,
+                            borderColor: selectedDate === date.value ? COLORS.selectedBorder : COLORS.border,
+                            backgroundColor: selectedDate === date.value ? 'rgba(3, 77, 162, 0.05)' : COLORS.white,
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: selectedDate === date.value ? COLORS.primary : COLORS.textGray }}>{date.day}</Text>
+                          <Text style={{ fontSize: 18, fontWeight: '600', color: selectedDate === date.value ? COLORS.primary : COLORS.textDark, marginVertical: 2 }}>{date.dateNum}</Text>
+                          {date.label === 'Today' && <Text style={{ fontSize: 10, color: COLORS.primary, fontWeight: '500' }}>Today</Text>}
+                        </TouchableOpacity>
                       ))}
                     </View>
-                  )}
-
-                  {/* Center Visit Badge */}
-                  <View style={styles.centerVisitBadge}>
-                    <BuildingOfficeIcon width={14} height={14} color="#5FA171" />
-                    <Text style={styles.centerVisitText}>Center Visit Only</Text>
-                  </View>
-
-                  {/* Select Button */}
-                  <TouchableOpacity
-                    onPress={() => handleVendorSelect(vendor)}
-                    style={styles.selectVendorButton}
-                  >
-                    <Text style={styles.selectVendorButtonText}>Select This Center</Text>
-                  </TouchableOpacity>
+                  </ScrollView>
                 </View>
-              ))
-            )}
-          </View>
-        )}
 
-        {/* STEP 2: Slot Selection */}
-        {step === 2 && selectedVendor && (
-          <View style={styles.section}>
-            {/* Back to Vendor */}
-            <TouchableOpacity onPress={() => setStep(1)} style={styles.backLink}>
-              <Text style={styles.backLinkText}>← Change Center</Text>
-            </TouchableOpacity>
+                {/* Time Slots */}
+                <View>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textGray, marginBottom: 12 }}>Select Time Slot</Text>
+                  {loadingSlots ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 20, gap: 8 }}>
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                      <Text style={{ fontSize: 14, color: COLORS.textGray }}>Loading slots...</Text>
+                    </View>
+                  ) : availableSlots.length === 0 ? (
+                    <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 14, color: '#999' }}>No slots available for this date</Text>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {availableSlots.map((slot) => {
+                        const isAvailable = slot.currentBookings < slot.maxBookings;
+                        const slotsRemaining = slot.maxBookings - slot.currentBookings;
+                        const isSelected = selectedSlot?.slotId === slot.slotId;
 
-            <View style={styles.slotSelectionCard}>
-              <Text style={styles.selectedVendorTitle}>Selected: {selectedVendor.name}</Text>
-
-              {/* Date Selection */}
-              <View style={styles.dateSection}>
-                <Text style={styles.dateSectionTitle}>Select Date</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.dateRow}>
-                    {dateOptions.map((date) => (
-                      <TouchableOpacity
-                        key={date.value}
-                        onPress={() => {
-                          setSelectedDate(date.value);
-                          setSelectedSlot(null);
-                        }}
-                        style={[
-                          styles.dateCard,
-                          selectedDate === date.value && styles.dateCardSelected,
-                        ]}
-                      >
-                        <Text style={[styles.dateDay, selectedDate === date.value && styles.dateDaySelected]}>
-                          {date.day}
-                        </Text>
-                        <Text style={[styles.dateNum, selectedDate === date.value && styles.dateNumSelected]}>
-                          {date.dateNum}
-                        </Text>
-                        {date.label === 'Today' && (
-                          <Text style={styles.todayLabel}>Today</Text>
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-              </View>
-
-              {/* Time Slots */}
-              <View style={styles.slotsSection}>
-                <Text style={styles.slotsSectionTitle}>Select Time Slot</Text>
-                {loadingSlots ? (
-                  <View style={styles.slotsLoading}>
-                    <ActivityIndicator size="small" color="#5FA171" />
-                    <Text style={styles.loadingText}>Loading slots...</Text>
-                  </View>
-                ) : availableSlots.length === 0 ? (
-                  <View style={styles.noSlotsContainer}>
-                    <Text style={styles.noSlotsText}>No slots available for this date</Text>
-                  </View>
-                ) : (
-                  <View style={styles.slotsGrid}>
-                    {availableSlots.map((slot) => {
-                      const isAvailable = slot.currentBookings < slot.maxBookings;
-                      const slotsRemaining = slot.maxBookings - slot.currentBookings;
-                      const isSelected = selectedSlot?.slotId === slot.slotId;
-
-                      return (
-                        <TouchableOpacity
-                          key={slot.slotId}
-                          onPress={() => isAvailable && handleSlotSelect(slot)}
-                          disabled={!isAvailable}
-                          style={[
-                            styles.slotCard,
-                            !isAvailable && styles.slotCardDisabled,
-                            isSelected && styles.slotCardSelected,
-                          ]}
-                        >
-                          <View style={styles.slotTimeRow}>
-                            <ClockIcon width={16} height={16} color={isSelected ? '#FFF' : '#5FA171'} />
-                            <Text style={[styles.slotTime, isSelected && styles.slotTimeSelected]}>
-                              {slot.timeSlot}
+                        return (
+                          <TouchableOpacity
+                            key={slot.slotId}
+                            onPress={() => isAvailable && handleSlotSelect(slot)}
+                            disabled={!isAvailable}
+                            style={{
+                              width: '48%',
+                              padding: 12,
+                              borderRadius: 8,
+                              borderWidth: 2,
+                              borderColor: isSelected ? COLORS.selectedBorder : COLORS.border,
+                              backgroundColor: isSelected ? COLORS.primary : !isAvailable ? '#F9FAFB' : COLORS.white,
+                              opacity: !isAvailable ? 0.6 : 1,
+                            }}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                              <ClockIcon width={16} height={16} color={isSelected ? '#FFF' : COLORS.primary} />
+                              <Text style={{ fontSize: 13, fontWeight: '500', color: isSelected ? '#FFF' : COLORS.textDark }}>{slot.timeSlot}</Text>
+                            </View>
+                            <Text style={{ fontSize: 11, textAlign: 'center', marginTop: 4, color: isSelected ? 'rgba(255,255,255,0.9)' : !isAvailable ? COLORS.error : COLORS.textGray }}>
+                              {isAvailable ? `${slotsRemaining} slots available` : 'Fully booked'}
                             </Text>
-                          </View>
-                          <Text style={[
-                            styles.slotAvailability,
-                            !isAvailable && styles.slotAvailabilityFull,
-                            isSelected && styles.slotAvailabilitySelected,
-                          ]}>
-                            {isAvailable ? `${slotsRemaining} slots available` : 'Fully booked'}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* STEP 3: Booking Summary */}
-        {step === 3 && selectedVendor && selectedSlot && (
-          <View style={styles.section}>
-            {/* Back to Slot */}
-            <TouchableOpacity onPress={() => setStep(2)} style={styles.backLink}>
-              <Text style={styles.backLinkText}>← Change Slot</Text>
-            </TouchableOpacity>
+          {/* STEP 3: Booking Summary */}
+          {step === 3 && selectedVendor && selectedSlot && (
+            <View style={{ marginBottom: 24 }}>
+              <TouchableOpacity onPress={() => setStep(2)} style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, color: COLORS.primary }}>← Change Slot</Text>
+              </TouchableOpacity>
 
-            {/* Summary Card */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Diagnostic Booking Summary</Text>
+              {/* Summary Card */}
+              <View
+                style={{
+                  backgroundColor: COLORS.white,
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: COLORS.cardBorder,
+                  marginBottom: 16,
+                  shadowColor: '#000',
+                  shadowOffset: { width: -2, height: 11 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 23,
+                  elevation: 3,
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>Diagnostic Booking Summary</Text>
 
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Center:</Text>
-                <Text style={styles.summaryValue}>{selectedVendor.name}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Center:</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>{selectedVendor.name}</Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Visit Type:</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Center Visit</Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Date:</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>{formatDate(selectedDate)}</Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Time:</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>{selectedSlot.timeSlot}</Text>
+                </View>
+
+                <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 12 }} />
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark }}>Total Amount:</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>₹{selectedVendor.totalDiscountedPrice}</Text>
+                </View>
               </View>
 
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Visit Type:</Text>
-                <Text style={styles.summaryValue}>Center Visit</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Date:</Text>
-                <Text style={styles.summaryValue}>{formatDate(selectedDate)}</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Time:</Text>
-                <Text style={styles.summaryValue}>{selectedSlot.timeSlot}</Text>
-              </View>
-
-              <View style={styles.summaryDivider} />
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryTotalLabel}>Total Amount:</Text>
-                <Text style={styles.summaryTotalValue}>₹{selectedVendor.totalDiscountedPrice}</Text>
-              </View>
+              {/* Continue Button */}
+              <TouchableOpacity
+                onPress={handleContinue}
+                style={{ backgroundColor: COLORS.primary, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>Proceed to Payment</Text>
+              </TouchableOpacity>
             </View>
-
-            {/* Continue Button */}
-            <TouchableOpacity onPress={handleContinue} style={styles.continueButton}>
-              <Text style={styles.continueButtonText}>Proceed to Payment</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={{ height: 50 }} />
+          )}
+        </View>
       </ScrollView>
     </View>
   );
 }
-
-// ============================================================================
-// STYLES
-// ============================================================================
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerContent: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 4,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  progressContainer: {
-    backgroundColor: '#FFF',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: 320,
-    marginHorizontal: 'auto',
-  },
-  stepContainer: {
-    alignItems: 'center',
-  },
-  stepCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  stepCircleActive: {
-    backgroundColor: '#5FA171',
-  },
-  stepNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  stepNumberActive: {
-    color: '#FFF',
-  },
-  stepLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  stepLabelActive: {
-    color: '#5FA171',
-  },
-  stepLine: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 8,
-    marginBottom: 20,
-  },
-  stepLineActive: {
-    backgroundColor: '#5FA171',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#D32F2F',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#5FA171',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  // Lab booking card
-  labBookingCard: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#5FA171',
-  },
-  labBookingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#5FA171',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  labBookingTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5FA171',
-  },
-  labBookingDetails: {
-    fontSize: 13,
-    color: '#333',
-    marginBottom: 4,
-  },
-  labBookingType: {
-    fontSize: 12,
-    color: '#666',
-  },
-  // Info note
-  infoNote: {
-    backgroundColor: '#FFF9E6',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#F7DCAF',
-  },
-  infoNoteText: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-  },
-  infoNoteBold: {
-    fontWeight: '600',
-    color: '#333',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  // Vendor styles
-  noVendorsCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  noVendorsText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  vendorCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  vendorHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  vendorInfo: {
-    flex: 1,
-  },
-  vendorName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  vendorCodeBadge: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  vendorCodeText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#5FA171',
-  },
-  vendorPriceContainer: {
-    alignItems: 'flex-end',
-  },
-  vendorPrice: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#5FA171',
-  },
-  vendorMrp: {
-    fontSize: 13,
-    color: '#999',
-    textDecorationLine: 'line-through',
-  },
-  pricingSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingTop: 12,
-    marginBottom: 12,
-  },
-  pricingTitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#666',
-    marginBottom: 8,
-  },
-  pricingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  pricingServiceName: {
-    fontSize: 12,
-    color: '#666',
-    flex: 1,
-  },
-  pricingServicePrice: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
-  },
-  centerVisitBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
-  centerVisitText: {
-    fontSize: 12,
-    color: '#5FA171',
-  },
-  selectVendorButton: {
-    backgroundColor: '#5FA171',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  selectVendorButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Back link
-  backLink: {
-    marginBottom: 12,
-  },
-  backLinkText: {
-    fontSize: 13,
-    color: '#5FA171',
-  },
-  // Slot selection
-  slotSelectionCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  selectedVendorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  dateSection: {
-    marginBottom: 20,
-  },
-  dateSectionTitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
-    marginBottom: 12,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  dateCard: {
-    width: 70,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    alignItems: 'center',
-  },
-  dateCardSelected: {
-    borderColor: '#5FA171',
-    backgroundColor: '#E8F5E9',
-  },
-  dateDay: {
-    fontSize: 11,
-    color: '#666',
-  },
-  dateDaySelected: {
-    color: '#5FA171',
-  },
-  dateNum: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginVertical: 2,
-  },
-  dateNumSelected: {
-    color: '#5FA171',
-  },
-  todayLabel: {
-    fontSize: 10,
-    color: '#5FA171',
-    fontWeight: '500',
-  },
-  slotsSection: {},
-  slotsSectionTitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
-    marginBottom: 12,
-  },
-  slotsLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-    gap: 8,
-  },
-  noSlotsContainer: {
-    paddingVertical: 24,
-    alignItems: 'center',
-  },
-  noSlotsText: {
-    fontSize: 14,
-    color: '#999',
-  },
-  slotsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  slotCard: {
-    width: '48%',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#FFF',
-  },
-  slotCardDisabled: {
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    opacity: 0.6,
-  },
-  slotCardSelected: {
-    borderColor: '#5FA171',
-    backgroundColor: '#5FA171',
-  },
-  slotTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  slotTime: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#333',
-  },
-  slotTimeSelected: {
-    color: '#FFF',
-  },
-  slotAvailability: {
-    fontSize: 11,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  slotAvailabilityFull: {
-    color: '#EF4444',
-  },
-  slotAvailabilitySelected: {
-    color: 'rgba(255,255,255,0.9)',
-  },
-  // Summary
-  summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    marginBottom: 16,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 12,
-  },
-  summaryTotalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  summaryTotalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#5FA171',
-  },
-  continueButton: {
-    backgroundColor: '#5FA171',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  continueButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
