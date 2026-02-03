@@ -3127,7 +3127,7 @@ export default function BookingsPage() {
               paddingVertical: 16,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={() => router.push('/member')}
                 style={{
@@ -3139,7 +3139,12 @@ export default function BookingsPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827' }}>My Bookings</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
+                  My Bookings
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                  View and manage your bookings
+                </Text>
               </View>
             </View>
           </View>
@@ -3179,7 +3184,6 @@ export default function BookingsPage() {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
-              const Icon = tab.icon;
 
               return (
                 <TouchableOpacity
@@ -3190,21 +3194,18 @@ export default function BookingsPage() {
                     paddingVertical: 12,
                     paddingHorizontal: 16,
                     borderBottomWidth: 2,
-                    borderBottomColor: isActive ? '#0F5FDC' : 'transparent',
+                    borderBottomColor: isActive ? COLORS.primary : 'transparent',
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Icon width={18} height={18} color={isActive ? '#0E51A2' : '#6B7280'} />
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: '500',
-                        color: isActive ? '#0E51A2' : '#6B7280',
-                      }}
-                    >
-                      {tab.label}
-                    </Text>
-                  </View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '500',
+                      color: isActive ? COLORS.primaryLight : COLORS.textGray,
+                    }}
+                  >
+                    {tab.label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

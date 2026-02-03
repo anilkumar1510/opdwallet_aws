@@ -720,24 +720,6 @@ export default function DiagnosticsPage() {
                     </View>
                   </View>
 
-                  {/* Review Cart Button */}
-                  {prescription.status === 'DIGITIZED' && prescription.cartId && (
-                    <TouchableOpacity
-                      onPress={() => router.push('/member/bookings?tab=diagnostic')}
-                      activeOpacity={0.8}
-                      style={{
-                        marginTop: 12,
-                        backgroundColor: COLORS.primary,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                        Review Cart
-                      </Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               ))}
             </View>
