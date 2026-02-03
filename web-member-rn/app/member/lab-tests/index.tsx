@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import {
   ArrowLeftIcon,
@@ -483,50 +482,50 @@ export default function LabTestsPage() {
               <TouchableOpacity
                 onPress={() => router.push('/member/lab-tests/upload')}
                 activeOpacity={0.8}
+                style={{
+                  borderRadius: 12,
+                  padding: 20,
+                  borderWidth: 1,
+                  borderColor: COLORS.cardBorder,
+                  backgroundColor: COLORS.white,
+                  shadowColor: '#000',
+                  shadowOffset: { width: -2, height: 11 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 23,
+                  elevation: 3,
+                }}
               >
-                <LinearGradient
-                  colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    borderRadius: 12,
-                    padding: 20,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                  }}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
-                    Upload New Prescription
-                  </Text>
-                  <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>
-                    Upload a new prescription from your device
-                  </Text>
-                </LinearGradient>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                  Upload New Prescription
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>
+                  Upload a new prescription from your device
+                </Text>
               </TouchableOpacity>
 
               {/* Use Existing Prescription */}
               <TouchableOpacity
                 onPress={handleOpenSelectorModal}
                 activeOpacity={0.8}
+                style={{
+                  borderRadius: 12,
+                  padding: 20,
+                  borderWidth: 1,
+                  borderColor: COLORS.cardBorder,
+                  backgroundColor: COLORS.white,
+                  shadowColor: '#000',
+                  shadowOffset: { width: -2, height: 11 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 23,
+                  elevation: 3,
+                }}
               >
-                <LinearGradient
-                  colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    borderRadius: 12,
-                    padding: 20,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                  }}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
-                    Use Existing Prescription
-                  </Text>
-                  <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>
-                    Select from your health records
-                  </Text>
-                </LinearGradient>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                  Use Existing Prescription
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>
+                  Select from your health records
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

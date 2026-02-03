@@ -12,8 +12,26 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -154,27 +172,18 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const dimensions = sizeMap[size];
 
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: COLORS.iconBg,
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon width={dimensions.icon} height={dimensions.icon} color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -1464,16 +1473,19 @@ export default function BookingsPage() {
     const isCovered = isBenefitCovered(type);
 
     return (
-      <LinearGradient
-        colors={isCovered ? ['#EFF4FF', '#FEF3E9', '#FEF3E9'] : ['#F3F4F6', '#E5E7EB', '#E5E7EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 48,
           alignItems: 'center',
-          borderWidth: 2,
-          borderColor: isCovered ? '#86ACD8' : '#D1D5DB',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         <IconCircle icon={SparklesIcon} size="lg" />
@@ -1481,7 +1493,7 @@ export default function BookingsPage() {
           style={{
             fontSize: 20,
             fontWeight: '700',
-            color: isCovered ? '#0E51A2' : '#6B7280',
+            color: isCovered ? COLORS.primaryLight : COLORS.textGray,
             marginTop: 24,
             marginBottom: 8,
             textAlign: 'center',
@@ -1492,7 +1504,7 @@ export default function BookingsPage() {
         <Text
           style={{
             fontSize: 14,
-            color: '#6B7280',
+            color: COLORS.textGray,
             marginBottom: isCovered ? 24 : 0,
             textAlign: 'center',
           }}
@@ -1503,29 +1515,19 @@ export default function BookingsPage() {
           <TouchableOpacity
             onPress={() => router.push(config.route as any)}
             activeOpacity={0.8}
+            style={{
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 12,
+              backgroundColor: COLORS.primary,
+            }}
           >
-            <LinearGradient
-              colors={['#1F63B4', '#5DA4FB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                borderRadius: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-            >
-              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
-                {config.buttonText}
-              </Text>
-            </LinearGradient>
+            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+              {config.buttonText}
+            </Text>
           </TouchableOpacity>
         )}
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -1611,20 +1613,19 @@ export default function BookingsPage() {
       (booking.status === 'PENDING_CONFIRMATION' || booking.status === 'CONFIRMED') && isFuture;
 
     return (
-      <LinearGradient
-        colors={
-          isUpcoming
-            ? ['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']
-            : ['#EFF4FF', '#FEF3E9', '#FEF3E9']
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -1637,18 +1638,16 @@ export default function BookingsPage() {
                 borderRadius: 24,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
+                backgroundColor: COLORS.iconBg,
               }}
             >
-              <SparklesIcon width={24} height={24} color="#0F5FDC" />
+              <SparklesIcon width={24} height={24} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
                 {booking.serviceName}
               </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                 {booking.clinicName}
               </Text>
             </View>
@@ -1692,23 +1691,23 @@ export default function BookingsPage() {
         {/* Details */}
         <View style={{ gap: 8, marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {booking.patientName}</Text>
+            <UserIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {booking.patientName}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(booking.appointmentDate)}</Text>
+            <CalendarIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{formatDate(booking.appointmentDate)}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{booking.appointmentTime}</Text>
+            <ClockIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{booking.appointmentTime}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }} numberOfLines={1}>
+            <MapPinIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
               {booking.clinicAddress.city}, {booking.clinicAddress.state}
             </Text>
           </View>
@@ -1719,14 +1718,14 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, color: '#111827' }}>
+            <Text style={{ fontSize: 13, color: COLORS.textGray }}>
               ID: <Text style={{ fontWeight: '500' }}>{booking.bookingId}</Text>
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{booking.servicePrice}
             </Text>
           </View>
@@ -1735,15 +1734,15 @@ export default function BookingsPage() {
           {booking.walletDebitAmount > 0 && (
             <View style={{ marginBottom: 12, gap: 4 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#111827' }}>Wallet Deduction:</Text>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#111827' }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray }}>Wallet Deduction:</Text>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textDark }}>
                   ₹{booking.walletDebitAmount}
                 </Text>
               </View>
               {booking.copayAmount > 0 && (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 12, color: '#111827' }}>Co-pay:</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#111827' }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Co-pay:</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textDark }}>
                     ₹{booking.copayAmount}
                   </Text>
                 </View>
@@ -1765,7 +1764,7 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Cancel Booking</Text>
               </TouchableOpacity>
             )}
 
@@ -1774,7 +1773,7 @@ export default function BookingsPage() {
               <TouchableOpacity
                 onPress={() => handleViewInvoice(booking)}
                 style={{
-                  backgroundColor: '#EFF6FF',
+                  backgroundColor: COLORS.iconBg,
                   paddingVertical: 8,
                   paddingHorizontal: 12,
                   borderRadius: 8,
@@ -1785,13 +1784,13 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <DocumentArrowDownIcon width={16} height={16} color="#2563EB" />
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#2563EB' }}>View Invoice</Text>
+                <DocumentArrowDownIcon width={16} height={16} color={COLORS.primary} />
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary }}>View Invoice</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -1813,20 +1812,19 @@ export default function BookingsPage() {
        (booking.status === 'CONFIRMED' && !booking.billGenerated)) && isFuture;
 
     return (
-      <LinearGradient
-        colors={
-          isUpcoming
-            ? ['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']
-            : ['#EFF4FF', '#FEF3E9', '#FEF3E9']
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -1839,18 +1837,16 @@ export default function BookingsPage() {
                 borderRadius: 24,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
+                backgroundColor: COLORS.iconBg,
               }}
             >
-              <EyeIcon width={24} height={24} color="#0F5FDC" />
+              <EyeIcon width={24} height={24} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
                 {booking.serviceName}
               </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                 {booking.clinicName}
               </Text>
             </View>
@@ -1894,23 +1890,23 @@ export default function BookingsPage() {
         {/* Details */}
         <View style={{ gap: 8, marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {booking.patientName}</Text>
+            <UserIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {booking.patientName}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(booking.appointmentDate)}</Text>
+            <CalendarIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{formatDate(booking.appointmentDate)}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{booking.appointmentTime}</Text>
+            <ClockIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{booking.appointmentTime}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }} numberOfLines={1}>
+            <MapPinIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
               {booking.clinicAddress.city}, {booking.clinicAddress.state}
             </Text>
           </View>
@@ -1921,14 +1917,14 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, color: '#111827' }}>
+            <Text style={{ fontSize: 13, color: COLORS.textGray }}>
               ID: <Text style={{ fontWeight: '500' }}>{booking.bookingId}</Text>
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{booking.servicePrice}
             </Text>
           </View>
@@ -1937,15 +1933,15 @@ export default function BookingsPage() {
           {booking.walletDebitAmount > 0 && (
             <View style={{ marginBottom: 12, gap: 4 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 12, color: '#111827' }}>Wallet Deduction:</Text>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: '#111827' }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray }}>Wallet Deduction:</Text>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textDark }}>
                   ₹{booking.walletDebitAmount}
                 </Text>
               </View>
               {booking.copayAmount > 0 && (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 12, color: '#111827' }}>Co-pay:</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#111827' }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Co-pay:</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textDark }}>
                     ₹{booking.copayAmount}
                   </Text>
                 </View>
@@ -1960,22 +1956,17 @@ export default function BookingsPage() {
               <TouchableOpacity
                 onPress={() => router.push(`/member/vision/payment/${booking.bookingId}` as any)}
                 activeOpacity={0.8}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                  backgroundColor: COLORS.primary,
+                }}
               >
-                <LinearGradient
-                  colors={['#1F63B4', '#5DA4FB']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
-                    View and Pay Bill
-                  </Text>
-                </LinearGradient>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
+                  View and Pay Bill
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -1995,8 +1986,8 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <DocumentArrowDownIcon width={16} height={16} color="#166534" />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#166534' }}>View/Download Invoice</Text>
+                <DocumentArrowDownIcon width={16} height={16} color={COLORS.success} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>View/Download Invoice</Text>
               </TouchableOpacity>
             )}
 
@@ -2014,8 +2005,8 @@ export default function BookingsPage() {
                   gap: 8,
                 }}
               >
-                <CheckCircleIcon width={16} height={16} color="#166534" />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#166534' }}>Payment Complete</Text>
+                <CheckCircleIcon width={16} height={16} color={COLORS.success} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>Payment Complete</Text>
               </View>
             )}
 
@@ -2032,12 +2023,12 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Booking</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Cancel Booking</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -2050,20 +2041,19 @@ export default function BookingsPage() {
       (appointment.status === 'PENDING_CONFIRMATION' || appointment.status === 'CONFIRMED') && isFuture;
 
     return (
-      <LinearGradient
-        colors={
-          isUpcoming
-            ? ['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']
-            : ['#EFF4FF', '#FEF3E9', '#FEF3E9']
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -2076,23 +2066,21 @@ export default function BookingsPage() {
                 borderRadius: 24,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: appointment.appointmentType === 'ONLINE' ? 'rgba(37, 164, 37, 0.15)' : 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: appointment.appointmentType === 'ONLINE' ? 'rgba(37, 164, 37, 0.3)' : 'rgba(164, 191, 254, 0.48)',
+                backgroundColor: appointment.appointmentType === 'ONLINE' ? 'rgba(22, 163, 74, 0.1)' : COLORS.iconBg,
               }}
             >
               {appointment.appointmentType === 'ONLINE' ? (
-                <VideoCameraIcon width={24} height={24} color="#25A425" />
+                <VideoCameraIcon width={24} height={24} color={COLORS.success} />
               ) : (
-                <HeartIcon width={24} height={24} color="#0F5FDC" />
+                <HeartIcon width={24} height={24} color={COLORS.primary} />
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
                 Dr. {appointment.doctorName}
               </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
-                {appointment.specialty} {appointment.appointmentType === 'ONLINE' && <Text style={{ color: '#25A425', fontWeight: '500' }}>(Online)</Text>}
+              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                {appointment.specialty} {appointment.appointmentType === 'ONLINE' && <Text style={{ color: COLORS.success, fontWeight: '500' }}>(Online)</Text>}
               </Text>
             </View>
           </View>
@@ -2115,23 +2103,23 @@ export default function BookingsPage() {
         {/* Details */}
         <View style={{ gap: 8, marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {appointment.patientName}</Text>
+            <UserIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {appointment.patientName}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(appointment.appointmentDate)}</Text>
+            <CalendarIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{formatDate(appointment.appointmentDate)}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{appointment.timeSlot}</Text>
+            <ClockIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{appointment.timeSlot}</Text>
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: appointment.appointmentType === 'ONLINE' ? '#0F5FDC' : '#111827', fontWeight: appointment.appointmentType === 'ONLINE' ? '500' : 'normal' }} numberOfLines={1}>
+            <MapPinIcon width={16} height={16} color={COLORS.primary} />
+            <Text style={{ fontSize: 13, color: appointment.appointmentType === 'ONLINE' ? COLORS.primary : COLORS.textDark, fontWeight: appointment.appointmentType === 'ONLINE' ? '500' : 'normal' }} numberOfLines={1}>
               {appointment.appointmentType === 'ONLINE' ? 'Online Consultation' : appointment.clinicName}
             </Text>
           </View>
@@ -2142,14 +2130,14 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, color: '#111827' }}>
+            <Text style={{ fontSize: 13, color: COLORS.textGray }}>
               ID: <Text style={{ fontWeight: '500' }}>{appointment.appointmentNumber}</Text>
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{appointment.consultationFee}
             </Text>
           </View>
@@ -2162,7 +2150,7 @@ export default function BookingsPage() {
                   Alert.alert('Prescription', 'Prescription viewing will be implemented');
                 }}
                 style={{
-                  backgroundColor: '#EFF4FF',
+                  backgroundColor: COLORS.iconBg,
                   paddingVertical: 8,
                   paddingHorizontal: 12,
                   borderRadius: 8,
@@ -2170,7 +2158,7 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#0F5FDC' }}>View Prescription</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary }}>View Prescription</Text>
               </TouchableOpacity>
             )}
 
@@ -2182,7 +2170,7 @@ export default function BookingsPage() {
                   router.push(`/member/consultations/${appointment._id}` as any);
                 }}
                 style={{
-                  backgroundColor: '#25A425',
+                  backgroundColor: COLORS.success,
                   paddingVertical: 8,
                   paddingHorizontal: 12,
                   borderRadius: 8,
@@ -2210,12 +2198,12 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Appointment</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Cancel Appointment</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -2231,16 +2219,19 @@ export default function BookingsPage() {
     const statusText = prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue';
 
     return (
-      <LinearGradient
-        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -2345,22 +2336,25 @@ export default function BookingsPage() {
             </TouchableOpacity>
           )}
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
   const renderLabOrderCard = (order: any) => {
     return (
-      <LinearGradient
-        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -2460,10 +2454,7 @@ export default function BookingsPage() {
               onPress={() => handleViewLabReport(order)}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+              <View
                 style={{
                   paddingVertical: 10,
                   paddingHorizontal: 12,
@@ -2472,11 +2463,12 @@ export default function BookingsPage() {
                   flexDirection: 'row',
                   justifyContent: 'center',
                   gap: 8,
+                  backgroundColor: COLORS.primary,
                 }}
               >
                 <DocumentArrowDownIcon width={16} height={16} color="#FFFFFF" />
                 <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -2497,7 +2489,7 @@ export default function BookingsPage() {
             </View>
           )}
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -2515,16 +2507,19 @@ export default function BookingsPage() {
         activeOpacity={0.8}
         onPress={() => router.push(`/member/lab-tests?cartId=${cart.cartId}` as any)}
       >
-        <LinearGradient
-          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <View
           style={{
             borderRadius: 16,
             padding: 20,
-            borderWidth: 2,
-            borderColor: '#86ACD8',
+            borderWidth: 1,
+            borderColor: COLORS.cardBorder,
+            backgroundColor: COLORS.white,
             marginBottom: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
           {/* Header */}
@@ -2537,18 +2532,16 @@ export default function BookingsPage() {
                   borderRadius: 24,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(164, 191, 254, 0.48)',
+                  backgroundColor: COLORS.iconBg,
                 }}
               >
-                <BeakerIcon width={24} height={24} color="#0F5FDC" />
+                <BeakerIcon width={24} height={24} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
                   Lab Test Cart
                 </Text>
-                <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                   {cart.items?.length || 0} test(s)
                 </Text>
               </View>
@@ -2570,20 +2563,20 @@ export default function BookingsPage() {
           {/* Details */}
           <View style={{ gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <UserIcon width={16} height={16} color="#111827" />
-              <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {cart.patientName}</Text>
+              <UserIcon width={16} height={16} color={COLORS.primary} />
+              <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {cart.patientName}</Text>
             </View>
 
             {cart.items && cart.items.length > 0 && (
               <View style={{ marginTop: 4 }}>
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Tests:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 4 }}>Tests:</Text>
                 {cart.items.slice(0, 3).map((item: any, idx: number) => (
-                  <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                  <Text key={idx} style={{ fontSize: 12, color: COLORS.textDark, marginLeft: 8 }}>
                     • {item.serviceName}
                   </Text>
                 ))}
                 {cart.items.length > 3 && (
-                  <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
                     +{cart.items.length - 3} more
                   </Text>
                 )}
@@ -2596,44 +2589,39 @@ export default function BookingsPage() {
             style={{
               paddingTop: 12,
               borderTopWidth: 1,
-              borderTopColor: '#E5E7EB',
+              borderTopColor: COLORS.border,
             }}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 13, color: '#111827' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>
                 Cart ID: <Text style={{ fontWeight: '500' }}>{cart.cartId}</Text>
               </Text>
             </View>
 
             {hasVendorsAssigned ? (
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 12, color: '#166534' }}>✓ Vendors assigned by operations team</Text>
+                <Text style={{ fontSize: 12, color: COLORS.success }}>✓ Vendors assigned by operations team</Text>
                 <TouchableOpacity
                   onPress={() => router.push(`/member/lab-tests/booking/${cart.cartId}` as any)}
                   activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    backgroundColor: COLORS.primary,
+                  }}
                 >
-                  <LinearGradient
-                    colors={['#1F63B4', '#5DA4FB']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{
-                      paddingVertical: 10,
-                      paddingHorizontal: 12,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Select Vendor & Book</Text>
-                  </LinearGradient>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Select Vendor & Book</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#0F5FDC' }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary }}>
                 View Details →
               </Text>
             )}
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -2650,16 +2638,19 @@ export default function BookingsPage() {
     const statusText = prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue';
 
     return (
-      <LinearGradient
-        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -2764,22 +2755,25 @@ export default function BookingsPage() {
             </TouchableOpacity>
           )}
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
   const renderDiagnosticOrderCard = (order: any) => {
     return (
-      <LinearGradient
-        colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: '#86ACD8',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -2879,10 +2873,7 @@ export default function BookingsPage() {
               onPress={() => handleViewDiagnosticReport(order)}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+              <View
                 style={{
                   paddingVertical: 10,
                   paddingHorizontal: 12,
@@ -2891,11 +2882,12 @@ export default function BookingsPage() {
                   flexDirection: 'row',
                   justifyContent: 'center',
                   gap: 8,
+                  backgroundColor: COLORS.primary,
                 }}
               >
                 <DocumentArrowDownIcon width={16} height={16} color="#FFFFFF" />
                 <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -2916,7 +2908,7 @@ export default function BookingsPage() {
             </View>
           )}
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -2934,16 +2926,19 @@ export default function BookingsPage() {
         activeOpacity={0.8}
         onPress={() => router.push(`/member/diagnostics?cartId=${cart.cartId}` as any)}
       >
-        <LinearGradient
-          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <View
           style={{
             borderRadius: 16,
             padding: 20,
-            borderWidth: 2,
-            borderColor: '#86ACD8',
+            borderWidth: 1,
+            borderColor: COLORS.cardBorder,
+            backgroundColor: COLORS.white,
             marginBottom: 16,
+            shadowColor: '#000',
+            shadowOffset: { width: -2, height: 11 },
+            shadowOpacity: 0.08,
+            shadowRadius: 23,
+            elevation: 3,
           }}
         >
           {/* Header */}
@@ -2956,18 +2951,16 @@ export default function BookingsPage() {
                   borderRadius: 24,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(164, 191, 254, 0.48)',
+                  backgroundColor: COLORS.iconBg,
                 }}
               >
-                <BeakerIcon width={24} height={24} color="#0F5FDC" />
+                <BeakerIcon width={24} height={24} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
                   Diagnostic Cart
                 </Text>
-                <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
+                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                   {cart.items?.length || 0} service(s)
                 </Text>
               </View>
@@ -2989,20 +2982,20 @@ export default function BookingsPage() {
           {/* Details */}
           <View style={{ gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <UserIcon width={16} height={16} color="#111827" />
-              <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {cart.patientName}</Text>
+              <UserIcon width={16} height={16} color={COLORS.primary} />
+              <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {cart.patientName}</Text>
             </View>
 
             {cart.items && cart.items.length > 0 && (
               <View style={{ marginTop: 4 }}>
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Services:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 4 }}>Services:</Text>
                 {cart.items.slice(0, 3).map((item: any, idx: number) => (
-                  <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                  <Text key={idx} style={{ fontSize: 12, color: COLORS.textDark, marginLeft: 8 }}>
                     • {item.serviceName}
                   </Text>
                 ))}
                 {cart.items.length > 3 && (
-                  <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
                     +{cart.items.length - 3} more
                   </Text>
                 )}
@@ -3015,44 +3008,39 @@ export default function BookingsPage() {
             style={{
               paddingTop: 12,
               borderTopWidth: 1,
-              borderTopColor: '#E5E7EB',
+              borderTopColor: COLORS.border,
             }}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 13, color: '#111827' }}>
+              <Text style={{ fontSize: 13, color: COLORS.textGray }}>
                 Cart ID: <Text style={{ fontWeight: '500' }}>{cart.cartId}</Text>
               </Text>
             </View>
 
             {hasVendorsAssigned ? (
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 12, color: '#166534' }}>✓ Centers assigned by operations team</Text>
+                <Text style={{ fontSize: 12, color: COLORS.success }}>✓ Centers assigned by operations team</Text>
                 <TouchableOpacity
                   onPress={() => router.push(`/member/diagnostics/booking/${cart.cartId}` as any)}
                   activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    backgroundColor: COLORS.primary,
+                  }}
                 >
-                  <LinearGradient
-                    colors={['#1F63B4', '#5DA4FB']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{
-                      paddingVertical: 10,
-                      paddingHorizontal: 12,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Select Center & Book</Text>
-                  </LinearGradient>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Select Center & Book</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#0F5FDC' }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.primary }}>
                 View Details →
               </Text>
             )}
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -3090,16 +3078,19 @@ export default function BookingsPage() {
     const diagnosticReports = diagnosticData?.reports || [];
 
     return (
-      <LinearGradient
-        colors={['rgba(144, 234, 169, 0.15)', 'rgba(95, 161, 113, 0.15)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           borderRadius: 16,
           padding: 20,
-          borderWidth: 2,
-          borderColor: 'rgba(95, 161, 113, 0.3)',
+          borderWidth: 1,
+          borderColor: COLORS.cardBorder,
+          backgroundColor: COLORS.white,
           marginBottom: 16,
+          shadowColor: '#000',
+          shadowOffset: { width: -2, height: 11 },
+          shadowOpacity: 0.08,
+          shadowRadius: 23,
+          elevation: 3,
         }}
       >
         {/* Header */}
@@ -3112,18 +3103,16 @@ export default function BookingsPage() {
                 borderRadius: 24,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: 'rgba(95, 161, 113, 0.2)',
-                borderWidth: 1,
-                borderColor: 'rgba(95, 161, 113, 0.3)',
+                backgroundColor: 'rgba(22, 163, 74, 0.1)',
               }}
             >
-              <SparklesIcon width={24} height={24} color="#5FA171" />
+              <SparklesIcon width={24} height={24} color={COLORS.success} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
                 {order.packageName || 'Annual Health Check'}
               </Text>
-              <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+              <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                 {hasLabPortion && hasDiagnosticPortion
                   ? 'Lab + Diagnostic Tests'
                   : hasLabPortion
@@ -3286,7 +3275,7 @@ export default function BookingsPage() {
             </View>
           )}
         </View>
-      </LinearGradient>
+      </View>
     );
   };
 
@@ -3727,16 +3716,19 @@ export default function BookingsPage() {
             <View>
               {!isBenefitCovered('ahc') ? (
                 /* AHC not covered under policy */
-                <LinearGradient
-                  colors={['#F3F4F6', '#E5E7EB', '#E5E7EB']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+                <View
                   style={{
                     borderRadius: 16,
                     padding: 48,
                     alignItems: 'center',
-                    borderWidth: 2,
-                    borderColor: '#D1D5DB',
+                    borderWidth: 1,
+                    borderColor: COLORS.cardBorder,
+                    backgroundColor: COLORS.white,
+                    shadowColor: '#000',
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
+                    elevation: 3,
                   }}
                 >
                   <IconCircle icon={SparklesIcon} size="lg" />
@@ -3744,7 +3736,7 @@ export default function BookingsPage() {
                     style={{
                       fontSize: 20,
                       fontWeight: '700',
-                      color: '#6B7280',
+                      color: COLORS.textGray,
                       marginTop: 24,
                       marginBottom: 8,
                       textAlign: 'center',
@@ -3755,13 +3747,13 @@ export default function BookingsPage() {
                   <Text
                     style={{
                       fontSize: 14,
-                      color: '#6B7280',
+                      color: COLORS.textGray,
                       textAlign: 'center',
                     }}
                   >
                     Annual Health Check is not covered under your policy
                   </Text>
-                </LinearGradient>
+                </View>
               ) : ahcOrders.length === 0 ? (
                 renderEmptyState('ahc')
               ) : (
@@ -3784,22 +3776,17 @@ export default function BookingsPage() {
                   <TouchableOpacity
                     onPress={() => router.push('/member/wellness-programs' as any)}
                     activeOpacity={0.8}
-                    style={{ marginTop: 8 }}
+                    style={{
+                      marginTop: 8,
+                      paddingVertical: 14,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      backgroundColor: COLORS.success,
+                    }}
                   >
-                    <LinearGradient
-                      colors={['#90EAA9', '#5FA171']}
-                      start={{ x: 0.5, y: 0 }}
-                      end={{ x: 0.5, y: 1 }}
-                      style={{
-                        paddingVertical: 14,
-                        borderRadius: 12,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                        View Wellness Packages
-                      </Text>
-                    </LinearGradient>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                      View Wellness Packages
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}

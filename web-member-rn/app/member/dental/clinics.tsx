@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import Svg, { Path, Circle } from 'react-native-svg';
 import {

@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 
 // ============================================================================
@@ -16,6 +15,7 @@ import Svg, { Path, Rect, Circle } from 'react-native-svg';
 // ============================================================================
 const COLORS = {
   primary: '#034DA2',
+  primaryLight: '#0E51A2',
   orange: '#F5821E',
   textDark: '#303030',
   textGray: '#545454',
@@ -23,6 +23,7 @@ const COLORS = {
   background: '#f7f7fc',
   white: '#FFFFFF',
   border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
   success: '#16a34a',
 };
 
@@ -213,16 +214,19 @@ export default function PharmacyPage() {
         >
           <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 20 }}>
             {/* Coming Soon Card */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
                 borderRadius: 16,
                 padding: 28,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                backgroundColor: COLORS.white,
                 alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
               {/* Pharmacy Icon in Circle */}
@@ -362,7 +366,7 @@ export default function PharmacyPage() {
                   Back to Dashboard
                 </Text>
               </TouchableOpacity>
-            </LinearGradient>
+            </View>
 
             {/* Additional Info Box */}
             <View

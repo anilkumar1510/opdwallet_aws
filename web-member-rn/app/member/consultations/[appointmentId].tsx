@@ -15,8 +15,25 @@ import {
   VideoCameraIcon,
   UserIcon,
 } from '../../../src/components/icons/InlineSVGs';
-import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
+  success: '#16a34a',
+  error: '#DC2626',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -428,14 +445,9 @@ export default function VideoConsultationPage() {
           <View style={styles.waitingContent}>
             {/* Animated Video Icon */}
             <View style={styles.waitingIconContainer}>
-              <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.waitingIconGradient}
-              >
+              <View style={[styles.waitingIconGradient, { backgroundColor: COLORS.primary }]}>
                 <VideoCameraIcon width={48} height={48} color="#FFFFFF" />
-              </LinearGradient>
+              </View>
 
               {/* Pulsing ring animation */}
               <View style={styles.pulseRing} />
