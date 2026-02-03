@@ -17,6 +17,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import {
+  ArrowLeftIcon,
+  DocumentTextIcon,
+  ChevronDownIcon,
+} from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import apiClient from '../../../src/lib/api/client';
@@ -64,49 +69,13 @@ interface Address {
 }
 
 // ============================================================================
-// SVG ICONS
+// CUSTOM SVG ICONS (not available in InlineSVGs)
 // ============================================================================
 
-const ArrowLeftIcon = ({ width = 24, height = 24, color = '#111827' }) => (
-  <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M19 12H5M5 12L12 19M5 12L12 5"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const CloudArrowUpIcon = ({ width = 24, height = 24, color = '#0F5FDC' }) => (
+const CloudArrowUpIcon = ({ width = 24, height = 24, color = '#0F5FDC' }: { width?: number; height?: number; color?: string }) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const DocumentTextIcon = ({ width = 24, height = 24, color = '#0F5FDC' }) => (
-  <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const ChevronDownIcon = ({ width = 20, height = 20, color = '#6B7280' }) => (
-  <Svg width={width} height={height} viewBox="0 0 20 20" fill="none">
-    <Path
-      d="M5 7.5L10 12.5L15 7.5"
       stroke={color}
       strokeWidth={1.5}
       strokeLinecap="round"
@@ -803,12 +772,15 @@ export default function UploadPrescriptionPage() {
                     max={new Date().toISOString().split('T')[0]}
                     style={{
                       width: '100%',
-                      padding: 14,
-                      borderWidth: 2,
-                      borderColor: COLORS.selectedBorder,
-                      borderRadius: 12,
-                      fontSize: 14,
+                      padding: '14px',
+                      border: `2px solid ${COLORS.selectedBorder}`,
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      color: COLORS.textDark,
+                      backgroundColor: COLORS.white,
                       outline: 'none',
+                      boxSizing: 'border-box' as const,
                     }}
                   />
                 ) : (
