@@ -14,13 +14,29 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+};
 
 // ============================================================================
 // TYPES
@@ -534,472 +550,518 @@ export default function UploadPrescriptionPage() {
   const selectedMember = memberList.find(m => m.userId === patientId);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={{ backgroundColor: '#0E51A2' }}>
-        <LinearGradient
-          colors={['#0E51A2', '#1565C0']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ marginRight: 16, padding: 4 }}
-            >
-              <ArrowLeftIcon width={24} height={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFFFFF' }}>
-                Upload Prescription
-              </Text>
-              <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
-                Upload your lab test prescription
-              </Text>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      {/* ===== HEADER (STICKY) ===== */}
+      <View
+        style={{
+          backgroundColor: COLORS.white,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
+          ...Platform.select({
+            web: {
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            },
+          }),
+        }}
+      >
+        <SafeAreaView edges={['top']}>
+          <View
+            style={{
+              maxWidth: 480,
+              marginHorizontal: 'auto',
+              width: '100%',
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={{ padding: 8, borderRadius: 12 }}
+                activeOpacity={0.7}
+              >
+                <ArrowLeftIcon width={20} height={20} color="#374151" />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                  Upload Prescription
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                  Upload your lab test prescription
+                </Text>
+              </View>
             </View>
           </View>
-        </LinearGradient>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingVertical: 20,
+          paddingBottom: 96,
+        }}
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Upload Area */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
-            Select Prescription File
-          </Text>
+        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+          {/* Upload Area */}
+          <View
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+              Select Prescription File
+            </Text>
 
-          {!file ? (
-            <TouchableOpacity
-              onPress={handleSelectFile}
-              activeOpacity={0.8}
-              style={{
-                borderWidth: 2,
-                borderStyle: 'dashed',
-                borderColor: '#86ACD8',
-                borderRadius: 12,
-                padding: 32,
-                alignItems: 'center',
-              }}
-            >
-              <CloudArrowUpIcon width={48} height={48} color="#0F5FDC" />
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2', marginTop: 12 }}>
-                {Platform.OS === 'web' ? 'Click to upload' : 'Tap to upload'}
-              </Text>
-              <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
-                JPG, PNG, PDF (Max 10MB)
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View>
-              {/* Preview */}
-              <View
+            {!file ? (
+              <TouchableOpacity
+                onPress={handleSelectFile}
+                activeOpacity={0.8}
                 style={{
                   borderWidth: 2,
-                  borderColor: '#86ACD8',
+                  borderStyle: 'dashed',
+                  borderColor: COLORS.selectedBorder,
                   borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 12,
+                  padding: 32,
                   alignItems: 'center',
                 }}
               >
-                {preview ? (
-                  <Image
-                    source={{ uri: preview }}
-                    style={{ width: '100%', height: 200, borderRadius: 8 }}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View style={{ paddingVertical: 32 }}>
-                    <DocumentTextIcon width={64} height={64} color="#0F5FDC" />
+                <CloudArrowUpIcon width={48} height={48} color={COLORS.primary} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary, marginTop: 12 }}>
+                  {Platform.OS === 'web' ? 'Click to upload' : 'Tap to upload'}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+                  JPG, PNG, PDF (Max 10MB)
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View>
+                {/* Preview */}
+                <View
+                  style={{
+                    borderWidth: 2,
+                    borderColor: COLORS.selectedBorder,
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 12,
+                    alignItems: 'center',
+                  }}
+                >
+                  {preview ? (
+                    <Image
+                      source={{ uri: preview }}
+                      style={{ width: '100%', height: 200, borderRadius: 8 }}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={{ paddingVertical: 32 }}>
+                      <DocumentTextIcon width={64} height={64} color={COLORS.primary} />
+                    </View>
+                  )}
+                </View>
+
+                {/* File Info */}
+                <View
+                  style={{
+                    backgroundColor: COLORS.background,
+                    borderRadius: 8,
+                    padding: 12,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }} numberOfLines={1}>
+                      {file.name}
+                    </Text>
+                    {file.size && (
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity onPress={handleRemoveFile}>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Patient Information - Only show after file selected */}
+          {file && (
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 20,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+                Patient Information
+              </Text>
+
+              {/* Patient Selection */}
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                  Select Patient <Text style={{ color: COLORS.error }}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowPatientDropdown(!showPatientDropdown)}
+                  style={{
+                    borderWidth: 2,
+                    borderColor: COLORS.selectedBorder,
+                    borderRadius: 12,
+                    padding: 14,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: selectedMember ? COLORS.textDark : '#9CA3AF' }}>
+                    {selectedMember
+                      ? `${selectedMember.name}${selectedMember.relationship !== 'SELF' ? ` (${selectedMember.relationship})` : ''}`
+                      : 'Select a patient'}
+                  </Text>
+                  <ChevronDownIcon width={20} height={20} color={COLORS.textGray} />
+                </TouchableOpacity>
+
+                {showPatientDropdown && (
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                      borderRadius: 8,
+                      marginTop: 4,
+                      backgroundColor: COLORS.white,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    }}
+                  >
+                    {memberList.map((member) => (
+                      <TouchableOpacity
+                        key={member.userId}
+                        onPress={() => {
+                          setPatientId(member.userId);
+                          setPatientName(member.name);
+                          setPatientRelationship(member.relationship);
+                          setShowPatientDropdown(false);
+                        }}
+                        style={{
+                          padding: 14,
+                          borderBottomWidth: 1,
+                          borderBottomColor: COLORS.background,
+                          backgroundColor: patientId === member.userId ? 'rgba(3, 77, 162, 0.05)' : COLORS.white,
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, color: COLORS.textDark }}>
+                          {member.name} {member.relationship !== 'SELF' && `(${member.relationship})`}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
                 )}
               </View>
 
-              {/* File Info */}
-              <View
-                style={{
-                  backgroundColor: '#F9FAFB',
-                  borderRadius: 8,
-                  padding: 12,
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }} numberOfLines={1}>
-                    {file.name}
-                  </Text>
-                  {file.size && (
-                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
+              {/* Prescription Date */}
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                  Prescription Date <Text style={{ color: COLORS.error }}>*</Text>
+                </Text>
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="date"
+                    value={prescriptionDate}
+                    onChange={(e) => setPrescriptionDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      padding: 14,
+                      borderWidth: 2,
+                      borderColor: COLORS.selectedBorder,
+                      borderRadius: 12,
+                      fontSize: 14,
+                      outline: 'none',
+                    }}
+                  />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => {
+                      // For native, would use a date picker
+                      // For simplicity, using current date
+                      setPrescriptionDate(new Date().toISOString().split('T')[0]);
+                    }}
+                    style={{
+                      borderWidth: 2,
+                      borderColor: COLORS.selectedBorder,
+                      borderRadius: 12,
+                      padding: 14,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, color: prescriptionDate ? COLORS.textDark : '#9CA3AF' }}>
+                      {prescriptionDate || 'Select date'}
                     </Text>
-                  )}
-                </View>
-                <TouchableOpacity onPress={handleRemoveFile}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Remove</Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Address Selection */}
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                  Select Address <Text style={{ color: COLORS.error }}>*</Text>
+                </Text>
+
+                {loadingAddresses ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                  </View>
+                ) : addresses.length === 0 ? (
+                  <View
+                    style={{
+                      backgroundColor: COLORS.background,
+                      borderRadius: 8,
+                      padding: 16,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, color: COLORS.textGray, marginBottom: 12 }}>
+                      No addresses found. Please add an address first.
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setShowAddAddressModal(true)}
+                      style={{
+                        backgroundColor: COLORS.primary,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: '#FFFFFF' }}>
+                        Add New Address
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => setShowAddressDropdown(!showAddressDropdown)}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: COLORS.selectedBorder,
+                        borderRadius: 12,
+                        padding: 14,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, color: selectedAddress ? COLORS.textDark : '#9CA3AF', flex: 1 }} numberOfLines={1}>
+                        {selectedAddress
+                          ? `${selectedAddress.addressLine1}, ${selectedAddress.city} - ${selectedAddress.pincode}`
+                          : 'Select an address'}
+                      </Text>
+                      <ChevronDownIcon width={20} height={20} color={COLORS.textGray} />
+                    </TouchableOpacity>
+
+                    {showAddressDropdown && (
+                      <View
+                        style={{
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                          borderRadius: 8,
+                          marginTop: 4,
+                          backgroundColor: COLORS.white,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 3,
+                        }}
+                      >
+                        {addresses.map((address) => (
+                          <TouchableOpacity
+                            key={address._id}
+                            onPress={() => {
+                              setSelectedAddressId(address._id);
+                              setShowAddressDropdown(false);
+                            }}
+                            style={{
+                              padding: 14,
+                              borderBottomWidth: 1,
+                              borderBottomColor: COLORS.background,
+                              backgroundColor: selectedAddressId === address._id ? 'rgba(3, 77, 162, 0.05)' : COLORS.white,
+                            }}
+                          >
+                            <Text style={{ fontSize: 14, color: COLORS.textDark }}>
+                              {address.addressLine1}, {address.city} - {address.pincode}
+                              {address.isDefault && ' (Default)'}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+
+                    {selectedAddress && (
+                      <View
+                        style={{
+                          backgroundColor: 'rgba(3, 77, 162, 0.05)',
+                          borderRadius: 8,
+                          padding: 12,
+                          marginTop: 8,
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, color: COLORS.primary }}>
+                          <Text style={{ fontWeight: '600' }}>Pincode:</Text> {selectedAddress.pincode}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Add New Address Button */}
+                    <TouchableOpacity
+                      onPress={() => setShowAddAddressModal(true)}
+                      style={{
+                        marginTop: 12,
+                        paddingVertical: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>
+                        + Add New Address
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
           )}
-        </View>
 
-        {/* Patient Information - Only show after file selected */}
-        {file && (
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 20,
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
-              Patient Information
-            </Text>
-
-            {/* Patient Selection */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                Select Patient <Text style={{ color: '#DC2626' }}>*</Text>
+          {/* Notes - Only show after file selected */}
+          {file && (
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 20,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+                Additional Notes (Optional)
               </Text>
-              <TouchableOpacity
-                onPress={() => setShowPatientDropdown(!showPatientDropdown)}
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Any specific instructions or information..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={4}
                 style={{
                   borderWidth: 2,
-                  borderColor: '#86ACD8',
+                  borderColor: COLORS.selectedBorder,
                   borderRadius: 12,
                   padding: 14,
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  fontSize: 14,
+                  color: COLORS.textDark,
+                  textAlignVertical: 'top',
+                  minHeight: 100,
                 }}
-              >
-                <Text style={{ fontSize: 14, color: selectedMember ? '#111827' : '#9CA3AF' }}>
-                  {selectedMember
-                    ? `${selectedMember.name}${selectedMember.relationship !== 'SELF' ? ` (${selectedMember.relationship})` : ''}`
-                    : 'Select a patient'}
-                </Text>
-                <ChevronDownIcon width={20} height={20} color="#6B7280" />
-              </TouchableOpacity>
-
-              {showPatientDropdown && (
-                <View
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#E5E7EB',
-                    borderRadius: 8,
-                    marginTop: 4,
-                    backgroundColor: '#FFFFFF',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
-                >
-                  {memberList.map((member) => (
-                    <TouchableOpacity
-                      key={member.userId}
-                      onPress={() => {
-                        setPatientId(member.userId);
-                        setPatientName(member.name);
-                        setPatientRelationship(member.relationship);
-                        setShowPatientDropdown(false);
-                      }}
-                      style={{
-                        padding: 14,
-                        borderBottomWidth: 1,
-                        borderBottomColor: '#F3F4F6',
-                        backgroundColor: patientId === member.userId ? '#EFF4FF' : '#FFFFFF',
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, color: '#111827' }}>
-                        {member.name} {member.relationship !== 'SELF' && `(${member.relationship})`}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+              />
             </View>
+          )}
 
-            {/* Prescription Date */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                Prescription Date <Text style={{ color: '#DC2626' }}>*</Text>
-              </Text>
-              {Platform.OS === 'web' ? (
-                <input
-                  type="date"
-                  value={prescriptionDate}
-                  onChange={(e) => setPrescriptionDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  style={{
-                    width: '100%',
-                    padding: 14,
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    borderRadius: 12,
-                    fontSize: 14,
-                    outline: 'none',
-                  }}
-                />
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    // For native, would use a date picker
-                    // For simplicity, using current date
-                    setPrescriptionDate(new Date().toISOString().split('T')[0]);
-                  }}
-                  style={{
-                    borderWidth: 2,
-                    borderColor: '#86ACD8',
-                    borderRadius: 12,
-                    padding: 14,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: prescriptionDate ? '#111827' : '#9CA3AF' }}>
-                    {prescriptionDate || 'Select date'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Address Selection */}
-            <View>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                Select Address <Text style={{ color: '#DC2626' }}>*</Text>
-              </Text>
-
-              {loadingAddresses ? (
-                <View style={{ padding: 20, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" color="#0F5FDC" />
-                </View>
-              ) : addresses.length === 0 ? (
-                <View
-                  style={{
-                    backgroundColor: '#F9FAFB',
-                    borderRadius: 8,
-                    padding: 16,
-                  }}
-                >
-                  <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
-                    No addresses found. Please add an address first.
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setShowAddAddressModal(true)}
-                    style={{
-                      backgroundColor: '#0F5FDC',
-                      paddingVertical: 12,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#FFFFFF' }}>
-                      Add New Address
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    onPress={() => setShowAddressDropdown(!showAddressDropdown)}
-                    style={{
-                      borderWidth: 2,
-                      borderColor: '#86ACD8',
-                      borderRadius: 12,
-                      padding: 14,
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, color: selectedAddress ? '#111827' : '#9CA3AF', flex: 1 }} numberOfLines={1}>
-                      {selectedAddress
-                        ? `${selectedAddress.addressLine1}, ${selectedAddress.city} - ${selectedAddress.pincode}`
-                        : 'Select an address'}
-                    </Text>
-                    <ChevronDownIcon width={20} height={20} color="#6B7280" />
-                  </TouchableOpacity>
-
-                  {showAddressDropdown && (
-                    <View
-                      style={{
-                        borderWidth: 1,
-                        borderColor: '#E5E7EB',
-                        borderRadius: 8,
-                        marginTop: 4,
-                        backgroundColor: '#FFFFFF',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
-                        elevation: 3,
-                      }}
-                    >
-                      {addresses.map((address) => (
-                        <TouchableOpacity
-                          key={address._id}
-                          onPress={() => {
-                            setSelectedAddressId(address._id);
-                            setShowAddressDropdown(false);
-                          }}
-                          style={{
-                            padding: 14,
-                            borderBottomWidth: 1,
-                            borderBottomColor: '#F3F4F6',
-                            backgroundColor: selectedAddressId === address._id ? '#EFF4FF' : '#FFFFFF',
-                          }}
-                        >
-                          <Text style={{ fontSize: 14, color: '#111827' }}>
-                            {address.addressLine1}, {address.city} - {address.pincode}
-                            {address.isDefault && ' (Default)'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-
-                  {selectedAddress && (
-                    <View
-                      style={{
-                        backgroundColor: '#EFF4FF',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginTop: 8,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, color: '#0F5FDC' }}>
-                        <Text style={{ fontWeight: '600' }}>Pincode:</Text> {selectedAddress.pincode}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Add New Address Button */}
-                  <TouchableOpacity
-                    onPress={() => setShowAddAddressModal(true)}
-                    style={{
-                      marginTop: 12,
-                      paddingVertical: 10,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#0F5FDC' }}>
-                      + Add New Address
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Notes - Only show after file selected */}
-        {file && (
+          {/* Info Card */}
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.white,
               borderRadius: 16,
               padding: 20,
               marginBottom: 16,
               borderWidth: 1,
-              borderColor: '#E5E7EB',
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
-              Additional Notes (Optional)
+            <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary, marginBottom: 12 }}>
+              What happens next?
             </Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Any specific instructions or information..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={4}
-              style={{
-                borderWidth: 2,
-                borderColor: '#86ACD8',
-                borderRadius: 12,
-                padding: 14,
-                fontSize: 14,
-                color: '#111827',
-                textAlignVertical: 'top',
-                minHeight: 100,
-              }}
-            />
+            {[
+              'Your prescription will be reviewed by our team',
+              "We'll create a cart with all the tests from your prescription",
+              "You'll be notified once your cart is ready for review",
+              'Select a lab partner and book your slot',
+            ].map((step, index) => (
+              <View key={index} style={{ flexDirection: 'row', marginBottom: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary, marginRight: 8 }}>
+                  {index + 1}.
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.textDark, flex: 1 }}>{step}</Text>
+              </View>
+            ))}
           </View>
-        )}
 
-        {/* Info Card */}
-        <View
-          style={{
-            backgroundColor: '#F9FAFB',
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-          }}
-        >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2', marginBottom: 12 }}>
-            What happens next?
-          </Text>
-          {[
-            'Your prescription will be reviewed by our team',
-            "We'll create a cart with all the tests from your prescription",
-            "You'll be notified once your cart is ready for review",
-            'Select a lab partner and book your slot',
-          ].map((step, index) => (
-            <View key={index} style={{ flexDirection: 'row', marginBottom: 8 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#0F5FDC', marginRight: 8 }}>
-                {index + 1}.
+          {/* Upload Button - Only show after file selected */}
+          {file && (
+            <TouchableOpacity
+              onPress={handleUpload}
+              disabled={uploading}
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: uploading ? '#9CA3AF' : COLORS.primary,
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+              }}
+            >
+              {uploading && (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+              )}
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>
+                {uploading ? 'Uploading...' : 'Upload Prescription'}
               </Text>
-              <Text style={{ fontSize: 13, color: '#374151', flex: 1 }}>{step}</Text>
-            </View>
-          ))}
+            </TouchableOpacity>
+          )}
         </View>
-
-        {/* Upload Button - Only show after file selected */}
-        {file && (
-          <TouchableOpacity
-            onPress={handleUpload}
-            disabled={uploading}
-            activeOpacity={0.8}
-            style={{
-              backgroundColor: uploading ? '#93C5FD' : '#0F5FDC',
-              paddingVertical: 16,
-              borderRadius: 12,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-            }}
-          >
-            {uploading && (
-              <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
-            )}
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>
-              {uploading ? 'Uploading...' : 'Upload Prescription'}
-            </Text>
-          </TouchableOpacity>
-        )}
       </ScrollView>
 
       {/* Add Address Modal */}
@@ -1016,16 +1078,16 @@ export default function UploadPrescriptionPage() {
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: COLORS.white,
                 borderTopLeftRadius: 24,
                 borderTopRightRadius: 24,
                 maxHeight: '90%',
               }}
             >
               {/* Modal Header */}
-              <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
+              <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.primary }}>
                     Add New Address
                   </Text>
                   <TouchableOpacity
@@ -1033,10 +1095,10 @@ export default function UploadPrescriptionPage() {
                     style={{ padding: 4 }}
                     disabled={addingAddress}
                   >
-                    <Text style={{ fontSize: 24, color: '#6B7280' }}>×</Text>
+                    <Text style={{ fontSize: 24, color: COLORS.textGray }}>×</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 4 }}>
                   Enter the address details below
                 </Text>
               </View>
@@ -1044,8 +1106,8 @@ export default function UploadPrescriptionPage() {
               <ScrollView style={{ padding: 20 }} keyboardShouldPersistTaps="handled">
                 {/* Address Type */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                    Address Type <Text style={{ color: '#DC2626' }}>*</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                    Address Type <Text style={{ color: COLORS.error }}>*</Text>
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 12 }}>
                     {(['HOME', 'WORK', 'OTHER'] as const).map((type) => (
@@ -1057,15 +1119,15 @@ export default function UploadPrescriptionPage() {
                           paddingVertical: 10,
                           borderRadius: 8,
                           borderWidth: 2,
-                          borderColor: newAddress.addressType === type ? '#0F5FDC' : '#E5E7EB',
-                          backgroundColor: newAddress.addressType === type ? '#EFF4FF' : '#FFFFFF',
+                          borderColor: newAddress.addressType === type ? COLORS.selectedBorder : COLORS.border,
+                          backgroundColor: newAddress.addressType === type ? 'rgba(3, 77, 162, 0.05)' : COLORS.white,
                           alignItems: 'center',
                         }}
                       >
                         <Text style={{
                           fontSize: 13,
                           fontWeight: '500',
-                          color: newAddress.addressType === type ? '#0F5FDC' : '#6B7280'
+                          color: newAddress.addressType === type ? COLORS.primary : COLORS.textGray
                         }}>
                           {type}
                         </Text>
@@ -1076,8 +1138,8 @@ export default function UploadPrescriptionPage() {
 
                 {/* Address Line 1 */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                    Address Line 1 <Text style={{ color: '#DC2626' }}>*</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                    Address Line 1 <Text style={{ color: COLORS.error }}>*</Text>
                   </Text>
                   <TextInput
                     value={newAddress.addressLine1}
@@ -1086,11 +1148,11 @@ export default function UploadPrescriptionPage() {
                     placeholderTextColor="#9CA3AF"
                     style={{
                       borderWidth: 1,
-                      borderColor: '#D1D5DB',
+                      borderColor: COLORS.border,
                       borderRadius: 12,
                       padding: 14,
                       fontSize: 14,
-                      color: '#111827',
+                      color: COLORS.textDark,
                     }}
                     editable={!addingAddress}
                   />
@@ -1098,7 +1160,7 @@ export default function UploadPrescriptionPage() {
 
                 {/* Address Line 2 */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
                     Address Line 2 (Optional)
                   </Text>
                   <TextInput
@@ -1108,11 +1170,11 @@ export default function UploadPrescriptionPage() {
                     placeholderTextColor="#9CA3AF"
                     style={{
                       borderWidth: 1,
-                      borderColor: '#D1D5DB',
+                      borderColor: COLORS.border,
                       borderRadius: 12,
                       padding: 14,
                       fontSize: 14,
-                      color: '#111827',
+                      color: COLORS.textDark,
                     }}
                     editable={!addingAddress}
                   />
@@ -1121,8 +1183,8 @@ export default function UploadPrescriptionPage() {
                 {/* City and State */}
                 <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                      City <Text style={{ color: '#DC2626' }}>*</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                      City <Text style={{ color: COLORS.error }}>*</Text>
                     </Text>
                     <TextInput
                       value={newAddress.city}
@@ -1131,18 +1193,18 @@ export default function UploadPrescriptionPage() {
                       placeholderTextColor="#9CA3AF"
                       style={{
                         borderWidth: 1,
-                        borderColor: '#D1D5DB',
+                        borderColor: COLORS.border,
                         borderRadius: 12,
                         padding: 14,
                         fontSize: 14,
-                        color: '#111827',
+                        color: COLORS.textDark,
                       }}
                       editable={!addingAddress}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                      State <Text style={{ color: '#DC2626' }}>*</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                      State <Text style={{ color: COLORS.error }}>*</Text>
                     </Text>
                     <TextInput
                       value={newAddress.state}
@@ -1151,11 +1213,11 @@ export default function UploadPrescriptionPage() {
                       placeholderTextColor="#9CA3AF"
                       style={{
                         borderWidth: 1,
-                        borderColor: '#D1D5DB',
+                        borderColor: COLORS.border,
                         borderRadius: 12,
                         padding: 14,
                         fontSize: 14,
-                        color: '#111827',
+                        color: COLORS.textDark,
                       }}
                       editable={!addingAddress}
                     />
@@ -1165,8 +1227,8 @@ export default function UploadPrescriptionPage() {
                 {/* Pincode and Landmark */}
                 <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-                      Pincode <Text style={{ color: '#DC2626' }}>*</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
+                      Pincode <Text style={{ color: COLORS.error }}>*</Text>
                     </Text>
                     <TextInput
                       value={newAddress.pincode}
@@ -1180,17 +1242,17 @@ export default function UploadPrescriptionPage() {
                       maxLength={6}
                       style={{
                         borderWidth: 1,
-                        borderColor: '#D1D5DB',
+                        borderColor: COLORS.border,
                         borderRadius: 12,
                         padding: 14,
                         fontSize: 14,
-                        color: '#111827',
+                        color: COLORS.textDark,
                       }}
                       editable={!addingAddress}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 8 }}>
                       Landmark (Optional)
                     </Text>
                     <TextInput
@@ -1200,11 +1262,11 @@ export default function UploadPrescriptionPage() {
                       placeholderTextColor="#9CA3AF"
                       style={{
                         borderWidth: 1,
-                        borderColor: '#D1D5DB',
+                        borderColor: COLORS.border,
                         borderRadius: 12,
                         padding: 14,
                         fontSize: 14,
-                        color: '#111827',
+                        color: COLORS.textDark,
                       }}
                       editable={!addingAddress}
                     />
@@ -1223,8 +1285,8 @@ export default function UploadPrescriptionPage() {
                       height: 20,
                       borderRadius: 4,
                       borderWidth: 2,
-                      borderColor: newAddress.isDefault ? '#0F5FDC' : '#D1D5DB',
-                      backgroundColor: newAddress.isDefault ? '#0F5FDC' : '#FFFFFF',
+                      borderColor: newAddress.isDefault ? COLORS.primary : COLORS.border,
+                      backgroundColor: newAddress.isDefault ? COLORS.primary : COLORS.white,
                       justifyContent: 'center',
                       alignItems: 'center',
                       marginRight: 8,
@@ -1234,7 +1296,7 @@ export default function UploadPrescriptionPage() {
                       <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>✓</Text>
                     )}
                   </View>
-                  <Text style={{ fontSize: 14, color: '#374151' }}>Set as default address</Text>
+                  <Text style={{ fontSize: 14, color: COLORS.textDark }}>Set as default address</Text>
                 </TouchableOpacity>
 
                 {/* Action Buttons */}
@@ -1247,12 +1309,12 @@ export default function UploadPrescriptionPage() {
                       paddingVertical: 14,
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: '#D1D5DB',
+                      borderColor: COLORS.border,
                       alignItems: 'center',
                       opacity: addingAddress ? 0.5 : 1,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Cancel</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleAddAddress}
@@ -1261,7 +1323,7 @@ export default function UploadPrescriptionPage() {
                       flex: 1,
                       paddingVertical: 14,
                       borderRadius: 12,
-                      backgroundColor: addingAddress ? '#93C5FD' : '#0F5FDC',
+                      backgroundColor: addingAddress ? '#9CA3AF' : COLORS.primary,
                       alignItems: 'center',
                       flexDirection: 'row',
                       justifyContent: 'center',

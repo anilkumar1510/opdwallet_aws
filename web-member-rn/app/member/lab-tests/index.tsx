@@ -12,10 +12,26 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+};
 
 // ============================================================================
 // TYPES
@@ -403,136 +419,162 @@ export default function LabTestsPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={{ backgroundColor: '#0E51A2' }}>
-        <LinearGradient
-          colors={['#0E51A2', '#1565C0']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ marginRight: 16, padding: 4 }}
-            >
-              <ArrowLeftIcon width={24} height={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFFFFF' }}>
-                Lab Tests
-              </Text>
-              <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
-                Book lab tests with ease
-              </Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </SafeAreaView>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0F5FDC']} />
-        }
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      {/* ===== HEADER (STICKY) ===== */}
+      <View
+        style={{
+          backgroundColor: COLORS.white,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
+          ...Platform.select({
+            web: {
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+            },
+          }),
+        }}
       >
-        {/* Service Description Card */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <View
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: '#e8f2fc',
-                marginRight: 16,
-              }}
-            >
-              <BeakerIcon width={32} height={32} color="#0a529f" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
-                Available Lab Tests
-              </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 12, lineHeight: 20 }}>
-                Get accurate and timely lab test results from certified laboratories
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                {LAB_SERVICES.map((service, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      width: '50%',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor: '#0a529f',
-                        marginRight: 8,
-                      }}
-                    />
-                    <Text style={{ fontSize: 13, color: '#374151', flex: 1 }}>{service}</Text>
-                  </View>
-                ))}
+        <SafeAreaView edges={['top']}>
+          <View
+            style={{
+              maxWidth: 480,
+              marginHorizontal: 'auto',
+              width: '100%',
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={{ padding: 8, borderRadius: 12 }}
+                activeOpacity={0.7}
+              >
+                <ArrowLeftIcon width={20} height={20} color="#374151" />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                  Lab Tests
+                </Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                  Book lab tests with ease
+                </Text>
               </View>
             </View>
           </View>
-        </View>
+        </SafeAreaView>
+      </View>
 
-        {/* Get Started Card */}
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
-            Get Started
-          </Text>
-
-          <View style={{ gap: 12 }}>
-            {/* Upload New Prescription */}
-            <TouchableOpacity
-              onPress={() => router.push('/member/lab-tests/upload')}
-              activeOpacity={0.9}
-            >
-              <LinearGradient
-                colors={['#1F63B4', '#5DA4FB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingVertical: 20,
+          paddingBottom: 96,
+        }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
+      >
+        <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
+          {/* Service Description Card */}
+          <View
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View
                 style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                  marginRight: 16,
+                }}
+              >
+                <BeakerIcon width={32} height={32} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.primary, marginBottom: 8 }}>
+                  Available Lab Tests
+                </Text>
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 12, lineHeight: 20 }}>
+                  Get accurate and timely lab test results from certified laboratories
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {LAB_SERVICES.map((service, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        width: '50%',
+                        marginBottom: 8,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: COLORS.primary,
+                          marginRight: 8,
+                        }}
+                      />
+                      <Text style={{ fontSize: 13, color: COLORS.textDark, flex: 1 }}>{service}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Get Started Card */}
+          <View
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+              Get Started
+            </Text>
+
+            <View style={{ gap: 12 }}>
+              {/* Upload New Prescription */}
+              <TouchableOpacity
+                onPress={() => router.push('/member/lab-tests/upload')}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: COLORS.primary,
                   borderRadius: 12,
                   padding: 20,
                 }}
@@ -544,250 +586,260 @@ export default function LabTestsPage() {
                 <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 4 }}>
                   Upload a new prescription from your device
                 </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            {/* Use Existing Prescription */}
-            <TouchableOpacity
-              onPress={handleOpenSelectorModal}
-              activeOpacity={0.8}
-              style={{
-                borderRadius: 12,
-                padding: 20,
-                borderWidth: 2,
-                borderColor: '#0F5FDC',
-                backgroundColor: '#FFFFFF',
-              }}
-            >
-              <FolderOpenIcon width={28} height={28} color="#0F5FDC" />
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#0E51A2', marginTop: 12 }}>
-                Use Existing Prescription
-              </Text>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
-                Select from your health records
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Active Carts */}
-        {carts.length > 0 && (
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 20,
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <ShoppingCartIcon width={20} height={20} color="#0F5FDC" />
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginLeft: 8 }}>
-                Your Carts ({carts.length})
-              </Text>
-            </View>
-
-            {carts.map((cart) => (
+              {/* Use Existing Prescription */}
               <TouchableOpacity
-                key={cart.cartId}
-                onPress={() => router.push('/member/bookings?tab=lab')}
+                onPress={handleOpenSelectorModal}
                 activeOpacity={0.8}
                 style={{
                   borderRadius: 12,
-                  padding: 16,
+                  padding: 20,
                   borderWidth: 2,
-                  borderColor: '#86ACD8',
-                  backgroundColor: '#FFFFFF',
-                  marginBottom: 12,
+                  borderColor: COLORS.selectedBorder,
+                  backgroundColor: COLORS.white,
                 }}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
-                      {cart.items.length} test{cart.items.length > 1 ? 's' : ''} added
-                    </Text>
-                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
-                      Cart ID: {cart.cartId}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
-                      Created: {formatDate(cart.createdAt)}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                    <View
-                      style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 9999,
-                        ...getStatusColor(cart.status),
-                      }}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(cart.status).color }}>
-                        {cart.status}
+                <FolderOpenIcon width={28} height={28} color={COLORS.primary} />
+                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary, marginTop: 12 }}>
+                  Use Existing Prescription
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>
+                  Select from your health records
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Active Carts */}
+          {carts.length > 0 && (
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 20,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <ShoppingCartIcon width={20} height={20} color={COLORS.primary} />
+                <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginLeft: 8 }}>
+                  Your Carts ({carts.length})
+                </Text>
+              </View>
+
+              {carts.map((cart) => (
+                <TouchableOpacity
+                  key={cart.cartId}
+                  onPress={() => router.push('/member/bookings?tab=lab')}
+                  activeOpacity={0.8}
+                  style={{
+                    borderRadius: 12,
+                    padding: 16,
+                    borderWidth: 2,
+                    borderColor: COLORS.selectedBorder,
+                    backgroundColor: COLORS.white,
+                    marginBottom: 12,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>
+                        {cart.items.length} test{cart.items.length > 1 ? 's' : ''} added
+                      </Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>
+                        Cart ID: {cart.cartId}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                        Created: {formatDate(cart.createdAt)}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: '#0F5FDC' }}>
-                      Review Cart →
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Recent Prescriptions */}
-        {prescriptions.length > 0 && (
-          <View
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 20,
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: '#E5E7EB',
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
-              Recent Prescriptions
-            </Text>
-
-            {prescriptions.slice(0, 2).map((prescription) => (
-              <View
-                key={prescription.prescriptionId}
-                style={{
-                  backgroundColor: '#F9FAFB',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 12,
-                  borderWidth: 1,
-                  borderColor: '#E5E7EB',
-                }}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
-                      {prescription.fileName}
-                    </Text>
-
-                    {prescription.doctorName && (
-                      <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
-                        Dr. {prescription.doctorName}
-                        {prescription.prescriptionDate && ` • ${formatDate(prescription.prescriptionDate)}`}
-                      </Text>
-                    )}
-
-                    {/* Lab Tests Included */}
-                    {prescription.labTests && prescription.labTests.length > 0 && (
-                      <View style={{ marginTop: 8 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '500', color: '#374151', marginBottom: 4 }}>
-                          Tests Included:
-                        </Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-                          {prescription.labTests.map((test, idx) => (
-                            <View
-                              key={idx}
-                              style={{
-                                backgroundColor: '#EFF4FF',
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                                borderRadius: 4,
-                              }}
-                            >
-                              <Text style={{ fontSize: 11, fontWeight: '500', color: '#0F5FDC' }}>
-                                {typeof test === 'string' ? test : test.testName}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    )}
-
-                    {/* Upload Date and Status */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
-                        Uploaded: {formatDateTime(prescription.uploadedAt)}
-                      </Text>
+                    <View style={{ alignItems: 'flex-end', gap: 8 }}>
                       <View
                         style={{
                           paddingHorizontal: 8,
-                          paddingVertical: 2,
+                          paddingVertical: 4,
                           borderRadius: 9999,
-                          ...getStatusColor(prescription.status),
+                          ...getStatusColor(cart.status),
                         }}
                       >
-                        <Text style={{ fontSize: 10, fontWeight: '500', color: getStatusColor(prescription.status).color }}>
-                          {prescription.status}
+                        <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(cart.status).color }}>
+                          {cart.status}
                         </Text>
                       </View>
-                      {prescription.hasOrder && (
+                      <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary }}>
+                        Review Cart →
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Recent Prescriptions */}
+          {prescriptions.length > 0 && (
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 20,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
+                Recent Prescriptions
+              </Text>
+
+              {prescriptions.slice(0, 2).map((prescription) => (
+                <View
+                  key={prescription.prescriptionId}
+                  style={{
+                    backgroundColor: COLORS.background,
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>
+                        {prescription.fileName}
+                      </Text>
+
+                      {prescription.doctorName && (
+                        <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 4 }}>
+                          Dr. {prescription.doctorName}
+                          {prescription.prescriptionDate && ` • ${formatDate(prescription.prescriptionDate)}`}
+                        </Text>
+                      )}
+
+                      {/* Lab Tests Included */}
+                      {prescription.labTests && prescription.labTests.length > 0 && (
+                        <View style={{ marginTop: 8 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '500', color: COLORS.textDark, marginBottom: 4 }}>
+                            Tests Included:
+                          </Text>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                            {prescription.labTests.map((test, idx) => (
+                              <View
+                                key={idx}
+                                style={{
+                                  backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 2,
+                                  borderRadius: 4,
+                                }}
+                              >
+                                <Text style={{ fontSize: 11, fontWeight: '500', color: COLORS.primary }}>
+                                  {typeof test === 'string' ? test : test.testName}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Upload Date and Status */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                        <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
+                          Uploaded: {formatDateTime(prescription.uploadedAt)}
+                        </Text>
                         <View
                           style={{
-                            backgroundColor: '#F3E8FF',
                             paddingHorizontal: 8,
                             paddingVertical: 2,
                             borderRadius: 9999,
+                            ...getStatusColor(prescription.status),
                           }}
                         >
-                          <Text style={{ fontSize: 10, fontWeight: '500', color: '#7C3AED' }}>
-                            Lab Order Created
+                          <Text style={{ fontSize: 10, fontWeight: '500', color: getStatusColor(prescription.status).color }}>
+                            {prescription.status}
                           </Text>
                         </View>
+                        {prescription.hasOrder && (
+                          <View
+                            style={{
+                              backgroundColor: '#F3E8FF',
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 9999,
+                            }}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: '500', color: '#7C3AED' }}>
+                              Lab Order Created
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Status Icons */}
+                    <View style={{ marginLeft: 12 }}>
+                      {prescription.status === 'DIGITIZING' && (
+                        <ClockIcon width={20} height={20} color={COLORS.primary} />
+                      )}
+                      {prescription.status === 'DIGITIZED' && prescription.cartId && (
+                        <CheckCircleIcon width={20} height={20} color={COLORS.success} />
                       )}
                     </View>
                   </View>
 
-                  {/* Status Icons */}
-                  <View style={{ marginLeft: 12 }}>
-                    {prescription.status === 'DIGITIZING' && (
-                      <ClockIcon width={20} height={20} color="#0F5FDC" />
-                    )}
-                    {prescription.status === 'DIGITIZED' && prescription.cartId && (
-                      <CheckCircleIcon width={20} height={20} color="#25A425" />
-                    )}
-                  </View>
+                  {/* Review Cart Button */}
+                  {prescription.status === 'DIGITIZED' && prescription.cartId && (
+                    <TouchableOpacity
+                      onPress={() => router.push('/member/bookings?tab=lab')}
+                      activeOpacity={0.8}
+                      style={{
+                        marginTop: 12,
+                        backgroundColor: COLORS.primary,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
+                        Review Cart
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
+              ))}
+            </View>
+          )}
 
-                {/* Review Cart Button */}
-                {prescription.status === 'DIGITIZED' && prescription.cartId && (
-                  <TouchableOpacity
-                    onPress={() => router.push('/member/bookings?tab=lab')}
-                    activeOpacity={0.8}
-                    style={{
-                      marginTop: 12,
-                      backgroundColor: '#0F5FDC',
-                      paddingVertical: 12,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                      Review Cart
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* View Lab Bookings Button */}
-        <TouchableOpacity
-          onPress={() => router.push('/member/bookings?tab=lab')}
-          activeOpacity={0.8}
-          style={{
-            backgroundColor: '#0F5FDC',
-            paddingVertical: 16,
-            borderRadius: 12,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>
-            View Lab Bookings
-          </Text>
-        </TouchableOpacity>
+          {/* View Lab Bookings Button */}
+          <TouchableOpacity
+            onPress={() => router.push('/member/bookings?tab=lab')}
+            activeOpacity={0.8}
+            style={{
+              backgroundColor: COLORS.primary,
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#FFFFFF' }}>
+              View Lab Bookings
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Prescription Selector Modal */}
@@ -800,7 +852,7 @@ export default function LabTestsPage() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.white,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               maxHeight: '80%',
@@ -809,26 +861,26 @@ export default function LabTestsPage() {
           >
             {/* Modal Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: '#111827' }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.primary }}>
                 Select Prescription
               </Text>
               <TouchableOpacity onPress={() => setShowSelectorModal(false)} style={{ padding: 4 }}>
-                <XMarkIcon width={24} height={24} color="#6B7280" />
+                <XMarkIcon width={24} height={24} color={COLORS.textGray} />
               </TouchableOpacity>
             </View>
-            <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 20 }}>
+            <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 20 }}>
               Choose a prescription to book lab tests
             </Text>
 
             {/* Prescriptions List */}
             {loadingPrescriptions ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#0F5FDC" />
+                <ActivityIndicator size="large" color={COLORS.primary} />
               </View>
             ) : healthRecordPrescriptions.length === 0 ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
                 <FolderOpenIcon width={48} height={48} color="#9CA3AF" />
-                <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 12, textAlign: 'center' }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 12, textAlign: 'center' }}>
                   No prescriptions found in your health records
                 </Text>
                 <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4, textAlign: 'center' }}>
@@ -847,32 +899,32 @@ export default function LabTestsPage() {
                       borderRadius: 12,
                       padding: 16,
                       marginBottom: 12,
-                      borderColor: selectedPrescription?._id === prescription._id ? '#0F5FDC' : '#E5E7EB',
-                      backgroundColor: selectedPrescription?._id === prescription._id ? '#EFF4FF' : '#FFFFFF',
+                      borderColor: selectedPrescription?._id === prescription._id ? COLORS.selectedBorder : COLORS.border,
+                      backgroundColor: selectedPrescription?._id === prescription._id ? 'rgba(3, 77, 162, 0.05)' : COLORS.white,
                     }}
                   >
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                          <UserIcon width={16} height={16} color="#6B7280" />
-                          <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
+                          <UserIcon width={16} height={16} color={COLORS.textGray} />
+                          <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                             Dr. {prescription.doctorName}
                           </Text>
                           <View
                             style={{
-                              backgroundColor: '#F3F4F6',
+                              backgroundColor: COLORS.background,
                               paddingHorizontal: 8,
                               paddingVertical: 2,
                               borderRadius: 4,
                             }}
                           >
-                            <Text style={{ fontSize: 10, color: '#6B7280' }}>
+                            <Text style={{ fontSize: 10, color: COLORS.textGray }}>
                               {prescription.type === 'digital' ? 'Digital' : 'PDF'}
                             </Text>
                           </View>
                         </View>
                         {prescription.patientName && (
-                          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 4 }}>
                             Patient: {prescription.patientName}
                           </Text>
                         )}
@@ -889,7 +941,7 @@ export default function LabTestsPage() {
                             width: 24,
                             height: 24,
                             borderRadius: 12,
-                            backgroundColor: '#0F5FDC',
+                            backgroundColor: COLORS.primary,
                             justifyContent: 'center',
                             alignItems: 'center',
                           }}
@@ -904,7 +956,7 @@ export default function LabTestsPage() {
             )}
 
             {/* Action Buttons */}
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border }}>
               <TouchableOpacity
                 onPress={() => setShowSelectorModal(false)}
                 style={{
@@ -912,11 +964,11 @@ export default function LabTestsPage() {
                   paddingVertical: 14,
                   borderRadius: 8,
                   borderWidth: 1,
-                  borderColor: '#D1D5DB',
+                  borderColor: COLORS.border,
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#374151' }}>Cancel</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handlePrescriptionSelect}
@@ -925,7 +977,7 @@ export default function LabTestsPage() {
                   flex: 1,
                   paddingVertical: 14,
                   borderRadius: 8,
-                  backgroundColor: selectedPrescription ? '#0F5FDC' : '#D1D5DB',
+                  backgroundColor: selectedPrescription ? COLORS.primary : '#9CA3AF',
                   alignItems: 'center',
                 }}
               >
@@ -946,7 +998,7 @@ export default function LabTestsPage() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.white,
               borderRadius: 16,
               padding: 24,
               width: '100%',
@@ -956,8 +1008,8 @@ export default function LabTestsPage() {
           >
             {submittingPrescription ? (
               <>
-                <ActivityIndicator size="large" color="#0F5FDC" style={{ marginBottom: 16 }} />
-                <Text style={{ fontSize: 14, color: '#6B7280' }}>Submitting your prescription...</Text>
+                <ActivityIndicator size="large" color={COLORS.primary} style={{ marginBottom: 16 }} />
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>Submitting your prescription...</Text>
               </>
             ) : (
               <>
@@ -966,28 +1018,28 @@ export default function LabTestsPage() {
                     width: 64,
                     height: 64,
                     borderRadius: 32,
-                    backgroundColor: '#e8f2fc',
+                    backgroundColor: 'rgba(3, 77, 162, 0.1)',
                     justifyContent: 'center',
                     alignItems: 'center',
                     marginBottom: 16,
                   }}
                 >
-                  <CheckCircleIcon width={40} height={40} color="#0a529f" />
+                  <CheckCircleIcon width={40} height={40} color={COLORS.success} />
                 </View>
 
-                <Text style={{ fontSize: 20, fontWeight: '600', color: '#111827', marginBottom: 8, textAlign: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: '600', color: COLORS.primary, marginBottom: 8, textAlign: 'center' }}>
                   Prescription Submitted Successfully!
                 </Text>
 
-                <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 20, textAlign: 'center', lineHeight: 20 }}>
                   Your prescription has been submitted for digitization. Our operations team will review it and create a cart with available lab vendors for you to choose from.
                 </Text>
 
                 <View
                   style={{
-                    backgroundColor: '#EFF6FF',
+                    backgroundColor: 'rgba(3, 77, 162, 0.05)',
                     borderWidth: 1,
-                    borderColor: '#BFDBFE',
+                    borderColor: COLORS.selectedBorder,
                     borderRadius: 12,
                     padding: 16,
                     marginBottom: 20,
@@ -995,12 +1047,12 @@ export default function LabTestsPage() {
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <ClockIcon width={20} height={20} color="#2563EB" />
+                    <ClockIcon width={20} height={20} color={COLORS.primary} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '500', color: '#1E40AF', marginBottom: 8 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary, marginBottom: 8 }}>
                         What happens next?
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#1E3A8A', lineHeight: 18 }}>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, lineHeight: 18 }}>
                         • Our team will digitize your prescription{'\n'}
                         • We'll find the best labs for you{'\n'}
                         • You'll receive a notification when ready{'\n'}
@@ -1016,7 +1068,7 @@ export default function LabTestsPage() {
                     width: '100%',
                     paddingVertical: 14,
                     borderRadius: 8,
-                    backgroundColor: '#0F5FDC',
+                    backgroundColor: COLORS.primary,
                     alignItems: 'center',
                   }}
                 >
