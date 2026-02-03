@@ -10,13 +10,67 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle } from 'react-native-svg';
 import {
   ArrowLeftIcon,
-  EyeIcon,
   MagnifyingGlassIcon,
 } from '../../src/components/icons/InlineSVGs';
 import apiClient from '../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+};
+
+// ============================================================================
+// ICONS - Matching Home Page Style
+// ============================================================================
+
+function EyeIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle
+        cx="12"
+        cy="12"
+        r="3"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+      />
+    </Svg>
+  );
+}
+
+function ChevronRightIcon({ size = 16 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 18L15 12L9 6"
+        stroke={COLORS.textGray}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -132,21 +186,16 @@ export default function VisionPage() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
+          borderBottomColor: COLORS.border,
           ...Platform.select({
             web: {
-              position: 'sticky' as any,
+              position: 'sticky',
               top: 0,
               zIndex: 10,
             },
@@ -160,26 +209,23 @@ export default function VisionPage() {
               marginHorizontal: 'auto',
               width: '100%',
               paddingHorizontal: 16,
-              paddingVertical: 16,
+              paddingVertical: 12,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={handleHeaderBack}
-                style={{
-                  padding: 8,
-                  borderRadius: 8,
-                }}
+                style={{ padding: 8, borderRadius: 12 }}
                 activeOpacity={0.7}
               >
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                   Vision Services
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                  Browse and book vision care services covered by your policy
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                  Browse and book vision care services
                 </Text>
               </View>
             </View>
@@ -192,24 +238,25 @@ export default function VisionPage() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingVertical: 24,
+          paddingVertical: 20,
           paddingBottom: 96,
         }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
           {/* ===== ERROR BANNER ===== */}
           {error && (
             <View
               style={{
-                backgroundColor: '#FEF1E7',
+                backgroundColor: '#FEF2F2',
                 borderWidth: 1,
-                borderColor: '#F9B376',
+                borderColor: '#FECACA',
                 borderRadius: 12,
-                padding: 16,
+                padding: 14,
                 marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 14, color: '#E53535' }}>{error}</Text>
+              <Text style={{ fontSize: 14, color: COLORS.error }}>{error}</Text>
             </View>
           )}
 
@@ -223,71 +270,60 @@ export default function VisionPage() {
                 paddingVertical: 64,
               }}
             >
-              <ActivityIndicator size="large" color="#0F5FDC" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
           ) : services.length === 0 ? (
             /* ===== EMPTY STATE ===== */
-            <LinearGradient
-              colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
-                borderRadius: 12,
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
                 padding: 32,
-                borderWidth: 2,
-                borderColor: '#F7DCAF',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
                 alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
-              {/* Icon Circle */}
-              <LinearGradient
-                colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
                   width: 64,
                   height: 64,
                   borderRadius: 32,
+                  backgroundColor: 'rgba(3, 77, 162, 0.1)',
                   justifyContent: 'center',
                   alignItems: 'center',
                   marginBottom: 16,
-                  borderWidth: 1,
-                  borderColor: 'rgba(164, 191, 254, 0.48)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: -2, height: 11 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 46.1,
-                  elevation: 4,
                 }}
               >
-                <EyeIcon width={32} height={32} color="#0F5FDC" />
-              </LinearGradient>
-
-              {/* Title */}
+                <EyeIcon size={32} />
+              </View>
               <Text
                 style={{
                   fontSize: 18,
                   fontWeight: '700',
-                  color: '#0E51A2',
+                  color: COLORS.primary,
                   marginBottom: 8,
                   textAlign: 'center',
                 }}
               >
                 No Vision Services Available
               </Text>
-
-              {/* Message */}
               <Text
                 style={{
                   fontSize: 14,
-                  color: '#6B7280',
+                  color: COLORS.textGray,
                   textAlign: 'center',
                   lineHeight: 20,
                 }}
               >
                 No vision services are currently assigned to your policy. Please contact your administrator for more information.
               </Text>
-            </LinearGradient>
+            </View>
           ) : (
             <>
               {/* ===== SEARCH BAR (Conditional - only if > 3 services) ===== */}
@@ -314,12 +350,12 @@ export default function VisionPage() {
                         paddingLeft: 40,
                         paddingRight: 16,
                         paddingVertical: 12,
-                        borderWidth: 2,
-                        borderColor: '#86ACD8',
+                        borderWidth: 1,
+                        borderColor: COLORS.cardBorder,
                         borderRadius: 12,
                         fontSize: 14,
-                        color: '#111827',
-                        backgroundColor: '#FFFFFF',
+                        color: COLORS.textDark,
+                        backgroundColor: COLORS.white,
                       }}
                       placeholderTextColor="#9CA3AF"
                     />
@@ -327,91 +363,59 @@ export default function VisionPage() {
                 </View>
               )}
 
-              {/* ===== SERVICES GRID ===== */}
-              <View style={{ gap: 16 }}>
+              {/* ===== SERVICES LIST ===== */}
+              <View style={{ gap: 12 }}>
                 {filteredServices.map((service) => (
-                  <LinearGradient
+                  <TouchableOpacity
                     key={service.code}
-                    colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    onPress={() => handleBookService(service.code)}
+                    activeOpacity={0.7}
                     style={{
-                      borderRadius: 12,
+                      backgroundColor: COLORS.white,
+                      borderRadius: 16,
                       padding: 16,
-                      borderWidth: 2,
-                      borderColor: '#F7DCAF',
+                      borderWidth: 1,
+                      borderColor: COLORS.cardBorder,
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
                       elevation: 3,
                     }}
                   >
-                    {/* Service Header */}
-                    <View style={{ marginBottom: 16 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: '#0E51A2',
-                          marginBottom: 8,
-                        }}
-                      >
-                        {service.name}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          color: '#6B7280',
-                          lineHeight: 20,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {service.description}
-                      </Text>
-                    </View>
-
-                    {/* Book Button */}
-                    <TouchableOpacity
-                      onPress={() => handleBookService(service.code)}
-                      activeOpacity={0.8}
-                      style={{ width: '100%' }}
-                    >
-                      <LinearGradient
-                        colors={['#1F63B4', '#5DA4FB']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={{
-                          paddingHorizontal: 24,
-                          paddingVertical: 12,
-                          borderRadius: 12,
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.2,
-                          shadowRadius: 8,
-                          elevation: 4,
-                          alignItems: 'center',
-                        }}
-                      >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ flex: 1, marginRight: 12 }}>
                         <Text
                           style={{
-                            color: '#FFFFFF',
-                            fontSize: 14,
+                            fontSize: 15,
                             fontWeight: '600',
+                            color: COLORS.primary,
+                            marginBottom: 4,
                           }}
                         >
-                          Book Now
+                          {service.name}
                         </Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </LinearGradient>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: COLORS.textGray,
+                            lineHeight: 18,
+                          }}
+                          numberOfLines={2}
+                        >
+                          {service.description}
+                        </Text>
+                      </View>
+                      <ChevronRightIcon size={20} />
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </View>
 
               {/* ===== NO SEARCH RESULTS ===== */}
               {filteredServices.length === 0 && searchTerm && (
                 <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
                     No services match your search "{searchTerm}"
                   </Text>
                 </View>

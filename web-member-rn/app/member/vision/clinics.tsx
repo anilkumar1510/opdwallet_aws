@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle } from 'react-native-svg';
 import * as Location from 'expo-location';
 import {
   ArrowLeftIcon,
@@ -18,6 +18,23 @@ import {
   MagnifyingGlassIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+};
 
 // ============================================================================
 // TYPES
@@ -192,9 +209,9 @@ export default function VisionClinicsPage() {
             console.log('[VisionClinics] Nominatim response:', nominatimData);
 
             // Extract pincode from address
-            const pincode = nominatimData.address?.postcode;
-            if (pincode) {
-              detectedPincode = pincode;
+            const pincodeValue = nominatimData.address?.postcode;
+            if (pincodeValue) {
+              detectedPincode = pincodeValue;
               console.log('[VisionClinics] Pincode from Nominatim:', detectedPincode);
             }
           }
@@ -263,21 +280,16 @@ export default function VisionClinicsPage() {
   }, [router]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
+          borderBottomColor: COLORS.border,
           ...Platform.select({
             web: {
-              position: 'sticky' as any,
+              position: 'sticky',
               top: 0,
               zIndex: 10,
             },
@@ -291,25 +303,22 @@ export default function VisionClinicsPage() {
               marginHorizontal: 'auto',
               width: '100%',
               paddingHorizontal: 16,
-              paddingVertical: 16,
+              paddingVertical: 12,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={handleBack}
-                style={{
-                  padding: 8,
-                  borderRadius: 8,
-                }}
+                style={{ padding: 8, borderRadius: 12 }}
                 activeOpacity={0.7}
               >
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                   Find Vision Clinics
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Search for clinics near you
                 </Text>
               </View>
@@ -323,29 +332,33 @@ export default function VisionClinicsPage() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingVertical: 24,
+          paddingVertical: 20,
           paddingBottom: 96,
         }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
           {/* ===== LOCATION SEARCH CARD ===== */}
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
               marginBottom: 16,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
             <Text
               style={{
                 fontSize: 16,
                 fontWeight: '600',
-                color: '#0E51A2',
+                color: COLORS.primary,
                 marginBottom: 16,
               }}
             >
@@ -359,7 +372,7 @@ export default function VisionClinicsPage() {
                   style={{
                     fontSize: 14,
                     fontWeight: '500',
-                    color: '#374151',
+                    color: COLORS.textDark,
                     marginBottom: 8,
                   }}
                 >
@@ -378,12 +391,12 @@ export default function VisionClinicsPage() {
                       flex: 1,
                       paddingHorizontal: 16,
                       paddingVertical: 12,
-                      borderWidth: 2,
-                      borderColor: '#86ACD8',
+                      borderWidth: 1,
+                      borderColor: COLORS.cardBorder,
                       borderRadius: 12,
                       fontSize: 14,
-                      color: '#111827',
-                      backgroundColor: '#FFFFFF',
+                      color: COLORS.textDark,
+                      backgroundColor: COLORS.white,
                     }}
                     placeholderTextColor="#9CA3AF"
                   />
@@ -391,39 +404,33 @@ export default function VisionClinicsPage() {
                     onPress={handleSearch}
                     disabled={loading || !pincode}
                     activeOpacity={0.8}
+                    style={{
+                      backgroundColor: loading || !pincode ? '#9CA3AF' : COLORS.primary,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
                   >
-                    <LinearGradient
-                      colors={['#1F63B4', '#5DA4FB']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
+                    <MagnifyingGlassIcon width={20} height={20} color="#FFFFFF" />
+                    <Text
                       style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 12,
-                        borderRadius: 12,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                        opacity: loading || !pincode ? 0.5 : 1,
+                        color: '#FFFFFF',
+                        fontSize: 14,
+                        fontWeight: '600',
                       }}
                     >
-                      <MagnifyingGlassIcon width={20} height={20} color="#FFFFFF" />
-                      <Text
-                        style={{
-                          color: '#FFFFFF',
-                          fontSize: 14,
-                          fontWeight: '600',
-                        }}
-                      >
-                        Search
-                      </Text>
-                    </LinearGradient>
+                      Search
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
               {/* OR Divider */}
               <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#6B7280' }}>OR</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textGray }}>OR</Text>
               </View>
 
               {/* Auto-detect Location */}
@@ -432,36 +439,32 @@ export default function VisionClinicsPage() {
                   onPress={detectLocation}
                   disabled={detectingLocation || loading}
                   activeOpacity={0.8}
+                  style={{
+                    backgroundColor: detectingLocation || loading ? '#9CA3AF' : COLORS.success,
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
                 >
-                  <View
+                  <MapPinIcon width={20} height={20} color="#FFFFFF" />
+                  <Text
                     style={{
-                      backgroundColor: '#25A425',
-                      paddingHorizontal: 24,
-                      paddingVertical: 12,
-                      borderRadius: 12,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      opacity: detectingLocation || loading ? 0.5 : 1,
+                      color: '#FFFFFF',
+                      fontSize: 14,
+                      fontWeight: '600',
                     }}
                   >
-                    <MapPinIcon width={20} height={20} color="#FFFFFF" />
-                    <Text
-                      style={{
-                        color: '#FFFFFF',
-                        fontSize: 14,
-                        fontWeight: '600',
-                      }}
-                    >
-                      {detectingLocation ? 'Detecting...' : 'Use My Location'}
-                    </Text>
-                  </View>
+                    {detectingLocation ? 'Detecting...' : 'Use My Location'}
+                  </Text>
                 </TouchableOpacity>
                 <Text
                   style={{
                     fontSize: 12,
-                    color: '#6B7280',
+                    color: COLORS.textGray,
                     marginTop: 8,
                     textAlign: 'center',
                   }}
@@ -470,21 +473,21 @@ export default function VisionClinicsPage() {
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== ERROR BANNER ===== */}
           {error && (
             <View
               style={{
-                backgroundColor: '#FEF1E7',
+                backgroundColor: '#FEF2F2',
                 borderWidth: 1,
-                borderColor: '#F9B376',
+                borderColor: '#FECACA',
                 borderRadius: 12,
-                padding: 16,
+                padding: 14,
                 marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 14, color: '#E53535' }}>{error}</Text>
+              <Text style={{ fontSize: 14, color: COLORS.error }}>{error}</Text>
             </View>
           )}
 
@@ -496,7 +499,7 @@ export default function VisionClinicsPage() {
                 alignItems: 'center',
               }}
             >
-              <ActivityIndicator size="large" color="#0F5FDC" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
           )}
 
@@ -509,7 +512,7 @@ export default function VisionClinicsPage() {
                   style={{
                     fontSize: 18,
                     fontWeight: '600',
-                    color: '#0E51A2',
+                    color: COLORS.primary,
                   }}
                 >
                   Clinics in {searchedPincode} ({clinics.length})
@@ -517,22 +520,20 @@ export default function VisionClinicsPage() {
               </View>
 
               {/* Clinics Grid */}
-              <View style={{ gap: 16 }}>
+              <View style={{ gap: 12 }}>
                 {clinics.map((clinic) => (
-                  <LinearGradient
+                  <View
                     key={clinic.clinicId}
-                    colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
                     style={{
-                      borderRadius: 12,
+                      backgroundColor: COLORS.white,
+                      borderRadius: 16,
                       padding: 16,
-                      borderWidth: 2,
-                      borderColor: '#F7DCAF',
+                      borderWidth: 1,
+                      borderColor: COLORS.cardBorder,
                       shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
                       elevation: 3,
                     }}
                   >
@@ -541,7 +542,7 @@ export default function VisionClinicsPage() {
                       style={{
                         fontSize: 16,
                         fontWeight: '600',
-                        color: '#0E51A2',
+                        color: COLORS.primary,
                         marginBottom: 12,
                       }}
                     >
@@ -557,32 +558,30 @@ export default function VisionClinicsPage() {
                         marginBottom: 12,
                       }}
                     >
-                      <MapPinIcon width={20} height={20} color="#0F5FDC" />
+                      <MapPinIcon width={20} height={20} color={COLORS.primary} />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 20 }}>
+                        <Text style={{ fontSize: 14, color: COLORS.textGray, lineHeight: 20 }}>
                           {clinic.address.street || clinic.address.line1}
                         </Text>
-                        <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 20 }}>
+                        <Text style={{ fontSize: 14, color: COLORS.textGray, lineHeight: 20 }}>
                           {clinic.address.city}, {clinic.address.state} - {clinic.address.pincode}
                         </Text>
                       </View>
                     </View>
 
                     {/* Contact */}
-                    <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 16 }}>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 16 }}>
                       <Text style={{ fontWeight: '500' }}>Contact:</Text> {clinic.contactNumber}
                     </Text>
 
                     {/* Billing Info and Availability */}
-                    <LinearGradient
-                      colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                    <View
                       style={{
+                        backgroundColor: 'rgba(3, 77, 162, 0.05)',
                         borderRadius: 12,
                         padding: 12,
-                        borderWidth: 2,
-                        borderColor: '#86ACD8',
+                        borderWidth: 1,
+                        borderColor: COLORS.selectedBorder,
                         marginBottom: 16,
                       }}
                     >
@@ -594,59 +593,50 @@ export default function VisionClinicsPage() {
                         }}
                       >
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 12, color: '#6B7280' }}>Billing</Text>
-                          <Text style={{ fontSize: 12, fontWeight: '500', color: '#374151' }}>
+                          <Text style={{ fontSize: 12, color: COLORS.textGray }}>Billing</Text>
+                          <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.textDark }}>
                             Billing will be done post service availment
                           </Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: 12, color: '#6B7280' }}>Available Slots</Text>
+                          <Text style={{ fontSize: 12, color: COLORS.textGray }}>Available Slots</Text>
                           <Text
                             style={{
                               fontSize: 18,
                               fontWeight: '700',
-                              color: '#25A425',
+                              color: COLORS.success,
                             }}
                           >
                             {clinic.availableSlots}
                           </Text>
                         </View>
                       </View>
-                    </LinearGradient>
+                    </View>
 
                     {/* Select Button */}
                     <TouchableOpacity
                       onPress={() => handleSelectClinic(clinic.clinicId)}
                       disabled={clinic.availableSlots === 0}
                       activeOpacity={0.8}
+                      style={{
+                        backgroundColor: clinic.availableSlots > 0 ? COLORS.primary : '#9CA3AF',
+                        paddingHorizontal: 24,
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
                     >
-                      <LinearGradient
-                        colors={
-                          clinic.availableSlots > 0
-                            ? ['#1F63B4', '#5DA4FB']
-                            : ['#9ca3af', '#9ca3af']
-                        }
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
+                      <Text
                         style={{
-                          paddingHorizontal: 24,
-                          paddingVertical: 12,
-                          borderRadius: 12,
-                          alignItems: 'center',
+                          color: '#FFFFFF',
+                          fontSize: 14,
+                          fontWeight: '600',
                         }}
                       >
-                        <Text
-                          style={{
-                            color: '#FFFFFF',
-                            fontSize: 14,
-                            fontWeight: '600',
-                          }}
-                        >
-                          {clinic.availableSlots > 0 ? 'Select Clinic' : 'No Slots Available'}
-                        </Text>
-                      </LinearGradient>
+                        {clinic.availableSlots > 0 ? 'Select Clinic' : 'No Slots Available'}
+                      </Text>
                     </TouchableOpacity>
-                  </LinearGradient>
+                  </View>
                 ))}
               </View>
             </View>
@@ -654,48 +644,42 @@ export default function VisionClinicsPage() {
 
           {/* ===== EMPTY STATE ===== */}
           {!loading && !searchedPincode && (
-            <LinearGradient
-              colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
-                borderRadius: 12,
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
                 padding: 32,
-                borderWidth: 2,
-                borderColor: '#F7DCAF',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
                 alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
               {/* Icon Circle */}
-              <LinearGradient
-                colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
                   width: 64,
                   height: 64,
                   borderRadius: 32,
+                  backgroundColor: 'rgba(3, 77, 162, 0.1)',
                   justifyContent: 'center',
                   alignItems: 'center',
                   marginBottom: 16,
-                  borderWidth: 1,
-                  borderColor: 'rgba(164, 191, 254, 0.48)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: -2, height: 11 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 46.1,
-                  elevation: 4,
                 }}
               >
-                <MapPinIcon width={32} height={32} color="#0F5FDC" />
-              </LinearGradient>
+                <MapPinIcon width={32} height={32} color={COLORS.primary} />
+              </View>
 
               {/* Title */}
               <Text
                 style={{
                   fontSize: 18,
                   fontWeight: '700',
-                  color: '#0E51A2',
+                  color: COLORS.primary,
                   marginBottom: 8,
                   textAlign: 'center',
                 }}
@@ -707,14 +691,14 @@ export default function VisionClinicsPage() {
               <Text
                 style={{
                   fontSize: 14,
-                  color: '#6B7280',
+                  color: COLORS.textGray,
                   textAlign: 'center',
                   lineHeight: 20,
                 }}
               >
                 Enter your pincode or use auto-detect to find vision clinics near you
               </Text>
-            </LinearGradient>
+            </View>
           )}
         </View>
       </ScrollView>

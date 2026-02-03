@@ -9,13 +9,61 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle } from 'react-native-svg';
 import {
   ArrowLeftIcon,
-  UserIcon,
-  CheckCircleIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+};
+
+// ============================================================================
+// ICONS - Matching Home Page Style
+// ============================================================================
+
+function UserIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="8" r="4" stroke={COLORS.primary} strokeWidth={1.5} />
+      <Path
+        d="M20 21a8 8 0 10-16 0"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function CheckCircleIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={COLORS.success} strokeWidth={1.5} />
+      <Path
+        d="M9 12l2 2 4-4"
+        stroke={COLORS.success}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -28,49 +76,6 @@ interface Patient {
   age: number;
   gender: string;
 }
-
-// ============================================================================
-// ICON CIRCLE COMPONENT
-// ============================================================================
-
-interface IconCircleProps {
-  icon: React.ComponentType<{ width?: number; height?: number; color?: string }>;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
-  const sizeMap = {
-    sm: { container: 40, icon: 20 },
-    md: { container: 48, icon: 24 },
-    lg: { container: 64, icon: 32 },
-  };
-
-  const dimensions = sizeMap[size];
-
-  return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        width: dimensions.container,
-        height: dimensions.container,
-        borderRadius: dimensions.container / 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
-      }}
-    >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
-  );
-};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -197,8 +202,8 @@ export default function VisionSelectPatientPage() {
 
   if (loading || familyLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -208,21 +213,16 @@ export default function VisionSelectPatientPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
+          borderBottomColor: COLORS.border,
           ...Platform.select({
             web: {
-              position: 'sticky' as any,
+              position: 'sticky',
               top: 0,
               zIndex: 10,
             },
@@ -236,25 +236,22 @@ export default function VisionSelectPatientPage() {
               marginHorizontal: 'auto',
               width: '100%',
               paddingHorizontal: 16,
-              paddingVertical: 16,
+              paddingVertical: 12,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={handleBack}
-                style={{
-                  padding: 8,
-                  borderRadius: 8,
-                }}
+                style={{ padding: 8, borderRadius: 12 }}
                 activeOpacity={0.7}
               >
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                   Select Patient
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Who is this appointment for?
                 </Text>
               </View>
@@ -268,23 +265,39 @@ export default function VisionSelectPatientPage() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingVertical: 24,
+          paddingVertical: 20,
           paddingBottom: 96,
         }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
-          {/* ===== PATIENTS GRID OR EMPTY STATE ===== */}
+          {/* ===== PATIENTS LIST OR EMPTY STATE ===== */}
           {patients.length === 0 ? (
-            <View style={{ paddingVertical: 48, alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
+            <View
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                padding: 32,
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
+                marginBottom: 24,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 8 }}>
                 No Patients Available
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
                 Please contact support if you believe this is an error.
               </Text>
             </View>
           ) : (
-            <View style={{ gap: 16, marginBottom: 24 }}>
+            <View style={{ gap: 12, marginBottom: 24 }}>
               {patients.map((patient) => {
                 const isSelected = selectedPatient?.id === patient.id;
 
@@ -293,87 +306,66 @@ export default function VisionSelectPatientPage() {
                     key={patient.id}
                     onPress={() => handlePatientSelect(patient)}
                     activeOpacity={0.7}
+                    style={{
+                      backgroundColor: COLORS.white,
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: isSelected ? 2 : 1,
+                      borderColor: isSelected ? COLORS.selectedBorder : COLORS.cardBorder,
+                      shadowColor: '#000',
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 23,
+                      elevation: 3,
+                    }}
                   >
-                    <LinearGradient
-                      colors={
-                        isSelected
-                          ? ['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']
-                          : ['#EFF4FF', '#FEF3E9', '#FEF3E9']
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                    <View
                       style={{
-                        borderRadius: 12,
-                        padding: 16,
-                        borderWidth: 2,
-                        borderColor: isSelected ? '#86ACD8' : '#F7DCAF',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: isSelected ? 0.15 : 0.05,
-                        shadowRadius: isSelected ? 8 : 4,
-                        elevation: isSelected ? 4 : 2,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        {/* Left Side - Patient Info */}
+                      {/* Left Side - Patient Info */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                         <View
                           style={{
-                            flexDirection: 'row',
-                            alignItems: 'flex-start',
-                            gap: 12,
-                            flex: 1,
+                            width: 44,
+                            height: 44,
+                            borderRadius: 22,
+                            backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
                           }}
                         >
-                          <IconCircle icon={UserIcon} size="md" />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={{
-                                fontSize: 16,
-                                fontWeight: '600',
-                                color: '#0E51A2',
-                              }}
-                              numberOfLines={1}
-                            >
-                              {patient.name}
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 14,
-                                color: '#6B7280',
-                                marginTop: 2,
-                              }}
-                            >
-                              {patient.relationship}
-                            </Text>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                gap: 12,
-                                marginTop: 8,
-                              }}
-                            >
-                              <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                                {patient.age} years
-                              </Text>
-                              <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                                {patient.gender}
-                              </Text>
-                            </View>
-                          </View>
+                          <UserIcon size={22} />
                         </View>
-
-                        {/* Right Side - Checkmark if Selected */}
-                        {isSelected && (
-                          <CheckCircleIcon width={24} height={24} color="#25A425" />
-                        )}
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              fontSize: 15,
+                              fontWeight: '600',
+                              color: COLORS.primary,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {patient.name}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: COLORS.textGray,
+                              marginTop: 2,
+                            }}
+                          >
+                            {patient.relationship} • {patient.age} yrs • {patient.gender}
+                          </Text>
+                        </View>
                       </View>
-                    </LinearGradient>
+
+                      {/* Right Side - Checkmark if Selected */}
+                      {isSelected && <CheckCircleIcon size={24} />}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -385,37 +377,16 @@ export default function VisionSelectPatientPage() {
             disabled={!selectedPatient}
             onPress={handleContinue}
             activeOpacity={0.8}
+            style={{
+              backgroundColor: selectedPatient ? COLORS.primary : '#9CA3AF',
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: 'center',
+            }}
           >
-            <LinearGradient
-              colors={
-                selectedPatient
-                  ? ['#1F63B4', '#5DA4FB']
-                  : ['#9ca3af', '#9ca3af']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                paddingHorizontal: 24,
-                paddingVertical: 14,
-                borderRadius: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: selectedPatient ? 0.2 : 0,
-                shadowRadius: 8,
-                elevation: selectedPatient ? 4 : 0,
-                alignItems: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  color: '#FFFFFF',
-                  fontSize: 15,
-                  fontWeight: '600',
-                }}
-              >
-                Continue
-              </Text>
-            </LinearGradient>
+            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+              Continue
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
