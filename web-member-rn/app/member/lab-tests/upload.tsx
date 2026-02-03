@@ -17,10 +17,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   ArrowLeftIcon,
   DocumentTextIcon,
   ChevronDownIcon,
+  CalendarIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import { useAuth } from '../../../src/contexts/AuthContext';
@@ -112,6 +114,7 @@ export default function UploadPrescriptionPage() {
   // Dropdown states
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Add Address Modal state
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
@@ -784,23 +787,45 @@ export default function UploadPrescriptionPage() {
                     }}
                   />
                 ) : (
-                  <TouchableOpacity
-                    onPress={() => {
-                      // For native, would use a date picker
-                      // For simplicity, using current date
-                      setPrescriptionDate(new Date().toISOString().split('T')[0]);
-                    }}
-                    style={{
-                      borderWidth: 2,
-                      borderColor: COLORS.selectedBorder,
-                      borderRadius: 12,
-                      padding: 14,
-                    }}
-                  >
-                    <Text style={{ fontSize: 14, color: prescriptionDate ? COLORS.textDark : '#9CA3AF' }}>
-                      {prescriptionDate || 'Select date'}
-                    </Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      onPress={() => setShowDatePicker(true)}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: COLORS.selectedBorder,
+                        borderRadius: 12,
+                        padding: 14,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, color: prescriptionDate ? COLORS.textDark : '#9CA3AF' }}>
+                        {prescriptionDate
+                          ? new Date(prescriptionDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : 'Select date'}
+                      </Text>
+                      <CalendarIcon width={20} height={20} color={COLORS.textGray} />
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={prescriptionDate ? new Date(prescriptionDate) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        maximumDate={new Date()}
+                        onChange={(event, selectedDate) => {
+                          setShowDatePicker(Platform.OS === 'ios');
+                          if (selectedDate) {
+                            setPrescriptionDate(selectedDate.toISOString().split('T')[0]);
+                          }
+                        }}
+                      />
+                    )}
+                  </>
                 )}
               </View>
 
