@@ -1,12 +1,14 @@
 import { Redirect, Stack, usePathname } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { FamilyProvider } from '../../src/contexts/FamilyContext';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomTabBar from '../../src/components/navigation/BottomTabBar';
 
 export default function MemberRoutesLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   // Only show bottom nav on the main member page (dashboard)
   const showBottomNav = pathname === '/member' || pathname === '/member/index';
@@ -25,7 +27,7 @@ export default function MemberRoutesLayout() {
 
   return (
     <FamilyProvider>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, paddingBottom: Platform.OS !== 'web' && !showBottomNav ? insets.bottom : 0 }}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="policy-details/[policyId]" />
