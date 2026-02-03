@@ -380,29 +380,22 @@ export default function LoginScreen() {
               end={{ x: 1, y: 1 }}
               style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 40 }}
             >
-              <View style={{ maxWidth: 512, width: '100%', alignSelf: 'center' }}>
-                {/* Member Illustration */}
-                <View style={{ alignItems: 'center', marginBottom: 24 }}>
+              <View style={{ maxWidth: 560, width: '100%', alignSelf: 'center' }}>
+                {/* Member Illustration - Contains branding */}
+                <View style={{ alignItems: 'center', marginBottom: 32 }}>
                   <Image
-                    source={require('../assets/images/Member.png')}
+                    source={
+                      Platform.OS === 'web'
+                        ? { uri: '/images/opd-wallet-member-portal.png' }
+                        : require('../assets/images/opd-wallet-member-portal.png')
+                    }
                     resizeMode="contain"
-                    style={{ width: 320, height: 320 }}
+                    style={{ width: 440, height: 300 }}
                   />
                 </View>
 
-                {/* Heading */}
-                <View style={{ alignItems: 'center', marginBottom: 24 }}>
-                  <Text
-                    style={{
-                      fontSize: 36,
-                      fontWeight: '900',
-                      color: 'white',
-                      textAlign: 'center',
-                      marginBottom: 12,
-                    }}
-                  >
-                    Member Portal
-                  </Text>
+                {/* Subtitle */}
+                <View style={{ alignItems: 'center', marginBottom: 32 }}>
                   <Text
                     style={{
                       fontSize: 18,
@@ -479,51 +472,40 @@ export default function LoginScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{
-              paddingVertical: isTablet ? 32 : 12,
+              paddingVertical: isTablet ? 32 : 20,
               paddingHorizontal: isTablet ? 24 : 16,
             }}
           >
             <View style={{ alignItems: 'center' }}>
-              {/* Member Illustration */}
+              {/* Member Illustration - Contains branding */}
               <Image
-                source={require('../assets/images/Member.png')}
+                source={
+                  Platform.OS === 'web'
+                    ? { uri: '/images/opd-wallet-member-portal.png' }
+                    : require('../assets/images/opd-wallet-member-portal.png')
+                }
                 resizeMode="contain"
                 style={{
-                  width: isTablet ? 256 : 128,
-                  height: isTablet ? 256 : 128,
-                  marginBottom: isTablet ? 24 : 8,
+                  width: isTablet ? 360 : 300,
+                  height: isTablet ? 240 : 200,
+                  marginBottom: isTablet ? 24 : 16,
                 }}
               />
 
-              {/* Heading */}
+              {/* Subtitle */}
               <Text
                 style={{
-                  fontSize: isTablet ? 30 : 20,
-                  fontWeight: '900',
-                  color: 'white',
+                  fontSize: isTablet ? 16 : 14,
+                  color: 'rgba(255, 255, 255, 0.95)',
                   textAlign: 'center',
-                  marginBottom: isTablet ? 12 : 4,
+                  marginBottom: isTablet ? 24 : 16,
                 }}
               >
-                Member Portal
+                Your complete healthcare benefits platform
               </Text>
 
-              {/* Subtitle - hidden on mobile */}
-              {isTablet && (
-                <Text
-                  style={{
-                    fontSize: 16,
-                    color: 'rgba(255, 255, 255, 0.95)',
-                    textAlign: 'center',
-                    marginBottom: 24,
-                  }}
-                >
-                  Your complete healthcare benefits platform
-                </Text>
-              )}
-
               {/* Feature Cards */}
-              <View style={{ width: '100%', gap: isTablet ? 12 : 6 }}>
+              <View style={{ width: '100%', gap: isTablet ? 12 : 8 }}>
                 {/* OPD Coverage - always visible */}
                 <FeatureCard
                   icon={<ShieldIcon />}
