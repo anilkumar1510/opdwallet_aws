@@ -3381,11 +3381,11 @@ export default function BookingsPage() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
-            maxWidth: 480,
-            marginHorizontal: 'auto',
             paddingHorizontal: 16,
+            flexGrow: 1,
           }}
           style={{ width: '100%' }}
+          nestedScrollEnabled={true}
         >
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {tabs.map((tab) => {
