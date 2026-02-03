@@ -26,6 +26,7 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 |--------|----------|-------------|
 | GET | /tpa/claims | Get claims (filtered by role) |
 | GET | /tpa/claims/unassigned | Get unassigned claims (admin only) |
+| GET | /tpa/claims/assigned | Get assigned claims (all roles) |
 | GET | /tpa/claims/:claimId | Get claim details |
 | POST | /tpa/claims/:claimId/assign | Assign claim to TPA user |
 | POST | /tpa/claims/:claimId/reassign | Reassign claim to different user |
@@ -62,7 +63,7 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 
 ---
 
-**Total Endpoints: 15**
+**Total Endpoints: 16**
 
 **Access Control:**
 - Login page validates TPA_ADMIN or TPA_USER role

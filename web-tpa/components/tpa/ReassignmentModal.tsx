@@ -79,7 +79,7 @@ export default function ReassignmentModal({
       const response = await apiFetch(`/api/tpa/claims/${claimId}/reassign`, {
         method: 'POST',
         body: JSON.stringify({
-          newAssignee: selectedUser,
+          assignedTo: selectedUser,
           reason,
           notes,
         }),

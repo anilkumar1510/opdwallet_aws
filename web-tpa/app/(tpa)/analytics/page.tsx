@@ -67,7 +67,7 @@ export default function TPAAnalyticsPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setAnalytics(data.summary)
+        setAnalytics(data.summary.summary)
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)

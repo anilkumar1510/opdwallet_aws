@@ -222,6 +222,7 @@ export class MemberClaim {
       reassignedByName: String,
       reassignedAt: Date,
       reason: String,
+      notes: String,
     }],
   })
   reassignmentHistory: {
@@ -233,6 +234,7 @@ export class MemberClaim {
     reassignedByName: string;
     reassignedAt: Date;
     reason: string;
+    notes?: string;
   }[];
 
   // TPA Review fields

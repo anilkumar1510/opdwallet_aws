@@ -3,7 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { MemberClaim, MemberClaimDocument, ClaimStatus, PaymentStatus, ClaimCategory } from '@/modules/memberclaims/schemas/memberclaim.schema';
 import { User, UserDocument } from '@/modules/users/schemas/user.schema';
+import { InternalUser, InternalUserDocument } from '@/modules/internal-users/schemas/internal-user.schema';
 import { UserRole } from '@/common/constants/roles.enum';
+import { UserStatus } from '@/common/constants/status.enum';
 import { AssignClaimDto } from './dto/assign-claim.dto';
 import { ReassignClaimDto } from './dto/reassign-claim.dto';
 import { ApproveClaimDto } from './dto/approve-claim.dto';
@@ -28,6 +30,7 @@ export class TpaService {
   constructor(
     @InjectModel(MemberClaim.name) private memberClaimModel: Model<MemberClaimDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(InternalUser.name) private internalUserModel: Model<InternalUserDocument>,
     @InjectModel(Policy.name) private policyModel: Model<PolicyDocument>,
     private readonly walletService: WalletService,
     private readonly planConfigService: PlanConfigService,
@@ -137,7 +140,11 @@ export class TpaService {
     let unassignedCount = 0;
     if (userRole === UserRole.TPA_ADMIN) {
       unassignedCount = await this.memberClaimModel.countDocuments({
-        status: ClaimStatus.UNASSIGNED,
+        status: { $in: [ClaimStatus.SUBMITTED, ClaimStatus.UNASSIGNED] },
+        $or: [
+          { assignedTo: { $exists: false } },
+          { assignedTo: null },
+        ],
       });
     }
 
@@ -160,7 +167,11 @@ export class TpaService {
     limit: number = 10,
   ) {
     const query: any = {
-      status: ClaimStatus.UNASSIGNED,
+      status: { $in: [ClaimStatus.SUBMITTED, ClaimStatus.UNASSIGNED] },
+      $or: [
+        { assignedTo: { $exists: false } },
+        { assignedTo: null },
+      ],
     };
 
     if (fromDate || toDate) {
@@ -176,6 +187,59 @@ export class TpaService {
       .skip((page - 1) * limit)
       .limit(limit)
       .populate('userId', 'name email memberId')
+      .exec();
+
+    return {
+      claims,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Get assigned claims (claims that have been assigned to TPA users)
+   */
+  async getAssignedClaims(
+    userId: string,
+    userRole: string,
+    fromDate?: Date,
+    toDate?: Date,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'assignedAt',
+    sortOrder: string = 'desc',
+  ) {
+    const query: any = {
+      assignedTo: { $exists: true, $ne: null },
+      status: { $in: [ClaimStatus.ASSIGNED, ClaimStatus.UNDER_REVIEW, ClaimStatus.DOCUMENTS_REQUIRED] },
+    };
+
+    // Role-based filtering
+    if (userRole === UserRole.TPA_USER) {
+      // TPA users can only see claims assigned to them
+      query.assignedTo = new Types.ObjectId(userId);
+    }
+
+    // Date range filter
+    if (fromDate || toDate) {
+      query.assignedAt = {};
+      if (fromDate) query.assignedAt.$gte = fromDate;
+      if (toDate) query.assignedAt.$lte = toDate;
+    }
+
+    // Determine sort field and order
+    const sortField = sortBy === 'assignedAt' ? 'assignedAt' : 'createdAt';
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
+    const total = await this.memberClaimModel.countDocuments(query);
+    const claims = await this.memberClaimModel
+      .find(query)
+      .sort({ [sortField]: sortDirection })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('userId', 'name email memberId')
+      .populate('assignedTo', 'name email')
       .exec();
 
     return {
@@ -245,8 +309,15 @@ export class TpaService {
       throw new BadRequestException('Claim is already assigned or in processing');
     }
 
+    // Fetch admin user details
+    const adminUser = await this.internalUserModel.findById(adminUserId);
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+    const adminName = adminUser.name.fullName || `${adminUser.name.firstName} ${adminUser.name.lastName}`;
+
     // Verify the assignee is a TPA_USER
-    const assignee = await this.userModel.findById(assignClaimDto.assignedTo);
+    const assignee = await this.internalUserModel.findById(assignClaimDto.assignedTo);
     if (!assignee) {
       throw new NotFoundException('Assignee user not found');
     }
@@ -259,7 +330,7 @@ export class TpaService {
     claim.assignedTo = new Types.ObjectId(assignClaimDto.assignedTo);
     claim.assignedToName = assignee.name.fullName || `${assignee.name.firstName} ${assignee.name.lastName}`;
     claim.assignedBy = new Types.ObjectId(adminUserId);
-    claim.assignedByName = adminUserName;
+    claim.assignedByName = adminName;
     claim.assignedAt = new Date();
 
     // Update status to ASSIGNED
@@ -267,7 +338,7 @@ export class TpaService {
       claim,
       ClaimStatus.ASSIGNED,
       new Types.ObjectId(adminUserId),
-      adminUserName,
+      adminName,
       UserRole.TPA_ADMIN,
       'Claim assigned to TPA user',
       assignClaimDto.notes,
@@ -278,7 +349,7 @@ export class TpaService {
       claim,
       'ASSIGNED',
       new Types.ObjectId(adminUserId),
-      adminUserName,
+      adminName,
       assignClaimDto.notes,
     );
 
@@ -309,8 +380,15 @@ export class TpaService {
       throw new BadRequestException('Claim is not currently assigned');
     }
 
+    // Fetch admin user details
+    const adminUser = await this.internalUserModel.findById(adminUserId);
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+    const adminName = adminUser.name.fullName || `${adminUser.name.firstName} ${adminUser.name.lastName}`;
+
     // Verify the new assignee is a TPA_USER
-    const newAssignee = await this.userModel.findById(reassignClaimDto.assignedTo);
+    const newAssignee = await this.internalUserModel.findById(reassignClaimDto.assignedTo);
     if (!newAssignee) {
       throw new NotFoundException('New assignee user not found');
     }
@@ -330,16 +408,17 @@ export class TpaService {
       newAssignee: new Types.ObjectId(reassignClaimDto.assignedTo),
       newAssigneeName: newAssignee.name.fullName || `${newAssignee.name.firstName} ${newAssignee.name.lastName}`,
       reassignedBy: new Types.ObjectId(adminUserId),
-      reassignedByName: adminUserName,
+      reassignedByName: adminName,
       reassignedAt: new Date(),
       reason: reassignClaimDto.reason,
+      notes: reassignClaimDto.notes,
     });
 
     // Update claim assignment
     claim.assignedTo = new Types.ObjectId(reassignClaimDto.assignedTo);
     claim.assignedToName = newAssignee.name.fullName || `${newAssignee.name.firstName} ${newAssignee.name.lastName}`;
     claim.assignedBy = new Types.ObjectId(adminUserId);
-    claim.assignedByName = adminUserName;
+    claim.assignedByName = adminName;
     claim.assignedAt = new Date();
 
     // Add to review history
@@ -347,7 +426,7 @@ export class TpaService {
       claim,
       'REASSIGNED',
       new Types.ObjectId(adminUserId),
-      adminUserName,
+      adminName,
       reassignClaimDto.reason,
     );
 
@@ -659,7 +738,11 @@ export class TpaService {
     // Get claims by status
     const unassignedClaims = await this.memberClaimModel.countDocuments({
       ...dateFilter,
-      status: ClaimStatus.UNASSIGNED,
+      status: { $in: [ClaimStatus.SUBMITTED, ClaimStatus.UNASSIGNED] },
+      $or: [
+        { assignedTo: { $exists: false } },
+        { assignedTo: null },
+      ],
     });
 
     const assignedClaims = await this.memberClaimModel.countDocuments({
@@ -784,10 +867,10 @@ export class TpaService {
       throw new ForbiddenException('Only TPA admins can view TPA users');
     }
 
-    const tpaUsers = await this.userModel
+    const tpaUsers = await this.internalUserModel
       .find({
         role: { $in: [UserRole.TPA_USER, UserRole.TPA_ADMIN] },
-        isActive: true,
+        status: UserStatus.ACTIVE,
       })
       .select('name email role createdAt')
       .sort({ 'name.fullName': 1 })
@@ -796,6 +879,8 @@ export class TpaService {
     // Get workload for each user
     const usersWithWorkload = await Promise.all(
       tpaUsers.map(async (user) => {
+        const userId = (user._id as any).toString();
+
         const assignedClaims = await this.memberClaimModel.countDocuments({
           assignedTo: user._id,
           status: { $nin: [ClaimStatus.APPROVED, ClaimStatus.REJECTED, ClaimStatus.PAYMENT_COMPLETED] },
@@ -814,7 +899,7 @@ export class TpaService {
         const approvalRate = totalReviewed > 0 ? (approvedClaims / totalReviewed) * 100 : 0;
 
         return {
-          _id: user._id.toString(),
+          _id: userId,
           name: user.name,
           email: user.email,
           role: user.role,

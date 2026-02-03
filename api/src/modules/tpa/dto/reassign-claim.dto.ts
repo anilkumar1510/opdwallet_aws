@@ -1,4 +1,4 @@
-import { IsMongoId, IsString } from 'class-validator';
+import { IsMongoId, IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ReassignClaimDto {
@@ -15,4 +15,13 @@ export class ReassignClaimDto {
   })
   @IsString()
   reason: string;
+
+  @ApiProperty({
+    description: 'Additional notes or context for reassignment',
+    example: 'Urgent claim requiring immediate attention',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }

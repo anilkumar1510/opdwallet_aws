@@ -227,7 +227,7 @@ export default function AssignedClaimsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <Link
-                      href={`/tpa/claims/${claim.claimId}`}
+                      href={`/claims/${claim.claimId}`}
                       className="text-sm font-medium text-blue-600 hover:text-blue-700"
                     >
                       {claim.claimId}
@@ -285,7 +285,7 @@ export default function AssignedClaimsPage() {
 
                 {/* Actions */}
                 <Link
-                  href={`/tpa/claims/${claim.claimId}`}
+                  href={`/claims/${claim.claimId}`}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                 >
                   <EyeIcon className="h-4 w-4" />

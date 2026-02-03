@@ -189,7 +189,7 @@ export default function UnassignedClaimsPage() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <Link
-                    href={`/tpa/claims/${claim.claimId}`}
+                    href={`/claims/${claim.claimId}`}
                     className="text-sm font-medium text-blue-600 hover:text-blue-700"
                   >
                     {claim.claimId}

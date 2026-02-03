@@ -89,6 +89,37 @@ export class TpaController {
     );
   }
 
+  @Get('claims/assigned')
+  @Roles(UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get assigned claims (claims currently assigned to TPA users)' })
+  @ApiQuery({ name: 'fromDate', type: Date, required: false })
+  @ApiQuery({ name: 'toDate', type: Date, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
+  @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
+  @ApiQuery({ name: 'sortBy', type: String, required: false, example: 'assignedAt', description: 'Sort field (assignedAt or createdAt)' })
+  @ApiQuery({ name: 'sortOrder', type: String, required: false, example: 'desc', description: 'Sort order (asc or desc)' })
+  @ApiResponse({ status: 200, description: 'Assigned claims retrieved successfully' })
+  async getAssignedClaims(
+    @Request() req: any,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
+  ) {
+    return this.tpaService.getAssignedClaims(
+      req.user.userId,
+      req.user.role,
+      fromDate ? new Date(fromDate) : undefined,
+      toDate ? new Date(toDate) : undefined,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      sortBy || 'assignedAt',
+      sortOrder || 'desc',
+    );
+  }
+
   @Get('claims/:claimId')
   @Roles(UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get claim details by ID' })
