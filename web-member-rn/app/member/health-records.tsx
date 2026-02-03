@@ -14,10 +14,28 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import apiClient from '../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // SVG ICONS
@@ -258,6 +276,21 @@ interface DigitalPrescription {
   appointmentId?: AppointmentInfo;
 }
 
+interface Bill {
+  _id: string;
+  paymentId: string;
+  amount: number;
+  paymentType: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  serviceType: string;
+  serviceReferenceId: string;
+  description: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -293,15 +326,56 @@ export default function HealthRecordsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [digitalPrescriptions, setDigitalPrescriptions] = useState<DigitalPrescription[]>([]);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [visibleBillsCount, setVisibleBillsCount] = useState(2);
   const [loading, setLoading] = useState(true);
+  const [billsLoading, setBillsLoading] = useState(false);
   const [error, setError] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab === 'prescriptions') {
       fetchAllPrescriptions();
+    } else if (activeTab === 'bills') {
+      fetchBills();
     }
   }, [activeTab, viewingUserId]);
+
+  const fetchBills = async () => {
+    try {
+      setBillsLoading(true);
+      setError('');
+      setVisibleBillsCount(2); // Reset pagination
+
+      // Fetch completed payments
+      const response = await apiClient.get('/payments', {
+        params: {
+          status: 'COMPLETED',
+          limit: '100',
+        },
+      });
+
+      // Handle different response structures
+      const allPayments = response.data?.payments || response.data || [];
+
+      // Filter for dental, vision, lab, and appointment service types
+      const filteredBills = Array.isArray(allPayments)
+        ? allPayments.filter(
+            (p: Bill) => ['DENTAL', 'VISION', 'LAB_ORDER', 'APPOINTMENT'].includes(p.serviceType)
+          )
+        : [];
+
+      console.log('[HealthRecords] Bills fetched:', filteredBills.length);
+      setBills(filteredBills);
+    } catch (err: any) {
+      console.error('Error fetching bills:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load bills';
+      setError(typeof errorMessage === 'string' ? errorMessage : 'Failed to load bills');
+      setBills([]);
+    } finally {
+      setBillsLoading(false);
+    }
+  };
 
   const fetchAllPrescriptions = async () => {
     try {
@@ -320,7 +394,8 @@ export default function HealthRecordsPage() {
       setDigitalPrescriptions(digitalResponse.data.prescriptions || []);
     } catch (err: any) {
       console.error('Error fetching prescriptions:', err);
-      setError(err.response?.data?.message || 'Failed to load prescriptions');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load prescriptions';
+      setError(typeof errorMessage === 'string' ? errorMessage : 'Failed to load prescriptions');
     } finally {
       setLoading(false);
     }
@@ -457,13 +532,13 @@ export default function HealthRecordsPage() {
   const ContainerComponent = Platform.OS === 'web' ? View : SafeAreaView;
 
   return (
-    <ContainerComponent style={{ flex: 1, backgroundColor: '#F7F7FC' }}>
+    <ContainerComponent style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#E5E7EB',
+          borderBottomColor: COLORS.border,
           paddingHorizontal: 16,
           paddingVertical: 16,
         }}
@@ -476,11 +551,11 @@ export default function HealthRecordsPage() {
               borderRadius: 12,
             }}
           >
-            <ArrowLeftIcon size={24} color="#0E51A2" />
+            <ArrowLeftIcon size={24} color={COLORS.primaryLight} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>Health Records</Text>
-            <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>Health Records</Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
               View your prescriptions and medical records
             </Text>
           </View>
@@ -494,14 +569,14 @@ export default function HealthRecordsPage() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FFFFFF',
-              borderWidth: 2,
-              borderColor: '#E5E7EB',
+              backgroundColor: COLORS.white,
+              borderWidth: 1,
+              borderColor: COLORS.border,
               borderRadius: 12,
               paddingHorizontal: 12,
             }}
           >
-            <MagnifyingGlassIcon size={20} color="#9CA3AF" />
+            <MagnifyingGlassIcon size={20} color={COLORS.primary} />
             <TextInput
               value={searchTerm}
               onChangeText={setSearchTerm}
@@ -512,7 +587,7 @@ export default function HealthRecordsPage() {
                 paddingVertical: 14,
                 paddingHorizontal: 12,
                 fontSize: 14,
-                color: '#111827',
+                color: COLORS.textDark,
               }}
             />
           </View>
@@ -523,7 +598,7 @@ export default function HealthRecordsPage() {
           style={{
             flexDirection: 'row',
             borderBottomWidth: 2,
-            borderBottomColor: '#E5E7EB',
+            borderBottomColor: COLORS.border,
             marginBottom: 24,
           }}
         >
@@ -535,17 +610,17 @@ export default function HealthRecordsPage() {
               paddingVertical: 16,
               paddingHorizontal: 16,
               borderBottomWidth: activeTab === 'prescriptions' ? 4 : 0,
-              borderBottomColor: '#0F5FDC',
+              borderBottomColor: COLORS.primary,
               marginBottom: -2,
             }}
           >
-            <DocumentTextIcon size={20} color={activeTab === 'prescriptions' ? '#0E51A2' : '#6B7280'} />
+            <DocumentTextIcon size={20} color={activeTab === 'prescriptions' ? COLORS.primaryLight : COLORS.textGray} />
             <Text
               style={{
                 marginLeft: 8,
                 fontSize: 14,
                 fontWeight: '600',
-                color: activeTab === 'prescriptions' ? '#0E51A2' : '#6B7280',
+                color: activeTab === 'prescriptions' ? COLORS.primaryLight : COLORS.textGray,
               }}
             >
               Prescriptions
@@ -560,17 +635,17 @@ export default function HealthRecordsPage() {
               paddingVertical: 16,
               paddingHorizontal: 16,
               borderBottomWidth: activeTab === 'bills' ? 4 : 0,
-              borderBottomColor: '#0F5FDC',
+              borderBottomColor: COLORS.primary,
               marginBottom: -2,
             }}
           >
-            <DocumentTextIcon size={20} color={activeTab === 'bills' ? '#0E51A2' : '#6B7280'} />
+            <DocumentTextIcon size={20} color={activeTab === 'bills' ? COLORS.primaryLight : COLORS.textGray} />
             <Text
               style={{
                 marginLeft: 8,
                 fontSize: 14,
                 fontWeight: '600',
-                color: activeTab === 'bills' ? '#0E51A2' : '#6B7280',
+                color: activeTab === 'bills' ? COLORS.primaryLight : COLORS.textGray,
               }}
             >
               Bills & Invoices
@@ -590,7 +665,7 @@ export default function HealthRecordsPage() {
               borderRadius: 12,
             }}
           >
-            <Text style={{ fontSize: 14, color: '#DC2626' }}>{error}</Text>
+            <Text style={{ fontSize: 14, color: COLORS.error }}>{error}</Text>
           </View>
         ) : null}
 
@@ -598,7 +673,7 @@ export default function HealthRecordsPage() {
         {activeTab === 'prescriptions' ? (
           loading ? (
             <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-              <ActivityIndicator size="large" color="#0F5FDC" />
+              <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
           ) : (
             <View style={{ gap: 24 }}>
@@ -629,7 +704,39 @@ export default function HealthRecordsPage() {
             </View>
           )
         ) : (
-          <EmptyState type="bills" />
+          billsLoading ? (
+            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+          ) : bills.length === 0 ? (
+            <EmptyState type="bills" />
+          ) : (
+            <View style={{ gap: 16 }}>
+              {bills.slice(0, visibleBillsCount).map((bill, index) => (
+                <View key={bill._id}>
+                  <BillCard bill={bill} />
+                  {/* Load More button on the last visible card if there are more bills */}
+                  {index === visibleBillsCount - 1 && visibleBillsCount < bills.length && (
+                    <TouchableOpacity
+                      onPress={() => setVisibleBillsCount((prev) => prev + 2)}
+                      style={{
+                        marginTop: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 16,
+                        backgroundColor: COLORS.iconBg,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                        Load More ({bills.length - visibleBillsCount} remaining)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+          )
         )}
       </ScrollView>
     </ContainerComponent>
@@ -652,66 +759,67 @@ function DigitalPrescriptionCard({
   const appointment = prescription.appointmentId;
 
   return (
-    <LinearGradient
-      colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         borderRadius: 16,
-        borderWidth: 2,
-        borderColor: '#86ACD8',
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+        backgroundColor: COLORS.white,
         overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
       }}
     >
       <View style={{ padding: 20 }}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-          <LinearGradient
-            colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+          <View
             style={{
               width: 48,
               height: 48,
               borderRadius: 24,
               alignItems: 'center',
               justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: 'rgba(164, 191, 254, 0.48)',
+              backgroundColor: COLORS.iconBg,
             }}
           >
-            <DocumentTextIcon size={24} color="#0F5FDC" />
-          </LinearGradient>
+            <DocumentTextIcon size={24} color={COLORS.primary} />
+          </View>
           <View style={{ marginLeft: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primaryLight }}>
               Digital Prescription
             </Text>
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>{prescription.prescriptionType}</Text>
+            <Text style={{ fontSize: 12, color: COLORS.textGray }}>{prescription.prescriptionType}</Text>
           </View>
         </View>
 
         {/* Appointment Details */}
         {appointment && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
               Appointment Details
             </Text>
             <View style={{ gap: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <UserIcon size={20} color="#0F5FDC" />
+                <UserIcon size={20} color={COLORS.primary} />
                 <View style={{ marginLeft: 12 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
                     {prescription.doctorName}
                   </Text>
                   {prescription.doctorQualification && (
-                    <Text style={{ fontSize: 13, color: '#6B7280' }}>
+                    <Text style={{ fontSize: 13, color: COLORS.textGray }}>
                       {prescription.doctorQualification}
                     </Text>
                   )}
-                  <Text style={{ fontSize: 13, color: '#6B7280' }}>{appointment.specialty}</Text>
+                  <Text style={{ fontSize: 13, color: COLORS.textGray }}>{appointment.specialty}</Text>
                 </View>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <CalendarIcon size={20} color="#0F5FDC" />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827', marginLeft: 12 }}>
+                <CalendarIcon size={20} color={COLORS.primary} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark, marginLeft: 12 }}>
                   {formatDate(appointment.appointmentDate)}
                 </Text>
               </View>
@@ -721,21 +829,21 @@ function DigitalPrescriptionCard({
 
         {/* Clinical Information */}
         {(prescription.chiefComplaint || prescription.diagnosis) && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16, gap: 12 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16, gap: 12 }}>
             {prescription.chiefComplaint && (
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   Chief Complaint
                 </Text>
-                <Text style={{ fontSize: 15, color: '#111827' }}>{prescription.chiefComplaint}</Text>
+                <Text style={{ fontSize: 15, color: COLORS.textDark }}>{prescription.chiefComplaint}</Text>
               </View>
             )}
             {prescription.diagnosis && (
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   Diagnosis
                 </Text>
-                <Text style={{ fontSize: 15, color: '#111827' }}>{prescription.diagnosis}</Text>
+                <Text style={{ fontSize: 15, color: COLORS.textDark }}>{prescription.diagnosis}</Text>
               </View>
             )}
           </View>
@@ -743,36 +851,36 @@ function DigitalPrescriptionCard({
 
         {/* Medicines */}
         {prescription.medicines && prescription.medicines.length > 0 && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
               Prescribed Medicines (Rx)
             </Text>
             <View style={{ gap: 12 }}>
               {prescription.medicines.map((medicine, idx) => (
-                <View key={idx} style={{ backgroundColor: 'rgba(249, 250, 251, 0.8)', padding: 16, borderRadius: 12 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 8 }}>
+                <View key={idx} style={{ backgroundColor: COLORS.iconBg, padding: 16, borderRadius: 12 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark, marginBottom: 8 }}>
                     {medicine.medicineName}
                   </Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                     <View style={{ width: '45%' }}>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Dosage:</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827' }}>{medicine.dosage}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray }}>Dosage:</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}>{medicine.dosage}</Text>
                     </View>
                     <View style={{ width: '45%' }}>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Frequency:</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827' }}>{medicine.frequency}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray }}>Frequency:</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}>{medicine.frequency}</Text>
                     </View>
                     <View style={{ width: '45%' }}>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Duration:</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827' }}>{medicine.duration}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray }}>Duration:</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}>{medicine.duration}</Text>
                     </View>
                     <View style={{ width: '45%' }}>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Route:</Text>
-                      <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827' }}>{medicine.route}</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray }}>Route:</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark }}>{medicine.route}</Text>
                     </View>
                   </View>
                   {medicine.instructions && (
-                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 8, fontStyle: 'italic' }}>
+                    <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 8, fontStyle: 'italic' }}>
                       {medicine.instructions}
                     </Text>
                   )}
@@ -784,21 +892,21 @@ function DigitalPrescriptionCard({
 
         {/* Lab Tests */}
         {prescription.labTests && prescription.labTests.length > 0 && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <BeakerIcon size={16} color="#6B7280" />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: 8 }}>
+              <BeakerIcon size={16} color={COLORS.textGray} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: 8 }}>
                 Lab Tests / Investigations
               </Text>
             </View>
             <View style={{ gap: 8 }}>
               {prescription.labTests.map((test, idx) => (
-                <View key={idx} style={{ backgroundColor: 'rgba(249, 250, 251, 0.8)', padding: 12, borderRadius: 12 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
+                <View key={idx} style={{ backgroundColor: COLORS.iconBg, padding: 12, borderRadius: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                     {idx + 1}. {test.testName}
                   </Text>
                   {test.instructions && (
-                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>{test.instructions}</Text>
+                    <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>{test.instructions}</Text>
                   )}
                 </View>
               ))}
@@ -808,23 +916,23 @@ function DigitalPrescriptionCard({
 
         {/* Instructions */}
         {(prescription.generalInstructions || prescription.dietaryAdvice) && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16, gap: 12 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16, gap: 12 }}>
             {prescription.generalInstructions && (
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   General Instructions
                 </Text>
-                <Text style={{ fontSize: 13, color: '#374151', lineHeight: 20 }}>
+                <Text style={{ fontSize: 13, color: COLORS.textDark, lineHeight: 20 }}>
                   {prescription.generalInstructions}
                 </Text>
               </View>
             )}
             {prescription.dietaryAdvice && (
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   Dietary Advice
                 </Text>
-                <Text style={{ fontSize: 13, color: '#374151', lineHeight: 20 }}>
+                <Text style={{ fontSize: 13, color: COLORS.textDark, lineHeight: 20 }}>
                   {prescription.dietaryAdvice}
                 </Text>
               </View>
@@ -834,15 +942,15 @@ function DigitalPrescriptionCard({
 
         {/* Follow-up */}
         {(prescription.followUpDate || prescription.followUpInstructions) && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
               Follow-up
             </Text>
             {prescription.followUpDate && (
-              <Text style={{ fontSize: 14, color: '#111827' }}>Date: {formatDate(prescription.followUpDate)}</Text>
+              <Text style={{ fontSize: 14, color: COLORS.textDark }}>Date: {formatDate(prescription.followUpDate)}</Text>
             )}
             {prescription.followUpInstructions && (
-              <Text style={{ fontSize: 13, color: '#374151', marginTop: 4 }}>
+              <Text style={{ fontSize: 13, color: COLORS.textDark, marginTop: 4 }}>
                 {prescription.followUpInstructions}
               </Text>
             )}
@@ -851,42 +959,40 @@ function DigitalPrescriptionCard({
 
         {/* Action Buttons */}
         {prescription.pdfGenerated && (
-          <TouchableOpacity onPress={onDownload} disabled={isDownloading}>
-            <LinearGradient
-              colors={['#1F63B4', '#5DA4FB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 14,
-                borderRadius: 12,
-                opacity: isDownloading ? 0.7 : 1,
-              }}
-            >
-              {isDownloading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <CloudArrowDownIcon size={20} color="#FFFFFF" />
-                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 15, marginLeft: 8 }}>
-                    Download PDF
-                  </Text>
-                </>
-              )}
-            </LinearGradient>
+          <TouchableOpacity
+            onPress={onDownload}
+            disabled={isDownloading}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 14,
+              borderRadius: 12,
+              backgroundColor: COLORS.primary,
+              opacity: isDownloading ? 0.7 : 1,
+            }}
+          >
+            {isDownloading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <CloudArrowDownIcon size={20} color="#FFFFFF" />
+                <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 15, marginLeft: 8 }}>
+                  Download PDF
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
         {/* Prescription ID & Date */}
-        <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-          <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center' }}>
+        <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+          <Text style={{ fontSize: 12, color: COLORS.textGray, textAlign: 'center' }}>
             ID: {prescription.prescriptionId} • Created: {formatDate(prescription.createdDate)}
           </Text>
         </View>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -910,36 +1016,37 @@ function PDFPrescriptionCard({
   const appointment = prescription.appointmentId;
 
   return (
-    <LinearGradient
-      colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         borderRadius: 16,
-        borderWidth: 2,
-        borderColor: '#86ACD8',
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+        backgroundColor: COLORS.white,
         overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
       }}
     >
       <View style={{ padding: 20 }}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-          <LinearGradient
-            colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+          <View
             style={{
               width: 48,
               height: 48,
               borderRadius: 24,
               alignItems: 'center',
               justifyContent: 'center',
-              borderWidth: 1,
-              borderColor: 'rgba(164, 191, 254, 0.48)',
+              backgroundColor: COLORS.iconBg,
             }}
           >
-            <DocumentTextIcon size={24} color="#0F5FDC" />
-          </LinearGradient>
+            <DocumentTextIcon size={24} color={COLORS.primary} />
+          </View>
           <View style={{ marginLeft: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }}>PDF Prescription</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primaryLight }}>PDF Prescription</Text>
             <View
               style={{
                 backgroundColor: '#DCFCE7',
@@ -957,33 +1064,33 @@ function PDFPrescriptionCard({
 
         {/* Appointment Details Section */}
         {appointment && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16 }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 }}>
               Appointment Details
             </Text>
 
             <View style={{ gap: 12 }}>
               {/* Doctor & Specialty */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <UserIcon size={20} color="#0F5FDC" />
+                <UserIcon size={20} color={COLORS.primary} />
                 <View style={{ marginLeft: 12 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.textDark }}>
                     {appointment.doctorName || prescription.doctorName}
                   </Text>
-                  <Text style={{ fontSize: 13, color: '#6B7280' }}>{appointment.specialty}</Text>
+                  <Text style={{ fontSize: 13, color: COLORS.textGray }}>{appointment.specialty}</Text>
                 </View>
               </View>
 
               {/* Date & Time */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <CalendarIcon size={20} color="#0F5FDC" />
+                <CalendarIcon size={20} color={COLORS.primary} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12, gap: 16 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                     {formatDate(appointment.appointmentDate)}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <ClockIcon size={16} color="#6B7280" />
-                    <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 4 }}>{appointment.timeSlot}</Text>
+                    <ClockIcon size={16} color={COLORS.textGray} />
+                    <Text style={{ fontSize: 13, color: COLORS.textGray, marginLeft: 4 }}>{appointment.timeSlot}</Text>
                   </View>
                 </View>
               </View>
@@ -992,21 +1099,21 @@ function PDFPrescriptionCard({
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                 {appointment.appointmentType === 'ONLINE' ? (
                   <>
-                    <VideoCameraIcon size={20} color="#0F5FDC" />
+                    <VideoCameraIcon size={20} color={COLORS.primary} />
                     <View style={{ marginLeft: 12 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>Online Consultation</Text>
-                      <Text style={{ fontSize: 12, color: '#6B7280' }}>Video Call</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Online Consultation</Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray }}>Video Call</Text>
                     </View>
                   </>
                 ) : (
                   <>
-                    <MapPinIcon size={20} color="#0F5FDC" />
+                    <MapPinIcon size={20} color={COLORS.primary} />
                     <View style={{ marginLeft: 12 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                         {appointment.clinicName || 'In-Clinic Visit'}
                       </Text>
                       {appointment.clinicAddress && (
-                        <Text style={{ fontSize: 12, color: '#6B7280' }}>{appointment.clinicAddress}</Text>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray }}>{appointment.clinicAddress}</Text>
                       )}
                     </View>
                   </>
@@ -1015,9 +1122,9 @@ function PDFPrescriptionCard({
 
               {/* Patient */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <UserIcon size={20} color="#9CA3AF" />
-                <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 12 }}>
-                  Patient: <Text style={{ fontWeight: '500', color: '#111827' }}>{prescription.patientName}</Text>
+                <UserIcon size={20} color={COLORS.textGray} />
+                <Text style={{ fontSize: 13, color: COLORS.textGray, marginLeft: 12 }}>
+                  Patient: <Text style={{ fontWeight: '500', color: COLORS.textDark }}>{prescription.patientName}</Text>
                 </Text>
               </View>
             </View>
@@ -1026,73 +1133,72 @@ function PDFPrescriptionCard({
 
         {/* Clinical Information */}
         {(prescription.diagnosis || prescription.notes) && (
-          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16, gap: 12 }}>
+          <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16, gap: 12 }}>
             {prescription.diagnosis && (
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   Diagnosis
                 </Text>
-                <Text style={{ fontSize: 15, color: '#111827' }}>{prescription.diagnosis}</Text>
+                <Text style={{ fontSize: 15, color: COLORS.textDark }}>{prescription.diagnosis}</Text>
               </View>
             )}
             {prescription.notes && (
               <View>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                   Doctor's Notes
                 </Text>
-                <Text style={{ fontSize: 13, color: '#374151', lineHeight: 20 }}>{prescription.notes}</Text>
+                <Text style={{ fontSize: 13, color: COLORS.textDark, lineHeight: 20 }}>{prescription.notes}</Text>
               </View>
             )}
           </View>
         )}
 
         {/* File Information */}
-        <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 16 }}>
+        <View style={{ paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ backgroundColor: '#FEF2F2', padding: 8, borderRadius: 8 }}>
-                <DocumentTextIcon size={24} color="#DC2626" />
+                <DocumentTextIcon size={24} color={COLORS.error} />
               </View>
               <View style={{ marginLeft: 12 }}>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }} numberOfLines={1}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }} numberOfLines={1}>
                   {prescription.fileName}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray }}>
                   {formatFileSize(prescription.fileSize)} • PDF Document
                 </Text>
               </View>
             </View>
           </View>
-          <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+          <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 8 }}>
             Uploaded: {formatDate(prescription.uploadDate)} • {formatTime(prescription.uploadDate)}
           </Text>
         </View>
 
         {/* Action Buttons */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity onPress={onView} disabled={isViewing} style={{ flex: 1 }}>
-            <LinearGradient
-              colors={['#1F63B4', '#5DA4FB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 14,
-                borderRadius: 12,
-                opacity: isViewing ? 0.7 : 1,
-              }}
-            >
-              {isViewing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <EyeIcon size={20} color="#FFFFFF" />
-                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 15, marginLeft: 8 }}>View PDF</Text>
-                </>
-              )}
-            </LinearGradient>
+          <TouchableOpacity
+            onPress={onView}
+            disabled={isViewing}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 14,
+              borderRadius: 12,
+              backgroundColor: COLORS.primary,
+              opacity: isViewing ? 0.7 : 1,
+            }}
+          >
+            {isViewing ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <EyeIcon size={20} color="#FFFFFF" />
+                <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 15, marginLeft: 8 }}>View PDF</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -1105,29 +1211,163 @@ function PDFPrescriptionCard({
               justifyContent: 'center',
               paddingVertical: 14,
               borderRadius: 12,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
-              backgroundColor: '#FFFFFF',
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              backgroundColor: COLORS.white,
               opacity: isDownloading ? 0.7 : 1,
             }}
           >
             {isDownloading ? (
-              <ActivityIndicator size="small" color="#374151" />
+              <ActivityIndicator size="small" color={COLORS.textDark} />
             ) : (
               <>
-                <CloudArrowDownIcon size={20} color="#374151" />
-                <Text style={{ color: '#374151', fontWeight: '600', fontSize: 15, marginLeft: 8 }}>Download</Text>
+                <CloudArrowDownIcon size={20} color={COLORS.textDark} />
+                <Text style={{ color: COLORS.textDark, fontWeight: '600', fontSize: 15, marginLeft: 8 }}>Download</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
         {/* Prescription ID */}
-        <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-          <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center' }}>ID: {prescription.prescriptionId}</Text>
+        <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+          <Text style={{ fontSize: 12, color: COLORS.textGray, textAlign: 'center' }}>ID: {prescription.prescriptionId}</Text>
         </View>
       </View>
-    </LinearGradient>
+    </View>
+  );
+}
+
+// ============================================================================
+// BILL CARD
+// ============================================================================
+
+function BillCard({ bill }: { bill: Bill }) {
+  // Helper to safely convert any value to string
+  const safeString = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
+  const getServiceTypeLabel = (type: string) => {
+    switch (type) {
+      case 'DENTAL':
+        return 'Dental Service';
+      case 'VISION':
+        return 'Vision Service';
+      case 'LAB_ORDER':
+        return 'Lab Test';
+      case 'APPOINTMENT':
+        return 'Consultation';
+      default:
+        return safeString(type) || 'Service';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return COLORS.success;
+      case 'PENDING':
+        return '#F59E0B';
+      case 'FAILED':
+      case 'CANCELLED':
+        return COLORS.error;
+      default:
+        return COLORS.textGray;
+    }
+  };
+
+  // Safely format date
+  const safeFormatDate = (dateStr: any): string => {
+    if (!dateStr) return 'N/A';
+    try {
+      return formatDate(safeString(dateStr));
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  return (
+    <View
+      style={{
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+        backgroundColor: COLORS.white,
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
+      }}
+    >
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: COLORS.iconBg,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <DocumentTextIcon size={24} color={COLORS.primary} />
+          </View>
+          <View>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight }}>
+              {getServiceTypeLabel(bill.serviceType)}
+            </Text>
+            <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+              {safeFormatDate(bill.createdAt)}
+            </Text>
+          </View>
+        </View>
+        <View
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 4,
+            borderRadius: 8,
+            backgroundColor: getStatusColor(safeString(bill.status)),
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.white }}>{safeString(bill.status)}</Text>
+        </View>
+      </View>
+
+      {/* Details */}
+      <View
+        style={{
+          borderRadius: 12,
+          padding: 12,
+          backgroundColor: COLORS.iconBg,
+          marginBottom: 12,
+        }}
+      >
+        <Text style={{ fontSize: 14, color: COLORS.textDark, marginBottom: 8 }}>{safeString(bill.description) || 'Payment'}</Text>
+        {bill.transactionId && (
+          <Text style={{ fontSize: 12, color: COLORS.textGray }}>Transaction ID: {safeString(bill.transactionId)}</Text>
+        )}
+      </View>
+
+      {/* Footer */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontSize: 12, color: COLORS.textGray }}>ID: {safeString(bill.paymentId)}</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.success }}>₹{safeString(bill.amount)}</Text>
+      </View>
+
+      {bill.paidAt && (
+        <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 8 }}>
+          Paid on: {safeFormatDate(bill.paidAt)}
+        </Text>
+      )}
+    </View>
   );
 }
 
@@ -1137,40 +1377,42 @@ function PDFPrescriptionCard({
 
 function EmptyState({ type }: { type: 'prescriptions' | 'bills' }) {
   return (
-    <LinearGradient
-      colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-      locations={[0.2, 0.67, 1]}
+    <View
       style={{
         borderRadius: 16,
-        borderWidth: 2,
-        borderColor: '#86ACD8',
+        borderWidth: 1,
+        borderColor: COLORS.cardBorder,
+        backgroundColor: COLORS.white,
         padding: 32,
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 11 },
+        shadowOpacity: 0.08,
+        shadowRadius: 23,
+        elevation: 3,
       }}
     >
-      <LinearGradient
-        colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
+      <View
         style={{
           width: 80,
           height: 80,
           borderRadius: 40,
           alignItems: 'center',
           justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: 'rgba(164, 191, 254, 0.48)',
+          backgroundColor: COLORS.iconBg,
           marginBottom: 24,
         }}
       >
-        <DocumentTextIcon size={40} color="#0F5FDC" />
-      </LinearGradient>
-      <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 8, textAlign: 'center' }}>
-        {type === 'prescriptions' ? 'No prescriptions found' : 'Bills & Invoices'}
+        <DocumentTextIcon size={40} color={COLORS.primary} />
+      </View>
+      <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.primaryLight, marginBottom: 8, textAlign: 'center' }}>
+        {type === 'prescriptions' ? 'No prescriptions found' : 'No bills found'}
       </Text>
-      <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+      <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
         {type === 'prescriptions'
           ? 'Prescriptions from your doctor will appear here'
-          : 'Coming soon'}
+          : 'Your bills and invoices from dental, vision, and other services will appear here'}
       </Text>
-    </LinearGradient>
+    </View>
   );
 }
