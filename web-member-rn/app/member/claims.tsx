@@ -489,12 +489,13 @@ export default function ClaimsPage() {
               <TouchableOpacity
                 onPress={() => router.push('/member/claims/new')}
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 14,
-                  backgroundColor: COLORS.primary,
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  backgroundColor: COLORS.primary,
                   shadowColor: COLORS.primary,
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.25,
@@ -503,7 +504,8 @@ export default function ClaimsPage() {
                 }}
                 activeOpacity={0.8}
               >
-                <PlusIcon width={16} height={16} color={COLORS.white} />
+                <PlusIcon width={14} height={14} color={COLORS.white} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>New Claim</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -883,21 +885,9 @@ export default function ClaimsPage() {
                         elevation: 3,
                       }}
                     >
-                      {/* Top Row: Claim Number, Type Badge, Status */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>{claim.claimNumber}</Text>
-                          <View
-                            style={{
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
-                              borderRadius: 12,
-                              backgroundColor: 'rgba(3, 77, 162, 0.1)',
-                            }}
-                          >
-                            <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.primary }}>{claim.type}</Text>
-                          </View>
-                        </View>
+                      {/* Top Row: Claim Number & Status */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>{claim.claimNumber}</Text>
                         <View
                           style={{
                             flexDirection: 'row',
@@ -907,12 +897,28 @@ export default function ClaimsPage() {
                             paddingVertical: 3,
                             borderRadius: 12,
                             backgroundColor: statusColors.background,
+                            flexShrink: 0,
                           }}
                         >
                           {getStatusIcon(claim.status)}
                           <Text style={{ fontSize: 10, fontWeight: '600', color: statusColors.color, textTransform: 'capitalize' }}>
                             {claim.status.replace('_', ' ')}
                           </Text>
+                        </View>
+                      </View>
+
+                      {/* Type Badge Row */}
+                      <View style={{ marginBottom: 8 }}>
+                        <View
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 12,
+                            backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                            alignSelf: 'flex-start',
+                          }}
+                        >
+                          <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.primary }}>{claim.type}</Text>
                         </View>
                       </View>
 
