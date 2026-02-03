@@ -108,6 +108,9 @@ export default function InClinicConsultationPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [userId, setUserId] = useState('');
+  const [visibleCount, setVisibleCount] = useState(2); // Show 2 appointments initially
+
+  const APPOINTMENTS_PER_PAGE = 2;
 
   // ============================================================================
   // FETCH USER DATA & APPOINTMENTS
@@ -156,6 +159,7 @@ export default function InClinicConsultationPage() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
+    setVisibleCount(APPOINTMENTS_PER_PAGE); // Reset to show only first 2 after refresh
     const targetUserId = viewingUserId || userId;
     await fetchAppointments(targetUserId);
     setRefreshing(false);
@@ -232,6 +236,10 @@ export default function InClinicConsultationPage() {
   const handleBack = useCallback(() => {
     router.back();
   }, [router]);
+
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + APPOINTMENTS_PER_PAGE);
+  }, []);
 
   // ============================================================================
   // HELPERS
@@ -425,7 +433,7 @@ export default function InClinicConsultationPage() {
                 Your Appointments ({appointments.length})
               </Text>
 
-              {appointments.map((appointment) => (
+              {appointments.slice(0, visibleCount).map((appointment) => (
                 <View
                   key={appointment._id}
                   style={{
@@ -546,6 +554,28 @@ export default function InClinicConsultationPage() {
                   )}
                 </View>
               ))}
+
+              {/* Load More Button */}
+              {visibleCount < appointments.length && (
+                <TouchableOpacity
+                  onPress={handleLoadMore}
+                  activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: COLORS.primary,
+                    backgroundColor: COLORS.white,
+                    alignItems: 'center',
+                    marginTop: 8,
+                  }}
+                >
+                  <Text style={{ color: COLORS.primary, fontSize: 14, fontWeight: '600' }}>
+                    Load More ({appointments.length - visibleCount} remaining)
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
