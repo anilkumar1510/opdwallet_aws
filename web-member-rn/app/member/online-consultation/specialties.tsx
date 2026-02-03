@@ -10,13 +10,31 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
   ChevronRightIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -113,8 +131,8 @@ export default function OnlineSpecialtiesPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -124,13 +142,13 @@ export default function OnlineSpecialtiesPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -164,10 +182,10 @@ export default function OnlineSpecialtiesPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
                   Select Specialty
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Choose medical specialty
                 </Text>
               </View>
@@ -191,15 +209,15 @@ export default function OnlineSpecialtiesPage() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FFFFFF',
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              backgroundColor: COLORS.white,
+              borderWidth: 1,
+              borderColor: COLORS.border,
               borderRadius: 12,
               paddingHorizontal: 12,
               marginBottom: 24,
             }}
           >
-            <MagnifyingGlassIcon width={20} height={20} color="#9CA3AF" />
+            <MagnifyingGlassIcon width={20} height={20} color={COLORS.primary} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -210,7 +228,7 @@ export default function OnlineSpecialtiesPage() {
                 paddingHorizontal: 12,
                 paddingVertical: 14,
                 fontSize: 14,
-                color: '#111827',
+                color: COLORS.textDark,
               }}
             />
           </View>
@@ -218,26 +236,22 @@ export default function OnlineSpecialtiesPage() {
           {/* ===== SPECIALTIES LIST OR EMPTY STATE ===== */}
           {filteredSpecialties.length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-              <LinearGradient
-                colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
                   width: 64,
                   height: 64,
                   borderRadius: 32,
                   justifyContent: 'center',
                   alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: 'rgba(164, 191, 254, 0.48)',
+                  backgroundColor: COLORS.iconBg,
                 }}
               >
-                <MagnifyingGlassIcon width={32} height={32} color="#0F5FDC" />
-              </LinearGradient>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginTop: 16, marginBottom: 8 }}>
+                <MagnifyingGlassIcon width={32} height={32} color={COLORS.primary} />
+              </View>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginTop: 16, marginBottom: 8 }}>
                 {searchQuery.trim() === '' ? 'No Specialties Available' : 'No specialties found'}
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', paddingHorizontal: 24 }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center', paddingHorizontal: 24 }}>
                 {searchQuery.trim() === ''
                   ? 'Online consultation is not configured in your policy. Please contact your HR administrator.'
                   : 'Try adjusting your search term'}
@@ -250,63 +264,49 @@ export default function OnlineSpecialtiesPage() {
                   key={specialty._id}
                   onPress={() => handleSpecialtyClick(specialty)}
                   activeOpacity={0.8}
+                  style={{
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: COLORS.cardBorder,
+                    backgroundColor: COLORS.white,
+                    shadowColor: '#000',
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
+                    elevation: 3,
+                  }}
                 >
-                  <LinearGradient
-                    colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: 12,
-                      padding: 16,
-                      borderWidth: 2,
-                      borderColor: '#F7DCAF',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      elevation: 3,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      {/* Icon Circle with first letter */}
-                      <LinearGradient
-                        colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 24,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          borderWidth: 1,
-                          borderColor: 'rgba(164, 191, 254, 0.48)',
-                          shadowColor: '#000',
-                          shadowOffset: { width: -2, height: 11 },
-                          shadowOpacity: 0.05,
-                          shadowRadius: 46.1,
-                          elevation: 4,
-                        }}
-                      >
-                        <Text style={{ fontSize: 20, fontWeight: '600', color: '#0F5FDC' }}>
-                          {specialty.name.charAt(0)}
-                        </Text>
-                      </LinearGradient>
-
-                      {/* Specialty Info */}
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 4 }}>
-                          {specialty.name}
-                        </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280' }} numberOfLines={2}>
-                          {specialty.description}
-                        </Text>
-                      </View>
-
-                      {/* Chevron */}
-                      <ChevronRightIcon width={20} height={20} color="#0F5FDC" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    {/* Icon Circle with first letter */}
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: COLORS.iconBg,
+                      }}
+                    >
+                      <Text style={{ fontSize: 20, fontWeight: '600', color: COLORS.primary }}>
+                        {specialty.name.charAt(0)}
+                      </Text>
                     </View>
-                  </LinearGradient>
+
+                    {/* Specialty Info */}
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 4 }}>
+                        {specialty.name}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray }} numberOfLines={2}>
+                        {specialty.description}
+                      </Text>
+                    </View>
+
+                    {/* Chevron */}
+                    <ChevronRightIcon width={20} height={20} color={COLORS.primary} />
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>

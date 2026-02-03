@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
@@ -21,6 +20,25 @@ import {
   FunnelIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -61,27 +79,18 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const dimensions = sizeMap[size];
 
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: COLORS.iconBg,
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon width={dimensions.icon} height={dimensions.icon} color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -212,8 +221,8 @@ export default function OnlineDoctorsPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -223,13 +232,13 @@ export default function OnlineDoctorsPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -263,10 +272,10 @@ export default function OnlineDoctorsPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
                   Select Doctor
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   {specialtyName || 'Online Consultation'}
                 </Text>
               </View>
@@ -290,14 +299,14 @@ export default function OnlineDoctorsPage() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FFFFFF',
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              backgroundColor: COLORS.white,
+              borderWidth: 1,
+              borderColor: COLORS.border,
               borderRadius: 12,
               paddingHorizontal: 12,
             }}
           >
-            <MagnifyingGlassIcon width={20} height={20} color="#0F5FDC" />
+            <MagnifyingGlassIcon width={20} height={20} color={COLORS.primary} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -308,7 +317,7 @@ export default function OnlineDoctorsPage() {
                 paddingHorizontal: 12,
                 paddingVertical: 14,
                 fontSize: 14,
-                color: '#111827',
+                color: COLORS.textDark,
               }}
             />
           </View>
@@ -323,14 +332,14 @@ export default function OnlineDoctorsPage() {
                 gap: 8,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
+                borderWidth: 1,
+                borderColor: COLORS.border,
                 borderRadius: 12,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: COLORS.white,
               }}
             >
-              <FunnelIcon width={16} height={16} color="#0E51A2" />
-              <Text style={{ fontSize: 14, color: '#0E51A2' }}>Filters</Text>
+              <FunnelIcon width={16} height={16} color={COLORS.primaryLight} />
+              <Text style={{ fontSize: 14, color: COLORS.primaryLight }}>Filters</Text>
             </TouchableOpacity>
 
             {/* Available Now Filter */}
@@ -343,16 +352,16 @@ export default function OnlineDoctorsPage() {
                   paddingHorizontal: 16,
                   paddingVertical: 10,
                   borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: showAvailableNow ? '#25A425' : '#86ACD8',
-                  backgroundColor: showAvailableNow ? '#25A425' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: showAvailableNow ? COLORS.success : COLORS.border,
+                  backgroundColor: showAvailableNow ? COLORS.success : COLORS.white,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 14,
                     fontWeight: '500',
-                    color: showAvailableNow ? '#FFFFFF' : '#0E51A2',
+                    color: showAvailableNow ? COLORS.white : COLORS.primaryLight,
                   }}
                 >
                   Available Now (5 mins)
@@ -365,30 +374,28 @@ export default function OnlineDoctorsPage() {
           {filteredDoctors.length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
               <IconCircle icon={UserIcon} size="lg" />
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginTop: 16, marginBottom: 8 }}>
                 No doctors found
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
                 Try adjusting your filters or search term
               </Text>
             </View>
           ) : (
             <View style={{ gap: 16 }}>
               {filteredDoctors.map((doctor) => (
-                <LinearGradient
+                <View
                   key={doctor._id}
-                  colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
                   style={{
-                    borderRadius: 12,
+                    borderRadius: 16,
                     padding: 16,
-                    borderWidth: 2,
-                    borderColor: '#F7DCAF',
+                    borderWidth: 1,
+                    borderColor: COLORS.cardBorder,
+                    backgroundColor: COLORS.white,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
                     elevation: 3,
                   }}
                 >
@@ -401,8 +408,8 @@ export default function OnlineDoctorsPage() {
                           width: 64,
                           height: 64,
                           borderRadius: 32,
-                          borderWidth: 2,
-                          borderColor: 'rgba(164, 191, 254, 0.48)',
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
                         }}
                       />
                     ) : (
@@ -410,7 +417,7 @@ export default function OnlineDoctorsPage() {
                     )}
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', flex: 1 }} numberOfLines={1}>
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, flex: 1 }} numberOfLines={1}>
                           {doctor.name}
                         </Text>
                         {/* Availability Badge */}
@@ -426,30 +433,30 @@ export default function OnlineDoctorsPage() {
                             marginLeft: 8,
                           }}
                         >
-                          <ClockIcon width={12} height={12} color={isAvailableSoon(doctor.availableInMinutes) ? '#25A425' : '#6B7280'} />
+                          <ClockIcon width={12} height={12} color={isAvailableSoon(doctor.availableInMinutes) ? COLORS.success : COLORS.textGray} />
                           <Text
                             style={{
                               fontSize: 10,
                               fontWeight: '500',
-                              color: isAvailableSoon(doctor.availableInMinutes) ? '#25A425' : '#6B7280',
+                              color: isAvailableSoon(doctor.availableInMinutes) ? COLORS.success : COLORS.textGray,
                             }}
                           >
                             {formatAvailability(doctor.availableInMinutes)}
                           </Text>
                         </View>
                       </View>
-                      <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 2 }}>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 2 }}>
                         {doctor.qualifications}
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 4 }}>
                         {doctor.experienceYears || doctor.experience} years experience
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <StarIcon width={16} height={16} color="#F59E0B" />
-                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>
                           {doctor.rating}
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray }}>
                           ({doctor.reviewCount} reviews)
                         </Text>
                       </View>
@@ -457,43 +464,37 @@ export default function OnlineDoctorsPage() {
                   </View>
 
                   {/* Consultation Fee and Select Button */}
-                  <LinearGradient
-                    colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  <View
                     style={{
-                      borderRadius: 8,
+                      borderRadius: 12,
                       padding: 12,
-                      borderWidth: 1,
-                      borderColor: '#86ACD8',
+                      backgroundColor: COLORS.iconBg,
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View>
-                        <Text style={{ fontSize: 12, color: '#6B7280' }}>Consultation:</Text>
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#25A425' }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray }}>Consultation:</Text>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.success }}>
                           ₹{doctor.consultationFee}
                         </Text>
                       </View>
-                      <TouchableOpacity onPress={() => handleSelectDoctor(doctor)} activeOpacity={0.8}>
-                        <LinearGradient
-                          colors={['#1F63B4', '#5DA4FB']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={{
-                            paddingHorizontal: 24,
-                            paddingVertical: 10,
-                            borderRadius: 8,
-                          }}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                            Select
-                          </Text>
-                        </LinearGradient>
+                      <TouchableOpacity
+                        onPress={() => handleSelectDoctor(doctor)}
+                        activeOpacity={0.8}
+                        style={{
+                          paddingHorizontal: 24,
+                          paddingVertical: 10,
+                          borderRadius: 8,
+                          backgroundColor: COLORS.primary,
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.white }}>
+                          Select
+                        </Text>
                       </TouchableOpacity>
                     </View>
-                  </LinearGradient>
-                </LinearGradient>
+                  </View>
+                </View>
               ))}
             </View>
           )}

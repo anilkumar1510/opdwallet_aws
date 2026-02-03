@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
@@ -28,6 +27,25 @@ import {
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#E5E7EB',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -82,27 +100,18 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const dimensions = sizeMap[size];
 
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: COLORS.iconBg,
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon width={dimensions.icon} height={dimensions.icon} color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -556,8 +565,8 @@ export default function OnlineConfirmPage() {
 
   if (loadingRelationships) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -574,18 +583,21 @@ export default function OnlineConfirmPage() {
     const successTime = timeChoice === 'NOW' ? 'Immediate' : selectedTime;
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
         <View style={{ maxWidth: 480, width: '100%' }}>
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 24,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
               alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
             {/* Success Icon */}
@@ -594,81 +606,79 @@ export default function OnlineConfirmPage() {
                 width: 80,
                 height: 80,
                 borderRadius: 40,
-                backgroundColor: '#25A425',
+                backgroundColor: COLORS.success,
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginBottom: 24,
               }}
             >
-              <CheckCircleIcon width={48} height={48} color="#FFFFFF" />
+              <CheckCircleIcon width={48} height={48} color={COLORS.white} />
             </View>
 
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 8, textAlign: 'center' }}>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.primaryLight, marginBottom: 8, textAlign: 'center' }}>
               Booking Confirmed!
             </Text>
 
-            <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 24, textAlign: 'center' }}>
+            <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 24, textAlign: 'center' }}>
               Your online consultation has been booked and is awaiting confirmation
             </Text>
 
             {/* Appointment ID */}
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+            <View
               style={{
-                borderRadius: 8,
+                borderRadius: 12,
                 padding: 16,
-                borderWidth: 1,
-                borderColor: '#86ACD8',
+                backgroundColor: COLORS.iconBg,
                 marginBottom: 24,
                 width: '100%',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Appointment ID</Text>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#0F5FDC' }}>{appointmentId}</Text>
-            </LinearGradient>
+              <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 4 }}>Appointment ID</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>{appointmentId}</Text>
+            </View>
 
             {/* Details */}
             <View style={{ gap: 12, width: '100%', marginBottom: 24 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <UserIcon width={20} height={20} color="#0F5FDC" />
+                <UserIcon width={20} height={20} color={COLORS.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Doctor</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }} numberOfLines={1}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Doctor</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }} numberOfLines={1}>
                     {doctorName}
                   </Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <CalendarIcon width={20} height={20} color="#0F5FDC" />
+                <CalendarIcon width={20} height={20} color={COLORS.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Date</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>{formatDate(successDate)}</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Date</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>{formatDate(successDate)}</Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <ClockIcon width={20} height={20} color="#0F5FDC" />
+                <ClockIcon width={20} height={20} color={COLORS.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Time</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>{successTime}</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Time</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>{successTime}</Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <PhoneIcon width={20} height={20} color="#0F5FDC" />
+                <PhoneIcon width={20} height={20} color={COLORS.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Contact Number</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>{contactNumber}</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Contact Number</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>{contactNumber}</Text>
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <VideoCameraIcon width={20} height={20} color="#0F5FDC" />
+                <VideoCameraIcon width={20} height={20} color={COLORS.primary} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Call Preference</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Call Preference</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>
                     {callPreference === 'BOTH' ? 'Voice & Video' : callPreference.charAt(0) + callPreference.slice(1).toLowerCase()}
                   </Text>
                 </View>
@@ -676,22 +686,21 @@ export default function OnlineConfirmPage() {
             </View>
 
             {/* View Appointments Button */}
-            <TouchableOpacity onPress={handleViewAppointments} activeOpacity={0.8} style={{ width: '100%' }}>
-              <LinearGradient
-                colors={['#16a34a', '#22c55e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  paddingHorizontal: 24,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>View Online Consultations</Text>
-              </LinearGradient>
+            <TouchableOpacity
+              onPress={handleViewAppointments}
+              activeOpacity={0.8}
+              style={{
+                width: '100%',
+                paddingHorizontal: 24,
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+                backgroundColor: COLORS.success,
+              }}
+            >
+              <Text style={{ color: COLORS.white, fontSize: 15, fontWeight: '600' }}>View Online Consultations</Text>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     );
@@ -702,13 +711,13 @@ export default function OnlineConfirmPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -738,8 +747,8 @@ export default function OnlineConfirmPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>Confirm Booking</Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Review and confirm details</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>Confirm Booking</Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>Review and confirm details</Text>
               </View>
             </View>
           </View>
@@ -757,24 +766,27 @@ export default function OnlineConfirmPage() {
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 16 }}>
           {/* ===== DOCTOR DETAILS CARD ===== */}
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>Doctor Details</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 16 }}>Doctor Details</Text>
 
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
               <IconCircle icon={UserIcon} size="lg" />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>{doctorName}</Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{specialty}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight }}>{doctorName}</Text>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>{specialty}</Text>
                 {availableInMinutes !== null && availableInMinutes <= 5 && (
                   <View
                     style={{
@@ -789,27 +801,32 @@ export default function OnlineConfirmPage() {
                       alignSelf: 'flex-start',
                     }}
                   >
-                    <ClockIcon width={12} height={12} color="#25A425" />
-                    <Text style={{ fontSize: 12, fontWeight: '500', color: '#25A425' }}>
+                    <ClockIcon width={12} height={12} color={COLORS.success} />
+                    <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.success }}>
                       Available {availableInMinutes === 0 ? 'now' : `in ${availableInMinutes} mins`}
                     </Text>
                   </View>
                 )}
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== SELECT PATIENT ===== */}
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>Select Patient</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 16 }}>Select Patient</Text>
             <View style={{ gap: 8 }}>
               {familyMembers.map((member) => (
                 <TouchableOpacity key={member._id} onPress={() => setSelectedPatient(member)} activeOpacity={0.8}>
@@ -817,13 +834,13 @@ export default function OnlineConfirmPage() {
                     style={{
                       padding: 12,
                       borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: selectedPatient?._id === member._id ? '#0F5FDC' : '#86ACD8',
-                      backgroundColor: selectedPatient?._id === member._id ? '#EFF4FF' : '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: selectedPatient?._id === member._id ? COLORS.primary : COLORS.border,
+                      backgroundColor: selectedPatient?._id === member._id ? COLORS.iconBg : COLORS.white,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>{member.name}</Text>
-                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>{member.name}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                       {member.relation}
                       {member.isPrimary && ' (You)'}
                     </Text>
@@ -831,26 +848,31 @@ export default function OnlineConfirmPage() {
                 </TouchableOpacity>
               ))}
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== CONTACT NUMBER ===== */}
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>Contact Number</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 16 }}>Contact Number</Text>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: '#FFFFFF',
-                borderWidth: 2,
-                borderColor: '#86ACD8',
+                backgroundColor: COLORS.white,
+                borderWidth: 1,
+                borderColor: COLORS.border,
                 borderRadius: 12,
                 paddingHorizontal: 12,
               }}
@@ -867,24 +889,29 @@ export default function OnlineConfirmPage() {
                   paddingHorizontal: 12,
                   paddingVertical: 14,
                   fontSize: 14,
-                  color: '#111827',
+                  color: COLORS.textDark,
                 }}
               />
             </View>
-            <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>Doctor will call you on this number</Text>
-          </LinearGradient>
+            <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 8 }}>Doctor will call you on this number</Text>
+          </View>
 
           {/* ===== CALL PREFERENCE ===== */}
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>Call Preference</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 16 }}>Call Preference</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {/* Voice */}
               <TouchableOpacity onPress={() => setCallPreference('VOICE')} activeOpacity={0.8} style={{ flex: 1 }}>
@@ -892,19 +919,19 @@ export default function OnlineConfirmPage() {
                   style={{
                     padding: 12,
                     borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: callPreference === 'VOICE' ? '#0F5FDC' : '#86ACD8',
-                    backgroundColor: callPreference === 'VOICE' ? '#0F5FDC' : '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: callPreference === 'VOICE' ? COLORS.primary : COLORS.border,
+                    backgroundColor: callPreference === 'VOICE' ? COLORS.primary : COLORS.white,
                     alignItems: 'center',
                   }}
                 >
-                  <PhoneIcon width={24} height={24} color={callPreference === 'VOICE' ? '#FFFFFF' : '#0E51A2'} />
+                  <PhoneIcon width={24} height={24} color={callPreference === 'VOICE' ? COLORS.white : COLORS.primaryLight} />
                   <Text
                     style={{
                       fontSize: 12,
                       fontWeight: '500',
                       marginTop: 4,
-                      color: callPreference === 'VOICE' ? '#FFFFFF' : '#0E51A2',
+                      color: callPreference === 'VOICE' ? COLORS.white : COLORS.primaryLight,
                     }}
                   >
                     Voice
@@ -918,19 +945,19 @@ export default function OnlineConfirmPage() {
                   style={{
                     padding: 12,
                     borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: callPreference === 'VIDEO' ? '#0F5FDC' : '#86ACD8',
-                    backgroundColor: callPreference === 'VIDEO' ? '#0F5FDC' : '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: callPreference === 'VIDEO' ? COLORS.primary : COLORS.border,
+                    backgroundColor: callPreference === 'VIDEO' ? COLORS.primary : COLORS.white,
                     alignItems: 'center',
                   }}
                 >
-                  <VideoCameraIcon width={24} height={24} color={callPreference === 'VIDEO' ? '#FFFFFF' : '#0E51A2'} />
+                  <VideoCameraIcon width={24} height={24} color={callPreference === 'VIDEO' ? COLORS.white : COLORS.primaryLight} />
                   <Text
                     style={{
                       fontSize: 12,
                       fontWeight: '500',
                       marginTop: 4,
-                      color: callPreference === 'VIDEO' ? '#FFFFFF' : '#0E51A2',
+                      color: callPreference === 'VIDEO' ? COLORS.white : COLORS.primaryLight,
                     }}
                   >
                     Video
@@ -944,9 +971,9 @@ export default function OnlineConfirmPage() {
                   style={{
                     padding: 12,
                     borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: callPreference === 'BOTH' ? '#0F5FDC' : '#86ACD8',
-                    backgroundColor: callPreference === 'BOTH' ? '#0F5FDC' : '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: callPreference === 'BOTH' ? COLORS.primary : COLORS.border,
+                    backgroundColor: callPreference === 'BOTH' ? COLORS.primary : COLORS.white,
                     alignItems: 'center',
                   }}
                 >
@@ -954,7 +981,7 @@ export default function OnlineConfirmPage() {
                     style={{
                       fontSize: 12,
                       fontWeight: '500',
-                      color: callPreference === 'BOTH' ? '#FFFFFF' : '#0E51A2',
+                      color: callPreference === 'BOTH' ? COLORS.white : COLORS.primaryLight,
                     }}
                   >
                     Both
@@ -963,7 +990,7 @@ export default function OnlineConfirmPage() {
                     style={{
                       fontSize: 10,
                       marginTop: 2,
-                      color: callPreference === 'BOTH' ? 'rgba(255,255,255,0.8)' : '#6B7280',
+                      color: callPreference === 'BOTH' ? 'rgba(255,255,255,0.8)' : COLORS.textGray,
                     }}
                   >
                     Voice & Video
@@ -971,19 +998,24 @@ export default function OnlineConfirmPage() {
                 </View>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== WHEN TO CONSULT ===== */}
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 16 }}>
               When do you want to consult?
             </Text>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
@@ -993,19 +1025,19 @@ export default function OnlineConfirmPage() {
                   style={{
                     padding: 16,
                     borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: timeChoice === 'NOW' ? '#0F5FDC' : '#86ACD8',
-                    backgroundColor: timeChoice === 'NOW' ? '#0F5FDC' : '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: timeChoice === 'NOW' ? COLORS.primary : COLORS.border,
+                    backgroundColor: timeChoice === 'NOW' ? COLORS.primary : COLORS.white,
                     alignItems: 'center',
                   }}
                 >
-                  <ClockIcon width={24} height={24} color={timeChoice === 'NOW' ? '#FFFFFF' : '#0E51A2'} />
+                  <ClockIcon width={24} height={24} color={timeChoice === 'NOW' ? COLORS.white : COLORS.primaryLight} />
                   <Text
                     style={{
                       fontSize: 14,
                       fontWeight: '500',
                       marginTop: 8,
-                      color: timeChoice === 'NOW' ? '#FFFFFF' : '#0E51A2',
+                      color: timeChoice === 'NOW' ? COLORS.white : COLORS.primaryLight,
                     }}
                   >
                     Consult Now
@@ -1014,7 +1046,7 @@ export default function OnlineConfirmPage() {
                     style={{
                       fontSize: 12,
                       marginTop: 2,
-                      color: timeChoice === 'NOW' ? 'rgba(255,255,255,0.8)' : '#6B7280',
+                      color: timeChoice === 'NOW' ? 'rgba(255,255,255,0.8)' : COLORS.textGray,
                     }}
                   >
                     Immediate
@@ -1028,19 +1060,19 @@ export default function OnlineConfirmPage() {
                   style={{
                     padding: 16,
                     borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: timeChoice === 'LATER' ? '#0F5FDC' : '#86ACD8',
-                    backgroundColor: timeChoice === 'LATER' ? '#0F5FDC' : '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: timeChoice === 'LATER' ? COLORS.primary : COLORS.border,
+                    backgroundColor: timeChoice === 'LATER' ? COLORS.primary : COLORS.white,
                     alignItems: 'center',
                   }}
                 >
-                  <CalendarIcon width={24} height={24} color={timeChoice === 'LATER' ? '#FFFFFF' : '#0E51A2'} />
+                  <CalendarIcon width={24} height={24} color={timeChoice === 'LATER' ? COLORS.white : COLORS.primaryLight} />
                   <Text
                     style={{
                       fontSize: 14,
                       fontWeight: '500',
                       marginTop: 8,
-                      color: timeChoice === 'LATER' ? '#FFFFFF' : '#0E51A2',
+                      color: timeChoice === 'LATER' ? COLORS.white : COLORS.primaryLight,
                     }}
                   >
                     Schedule Later
@@ -1049,7 +1081,7 @@ export default function OnlineConfirmPage() {
                     style={{
                       fontSize: 12,
                       marginTop: 2,
-                      color: timeChoice === 'LATER' ? 'rgba(255,255,255,0.8)' : '#6B7280',
+                      color: timeChoice === 'LATER' ? 'rgba(255,255,255,0.8)' : COLORS.textGray,
                     }}
                   >
                     Choose time
@@ -1065,75 +1097,77 @@ export default function OnlineConfirmPage() {
                   backgroundColor: '#E8F5E9',
                   padding: 12,
                   borderRadius: 8,
-                  borderWidth: 2,
-                  borderColor: '#25A425',
+                  borderWidth: 1,
+                  borderColor: COLORS.success,
                 }}
               >
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>Selected Time:</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2', marginTop: 4 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray }}>Selected Time:</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primaryLight, marginTop: 4 }}>
                   {selectedDate} at {selectedTime}
                 </Text>
                 <TouchableOpacity onPress={handleScheduleLater}>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#0F5FDC', marginTop: 8 }}>Change slot</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.primary, marginTop: 8 }}>Change slot</Text>
                 </TouchableOpacity>
               </View>
             )}
-          </LinearGradient>
+          </View>
 
           {/* ===== PAYMENT SUMMARY ===== */}
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
             <View style={{ gap: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 14, color: '#6B7280' }}>Consultation Fee</Text>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>₹{price}</Text>
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>Consultation Fee</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>₹{price}</Text>
               </View>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 14, color: '#6B7280' }}>Platform Fee</Text>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>₹0</Text>
+                <Text style={{ fontSize: 14, color: COLORS.textGray }}>Platform Fee</Text>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>₹0</Text>
               </View>
 
-              <View style={{ height: 1, backgroundColor: '#F7DCAF', marginVertical: 4 }} />
+              <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 4 }} />
 
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>Total Amount</Text>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#25A425' }}>₹{price}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.textDark }}>Total Amount</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.success }}>₹{price}</Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== CONFIRM BUTTON ===== */}
-          <TouchableOpacity onPress={handleConfirmBooking} disabled={loading || !selectedPatient || !contactNumber} activeOpacity={0.8}>
-            <LinearGradient
-              colors={loading || !selectedPatient || !contactNumber ? ['#9ca3af', '#9ca3af'] : ['#1F63B4', '#5DA4FB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                paddingHorizontal: 24,
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: 'center',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              {loading && <ActivityIndicator size="small" color="#FFFFFF" />}
-              <BanknotesIcon width={20} height={20} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
-                {loading ? 'Processing...' : 'Proceed to Payment'}
-              </Text>
-            </LinearGradient>
+          <TouchableOpacity
+            onPress={handleConfirmBooking}
+            disabled={loading || !selectedPatient || !contactNumber}
+            activeOpacity={0.8}
+            style={{
+              paddingHorizontal: 24,
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 8,
+              backgroundColor: loading || !selectedPatient || !contactNumber ? '#9ca3af' : COLORS.primary,
+            }}
+          >
+            {loading && <ActivityIndicator size="small" color={COLORS.white} />}
+            <BanknotesIcon width={20} height={20} color={COLORS.white} />
+            <Text style={{ color: COLORS.white, fontSize: 15, fontWeight: '600' }}>
+              {loading ? 'Processing...' : 'Proceed to Payment'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -1141,7 +1175,7 @@ export default function OnlineConfirmPage() {
       {/* ===== SLOT SELECTION MODAL ===== */}
       <Modal visible={showSlotModal} animationType="slide" transparent={true}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%' }}>
+          <View style={{ backgroundColor: COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%' }}>
             {/* Modal Header */}
             <View
               style={{
@@ -1150,18 +1184,18 @@ export default function OnlineConfirmPage() {
                 justifyContent: 'space-between',
                 padding: 16,
                 borderBottomWidth: 1,
-                borderBottomColor: '#e5e7eb',
+                borderBottomColor: COLORS.border,
               }}
             >
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>Select Time Slot</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>Select Time Slot</Text>
               <TouchableOpacity onPress={() => setShowSlotModal(false)}>
-                <XMarkIcon width={24} height={24} color="#6B7280" />
+                <XMarkIcon width={24} height={24} color={COLORS.textGray} />
               </TouchableOpacity>
             </View>
 
             {/* Simplified Slot Selection */}
             <ScrollView style={{ padding: 16 }}>
-              <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 16 }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 16 }}>
                 Select your preferred date and time for the online consultation.
               </Text>
 
@@ -1179,7 +1213,7 @@ export default function OnlineConfirmPage() {
 
                   return (
                     <View key={dayOffset}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>{dayName}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 8 }}>{dayName}</Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                         {['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '5:00 PM'].map((time) => (
                           <TouchableOpacity
@@ -1193,11 +1227,11 @@ export default function OnlineConfirmPage() {
                                 paddingVertical: 10,
                                 borderRadius: 8,
                                 borderWidth: 1,
-                                borderColor: '#86ACD8',
-                                backgroundColor: '#FFFFFF',
+                                borderColor: COLORS.border,
+                                backgroundColor: COLORS.white,
                               }}
                             >
-                              <Text style={{ fontSize: 14, color: '#0E51A2' }}>{time}</Text>
+                              <Text style={{ fontSize: 14, color: COLORS.primaryLight }}>{time}</Text>
                             </View>
                           </TouchableOpacity>
                         ))}
