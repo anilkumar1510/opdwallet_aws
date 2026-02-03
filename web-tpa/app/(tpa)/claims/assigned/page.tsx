@@ -10,6 +10,7 @@ import {
   EyeIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline'
+import { useRoleGuard } from '@/lib/hooks/useRoleGuard'
 
 interface Claim {
   _id: string
@@ -38,6 +39,8 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 }
 
 export default function AssignedClaimsPage() {
+  useRoleGuard(['TPA_ADMIN', 'SUPER_ADMIN'])
+
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')

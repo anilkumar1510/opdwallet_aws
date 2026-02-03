@@ -12,6 +12,8 @@ import {
   UserPlusIcon,
 } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
+import { useUser } from '@/lib/providers/user-provider'
+import { isTpaAdmin } from '@/lib/utils/rbac'
 
 interface Claim {
   _id: string
@@ -54,6 +56,9 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 }
 
 export default function TPAClaimsPage() {
+  const { user } = useUser()
+  const isAdmin = isTpaAdmin(user?.role)
+
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -135,19 +140,26 @@ export default function TPAClaimsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">All Claims</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isAdmin ? 'All Claims' : 'My Claims'}
+          </h1>
           <p className="text-gray-500 mt-1">
-            {total} total claims • {unassignedCount} unassigned
+            {isAdmin
+              ? `${total} total claims • ${unassignedCount} unassigned`
+              : `${total} claims assigned to you`
+            }
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Link
-            href="/claims/unassigned"
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-          >
-            <UserPlusIcon className="h-5 w-5" />
-            <span>Unassigned ({unassignedCount})</span>
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/claims/unassigned"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+            >
+              <UserPlusIcon className="h-5 w-5" />
+              <span>Unassigned ({unassignedCount})</span>
+            </Link>
+          )}
           <button
             onClick={fetchClaims}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
@@ -208,6 +220,20 @@ export default function TPAClaimsPage() {
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="grid grid-cols-3 gap-4">
+              {isAdmin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned To
+                  </label>
+                  <select
+                    value={assignedToFilter}
+                    onChange={(e) => setAssignedToFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="all">All Assignees</option>
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Date Range

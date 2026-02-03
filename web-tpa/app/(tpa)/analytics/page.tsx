@@ -16,6 +16,7 @@ import {
   UserGroupIcon,
   CalendarIcon,
 } from '@heroicons/react/24/outline'
+import { useRoleGuard } from '@/lib/hooks/useRoleGuard'
 
 interface AnalyticsSummary {
   totalClaims: number
@@ -42,6 +43,8 @@ interface CategoryBreakdown {
 }
 
 export default function TPAAnalyticsPage() {
+  useRoleGuard(['TPA_ADMIN', 'SUPER_ADMIN'])
+
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')

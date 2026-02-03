@@ -14,6 +14,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
+import { useRoleGuard } from '@/lib/hooks/useRoleGuard'
 
 interface TPAUser {
   _id: string
@@ -31,6 +32,8 @@ interface TPAUser {
 }
 
 export default function TPAUsersPage() {
+  useRoleGuard(['TPA_ADMIN', 'SUPER_ADMIN'])
+
   const [users, setUsers] = useState<TPAUser[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)

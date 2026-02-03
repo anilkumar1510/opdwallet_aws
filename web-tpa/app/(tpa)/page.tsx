@@ -13,6 +13,8 @@ import {
   ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
+import { useUser } from '@/lib/providers/user-provider'
+import { isTpaAdmin } from '@/lib/utils/rbac'
 
 interface AnalyticsSummary {
   totalClaims: number
@@ -40,6 +42,9 @@ interface RecentActivity {
 }
 
 export default function TPADashboard() {
+  const { user } = useUser()
+  const isAdmin = isTpaAdmin(user?.role)
+
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null)
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,7 +54,8 @@ export default function TPADashboard() {
       const response = await apiFetch('/api/tpa/analytics/summary')
       if (response.ok) {
         const data = await response.json()
-        setAnalytics(data.summary)
+        // Access nested summary object
+        setAnalytics(data.summary?.summary || data.summary)
       }
     } catch (error) {
       console.error('Error fetching analytics:', error)
@@ -198,13 +204,15 @@ export default function TPADashboard() {
           <h1 className="text-2xl font-bold text-gray-900">TPA Dashboard</h1>
           <p className="text-gray-500 mt-1">Manage and review claims efficiently</p>
         </div>
-        <Link
-          href="/analytics"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <ChartBarIcon className="h-5 w-5" />
-          <span>View Analytics</span>
-        </Link>
+        {isAdmin && (
+          <Link
+            href="/analytics"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <ChartBarIcon className="h-5 w-5" />
+            <span>View Analytics</span>
+          </Link>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -261,7 +269,7 @@ export default function TPADashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-2' : ''} gap-6`}>
         {/* Activity Feed */}
         <div className="bg-white rounded-xl border border-gray-200">
           <div className="p-4 border-b border-gray-200">
@@ -296,88 +304,90 @@ export default function TPADashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+        {/* Quick Actions - Only for TPA_ADMIN */}
+        {isAdmin && (
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/claims/unassigned"
+                className="block p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <ClipboardDocumentListIcon className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        Review Unassigned Claims
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {analytics?.unassignedClaims || 0} claims waiting
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-red-600 text-xs font-medium">Action Required</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/claims/assigned"
+                className="block p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <UserGroupIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">View Assigned Claims</p>
+                      <p className="text-xs text-gray-500">
+                        {analytics?.assignedClaims || 0} currently assigned
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                href="/analytics"
+                className="block p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                      <ChartBarIcon className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">View Full Analytics</p>
+                      <p className="text-xs text-gray-500">Detailed reports & insights</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                href="/users"
+                className="block p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <UserGroupIcon className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Manage TPA Users</p>
+                      <p className="text-xs text-gray-500">View workload & performance</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
           </div>
-          <div className="p-4 space-y-3">
-            <Link
-              href="/claims/unassigned"
-              className="block p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                    <ClipboardDocumentListIcon className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Review Unassigned Claims
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {analytics?.unassignedClaims || 0} claims waiting
-                    </p>
-                  </div>
-                </div>
-                <span className="text-red-600 text-xs font-medium">Action Required</span>
-              </div>
-            </Link>
-
-            <Link
-              href="/claims/assigned"
-              className="block p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <UserGroupIcon className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">View Assigned Claims</p>
-                    <p className="text-xs text-gray-500">
-                      {analytics?.assignedClaims || 0} currently assigned
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link
-              href="/analytics"
-              className="block p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <ChartBarIcon className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">View Full Analytics</p>
-                    <p className="text-xs text-gray-500">Detailed reports & insights</p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link
-              href="/users"
-              className="block p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <UserGroupIcon className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Manage TPA Users</p>
-                    <p className="text-xs text-gray-500">View workload & performance</p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

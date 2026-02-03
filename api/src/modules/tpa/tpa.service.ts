@@ -254,6 +254,35 @@ export class TpaService {
    * Get claim details by ID
    */
   async getClaimById(claimId: string, userId: string, userRole: string) {
+    // First, fetch claim WITHOUT populate to check authorization
+    const claimForAuth = await this.memberClaimModel
+      .findOne({ claimId })
+      .lean()
+      .exec();
+
+    if (!claimForAuth) {
+      throw new NotFoundException(`Claim with ID ${claimId} not found`);
+    }
+
+    // Check permissions - TPA_USER can only view assigned claims
+    if (userRole === UserRole.TPA_USER) {
+      const assignedToId = claimForAuth.assignedTo?.toString();
+
+      // Debug logging
+      console.log('Authorization check for TPA_USER:');
+      console.log('  - Claim ID:', claimId);
+      console.log('  - assignedTo (raw):', claimForAuth.assignedTo);
+      console.log('  - assignedToId (extracted):', assignedToId);
+      console.log('  - userId (from request):', userId);
+      console.log('  - Types:', typeof assignedToId, 'vs', typeof userId);
+      console.log('  - Match:', assignedToId === userId);
+
+      if (!assignedToId || assignedToId !== userId) {
+        throw new ForbiddenException('You can only view claims assigned to you');
+      }
+    }
+
+    // Now fetch the full claim with populated fields
     const claim = await this.memberClaimModel
       .findOne({ claimId })
       .populate('userId', 'name email phone memberId')
@@ -266,13 +295,6 @@ export class TpaService {
       throw new NotFoundException(`Claim with ID ${claimId} not found`);
     }
 
-    // Check permissions - TPA_USER can only view assigned claims
-    if (userRole === UserRole.TPA_USER) {
-      if (!claim.assignedTo || claim.assignedTo.toString() !== userId) {
-        throw new ForbiddenException('You can only view claims assigned to you');
-      }
-    }
-
     // Fetch policy details if policyId exists
     let policyDetails = null;
     if (claim.policyId) {
@@ -283,8 +305,14 @@ export class TpaService {
       policyDetails = await this.getPolicyDetailsForClaim(policyIdString);
     }
 
+    // Convert to plain object and add raw assignedToId for frontend authorization
+    const claimObject = claim.toObject();
     return {
-      claim,
+      claim: {
+        ...claimObject,
+        // Include raw assignedTo ID even if populate failed
+        assignedToId: claimForAuth.assignedTo?.toString(),
+      },
       policyDetails,
     };
   }
@@ -724,7 +752,7 @@ export class TpaService {
   /**
    * Get TPA analytics summary
    */
-  async getAnalyticsSummary(fromDate?: Date, toDate?: Date) {
+  async getAnalyticsSummary(fromDate?: Date, toDate?: Date, userId?: string, userRole?: string) {
     const dateFilter: any = {};
     if (fromDate || toDate) {
       dateFilter.submittedAt = {};
@@ -732,11 +760,17 @@ export class TpaService {
       if (toDate) dateFilter.submittedAt.$lte = toDate;
     }
 
+    // For TPA_USER, filter by assigned claims only
+    if (userRole === UserRole.TPA_USER && userId) {
+      dateFilter.assignedTo = new Types.ObjectId(userId);
+    }
+
     // Get all claims
     const totalClaims = await this.memberClaimModel.countDocuments(dateFilter);
 
     // Get claims by status
-    const unassignedClaims = await this.memberClaimModel.countDocuments({
+    // For TPA_USER, unassigned count is always 0 (they don't see unassigned claims)
+    const unassignedClaims = userRole === UserRole.TPA_USER ? 0 : await this.memberClaimModel.countDocuments({
       ...dateFilter,
       status: { $in: [ClaimStatus.SUBMITTED, ClaimStatus.UNASSIGNED] },
       $or: [

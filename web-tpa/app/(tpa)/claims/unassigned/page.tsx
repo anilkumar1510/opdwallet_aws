@@ -10,6 +10,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { apiFetch } from '@/lib/api'
+import { useRoleGuard } from '@/lib/hooks/useRoleGuard'
 
 interface Claim {
   _id: string
@@ -34,6 +35,8 @@ interface TPAUser {
 }
 
 export default function UnassignedClaimsPage() {
+  useRoleGuard(['TPA_ADMIN', 'SUPER_ADMIN'])
+
   const [claims, setClaims] = useState<Claim[]>([])
   const [tpaUsers, setTpaUsers] = useState<TPAUser[]>([])
   const [loading, setLoading] = useState(true)

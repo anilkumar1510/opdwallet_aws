@@ -90,7 +90,7 @@ export class TpaController {
   }
 
   @Get('claims/assigned')
-  @Roles(UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.TPA_ADMIN, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get assigned claims (claims currently assigned to TPA users)' })
   @ApiQuery({ name: 'fromDate', type: Date, required: false })
   @ApiQuery({ name: 'toDate', type: Date, required: false })
@@ -272,18 +272,21 @@ export class TpaController {
   }
 
   @Get('analytics/summary')
-  @Roles(UserRole.TPA_ADMIN, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get TPA analytics summary' })
   @ApiQuery({ name: 'fromDate', type: Date, required: false })
   @ApiQuery({ name: 'toDate', type: Date, required: false })
   @ApiResponse({ status: 200, description: 'Analytics summary retrieved successfully' })
   async getAnalyticsSummary(
+    @Request() req: any,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
     const summary = await this.tpaService.getAnalyticsSummary(
       fromDate ? new Date(fromDate) : undefined,
       toDate ? new Date(toDate) : undefined,
+      req.user.userId,
+      req.user.role,
     );
     return {
       message: 'Analytics summary retrieved successfully',

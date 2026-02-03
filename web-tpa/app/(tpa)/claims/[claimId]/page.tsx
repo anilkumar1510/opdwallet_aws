@@ -51,6 +51,7 @@ interface Claim {
     name: { fullName: string }
     email: string
   }
+  assignedToId?: string  // Raw assignedTo ID (even if populate fails)
   assignedToName?: string
   assignedBy?: {
     name: { fullName: string }
@@ -225,7 +226,9 @@ export default function ClaimDetailPage() {
 
     // TPA_USER can only take action if claim is assigned to them
     if (currentUser.role === 'TPA_USER') {
-      return claim.assignedTo?._id === currentUser._id
+      // Check both populated assignedTo and raw assignedToId (in case populate failed)
+      const assignedId = claim.assignedTo?._id || claim.assignedToId
+      return assignedId === currentUser._id
     }
 
     return false

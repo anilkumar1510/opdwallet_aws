@@ -7,6 +7,7 @@ import { UserProvider, useUser } from '@/lib/providers/user-provider'
 import { QueryProvider } from '@/lib/providers/query-provider'
 import { handleLogout } from '@/lib/auth-utils'
 import { Logo } from '@/components/ui/Logo'
+import { isTpaAdmin } from '@/lib/utils/rbac'
 
 function TPALayoutContent({
   children,
@@ -21,7 +22,10 @@ function TPALayoutContent({
     if (pathname === '/') return 'Dashboard'
     if (pathname.startsWith('/claims/unassigned')) return 'Unassigned Claims'
     if (pathname.startsWith('/claims/assigned')) return 'Assigned Claims'
-    if (pathname.startsWith('/claims')) return 'Claims Management'
+    if (pathname.startsWith('/claims')) {
+      // Show "My Claims" for TPA_USER, "Claims Management" for TPA_ADMIN
+      return user?.role === 'TPA_USER' ? 'My Claims' : 'Claims Management'
+    }
     if (pathname.startsWith('/analytics')) return 'Analytics & Reports'
     if (pathname.startsWith('/users')) return 'Member Management'
     return 'TPA Portal'
@@ -31,32 +35,38 @@ function TPALayoutContent({
     {
       name: 'Dashboard',
       path: '/',
-      current: pathname === '/'
+      current: pathname === '/',
+      allowedRoles: ['TPA_ADMIN', 'TPA_USER', 'SUPER_ADMIN']
     },
     {
-      name: 'All Claims',
+      name: user?.role === 'TPA_USER' ? 'My Claims' : 'All Claims',
       path: '/claims',
-      current: pathname === '/claims'
+      current: pathname === '/claims',
+      allowedRoles: ['TPA_ADMIN', 'TPA_USER', 'SUPER_ADMIN']
     },
     {
       name: 'Unassigned',
       path: '/claims/unassigned',
-      current: pathname.startsWith('/claims/unassigned')
+      current: pathname.startsWith('/claims/unassigned'),
+      allowedRoles: ['TPA_ADMIN', 'SUPER_ADMIN']
     },
     {
       name: 'Assigned',
       path: '/claims/assigned',
-      current: pathname.startsWith('/claims/assigned')
+      current: pathname.startsWith('/claims/assigned'),
+      allowedRoles: ['TPA_ADMIN', 'SUPER_ADMIN']
     },
     {
       name: 'Analytics',
       path: '/analytics',
-      current: pathname.startsWith('/analytics')
+      current: pathname.startsWith('/analytics'),
+      allowedRoles: ['TPA_ADMIN', 'SUPER_ADMIN']
     },
     {
       name: 'Members',
       path: '/users',
-      current: pathname.startsWith('/users')
+      current: pathname.startsWith('/users'),
+      allowedRoles: ['TPA_ADMIN', 'SUPER_ADMIN']
     },
   ]
 
@@ -73,15 +83,18 @@ function TPALayoutContent({
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2 flex-1">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => router.push(item.path)}
-                  className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
-                >
-                  {item.name}
-                </button>
-              ))}
+              {navigationItems
+                .filter(item => !item.allowedRoles || item.allowedRoles.includes(user?.role || ''))
+                .map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => router.push(item.path)}
+                    className={item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'}
+                  >
+                    {item.name}
+                  </button>
+                ))
+              }
             </div>
 
             {/* User Menu */}
@@ -102,15 +115,18 @@ function TPALayoutContent({
 
           <div className="md:hidden border-t border-white/10 pt-4 pb-2">
             <div className="flex space-x-1 overflow-x-auto">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => router.push(item.path)}
-                  className={`${item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'} whitespace-nowrap flex-shrink-0`}
-                >
-                  {item.name}
-                </button>
-              ))}
+              {navigationItems
+                .filter(item => !item.allowedRoles || item.allowedRoles.includes(user?.role || ''))
+                .map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => router.push(item.path)}
+                    className={`${item.current ? 'nav-item-dark nav-item-dark-active' : 'nav-item-dark'} whitespace-nowrap flex-shrink-0`}
+                  >
+                    {item.name}
+                  </button>
+                ))
+              }
             </div>
           </div>
         </div>
