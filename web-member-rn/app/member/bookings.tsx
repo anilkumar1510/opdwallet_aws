@@ -733,6 +733,38 @@ export default function BookingsPage() {
   // ============================================================================
 
   const handleCancelDentalBooking = async (bookingId: string, serviceName: string) => {
+    // For web, use window.confirm as Alert may not work properly
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to cancel ${serviceName}? Your wallet will be refunded.`);
+      if (!confirmed) return;
+
+      try {
+        console.log('[Bookings] Cancelling dental booking (web):', bookingId);
+        await apiClient.put(`/dental-bookings/${bookingId}/cancel`);
+        window.alert('Booking cancelled successfully. Your wallet has been refunded.');
+        fetchDentalBookings(); // Refresh bookings
+      } catch (error: any) {
+        console.error('[Bookings] Error cancelling booking:', error);
+        // Extract error message - handle nested message structures
+        let errorMessage = 'Failed to cancel booking';
+        if (error.response?.data) {
+          const data = error.response.data;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (typeof data.message === 'string') {
+            errorMessage = data.message;
+          } else if (data.message && typeof data.message === 'object' && typeof data.message.message === 'string') {
+            errorMessage = data.message.message;
+          } else if (typeof data.error === 'string') {
+            errorMessage = data.error;
+          }
+        }
+        window.alert(errorMessage);
+      }
+      return;
+    }
+
+    // For native platforms, use Alert
     Alert.alert(
       'Cancel Booking',
       `Are you sure you want to cancel ${serviceName}?`,
@@ -744,7 +776,7 @@ export default function BookingsPage() {
           onPress: async () => {
             try {
               console.log('[Bookings] Cancelling dental booking:', bookingId);
-              await apiClient.post(`/dental-bookings/${bookingId}/cancel`);
+              await apiClient.put(`/dental-bookings/${bookingId}/cancel`);
               Alert.alert('Success', 'Booking cancelled successfully');
               fetchDentalBookings(); // Refresh bookings
             } catch (error: any) {
@@ -758,6 +790,38 @@ export default function BookingsPage() {
   };
 
   const handleCancelVisionBooking = async (bookingId: string, serviceName: string) => {
+    // For web, use window.confirm as Alert may not work properly
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to cancel ${serviceName}? Your wallet will be refunded.`);
+      if (!confirmed) return;
+
+      try {
+        console.log('[Bookings] Cancelling vision booking (web):', bookingId);
+        await apiClient.put(`/vision-bookings/${bookingId}/cancel`);
+        window.alert('Booking cancelled successfully. Your wallet has been refunded.');
+        fetchVisionBookings(); // Refresh bookings
+      } catch (error: any) {
+        console.error('[Bookings] Error cancelling booking:', error);
+        // Extract error message - handle nested message structures
+        let errorMessage = 'Failed to cancel booking';
+        if (error.response?.data) {
+          const data = error.response.data;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (typeof data.message === 'string') {
+            errorMessage = data.message;
+          } else if (data.message && typeof data.message === 'object' && typeof data.message.message === 'string') {
+            errorMessage = data.message.message;
+          } else if (typeof data.error === 'string') {
+            errorMessage = data.error;
+          }
+        }
+        window.alert(errorMessage);
+      }
+      return;
+    }
+
+    // For native platforms, use Alert
     Alert.alert(
       'Cancel Booking',
       `Are you sure you want to cancel ${serviceName}?`,
@@ -769,7 +833,7 @@ export default function BookingsPage() {
           onPress: async () => {
             try {
               console.log('[Bookings] Cancelling vision booking:', bookingId);
-              await apiClient.post(`/vision-bookings/${bookingId}/cancel`);
+              await apiClient.put(`/vision-bookings/${bookingId}/cancel`);
               Alert.alert('Success', 'Booking cancelled successfully');
               fetchVisionBookings(); // Refresh bookings
             } catch (error: any) {

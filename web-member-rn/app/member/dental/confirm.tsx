@@ -10,19 +10,164 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
-  UserIcon,
-  CalendarIcon,
-  ClockIcon,
-  MapPinIcon,
-  BanknotesIcon,
-  CheckCircleIcon,
-  WalletIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS - Matching Home Page
+// ============================================================================
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  warning: '#F97316',
+};
+
+// ============================================================================
+// ICONS - Matching Home Page Style
+// ============================================================================
+
+function UserIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="8" r="4" stroke={COLORS.primary} strokeWidth={1.5} />
+      <Path
+        d="M20 21a8 8 0 10-16 0"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function CalendarIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M8 2V5M16 2V5M3.5 9.09H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ClockIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={COLORS.primary} strokeWidth={1.5} />
+      <Path
+        d="M12 7V12L15 15"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function MapPinIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 13.43a3.12 3.12 0 100-6.24 3.12 3.12 0 000 6.24z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+      />
+      <Path
+        d="M3.62 8.49c1.97-8.66 14.8-8.65 16.76.01 1.15 5.08-2.01 9.38-4.78 12.04a5.193 5.193 0 01-7.21 0c-2.76-2.66-5.92-6.97-4.77-12.05z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+      />
+    </Svg>
+  );
+}
+
+function BanknotesIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2 8.5H22M6 16.5H8M10.5 16.5H14.5"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M22 5.5V18.5C22 21 20.5 22 18 22H6C3.5 22 2 21 2 18.5V5.5C2 3 3.5 2 6 2H18C20.5 2 22 3 22 5.5Z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function WalletIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M22 10.97V13.03C22 13.58 21.56 14.03 21 14.05H19.04C17.96 14.05 16.97 13.26 16.88 12.18C16.82 11.55 17.06 10.96 17.48 10.55C17.85 10.17 18.36 9.95 18.92 9.95H21C21.56 9.97 22 10.42 22 10.97Z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M2 10.5V8.5C2 5.78 3.64 3.88 6.19 3.56C6.45 3.52 6.72 3.5 7 3.5H16C16.26 3.5 16.51 3.51 16.75 3.55C19.33 3.85 21 5.76 21 8.5V9.95H18.92C18.36 9.95 17.85 10.17 17.48 10.55C17.06 10.96 16.82 11.55 16.88 12.18C16.97 13.26 17.96 14.05 19.04 14.05H21V15.5C21 18.5 19 20.5 16 20.5H7C4 20.5 2 18.5 2 15.5V14.5"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function CheckCircleIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={COLORS.success} strokeWidth={1.5} />
+      <Path
+        d="M9 12l2 2 4-4"
+        stroke={COLORS.success}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ToothIcon({ size = 24 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2C9.5 2 7.5 3.5 7 5.5C6.5 7.5 5 8 4 9C3 10 3 11.5 3.5 13C4 14.5 4.5 16 5 18C5.5 20 6.5 22 8 22C9.5 22 10 20.5 10 19C10 17.5 10.5 16 12 16C13.5 16 14 17.5 14 19C14 20.5 14.5 22 16 22C17.5 22 18.5 20 19 18C19.5 16 20 14.5 20.5 13C21 11.5 21 10 20 9C19 8 17.5 7.5 17 5.5C16.5 3.5 14.5 2 12 2Z"
+        stroke={COLORS.primary}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -42,49 +187,6 @@ interface Clinic {
   };
   servicePrice: number;
 }
-
-// ============================================================================
-// ICON CIRCLE COMPONENT
-// ============================================================================
-
-interface IconCircleProps {
-  icon: React.ComponentType<{ width?: number; height?: number; color?: string }>;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
-  const sizeMap = {
-    sm: { container: 40, icon: 20 },
-    md: { container: 48, icon: 24 },
-    lg: { container: 64, icon: 32 },
-  };
-
-  const dimensions = sizeMap[size];
-
-  return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        width: dimensions.container,
-        height: dimensions.container,
-        borderRadius: dimensions.container / 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
-      }}
-    >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
-  );
-};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -234,9 +336,6 @@ export default function ConfirmDentalBookingPage() {
           console.warn('[ConfirmDental] Could not fetch policy (no copay):', policyErr);
           setCopayPercentage(0);
         }
-
-        // Calculate payment breakdown after fetching price, wallet, and copay
-        // This will be done in a separate useEffect after price is set
       } catch (err: any) {
         console.error('[ConfirmDental] Error fetching data:', err);
         Alert.alert('Error', 'Failed to load booking details. Please try again.');
@@ -386,7 +485,6 @@ export default function ConfirmDentalBookingPage() {
         setValidationResult(response.data);
       } catch (err: any) {
         console.error('[ConfirmDental] Error validating booking:', err);
-        // Validation errors are not critical - continue anyway
       } finally {
         setValidating(false);
       }
@@ -422,7 +520,7 @@ export default function ConfirmDentalBookingPage() {
           price,
           appointmentDate,
           appointmentTime,
-          paymentAlreadyProcessed: false, // Wallet will be deducted by API
+          paymentAlreadyProcessed: false,
         };
 
         const response = await apiClient.post<{ bookingId: string }>('/dental-bookings', bookingData);
@@ -455,7 +553,7 @@ export default function ConfirmDentalBookingPage() {
         const paymentId = paymentResponse.data.paymentId;
         console.log('[ConfirmDental] Pending payment created:', paymentId);
 
-        // Store booking data in AsyncStorage (React Native equivalent of sessionStorage)
+        // Store booking data in AsyncStorage
         const bookingData = {
           serviceType: 'DENTAL',
           serviceDetails: {
@@ -488,12 +586,11 @@ export default function ConfirmDentalBookingPage() {
         return;
       }
 
-      // Fallback - should not reach here
+      // Fallback
       Alert.alert('Error', 'Unable to process payment. Please try again.');
     } catch (err: any) {
       console.error('[ConfirmDental] Error processing payment:', err);
 
-      // Handle specific error cases
       if (err.response?.status === 400) {
         Alert.alert('Payment Failed', err.response.data?.message || 'Invalid payment data. Please try again.');
       } else if (err.response?.status === 401) {
@@ -542,37 +639,50 @@ export default function ConfirmDentalBookingPage() {
 
   if (bookingSuccess) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
         <View style={{ maxWidth: 480, width: '100%' }}>
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
-              padding: 24,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
+              padding: 32,
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
               alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
             {/* Success Icon */}
-            <View style={{ marginBottom: 24 }}>
-              <IconCircle icon={CheckCircleIcon} size="lg" />
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 20,
+              }}
+            >
+              <CheckCircleIcon size={32} />
             </View>
 
             {/* Title */}
-            <Text style={{ fontSize: 20, fontWeight: '700', color: '#0E51A2', marginBottom: 8, textAlign: 'center' }}>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.primary, marginBottom: 8, textAlign: 'center' }}>
               Booking Confirmed!
             </Text>
 
             {/* Booking ID */}
-            <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 4, textAlign: 'center' }}>
+            <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 4, textAlign: 'center' }}>
               Booking ID: {bookingId}
             </Text>
 
             {/* Date & Time */}
-            <Text style={{ fontSize: 12, color: '#9ca3af', marginBottom: 24, textAlign: 'center' }}>
+            <Text style={{ fontSize: 12, color: COLORS.textGray, marginBottom: 24, textAlign: 'center' }}>
               {formatDate(appointmentDate)} at {appointmentTime}
             </Text>
 
@@ -580,30 +690,19 @@ export default function ConfirmDentalBookingPage() {
             <TouchableOpacity
               onPress={handleViewBookings}
               activeOpacity={0.8}
-              style={{ width: '100%' }}
+              style={{
+                width: '100%',
+                backgroundColor: COLORS.success,
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+              }}
             >
-              <LinearGradient
-                colors={['#16a34a', '#22c55e']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 8,
-                  elevation: 4,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
-                  View Bookings
-                </Text>
-              </LinearGradient>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                View Bookings
+              </Text>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     );
@@ -614,18 +713,13 @@ export default function ConfirmDentalBookingPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
+          borderBottomColor: COLORS.border,
           ...Platform.select({
             web: {
               position: 'sticky',
@@ -642,22 +736,22 @@ export default function ConfirmDentalBookingPage() {
               marginHorizontal: 'auto',
               width: '100%',
               paddingHorizontal: 16,
-              paddingVertical: 16,
+              paddingVertical: 12,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <TouchableOpacity
                 onPress={() => router.back()}
-                style={{ padding: 8, borderRadius: 8 }}
+                style={{ padding: 8, borderRadius: 12 }}
                 activeOpacity={0.7}
               >
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
-                  Confirm Dental Booking
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
+                  Confirm Booking
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Review your booking details
                 </Text>
               </View>
@@ -671,70 +765,88 @@ export default function ConfirmDentalBookingPage() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingVertical: 24,
+          paddingVertical: 20,
           paddingBottom: 96,
         }}
+        showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 16 }}>
           {/* ===== SERVICE DETAILS CARD ===== */}
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
-              Service Details
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <ToothIcon size={18} />
+              </View>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary }}>
+                Service Details
+              </Text>
+            </View>
 
             {/* Service Name & Description */}
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-              <IconCircle icon={BanknotesIcon} size="md" />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2', marginBottom: 4 }}>
-                  {service?.name || 'Dental Service'}
-                </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', lineHeight: 18 }}>
-                  {service?.description || ''}
-                </Text>
-              </View>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary, marginBottom: 4 }}>
+                {service?.name || 'Dental Service'}
+              </Text>
+              <Text style={{ fontSize: 13, color: COLORS.textGray, lineHeight: 18 }}>
+                {service?.description || ''}
+              </Text>
             </View>
 
             {/* Divider */}
-            <View style={{ height: 1, backgroundColor: '#F7DCAF', marginBottom: 16 }} />
+            <View style={{ height: 1, backgroundColor: COLORS.border, marginBottom: 12 }} />
 
             {/* Clinic Location */}
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-              <MapPinIcon width={20} height={20} color="#0F5FDC" />
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+              <MapPinIcon size={18} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2', marginBottom: 2 }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary, marginBottom: 2 }}>
                   {clinic?.clinicName || 'Dental Clinic'}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray }}>
                   {clinic?.address?.city || ''}
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== APPOINTMENT DETAILS CARD ===== */}
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              backgroundColor: COLORS.white,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#86ACD8',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
               Appointment Details
             </Text>
 
@@ -742,10 +854,10 @@ export default function ConfirmDentalBookingPage() {
               {/* Patient */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <UserIcon width={20} height={20} color="#0F5FDC" />
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Patient</Text>
+                  <UserIcon size={18} />
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Patient</Text>
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                   {patientName}
                 </Text>
               </View>
@@ -753,10 +865,10 @@ export default function ConfirmDentalBookingPage() {
               {/* Date */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <CalendarIcon width={20} height={20} color="#0F5FDC" />
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Date</Text>
+                  <CalendarIcon size={18} />
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Date</Text>
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                   {formatDate(appointmentDate)}
                 </Text>
               </View>
@@ -764,10 +876,10 @@ export default function ConfirmDentalBookingPage() {
               {/* Time */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <ClockIcon width={20} height={20} color="#0F5FDC" />
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Time</Text>
+                  <ClockIcon size={18} />
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Time</Text>
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                   {appointmentTime}
                 </Text>
               </View>
@@ -775,38 +887,41 @@ export default function ConfirmDentalBookingPage() {
               {/* Service Fee */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <BanknotesIcon width={20} height={20} color="#0F5FDC" />
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Service Fee</Text>
+                  <BanknotesIcon size={18} />
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Service Fee</Text>
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#25A425' }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.success }}>
                   ₹{price}
                 </Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ===== PAYMENT BREAKDOWN CARD ===== */}
           {!dataLoading && (copayPercentage > 0 || serviceLimit > 0) && (
-            <LinearGradient
-              colors={['#FEF3E9', '#FEF3E9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
-                borderRadius: 12,
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
                 padding: 16,
-                borderWidth: 2,
-                borderColor: '#F7DCAF',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary, marginBottom: 16 }}>
                 Payment Breakdown
               </Text>
 
               <View style={{ gap: 12 }}>
                 {/* Service Fee */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Service Fee</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#111827' }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Service Fee</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
                     ₹{price}
                   </Text>
                 </View>
@@ -814,8 +929,8 @@ export default function ConfirmDentalBookingPage() {
                 {/* Service Transaction Limit (if applicable) */}
                 {serviceLimit > 0 && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 14, color: '#6B7280' }}>Service Transaction Limit</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#F97316' }}>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray }}>Service Transaction Limit</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.warning }}>
                       ₹{serviceLimit}
                     </Text>
                   </View>
@@ -823,8 +938,8 @@ export default function ConfirmDentalBookingPage() {
 
                 {/* Insurance Coverage */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Insurance Coverage</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#25A425' }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Insurance Coverage</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.success }}>
                     -₹{insurancePayment}
                   </Text>
                 </View>
@@ -832,10 +947,10 @@ export default function ConfirmDentalBookingPage() {
                 {/* Copay */}
                 {copayAmount > 0 && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray }}>
                       Copay ({copayPercentage}%)
                     </Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#F97316' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.warning }}>
                       ₹{copayAmount}
                     </Text>
                   </View>
@@ -844,45 +959,59 @@ export default function ConfirmDentalBookingPage() {
                 {/* Excess Amount (if service limit exceeded) */}
                 {excessAmount > 0 && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 14, color: '#6B7280' }}>Excess Amount</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#F97316' }}>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray }}>Excess Amount</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.warning }}>
                       ₹{excessAmount}
                     </Text>
                   </View>
                 )}
 
                 {/* Divider */}
-                <View style={{ height: 1, backgroundColor: '#F7DCAF', marginVertical: 4 }} />
+                <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 4 }} />
 
                 {/* Total You Pay */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary }}>
                     Total You Pay
                   </Text>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
                     ₹{userPayment}
                   </Text>
                 </View>
               </View>
-            </LinearGradient>
+            </View>
           )}
 
           {/* ===== WALLET BALANCE CARD ===== */}
           {!dataLoading && (
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
-                borderRadius: 12,
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
                 padding: 16,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <WalletIcon width={20} height={20} color="#0F5FDC" />
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: 'rgba(3, 77, 162, 0.1)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <WalletIcon size={18} />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary }}>
                   Wallet Balance
                 </Text>
               </View>
@@ -890,71 +1019,58 @@ export default function ConfirmDentalBookingPage() {
               <View style={{ gap: 12 }}>
                 {/* Current Balance */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 14, color: '#6B7280' }}>Current Balance</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#0E51A2' }}>
+                  <Text style={{ fontSize: 14, color: COLORS.textGray }}>Current Balance</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
                     ₹{walletBalance}
                   </Text>
                 </View>
 
                 {/* After This Booking */}
-                {paymentMethod === 'WALLET_ONLY' || paymentMethod === 'COPAY' || paymentMethod === 'OUT_OF_POCKET' ? (
+                {(paymentMethod === 'WALLET_ONLY' || paymentMethod === 'COPAY' || paymentMethod === 'OUT_OF_POCKET') && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 14, color: '#6B7280' }}>After This Booking</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#25A425' }}>
+                    <Text style={{ fontSize: 14, color: COLORS.textGray }}>After This Booking</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.success }}>
                       ₹{Math.max(0, walletBalance - (paymentMethod === 'WALLET_ONLY' ? price : walletCoverage))}
                     </Text>
                   </View>
-                ) : null}
+                )}
               </View>
-            </LinearGradient>
+            </View>
           )}
 
           {/* ===== PAYMENT BUTTON / LOADING ===== */}
           {dataLoading ? (
             <View style={{ paddingVertical: 32, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
-              <ActivityIndicator size="small" color="#0F5FDC" />
-              <Text style={{ fontSize: 14, color: '#6B7280' }}>Loading payment details...</Text>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={{ fontSize: 14, color: COLORS.textGray }}>Loading payment details...</Text>
             </View>
           ) : (
             <TouchableOpacity
               onPress={handleConfirmPayment}
               disabled={loading}
               activeOpacity={0.8}
+              style={{
+                backgroundColor: loading
+                  ? '#9CA3AF'
+                  : paymentMethod === 'WALLET_ONLY'
+                  ? COLORS.success
+                  : COLORS.primary,
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+              }}
             >
-              <LinearGradient
-                colors={
-                  loading
-                    ? ['#9ca3af', '#9ca3af']
-                    : paymentMethod === 'WALLET_ONLY'
-                    ? ['#16a34a', '#22c55e']
-                    : ['#1F63B4', '#5DA4FB']
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: loading ? 0 : 0.2,
-                  shadowRadius: 8,
-                  elevation: loading ? 0 : 4,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
-              >
-                {loading && <ActivityIndicator size="small" color="#FFFFFF" />}
-                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
-                  {loading
-                    ? 'Processing...'
-                    : paymentMethod === 'WALLET_ONLY'
-                    ? 'Confirm Booking'
-                    : `Pay ₹${userPayment}`}
-                </Text>
-              </LinearGradient>
+              {loading && <ActivityIndicator size="small" color="#FFFFFF" />}
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                {loading
+                  ? 'Processing...'
+                  : paymentMethod === 'WALLET_ONLY'
+                  ? 'Confirm Booking'
+                  : `Pay ₹${userPayment}`}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
