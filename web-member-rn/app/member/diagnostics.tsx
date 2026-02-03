@@ -629,7 +629,7 @@ export default function DiagnosticsPage() {
                 <View
                   key={prescription.prescriptionId}
                   style={{
-                    backgroundColor: '#F9FAFB',
+                    backgroundColor: COLORS.background,
                     borderRadius: 12,
                     padding: 16,
                     marginBottom: 12,
@@ -661,7 +661,7 @@ export default function DiagnosticsPage() {
                               <View
                                 key={idx}
                                 style={{
-                                  backgroundColor: '#EFF4FF',
+                                  backgroundColor: 'rgba(3, 77, 162, 0.1)',
                                   paddingHorizontal: 8,
                                   paddingVertical: 2,
                                   borderRadius: 4,
@@ -703,7 +703,7 @@ export default function DiagnosticsPage() {
                             }}
                           >
                             <Text style={{ fontSize: 10, fontWeight: '500', color: '#7C3AED' }}>
-                              Order Created
+                              Diagnostic Order Created
                             </Text>
                           </View>
                         )}
@@ -734,7 +734,7 @@ export default function DiagnosticsPage() {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.white }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
                         Review Cart
                       </Text>
                     </TouchableOpacity>
