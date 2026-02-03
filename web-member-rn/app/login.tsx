@@ -217,15 +217,11 @@ export default function LoginScreen() {
           style={{ flex: 1 }}
         >
           {/* Blue Header Strip with Logo */}
-          <View style={{ backgroundColor: '#1E4A8D', paddingVertical: 16, paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: '#1E4A8D', paddingVertical: 24, paddingHorizontal: 40 }}>
             <Image
-              source={
-                Platform.OS === 'web'
-                  ? { uri: '/logos/habit-logo-white.png' }
-                  : require('../assets/images/habit-logo-white.png')
-              }
+              source={require('../assets/images/habit-logo-white.png')}
               resizeMode="contain"
-              style={{ height: 48 }}
+              style={{ width: 220, height: 64 }}
             />
           </View>
 
@@ -451,18 +447,14 @@ export default function LoginScreen() {
           <View
             style={{
               backgroundColor: '#1E4A8D',
-              paddingVertical: isTablet ? 16 : 12,
-              paddingHorizontal: isTablet ? 24 : 16,
+              paddingVertical: isTablet ? 24 : 18,
+              paddingHorizontal: isTablet ? 40 : 24,
             }}
           >
             <Image
-              source={
-                Platform.OS === 'web'
-                  ? { uri: '/logos/habit-logo-white.png' }
-                  : require('../assets/images/habit-logo-white.png')
-              }
+              source={require('../assets/images/habit-logo-white.png')}
               resizeMode="contain"
-              style={{ height: isTablet ? 48 : 40 }}
+              style={{ width: isTablet ? 220 : 180, height: isTablet ? 64 : 52 }}
             />
           </View>
 
@@ -492,45 +484,40 @@ export default function LoginScreen() {
                 }}
               />
 
-              {/* Subtitle */}
-              <Text
-                style={{
-                  fontSize: isTablet ? 16 : 14,
-                  color: 'rgba(255, 255, 255, 0.95)',
-                  textAlign: 'center',
-                  marginBottom: isTablet ? 24 : 16,
-                }}
-              >
-                Your complete healthcare benefits platform
-              </Text>
+              {/* Subtitle - hidden on mobile */}
+              {isTablet && (
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    textAlign: 'center',
+                    marginBottom: 24,
+                  }}
+                >
+                  Your complete healthcare benefits platform
+                </Text>
+              )}
 
-              {/* Feature Cards */}
-              <View style={{ width: '100%', gap: isTablet ? 12 : 8 }}>
-                {/* OPD Coverage - always visible */}
-                <FeatureCard
-                  icon={<ShieldIcon />}
-                  title="OPD Coverage"
-                  description="Complete outpatient care benefits"
-                />
-
-                {/* Easy Claims - hidden on mobile */}
-                {isTablet && (
+              {/* Feature Cards - hidden on mobile */}
+              {isTablet && (
+                <View style={{ width: '100%', gap: 12 }}>
+                  <FeatureCard
+                    icon={<ShieldIcon />}
+                    title="OPD Coverage"
+                    description="Complete outpatient care benefits"
+                  />
                   <FeatureCard
                     icon={<DollarIcon />}
                     title="Easy Claims"
                     description="Quick and hassle-free claim process"
                   />
-                )}
-
-                {/* Family Coverage - hidden on mobile */}
-                {isTablet && (
                   <FeatureCard
                     icon={<UsersIcon />}
                     title="Family Coverage"
                     description="Manage family health benefits"
                   />
-                )}
-              </View>
+                </View>
+              )}
             </View>
           </LinearGradient>
 
