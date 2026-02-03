@@ -9,13 +9,31 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeftIcon,
   UserIcon,
   CheckCircleIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -48,27 +66,18 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const dimensions = sizeMap[size];
 
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: COLORS.iconBg,
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon width={dimensions.icon} height={dimensions.icon} color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -217,8 +226,8 @@ export default function SelectPatientPage() {
 
   if (loading || familyLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -228,13 +237,13 @@ export default function SelectPatientPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -271,10 +280,10 @@ export default function SelectPatientPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
                   Select Patient
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Who is this appointment for?
                 </Text>
               </View>
@@ -296,10 +305,10 @@ export default function SelectPatientPage() {
           {/* ===== PATIENTS GRID OR EMPTY STATE ===== */}
           {patients.length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 8 }}>
                 No Patients Available
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
                 Please contact support if you believe this is an error.
               </Text>
             </View>
@@ -313,87 +322,78 @@ export default function SelectPatientPage() {
                     key={patient.id}
                     onPress={() => handlePatientSelect(patient)}
                     activeOpacity={0.7}
+                    style={{
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: isSelected ? 2 : 1,
+                      borderColor: isSelected ? COLORS.selectedBorder : COLORS.cardBorder,
+                      backgroundColor: COLORS.white,
+                      shadowColor: '#000',
+                      shadowOffset: { width: -2, height: 11 },
+                      shadowOpacity: isSelected ? 0.12 : 0.08,
+                      shadowRadius: 23,
+                      elevation: isSelected ? 4 : 3,
+                    }}
                   >
-                    <LinearGradient
-                      colors={
-                        isSelected
-                          ? ['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']
-                          : ['#EFF4FF', '#FEF3E9', '#FEF3E9']
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                    <View
                       style={{
-                        borderRadius: 12,
-                        padding: 16,
-                        borderWidth: 2,
-                        borderColor: isSelected ? '#86ACD8' : '#F7DCAF',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: isSelected ? 0.15 : 0.05,
-                        shadowRadius: isSelected ? 8 : 4,
-                        elevation: isSelected ? 4 : 2,
+                        flexDirection: 'row',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
                       }}
                     >
+                      {/* Left Side - Patient Info */}
                       <View
                         style={{
                           flexDirection: 'row',
                           alignItems: 'flex-start',
-                          justifyContent: 'space-between',
+                          gap: 12,
+                          flex: 1,
                         }}
                       >
-                        {/* Left Side - Patient Info */}
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'flex-start',
-                            gap: 12,
-                            flex: 1,
-                          }}
-                        >
-                          <IconCircle icon={UserIcon} size="md" />
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={{
-                                fontSize: 16,
-                                fontWeight: '600',
-                                color: '#0E51A2',
-                              }}
-                              numberOfLines={1}
-                            >
-                              {patient.name}
+                        <IconCircle icon={UserIcon} size="md" />
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: '600',
+                              color: COLORS.primaryLight,
+                            }}
+                            numberOfLines={1}
+                          >
+                            {patient.name}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              color: COLORS.textGray,
+                              marginTop: 2,
+                            }}
+                          >
+                            {patient.relationship}
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              gap: 12,
+                              marginTop: 8,
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, color: COLORS.textGray }}>
+                              {patient.age} years
                             </Text>
-                            <Text
-                              style={{
-                                fontSize: 14,
-                                color: '#6B7280',
-                                marginTop: 2,
-                              }}
-                            >
-                              {patient.relationship}
+                            <Text style={{ fontSize: 12, color: COLORS.textGray }}>
+                              {patient.gender}
                             </Text>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                gap: 12,
-                                marginTop: 8,
-                              }}
-                            >
-                              <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                                {patient.age} years
-                              </Text>
-                              <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                                {patient.gender}
-                              </Text>
-                            </View>
                           </View>
                         </View>
-
-                        {/* Right Side - Checkmark if Selected */}
-                        {isSelected && (
-                          <CheckCircleIcon width={24} height={24} color="#25A425" />
-                        )}
                       </View>
-                    </LinearGradient>
+
+                      {/* Right Side - Checkmark if Selected */}
+                      {isSelected && (
+                        <CheckCircleIcon width={24} height={24} color={COLORS.success} />
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -405,37 +405,28 @@ export default function SelectPatientPage() {
             disabled={!selectedPatient}
             onPress={handleContinue}
             activeOpacity={0.8}
+            style={{
+              backgroundColor: selectedPatient ? COLORS.primary : '#9ca3af',
+              paddingHorizontal: 24,
+              paddingVertical: 14,
+              borderRadius: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: selectedPatient ? 0.2 : 0,
+              shadowRadius: 8,
+              elevation: selectedPatient ? 4 : 0,
+              alignItems: 'center',
+            }}
           >
-            <LinearGradient
-              colors={
-                selectedPatient
-                  ? ['#1F63B4', '#5DA4FB']
-                  : ['#9ca3af', '#9ca3af']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+            <Text
               style={{
-                paddingHorizontal: 24,
-                paddingVertical: 14,
-                borderRadius: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: selectedPatient ? 0.2 : 0,
-                shadowRadius: 8,
-                elevation: selectedPatient ? 4 : 0,
-                alignItems: 'center',
+                color: COLORS.white,
+                fontSize: 15,
+                fontWeight: '600',
               }}
             >
-              <Text
-                style={{
-                  color: '#FFFFFF',
-                  fontSize: 15,
-                  fontWeight: '600',
-                }}
-              >
-                Continue
-              </Text>
-            </LinearGradient>
+              Continue
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

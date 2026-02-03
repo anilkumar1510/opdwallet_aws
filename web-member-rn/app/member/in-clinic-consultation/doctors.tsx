@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -23,6 +22,25 @@ import {
   FunnelIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -73,27 +91,18 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const dimensions = sizeMap[size];
 
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: COLORS.iconBg,
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon width={dimensions.icon} height={dimensions.icon} color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -343,8 +352,8 @@ export default function DoctorsPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -354,13 +363,13 @@ export default function DoctorsPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -394,10 +403,10 @@ export default function DoctorsPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
                   Select Doctor
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   {specialtyName || 'Choose your doctor'}
                 </Text>
               </View>
@@ -417,19 +426,22 @@ export default function DoctorsPage() {
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 16 }}>
           {/* ===== LOCATION FILTER CARD ===== */}
-          <LinearGradient
-            colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 12,
               borderWidth: 1,
-              borderColor: '#86ACD8',
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>
                 Filter by Location
               </Text>
               {pincode && (
@@ -439,10 +451,10 @@ export default function DoctorsPage() {
                     paddingHorizontal: 8,
                     paddingVertical: 4,
                     borderRadius: 6,
-                    backgroundColor: 'rgba(224, 233, 255, 0.8)',
+                    backgroundColor: COLORS.iconBg,
                   }}
                 >
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#0F5FDC' }}>Clear</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.primary }}>Clear</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -457,80 +469,75 @@ export default function DoctorsPage() {
                 keyboardType="numeric"
                 style={{
                   flex: 1,
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: COLORS.background,
                   borderWidth: 1,
-                  borderColor: '#86ACD8',
+                  borderColor: COLORS.border,
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   fontSize: 14,
-                  color: '#111827',
+                  color: COLORS.textDark,
                 }}
               />
               <TouchableOpacity
                 onPress={handleUseCurrentLocation}
                 disabled={fetchingLocation}
                 activeOpacity={0.8}
+                style={{
+                  backgroundColor: fetchingLocation ? '#9ca3af' : COLORS.primary,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
               >
-                <LinearGradient
-                  colors={fetchingLocation ? ['#9ca3af', '#9ca3af'] : ['#1F63B4', '#5DA4FB']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  {fetchingLocation ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <MapPinIcon width={16} height={16} color="#FFFFFF" />
-                      <Text style={{ fontSize: 12, fontWeight: '500', color: '#FFFFFF' }}>
-                        Use Current
-                      </Text>
-                    </>
-                  )}
-                </LinearGradient>
+                {fetchingLocation ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <>
+                    <MapPinIcon width={16} height={16} color={COLORS.white} />
+                    <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.white }}>
+                      Use Current
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
 
             {locationName && (
-              <Text style={{ fontSize: 12, fontWeight: '500', color: '#25A425', marginTop: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: '500', color: COLORS.success, marginTop: 8 }}>
                 {locationName}
               </Text>
             )}
 
             {locationError && (
-              <Text style={{ fontSize: 12, color: '#E53535', marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: COLORS.error, marginTop: 8 }}>
                 {locationError}
               </Text>
             )}
 
             {pincode.length > 0 && pincode.length < 6 && !locationError && (
-              <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 8 }}>
                 {6 - pincode.length} more digit(s) required
               </Text>
             )}
-          </LinearGradient>
+          </View>
 
           {/* ===== SEARCH BAR ===== */}
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: COLORS.white,
               borderWidth: 1,
-              borderColor: '#86ACD8',
+              borderColor: COLORS.border,
               borderRadius: 12,
               paddingHorizontal: 12,
             }}
           >
-            <MagnifyingGlassIcon width={20} height={20} color="#0F5FDC" />
+            <MagnifyingGlassIcon width={20} height={20} color={COLORS.primary} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -541,7 +548,7 @@ export default function DoctorsPage() {
                 paddingHorizontal: 12,
                 paddingVertical: 14,
                 fontSize: 14,
-                color: '#111827',
+                color: COLORS.textDark,
               }}
             />
           </View>
@@ -557,13 +564,13 @@ export default function DoctorsPage() {
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 borderWidth: 1,
-                borderColor: '#86ACD8',
+                borderColor: COLORS.border,
                 borderRadius: 12,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: COLORS.white,
               }}
             >
-              <FunnelIcon width={16} height={16} color="#0E51A2" />
-              <Text style={{ fontSize: 14, color: '#0E51A2' }}>Filters</Text>
+              <FunnelIcon width={16} height={16} color={COLORS.primaryLight} />
+              <Text style={{ fontSize: 14, color: COLORS.primaryLight }}>Filters</Text>
             </TouchableOpacity>
 
             {selectedCity && (
@@ -573,10 +580,10 @@ export default function DoctorsPage() {
                   paddingHorizontal: 12,
                   paddingVertical: 10,
                   borderRadius: 12,
-                  backgroundColor: 'rgba(224, 233, 255, 0.8)',
+                  backgroundColor: COLORS.iconBg,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0F5FDC' }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primary }}>
                   {selectedCity} ×
                 </Text>
               </TouchableOpacity>
@@ -585,18 +592,21 @@ export default function DoctorsPage() {
 
           {/* ===== CITY FILTERS ===== */}
           {showFilters && cities.length > 0 && (
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
-                borderRadius: 12,
+                borderRadius: 16,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: '#86ACD8',
+                borderColor: COLORS.cardBorder,
+                backgroundColor: COLORS.white,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2', marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight, marginBottom: 12 }}>
                 Filter by City
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -605,63 +615,56 @@ export default function DoctorsPage() {
                     key={city}
                     onPress={() => handleCityClick(city)}
                     activeOpacity={0.7}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: city === selectedCity ? COLORS.primary : COLORS.border,
+                      backgroundColor: city === selectedCity ? COLORS.primary : COLORS.white,
+                    }}
                   >
-                    <LinearGradient
-                      colors={city === selectedCity ? ['#1F63B4', '#5DA4FB'] : ['#FFFFFF', '#FFFFFF']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
+                    <Text
                       style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 20,
-                        borderWidth: city === selectedCity ? 0 : 1,
-                        borderColor: '#86ACD8',
+                        fontSize: 14,
+                        fontWeight: '500',
+                        color: city === selectedCity ? COLORS.white : COLORS.primaryLight,
                       }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: '500',
-                          color: city === selectedCity ? '#FFFFFF' : '#0E51A2',
-                        }}
-                      >
-                        {city}
-                      </Text>
-                    </LinearGradient>
+                      {city}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            </LinearGradient>
+            </View>
           )}
 
           {/* ===== DOCTORS LIST OR EMPTY STATE ===== */}
           {filteredDoctors.length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
               <IconCircle icon={UserIcon} size="lg" />
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginTop: 16, marginBottom: 8 }}>
                 No doctors found
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
                 Try adjusting your filters or search term
               </Text>
             </View>
           ) : (
             <View style={{ gap: 16 }}>
               {filteredDoctors.map((doctor) => (
-                <LinearGradient
+                <View
                   key={doctor._id}
-                  colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
                   style={{
-                    borderRadius: 12,
+                    borderRadius: 16,
                     padding: 16,
-                    borderWidth: 2,
-                    borderColor: '#F7DCAF',
+                    borderWidth: 1,
+                    borderColor: COLORS.cardBorder,
+                    backgroundColor: COLORS.white,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
                     elevation: 3,
                   }}
                 >
@@ -675,28 +678,28 @@ export default function DoctorsPage() {
                           height: 64,
                           borderRadius: 32,
                           borderWidth: 2,
-                          borderColor: 'rgba(164, 191, 254, 0.48)',
+                          borderColor: COLORS.border,
                         }}
                       />
                     ) : (
                       <IconCircle icon={UserIcon} size="lg" />
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2' }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight }}>
                         {doctor.name}
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                         {doctor.qualifications}
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                      <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                         {doctor.experience} years experience
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                         <StarIcon width={16} height={16} color="#F59E0B" />
-                        <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                        <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>
                           {doctor.rating}
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray }}>
                           ({doctor.reviewCount} reviews)
                         </Text>
                       </View>
@@ -707,21 +710,19 @@ export default function DoctorsPage() {
                   {doctor.clinics && doctor.clinics.length > 0 ? (
                     <View style={{ gap: 12 }}>
                       {doctor.clinics.map((clinic, index) => (
-                        <LinearGradient
+                        <View
                           key={index}
-                          colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
                           style={{
-                            borderRadius: 8,
+                            borderRadius: 12,
                             padding: 12,
                             borderWidth: 1,
-                            borderColor: '#86ACD8',
+                            borderColor: COLORS.border,
+                            backgroundColor: COLORS.background,
                           }}
                         >
                           <View style={{ marginBottom: 8 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>
+                              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>
                                 {clinic.name}
                               </Text>
                               {clinic.distanceText && (
@@ -730,10 +731,10 @@ export default function DoctorsPage() {
                                     paddingHorizontal: 8,
                                     paddingVertical: 2,
                                     borderRadius: 12,
-                                    backgroundColor: '#25A425',
+                                    backgroundColor: COLORS.success,
                                   }}
                                 >
-                                  <Text style={{ fontSize: 10, color: '#FFFFFF' }}>
+                                  <Text style={{ fontSize: 10, color: COLORS.white }}>
                                     {clinic.distanceText}
                                   </Text>
                                 </View>
@@ -741,9 +742,9 @@ export default function DoctorsPage() {
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 4 }}>
                               <View style={{ marginTop: 2 }}>
-                                <MapPinIcon width={14} height={14} color="#0F5FDC" />
+                                <MapPinIcon width={14} height={14} color={COLORS.primary} />
                               </View>
-                              <Text style={{ fontSize: 12, color: '#6B7280', flex: 1 }} numberOfLines={2}>
+                              <Text style={{ fontSize: 12, color: COLORS.textGray, flex: 1 }} numberOfLines={2}>
                                 {clinic.address}
                               </Text>
                             </View>
@@ -756,57 +757,50 @@ export default function DoctorsPage() {
                               justifyContent: 'space-between',
                               paddingTop: 8,
                               borderTopWidth: 1,
-                              borderTopColor: '#86ACD8',
+                              borderTopColor: COLORS.border,
                             }}
                           >
                             <View>
-                              <Text style={{ fontSize: 12, color: '#6B7280' }}>Consultation:</Text>
-                              <Text style={{ fontSize: 14, fontWeight: '600', color: '#25A425' }}>
+                              <Text style={{ fontSize: 12, color: COLORS.textGray }}>Consultation:</Text>
+                              <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.success }}>
                                 ₹{clinic.consultationFee}
                               </Text>
                             </View>
                             <TouchableOpacity
                               onPress={() => handleBookAppointment(doctor, clinic)}
                               activeOpacity={0.8}
+                              style={{
+                                backgroundColor: COLORS.primary,
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                borderRadius: 8,
+                              }}
                             >
-                              <LinearGradient
-                                colors={['#1F63B4', '#5DA4FB']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={{
-                                  paddingHorizontal: 16,
-                                  paddingVertical: 8,
-                                  borderRadius: 8,
-                                }}
-                              >
-                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>
-                                  Book Appointment
-                                </Text>
-                              </LinearGradient>
+                              <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.white }}>
+                                Book Appointment
+                              </Text>
                             </TouchableOpacity>
                           </View>
-                        </LinearGradient>
+                        </View>
                       ))}
                     </View>
                   ) : (
-                    <LinearGradient
-                      colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                    <View
                       style={{
-                        borderRadius: 8,
+                        borderRadius: 12,
                         padding: 16,
                         borderWidth: 1,
-                        borderColor: '#86ACD8',
+                        borderColor: COLORS.border,
+                        backgroundColor: COLORS.background,
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                      <Text style={{ fontSize: 14, color: COLORS.textGray }}>
                         No clinic locations available
                       </Text>
-                    </LinearGradient>
+                    </View>
                   )}
-                </LinearGradient>
+                </View>
               ))}
             </View>
           )}

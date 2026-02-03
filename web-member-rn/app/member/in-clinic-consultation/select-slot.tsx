@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -17,6 +16,25 @@ import {
   ChevronRightIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -226,8 +244,8 @@ export default function SelectSlotPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -237,13 +255,13 @@ export default function SelectSlotPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -277,10 +295,10 @@ export default function SelectSlotPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
                   Select Date & Time
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   {doctorName || 'Choose your appointment slot'}
                 </Text>
               </View>
@@ -300,21 +318,24 @@ export default function SelectSlotPage() {
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%', gap: 16 }}>
           {/* ===== DATE PICKER CARD ===== */}
-          <LinearGradient
-            colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          <View
             style={{
-              borderRadius: 12,
+              borderRadius: 16,
               padding: 16,
-              borderWidth: 2,
-              borderColor: '#F7DCAF',
+              borderWidth: 1,
+              borderColor: COLORS.cardBorder,
+              backgroundColor: COLORS.white,
+              shadowColor: '#000',
+              shadowOffset: { width: -2, height: 11 },
+              shadowOpacity: 0.08,
+              shadowRadius: 23,
+              elevation: 3,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <CalendarIcon width={20} height={20} color="#0F5FDC" />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2' }}>Select Date</Text>
+                <CalendarIcon width={20} height={20} color={COLORS.primary} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>Select Date</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity
@@ -326,7 +347,7 @@ export default function SelectSlotPage() {
                     opacity: currentWeekStart === 0 ? 0.3 : 1,
                   }}
                 >
-                  <ChevronLeftIcon width={20} height={20} color="#0E51A2" />
+                  <ChevronLeftIcon width={20} height={20} color={COLORS.primaryLight} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleNextWeek}
@@ -337,7 +358,7 @@ export default function SelectSlotPage() {
                     opacity: currentWeekStart + 5 >= daySlots.length ? 0.3 : 1,
                   }}
                 >
-                  <ChevronRightIcon width={20} height={20} color="#0E51A2" />
+                  <ChevronRightIcon width={20} height={20} color={COLORS.primaryLight} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -352,91 +373,87 @@ export default function SelectSlotPage() {
                       key={day.dateStr}
                       onPress={() => handleDateSelect(day.dateStr)}
                       activeOpacity={0.7}
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        minWidth: 72,
+                        backgroundColor: isSelected ? COLORS.primary : COLORS.background,
+                        borderWidth: 1,
+                        borderColor: isSelected ? COLORS.primary : COLORS.border,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: isSelected ? 4 : 0 },
+                        shadowOpacity: isSelected ? 0.2 : 0,
+                        shadowRadius: isSelected ? 8 : 0,
+                        elevation: isSelected ? 4 : 0,
+                      }}
                     >
-                      <LinearGradient
-                        colors={isSelected ? ['#1F63B4', '#5DA4FB'] : ['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
+                      <Text
                         style={{
-                          paddingHorizontal: 16,
-                          paddingVertical: 12,
-                          borderRadius: 12,
-                          alignItems: 'center',
-                          minWidth: 72,
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: isSelected ? 4 : 0 },
-                          shadowOpacity: isSelected ? 0.2 : 0,
-                          shadowRadius: isSelected ? 8 : 0,
-                          elevation: isSelected ? 4 : 0,
+                          fontSize: 12,
+                          fontWeight: '500',
+                          color: isSelected ? COLORS.white : COLORS.primaryLight,
+                          marginBottom: 4,
                         }}
                       >
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontWeight: '500',
-                            color: isSelected ? '#FFFFFF' : '#0E51A2',
-                            marginBottom: 4,
-                          }}
-                        >
-                          {day.dayName}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: '600',
-                            color: isSelected ? '#FFFFFF' : '#0E51A2',
-                          }}
-                        >
-                          {formatDate(day.date)}
-                        </Text>
-                      </LinearGradient>
+                        {day.dayName}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: '600',
+                          color: isSelected ? COLORS.white : COLORS.primaryLight,
+                        }}
+                      >
+                        {formatDate(day.date)}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </ScrollView>
-          </LinearGradient>
+          </View>
 
           {/* ===== TIME SLOTS CARD ===== */}
           {selectedDaySlots && (
-            <LinearGradient
-              colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={{
-                borderRadius: 12,
+                borderRadius: 16,
                 padding: 16,
-                borderWidth: 2,
-                borderColor: '#86ACD8',
+                borderWidth: 1,
+                borderColor: COLORS.cardBorder,
+                backgroundColor: COLORS.white,
+                shadowColor: '#000',
+                shadowOffset: { width: -2, height: 11 },
+                shadowOpacity: 0.08,
+                shadowRadius: 23,
+                elevation: 3,
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2', marginBottom: 16 }}>
+              <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight, marginBottom: 16 }}>
                 Available Time Slots
               </Text>
 
               {selectedDaySlots.slots.filter((s) => s.available).length === 0 ? (
                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                  <LinearGradient
-                    colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  <View
                     style={{
                       width: 64,
                       height: 64,
                       borderRadius: 32,
                       justifyContent: 'center',
                       alignItems: 'center',
-                      borderWidth: 1,
-                      borderColor: 'rgba(164, 191, 254, 0.48)',
+                      backgroundColor: COLORS.iconBg,
                       marginBottom: 16,
                     }}
                   >
-                    <CalendarIcon width={32} height={32} color="#0F5FDC" />
-                  </LinearGradient>
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#0E51A2', marginBottom: 4 }}>
+                    <CalendarIcon width={32} height={32} color={COLORS.primary} />
+                  </View>
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight, marginBottom: 4 }}>
                     No slots available
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>Please select a different date</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textGray }}>Please select a different date</Text>
                 </View>
               ) : (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -450,49 +467,38 @@ export default function SelectSlotPage() {
                         onPress={() => isAvailable && handleSlotSelect(slot.time, slot.slotId)}
                         disabled={!isAvailable}
                         activeOpacity={0.7}
-                        style={{ width: '31%' }}
+                        style={{
+                          width: '31%',
+                          paddingVertical: 10,
+                          paddingHorizontal: 8,
+                          borderRadius: 12,
+                          alignItems: 'center',
+                          borderWidth: 1,
+                          borderColor: isSelected ? COLORS.primary : isAvailable ? COLORS.border : '#e5e7eb',
+                          backgroundColor: isSelected ? COLORS.primary : isAvailable ? COLORS.background : '#f3f4f6',
+                          opacity: isAvailable ? 1 : 0.5,
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: isSelected ? 4 : 0 },
+                          shadowOpacity: isSelected ? 0.2 : 0,
+                          shadowRadius: isSelected ? 8 : 0,
+                          elevation: isSelected ? 4 : 0,
+                        }}
                       >
-                        <LinearGradient
-                          colors={
-                            isSelected
-                              ? ['#1F63B4', '#5DA4FB']
-                              : isAvailable
-                              ? ['#EFF4FF', '#FEF3E9']
-                              : ['#f3f4f6', '#f3f4f6']
-                          }
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
+                        <Text
                           style={{
-                            paddingVertical: 10,
-                            paddingHorizontal: 8,
-                            borderRadius: 12,
-                            alignItems: 'center',
-                            borderWidth: isSelected ? 0 : 1,
-                            borderColor: isAvailable ? '#F7DCAF' : '#e5e7eb',
-                            opacity: isAvailable ? 1 : 0.5,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: isSelected ? 4 : 0 },
-                            shadowOpacity: isSelected ? 0.2 : 0,
-                            shadowRadius: isSelected ? 8 : 0,
-                            elevation: isSelected ? 4 : 0,
+                            fontSize: 12,
+                            fontWeight: '500',
+                            color: isSelected ? COLORS.white : isAvailable ? COLORS.primaryLight : '#9ca3af',
                           }}
                         >
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              fontWeight: '500',
-                              color: isSelected ? '#FFFFFF' : isAvailable ? '#0E51A2' : '#9ca3af',
-                            }}
-                          >
-                            {slot.time}
-                          </Text>
-                        </LinearGradient>
+                          {slot.time}
+                        </Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               )}
-            </LinearGradient>
+            </View>
           )}
 
           {/* ===== CONTINUE BUTTON ===== */}
@@ -500,25 +506,20 @@ export default function SelectSlotPage() {
             disabled={!selectedDate || !selectedSlot}
             onPress={handleContinue}
             activeOpacity={0.8}
+            style={{
+              backgroundColor: selectedDate && selectedSlot ? COLORS.primary : '#9ca3af',
+              paddingHorizontal: 24,
+              paddingVertical: 14,
+              borderRadius: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: selectedDate && selectedSlot ? 4 : 0 },
+              shadowOpacity: selectedDate && selectedSlot ? 0.2 : 0,
+              shadowRadius: 8,
+              elevation: selectedDate && selectedSlot ? 4 : 0,
+              alignItems: 'center',
+            }}
           >
-            <LinearGradient
-              colors={selectedDate && selectedSlot ? ['#1F63B4', '#5DA4FB'] : ['#9ca3af', '#9ca3af']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                paddingHorizontal: 24,
-                paddingVertical: 14,
-                borderRadius: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: selectedDate && selectedSlot ? 4 : 0 },
-                shadowOpacity: selectedDate && selectedSlot ? 0.2 : 0,
-                shadowRadius: 8,
-                elevation: selectedDate && selectedSlot ? 4 : 0,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>Continue</Text>
-            </LinearGradient>
+            <Text style={{ color: COLORS.white, fontSize: 15, fontWeight: '600' }}>Continue</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

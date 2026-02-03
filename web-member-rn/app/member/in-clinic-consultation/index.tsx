@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -22,6 +21,25 @@ import {
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import apiClient from '../../../src/lib/api/client';
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+const COLORS = {
+  primary: '#034DA2',
+  primaryLight: '#0E51A2',
+  textDark: '#1c1c1c',
+  textGray: '#6B7280',
+  background: '#f7f7fc',
+  white: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: 'rgba(217, 217, 217, 0.48)',
+  success: '#16a34a',
+  error: '#DC2626',
+  selectedBorder: '#86ACD8',
+  iconBg: 'rgba(3, 77, 162, 0.1)',
+};
 
 // ============================================================================
 // TYPES
@@ -62,27 +80,18 @@ const IconCircle: React.FC<IconCircleProps> = ({ icon: Icon, size = 'md' }) => {
   const dimensions = sizeMap[size];
 
   return (
-    <LinearGradient
-      colors={['rgba(223, 232, 255, 0.75)', 'rgba(189, 209, 255, 0.75)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={{
         width: dimensions.container,
         height: dimensions.container,
         borderRadius: dimensions.container / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(164, 191, 254, 0.48)',
-        shadowColor: '#000',
-        shadowOffset: { width: -2, height: 11 },
-        shadowOpacity: 0.05,
-        shadowRadius: 46.1,
-        elevation: 4,
+        backgroundColor: COLORS.iconBg,
       }}
     >
-      <Icon width={dimensions.icon} height={dimensions.icon} color="#0F5FDC" />
-    </LinearGradient>
+      <Icon width={dimensions.icon} height={dimensions.icon} color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -296,8 +305,8 @@ export default function InClinicConsultationPage() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#f7f7fc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0F5FDC" />
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -307,13 +316,13 @@ export default function InClinicConsultationPage() {
   // ============================================================================
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f7f7fc' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       {/* ===== HEADER (STICKY) ===== */}
       <View
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: COLORS.white,
           borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
+          borderBottomColor: COLORS.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.05,
@@ -347,10 +356,10 @@ export default function InClinicConsultationPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#0E51A2' }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primaryLight }}>
                   In-Clinic Appointments
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   View and manage your appointments
                 </Text>
               </View>
@@ -368,70 +377,67 @@ export default function InClinicConsultationPage() {
           paddingBottom: 96,
         }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#0F5FDC']} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[COLORS.primary]} />
         }
       >
         <View style={{ maxWidth: 480, marginHorizontal: 'auto', width: '100%' }}>
           {/* ===== BOOK NEW APPOINTMENT CTA ===== */}
-          <TouchableOpacity onPress={handleBookAppointment} activeOpacity={0.8} style={{ marginBottom: 24 }}>
-            <LinearGradient
-              colors={['#1F63B4', '#5DA4FB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                paddingHorizontal: 24,
-                paddingVertical: 14,
-                borderRadius: 12,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                elevation: 4,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <PlusIcon width={20} height={20} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
-                Book New Appointment
-              </Text>
-            </LinearGradient>
+          <TouchableOpacity
+            onPress={handleBookAppointment}
+            activeOpacity={0.8}
+            style={{
+              marginBottom: 24,
+              backgroundColor: COLORS.primary,
+              paddingHorizontal: 24,
+              paddingVertical: 14,
+              borderRadius: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <PlusIcon width={20} height={20} color={COLORS.white} />
+            <Text style={{ color: COLORS.white, fontSize: 15, fontWeight: '600' }}>
+              Book New Appointment
+            </Text>
           </TouchableOpacity>
 
           {/* ===== APPOINTMENTS LIST OR EMPTY STATE ===== */}
           {appointments.length === 0 ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
               <IconCircle icon={CalendarIcon} size="lg" />
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#0E51A2', marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primaryLight, marginTop: 16, marginBottom: 8 }}>
                 No appointments yet
               </Text>
-              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center' }}>
+              <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
                 Book your first appointment to get started
               </Text>
             </View>
           ) : (
             <View style={{ gap: 16 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#0E51A2', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primaryLight, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Your Appointments ({appointments.length})
               </Text>
 
               {appointments.map((appointment) => (
-                <LinearGradient
+                <View
                   key={appointment._id}
-                  colors={['#EFF4FF', '#FEF3E9', '#FEF3E9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
                   style={{
-                    borderRadius: 12,
+                    borderRadius: 16,
                     padding: 16,
-                    borderWidth: 2,
-                    borderColor: '#F7DCAF',
+                    borderWidth: 1,
+                    borderColor: COLORS.cardBorder,
+                    backgroundColor: COLORS.white,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
+                    shadowOffset: { width: -2, height: 11 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 23,
                     elevation: 3,
                   }}
                 >
@@ -440,10 +446,10 @@ export default function InClinicConsultationPage() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                       <IconCircle icon={UserIcon} size="md" />
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#0E51A2' }} numberOfLines={1}>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.primaryLight }} numberOfLines={1}>
                           {appointment.doctorName}
                         </Text>
-                        <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                        <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                           {appointment.specialty}
                         </Text>
                       </View>
@@ -456,68 +462,66 @@ export default function InClinicConsultationPage() {
                         backgroundColor: getStatusColor(appointment.status),
                       }}
                     >
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#FFFFFF' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: COLORS.white }}>
                         {getStatusText(appointment.status)}
                       </Text>
                     </View>
                   </View>
 
                   {/* Appointment Details */}
-                  <LinearGradient
-                    colors={['rgba(224, 233, 255, 0.48)', 'rgba(200, 216, 255, 0.48)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                  <View
                     style={{
-                      borderRadius: 8,
+                      borderRadius: 12,
                       padding: 12,
                       borderWidth: 1,
-                      borderColor: '#86ACD8',
+                      borderColor: COLORS.border,
+                      backgroundColor: COLORS.background,
                       marginBottom: 16,
                     }}
                   >
                     <View style={{ gap: 12 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <UserIcon width={16} height={16} color="#0F5FDC" />
-                        <Text style={{ fontSize: 13, color: '#6B7280' }}>Patient:</Text>
-                        <Text style={{ fontSize: 13, fontWeight: '500', color: '#0E51A2', flex: 1 }} numberOfLines={1}>
+                        <UserIcon width={16} height={16} color={COLORS.primary} />
+                        <Text style={{ fontSize: 13, color: COLORS.textGray }}>Patient:</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primaryLight, flex: 1 }} numberOfLines={1}>
                           {appointment.patientName}
                         </Text>
                       </View>
 
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <CalendarIcon width={16} height={16} color="#0F5FDC" />
-                        <Text style={{ fontSize: 13, color: '#6B7280' }}>Date:</Text>
-                        <Text style={{ fontSize: 13, fontWeight: '500', color: '#0E51A2' }}>
+                        <CalendarIcon width={16} height={16} color={COLORS.primary} />
+                        <Text style={{ fontSize: 13, color: COLORS.textGray }}>Date:</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primaryLight }}>
                           {formatDate(appointment.appointmentDate)}
                         </Text>
                       </View>
 
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <ClockIcon width={16} height={16} color="#0F5FDC" />
-                        <Text style={{ fontSize: 13, color: '#6B7280' }}>Time:</Text>
-                        <Text style={{ fontSize: 13, fontWeight: '500', color: '#0E51A2' }}>
+                        <ClockIcon width={16} height={16} color={COLORS.primary} />
+                        <Text style={{ fontSize: 13, color: COLORS.textGray }}>Time:</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primaryLight }}>
                           {appointment.timeSlot}
                         </Text>
                       </View>
 
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                         <View style={{ marginTop: 2 }}>
-                          <MapPinIcon width={16} height={16} color="#0F5FDC" />
+                          <MapPinIcon width={16} height={16} color={COLORS.primary} />
                         </View>
-                        <Text style={{ fontSize: 13, color: '#6B7280' }}>Clinic:</Text>
-                        <Text style={{ fontSize: 13, fontWeight: '500', color: '#0E51A2', flex: 1 }} numberOfLines={2}>
+                        <Text style={{ fontSize: 13, color: COLORS.textGray }}>Clinic:</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primaryLight, flex: 1 }} numberOfLines={2}>
                           {appointment.clinicName}
                         </Text>
                       </View>
                     </View>
-                  </LinearGradient>
+                  </View>
 
                   {/* Appointment ID and Fee */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingHorizontal: 4 }}>
-                    <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                      ID: <Text style={{ fontWeight: '600', color: '#0E51A2' }}>{appointment.appointmentId}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.textGray }}>
+                      ID: <Text style={{ fontWeight: '600', color: COLORS.primaryLight }}>{appointment.appointmentId}</Text>
                     </Text>
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#25A425' }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: COLORS.success }}>
                       ₹{appointment.consultationFee}
                     </Text>
                   </View>
@@ -527,23 +531,20 @@ export default function InClinicConsultationPage() {
                     <TouchableOpacity
                       onPress={() => handleCancelAppointment(appointment.appointmentId)}
                       activeOpacity={0.8}
+                      style={{
+                        backgroundColor: COLORS.error,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
                     >
-                      <View
-                        style={{
-                          backgroundColor: '#E53535',
-                          paddingVertical: 12,
-                          paddingHorizontal: 16,
-                          borderRadius: 12,
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
-                          Cancel Appointment
-                        </Text>
-                      </View>
+                      <Text style={{ color: COLORS.white, fontSize: 14, fontWeight: '600' }}>
+                        Cancel Appointment
+                      </Text>
                     </TouchableOpacity>
                   )}
-                </LinearGradient>
+                </View>
               ))}
             </View>
           )}
