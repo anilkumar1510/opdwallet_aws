@@ -235,6 +235,22 @@ export default function BookingsPage() {
   // AHC eligibility (checked separately via eligibility endpoint)
   const [ahcCovered, setAhcCovered] = useState<boolean>(false);
 
+  // Load More state - show only 4 cards initially per section
+  const CARDS_PER_PAGE = 4;
+  const [showAllUpcomingDental, setShowAllUpcomingDental] = useState(false);
+  const [showAllPastDental, setShowAllPastDental] = useState(false);
+  const [showAllUpcomingVision, setShowAllUpcomingVision] = useState(false);
+  const [showAllPastVision, setShowAllPastVision] = useState(false);
+  const [showAllUpcomingAppointments, setShowAllUpcomingAppointments] = useState(false);
+  const [showAllPastAppointments, setShowAllPastAppointments] = useState(false);
+  const [showAllLabPrescriptions, setShowAllLabPrescriptions] = useState(false);
+  const [showAllLabOrders, setShowAllLabOrders] = useState(false);
+  const [showAllLabCarts, setShowAllLabCarts] = useState(false);
+  const [showAllDiagnosticPrescriptions, setShowAllDiagnosticPrescriptions] = useState(false);
+  const [showAllDiagnosticOrders, setShowAllDiagnosticOrders] = useState(false);
+  const [showAllDiagnosticCarts, setShowAllDiagnosticCarts] = useState(false);
+  const [showAllAhcOrders, setShowAllAhcOrders] = useState(false);
+
   // Map tab names to category codes
   const tabToCategoryCode: Record<string, string> = {
     doctors: 'CAT001',      // Doctor Consult / In-Clinic Appointments
@@ -1629,36 +1645,22 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: COLORS.iconBg,
-              }}
-            >
-              <SparklesIcon width={24} height={24} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                {booking.serviceName}
-              </Text>
-              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
-                {booking.clinicName}
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              {booking.serviceName}
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {booking.clinicName}
+            </Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
             <View
               style={{
-                paddingHorizontal: 12,
+                paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 9999,
-                ...getStatusColor(booking.status),
+                borderRadius: 6,
+                backgroundColor: getStatusColor(booking.status).backgroundColor,
               }}
             >
               <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(booking.status).color }}>
@@ -1668,10 +1670,10 @@ export default function BookingsPage() {
             {booking.paymentStatus && (
               <View
                 style={{
-                  paddingHorizontal: 12,
+                  paddingHorizontal: 10,
                   paddingVertical: 4,
-                  borderRadius: 9999,
-                  ...getPaymentStatusColor(booking.paymentStatus),
+                  borderRadius: 6,
+                  backgroundColor: getPaymentStatusColor(booking.paymentStatus).backgroundColor,
                 }}
               >
                 <Text
@@ -1689,28 +1691,19 @@ export default function BookingsPage() {
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {booking.patientName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{formatDate(booking.appointmentDate)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{booking.appointmentTime}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
-              {booking.clinicAddress.city}, {booking.clinicAddress.state}
-            </Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Patient: </Text>{booking.patientName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Date: </Text>{formatDate(booking.appointmentDate)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Time: </Text>{booking.appointmentTime}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
+            <Text style={{ color: COLORS.textGray }}>Location: </Text>{booking.clinicAddress.city}, {booking.clinicAddress.state}
+          </Text>
         </View>
 
         {/* Footer */}
@@ -1751,20 +1744,21 @@ export default function BookingsPage() {
           )}
 
           {/* Action Buttons */}
-          <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             {canCancel && (
               <TouchableOpacity
                 onPress={() => handleCancelDentalBooking(booking.bookingId, booking.serviceName)}
                 style={{
+                  flex: 1,
                   backgroundColor: '#FEF2F2',
-                  paddingVertical: 8,
+                  paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Cancel Booking</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.error }}>Cancel</Text>
               </TouchableOpacity>
             )}
 
@@ -1773,19 +1767,16 @@ export default function BookingsPage() {
               <TouchableOpacity
                 onPress={() => handleViewInvoice(booking)}
                 style={{
-                  backgroundColor: COLORS.iconBg,
-                  paddingVertical: 8,
+                  flex: 1,
+                  backgroundColor: COLORS.primary,
+                  paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
                 }}
                 activeOpacity={0.7}
               >
-                <DocumentArrowDownIcon width={16} height={16} color={COLORS.primary} />
-                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary }}>View Invoice</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>View Invoice</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1828,36 +1819,22 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: COLORS.iconBg,
-              }}
-            >
-              <EyeIcon width={24} height={24} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                {booking.serviceName}
-              </Text>
-              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
-                {booking.clinicName}
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              {booking.serviceName}
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {booking.clinicName}
+            </Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
             <View
               style={{
-                paddingHorizontal: 12,
+                paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 9999,
-                ...getStatusColor(booking.status),
+                borderRadius: 6,
+                backgroundColor: getStatusColor(booking.status).backgroundColor,
               }}
             >
               <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(booking.status).color }}>
@@ -1867,10 +1844,10 @@ export default function BookingsPage() {
             {booking.paymentStatus && (
               <View
                 style={{
-                  paddingHorizontal: 12,
+                  paddingHorizontal: 10,
                   paddingVertical: 4,
-                  borderRadius: 9999,
-                  ...getPaymentStatusColor(booking.paymentStatus),
+                  borderRadius: 6,
+                  backgroundColor: getPaymentStatusColor(booking.paymentStatus).backgroundColor,
                 }}
               >
                 <Text
@@ -1888,28 +1865,19 @@ export default function BookingsPage() {
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {booking.patientName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{formatDate(booking.appointmentDate)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{booking.appointmentTime}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
-              {booking.clinicAddress.city}, {booking.clinicAddress.state}
-            </Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Patient: </Text>{booking.patientName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Date: </Text>{formatDate(booking.appointmentDate)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Time: </Text>{booking.appointmentTime}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
+            <Text style={{ color: COLORS.textGray }}>Location: </Text>{booking.clinicAddress.city}, {booking.clinicAddress.state}
+          </Text>
         </View>
 
         {/* Footer */}
@@ -1922,7 +1890,7 @@ export default function BookingsPage() {
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Text style={{ fontSize: 13, color: COLORS.textGray }}>
-              ID: <Text style={{ fontWeight: '500' }}>{booking.bookingId}</Text>
+              ID: <Text style={{ fontWeight: '500', color: COLORS.textDark }}>{booking.bookingId}</Text>
             </Text>
             <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{booking.servicePrice}
@@ -1950,13 +1918,14 @@ export default function BookingsPage() {
           )}
 
           {/* Action Buttons */}
-          <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             {/* View and Pay Bill - Show when bill generated but payment pending */}
             {booking.billGenerated && booking.paymentStatus === 'PENDING' && (
               <TouchableOpacity
                 onPress={() => router.push(`/member/vision/payment/${booking.bookingId}` as any)}
                 activeOpacity={0.8}
                 style={{
+                  flex: 1,
                   paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
@@ -1964,8 +1933,8 @@ export default function BookingsPage() {
                   backgroundColor: COLORS.primary,
                 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
-                  View and Pay Bill
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>
+                  View & Pay Bill
                 </Text>
               </TouchableOpacity>
             )}
@@ -1975,19 +1944,16 @@ export default function BookingsPage() {
               <TouchableOpacity
                 onPress={() => handleViewInvoice(booking)}
                 style={{
-                  backgroundColor: '#DCFCE7',
+                  flex: 1,
+                  backgroundColor: COLORS.primary,
                   paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
                 }}
                 activeOpacity={0.7}
               >
-                <DocumentArrowDownIcon width={16} height={16} color={COLORS.success} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>View/Download Invoice</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>View Invoice</Text>
               </TouchableOpacity>
             )}
 
@@ -2015,6 +1981,7 @@ export default function BookingsPage() {
               <TouchableOpacity
                 onPress={() => handleCancelVisionBooking(booking.bookingId, booking.serviceName)}
                 style={{
+                  flex: 1,
                   backgroundColor: '#FEF2F2',
                   paddingVertical: 10,
                   paddingHorizontal: 12,
@@ -2023,7 +1990,7 @@ export default function BookingsPage() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Cancel Booking</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.error }}>Cancel</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -2057,40 +2024,22 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: appointment.appointmentType === 'ONLINE' ? 'rgba(22, 163, 74, 0.1)' : COLORS.iconBg,
-              }}
-            >
-              {appointment.appointmentType === 'ONLINE' ? (
-                <VideoCameraIcon width={24} height={24} color={COLORS.success} />
-              ) : (
-                <HeartIcon width={24} height={24} color={COLORS.primary} />
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                Dr. {appointment.doctorName}
-              </Text>
-              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
-                {appointment.specialty} {appointment.appointmentType === 'ONLINE' && <Text style={{ color: COLORS.success, fontWeight: '500' }}>(Online)</Text>}
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              Dr. {appointment.doctorName}
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {appointment.specialty} {appointment.appointmentType === 'ONLINE' && <Text style={{ color: COLORS.success, fontWeight: '500' }}>(Online)</Text>}
+            </Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
             <View
               style={{
-                paddingHorizontal: 12,
+                paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 9999,
-                ...getStatusColor(appointment.status),
+                borderRadius: 6,
+                backgroundColor: getStatusColor(appointment.status).backgroundColor,
               }}
             >
               <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(appointment.status).color }}>
@@ -2101,28 +2050,20 @@ export default function BookingsPage() {
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>Patient: {appointment.patientName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{formatDate(appointment.appointmentDate)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: COLORS.textDark }}>{appointment.timeSlot}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color={COLORS.primary} />
-            <Text style={{ fontSize: 13, color: appointment.appointmentType === 'ONLINE' ? COLORS.primary : COLORS.textDark, fontWeight: appointment.appointmentType === 'ONLINE' ? '500' : 'normal' }} numberOfLines={1}>
-              {appointment.appointmentType === 'ONLINE' ? 'Online Consultation' : appointment.clinicName}
-            </Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Patient: </Text>{appointment.patientName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Date: </Text>{formatDate(appointment.appointmentDate)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Time: </Text>{appointment.timeSlot}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }} numberOfLines={1}>
+            <Text style={{ color: COLORS.textGray }}>Location: </Text>
+            {appointment.appointmentType === 'ONLINE' ? 'Online Consultation' : appointment.clinicName}
+          </Text>
         </View>
 
         {/* Footer */}
@@ -2135,7 +2076,7 @@ export default function BookingsPage() {
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Text style={{ fontSize: 13, color: COLORS.textGray }}>
-              ID: <Text style={{ fontWeight: '500' }}>{appointment.appointmentNumber}</Text>
+              ID: <Text style={{ fontWeight: '500', color: COLORS.textDark }}>{appointment.appointmentNumber}</Text>
             </Text>
             <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{appointment.consultationFee}
@@ -2143,22 +2084,23 @@ export default function BookingsPage() {
           </View>
 
           {/* Action Buttons */}
-          <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             {appointment.hasPrescription && appointment.prescriptionId && (
               <TouchableOpacity
                 onPress={() => {
                   Alert.alert('Prescription', 'Prescription viewing will be implemented');
                 }}
                 style={{
-                  backgroundColor: COLORS.iconBg,
-                  paddingVertical: 8,
+                  flex: 1,
+                  backgroundColor: COLORS.primary,
+                  paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.primary }}>View Prescription</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>View Prescription</Text>
               </TouchableOpacity>
             )}
 
@@ -2170,19 +2112,16 @@ export default function BookingsPage() {
                   router.push(`/member/consultations/${appointment._id}` as any);
                 }}
                 style={{
+                  flex: 1,
                   backgroundColor: COLORS.success,
-                  paddingVertical: 8,
+                  paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 6,
                 }}
                 activeOpacity={0.7}
               >
-                <VideoCameraIcon width={16} height={16} color="#FFFFFF" />
-                <Text style={{ fontSize: 13, fontWeight: '500', color: '#FFFFFF' }}>Join Call</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>Join Call</Text>
               </TouchableOpacity>
             )}
 
@@ -2190,15 +2129,16 @@ export default function BookingsPage() {
               <TouchableOpacity
                 onPress={() => handleCancelAppointment(appointment.appointmentId, appointment.doctorName)}
                 style={{
+                  flex: 1,
                   backgroundColor: '#FEF2F2',
-                  paddingVertical: 8,
+                  paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.error }}>Cancel Appointment</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.error }}>Cancel</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -2235,37 +2175,21 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
-              }}
-            >
-              <BeakerIcon width={24} height={24} color="#0F5FDC" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
-                Lab Prescription
-              </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
-                {statusText}
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              Lab Prescription
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {statusText}
+            </Text>
           </View>
           <View
             style={{
-              paddingHorizontal: 12,
+              paddingHorizontal: 10,
               paddingVertical: 4,
-              borderRadius: 9999,
-              ...statusColor,
+              borderRadius: 6,
+              backgroundColor: statusColor.backgroundColor,
             }}
           >
             <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
@@ -2275,21 +2199,16 @@ export default function BookingsPage() {
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {prescription.patientName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Uploaded: {formatDate(prescription.uploadedAt)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Pincode: {prescription.pincode}</Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Patient: </Text>{prescription.patientName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Uploaded: </Text>{formatDate(prescription.uploadedAt)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Pincode: </Text>{prescription.pincode}
+          </Text>
         </View>
 
         {/* Footer */}
@@ -2297,23 +2216,23 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
-          <Text style={{ fontSize: 13, color: '#111827', marginBottom: 8 }}>
-            ID: <Text style={{ fontWeight: '500' }}>{prescription.prescriptionId}</Text>
+          <Text style={{ fontSize: 13, color: COLORS.textGray, marginBottom: 8 }}>
+            ID: <Text style={{ fontWeight: '500', color: COLORS.textDark }}>{prescription.prescriptionId}</Text>
           </Text>
 
           {prescription.status === 'CANCELLED' ? (
             <View style={{ backgroundColor: '#FEF2F2', padding: 12, borderRadius: 8 }}>
-              <Text style={{ fontSize: 12, color: '#991B1B' }}>
+              <Text style={{ fontSize: 12, color: COLORS.error }}>
                 Cancelled on {formatDate(prescription.cancelledAt)}
                 {prescription.cancellationReason && `\nReason: ${prescription.cancellationReason}`}
               </Text>
             </View>
           ) : (
-            <View style={{ backgroundColor: '#DBEAFE', padding: 12, borderRadius: 8 }}>
-              <Text style={{ fontSize: 12, color: '#1E40AF' }}>
+            <View style={{ backgroundColor: COLORS.iconBg, padding: 12, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, color: COLORS.primary }}>
                 Our team is processing your prescription. You will be notified once it's ready for ordering.
               </Text>
             </View>
@@ -2324,7 +2243,7 @@ export default function BookingsPage() {
               onPress={() => handleCancelLabPrescription(prescription)}
               style={{
                 backgroundColor: '#FEF2F2',
-                paddingVertical: 8,
+                paddingVertical: 10,
                 paddingHorizontal: 12,
                 borderRadius: 8,
                 alignItems: 'center',
@@ -2332,7 +2251,7 @@ export default function BookingsPage() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#DC2626' }}>Cancel Prescription</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.error }}>Cancel Prescription</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -2358,72 +2277,51 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
-              }}
-            >
-              <BeakerIcon width={24} height={24} color="#0F5FDC" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
-                Lab Test Order
-              </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
-                {order.items?.length || 0} test(s)
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              Lab Test Order
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {order.items?.length || 0} test(s)
+            </Text>
           </View>
           <View
             style={{
-              paddingHorizontal: 12,
+              paddingHorizontal: 10,
               paddingVertical: 4,
-              borderRadius: 9999,
+              borderRadius: 6,
               backgroundColor: '#DCFCE7',
             }}
           >
-            <Text style={{ fontSize: 11, fontWeight: '500', color: '#166534' }}>
+            <Text style={{ fontSize: 11, fontWeight: '500', color: COLORS.success }}>
               Paid
             </Text>
           </View>
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Vendor: {order.vendorName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(order.collectionDate)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{order.collectionTime}</Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Vendor: </Text>{order.vendorName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Collection Date: </Text>{formatDate(order.collectionDate)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Time: </Text>{order.collectionTime}
+          </Text>
 
           {order.items && order.items.length > 0 && (
             <View style={{ marginTop: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Tests:</Text>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 4 }}>Tests:</Text>
               {order.items.slice(0, 3).map((item: any, idx: number) => (
-                <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                <Text key={idx} style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
                   • {item.serviceName}
                 </Text>
               ))}
               {order.items.length > 3 && (
-                <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
                   +{order.items.length - 3} more
                 </Text>
               )}
@@ -2436,14 +2334,14 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, color: '#111827' }}>
-              Order ID: <Text style={{ fontWeight: '500' }}>{order.orderId}</Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+              Order ID: <Text style={{ fontWeight: '500', color: COLORS.textDark }}>{order.orderId}</Text>
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{order.finalAmount}
             </Text>
           </View>
@@ -2453,22 +2351,15 @@ export default function BookingsPage() {
             <TouchableOpacity
               onPress={() => handleViewLabReport(order)}
               activeOpacity={0.8}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                alignItems: 'center',
+                backgroundColor: COLORS.primary,
+              }}
             >
-              <View
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
-                  backgroundColor: COLORS.primary,
-                }}
-              >
-                <DocumentArrowDownIcon width={16} height={16} color="#FFFFFF" />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
-              </View>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>View Report</Text>
             </TouchableOpacity>
           )}
 
@@ -2479,11 +2370,11 @@ export default function BookingsPage() {
                 paddingVertical: 10,
                 paddingHorizontal: 12,
                 borderRadius: 8,
-                backgroundColor: '#FEF3C7',
+                backgroundColor: COLORS.iconBg,
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#92400E' }}>
+              <Text style={{ fontSize: 12, color: COLORS.primary }}>
                 Report will be available after sample collection
               </Text>
             </View>
@@ -2499,8 +2390,8 @@ export default function BookingsPage() {
     const statusColor = hasVendorsAssigned
       ? { backgroundColor: '#FEF3C7', color: '#92400E' }
       : cart.status === 'ACTIVE'
-      ? { backgroundColor: '#DBEAFE', color: '#1E40AF' }
-      : { backgroundColor: '#F3F4F6', color: '#374151' };
+      ? { backgroundColor: COLORS.iconBg, color: COLORS.primary }
+      : { backgroundColor: '#F3F4F6', color: COLORS.textGray };
 
     return (
       <TouchableOpacity
@@ -2523,35 +2414,21 @@ export default function BookingsPage() {
           }}
         >
           {/* Header */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: COLORS.iconBg,
-                }}
-              >
-                <BeakerIcon width={24} height={24} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                  Lab Test Cart
-                </Text>
-                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
-                  {cart.items?.length || 0} test(s)
-                </Text>
-              </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+                Lab Test Cart
+              </Text>
+              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                {cart.items?.length || 0} test(s)
+              </Text>
             </View>
             <View
               style={{
-                paddingHorizontal: 12,
+                paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 9999,
-                ...statusColor,
+                borderRadius: 6,
+                backgroundColor: statusColor.backgroundColor,
               }}
             >
               <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
@@ -2629,12 +2506,12 @@ export default function BookingsPage() {
   const renderDiagnosticPrescriptionCard = (prescription: any) => {
     const statusColors: Record<string, { backgroundColor: string; color: string }> = {
       UPLOADED: { backgroundColor: '#FEF3C7', color: '#92400E' },
-      DIGITIZING: { backgroundColor: '#DBEAFE', color: '#1E40AF' },
-      CANCELLED: { backgroundColor: '#FEE2E2', color: '#991B1B' },
-      READY: { backgroundColor: '#DCFCE7', color: '#166534' },
+      DIGITIZING: { backgroundColor: COLORS.iconBg, color: COLORS.primary },
+      CANCELLED: { backgroundColor: '#FEE2E2', color: COLORS.error },
+      READY: { backgroundColor: '#DCFCE7', color: COLORS.success },
     };
 
-    const statusColor = statusColors[prescription.status] || { backgroundColor: '#F3F4F6', color: '#374151' };
+    const statusColor = statusColors[prescription.status] || { backgroundColor: '#F3F4F6', color: COLORS.textGray };
     const statusText = prescription.status === 'CANCELLED' ? 'Cancelled' : 'In Queue';
 
     return (
@@ -2654,37 +2531,21 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
-              }}
-            >
-              <BeakerIcon width={24} height={24} color="#0F5FDC" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
-                Diagnostic Prescription
-              </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
-                {statusText}
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              Diagnostic Prescription
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {statusText}
+            </Text>
           </View>
           <View
             style={{
-              paddingHorizontal: 12,
+              paddingHorizontal: 10,
               paddingVertical: 4,
-              borderRadius: 9999,
-              ...statusColor,
+              borderRadius: 6,
+              backgroundColor: statusColor.backgroundColor,
             }}
           >
             <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
@@ -2694,21 +2555,16 @@ export default function BookingsPage() {
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Patient: {prescription.patientName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Uploaded: {formatDate(prescription.uploadedAt)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MapPinIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Pincode: {prescription.pincode}</Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Patient: </Text>{prescription.patientName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Uploaded: </Text>{formatDate(prescription.uploadedAt)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Pincode: </Text>{prescription.pincode}
+          </Text>
         </View>
 
         {/* Footer */}
@@ -2716,10 +2572,10 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
-          <Text style={{ fontSize: 13, color: '#111827', marginBottom: 8 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textGray, marginBottom: 8 }}>
             ID: <Text style={{ fontWeight: '500' }}>{prescription.prescriptionId}</Text>
           </Text>
 
@@ -2777,72 +2633,51 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(223, 232, 255, 0.75)',
-                borderWidth: 1,
-                borderColor: 'rgba(164, 191, 254, 0.48)',
-              }}
-            >
-              <BeakerIcon width={24} height={24} color="#0F5FDC" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
-                Diagnostic Order
-              </Text>
-              <Text style={{ fontSize: 13, color: '#111827', marginTop: 2 }}>
-                {order.items?.length || 0} service(s)
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              Diagnostic Order
+            </Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+              {order.items?.length || 0} service(s)
+            </Text>
           </View>
           <View
             style={{
-              paddingHorizontal: 12,
+              paddingHorizontal: 10,
               paddingVertical: 4,
-              borderRadius: 9999,
+              borderRadius: 6,
               backgroundColor: '#DCFCE7',
             }}
           >
-            <Text style={{ fontSize: 11, fontWeight: '500', color: '#166534' }}>
+            <Text style={{ fontSize: 11, fontWeight: '500', color: COLORS.success }}>
               Paid
             </Text>
           </View>
         </View>
 
         {/* Details */}
-        <View style={{ gap: 8, marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <UserIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>Center: {order.vendorName}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <CalendarIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{formatDate(order.appointmentDate || order.collectionDate)}</Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ClockIcon width={16} height={16} color="#111827" />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{order.appointmentTime || order.collectionTime}</Text>
-          </View>
+        <View style={{ gap: 6, marginBottom: 12 }}>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Center: </Text>{order.vendorName}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Date: </Text>{formatDate(order.appointmentDate || order.collectionDate)}
+          </Text>
+          <Text style={{ fontSize: 13, color: COLORS.textDark }}>
+            <Text style={{ color: COLORS.textGray }}>Time: </Text>{order.appointmentTime || order.collectionTime}
+          </Text>
 
           {order.items && order.items.length > 0 && (
             <View style={{ marginTop: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#111827', marginBottom: 4 }}>Services:</Text>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: COLORS.textDark, marginBottom: 4 }}>Services:</Text>
               {order.items.slice(0, 3).map((item: any, idx: number) => (
-                <Text key={idx} style={{ fontSize: 12, color: '#111827', marginLeft: 8 }}>
+                <Text key={idx} style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
                   • {item.serviceName}
                 </Text>
               ))}
               {order.items.length > 3 && (
-                <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>
+                <Text style={{ fontSize: 12, color: COLORS.textGray, marginLeft: 8 }}>
                   +{order.items.length - 3} more
                 </Text>
               )}
@@ -2855,14 +2690,14 @@ export default function BookingsPage() {
           style={{
             paddingTop: 12,
             borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            borderTopColor: COLORS.border,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, color: '#111827' }}>
-              Order ID: <Text style={{ fontWeight: '500' }}>{order.orderId}</Text>
+            <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+              Order ID: <Text style={{ fontWeight: '500', color: COLORS.textDark }}>{order.orderId}</Text>
             </Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#0a529f' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.success }}>
               ₹{order.finalAmount}
             </Text>
           </View>
@@ -2872,22 +2707,15 @@ export default function BookingsPage() {
             <TouchableOpacity
               onPress={() => handleViewDiagnosticReport(order)}
               activeOpacity={0.8}
+              style={{
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                borderRadius: 8,
+                alignItems: 'center',
+                backgroundColor: COLORS.primary,
+              }}
             >
-              <View
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
-                  backgroundColor: COLORS.primary,
-                }}
-              >
-                <DocumentArrowDownIcon width={16} height={16} color="#FFFFFF" />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>View / Download Report</Text>
-              </View>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>View Report</Text>
             </TouchableOpacity>
           )}
 
@@ -2942,34 +2770,20 @@ export default function BookingsPage() {
           }}
         >
           {/* Header */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  backgroundColor: COLORS.iconBg,
-                }}
-              >
-                <BeakerIcon width={24} height={24} color={COLORS.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                  Diagnostic Cart
-                </Text>
-                <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
-                  {cart.items?.length || 0} service(s)
-                </Text>
-              </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+                Diagnostic Cart
+              </Text>
+              <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                {cart.items?.length || 0} service(s)
+              </Text>
             </View>
             <View
               style={{
-                paddingHorizontal: 12,
+                paddingHorizontal: 10,
                 paddingVertical: 4,
-                borderRadius: 9999,
+                borderRadius: 6,
                 ...statusColor,
               }}
             >
@@ -3094,39 +2908,25 @@ export default function BookingsPage() {
         }}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(22, 163, 74, 0.1)',
-              }}
-            >
-              <SparklesIcon width={24} height={24} color={COLORS.success} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                {order.packageName || 'Annual Health Check'}
-              </Text>
-              <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
-                {hasLabPortion && hasDiagnosticPortion
-                  ? 'Lab + Diagnostic Tests'
-                  : hasLabPortion
-                  ? 'Lab Tests'
-                  : 'Diagnostic Tests'}
-              </Text>
-            </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
+              {order.packageName || 'Annual Health Check'}
+            </Text>
+            <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+              {hasLabPortion && hasDiagnosticPortion
+                ? 'Lab + Diagnostic Tests'
+                : hasLabPortion
+                ? 'Lab Tests'
+                : 'Diagnostic Tests'}
+            </Text>
           </View>
           <View
             style={{
-              paddingHorizontal: 12,
+              paddingHorizontal: 10,
               paddingVertical: 4,
-              borderRadius: 9999,
-              ...statusColor,
+              borderRadius: 6,
+              backgroundColor: statusColor.backgroundColor,
             }}
           >
             <Text style={{ fontSize: 11, fontWeight: '500', color: statusColor.color }}>
@@ -3432,9 +3232,20 @@ export default function BookingsPage() {
                   {/* Upcoming Appointments */}
                   {upcomingAppointments.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
-                      {upcomingAppointments.map((appointment) => (
+                      {(showAllUpcomingAppointments ? upcomingAppointments : upcomingAppointments.slice(0, CARDS_PER_PAGE)).map((appointment) => (
                         <View key={appointment._id}>{renderAppointmentCard(appointment, true)}</View>
                       ))}
+                      {upcomingAppointments.length > CARDS_PER_PAGE && !showAllUpcomingAppointments && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllUpcomingAppointments(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({upcomingAppointments.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3445,15 +3256,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#6B7280',
+                          color: COLORS.textGray,
                           marginBottom: 12,
                         }}
                       >
                         Past Appointments
                       </Text>
-                      {pastAppointments.map((appointment) => (
+                      {(showAllPastAppointments ? pastAppointments : pastAppointments.slice(0, CARDS_PER_PAGE)).map((appointment) => (
                         <View key={appointment._id}>{renderAppointmentCard(appointment, false)}</View>
                       ))}
+                      {pastAppointments.length > CARDS_PER_PAGE && !showAllPastAppointments && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllPastAppointments(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({pastAppointments.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3491,15 +3313,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#111827',
+                          color: COLORS.primaryLight,
                           marginBottom: 12,
                         }}
                       >
                         Prescriptions In Queue
                       </Text>
-                      {filteredPrescriptions.map((prescription: any) => (
+                      {(showAllLabPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
                         <View key={prescription._id}>{renderLabPrescriptionCard(prescription)}</View>
                       ))}
+                      {filteredPrescriptions.length > CARDS_PER_PAGE && !showAllLabPrescriptions && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllLabPrescriptions(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({filteredPrescriptions.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3510,15 +3343,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#111827',
+                          color: COLORS.primaryLight,
                           marginBottom: 12,
                         }}
                       >
                         Lab Test Orders
                       </Text>
-                      {labOrders.map((order) => (
+                      {(showAllLabOrders ? labOrders : labOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                         <View key={order._id}>{renderLabOrderCard(order)}</View>
                       ))}
+                      {labOrders.length > CARDS_PER_PAGE && !showAllLabOrders && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllLabOrders(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({labOrders.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3529,15 +3373,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#111827',
+                          color: COLORS.primaryLight,
                           marginBottom: 12,
                         }}
                       >
                         Active Carts
                       </Text>
-                      {labCarts.map((cart) => (
+                      {(showAllLabCarts ? labCarts : labCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
                         <View key={cart._id}>{renderLabCartCard(cart)}</View>
                       ))}
+                      {labCarts.length > CARDS_PER_PAGE && !showAllLabCarts && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllLabCarts(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({labCarts.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3575,15 +3430,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#111827',
+                          color: COLORS.primaryLight,
                           marginBottom: 12,
                         }}
                       >
                         Prescriptions In Queue
                       </Text>
-                      {filteredPrescriptions.map((prescription: any) => (
+                      {(showAllDiagnosticPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
                         <View key={prescription._id}>{renderDiagnosticPrescriptionCard(prescription)}</View>
                       ))}
+                      {filteredPrescriptions.length > CARDS_PER_PAGE && !showAllDiagnosticPrescriptions && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllDiagnosticPrescriptions(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({filteredPrescriptions.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3594,15 +3460,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#111827',
+                          color: COLORS.primaryLight,
                           marginBottom: 12,
                         }}
                       >
                         Diagnostic Orders
                       </Text>
-                      {diagnosticOrders.map((order) => (
+                      {(showAllDiagnosticOrders ? diagnosticOrders : diagnosticOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                         <View key={order._id}>{renderDiagnosticOrderCard(order)}</View>
                       ))}
+                      {diagnosticOrders.length > CARDS_PER_PAGE && !showAllDiagnosticOrders && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllDiagnosticOrders(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({diagnosticOrders.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3613,15 +3490,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#111827',
+                          color: COLORS.primaryLight,
                           marginBottom: 12,
                         }}
                       >
                         Active Carts
                       </Text>
-                      {diagnosticCarts.map((cart) => (
+                      {(showAllDiagnosticCarts ? diagnosticCarts : diagnosticCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
                         <View key={cart._id}>{renderDiagnosticCartCard(cart)}</View>
                       ))}
+                      {diagnosticCarts.length > CARDS_PER_PAGE && !showAllDiagnosticCarts && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllDiagnosticCarts(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({diagnosticCarts.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3643,9 +3531,20 @@ export default function BookingsPage() {
                   {/* Upcoming Dental Bookings */}
                   {upcomingDentalBookings.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
-                      {upcomingDentalBookings.map((booking) => (
+                      {(showAllUpcomingDental ? upcomingDentalBookings : upcomingDentalBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderDentalBookingCard(booking, true)}</View>
                       ))}
+                      {upcomingDentalBookings.length > CARDS_PER_PAGE && !showAllUpcomingDental && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllUpcomingDental(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({upcomingDentalBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3656,15 +3555,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#6B7280',
+                          color: COLORS.textGray,
                           marginBottom: 12,
                         }}
                       >
                         Past Bookings
                       </Text>
-                      {pastDentalBookings.map((booking) => (
+                      {(showAllPastDental ? pastDentalBookings : pastDentalBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderDentalBookingCard(booking, false)}</View>
                       ))}
+                      {pastDentalBookings.length > CARDS_PER_PAGE && !showAllPastDental && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllPastDental(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({pastDentalBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3682,9 +3592,20 @@ export default function BookingsPage() {
                   {/* Upcoming Vision Bookings */}
                   {upcomingVisionBookings.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
-                      {upcomingVisionBookings.map((booking) => (
+                      {(showAllUpcomingVision ? upcomingVisionBookings : upcomingVisionBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderVisionBookingCard(booking, true)}</View>
                       ))}
+                      {upcomingVisionBookings.length > CARDS_PER_PAGE && !showAllUpcomingVision && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllUpcomingVision(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({upcomingVisionBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3695,15 +3616,26 @@ export default function BookingsPage() {
                         style={{
                           fontSize: 16,
                           fontWeight: '600',
-                          color: '#6B7280',
+                          color: COLORS.textGray,
                           marginBottom: 12,
                         }}
                       >
                         Past Bookings
                       </Text>
-                      {pastVisionBookings.map((booking) => (
+                      {(showAllPastVision ? pastVisionBookings : pastVisionBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderVisionBookingCard(booking, false)}</View>
                       ))}
+                      {pastVisionBookings.length > CARDS_PER_PAGE && !showAllPastVision && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllPastVision(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({pastVisionBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3762,15 +3694,26 @@ export default function BookingsPage() {
                     style={{
                       fontSize: 16,
                       fontWeight: '600',
-                      color: '#111827',
+                      color: COLORS.primaryLight,
                       marginBottom: 12,
                     }}
                   >
                     Your Health Check Orders
                   </Text>
-                  {ahcOrders.map((order) => (
+                  {(showAllAhcOrders ? ahcOrders : ahcOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                     <View key={order._id}>{renderAhcOrderCard(order)}</View>
                   ))}
+                  {ahcOrders.length > CARDS_PER_PAGE && !showAllAhcOrders && (
+                    <TouchableOpacity
+                      onPress={() => setShowAllAhcOrders(true)}
+                      style={{ paddingVertical: 12, alignItems: 'center' }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                        Load More ({ahcOrders.length - CARDS_PER_PAGE} more)
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
                   {/* Book Another CTA */}
                   <TouchableOpacity
