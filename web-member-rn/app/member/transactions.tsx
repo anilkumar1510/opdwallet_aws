@@ -203,8 +203,8 @@ interface SelfPayment {
   _id: string;
   paymentId: string;
   amount: number;
-  paymentType: 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT' | 'PARTIAL_PAYMENT' | 'TOP_UP';
-  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  paymentType: 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT' | 'PARTIAL_PAYMENT' | 'TOP_UP' | 'REFUND';
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
   serviceType: string;
   serviceReferenceId?: string;
   description?: string;
@@ -213,6 +213,11 @@ interface SelfPayment {
   paidAt?: string;
   createdAt: string;
   notes?: string;
+  isRefund?: boolean;
+  refundAmount?: number;
+  refundedAt?: string;
+  refundReason?: string;
+  originalPaymentId?: string;
 }
 
 // ============================================================================
@@ -448,15 +453,20 @@ export default function TransactionsScreen() {
 
   // Group visible self payments by month and calculate totals
   const groupedSelfPayments = useMemo(() => {
-    const groups: { [key: string]: { payments: SelfPayment[]; totalPaid: number } } = {};
+    const groups: { [key: string]: { payments: SelfPayment[]; totalPaid: number; totalRefunded: number } } = {};
     visibleSelfPayments.forEach((p) => {
-      const dateStr = p.paidAt || p.createdAt;
+      const isRefund = p.isRefund || p.paymentType === 'REFUND' || p.status === 'REFUNDED';
+      const dateStr = p.refundedAt || p.paidAt || p.createdAt;
       const monthKey = formatMonthYear(dateStr);
       if (!groups[monthKey]) {
-        groups[monthKey] = { payments: [], totalPaid: 0 };
+        groups[monthKey] = { payments: [], totalPaid: 0, totalRefunded: 0 };
       }
       groups[monthKey].payments.push(p);
-      groups[monthKey].totalPaid += p.amount;
+      if (isRefund) {
+        groups[monthKey].totalRefunded += (p.refundAmount || p.amount);
+      } else {
+        groups[monthKey].totalPaid += p.amount;
+      }
     });
     return groups;
   }, [visibleSelfPayments]);
@@ -592,15 +602,37 @@ export default function TransactionsScreen() {
         try {
           const selfParams: any = {
             limit: '100',
-            status: 'COMPLETED', // Only show completed payments
           };
           if (selectedServiceTypes.length > 0) {
             selfParams.serviceType = selectedServiceTypes[0]; // API accepts single value
           }
 
           const selfResponse = await apiClient.get('/payments', { params: selfParams });
-          const payments = selfResponse.data?.payments || selfResponse.data || [];
-          setSelfPayments(Array.isArray(payments) ? payments : []);
+          console.log('[Transactions] Self payments response:', selfResponse.data);
+
+          // Handle different response formats
+          let payments = [];
+          if (Array.isArray(selfResponse.data)) {
+            payments = selfResponse.data;
+          } else if (selfResponse.data?.payments) {
+            payments = selfResponse.data.payments;
+          } else if (selfResponse.data?.data) {
+            payments = selfResponse.data.data;
+          }
+
+          // Filter to only show completed payments and cancelled (potential refunds)
+          const filteredPayments = payments.filter((p: any) =>
+            p.status === 'COMPLETED' || p.status === 'CANCELLED'
+          );
+
+          // Sort by date (most recent first)
+          filteredPayments.sort((a: any, b: any) => {
+            const dateA = new Date(a.paidAt || a.createdAt);
+            const dateB = new Date(b.paidAt || b.createdAt);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          setSelfPayments(filteredPayments);
         } catch (selfError) {
           console.log('[Transactions] Self payments not available:', selfError);
           setSelfPayments([]);
@@ -1111,7 +1143,7 @@ export default function TransactionsScreen() {
                 </Text>
               </View>
             ) : (
-              Object.entries(groupedSelfPayments).map(([month, { payments: monthPayments, totalPaid }]) => (
+              Object.entries(groupedSelfPayments).map(([month, { payments: monthPayments, totalPaid, totalRefunded }]) => (
                 <View key={month} style={{ marginBottom: 24 }}>
                   {/* Month Header */}
                   <View
@@ -1125,12 +1157,24 @@ export default function TransactionsScreen() {
                     <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
                       {month}
                     </Text>
-                    <Text style={{ fontSize: 13, color: COLORS.textGray }}>
-                      Total Paid{' '}
-                      <Text style={{ fontWeight: '600', color: COLORS.textDark }}>
-                        ₹{totalPaid.toLocaleString('en-IN')}
-                      </Text>
-                    </Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      {totalPaid > 0 && (
+                        <Text style={{ fontSize: 13, color: COLORS.textGray }}>
+                          Paid{' '}
+                          <Text style={{ fontWeight: '600', color: COLORS.debit }}>
+                            ₹{totalPaid.toLocaleString('en-IN')}
+                          </Text>
+                        </Text>
+                      )}
+                      {totalRefunded > 0 && (
+                        <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
+                          Refunded{' '}
+                          <Text style={{ fontWeight: '600', color: COLORS.credit }}>
+                            ₹{totalRefunded.toLocaleString('en-IN')}
+                          </Text>
+                        </Text>
+                      )}
+                    </View>
                   </View>
 
                   {/* Payment Items */}
@@ -1145,9 +1189,11 @@ export default function TransactionsScreen() {
                       const isLast = index === monthPayments.length - 1;
                       const isAbsoluteLastPayment = payment._id === visibleSelfPayments[visibleSelfPayments.length - 1]?._id;
                       const showLoadMore = isAbsoluteLastPayment && hasMoreTransactions;
+                      const isRefund = payment.isRefund || payment.paymentType === 'REFUND' || payment.status === 'REFUNDED';
 
                       // Format payment type label
-                      const paymentTypeLabel = payment.paymentType === 'COPAY' ? 'Copay' :
+                      const paymentTypeLabel = isRefund ? 'Refund' :
+                        payment.paymentType === 'COPAY' ? 'Copay' :
                         payment.paymentType === 'OUT_OF_POCKET' ? 'Out of Pocket' :
                         payment.paymentType === 'FULL_PAYMENT' ? 'Full Payment' :
                         payment.paymentType === 'PARTIAL_PAYMENT' ? 'Partial Payment' : 'Payment';
@@ -1158,12 +1204,19 @@ export default function TransactionsScreen() {
                         payment.serviceType === 'PHARMACY' ? 'Pharmacy' :
                         payment.serviceType === 'DENTAL' ? 'Dental' :
                         payment.serviceType === 'VISION' ? 'Vision' :
+                        payment.serviceType === 'DIAGNOSTIC' ? 'Diagnostic' :
                         payment.serviceType || 'Service';
 
                       const formatPaymentDate = (dateString: string) => {
                         const date = new Date(dateString);
                         const today = new Date();
                         const isToday = date.toDateString() === today.toDateString();
+                        if (isRefund) {
+                          if (isToday) {
+                            return `Refunded Today, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+                          }
+                          return `Refunded ${date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+                        }
                         if (isToday) {
                           return `Paid Today, ${date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
                         }
@@ -1191,7 +1244,7 @@ export default function TransactionsScreen() {
                             {/* Left - Payment Details */}
                             <View style={{ flex: 1 }}>
                               <Text style={{ fontSize: 13, fontWeight: '400', color: COLORS.textDark, marginBottom: 2 }}>
-                                {payment.description || serviceTypeLabel}
+                                {isRefund ? (payment.refundReason || `Refund for ${serviceTypeLabel}`) : (payment.description || serviceTypeLabel)}
                               </Text>
                               <Text style={{ fontSize: 11, color: COLORS.textGray, marginBottom: 2 }}>
                                 {paymentTypeLabel} • {serviceTypeLabel}
@@ -1207,14 +1260,14 @@ export default function TransactionsScreen() {
                                 style={{
                                   fontSize: 13,
                                   fontWeight: '500',
-                                  color: COLORS.debit,
+                                  color: isRefund ? COLORS.credit : COLORS.debit,
                                   marginBottom: 2,
                                 }}
                               >
-                                -₹{payment.amount.toLocaleString('en-IN')}
+                                {isRefund ? '+' : '-'}₹{(payment.refundAmount || payment.amount).toLocaleString('en-IN')}
                               </Text>
                               <Text style={{ fontSize: 10, color: COLORS.textLight }}>
-                                {formatPaymentDate(payment.paidAt || payment.createdAt)}
+                                {formatPaymentDate(payment.refundedAt || payment.paidAt || payment.createdAt)}
                               </Text>
                             </View>
                           </View>
