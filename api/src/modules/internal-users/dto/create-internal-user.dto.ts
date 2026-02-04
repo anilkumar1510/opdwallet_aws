@@ -37,6 +37,33 @@ class PhoneDto {
   number!: string;
 }
 
+class AddressDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  line1!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  line2?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  state!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  pincode!: string;
+}
+
 /**
  * DTO for creating a new internal user (staff)
  * Only allows internal roles: SUPER_ADMIN, ADMIN, TPA, TPA_ADMIN, TPA_USER, FINANCE_USER, OPS
@@ -148,4 +175,10 @@ export class CreateInternalUserDto {
   @IsString({ each: true })
   @IsOptional()
   allowedIPs?: string[];
+
+  @ApiPropertyOptional({ type: AddressDto })
+  @ValidateNested()
+  @Type(() => AddressDto)
+  @IsOptional()
+  address?: AddressDto;
 }

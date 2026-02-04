@@ -16,6 +16,7 @@ import { LabService, LabServiceSchema } from '../lab/schemas/lab-service.schema'
 import { DiagnosticService, DiagnosticServiceSchema } from '../diagnostics/schemas/diagnostic-service.schema';
 import { LabVendorSlot, LabVendorSlotSchema } from '../lab/schemas/lab-vendor-slot.schema';
 import { DiagnosticVendorSlot, DiagnosticVendorSlotSchema } from '../diagnostics/schemas/diagnostic-vendor-slot.schema';
+import { PlanConfig, PlanConfigSchema } from '../plan-config/schemas/plan-config.schema';
 
 // Import other modules needed for AHC orders
 import { LabModule } from '../lab/lab.module';
@@ -36,6 +37,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
       { name: LabVendorSlot.name, schema: LabVendorSlotSchema },
       { name: DiagnosticVendorSlot.name, schema: DiagnosticVendorSlotSchema },
       { name: User.name, schema: UserSchema },
+      { name: PlanConfig.name, schema: PlanConfigSchema },
     ]),
     // Configure Multer for dual file uploads (lab and diagnostic reports)
     MulterModule.register({

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AhcPackage } from '../schemas/ahc-package.schema';
@@ -9,6 +9,8 @@ export class AhcPackageService {
   constructor(
     @InjectModel(AhcPackage.name)
     private ahcPackageModel: Model<AhcPackage>,
+    @InjectModel('PlanConfig')
+    private planConfigModel: Model<any>,
   ) {}
 
   async createPackage(createDto: CreateAhcPackageDto): Promise<AhcPackage> {
@@ -100,13 +102,54 @@ export class AhcPackageService {
     return ahcPackage.save();
   }
 
+  /**
+   * Check if AHC package is assigned to any policy plan configuration
+   */
+  private async checkPackageAssignment(packageId: string): Promise<{ assigned: boolean; count: number; packageName: string }> {
+    const ahcPackage = await this.getPackageById(packageId);
+
+    // Check if packageId is assigned to any plan config's wellness benefit
+    // The field can be at benefits.CAT008.ahcPackageId or benefits.wellness.ahcPackageId
+    const assignedPolicies = await this.planConfigModel.countDocuments({
+      $or: [
+        { 'benefits.CAT008.ahcPackageId': packageId },
+        { 'benefits.wellness.ahcPackageId': packageId },
+      ],
+    });
+
+    return {
+      assigned: assignedPolicies > 0,
+      count: assignedPolicies,
+      packageName: ahcPackage.name,
+    };
+  }
+
   async toggleActive(packageId: string): Promise<AhcPackage> {
     const ahcPackage = await this.getPackageById(packageId);
+
+    // If deactivating, check if package is assigned to any policy
+    if (ahcPackage.isActive) {
+      const assignment = await this.checkPackageAssignment(packageId);
+      if (assignment.assigned) {
+        throw new ConflictException(
+          `Cannot deactivate AHC Package "${assignment.packageName}". It is assigned to ${assignment.count} policy plan configuration(s). Please remove this package from all policies before deactivating.`
+        );
+      }
+    }
+
     ahcPackage.isActive = !ahcPackage.isActive;
     return ahcPackage.save();
   }
 
   async deletePackage(packageId: string): Promise<void> {
+    // Check if package is assigned to any policy
+    const assignment = await this.checkPackageAssignment(packageId);
+    if (assignment.assigned) {
+      throw new ConflictException(
+        `Cannot delete AHC Package "${assignment.packageName}". It is assigned to ${assignment.count} policy plan configuration(s). Please remove this package from all policies before deleting.`
+      );
+    }
+
     const result = await this.ahcPackageModel.deleteOne({ packageId });
 
     if (result.deletedCount === 0) {

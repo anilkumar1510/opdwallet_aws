@@ -209,6 +209,16 @@ export class InternalUsersService {
       this.validateRole(updateInternalUserDto.role);
     }
 
+    // Validate employeeId uniqueness if being updated
+    if (updateInternalUserDto.employeeId && updateInternalUserDto.employeeId !== user.employeeId) {
+      const existingEmployeeId = await this.internalUserModel
+        .findOne({ employeeId: updateInternalUserDto.employeeId, _id: { $ne: id } })
+        .lean();
+      if (existingEmployeeId) {
+        throw new ConflictException('Employee ID already exists');
+      }
+    }
+
     // Validate unique fields if being updated
     if (updateInternalUserDto.email && updateInternalUserDto.email !== user.email) {
       await this.commonUserService.validateEmailUniqueness(

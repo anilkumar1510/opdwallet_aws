@@ -40,32 +40,18 @@ export function UserEditForm({
           <p className="text-sm font-medium text-gray-500 mb-1">User ID</p>
           <p className="text-gray-900">{user.userId}</p>
         </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">Member ID</p>
-          {isEditing ? (
-            <input
-              type="text"
-              value={editedUser.memberId || ''}
-              onChange={(e) => onFieldChange('memberId', e.target.value)}
-              className="input"
-            />
-          ) : (
-            <p className="font-mono text-gray-900">{user.memberId}</p>
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">UHID</p>
-          {isEditing ? (
-            <input
-              type="text"
-              value={editedUser.uhid || ''}
-              onChange={(e) => onFieldChange('uhid', e.target.value)}
-              className="input"
-            />
-          ) : (
-            <p className="font-mono text-gray-900">{user.uhid}</p>
-          )}
-        </div>
+        {!isInternalUser && (
+          <>
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Member ID</p>
+              <p className="font-mono text-gray-900">{user.memberId}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">UHID</p>
+              <p className="font-mono text-gray-900">{user.uhid}</p>
+            </div>
+          </>
+        )}
         <div>
           <p className="text-sm font-medium text-gray-500 mb-1">Employee ID</p>
           {isEditing ? (
@@ -74,7 +60,7 @@ export function UserEditForm({
               value={editedUser.employeeId || ''}
               onChange={(e) => onFieldChange('employeeId', e.target.value)}
               className="input"
-              placeholder="Optional"
+              placeholder={isInternalUser ? "Required" : "Optional"}
             />
           ) : (
             <p className="font-mono text-gray-900">{user.employeeId || '-'}</p>
@@ -112,17 +98,7 @@ export function UserEditForm({
         {!isInternalUser && editedUser.relationship !== 'SELF' && (
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Primary Member ID</p>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedUser.primaryMemberId || ''}
-                onChange={(e) => onFieldChange('primaryMemberId', e.target.value)}
-                className="input"
-                placeholder="Required for dependents"
-              />
-            ) : (
-              <p className="text-gray-900">{user.primaryMemberId || '-'}</p>
-            )}
+            <p className="text-gray-900">{user.primaryMemberId || '-'}</p>
           </div>
         )}
         {!isInternalUser && (
@@ -149,36 +125,40 @@ export function UserEditForm({
             )}
           </div>
         )}
-        <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">Date of Birth</p>
-          {isEditing ? (
-            <input
-              type="date"
-              value={editedUser.dob ? new Date(editedUser.dob).toISOString().split('T')[0] : ''}
-              onChange={(e) => onFieldChange('dob', e.target.value)}
-              className="input"
-            />
-          ) : (
-            <p className="text-gray-900">{user.dob ? new Date(user.dob).toLocaleDateString() : '-'}</p>
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">Gender</p>
-          {isEditing ? (
-            <select
-              value={editedUser.gender || ''}
-              onChange={(e) => onFieldChange('gender', e.target.value)}
-              className="input"
-            >
-              <option value="">Select</option>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Other</option>
-            </select>
-          ) : (
-            <p className="text-gray-900">{user.gender || '-'}</p>
-          )}
-        </div>
+        {!isInternalUser && (
+          <>
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Date of Birth</p>
+              {isEditing ? (
+                <input
+                  type="date"
+                  value={editedUser.dob ? new Date(editedUser.dob).toISOString().split('T')[0] : ''}
+                  onChange={(e) => onFieldChange('dob', e.target.value)}
+                  className="input"
+                />
+              ) : (
+                <p className="text-gray-900">{user.dob ? new Date(user.dob).toLocaleDateString() : '-'}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Gender</p>
+              {isEditing ? (
+                <select
+                  value={editedUser.gender || ''}
+                  onChange={(e) => onFieldChange('gender', e.target.value)}
+                  className="input"
+                >
+                  <option value="">Select</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              ) : (
+                <p className="text-gray-900">{user.gender || '-'}</p>
+              )}
+            </div>
+          </>
+        )}
         <div>
           <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
           {isEditing ? (

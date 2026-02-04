@@ -165,7 +165,11 @@ export default function CugsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to toggle status')
+        // Handle nested message structure: errorData.message.message or errorData.message
+        const errorMessage = typeof errorData.message === 'object'
+          ? errorData.message.message || JSON.stringify(errorData.message)
+          : errorData.message || 'Failed to toggle status'
+        throw new Error(errorMessage)
       }
 
       toast.success('CUG status updated')
@@ -186,7 +190,11 @@ export default function CugsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to delete CUG')
+        // Handle nested message structure: errorData.message.message or errorData.message
+        const errorMessage = typeof errorData.message === 'object'
+          ? errorData.message.message || JSON.stringify(errorData.message)
+          : errorData.message || 'Failed to delete CUG'
+        throw new Error(errorMessage)
       }
 
       toast.success('CUG deleted successfully')
@@ -426,20 +434,6 @@ export default function CugsPage() {
                       placeholder="Google corporate group"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                  </div>
-
-                  {/* Active Status */}
-                  <div className="col-span-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="isActive"
-                        checked={formData.isActive}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Active</span>
-                    </label>
                   </div>
                 </div>
 

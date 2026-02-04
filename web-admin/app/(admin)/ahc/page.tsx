@@ -240,7 +240,11 @@ export default function AhcMasterPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to toggle status')
+        // Handle nested message structure: errorData.message.message or errorData.message
+        const errorMessage = typeof errorData.message === 'object'
+          ? errorData.message.message || JSON.stringify(errorData.message)
+          : errorData.message || 'Failed to toggle status'
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()
@@ -262,7 +266,11 @@ export default function AhcMasterPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to delete package')
+        // Handle nested message structure: errorData.message.message or errorData.message
+        const errorMessage = typeof errorData.message === 'object'
+          ? errorData.message.message || JSON.stringify(errorData.message)
+          : errorData.message || 'Failed to delete package'
+        throw new Error(errorMessage)
       }
 
       toast.success('AHC Package deleted successfully')

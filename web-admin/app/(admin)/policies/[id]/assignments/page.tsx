@@ -37,6 +37,8 @@ export default function PolicyAssignmentsPage() {
 
   // Plan config state
   const [planConfig, setPlanConfig] = useState<any>(null)
+  const [planConfigs, setPlanConfigs] = useState<any[]>([])
+  const [selectedPlanConfigId, setSelectedPlanConfigId] = useState('')
   const [relationships, setRelationships] = useState<any[]>([])
   const [coveredRelationships, setCoveredRelationships] = useState<string[]>([])
 
@@ -95,6 +97,23 @@ export default function PolicyAssignmentsPage() {
     }
   }, [])
 
+  const fetchPlanConfigs = useCallback(async () => {
+    try {
+      const response = await apiFetch(`/api/policies/${params.id}/config/all`)
+      if (response.ok) {
+        const data = await response.json()
+        setPlanConfigs(data)
+        // Auto-select the active/current published config
+        const activeConfig = data.find((c: any) => c.status === 'PUBLISHED' && c.isCurrent)
+        if (activeConfig) {
+          setSelectedPlanConfigId(activeConfig._id)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch plan configs:', error)
+    }
+  }, [params.id])
+
   const fetchAssignments = useCallback(async () => {
     try {
       const response = await apiFetch(`/api/assignments/policy/${params.id}`)
@@ -131,7 +150,8 @@ export default function PolicyAssignmentsPage() {
     fetchUsers()
     fetchPlanConfig()
     fetchRelationships()
-  }, [params.id, fetchPolicy, fetchAssignments, fetchUsers, fetchPlanConfig, fetchRelationships])
+    fetchPlanConfigs()
+  }, [params.id, fetchPolicy, fetchAssignments, fetchUsers, fetchPlanConfig, fetchRelationships, fetchPlanConfigs])
 
   // Helper functions
   const isDependentRelationship = () => {
@@ -219,16 +239,23 @@ export default function PolicyAssignmentsPage() {
 
     setCreating(true)
     try {
+      const payload: any = {
+        userId: newAssignment.userId,
+        policyId: params.id,
+        relationshipId: newAssignment.relationshipId,
+        primaryMemberId: newAssignment.primaryMemberId || undefined,
+        effectiveFrom: newAssignment.effectiveFrom,
+        effectiveTo: newAssignment.effectiveTo,
+      }
+
+      // Include planConfigId if selected
+      if (selectedPlanConfigId) {
+        payload.planConfigId = selectedPlanConfigId
+      }
+
       const response = await apiFetch('/api/assignments', {
         method: 'POST',
-        body: JSON.stringify({
-          userId: newAssignment.userId,
-          policyId: params.id,
-          relationshipId: newAssignment.relationshipId,
-          primaryMemberId: newAssignment.primaryMemberId || undefined,
-          effectiveFrom: newAssignment.effectiveFrom,
-          effectiveTo: newAssignment.effectiveTo,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
@@ -496,6 +523,29 @@ export default function PolicyAssignmentsPage() {
                   </div>
                 </div>
               )}
+
+              {/* Plan Configuration Selection */}
+              <div>
+                <label htmlFor="assign-plan-config" className="block text-sm font-medium text-gray-700 mb-1">
+                  Plan Configuration
+                </label>
+                <select
+                  id="assign-plan-config"
+                  className="input w-full"
+                  value={selectedPlanConfigId}
+                  onChange={(e) => setSelectedPlanConfigId(e.target.value)}
+                >
+                  <option value="">Choose plan config...</option>
+                  {Array.isArray(planConfigs) && planConfigs.map((config) => (
+                    <option key={config._id} value={config._id}>
+                      Version {config.version} - {config.status} {config.isCurrent ? '(Current)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-selected active configuration
+                </p>
+              </div>
 
               {/* Primary Member Search (for dependent relationships) */}
               {isDependentRelationship() && isRelationshipCovered() && (

@@ -69,26 +69,27 @@ function buildAssignmentPayload(
   return payload
 }
 
-function buildUserUpdateData(editedUser: any) {
+function buildUserUpdateData(editedUser: any, isInternalUser: boolean) {
+  // Clean phone object by removing MongoDB _id field
+  const cleanPhone = typeof editedUser.phone === 'object' && editedUser.phone
+    ? {
+        countryCode: editedUser.phone.countryCode || '+91',
+        number: editedUser.phone.number || ''
+      }
+    : editedUser.phone
+
   const updateData: any = {
     name: {
       firstName: editedUser.name?.firstName || '',
       lastName: editedUser.name?.lastName || ''
     },
     email: editedUser.email,
-    phone: editedUser.phone,
-    dob: editedUser.dob,
-    gender: editedUser.gender,
+    phone: cleanPhone,
     status: editedUser.status,
-    role: editedUser.role,
-    relationship: editedUser.relationship,
-    primaryMemberId: editedUser.primaryMemberId,
-    memberId: editedUser.memberId,
-    uhid: editedUser.uhid,
-    employeeId: editedUser.employeeId,
-    corporateName: editedUser.corporateName
+    employeeId: editedUser.employeeId
   }
 
+  // Include address for all users (clean MongoDB _id if present)
   if (editedUser.address) {
     updateData.address = {
       line1: editedUser.address.line1 || '',
@@ -97,6 +98,20 @@ function buildUserUpdateData(editedUser: any) {
       state: editedUser.address.state || '',
       pincode: editedUser.address.pincode || ''
     }
+  }
+
+  if (isInternalUser) {
+    // For internal users: include role, department, designation
+    updateData.role = editedUser.role
+    if (editedUser.department) updateData.department = editedUser.department
+    if (editedUser.designation) updateData.designation = editedUser.designation
+  } else {
+    // For members: include member-specific fields
+    updateData.dob = editedUser.dob
+    updateData.gender = editedUser.gender
+    updateData.relationship = editedUser.relationship
+    updateData.primaryMemberId = editedUser.primaryMemberId
+    updateData.corporateName = editedUser.corporateName
   }
 
   return updateData
@@ -370,21 +385,6 @@ export default function UserDetailPage() {
     }
   }
 
-  const updatePassword = async () => {
-    if (!showPasswordField || !newPassword) {
-      return
-    }
-
-    const endpoint = userType === 'member'
-      ? `/api/members/${params.id}/set-password`
-      : `/api/internal-users/${params.id}/set-password`
-
-    await apiFetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify({ password: newPassword }),
-    })
-  }
-
   const resetEditingState = () => {
     setIsEditing(false)
     setShowPasswordField(false)
@@ -394,7 +394,13 @@ export default function UserDetailPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const updateData = buildUserUpdateData(editedUser)
+      const isInternalUser = userType === 'internal'
+      const updateData = buildUserUpdateData(editedUser, isInternalUser)
+
+      // Include password in update data if provided
+      if (showPasswordField && newPassword) {
+        updateData.password = newPassword
+      }
 
       const endpoint = userType === 'member'
         ? `/api/members/${params.id}`
@@ -411,7 +417,6 @@ export default function UserDetailPage() {
         return
       }
 
-      await updatePassword()
       toast.success('User updated successfully')
       resetEditingState()
       fetchUserWithDependents()

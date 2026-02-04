@@ -58,6 +58,10 @@ export default function PolicyTable({
         const result = await response.json()
         toast.success(`Policy "${result.policyName}" deleted successfully`)
         setOpenMenuId(null)
+
+        // Redirect to policies list page
+        router.push('/policies')
+
         if (onRefresh) {
           onRefresh()
         }

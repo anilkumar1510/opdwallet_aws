@@ -275,6 +275,7 @@ function NewUserForm() {
       payload.role = formData.role
       payload.department = formData.department || undefined
       payload.designation = formData.designation || undefined
+      payload.address = hasAddress ? formData.address : undefined
     } else {
       // Add fields specific to members (external users)
       payload.uhid = formData.uhid

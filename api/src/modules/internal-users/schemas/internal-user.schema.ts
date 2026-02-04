@@ -114,6 +114,24 @@ export class InternalUser {
   @Prop({ type: String })
   lastLoginIP?: string;
 
+  // Address information
+  @Prop({
+    type: {
+      line1: { type: String, required: true },
+      line2: { type: String },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      pincode: { type: String, required: true },
+    },
+  })
+  address?: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+
   // Discriminator for user type
   @Prop({ default: 'internal', immutable: true })
   userType!: string;

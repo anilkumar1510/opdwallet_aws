@@ -347,12 +347,22 @@ export class MembersService {
       await this.validateUniquePhone(phoneToUpdate, id);
     }
 
-    // Update member with extracted phone
+    // Hash password if provided
+    let passwordHash: string | undefined;
+    if (updateMemberDto.password) {
+      passwordHash = await this.commonUserService.hashPassword(updateMemberDto.password);
+    }
+
+    // Update member with extracted phone and hashed password
     const updateData = {
       ...updateMemberDto,
       ...(phoneToUpdate && { phone: phoneToUpdate }),
+      ...(passwordHash && { passwordHash }),
       updatedBy,
     };
+
+    // Remove password field from updateData (we use passwordHash instead)
+    delete updateData.password;
 
     Object.assign(member, updateData);
     const updated = await member.save();
