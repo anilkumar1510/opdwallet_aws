@@ -180,7 +180,22 @@ export class VisionBookingsController {
     const userId = req.user.userId;
     console.log('[VisionBookingsController] GET /api/vision-bookings/:bookingId/invoice -', bookingId, 'User:', userId);
     const result = await this.visionBookingsService.getMemberInvoice(bookingId, userId);
-    res.sendFile(result.filePath);
+
+    // Check if file exists before sending
+    const fs = require('fs');
+    if (!fs.existsSync(result.filePath)) {
+      console.error('[VisionBookingsController] Invoice file not found:', result.filePath);
+      return res.status(404).json({ message: 'Invoice file not found on server' });
+    }
+
+    res.sendFile(result.filePath, (err: any) => {
+      if (err) {
+        console.error('[VisionBookingsController] Error sending invoice file:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Failed to download invoice file' });
+        }
+      }
+    });
   }
 
   /**
@@ -323,6 +338,21 @@ export class VisionBookingsController {
   ) {
     console.log('[VisionBookingsAdmin] GET /api/admin/vision-bookings/:bookingId/invoice -', bookingId);
     const result = await this.visionBookingsService.getInvoice(bookingId);
-    res.sendFile(result.filePath);
+
+    // Check if file exists before sending
+    const fs = require('fs');
+    if (!fs.existsSync(result.filePath)) {
+      console.error('[VisionBookingsAdmin] Invoice file not found:', result.filePath);
+      return res.status(404).json({ message: 'Invoice file not found on server' });
+    }
+
+    res.sendFile(result.filePath, (err: any) => {
+      if (err) {
+        console.error('[VisionBookingsAdmin] Error sending invoice file:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ message: 'Failed to download invoice file' });
+        }
+      }
+    });
   }
 }

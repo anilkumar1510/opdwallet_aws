@@ -957,9 +957,27 @@ export default function BookingsPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('[Bookings] Invoice download failed:', errorData);
-        throw new Error(errorData?.message || 'Failed to download invoice');
+        let errorMessage = 'Failed to download invoice';
+        try {
+          const errorData = await response.json();
+          console.error('[Bookings] Invoice download failed:', errorData);
+          if (errorData?.message) {
+            errorMessage = typeof errorData.message === 'string' ? errorData.message : JSON.stringify(errorData.message);
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch (jsonError) {
+          console.error('[Bookings] Could not parse error response as JSON');
+          // Try to get text response
+          try {
+            const textError = await response.text();
+            if (textError) errorMessage = textError;
+          } catch (textErr) {
+            // Use status text as fallback
+            errorMessage = response.statusText || `HTTP ${response.status}`;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       if (Platform.OS === 'web') {
@@ -1414,6 +1432,37 @@ export default function BookingsPage() {
     return status.charAt(0) + status.slice(1).toLowerCase();
   };
 
+  // Unified status for dental/vision bookings - single status that considers both booking and payment status
+  const getUnifiedBookingStatus = (bookingStatus: string, paymentStatus?: string) => {
+    // Priority order: Cancelled > Completed > Payment issues > Confirmed > Pending
+    if (bookingStatus === 'CANCELLED') {
+      return { text: 'Cancelled', backgroundColor: '#FEE2E2', color: '#991B1B' };
+    }
+    if (bookingStatus === 'COMPLETED') {
+      return { text: 'Completed', backgroundColor: '#DCFCE7', color: '#166534' };
+    }
+    if (paymentStatus === 'FAILED') {
+      return { text: 'Payment Failed', backgroundColor: '#FEE2E2', color: '#991B1B' };
+    }
+    if (bookingStatus === 'CONFIRMED') {
+      if (paymentStatus === 'PENDING') {
+        return { text: 'Payment Pending', backgroundColor: '#FEF3C7', color: '#92400E' };
+      }
+      return { text: 'Confirmed', backgroundColor: '#DCFCE7', color: '#166534' };
+    }
+    if (bookingStatus === 'PENDING_CONFIRMATION') {
+      if (paymentStatus === 'COMPLETED') {
+        return { text: 'Awaiting Confirmation', backgroundColor: '#DBEAFE', color: '#1E40AF' };
+      }
+      if (paymentStatus === 'PENDING') {
+        return { text: 'Payment Pending', backgroundColor: '#FEF3C7', color: '#92400E' };
+      }
+      return { text: 'Pending', backgroundColor: '#FEF3C7', color: '#92400E' };
+    }
+    // Default fallback
+    return { text: bookingStatus, backgroundColor: '#F3F4F6', color: '#374151' };
+  };
+
   // ============================================================================
   // TAB DATA
   // ============================================================================
@@ -1654,40 +1703,24 @@ export default function BookingsPage() {
               {booking.clinicName}
             </Text>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 6,
-                backgroundColor: getStatusColor(booking.status).backgroundColor,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(booking.status).color }}>
-                {getStatusText(booking.status)}
-              </Text>
-            </View>
-            {booking.paymentStatus && (
+          {/* Unified Status Badge */}
+          {(() => {
+            const unifiedStatus = getUnifiedBookingStatus(booking.status, booking.paymentStatus);
+            return (
               <View
                 style={{
                   paddingHorizontal: 10,
                   paddingVertical: 4,
                   borderRadius: 6,
-                  backgroundColor: getPaymentStatusColor(booking.paymentStatus).backgroundColor,
+                  backgroundColor: unifiedStatus.backgroundColor,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '500',
-                    color: getPaymentStatusColor(booking.paymentStatus).color,
-                  }}
-                >
-                  {getPaymentStatusText(booking.paymentStatus)}
+                <Text style={{ fontSize: 11, fontWeight: '500', color: unifiedStatus.color }}>
+                  {unifiedStatus.text}
                 </Text>
               </View>
-            )}
-          </View>
+            );
+          })()}
         </View>
 
         {/* Details */}
@@ -1828,40 +1861,24 @@ export default function BookingsPage() {
               {booking.clinicName}
             </Text>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 6,
-                backgroundColor: getStatusColor(booking.status).backgroundColor,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: '500', color: getStatusColor(booking.status).color }}>
-                {getStatusText(booking.status)}
-              </Text>
-            </View>
-            {booking.paymentStatus && (
+          {/* Unified Status Badge */}
+          {(() => {
+            const unifiedStatus = getUnifiedBookingStatus(booking.status, booking.paymentStatus);
+            return (
               <View
                 style={{
                   paddingHorizontal: 10,
                   paddingVertical: 4,
                   borderRadius: 6,
-                  backgroundColor: getPaymentStatusColor(booking.paymentStatus).backgroundColor,
+                  backgroundColor: unifiedStatus.backgroundColor,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '500',
-                    color: getPaymentStatusColor(booking.paymentStatus).color,
-                  }}
-                >
-                  {getPaymentStatusText(booking.paymentStatus)}
+                <Text style={{ fontSize: 11, fontWeight: '500', color: unifiedStatus.color }}>
+                  {unifiedStatus.text}
                 </Text>
               </View>
-            )}
-          </View>
+            );
+          })()}
         </View>
 
         {/* Details */}
