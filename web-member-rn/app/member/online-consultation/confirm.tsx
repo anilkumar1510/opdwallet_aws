@@ -1232,11 +1232,44 @@ export default function OnlineConfirmPage() {
                   const dateStr = `${year}-${month}-${day}`;
                   const dayName = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'long' });
 
+                  // Filter time slots - for today, only show future times
+                  const allSlots = ['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '5:00 PM'];
+                  const availableSlots = dayOffset === 0
+                    ? allSlots.filter((time) => {
+                        const now = new Date();
+                        const currentHour = now.getHours();
+                        const currentMinute = now.getMinutes();
+
+                        // Parse time slot
+                        const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                        if (!timeMatch) return true;
+
+                        let hour = parseInt(timeMatch[1], 10);
+                        const minute = parseInt(timeMatch[2], 10);
+                        const period = timeMatch[3].toUpperCase();
+
+                        // Convert to 24-hour format
+                        if (period === 'PM' && hour !== 12) {
+                          hour += 12;
+                        } else if (period === 'AM' && hour === 12) {
+                          hour = 0;
+                        }
+
+                        // Compare with current time
+                        if (hour > currentHour) return true;
+                        if (hour === currentHour && minute > currentMinute) return true;
+                        return false;
+                      })
+                    : allSlots;
+
+                  // Don't show the day if no slots are available
+                  if (availableSlots.length === 0) return null;
+
                   return (
                     <View key={dayOffset}>
                       <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 8 }}>{dayName}</Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        {['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '5:00 PM'].map((time) => (
+                        {availableSlots.map((time) => (
                           <TouchableOpacity
                             key={`${dateStr}-${time}`}
                             onPress={() => handleSlotSelected(dateStr, time, `${doctorId}_ONLINE_${dateStr}_${time.replace(/[:\s]/g, '_')}`)}
