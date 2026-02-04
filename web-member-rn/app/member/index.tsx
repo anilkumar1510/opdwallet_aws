@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,17 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { fetchWalletBalance, WalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 import { usePolicyPDF } from '../../src/hooks/usePolicyPDF';
+import apiClient from '../../src/lib/api/client';
+
+// Cart interface
+interface CartItem {
+  cartId: string;
+  items: Array<{ serviceName: string }>;
+  status: string;
+  createdAt: string;
+  patientName?: string;
+  type: 'lab' | 'diagnostic';
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -497,9 +508,50 @@ export default function DashboardScreen() {
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [activePolicyIndex, setActivePolicyIndex] = useState(0);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
+  const [carts, setCarts] = useState<CartItem[]>([]);
   const policyScrollRef = useRef<ScrollView>(null);
   const lastRefreshTime = useRef<number>(0);
   const isRefreshing = useRef<boolean>(false);
+
+  // Fetch carts (lab + diagnostics)
+  const fetchCarts = useCallback(async () => {
+    try {
+      const userId = viewingUserId || profileData?.user?._id || profile?.user?._id;
+      const params = userId ? { userId } : undefined;
+
+      // Fetch both lab and diagnostic carts in parallel
+      const [labRes, diagnosticRes] = await Promise.all([
+        apiClient.get('/member/lab/carts', { params }).catch(() => ({ data: { data: [] } })),
+        apiClient.get('/member/diagnostics/carts', { params }).catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const labCarts: CartItem[] = (labRes.data?.data || [])
+        .filter((c: any) => c.status === 'ACTIVE' || c.status === 'CREATED')
+        .map((c: any) => ({
+          cartId: c.cartId,
+          items: c.items || [],
+          status: c.status,
+          createdAt: c.createdAt,
+          patientName: c.patientName,
+          type: 'lab' as const,
+        }));
+
+      const diagnosticCarts: CartItem[] = (diagnosticRes.data?.data || [])
+        .filter((c: any) => c.status === 'ACTIVE' || c.status === 'CREATED')
+        .map((c: any) => ({
+          cartId: c.cartId,
+          items: c.items || [],
+          status: c.status,
+          createdAt: c.createdAt,
+          patientName: c.patientName,
+          type: 'diagnostic' as const,
+        }));
+
+      setCarts([...labCarts, ...diagnosticCarts]);
+    } catch (error) {
+      console.error('[Dashboard] Failed to fetch carts:', error);
+    }
+  }, [viewingUserId, profileData?.user?._id, profile?.user?._id]);
 
   // Fetch fresh wallet data from dedicated endpoint (like Next.js does)
   const fetchWalletData = async (userId: string) => {
@@ -513,7 +565,7 @@ export default function DashboardScreen() {
     }
   };
 
-  // Fetch wallet data when user ID becomes available or changes (profile switch)
+  // Fetch wallet data and carts when user ID becomes available or changes (profile switch)
   useEffect(() => {
     const userId = viewingUserId || profileData?.user?._id || profile?.user?._id;
     if (userId) {
@@ -521,8 +573,9 @@ export default function DashboardScreen() {
       // Clear old wallet data and fetch fresh data
       setWalletData(null);
       fetchWalletData(userId);
+      fetchCarts();
     }
-  }, [viewingUserId]);
+  }, [viewingUserId, fetchCarts]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -549,6 +602,9 @@ export default function DashboardScreen() {
 
             // Also refresh profile for other data
             await refreshProfile();
+
+            // Refresh carts
+            await fetchCarts();
           } catch (error) {
             console.log('[Dashboard] Failed to refresh data:', error);
           } finally {
@@ -558,7 +614,7 @@ export default function DashboardScreen() {
       };
 
       refreshData();
-    }, [refreshProfile, viewingUserId, profileData, profile])
+    }, [refreshProfile, viewingUserId, profileData, profile, fetchCarts])
   );
 
   // User data - use profile.user from MemberProfileResponse
@@ -819,6 +875,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            onPress={() => router.push('/member/carts' as any)}
             style={{
               width: 35,
               height: 35,
@@ -826,10 +883,33 @@ export default function DashboardScreen() {
               backgroundColor: '#fbfdfe',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
             }}
             activeOpacity={0.7}
           >
             <CartIcon />
+            {carts.length > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  backgroundColor: '#EF4444',
+                  borderRadius: 10,
+                  minWidth: 18,
+                  height: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 4,
+                  borderWidth: 2,
+                  borderColor: '#fff',
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                  {carts.length > 9 ? '9+' : carts.length}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -1409,6 +1489,7 @@ export default function DashboardScreen() {
           </View>
         </>
       )}
+
     </ContainerComponent>
   );
 }
