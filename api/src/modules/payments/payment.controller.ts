@@ -96,8 +96,15 @@ export class PaymentController {
 
       if (frontendServiceType === 'ONLINE_CONSULTATION' ||
           frontendServiceType === 'consultation' ||
-          frontendServiceType === 'APPOINTMENT') {
+          frontendServiceType === 'APPOINTMENT' ||
+          frontendServiceType === 'IN_CLINIC_APPOINTMENT') {
         serviceType = ServiceType.APPOINTMENT;
+      } else if (frontendServiceType === 'DIAGNOSTIC') {
+        serviceType = ServiceType.DIAGNOSTIC_ORDER;
+      } else if (frontendServiceType === 'LAB') {
+        serviceType = ServiceType.LAB_ORDER;
+      } else if (frontendServiceType === 'AHC') {
+        serviceType = ServiceType.AHC_ORDER;
       } else if (Object.values(ServiceType).includes(frontendServiceType as ServiceType)) {
         serviceType = frontendServiceType as ServiceType;
       } else {
@@ -110,15 +117,32 @@ export class PaymentController {
                        createPaymentDto.serviceId ||
                        new Types.ObjectId().toString();
 
+      // Extract serviceReferenceId based on service type
+      let serviceReferenceId = createPaymentDto.serviceReferenceId || createPaymentDto.paymentId;
+
+      // For specific service types, extract reference from metadata
+      if (!serviceReferenceId && createPaymentDto.metadata) {
+        if (serviceType === ServiceType.AHC_ORDER && createPaymentDto.metadata.packageId) {
+          serviceReferenceId = createPaymentDto.metadata.packageId;
+        } else if (serviceType === ServiceType.LAB_ORDER && createPaymentDto.metadata.cartId) {
+          serviceReferenceId = createPaymentDto.metadata.cartId;
+        } else if (serviceType === ServiceType.DIAGNOSTIC_ORDER && createPaymentDto.metadata.cartId) {
+          serviceReferenceId = createPaymentDto.metadata.cartId;
+        }
+      }
+
+      // Fall back to generated reference if still not set
+      if (!serviceReferenceId) {
+        serviceReferenceId = `REF-${Date.now()}`;
+      }
+
       const paymentData = {
         userId,
         amount: createPaymentDto.amount || 0,
         paymentType,
         serviceType,
         serviceId,
-        serviceReferenceId: createPaymentDto.serviceReferenceId ||
-                           createPaymentDto.paymentId || // Use frontend paymentId if exists
-                           `REF-${Date.now()}`,
+        serviceReferenceId,
         description: createPaymentDto.description || 'Payment Request',
         notes: createPaymentDto.metadata ? JSON.stringify(createPaymentDto.metadata) :
                createPaymentDto.notes || undefined,

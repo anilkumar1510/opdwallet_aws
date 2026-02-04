@@ -18,6 +18,8 @@ import { DiagnosticCartService } from './diagnostic-cart.service';
 import { AssignmentsService } from '../../assignments/assignments.service';
 import { PlanConfigService } from '../../plan-config/plan-config.service';
 import { WalletService } from '../../wallet/wallet.service';
+import { PaymentService } from '../../payments/payment.service';
+import { ServiceType as PaymentServiceType } from '../../payments/schemas/payment.schema';
 import { TransactionSummaryService } from '../../transactions/transaction-summary.service';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../../transactions/schemas/transaction-summary.schema';
 import { BenefitResolver } from '../../plan-config/utils/benefit-resolver';
@@ -68,6 +70,7 @@ export class DiagnosticOrderService {
     private planConfigService: PlanConfigService,
     private walletService: WalletService,
     private transactionSummaryService: TransactionSummaryService,
+    private paymentService: PaymentService,
   ) {}
 
   async create(createDto: CreateDiagnosticOrderDto): Promise<DiagnosticOrder> {
@@ -246,6 +249,31 @@ export class DiagnosticOrderService {
       await savedOrder.save();
 
       console.log('[DiagnosticOrder] Transaction summary created:', (transaction as any)._id);
+
+      // Update payment record with actual order ID if payment was processed
+      console.log('[DiagnosticOrder] Attempting to update payment record with:', {
+        cartId: createDto.cartId,
+        serviceType: PaymentServiceType.DIAGNOSTIC_ORDER,
+        orderId,
+        orderMongoId: (savedOrder._id as Types.ObjectId).toString(),
+      });
+
+      try {
+        const updatedPayment = await this.paymentService.updatePaymentByReference(
+          createDto.cartId,
+          PaymentServiceType.DIAGNOSTIC_ORDER,
+          orderId,
+          (savedOrder._id as Types.ObjectId).toString(),
+        );
+
+        if (updatedPayment) {
+          console.log('[DiagnosticOrder] Payment record updated successfully:', updatedPayment.paymentId);
+        } else {
+          console.log('[DiagnosticOrder] Payment record not found - might need manual update');
+        }
+      } catch (error) {
+        console.log('[DiagnosticOrder] Failed to update payment record (non-critical):', error.message);
+      }
     }
 
     // Mark cart as ordered
@@ -310,6 +338,41 @@ export class DiagnosticOrderService {
 
   async cancelOrder(orderId: string, reason: string, cancelledBy: CancelledBy): Promise<DiagnosticOrder> {
     const order = await this.findOne(orderId);
+
+    // Credit wallet if payment was made from wallet
+    if (order.paymentStatus === PaymentStatus.COMPLETED && order.walletDeduction && order.walletDeduction > 0) {
+      console.log('[DiagnosticOrder] Crediting wallet for cancelled order:', {
+        orderId,
+        amount: order.walletDeduction,
+        userId: order.userId,
+      });
+
+      await this.walletService.creditWallet(
+        order.userId.toString(),
+        order.walletDeduction,
+        'CAT003', // Diagnostic Services category code
+        (order._id as Types.ObjectId).toString(),
+        'DIAGNOSTIC',
+        order.vendorName,
+        `Refund for cancelled diagnostic order: ${reason}`,
+      );
+    }
+
+    // Process payment refund for finalPayable amount
+    if (order.paymentStatus === PaymentStatus.COMPLETED && order.finalPayable && order.finalPayable > 0) {
+      console.log('[DiagnosticOrder] Processing payment refund for cancelled order:', {
+        orderId,
+        amount: order.finalPayable,
+        userId: order.userId,
+      });
+
+      await this.paymentService.processRefundByService(
+        PaymentServiceType.DIAGNOSTIC_ORDER,
+        (order._id as Types.ObjectId).toString(),
+        reason,
+        order.orderId, // Pass orderId as fallback reference
+      );
+    }
 
     order.status = OrderStatus.CANCELLED;
     order.cancelledAt = new Date();

@@ -143,22 +143,45 @@ export default function DiagnosticServicesPage() {
     setShowModal(true)
   }
 
-  const handleDeactivate = async (serviceId: string) => {
-    if (!confirm('Are you sure you want to deactivate this service?')) return
+  const handleToggleStatus = async (service: DiagnosticService) => {
+    const action = service.isActive ? 'deactivate' : 'activate'
+    const confirmMessage = service.isActive
+      ? 'Are you sure you want to deactivate this service?'
+      : 'Are you sure you want to activate this service?'
+
+    if (!confirm(confirmMessage)) return
 
     try {
-      const response = await apiFetch(`/api/admin/diagnostics/services/${serviceId}`, {
-        method: 'DELETE',
-      })
+      const response = await apiFetch(
+        `/api/admin/diagnostics/services/${service.serviceId}/${action}`,
+        { method: 'PATCH' }
+      )
 
-      if (!response.ok) throw new Error('Failed to deactivate service')
+      if (!response.ok) {
+        let errorMessage = `Failed to ${action} service`
+        try {
+          const errorData = await response.json()
+          // Handle nested error message structure
+          if (typeof errorData.message === 'object' && errorData.message.message) {
+            errorMessage = errorData.message.message
+          } else if (typeof errorData.message === 'string') {
+            errorMessage = errorData.message
+          } else if (errorData.error) {
+            errorMessage = typeof errorData.error === 'string' ? errorData.error : errorData.error.message
+          }
+        } catch {
+          // If parsing fails, use default message
+        }
+        throw new Error(errorMessage)
+      }
 
       const data = await response.json()
-      toast.success(data.message || 'Service deactivated successfully')
+      toast.success(data.message || `Service ${action}d successfully`)
       fetchServices()
-    } catch (error) {
-      console.error('Error deactivating service:', error)
-      toast.error('Failed to deactivate service')
+    } catch (error: any) {
+      console.error(`Error ${action}ing service:`, error)
+      const errorMessage = error.message || `Failed to ${action} service`
+      toast.error(errorMessage)
     }
   }
 
@@ -256,6 +279,9 @@ export default function DiagnosticServicesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contrast
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -290,6 +316,17 @@ export default function DiagnosticServicesPage() {
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {service.isActive ? (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                          Inactive
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
                         onClick={() => handleEdit(service)}
@@ -298,15 +335,16 @@ export default function DiagnosticServicesPage() {
                         <PencilIcon className="h-4 w-4 mr-1" />
                         Edit
                       </button>
-                      {service.isActive && (
-                        <button
-                          onClick={() => handleDeactivate(service.serviceId)}
-                          className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
-                        >
-                          <TrashIcon className="h-4 w-4 mr-1" />
-                          Deactivate
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleToggleStatus(service)}
+                        className={`inline-flex items-center px-3 py-1 rounded-lg transition-colors ${
+                          service.isActive
+                            ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                            : 'bg-green-100 hover:bg-green-200 text-green-700'
+                        }`}
+                      >
+                        {service.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
                     </td>
                   </tr>
                 ))}

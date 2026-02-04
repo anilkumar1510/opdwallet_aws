@@ -111,6 +111,28 @@ export class LabAdminController {
     };
   }
 
+  @Patch('services/:id/activate')
+  async activateService(@Param('id') id: string) {
+    const service = await this.serviceService.activateService(id);
+
+    return {
+      success: true,
+      message: 'Service activated successfully',
+      data: service,
+    };
+  }
+
+  @Patch('services/:id/deactivate')
+  async deactivateServicePatch(@Param('id') id: string) {
+    const service = await this.serviceService.deactivateService(id);
+
+    return {
+      success: true,
+      message: 'Service deactivated successfully',
+      data: service,
+    };
+  }
+
   // ============ VENDOR MANAGEMENT ============
 
   @Post('vendors')

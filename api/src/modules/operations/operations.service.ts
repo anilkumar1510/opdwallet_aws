@@ -6,6 +6,7 @@ import { Doctor, DoctorDocument } from '../doctors/schemas/doctor.schema';
 import { Appointment, AppointmentDocument } from '../appointments/schemas/appointment.schema';
 import { LabPrescription, LabPrescriptionDocument } from '../lab/schemas/lab-prescription.schema';
 import { LabOrder, LabOrderDocument } from '../lab/schemas/lab-order.schema';
+import { PlanConfig } from '../plan-config/schemas/plan-config.schema';
 import { WalletService } from '../wallet/wallet.service';
 import { AssignmentsService } from '../assignments/assignments.service';
 import { RelationshipType } from '@/common/constants/status.enum';
@@ -19,6 +20,7 @@ export class OperationsService {
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
     @InjectModel(LabPrescription.name) private labPrescriptionModel: Model<LabPrescriptionDocument>,
     @InjectModel(LabOrder.name) private labOrderModel: Model<LabOrderDocument>,
+    @InjectModel(PlanConfig.name) private planConfigModel: Model<PlanConfig>,
     private walletService: WalletService,
     private assignmentsService: AssignmentsService,
   ) {}
@@ -97,6 +99,18 @@ export class OperationsService {
         .lean();
     }
 
+    // Check if top-up is allowed from active assignment's plan config
+    let topUpAllowed = false;
+    if (assignments && assignments.length > 0) {
+      const activeAssignment = assignments.find((a: any) => a.isActive);
+      if (activeAssignment && activeAssignment.planConfigId) {
+        const planConfig = await this.planConfigModel.findById(activeAssignment.planConfigId).lean();
+        if (planConfig) {
+          topUpAllowed = planConfig.wallet?.topUpAllowed || false;
+        }
+      }
+    }
+
     return {
       user,
       wallet: formattedWallet,
@@ -105,6 +119,7 @@ export class OperationsService {
       transactions,
       dependents,
       isPrimaryMember,
+      topUpAllowed,
     };
   }
 

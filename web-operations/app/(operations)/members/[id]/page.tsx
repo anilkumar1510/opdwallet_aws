@@ -21,6 +21,7 @@ interface MemberDetails {
   transactions: any[]
   dependents: any[]
   isPrimaryMember: boolean
+  topUpAllowed: boolean
 }
 
 export default function MemberDetailPage() {
@@ -92,7 +93,7 @@ export default function MemberDetailPage() {
     )
   }
 
-  const { user, wallet, rawWallet, assignments, transactions, dependents, isPrimaryMember } = details
+  const { user, wallet, rawWallet, assignments, transactions, dependents, isPrimaryMember, topUpAllowed } = details
 
   return (
     <div className="space-y-6">
@@ -122,7 +123,7 @@ export default function MemberDetailPage() {
             <ArrowPathIcon className="h-5 w-5" />
             <span>Refresh</span>
           </button>
-          {rawWallet && (
+          {rawWallet && topUpAllowed && (
             <button
               onClick={() => setShowTopupModal(true)}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"

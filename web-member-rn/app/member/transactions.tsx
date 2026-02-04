@@ -620,9 +620,9 @@ export default function TransactionsScreen() {
             payments = selfResponse.data.data;
           }
 
-          // Filter to only show completed payments and cancelled (potential refunds)
+          // Filter to only show completed, cancelled, and refunded payments
           const filteredPayments = payments.filter((p: any) =>
-            p.status === 'COMPLETED' || p.status === 'CANCELLED'
+            p.status === 'COMPLETED' || p.status === 'CANCELLED' || p.status === 'REFUNDED'
           );
 
           // Sort by date (most recent first)
@@ -1189,10 +1189,15 @@ export default function TransactionsScreen() {
                       const isLast = index === monthPayments.length - 1;
                       const isAbsoluteLastPayment = payment._id === visibleSelfPayments[visibleSelfPayments.length - 1]?._id;
                       const showLoadMore = isAbsoluteLastPayment && hasMoreTransactions;
-                      const isRefund = payment.isRefund || payment.paymentType === 'REFUND' || payment.status === 'REFUNDED';
+                      // Only the refund payment record has isRefund=true, not the original refunded payment
+                      const isRefund = payment.isRefund === true || payment.paymentType === 'REFUND';
+                      const wasRefunded = payment.status === 'REFUNDED' && !payment.isRefund;
 
                       // Format payment type label
                       const paymentTypeLabel = isRefund ? 'Refund' :
+                        wasRefunded ? (payment.paymentType === 'COPAY' ? 'Copay (Refunded)' :
+                          payment.paymentType === 'OUT_OF_POCKET' ? 'Out of Pocket (Refunded)' :
+                          'Payment (Refunded)') :
                         payment.paymentType === 'COPAY' ? 'Copay' :
                         payment.paymentType === 'OUT_OF_POCKET' ? 'Out of Pocket' :
                         payment.paymentType === 'FULL_PAYMENT' ? 'Full Payment' :

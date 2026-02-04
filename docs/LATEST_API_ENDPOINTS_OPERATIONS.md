@@ -317,6 +317,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | PATCH | /ops/lab/orders/:orderId/collect | Mark sample collected |
 | POST | /ops/lab/orders/:orderId/reports/upload | Upload test report |
 | PATCH | /ops/lab/orders/:orderId/complete | Complete order |
+| POST | /ops/lab/orders/:orderId/cancel | Cancel lab order (refunds wallet + payment) |
 
 ---
 
@@ -337,7 +338,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | PATCH | /ops/diagnostics/orders/:id/status | Update diagnostic order status |
 | PATCH | /ops/diagnostics/orders/:id/confirm | Confirm diagnostic order |
 | PATCH | /ops/diagnostics/orders/:id/collect | Mark diagnostic service as scheduled |
-| POST | /ops/diagnostics/orders/:id/cancel | Cancel diagnostic order |
+| POST | /ops/diagnostics/orders/:id/cancel | Cancel diagnostic order (refunds wallet + payment) |
 | POST | /ops/diagnostics/orders/:id/report | Upload diagnostic test report |
 
 ---
@@ -352,7 +353,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | POST | /ops/ahc/orders/:orderId/reports/upload | Upload lab and/or diagnostic reports (dual upload in single request) |
 | POST | /ops/ahc/orders/:orderId/reports/upload-lab | Upload only lab report (alternative endpoint) |
 | POST | /ops/ahc/orders/:orderId/reports/upload-diagnostic | Upload only diagnostic report (alternative endpoint) |
-| POST | /ops/ahc/orders/:orderId/cancel | Cancel AHC order with reason |
+| POST | /ops/ahc/orders/:orderId/cancel | Cancel AHC order with reason (refunds wallet + payment) |
 | PATCH | /ops/ahc/orders/:orderId/status | Update order status (manual override) |
 
 **AHC Operations Flow:**

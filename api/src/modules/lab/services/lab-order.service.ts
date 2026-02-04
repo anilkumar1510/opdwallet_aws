@@ -12,6 +12,8 @@ import { LabVendorService } from './lab-vendor.service';
 import { AssignmentsService } from '../../assignments/assignments.service';
 import { PlanConfigService } from '../../plan-config/plan-config.service';
 import { WalletService } from '../../wallet/wallet.service';
+import { PaymentService } from '../../payments/payment.service';
+import { ServiceType as PaymentServiceType } from '../../payments/schemas/payment.schema';
 import { BenefitResolver } from '../../plan-config/utils/benefit-resolver';
 import { CopayResolver } from '../../plan-config/utils/copay-resolver';
 import { CopayCalculator } from '../../plan-config/utils/copay-calculator';
@@ -34,6 +36,7 @@ export class LabOrderService {
     private planConfigService: PlanConfigService,
     private walletService: WalletService,
     private transactionSummaryService: TransactionSummaryService,
+    private paymentService: PaymentService,
   ) {}
 
   async validateOrder(userId: string, validateDto: ValidateLabOrderDto) {
@@ -336,6 +339,19 @@ export class LabOrderService {
       await savedOrder.save();
 
       console.log('[LabOrder] Transaction summary created:', (transaction as any)._id);
+
+      // Update payment record with actual order ID if payment was processed
+      try {
+        await this.paymentService.updatePaymentByReference(
+          createDto.cartId,
+          PaymentServiceType.LAB_ORDER,
+          orderId,
+          (savedOrder._id as Types.ObjectId).toString(),
+        );
+        console.log('[LabOrder] Payment record updated with order ID');
+      } catch (error) {
+        console.log('[LabOrder] Failed to update payment record (non-critical):', error.message);
+      }
     }
 
     // Mark cart as ordered
@@ -469,6 +485,41 @@ export class LabOrderService {
 
     if (order.status === OrderStatus.CANCELLED) {
       throw new BadRequestException('Order is already cancelled');
+    }
+
+    // Credit wallet if payment was made from wallet
+    if (order.paymentStatus === PaymentStatus.COMPLETED && order.walletDeduction && order.walletDeduction > 0) {
+      console.log('[LabOrder] Crediting wallet for cancelled order:', {
+        orderId,
+        amount: order.walletDeduction,
+        userId: order.userId,
+      });
+
+      await this.walletService.creditWallet(
+        order.userId.toString(),
+        order.walletDeduction,
+        'CAT004', // Laboratory Services category code
+        (order._id as Types.ObjectId).toString(),
+        'LAB',
+        order.vendorName,
+        `Refund for cancelled lab order: ${reason}`,
+      );
+    }
+
+    // Process payment refund for finalPayable amount
+    if (order.paymentStatus === PaymentStatus.COMPLETED && order.finalPayable && order.finalPayable > 0) {
+      console.log('[LabOrder] Processing payment refund for cancelled order:', {
+        orderId,
+        amount: order.finalPayable,
+        userId: order.userId,
+      });
+
+      await this.paymentService.processRefundByService(
+        PaymentServiceType.LAB_ORDER,
+        (order._id as Types.ObjectId).toString(),
+        reason,
+        order.orderId, // Pass orderId as fallback reference
+      );
     }
 
     order.status = OrderStatus.CANCELLED;

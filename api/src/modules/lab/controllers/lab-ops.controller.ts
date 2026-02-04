@@ -312,4 +312,18 @@ export class LabOpsController {
       data: order,
     };
   }
+
+  @Post('orders/:orderId/cancel')
+  async cancelOrder(
+    @Param('orderId') orderId: string,
+    @Body() body: { reason: string },
+  ) {
+    const order = await this.orderService.cancelOrder(orderId, body.reason);
+
+    return {
+      success: true,
+      message: 'Order cancelled successfully',
+      data: order,
+    };
+  }
 }

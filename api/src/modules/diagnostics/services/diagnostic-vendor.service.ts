@@ -414,10 +414,15 @@ export class DiagnosticVendorService {
    * Returns vendors that:
    * 1. Serve the specified pincode
    * 2. Have pricing for ALL selected services
+   * 3. Have available slots for current or future dates
    */
   async getEligibleVendors(serviceIds: string[], pincode: string): Promise<any[]> {
     // Convert serviceIds to ObjectIds
     const serviceObjectIds = serviceIds.map(id => new Types.ObjectId(id));
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     // Find vendors that serve this pincode
     const vendorsInPincode = await this.diagnosticVendorModel.find({
@@ -431,7 +436,7 @@ export class DiagnosticVendorService {
 
     const eligibleVendors = [];
 
-    // For each vendor, check if they have pricing for ALL selected services
+    // For each vendor, check if they have pricing for ALL selected services AND available slots
     for (const vendor of vendorsInPincode) {
       const vendorPricing = await this.diagnosticVendorPricingModel.find({
         vendorId: vendor._id,
@@ -439,33 +444,50 @@ export class DiagnosticVendorService {
         isActive: true,
       }).populate('serviceId', 'name code category');
 
-      // Vendor is eligible only if they have pricing for ALL services
-      if (vendorPricing.length === serviceIds.length) {
-        // Calculate total price
-        const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
-        const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
-
-        eligibleVendors.push({
-          _id: vendor._id,
-          vendorId: vendor.vendorId,
-          name: vendor.name,
-          code: vendor.code,
-          homeCollection: vendor.homeCollection,
-          centerVisit: vendor.centerVisit,
-          homeCollectionCharges: vendor.homeCollectionCharges,
-          pricing: vendorPricing.map((p: any) => ({
-            serviceId: p.serviceId._id,
-            serviceName: p.serviceId.name,
-            serviceCode: p.serviceId.code,
-            category: p.serviceId.category,
-            actualPrice: p.actualPrice,
-            discountedPrice: p.discountedPrice,
-          })),
-          totalActualPrice,
-          totalDiscountedPrice,
-          totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
-        });
+      // Vendor must have pricing for ALL services
+      if (vendorPricing.length !== serviceIds.length) {
+        continue;
       }
+
+      // Check if vendor has available slots for current or future dates
+      const availableSlots = await this.diagnosticVendorSlotModel.find({
+        vendorId: vendor._id,
+        pincode: pincode,
+        date: { $gte: todayStr },
+        isActive: true,
+        $expr: { $lt: ['$currentBookings', '$maxBookings'] } // currentBookings < maxBookings
+      });
+
+      // Vendor must have at least one available slot for current or future dates
+      if (availableSlots.length === 0) {
+        continue;
+      }
+
+      // Calculate total price
+      const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
+      const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
+
+      eligibleVendors.push({
+        _id: vendor._id,
+        vendorId: vendor.vendorId,
+        name: vendor.name,
+        code: vendor.code,
+        homeCollection: vendor.homeCollection,
+        centerVisit: vendor.centerVisit,
+        homeCollectionCharges: vendor.homeCollectionCharges,
+        pricing: vendorPricing.map((p: any) => ({
+          serviceId: p.serviceId._id,
+          serviceName: p.serviceId.name,
+          serviceCode: p.serviceId.code,
+          category: p.serviceId.category,
+          actualPrice: p.actualPrice,
+          discountedPrice: p.discountedPrice,
+        })),
+        totalActualPrice,
+        totalDiscountedPrice,
+        totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
+        availableSlotsCount: availableSlots.length,
+      });
     }
 
     return eligibleVendors;

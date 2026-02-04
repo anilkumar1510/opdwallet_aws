@@ -140,7 +140,7 @@ export default function NewDoctorPage() {
       if (response.ok) {
         const data = await response.json()
         toast.success('Doctor created successfully')
-        router.push(`/doctors/${data.doctorId}`)
+        router.push('/doctors')
       } else {
         const errorData = await response.json()
         console.error('Failed to create doctor:', errorData)

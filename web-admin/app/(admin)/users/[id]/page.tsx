@@ -413,7 +413,11 @@ export default function UserDetailPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        toast.error(error.message || 'Failed to update user')
+        // Handle nested message structure: error.message.message or error.message
+        const errorMessage = typeof error.message === 'object'
+          ? error.message.message || JSON.stringify(error.message)
+          : error.message || 'Failed to update user'
+        toast.error(errorMessage)
         return
       }
 

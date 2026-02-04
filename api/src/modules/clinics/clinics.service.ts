@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Clinic, ClinicDocument } from './schemas/clinic.schema';
+import { DoctorSlot, DoctorSlotDocument } from '../doctor-slots/schemas/doctor-slot.schema';
 import { CreateClinicDto } from './dto/create-clinic.dto';
 import { UpdateClinicDto } from './dto/update-clinic.dto';
 import { CounterService } from '../counters/counter.service';
@@ -10,6 +11,7 @@ import { CounterService } from '../counters/counter.service';
 export class ClinicsService {
   constructor(
     @InjectModel(Clinic.name) private clinicModel: Model<ClinicDocument>,
+    @InjectModel(DoctorSlot.name) private doctorSlotModel: Model<DoctorSlotDocument>,
     private readonly counterService: CounterService,
   ) {}
 
@@ -98,6 +100,18 @@ export class ClinicsService {
     const clinic = await this.clinicModel.findOne({ clinicId });
     if (!clinic) {
       throw new NotFoundException(`Clinic with ID ${clinicId} not found`);
+    }
+
+    // Check for active doctor schedules
+    const activeDoctorSlots = await this.doctorSlotModel.countDocuments({
+      clinicId,
+      isActive: true
+    });
+
+    if (activeDoctorSlots > 0) {
+      throw new BadRequestException(
+        `Cannot deactivate clinic. There are ${activeDoctorSlots} active doctor schedule(s) assigned to this clinic. Please deactivate all doctor schedules first.`
+      );
     }
 
     clinic.isActive = false;

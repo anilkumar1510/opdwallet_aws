@@ -7,6 +7,7 @@ import { Doctor, DoctorSchema } from '../doctors/schemas/doctor.schema';
 import { Appointment, AppointmentSchema } from '../appointments/schemas/appointment.schema';
 import { LabPrescription, LabPrescriptionSchema } from '../lab/schemas/lab-prescription.schema';
 import { LabOrder, LabOrderSchema } from '../lab/schemas/lab-order.schema';
+import { PlanConfig, PlanConfigSchema } from '../plan-config/schemas/plan-config.schema';
 import { WalletModule } from '../wallet/wallet.module';
 import { AssignmentsModule } from '../assignments/assignments.module';
 import { ClinicServicePricingModule } from './dental-services/clinic-service-pricing.module';
@@ -22,6 +23,7 @@ import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module'
       { name: Appointment.name, schema: AppointmentSchema },
       { name: LabPrescription.name, schema: LabPrescriptionSchema },
       { name: LabOrder.name, schema: LabOrderSchema },
+      { name: PlanConfig.name, schema: PlanConfigSchema },
     ]),
     WalletModule,
     AssignmentsModule,

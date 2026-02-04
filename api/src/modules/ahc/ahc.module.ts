@@ -25,6 +25,7 @@ import { AssignmentsModule } from '../assignments/assignments.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
+import { PaymentModule } from '../payments/payment.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
@@ -81,6 +82,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
     PlanConfigModule,
     WalletModule,
     TransactionSummaryModule,
+    PaymentModule,
   ],
   controllers: [
     AhcAdminController,

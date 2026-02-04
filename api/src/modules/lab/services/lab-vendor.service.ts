@@ -401,6 +401,7 @@ export class LabVendorService {
    * Returns vendors that:
    * 1. Serve the specified pincode
    * 2. Have pricing for ALL selected tests
+   * 3. Have available slots for current or future dates
    */
   async getEligibleVendors(serviceIds: string[], pincode: string): Promise<any[]> {
     console.log('[LabVendor] getEligibleVendors called with:', { serviceIds, pincode });
@@ -408,6 +409,10 @@ export class LabVendorService {
     // Convert serviceIds to ObjectIds
     const serviceObjectIds = serviceIds.map(id => new Types.ObjectId(id));
     console.log('[LabVendor] Converted to ObjectIds:', serviceObjectIds);
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     // Find vendors that serve this pincode
     const vendorsInPincode = await this.vendorModel.find({
@@ -424,7 +429,7 @@ export class LabVendorService {
 
     const eligibleVendors = [];
 
-    // For each vendor, check if they have pricing for ALL selected tests
+    // For each vendor, check if they have pricing for ALL selected tests AND available slots
     for (const vendor of vendorsInPincode) {
       console.log(`[LabVendor] Checking pricing for vendor ${vendor.name} (${vendor.vendorId})...`);
 
@@ -437,35 +442,54 @@ export class LabVendorService {
       console.log(`[LabVendor] Vendor ${vendor.name}: Found ${vendorPricing.length} pricing entries (need ${serviceIds.length})`);
       console.log(`[LabVendor] Pricing services:`, vendorPricing.map(p => ({ serviceId: (p.serviceId as any)?._id, serviceName: (p.serviceId as any)?.name })));
 
-      // Vendor is eligible only if they have pricing for ALL tests
-      if (vendorPricing.length === serviceIds.length) {
-        console.log(`[LabVendor] Vendor ${vendor.name} is ELIGIBLE (has all services)`);
-        // Calculate total price
-        const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
-        const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
-
-        eligibleVendors.push({
-          _id: vendor._id,
-          vendorId: vendor.vendorId,
-          name: vendor.name,
-          code: vendor.code,
-          homeCollection: vendor.homeCollection,
-          centerVisit: vendor.centerVisit,
-          homeCollectionCharges: vendor.homeCollectionCharges,
-          pricing: vendorPricing.map(p => ({
-            serviceId: (p.serviceId as any)._id,
-            serviceName: (p.serviceId as any).name,
-            serviceCode: (p.serviceId as any).code,
-            actualPrice: p.actualPrice,
-            discountedPrice: p.discountedPrice,
-          })),
-          totalActualPrice,
-          totalDiscountedPrice,
-          totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
-        });
-      } else {
+      // Vendor must have pricing for ALL tests
+      if (vendorPricing.length !== serviceIds.length) {
         console.log(`[LabVendor] Vendor ${vendor.name} is NOT eligible (missing ${serviceIds.length - vendorPricing.length} services)`);
+        continue;
       }
+
+      // Check if vendor has available slots for current or future dates
+      const availableSlots = await this.slotModel.find({
+        vendorId: vendor._id,
+        pincode: pincode,
+        date: { $gte: todayStr },
+        isActive: true,
+        $expr: { $lt: ['$currentBookings', '$maxBookings'] } // currentBookings < maxBookings
+      });
+
+      console.log(`[LabVendor] Vendor ${vendor.name}: Found ${availableSlots.length} available slots`);
+
+      // Vendor must have at least one available slot for current or future dates
+      if (availableSlots.length === 0) {
+        console.log(`[LabVendor] Vendor ${vendor.name} is NOT eligible (no available slots)`);
+        continue;
+      }
+
+      console.log(`[LabVendor] Vendor ${vendor.name} is ELIGIBLE (has all services and available slots)`);
+      // Calculate total price
+      const totalActualPrice = vendorPricing.reduce((sum, p) => sum + p.actualPrice, 0);
+      const totalDiscountedPrice = vendorPricing.reduce((sum, p) => sum + p.discountedPrice, 0);
+
+      eligibleVendors.push({
+        _id: vendor._id,
+        vendorId: vendor.vendorId,
+        name: vendor.name,
+        code: vendor.code,
+        homeCollection: vendor.homeCollection,
+        centerVisit: vendor.centerVisit,
+        homeCollectionCharges: vendor.homeCollectionCharges,
+        pricing: vendorPricing.map(p => ({
+          serviceId: (p.serviceId as any)._id,
+          serviceName: (p.serviceId as any).name,
+          serviceCode: (p.serviceId as any).code,
+          actualPrice: p.actualPrice,
+          discountedPrice: p.discountedPrice,
+        })),
+        totalActualPrice,
+        totalDiscountedPrice,
+        totalWithHomeCollection: totalDiscountedPrice + (vendor.homeCollectionCharges || 0),
+        availableSlotsCount: availableSlots.length,
+      });
     }
 
     console.log(`[LabVendor] Total eligible vendors: ${eligibleVendors.length}`);

@@ -6,7 +6,8 @@ import { apiFetch } from '@/lib/api'
 import { toast } from 'sonner'
 
 // API base URL configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'
+// Keep the /api prefix for static file access through nginx
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
 
 export default function EditDoctorPage() {
   const router = useRouter()

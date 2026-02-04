@@ -36,6 +36,28 @@ export default function EditClinicPage() {
     setSaving(true)
 
     try {
+      // Helper function to remove _id fields from nested objects
+      const cleanObject = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return obj
+        const cleaned: any = {}
+        for (const key in obj) {
+          if (key !== '_id') {
+            cleaned[key] = obj[key]
+          }
+        }
+        return cleaned
+      }
+
+      // Clean operating hours - remove _id from each day
+      const cleanOperatingHours = (hours: any) => {
+        if (!hours) return undefined
+        const cleaned: any = {}
+        for (const day in hours) {
+          cleaned[day] = cleanObject(hours[day])
+        }
+        return cleaned
+      }
+
       // Clean the data to match UpdateClinicDto - remove database fields
       const updateData = {
         name: formData.name,
@@ -49,8 +71,8 @@ export default function EditClinicPage() {
           pincode: formData.address.pincode,
           country: formData.address.country || 'India'
         } : undefined,
-        location: formData.location || undefined,
-        operatingHours: formData.operatingHours || undefined,
+        location: formData.location ? cleanObject(formData.location) : undefined,
+        operatingHours: cleanOperatingHours(formData.operatingHours),
         facilities: formData.facilities || undefined,
         isActive: formData.isActive !== undefined ? formData.isActive : true
       }

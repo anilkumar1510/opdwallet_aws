@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LabService, LabServiceCategory } from '../schemas/lab-service.schema';
+import { AhcPackage } from '../../ahc/schemas/ahc-package.schema';
 
 export interface CreateLabServiceDto {
   name: string;
@@ -15,6 +16,8 @@ export class LabServiceService {
   constructor(
     @InjectModel(LabService.name)
     private labServiceModel: Model<LabService>,
+    @InjectModel(AhcPackage.name)
+    private ahcPackageModel: Model<AhcPackage>,
   ) {}
 
   async createService(createDto: CreateLabServiceDto): Promise<LabService> {
@@ -56,7 +59,7 @@ export class LabServiceService {
   }
 
   async getAllServices(category?: LabServiceCategory): Promise<LabService[]> {
-    const filter: any = { isActive: true };
+    const filter: any = {};
 
     if (category) {
       filter.category = category;
@@ -68,7 +71,6 @@ export class LabServiceService {
   async searchServices(query: string): Promise<LabService[]> {
     return this.labServiceModel
       .find({
-        isActive: true,
         $or: [
           { name: { $regex: query, $options: 'i' } },
           { code: { $regex: query, $options: 'i' } },
@@ -115,6 +117,19 @@ export class LabServiceService {
 
   async deactivateService(serviceId: string): Promise<LabService> {
     const service = await this.getServiceById(serviceId);
+
+    // Check if this service is used in any active AHC packages
+    const packagesUsingService = await this.ahcPackageModel.countDocuments({
+      labServiceIds: serviceId,
+      isActive: true,
+    });
+
+    if (packagesUsingService > 0) {
+      throw new BadRequestException(
+        `Cannot deactivate lab service. This service is included in ${packagesUsingService} active AHC package(s). Please remove it from the packages first.`
+      );
+    }
+
     service.isActive = false;
     return service.save();
   }

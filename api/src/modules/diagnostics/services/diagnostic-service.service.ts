@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DiagnosticService, DiagnosticServiceCategory } from '../schemas/diagnostic-service.schema';
+import { AhcPackage } from '../../ahc/schemas/ahc-package.schema';
 
 export interface CreateDiagnosticServiceDto {
   name: string;
@@ -18,6 +19,8 @@ export class DiagnosticServiceService {
   constructor(
     @InjectModel(DiagnosticService.name)
     private diagnosticServiceModel: Model<DiagnosticService>,
+    @InjectModel(AhcPackage.name)
+    private ahcPackageModel: Model<AhcPackage>,
   ) {}
 
   async createService(createDto: CreateDiagnosticServiceDto): Promise<DiagnosticService> {
@@ -62,7 +65,7 @@ export class DiagnosticServiceService {
   }
 
   async getAllServices(category?: DiagnosticServiceCategory): Promise<DiagnosticService[]> {
-    const filter: any = { isActive: true };
+    const filter: any = {};
 
     if (category) {
       filter.category = category;
@@ -74,7 +77,6 @@ export class DiagnosticServiceService {
   async searchServices(query: string): Promise<DiagnosticService[]> {
     return this.diagnosticServiceModel
       .find({
-        isActive: true,
         $or: [
           { name: { $regex: query, $options: 'i' } },
           { code: { $regex: query, $options: 'i' } },
@@ -134,6 +136,19 @@ export class DiagnosticServiceService {
 
   async deactivateService(serviceId: string): Promise<DiagnosticService> {
     const service = await this.getServiceById(serviceId);
+
+    // Check if this service is used in any active AHC packages
+    const packagesUsingService = await this.ahcPackageModel.countDocuments({
+      diagnosticServiceIds: serviceId,
+      isActive: true,
+    });
+
+    if (packagesUsingService > 0) {
+      throw new BadRequestException(
+        `Cannot deactivate diagnostic service. This service is included in ${packagesUsingService} active AHC package(s). Please remove it from the packages first.`
+      );
+    }
+
     service.isActive = false;
     return service.save();
   }

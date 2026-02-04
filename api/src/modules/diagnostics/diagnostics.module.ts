@@ -11,6 +11,7 @@ import { DiagnosticPrescription, DiagnosticPrescriptionSchema } from './schemas/
 import { DiagnosticCart, DiagnosticCartSchema } from './schemas/diagnostic-cart.schema';
 import { DiagnosticOrder, DiagnosticOrderSchema } from './schemas/diagnostic-order.schema';
 import { DiagnosticMasterTest, DiagnosticMasterTestSchema } from './schemas/diagnostic-master-test.schema';
+import { AhcPackage, AhcPackageSchema } from '../ahc/schemas/ahc-package.schema';
 import { DiagnosticServiceService } from './services/diagnostic-service.service';
 import { DiagnosticVendorService } from './services/diagnostic-vendor.service';
 import { DiagnosticPrescriptionService } from './services/diagnostic-prescription.service';
@@ -25,6 +26,7 @@ import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PaymentModule } from '../payments/payment.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
@@ -39,12 +41,14 @@ import { User, UserSchema } from '../users/schemas/user.schema';
       { name: DiagnosticOrder.name, schema: DiagnosticOrderSchema },
       { name: DiagnosticMasterTest.name, schema: DiagnosticMasterTestSchema },
       { name: User.name, schema: UserSchema },
+      { name: AhcPackage.name, schema: AhcPackageSchema },
     ]),
     AssignmentsModule,
     PlanConfigModule,
     WalletModule,
     TransactionSummaryModule,
     NotificationsModule,
+    PaymentModule,
     MulterModule.register({
       storage: diskStorage({
         destination: (req, file, cb) => {

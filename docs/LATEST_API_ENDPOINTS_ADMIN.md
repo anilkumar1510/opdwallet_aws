@@ -276,7 +276,8 @@ docker logs opd-api-dev -f | grep "CACHE DELETE"
 | GET | /admin/lab/services | Get all lab services with filters (supports ?category and ?search) |
 | GET | /admin/lab/services/:id | Get lab service by ID |
 | PATCH | /admin/lab/services/:id | Update lab service |
-| DELETE | /admin/lab/services/:id | Deactivate lab service |
+| PATCH | /admin/lab/services/:id/activate | Activate lab service |
+| PATCH | /admin/lab/services/:id/deactivate | Deactivate lab service (blocks if service is in active AHC packages) |
 
 ### Lab Vendors
 
@@ -336,7 +337,8 @@ docker logs opd-api-dev -f | grep "CACHE DELETE"
 | GET | /admin/diagnostics/services | Get all diagnostic services with filters (supports ?category and ?search) |
 | GET | /admin/diagnostics/services/:id | Get diagnostic service by ID |
 | PATCH | /admin/diagnostics/services/:id | Update diagnostic service |
-| DELETE | /admin/diagnostics/services/:id | Deactivate diagnostic service |
+| PATCH | /admin/diagnostics/services/:id/activate | Activate diagnostic service |
+| PATCH | /admin/diagnostics/services/:id/deactivate | Deactivate diagnostic service (blocks if service is in active AHC packages) |
 
 ### Diagnostic Vendors
 

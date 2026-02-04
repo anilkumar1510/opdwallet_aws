@@ -1005,6 +1005,9 @@ export class WalletService {
       await wallet.save();
       console.log('✅ [WALLET SERVICE] Wallet balances updated');
 
+      // Invalidate wallet cache for this user
+      await this.invalidateWalletCache(userId, wallet);
+
       // Create transaction record
       console.log('🟡 [WALLET SERVICE] Generating transaction ID...');
       const transactionId = await this.counterService.generateTransactionId();

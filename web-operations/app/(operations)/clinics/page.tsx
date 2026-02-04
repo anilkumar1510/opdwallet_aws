@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { usePermissions } from '@/hooks/usePermissions'
+import { toast } from 'sonner'
 
 export default function ClinicsPage() {
   const router = useRouter()
@@ -69,9 +70,16 @@ export default function ClinicsPage() {
 
       if (response.ok) {
         fetchClinics()
+      } else {
+        const errorData = await response.json()
+        const errorMessage = typeof errorData.message === 'object'
+          ? errorData.message.message || JSON.stringify(errorData.message)
+          : errorData.message || `Failed to ${isActive ? 'deactivate' : 'activate'} clinic`
+        toast.error(errorMessage)
       }
     } catch (error) {
       console.error('Failed to toggle clinic status:', error)
+      toast.error('Failed to update clinic status. Please try again.')
     }
   }
 

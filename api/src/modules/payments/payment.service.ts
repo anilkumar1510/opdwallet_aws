@@ -296,6 +296,98 @@ export class PaymentService {
   }
 
   /**
+   * Update payment's serviceId after order is created
+   */
+  async updatePaymentServiceId(
+    paymentId: string,
+    serviceId: string,
+    serviceReferenceId?: string,
+  ): Promise<PaymentDocument | null> {
+    console.log('💰 [PAYMENT SERVICE] Updating payment serviceId:', { paymentId, serviceId, serviceReferenceId });
+
+    const payment = await this.paymentModel.findOne({ paymentId });
+
+    if (!payment) {
+      console.log('⚠️ [PAYMENT SERVICE] Payment not found:', paymentId);
+      return null;
+    }
+
+    payment.serviceId = new Types.ObjectId(serviceId);
+    if (serviceReferenceId) {
+      payment.serviceReferenceId = serviceReferenceId;
+    }
+
+    await payment.save();
+
+    console.log('✅ [PAYMENT SERVICE] Payment serviceId updated successfully');
+
+    return payment;
+  }
+
+  /**
+   * Find and update payment by serviceReferenceId (e.g., cartId) with actual order ID
+   */
+  async updatePaymentByReference(
+    serviceReferenceId: string,
+    serviceType: ServiceType,
+    orderId: string,
+    orderMongoId: string,
+  ): Promise<PaymentDocument | null> {
+    console.log('💰 [PAYMENT SERVICE] Updating payment by reference:', {
+      serviceReferenceId,
+      serviceType,
+      orderId,
+      orderMongoId
+    });
+
+    // First, try to find with exact match
+    let payment = await this.paymentModel.findOne({
+      serviceReferenceId,
+      serviceType,
+      status: PaymentStatus.COMPLETED,
+    });
+
+    // If not found, try without status filter (in case payment is still pending)
+    if (!payment) {
+      console.log('⚠️ [PAYMENT SERVICE] No COMPLETED payment found, trying without status filter...');
+      payment = await this.paymentModel.findOne({
+        serviceReferenceId,
+        serviceType,
+      }).sort({ createdAt: -1 });
+    }
+
+    // If still not found, log all payments for this reference to debug
+    if (!payment) {
+      console.log('⚠️ [PAYMENT SERVICE] No payment found for reference:', serviceReferenceId);
+
+      // Debug: Find any payment with this reference regardless of type
+      const anyPayments = await this.paymentModel.find({
+        serviceReferenceId,
+      }).select('paymentId serviceType serviceReferenceId status').lean();
+
+      console.log('🔍 [PAYMENT SERVICE] All payments for this reference:', JSON.stringify(anyPayments, null, 2));
+
+      return null;
+    }
+
+    console.log('✅ [PAYMENT SERVICE] Found payment to update:', {
+      paymentId: payment.paymentId,
+      currentServiceId: payment.serviceId,
+      currentServiceReferenceId: payment.serviceReferenceId,
+      status: payment.status,
+    });
+
+    payment.serviceId = new Types.ObjectId(orderMongoId);
+    payment.serviceReferenceId = orderId; // Update to actual order ID
+
+    await payment.save();
+
+    console.log('✅ [PAYMENT SERVICE] Payment updated with order ID:', orderId);
+
+    return payment;
+  }
+
+  /**
    * Process refund for a completed payment
    */
   async processRefund(
@@ -368,20 +460,33 @@ export class PaymentService {
     serviceType: ServiceType,
     serviceId: string,
     reason?: string,
+    serviceReferenceId?: string,
   ): Promise<PaymentDocument | null> {
-    console.log('💰 [PAYMENT SERVICE] Processing refund by service:', { serviceType, serviceId });
+    console.log('💰 [PAYMENT SERVICE] Processing refund by service:', { serviceType, serviceId, serviceReferenceId });
 
-    const payment = await this.paymentModel.findOne({
+    // Try to find payment by serviceId (MongoDB _id)
+    let payment = await this.paymentModel.findOne({
       serviceType,
       serviceId: new Types.ObjectId(serviceId),
       status: PaymentStatus.COMPLETED,
     });
+
+    // If not found and serviceReferenceId provided, try searching by reference (orderId)
+    if (!payment && serviceReferenceId) {
+      console.log('⚠️ [PAYMENT SERVICE] Payment not found by serviceId, trying serviceReferenceId:', serviceReferenceId);
+      payment = await this.paymentModel.findOne({
+        serviceType,
+        serviceReferenceId,
+        status: PaymentStatus.COMPLETED,
+      });
+    }
 
     if (!payment) {
       console.log('⚠️ [PAYMENT SERVICE] No completed payment found for service');
       return null;
     }
 
+    console.log('✅ [PAYMENT SERVICE] Found payment to refund:', payment.paymentId);
     return this.processRefund(payment.paymentId, reason);
   }
 

@@ -10,12 +10,17 @@ import { AhcOrder, AhcOrderStatus, CancelledBy, PaymentStatus } from '../schemas
 import { CreateAhcOrderDto } from '../dto/create-ahc-order.dto';
 import { ValidateAhcOrderDto } from '../dto/validate-ahc-order.dto';
 import { TransactionServiceType } from '../../transactions/schemas/transaction-summary.schema';
+import { WalletService } from '../../wallet/wallet.service';
+import { PaymentService } from '../../payments/payment.service';
+import { ServiceType as PaymentServiceType } from '../../payments/schemas/payment.schema';
 
 @Injectable()
 export class AhcOrderService {
   constructor(
     @InjectModel(AhcOrder.name)
     private ahcOrderModel: Model<AhcOrder>,
+    private walletService: WalletService,
+    private paymentService: PaymentService,
   ) {}
 
   /**
@@ -451,6 +456,19 @@ export class AhcOrderService {
       savedOrder.transactionId = transaction._id;
       savedOrder.paymentStatus = PaymentStatus.COMPLETED;
       await savedOrder.save();
+
+      // Update payment record with actual order ID if payment was processed
+      try {
+        await this.paymentService.updatePaymentByReference(
+          createDto.packageId, // AHC uses packageId as serviceReferenceId
+          PaymentServiceType.AHC_ORDER,
+          orderId,
+          (savedOrder._id as Types.ObjectId).toString(),
+        );
+        console.log('[AhcOrder] Payment record updated with order ID');
+      } catch (error) {
+        console.log('[AhcOrder] Failed to update payment record (non-critical):', error.message);
+      }
     }
 
     return savedOrder;
@@ -664,6 +682,46 @@ export class AhcOrderService {
 
     if (order.status === AhcOrderStatus.CANCELLED) {
       throw new BadRequestException('Order already cancelled');
+    }
+
+    // Extract userId - handle both populated and non-populated cases
+    const userIdString = typeof order.userId === 'object' && order.userId._id
+      ? order.userId._id.toString()
+      : order.userId.toString();
+
+    // Credit wallet if payment was made from wallet
+    if (order.paymentStatus === PaymentStatus.COMPLETED && order.walletDeduction && order.walletDeduction > 0) {
+      console.log('[AhcOrder] Crediting wallet for cancelled order:', {
+        orderId,
+        amount: order.walletDeduction,
+        userId: userIdString,
+      });
+
+      await this.walletService.creditWallet(
+        userIdString,
+        order.walletDeduction,
+        'CAT008', // Wellness - AHC category code
+        (order._id as Types.ObjectId).toString(),
+        'AHC',
+        order.packageName,
+        `Refund for cancelled AHC order: ${reason}`,
+      );
+    }
+
+    // Process payment refund for finalPayable amount
+    if (order.paymentStatus === PaymentStatus.COMPLETED && order.finalPayable && order.finalPayable > 0) {
+      console.log('[AhcOrder] Processing payment refund for cancelled order:', {
+        orderId,
+        amount: order.finalPayable,
+        userId: userIdString,
+      });
+
+      await this.paymentService.processRefundByService(
+        PaymentServiceType.AHC_ORDER,
+        (order._id as Types.ObjectId).toString(),
+        reason,
+        order.orderId, // Pass orderId as fallback reference
+      );
     }
 
     order.status = AhcOrderStatus.CANCELLED;

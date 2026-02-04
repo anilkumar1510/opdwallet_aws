@@ -13,6 +13,7 @@ import { LabOrder, LabOrderSchema } from './schemas/lab-order.schema';
 import { MasterTestParameter, MasterTestParameterSchema } from './schemas/master-test-parameter.schema';
 import { TestNameAlias, TestNameAliasSchema } from './schemas/test-name-alias.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { AhcPackage, AhcPackageSchema } from '../ahc/schemas/ahc-package.schema';
 import { LabPrescriptionService } from './services/lab-prescription.service';
 import { LabCartService } from './services/lab-cart.service';
 import { LabServiceService } from './services/lab-service.service';
@@ -28,6 +29,7 @@ import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PaymentModule } from '../payments/payment.module';
 
 @Module({
   imports: [
@@ -42,12 +44,14 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: MasterTestParameter.name, schema: MasterTestParameterSchema },
       { name: TestNameAlias.name, schema: TestNameAliasSchema },
       { name: User.name, schema: UserSchema },
+      { name: AhcPackage.name, schema: AhcPackageSchema },
     ]),
     AssignmentsModule,
     PlanConfigModule,
     WalletModule,
     TransactionSummaryModule,
     NotificationsModule,
+    PaymentModule,
     MulterModule.register({
       storage: diskStorage({
         destination: (req, file, cb) => {

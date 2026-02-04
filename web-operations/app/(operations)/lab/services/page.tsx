@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   PlusIcon,
   PencilIcon,
-  TrashIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
@@ -147,19 +146,31 @@ export default function LabServicesPage() {
     setShowModal(true)
   }
 
-  const handleDelete = async (serviceId: string) => {
-    if (!confirm('Are you sure you want to deactivate this service?')) return
+  const handleToggleStatus = async (service: LabService) => {
+    const action = service.isActive ? 'deactivate' : 'activate'
+    const confirmMessage = service.isActive
+      ? 'Are you sure you want to deactivate this service?'
+      : 'Are you sure you want to activate this service?'
+
+    if (!confirm(confirmMessage)) return
 
     try {
-      const response = await apiFetch(`/api/admin/lab/services/${serviceId}`, {
-        method: 'DELETE',
+      const response = await apiFetch(`/api/admin/lab/services/${service.serviceId}/${action}`, {
+        method: 'PATCH',
       })
 
       if (!response.ok) {
-        let errorMessage = 'Failed to delete service'
+        let errorMessage = `Failed to ${action} service`
         try {
           const errorData = await response.json()
-          errorMessage = errorData.message || errorMessage
+          // Handle nested error message structure
+          if (typeof errorData.message === 'object' && errorData.message.message) {
+            errorMessage = errorData.message.message
+          } else if (typeof errorData.message === 'string') {
+            errorMessage = errorData.message
+          } else if (errorData.error) {
+            errorMessage = typeof errorData.error === 'string' ? errorData.error : errorData.error.message
+          }
         } catch {
           // If parsing fails, use default message
         }
@@ -170,8 +181,8 @@ export default function LabServicesPage() {
       toast.success(data.message)
       fetchServices()
     } catch (error) {
-      console.error('Error deleting service:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete service'
+      console.error(`Error ${action}ing service:`, error)
+      const errorMessage = error instanceof Error ? error.message : `Failed to ${action} service`
       toast.error(errorMessage)
     }
   }
@@ -284,18 +295,23 @@ export default function LabServicesPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
                         onClick={() => handleEdit(service)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        className="inline-flex items-center px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
                       >
-                        <PencilIcon className="h-5 w-5 inline" />
+                        <PencilIcon className="h-4 w-4 mr-1" />
+                        Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(service.serviceId)}
-                        className="text-red-600 hover:text-red-900"
+                        onClick={() => handleToggleStatus(service)}
+                        className={`inline-flex items-center px-3 py-1 rounded-lg transition-colors ${
+                          service.isActive
+                            ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                            : 'bg-green-100 hover:bg-green-200 text-green-700'
+                        }`}
                       >
-                        <TrashIcon className="h-5 w-5 inline" />
+                        {service.isActive ? 'Deactivate' : 'Activate'}
                       </button>
                     </td>
                   </tr>
