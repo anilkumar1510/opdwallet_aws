@@ -235,8 +235,8 @@ export default function BookingsPage() {
   // AHC eligibility (checked separately via eligibility endpoint)
   const [ahcCovered, setAhcCovered] = useState<boolean>(false);
 
-  // Load More state - show only 4 cards initially per section
-  const CARDS_PER_PAGE = 4;
+  // Load More state - show only 2 cards initially per section
+  const CARDS_PER_PAGE = 2;
   const [showAllUpcomingDental, setShowAllUpcomingDental] = useState(false);
   const [showAllPastDental, setShowAllPastDental] = useState(false);
   const [showAllUpcomingVision, setShowAllUpcomingVision] = useState(false);
@@ -3290,9 +3290,20 @@ export default function BookingsPage() {
                   {/* Expanded Upcoming Appointments */}
                   {expandedDoctorSection === 'upcoming' && upcomingAppointments.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {upcomingAppointments.map((appointment) => (
+                      {(showAllUpcomingAppointments ? upcomingAppointments : upcomingAppointments.slice(0, CARDS_PER_PAGE)).map((appointment) => (
                         <View key={appointment._id}>{renderAppointmentCard(appointment, true)}</View>
                       ))}
+                      {upcomingAppointments.length > CARDS_PER_PAGE && !showAllUpcomingAppointments && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllUpcomingAppointments(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({upcomingAppointments.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3332,9 +3343,20 @@ export default function BookingsPage() {
                   {/* Expanded Past Appointments */}
                   {expandedDoctorSection === 'past' && pastAppointments.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {pastAppointments.map((appointment) => (
+                      {(showAllPastAppointments ? pastAppointments : pastAppointments.slice(0, CARDS_PER_PAGE)).map((appointment) => (
                         <View key={appointment._id}>{renderAppointmentCard(appointment, false)}</View>
                       ))}
+                      {pastAppointments.length > CARDS_PER_PAGE && !showAllPastAppointments && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllPastAppointments(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({pastAppointments.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3402,9 +3424,20 @@ export default function BookingsPage() {
                   {/* Expanded Prescriptions */}
                   {expandedLabSection === 'prescriptions' && filteredPrescriptions.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {filteredPrescriptions.map((prescription: any) => (
+                      {(showAllLabPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
                         <View key={prescription._id}>{renderLabPrescriptionCard(prescription)}</View>
                       ))}
+                      {filteredPrescriptions.length > CARDS_PER_PAGE && !showAllLabPrescriptions && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllLabPrescriptions(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({filteredPrescriptions.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3444,9 +3477,20 @@ export default function BookingsPage() {
                   {/* Expanded Orders */}
                   {expandedLabSection === 'orders' && labOrders.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {labOrders.map((order) => (
+                      {(showAllLabOrders ? labOrders : labOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                         <View key={order._id}>{renderLabOrderCard(order)}</View>
                       ))}
+                      {labOrders.length > CARDS_PER_PAGE && !showAllLabOrders && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllLabOrders(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({labOrders.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3486,9 +3530,20 @@ export default function BookingsPage() {
                   {/* Expanded Carts */}
                   {expandedLabSection === 'carts' && labCarts.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {labCarts.map((cart) => (
+                      {(showAllLabCarts ? labCarts : labCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
                         <View key={cart._id}>{renderLabCartCard(cart)}</View>
                       ))}
+                      {labCarts.length > CARDS_PER_PAGE && !showAllLabCarts && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllLabCarts(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({labCarts.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3557,9 +3612,20 @@ export default function BookingsPage() {
                   {/* Expanded Prescriptions */}
                   {expandedDiagnosticSection === 'prescriptions' && filteredPrescriptions.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {filteredPrescriptions.map((prescription: any) => (
+                      {(showAllDiagnosticPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
                         <View key={prescription._id}>{renderDiagnosticPrescriptionCard(prescription)}</View>
                       ))}
+                      {filteredPrescriptions.length > CARDS_PER_PAGE && !showAllDiagnosticPrescriptions && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllDiagnosticPrescriptions(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({filteredPrescriptions.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3599,9 +3665,20 @@ export default function BookingsPage() {
                   {/* Expanded Orders */}
                   {expandedDiagnosticSection === 'orders' && diagnosticOrders.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {diagnosticOrders.map((order) => (
+                      {(showAllDiagnosticOrders ? diagnosticOrders : diagnosticOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                         <View key={order._id}>{renderDiagnosticOrderCard(order)}</View>
                       ))}
+                      {diagnosticOrders.length > CARDS_PER_PAGE && !showAllDiagnosticOrders && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllDiagnosticOrders(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({diagnosticOrders.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3641,9 +3718,20 @@ export default function BookingsPage() {
                   {/* Expanded Carts */}
                   {expandedDiagnosticSection === 'carts' && diagnosticCarts.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {diagnosticCarts.map((cart) => (
+                      {(showAllDiagnosticCarts ? diagnosticCarts : diagnosticCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
                         <View key={cart._id}>{renderDiagnosticCartCard(cart)}</View>
                       ))}
+                      {diagnosticCarts.length > CARDS_PER_PAGE && !showAllDiagnosticCarts && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllDiagnosticCarts(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({diagnosticCarts.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3698,9 +3786,20 @@ export default function BookingsPage() {
                   {/* Expanded Upcoming Bookings */}
                   {expandedDentalSection === 'upcoming' && upcomingDentalBookings.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {upcomingDentalBookings.map((booking) => (
+                      {(showAllUpcomingDental ? upcomingDentalBookings : upcomingDentalBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderDentalBookingCard(booking, true)}</View>
                       ))}
+                      {upcomingDentalBookings.length > CARDS_PER_PAGE && !showAllUpcomingDental && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllUpcomingDental(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({upcomingDentalBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3740,9 +3839,20 @@ export default function BookingsPage() {
                   {/* Expanded Past Bookings */}
                   {expandedDentalSection === 'past' && pastDentalBookings.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {pastDentalBookings.map((booking) => (
+                      {(showAllPastDental ? pastDentalBookings : pastDentalBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderDentalBookingCard(booking, false)}</View>
                       ))}
+                      {pastDentalBookings.length > CARDS_PER_PAGE && !showAllPastDental && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllPastDental(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({pastDentalBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
@@ -3793,9 +3903,20 @@ export default function BookingsPage() {
                   {/* Expanded Upcoming Bookings */}
                   {expandedVisionSection === 'upcoming' && upcomingVisionBookings.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {upcomingVisionBookings.map((booking) => (
+                      {(showAllUpcomingVision ? upcomingVisionBookings : upcomingVisionBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderVisionBookingCard(booking, true)}</View>
                       ))}
+                      {upcomingVisionBookings.length > CARDS_PER_PAGE && !showAllUpcomingVision && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllUpcomingVision(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({upcomingVisionBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -3835,9 +3956,20 @@ export default function BookingsPage() {
                   {/* Expanded Past Bookings */}
                   {expandedVisionSection === 'past' && pastVisionBookings.length > 0 && (
                     <View style={{ gap: 8, paddingLeft: 8 }}>
-                      {pastVisionBookings.map((booking) => (
+                      {(showAllPastVision ? pastVisionBookings : pastVisionBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderVisionBookingCard(booking, false)}</View>
                       ))}
+                      {pastVisionBookings.length > CARDS_PER_PAGE && !showAllPastVision && (
+                        <TouchableOpacity
+                          onPress={() => setShowAllPastVision(true)}
+                          style={{ paddingVertical: 12, alignItems: 'center' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
+                            Load More ({pastVisionBookings.length - CARDS_PER_PAGE} more)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </View>
