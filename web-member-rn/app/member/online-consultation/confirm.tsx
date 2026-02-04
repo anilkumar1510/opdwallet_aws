@@ -163,6 +163,10 @@ export default function OnlineConfirmPage() {
   const [excessAmount, setExcessAmount] = useState(0);
   const [insurancePayment, setInsurancePayment] = useState(0);
 
+  // Booked slots state
+  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set());
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
   // ============================================================================
   // FETCH FAMILY MEMBERS
   // ============================================================================
@@ -389,8 +393,38 @@ export default function OnlineConfirmPage() {
   // HANDLERS
   // ============================================================================
 
+  const fetchBookedSlots = useCallback(async () => {
+    try {
+      setLoadingSlots(true);
+      console.log('[OnlineConfirm] Fetching booked slots for doctor:', doctorId);
+
+      // Fetch booked slots for this doctor (ONLINE appointments)
+      const response = await apiClient.get<{ date: string; timeSlot: string }[]>(
+        `/appointments/doctor/${doctorId}/booked-slots?type=ONLINE`
+      );
+
+      // Build set of booked slot keys (date_time format)
+      const booked = new Set<string>();
+      (response.data || []).forEach((slot) => {
+        const slotKey = `${slot.date}_${slot.timeSlot}`;
+        booked.add(slotKey);
+        console.log('[OnlineConfirm] Slot booked:', slotKey);
+      });
+
+      setBookedSlots(booked);
+      console.log('[OnlineConfirm] Total booked slots:', booked.size);
+    } catch (error) {
+      console.error('[OnlineConfirm] Error fetching booked slots:', error);
+      // Continue with empty booked slots on error
+      setBookedSlots(new Set());
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [doctorId]);
+
   const handleScheduleLater = () => {
     console.log('[OnlineConfirm] Schedule later clicked');
+    fetchBookedSlots();
     setShowSlotModal(true);
   };
 
@@ -432,9 +466,9 @@ export default function OnlineConfirmPage() {
           ? selectedSlotId
           : `${doctorId}_ONLINE_${appointmentDate}_${appointmentTime.replace(/[:\s]/g, '_')}`;
 
-      // CASE 1: Fully covered by wallet
+      // CASE 1: Fully covered by wallet (based on frontend calculation)
       if (userPayment === 0) {
-        console.log('[OnlineConfirm] Fully covered by wallet - creating appointment directly...');
+        console.log('[OnlineConfirm] Attempting wallet-only booking...');
 
         const appointmentData = {
           userId: loggedInUserId,
@@ -455,9 +489,29 @@ export default function OnlineConfirmPage() {
           clinicAddress: '',
         };
 
-        const response = await apiClient.post<{ appointmentId: string; message: string }>('/appointments', appointmentData);
-        console.log('[OnlineConfirm] Appointment created successfully:', response.data);
-        setAppointmentId(response.data.appointmentId);
+        const response = await apiClient.post<{
+          appointment: { appointmentId: string };
+          paymentRequired: boolean;
+          paymentId: string | null;
+          transactionId: string | null;
+          copayAmount: number;
+          walletDebitAmount: number;
+        }>('/appointments', appointmentData);
+
+        console.log('[OnlineConfirm] Appointment API response:', response.data);
+
+        // Check if payment is still required (backend may have different balance info)
+        if (response.data.paymentRequired && response.data.paymentId) {
+          console.log('[OnlineConfirm] Backend requires payment - redirecting to payment page');
+          const redirectUrl = '/member/online-consultation';
+          router.push(`/member/payments/${response.data.paymentId}?redirect=${encodeURIComponent(redirectUrl)}` as any);
+          return;
+        }
+
+        // Booking successful with wallet only
+        const createdAppointmentId = response.data.appointment?.appointmentId || (response.data as any).appointmentId;
+        console.log('[OnlineConfirm] Appointment created successfully:', createdAppointmentId);
+        setAppointmentId(createdAppointmentId);
         setBookingSuccess(true);
         return;
       }
@@ -536,7 +590,8 @@ export default function OnlineConfirmPage() {
   };
 
   const handleViewAppointments = () => {
-    router.push('/member/online-consultation' as any);
+    // Use replace to remove confirm page from history stack
+    router.replace('/member/online-consultation' as any);
   };
 
   const handleBack = () => {
@@ -1199,7 +1254,16 @@ export default function OnlineConfirmPage() {
                 Select your preferred date and time for the online consultation.
               </Text>
 
+              {/* Loading indicator */}
+              {loadingSlots && (
+                <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 8 }}>Loading available slots...</Text>
+                </View>
+              )}
+
               {/* Quick Date Options */}
+              {!loadingSlots && (
               <View style={{ gap: 12 }}>
                 {[0, 1, 2].map((dayOffset) => {
                   const date = new Date();
@@ -1211,35 +1275,80 @@ export default function OnlineConfirmPage() {
                   const dateStr = `${year}-${month}-${day}`;
                   const dayName = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'long' });
 
+                  // Filter time slots - for today, only show future times
+                  const allSlots = ['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '5:00 PM'];
+                  const availableSlots = dayOffset === 0
+                    ? allSlots.filter((time) => {
+                        const now = new Date();
+                        const currentHour = now.getHours();
+                        const currentMinute = now.getMinutes();
+
+                        // Parse time slot
+                        const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                        if (!timeMatch) return true;
+
+                        let hour = parseInt(timeMatch[1], 10);
+                        const minute = parseInt(timeMatch[2], 10);
+                        const period = timeMatch[3].toUpperCase();
+
+                        // Convert to 24-hour format
+                        if (period === 'PM' && hour !== 12) {
+                          hour += 12;
+                        } else if (period === 'AM' && hour === 12) {
+                          hour = 0;
+                        }
+
+                        // Compare with current time
+                        if (hour > currentHour) return true;
+                        if (hour === currentHour && minute > currentMinute) return true;
+                        return false;
+                      })
+                    : allSlots;
+
+                  // Don't show the day if no slots are available
+                  if (availableSlots.length === 0) return null;
+
                   return (
                     <View key={dayOffset}>
                       <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primaryLight, marginBottom: 8 }}>{dayName}</Text>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        {['10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '5:00 PM'].map((time) => (
-                          <TouchableOpacity
-                            key={`${dateStr}-${time}`}
-                            onPress={() => handleSlotSelected(dateStr, time, `${doctorId}_ONLINE_${dateStr}_${time.replace(/[:\s]/g, '_')}`)}
-                            activeOpacity={0.8}
-                          >
-                            <View
-                              style={{
-                                paddingHorizontal: 16,
-                                paddingVertical: 10,
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: COLORS.border,
-                                backgroundColor: COLORS.white,
-                              }}
+                        {availableSlots.map((time) => {
+                          const slotKey = `${dateStr}_${time}`;
+                          const isBooked = bookedSlots.has(slotKey);
+
+                          return (
+                            <TouchableOpacity
+                              key={`${dateStr}-${time}`}
+                              onPress={() => !isBooked && handleSlotSelected(dateStr, time, `${doctorId}_ONLINE_${dateStr}_${time.replace(/[:\s]/g, '_')}`)}
+                              activeOpacity={isBooked ? 1 : 0.8}
+                              disabled={isBooked}
                             >
-                              <Text style={{ fontSize: 14, color: COLORS.primaryLight }}>{time}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        ))}
+                              <View
+                                style={{
+                                  paddingHorizontal: 16,
+                                  paddingVertical: 10,
+                                  borderRadius: 8,
+                                  borderWidth: 1,
+                                  borderColor: isBooked ? '#E5E7EB' : COLORS.border,
+                                  backgroundColor: isBooked ? '#F3F4F6' : COLORS.white,
+                                }}
+                              >
+                                <Text style={{ fontSize: 14, color: isBooked ? '#9CA3AF' : COLORS.primaryLight }}>
+                                  {time}
+                                </Text>
+                                {isBooked && (
+                                  <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>Booked</Text>
+                                )}
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     </View>
                   );
                 })}
               </View>
+              )}
             </ScrollView>
           </View>
         </View>

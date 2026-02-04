@@ -243,7 +243,9 @@ export default function OnlineConsultationPage() {
   }, [viewingUserId, userId, fetchAppointments]);
 
   const handleBack = useCallback(() => {
-    router.back();
+    // Navigate directly to member dashboard instead of back()
+    // This avoids going back to confirm page after booking
+    router.replace('/member' as any);
   }, [router]);
 
   // ============================================================================

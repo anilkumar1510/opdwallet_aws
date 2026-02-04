@@ -14,6 +14,7 @@ import { PaymentModule } from '../payments/payment.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { ClinicServicePricingModule } from '../operations/dental-services/clinic-service-pricing.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
     forwardRef(() => PaymentModule),
     TransactionSummaryModule,
     ClinicServicePricingModule,
+    NotificationsModule,
   ],
   controllers: [DentalBookingsController],
   providers: [DentalBookingsService, DentalInvoiceService],

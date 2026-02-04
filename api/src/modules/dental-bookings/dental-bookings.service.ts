@@ -23,6 +23,7 @@ import { PolicyServicesConfigService } from '../plan-config/policy-services-conf
 import { DentalInvoiceService } from './dental-invoice.service';
 import { AdminQueryBookingsDto } from './dto/admin-query-bookings.dto';
 import { RescheduleBookingDto } from './dto/reschedule-booking.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class DentalBookingsService {
@@ -45,6 +46,7 @@ export class DentalBookingsService {
     private policyServicesConfigService: PolicyServicesConfigService,
     @Inject(forwardRef(() => DentalInvoiceService))
     private dentalInvoiceService: DentalInvoiceService,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -620,6 +622,22 @@ export class DentalBookingsService {
     booking.transactionId = new Types.ObjectId((transaction as any)._id.toString());
     await booking.save();
 
+    // Send notification for booking creation
+    const dateStr = new Date(createDto.appointmentDate).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentCreated(
+      userId,
+      bookingId,
+      'DENTAL',
+      clinic.name,
+      dateStr,
+      createDto.appointmentTime,
+    );
+
     console.log('[DentalBookings] Booking created successfully:', bookingId);
 
     return booking;
@@ -721,6 +739,22 @@ export class DentalBookingsService {
     booking.cancelledAt = new Date();
     booking.cancellationReason = reason;
     await booking.save();
+
+    // Send notification for booking cancellation
+    const dateStr = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentCancelled(
+      userId,
+      bookingId,
+      'DENTAL',
+      booking.clinicName,
+      dateStr,
+      reason,
+    );
 
     console.log('[DentalBookings] Booking cancelled:', bookingId);
 
@@ -954,6 +988,12 @@ export class DentalBookingsService {
     }
 
     // Store original date for history
+    const oldDate = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
     booking.rescheduledFrom = booking.appointmentDate;
     booking.rescheduledReason = rescheduleDto.reason;
 
@@ -963,6 +1003,23 @@ export class DentalBookingsService {
     booking.appointmentTime = rescheduleDto.appointmentTime;
 
     await booking.save();
+
+    // Send notification for booking reschedule
+    const newDate = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentRescheduled(
+      booking.userId.toString(),
+      bookingId,
+      'DENTAL',
+      booking.clinicName,
+      oldDate,
+      newDate,
+      rescheduleDto.appointmentTime,
+    );
 
     console.log('[DentalBookingsAdmin] Booking rescheduled:', bookingId);
 

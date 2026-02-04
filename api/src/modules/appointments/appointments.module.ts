@@ -12,6 +12,7 @@ import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { PaymentModule } from '../payments/payment.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { AssignmentsModule } from '../assignments/assignments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { BenefitAccessGuard } from '@/common/guards/benefit-access.guard';
 
 @Module({
@@ -28,6 +29,7 @@ import { BenefitAccessGuard } from '@/common/guards/benefit-access.guard';
     PaymentModule,
     TransactionSummaryModule,
     forwardRef(() => AssignmentsModule),
+    NotificationsModule,
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService, BenefitAccessGuard],

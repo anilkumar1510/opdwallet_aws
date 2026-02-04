@@ -110,6 +110,14 @@ export class AppointmentsController {
     return this.appointmentsService.getOngoingAppointments(userId);
   }
 
+  @Get('doctor/:doctorId/booked-slots')
+  async getDoctorBookedSlots(
+    @Param('doctorId') doctorId: string,
+    @Query('type') appointmentType?: string,
+  ) {
+    return this.appointmentsService.getDoctorBookedSlots(doctorId, appointmentType);
+  }
+
   @Get(':appointmentId')
   async findOne(@Param('appointmentId') appointmentId: string) {
     return this.appointmentsService.findOne(appointmentId);

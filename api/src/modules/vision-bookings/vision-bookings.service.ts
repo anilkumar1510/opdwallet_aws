@@ -24,6 +24,7 @@ import { VisionInvoiceService } from './vision-invoice.service';
 import { AdminQueryBookingsDto } from '../dental-bookings/dto/admin-query-bookings.dto';
 import { RescheduleBookingDto } from '../dental-bookings/dto/reschedule-booking.dto';
 import { Payment } from '../payments/schemas/payment.schema';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class VisionBookingsService {
@@ -48,6 +49,7 @@ export class VisionBookingsService {
     private policyServicesConfigService: PolicyServicesConfigService,
     @Inject(forwardRef(() => VisionInvoiceService))
     private visionInvoiceService: VisionInvoiceService,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -497,6 +499,22 @@ export class VisionBookingsService {
     console.log('[VisionBookings] Booking created successfully:', bookingId, '- Status: PENDING_CONFIRMATION, Payment: PENDING');
     console.log('[VisionBookings] Payment will be processed after appointment confirmation by operations');
 
+    // Send notification for booking creation
+    const dateStr = new Date(createDto.appointmentDate).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentCreated(
+      userId,
+      bookingId,
+      'VISION',
+      clinic.name,
+      dateStr,
+      createDto.appointmentTime,
+    );
+
     return booking;
   }
 
@@ -596,6 +614,22 @@ export class VisionBookingsService {
     booking.cancelledAt = new Date();
     booking.cancellationReason = reason;
     await booking.save();
+
+    // Send notification for booking cancellation
+    const dateStr = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentCancelled(
+      userId,
+      bookingId,
+      'VISION',
+      booking.clinicName,
+      dateStr,
+      reason,
+    );
 
     console.log('[VisionBookings] Booking cancelled:', bookingId);
 
@@ -806,6 +840,12 @@ export class VisionBookingsService {
     }
 
     // Store original date for history
+    const oldDate = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
     booking.rescheduledFrom = booking.appointmentDate;
     booking.rescheduledReason = rescheduleDto.reason;
 
@@ -815,6 +855,23 @@ export class VisionBookingsService {
     booking.appointmentTime = rescheduleDto.appointmentTime;
 
     await booking.save();
+
+    // Send notification for booking reschedule
+    const newDate = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentRescheduled(
+      booking.userId.toString(),
+      bookingId,
+      'VISION',
+      booking.clinicName,
+      oldDate,
+      newDate,
+      rescheduleDto.appointmentTime,
+    );
 
     console.log('[VisionBookingsAdmin] Booking rescheduled:', bookingId);
 

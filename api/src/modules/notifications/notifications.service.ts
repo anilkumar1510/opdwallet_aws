@@ -275,6 +275,7 @@ export class NotificationsService {
       'ONLINE': 'Online',
       'DENTAL': 'Dental',
       'VISION': 'Vision',
+      'AHC': 'Annual Health Check',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({
@@ -301,6 +302,7 @@ export class NotificationsService {
       'ONLINE': 'Online',
       'DENTAL': 'Dental',
       'VISION': 'Vision',
+      'AHC': 'Annual Health Check',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({
@@ -327,6 +329,7 @@ export class NotificationsService {
       'ONLINE': 'Online',
       'DENTAL': 'Dental',
       'VISION': 'Vision',
+      'AHC': 'Annual Health Check',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({
@@ -354,6 +357,7 @@ export class NotificationsService {
       'ONLINE': 'Online',
       'DENTAL': 'Dental',
       'VISION': 'Vision',
+      'AHC': 'Annual Health Check',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({

@@ -235,8 +235,8 @@ export default function BookingsPage() {
   // AHC eligibility (checked separately via eligibility endpoint)
   const [ahcCovered, setAhcCovered] = useState<boolean>(false);
 
-  // Load More state - show only 4 cards initially per section
-  const CARDS_PER_PAGE = 4;
+  // Load More state - show only 2 cards initially per section
+  const CARDS_PER_PAGE = 2;
   const [showAllUpcomingDental, setShowAllUpcomingDental] = useState(false);
   const [showAllPastDental, setShowAllPastDental] = useState(false);
   const [showAllUpcomingVision, setShowAllUpcomingVision] = useState(false);
@@ -250,6 +250,13 @@ export default function BookingsPage() {
   const [showAllDiagnosticOrders, setShowAllDiagnosticOrders] = useState(false);
   const [showAllDiagnosticCarts, setShowAllDiagnosticCarts] = useState(false);
   const [showAllAhcOrders, setShowAllAhcOrders] = useState(false);
+
+  // Expandable CTA sections for all tabs
+  const [expandedDoctorSection, setExpandedDoctorSection] = useState<string | null>(null);
+  const [expandedDentalSection, setExpandedDentalSection] = useState<string | null>(null);
+  const [expandedVisionSection, setExpandedVisionSection] = useState<string | null>(null);
+  const [expandedLabSection, setExpandedLabSection] = useState<string | null>(null);
+  const [expandedDiagnosticSection, setExpandedDiagnosticSection] = useState<string | null>(null);
 
   // Map tab names to category codes
   const tabToCategoryCode: Record<string, string> = {
@@ -3246,10 +3253,43 @@ export default function BookingsPage() {
               {appointments.length === 0 ? (
                 renderEmptyState('doctors')
               ) : (
-                <View>
-                  {/* Upcoming Appointments */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Upcoming Appointments */}
                   {upcomingAppointments.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDoctorSection(expandedDoctorSection === 'upcoming' ? null : 'upcoming')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Upcoming Appointments
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {upcomingAppointments.length} appointment{upcomingAppointments.length !== 1 ? 's' : ''} scheduled
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDoctorSection === 'upcoming' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Upcoming Appointments */}
+                  {expandedDoctorSection === 'upcoming' && upcomingAppointments.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllUpcomingAppointments ? upcomingAppointments : upcomingAppointments.slice(0, CARDS_PER_PAGE)).map((appointment) => (
                         <View key={appointment._id}>{renderAppointmentCard(appointment, true)}</View>
                       ))}
@@ -3267,19 +3307,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Past Appointments */}
+                  {/* CTA: Past Appointments */}
                   {pastAppointments.length > 0 && (
-                    <View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.textGray,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Past Appointments
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDoctorSection(expandedDoctorSection === 'past' ? null : 'past')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Past Appointments
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {pastAppointments.length} appointment{pastAppointments.length !== 1 ? 's' : ''} completed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDoctorSection === 'past' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Past Appointments */}
+                  {expandedDoctorSection === 'past' && pastAppointments.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllPastAppointments ? pastAppointments : pastAppointments.slice(0, CARDS_PER_PAGE)).map((appointment) => (
                         <View key={appointment._id}>{renderAppointmentCard(appointment, false)}</View>
                       ))}
@@ -3304,7 +3367,6 @@ export default function BookingsPage() {
           {/* Lab Tab */}
           {activeTab === 'lab' && (() => {
               // Filter out prescriptions that already have carts OR orders created
-              // Both cart.prescriptionId and order.prescriptionId contain the MongoDB _id of the prescription
               const prescriptionIdsWithCarts = new Set(
                 labCarts.map((cart: any) => cart.prescriptionId).filter(Boolean)
               );
@@ -3318,25 +3380,50 @@ export default function BookingsPage() {
                   !prescriptionIdsWithOrders.has(prescription._id)
               );
 
+              const hasAnyLabData = labCarts.length > 0 || labOrders.length > 0 || filteredPrescriptions.length > 0;
+
               return (
             <View>
-              {labCarts.length === 0 && labOrders.length === 0 && filteredPrescriptions.length === 0 ? (
+              {!hasAnyLabData ? (
                 renderEmptyState('lab')
               ) : (
-                <View>
-                  {/* Lab Prescriptions (In Queue) - only show if no cart created yet */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Prescriptions In Queue */}
                   {filteredPrescriptions.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Prescriptions In Queue
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedLabSection(expandedLabSection === 'prescriptions' ? null : 'prescriptions')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Prescriptions In Queue
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {filteredPrescriptions.length} prescription{filteredPrescriptions.length !== 1 ? 's' : ''} awaiting action
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedLabSection === 'prescriptions' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Prescriptions */}
+                  {expandedLabSection === 'prescriptions' && filteredPrescriptions.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllLabPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
                         <View key={prescription._id}>{renderLabPrescriptionCard(prescription)}</View>
                       ))}
@@ -3354,19 +3441,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Lab Orders (Paid) */}
+                  {/* CTA: Lab Test Orders */}
                   {labOrders.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Lab Test Orders
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedLabSection(expandedLabSection === 'orders' ? null : 'orders')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Lab Test Orders
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {labOrders.length} order{labOrders.length !== 1 ? 's' : ''} placed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedLabSection === 'orders' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Orders */}
+                  {expandedLabSection === 'orders' && labOrders.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllLabOrders ? labOrders : labOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                         <View key={order._id}>{renderLabOrderCard(order)}</View>
                       ))}
@@ -3384,19 +3494,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Lab Carts (Active) */}
+                  {/* CTA: Active Carts */}
                   {labCarts.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Active Carts
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedLabSection(expandedLabSection === 'carts' ? null : 'carts')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Active Carts
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {labCarts.length} cart{labCarts.length !== 1 ? 's' : ''} pending checkout
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedLabSection === 'carts' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Carts */}
+                  {expandedLabSection === 'carts' && labCarts.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllLabCarts ? labCarts : labCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
                         <View key={cart._id}>{renderLabCartCard(cart)}</View>
                       ))}
@@ -3435,25 +3568,50 @@ export default function BookingsPage() {
                   !prescriptionIdsWithOrders.has(prescription._id)
               );
 
+              const hasAnyDiagnosticData = diagnosticCarts.length > 0 || diagnosticOrders.length > 0 || filteredPrescriptions.length > 0;
+
               return (
             <View>
-              {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 && filteredPrescriptions.length === 0 ? (
+              {!hasAnyDiagnosticData ? (
                 renderEmptyState('diagnostic')
               ) : (
-                <View>
-                  {/* Diagnostic Prescriptions (In Queue) - only show if no cart created yet */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Prescriptions In Queue */}
                   {filteredPrescriptions.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Prescriptions In Queue
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDiagnosticSection(expandedDiagnosticSection === 'prescriptions' ? null : 'prescriptions')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Prescriptions In Queue
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {filteredPrescriptions.length} prescription{filteredPrescriptions.length !== 1 ? 's' : ''} awaiting action
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDiagnosticSection === 'prescriptions' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Prescriptions */}
+                  {expandedDiagnosticSection === 'prescriptions' && filteredPrescriptions.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllDiagnosticPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
                         <View key={prescription._id}>{renderDiagnosticPrescriptionCard(prescription)}</View>
                       ))}
@@ -3471,19 +3629,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Diagnostic Orders (Paid) */}
+                  {/* CTA: Diagnostic Orders */}
                   {diagnosticOrders.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Diagnostic Orders
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDiagnosticSection(expandedDiagnosticSection === 'orders' ? null : 'orders')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Diagnostic Orders
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {diagnosticOrders.length} order{diagnosticOrders.length !== 1 ? 's' : ''} placed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDiagnosticSection === 'orders' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Orders */}
+                  {expandedDiagnosticSection === 'orders' && diagnosticOrders.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllDiagnosticOrders ? diagnosticOrders : diagnosticOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
                         <View key={order._id}>{renderDiagnosticOrderCard(order)}</View>
                       ))}
@@ -3501,19 +3682,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Diagnostic Carts (Active) */}
+                  {/* CTA: Active Carts */}
                   {diagnosticCarts.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Active Carts
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDiagnosticSection(expandedDiagnosticSection === 'carts' ? null : 'carts')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Active Carts
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {diagnosticCarts.length} cart{diagnosticCarts.length !== 1 ? 's' : ''} pending checkout
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDiagnosticSection === 'carts' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Carts */}
+                  {expandedDiagnosticSection === 'carts' && diagnosticCarts.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllDiagnosticCarts ? diagnosticCarts : diagnosticCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
                         <View key={cart._id}>{renderDiagnosticCartCard(cart)}</View>
                       ))}
@@ -3545,10 +3749,43 @@ export default function BookingsPage() {
               {dentalBookings.length === 0 ? (
                 renderEmptyState('dental')
               ) : (
-                <View>
-                  {/* Upcoming Dental Bookings */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Upcoming Bookings */}
                   {upcomingDentalBookings.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDentalSection(expandedDentalSection === 'upcoming' ? null : 'upcoming')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Upcoming Bookings
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {upcomingDentalBookings.length} booking{upcomingDentalBookings.length !== 1 ? 's' : ''} scheduled
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDentalSection === 'upcoming' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Upcoming Bookings */}
+                  {expandedDentalSection === 'upcoming' && upcomingDentalBookings.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllUpcomingDental ? upcomingDentalBookings : upcomingDentalBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderDentalBookingCard(booking, true)}</View>
                       ))}
@@ -3566,19 +3803,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Past Dental Bookings */}
+                  {/* CTA: Past Bookings */}
                   {pastDentalBookings.length > 0 && (
-                    <View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.textGray,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Past Bookings
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedDentalSection(expandedDentalSection === 'past' ? null : 'past')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Past Bookings
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {pastDentalBookings.length} booking{pastDentalBookings.length !== 1 ? 's' : ''} completed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDentalSection === 'past' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Past Bookings */}
+                  {expandedDentalSection === 'past' && pastDentalBookings.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllPastDental ? pastDentalBookings : pastDentalBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderDentalBookingCard(booking, false)}</View>
                       ))}
@@ -3606,10 +3866,43 @@ export default function BookingsPage() {
               {visionBookings.length === 0 ? (
                 renderEmptyState('vision')
               ) : (
-                <View>
-                  {/* Upcoming Vision Bookings */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Upcoming Bookings */}
                   {upcomingVisionBookings.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
+                    <TouchableOpacity
+                      onPress={() => setExpandedVisionSection(expandedVisionSection === 'upcoming' ? null : 'upcoming')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Upcoming Bookings
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {upcomingVisionBookings.length} booking{upcomingVisionBookings.length !== 1 ? 's' : ''} scheduled
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedVisionSection === 'upcoming' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Upcoming Bookings */}
+                  {expandedVisionSection === 'upcoming' && upcomingVisionBookings.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllUpcomingVision ? upcomingVisionBookings : upcomingVisionBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderVisionBookingCard(booking, true)}</View>
                       ))}
@@ -3627,19 +3920,42 @@ export default function BookingsPage() {
                     </View>
                   )}
 
-                  {/* Past Vision Bookings */}
+                  {/* CTA: Past Bookings */}
                   {pastVisionBookings.length > 0 && (
-                    <View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.textGray,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Past Bookings
-                      </Text>
+                    <TouchableOpacity
+                      onPress={() => setExpandedVisionSection(expandedVisionSection === 'past' ? null : 'past')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Past Bookings
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {pastVisionBookings.length} booking{pastVisionBookings.length !== 1 ? 's' : ''} completed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedVisionSection === 'past' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Past Bookings */}
+                  {expandedVisionSection === 'past' && pastVisionBookings.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
                       {(showAllPastVision ? pastVisionBookings : pastVisionBookings.slice(0, CARDS_PER_PAGE)).map((booking) => (
                         <View key={booking._id}>{renderVisionBookingCard(booking, false)}</View>
                       ))}

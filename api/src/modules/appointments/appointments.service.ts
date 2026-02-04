@@ -9,6 +9,7 @@ import { PlanConfigService } from '../plan-config/plan-config.service';
 import { PaymentService } from '../payments/payment.service';
 import { TransactionSummaryService } from '../transactions/transaction-summary.service';
 import { AssignmentsService } from '../assignments/assignments.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CopayCalculator } from '../plan-config/utils/copay-calculator';
 import { CopayResolver } from '../plan-config/utils/copay-resolver';
 import { ServiceTransactionLimitCalculator } from '../plan-config/utils/service-transaction-limit-calculator';
@@ -27,6 +28,7 @@ export class AppointmentsService {
     private readonly transactionService: TransactionSummaryService,
     @Inject(forwardRef(() => AssignmentsService))
     private readonly assignmentsService: AssignmentsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<any> {
@@ -447,6 +449,50 @@ export class AppointmentsService {
       console.log('💳 [PAYMENT ALREADY PROCESSED] Skipping payment creation - using existing payment');
       console.log('💳 [EXISTING PAYMENT] Payment ID:', createAppointmentDto.existingPaymentId);
 
+      // IMPORTANT: Still debit wallet for the insurance portion
+      if (walletDebitAmount > 0 && hasSufficientBalance) {
+        console.log('💰 [WALLET DEBIT - PAYMENT FLOW] Debiting wallet for insurance portion...');
+        console.log('💰 [WALLET DEBIT] Amount:', walletDebitAmount);
+        console.log('💰 [WALLET DEBIT] Category:', categoryCode);
+        console.log('💰 [WALLET DEBIT] User:', walletUserId);
+
+        try {
+          await this.walletService.debitWallet(
+            walletUserId,
+            walletDebitAmount,
+            categoryCode,
+            (saved._id as Types.ObjectId).toString(),
+            'CONSULTATION',
+            createAppointmentDto.doctorName || 'Doctor',
+            `Consultation fee (wallet portion) - ${createAppointmentDto.doctorName || 'Doctor'}`
+          );
+          console.log('✅ [WALLET DEBIT] Wallet debited successfully: ₹' + walletDebitAmount);
+
+          // Create transaction summary for wallet portion
+          const transactionData = {
+            userId: walletUserId,
+            serviceType: TransactionServiceType.APPOINTMENT,
+            serviceId: (saved._id as Types.ObjectId).toString(),
+            serviceReferenceId: appointmentId,
+            serviceName: `Consultation - ${createAppointmentDto.doctorName || 'Doctor'}`,
+            serviceDate: new Date(createAppointmentDto.appointmentDate),
+            totalAmount: consultationFee,
+            walletAmount: walletDebitAmount,
+            selfPaidAmount: copayAmount + excessAmount,
+            copayAmount: copayAmount,
+            paymentMethod: copayAmount > 0 ? PaymentMethod.COPAY : PaymentMethod.WALLET_ONLY,
+            status: TransactionStatus.COMPLETED,
+          };
+
+          const transaction = await this.transactionService.createTransaction(transactionData);
+          saved.transactionId = transaction.transactionId;
+          console.log('✅ [TRANSACTION] Transaction created:', transaction.transactionId);
+        } catch (walletError) {
+          console.error('❌ [WALLET DEBIT ERROR] Failed to debit wallet:', walletError);
+          // Continue - appointment is still valid, just wallet debit failed
+        }
+      }
+
       // Update the existing payment's serviceId to point to this appointment
       try {
         await this.paymentService.updatePaymentServiceLink(
@@ -468,6 +514,26 @@ export class AppointmentsService {
       await saved.save();
 
       console.log('✅ [APPOINTMENT] Appointment confirmed (payment already processed)');
+
+      // Send notification to user about appointment creation (early return case)
+      try {
+        const dateStr = new Date(createAppointmentDto.appointmentDate).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+        await this.notificationsService.notifyAppointmentCreated(
+          userId,
+          appointmentId,
+          appointmentType,
+          createAppointmentDto.doctorName || 'Doctor',
+          dateStr,
+          createAppointmentDto.timeSlot,
+        );
+        console.log('✅ [NOTIFICATION] Appointment creation notification sent');
+      } catch (notifError) {
+        console.error('⚠️ [NOTIFICATION] Failed to send notification:', notifError);
+      }
 
       return {
         appointment: saved,
@@ -790,6 +856,26 @@ export class AppointmentsService {
       throw new BadRequestException('Failed to process payment: ' + error.message);
     }
 
+    // Send notification to user about appointment creation
+    try {
+      const dateStr = new Date(createAppointmentDto.appointmentDate).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      await this.notificationsService.notifyAppointmentCreated(
+        userId,
+        appointmentId,
+        appointmentType,
+        createAppointmentDto.doctorName || 'Doctor',
+        dateStr,
+        createAppointmentDto.timeSlot,
+      );
+      console.log('✅ [NOTIFICATION] Appointment creation notification sent');
+    } catch (notifError) {
+      console.error('⚠️ [NOTIFICATION] Failed to send notification:', notifError);
+    }
+
     // Return appointment with payment info
     console.log('✅ [APPOINTMENTS SERVICE] ========== APPOINTMENT CREATION COMPLETE ==========');
     const response = {
@@ -853,6 +939,34 @@ export class AppointmentsService {
       .exec();
 
     return appointment ? [appointment] : [];
+  }
+
+  async getDoctorBookedSlots(doctorId: string, appointmentType?: string): Promise<{ date: string; timeSlot: string }[]> {
+    // Get booked slots for a doctor (for slot selection UI)
+    const today = new Date().toISOString().split('T')[0];
+
+    const filter: any = {
+      doctorId,
+      status: { $nin: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED] },
+      appointmentDate: { $gte: today },
+    };
+
+    if (appointmentType) {
+      filter.appointmentType = appointmentType;
+    }
+
+    const appointments = await this.appointmentModel
+      .find(filter)
+      .select('appointmentDate timeSlot')
+      .lean()
+      .exec();
+
+    return appointments.map((apt) => ({
+      date: typeof apt.appointmentDate === 'string'
+        ? apt.appointmentDate.split('T')[0]
+        : new Date(apt.appointmentDate).toISOString().split('T')[0],
+      timeSlot: apt.timeSlot,
+    }));
   }
 
   async findOne(appointmentId: string): Promise<Appointment | null> {
@@ -1022,6 +1136,26 @@ export class AppointmentsService {
       console.log('⚠️ [REFUND] No payment ID on appointment - no refund to process');
     }
 
+    // Send notification to user about appointment cancellation (OPS)
+    try {
+      const dateStr = new Date(appointment.appointmentDate).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      await this.notificationsService.notifyAppointmentCancelled(
+        appointment.userId.toString(),
+        appointmentId,
+        appointment.appointmentType,
+        appointment.doctorName || 'Doctor',
+        dateStr,
+        _reason,
+      );
+      console.log('✅ [NOTIFICATION] Appointment cancellation notification sent (OPS)');
+    } catch (notifError) {
+      console.error('⚠️ [NOTIFICATION] Failed to send cancellation notification:', notifError);
+    }
+
     return appointment;
   }
 
@@ -1124,6 +1258,26 @@ export class AppointmentsService {
       }
     } else {
       console.log('⚠️ [REFUND] No payment ID on appointment - no refund to process');
+    }
+
+    // Send notification to user about appointment cancellation (USER)
+    try {
+      const dateStr = new Date(appointment.appointmentDate).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      await this.notificationsService.notifyAppointmentCancelled(
+        appointment.userId.toString(),
+        appointmentId,
+        appointment.appointmentType,
+        appointment.doctorName || 'Doctor',
+        dateStr,
+        'Cancelled by user',
+      );
+      console.log('✅ [NOTIFICATION] Appointment cancellation notification sent (USER)');
+    } catch (notifError) {
+      console.error('⚠️ [NOTIFICATION] Failed to send cancellation notification:', notifError);
     }
 
     return appointment;

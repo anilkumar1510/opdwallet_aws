@@ -381,9 +381,9 @@ export default function ConfirmAppointmentPage() {
     setLoading(true);
 
     try {
-      // CASE 1: Fully covered by wallet (no user payment required)
+      // CASE 1: Fully covered by wallet (no user payment required based on frontend calculation)
       if (userPayment === 0) {
-        console.log('[ConfirmAppointment] Fully covered by wallet - creating appointment directly...');
+        console.log('[ConfirmAppointment] Attempting wallet-only booking...');
 
         const appointmentData = {
           userId,
@@ -404,13 +404,29 @@ export default function ConfirmAppointmentPage() {
 
         console.log('[ConfirmAppointment] Appointment data:', appointmentData);
 
-        const response = await apiClient.post<{ appointmentId: string; message: string }>(
-          '/appointments',
-          appointmentData
-        );
+        const response = await apiClient.post<{
+          appointment: { appointmentId: string };
+          paymentRequired: boolean;
+          paymentId: string | null;
+          transactionId: string | null;
+          copayAmount: number;
+          walletDebitAmount: number;
+        }>('/appointments', appointmentData);
 
-        console.log('[ConfirmAppointment] Appointment created successfully:', response.data);
-        setAppointmentId(response.data.appointmentId);
+        console.log('[ConfirmAppointment] Appointment API response:', response.data);
+
+        // Check if payment is still required (backend may have different balance info)
+        if (response.data.paymentRequired && response.data.paymentId) {
+          console.log('[ConfirmAppointment] Backend requires payment - redirecting to payment page');
+          const redirectUrl = '/member/in-clinic-consultation';
+          router.push(`/member/payments/${response.data.paymentId}?redirect=${encodeURIComponent(redirectUrl)}` as any);
+          return;
+        }
+
+        // Booking successful with wallet only
+        const appointmentId = response.data.appointment?.appointmentId || (response.data as any).appointmentId;
+        console.log('[ConfirmAppointment] Appointment created successfully:', appointmentId);
+        setAppointmentId(appointmentId);
         setBookingSuccess(true);
         return;
       }
@@ -535,7 +551,8 @@ export default function ConfirmAppointmentPage() {
 
   const handleViewAppointments = useCallback(() => {
     console.log('[ConfirmAppointment] Navigating to appointments list');
-    router.push('/member/in-clinic-consultation' as any);
+    // Use replace to remove confirm page from history stack
+    router.replace('/member/in-clinic-consultation' as any);
   }, [router]);
 
   const handleBack = useCallback(() => {

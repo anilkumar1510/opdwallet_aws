@@ -27,6 +27,7 @@ import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { PaymentModule } from '../payments/payment.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
     WalletModule,
     TransactionSummaryModule,
     PaymentModule,
+    NotificationsModule,
   ],
   controllers: [
     AhcAdminController,
