@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export enum NotificationType {
+  // Claim notifications
   CLAIM_ASSIGNED = 'CLAIM_ASSIGNED',
   CLAIM_STATUS_CHANGED = 'CLAIM_STATUS_CHANGED',
   DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED',
@@ -9,6 +10,14 @@ export enum NotificationType {
   CLAIM_REJECTED = 'CLAIM_REJECTED',
   PAYMENT_COMPLETED = 'PAYMENT_COMPLETED',
   CLAIM_UNDER_REVIEW = 'CLAIM_UNDER_REVIEW',
+  // Cart notifications
+  CART_CREATED = 'CART_CREATED',
+  // Appointment notifications
+  APPOINTMENT_CREATED = 'APPOINTMENT_CREATED',
+  APPOINTMENT_CONFIRMED = 'APPOINTMENT_CONFIRMED',
+  APPOINTMENT_CANCELLED = 'APPOINTMENT_CANCELLED',
+  APPOINTMENT_RESCHEDULED = 'APPOINTMENT_RESCHEDULED',
+  APPOINTMENT_COMPLETED = 'APPOINTMENT_COMPLETED',
 }
 
 export enum NotificationPriority {

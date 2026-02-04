@@ -240,4 +240,130 @@ export class NotificationsService {
       actionUrl: `/member/claims/${claimNumber}`,
     });
   }
+
+  // Cart notifications
+  async notifyCartCreated(
+    userId: string | Types.ObjectId,
+    cartId: string,
+    cartType: 'lab' | 'diagnostic',
+    itemCount: number,
+    patientName?: string,
+  ) {
+    const typeLabel = cartType === 'lab' ? 'Lab Test' : 'Diagnostic';
+    return this.createNotification({
+      userId,
+      type: NotificationType.CART_CREATED,
+      title: `${typeLabel} Cart Created`,
+      message: `A ${typeLabel.toLowerCase()} cart with ${itemCount} item${itemCount !== 1 ? 's' : ''} has been created${patientName ? ` for ${patientName}` : ''}.`,
+      priority: NotificationPriority.MEDIUM,
+      metadata: { cartId, cartType, itemCount, patientName },
+      actionUrl: cartType === 'lab' ? `/member/lab-tests/booking/${cartId}` : `/member/diagnostics/booking/${cartId}`,
+    });
+  }
+
+  // Appointment notifications
+  async notifyAppointmentCreated(
+    userId: string | Types.ObjectId,
+    appointmentId: string,
+    appointmentType: string,
+    doctorName: string,
+    appointmentDate: string,
+    timeSlot: string,
+  ) {
+    const typeLabels: Record<string, string> = {
+      'IN_CLINIC': 'In-Clinic',
+      'ONLINE': 'Online',
+      'DENTAL': 'Dental',
+      'VISION': 'Vision',
+    };
+    const label = typeLabels[appointmentType] || appointmentType;
+    return this.createNotification({
+      userId,
+      type: NotificationType.APPOINTMENT_CREATED,
+      title: `${label} Appointment Booked`,
+      message: `Your ${label.toLowerCase()} appointment with ${doctorName} is scheduled for ${appointmentDate} at ${timeSlot}.`,
+      priority: NotificationPriority.MEDIUM,
+      metadata: { appointmentId, appointmentType, doctorName, appointmentDate, timeSlot },
+      actionUrl: `/member/bookings`,
+    });
+  }
+
+  async notifyAppointmentConfirmed(
+    userId: string | Types.ObjectId,
+    appointmentId: string,
+    appointmentType: string,
+    doctorName: string,
+    appointmentDate: string,
+    timeSlot: string,
+  ) {
+    const typeLabels: Record<string, string> = {
+      'IN_CLINIC': 'In-Clinic',
+      'ONLINE': 'Online',
+      'DENTAL': 'Dental',
+      'VISION': 'Vision',
+    };
+    const label = typeLabels[appointmentType] || appointmentType;
+    return this.createNotification({
+      userId,
+      type: NotificationType.APPOINTMENT_CONFIRMED,
+      title: `${label} Appointment Confirmed`,
+      message: `Your ${label.toLowerCase()} appointment with ${doctorName} on ${appointmentDate} at ${timeSlot} has been confirmed.`,
+      priority: NotificationPriority.HIGH,
+      metadata: { appointmentId, appointmentType, doctorName, appointmentDate, timeSlot },
+      actionUrl: `/member/bookings`,
+    });
+  }
+
+  async notifyAppointmentCancelled(
+    userId: string | Types.ObjectId,
+    appointmentId: string,
+    appointmentType: string,
+    doctorName: string,
+    appointmentDate: string,
+    reason?: string,
+  ) {
+    const typeLabels: Record<string, string> = {
+      'IN_CLINIC': 'In-Clinic',
+      'ONLINE': 'Online',
+      'DENTAL': 'Dental',
+      'VISION': 'Vision',
+    };
+    const label = typeLabels[appointmentType] || appointmentType;
+    return this.createNotification({
+      userId,
+      type: NotificationType.APPOINTMENT_CANCELLED,
+      title: `${label} Appointment Cancelled`,
+      message: `Your ${label.toLowerCase()} appointment with ${doctorName} on ${appointmentDate} has been cancelled.${reason ? ` Reason: ${reason}` : ''}`,
+      priority: NotificationPriority.HIGH,
+      metadata: { appointmentId, appointmentType, doctorName, appointmentDate, reason },
+      actionUrl: `/member/bookings`,
+    });
+  }
+
+  async notifyAppointmentRescheduled(
+    userId: string | Types.ObjectId,
+    appointmentId: string,
+    appointmentType: string,
+    doctorName: string,
+    oldDate: string,
+    newDate: string,
+    newTimeSlot: string,
+  ) {
+    const typeLabels: Record<string, string> = {
+      'IN_CLINIC': 'In-Clinic',
+      'ONLINE': 'Online',
+      'DENTAL': 'Dental',
+      'VISION': 'Vision',
+    };
+    const label = typeLabels[appointmentType] || appointmentType;
+    return this.createNotification({
+      userId,
+      type: NotificationType.APPOINTMENT_RESCHEDULED,
+      title: `${label} Appointment Rescheduled`,
+      message: `Your ${label.toLowerCase()} appointment with ${doctorName} has been rescheduled from ${oldDate} to ${newDate} at ${newTimeSlot}.`,
+      priority: NotificationPriority.HIGH,
+      metadata: { appointmentId, appointmentType, doctorName, oldDate, newDate, newTimeSlot },
+      actionUrl: `/member/bookings`,
+    });
+  }
 }

@@ -509,6 +509,7 @@ export default function DashboardScreen() {
   const [activePolicyIndex, setActivePolicyIndex] = useState(0);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [carts, setCarts] = useState<CartItem[]>([]);
+  const [notificationCount, setNotificationCount] = useState(0);
   const policyScrollRef = useRef<ScrollView>(null);
   const lastRefreshTime = useRef<number>(0);
   const isRefreshing = useRef<boolean>(false);
@@ -553,6 +554,16 @@ export default function DashboardScreen() {
     }
   }, [viewingUserId, profileData?.user?._id, profile?.user?._id]);
 
+  // Fetch notification count
+  const fetchNotificationCount = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/notifications/unread-count');
+      setNotificationCount(response.data?.unreadCount || 0);
+    } catch (error) {
+      console.error('[Dashboard] Failed to fetch notification count:', error);
+    }
+  }, []);
+
   // Fetch fresh wallet data from dedicated endpoint (like Next.js does)
   const fetchWalletData = async (userId: string) => {
     try {
@@ -565,7 +576,7 @@ export default function DashboardScreen() {
     }
   };
 
-  // Fetch wallet data and carts when user ID becomes available or changes (profile switch)
+  // Fetch wallet data, carts, and notifications when user ID becomes available or changes (profile switch)
   useEffect(() => {
     const userId = viewingUserId || profileData?.user?._id || profile?.user?._id;
     if (userId) {
@@ -574,8 +585,9 @@ export default function DashboardScreen() {
       setWalletData(null);
       fetchWalletData(userId);
       fetchCarts();
+      fetchNotificationCount();
     }
-  }, [viewingUserId, fetchCarts]);
+  }, [viewingUserId, fetchCarts, fetchNotificationCount]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
@@ -603,8 +615,9 @@ export default function DashboardScreen() {
             // Also refresh profile for other data
             await refreshProfile();
 
-            // Refresh carts
+            // Refresh carts and notifications
             await fetchCarts();
+            await fetchNotificationCount();
           } catch (error) {
             console.log('[Dashboard] Failed to refresh data:', error);
           } finally {
@@ -614,7 +627,7 @@ export default function DashboardScreen() {
       };
 
       refreshData();
-    }, [refreshProfile, viewingUserId, profileData, profile, fetchCarts])
+    }, [refreshProfile, viewingUserId, profileData, profile, fetchCarts, fetchNotificationCount])
   );
 
   // User data - use profile.user from MemberProfileResponse
@@ -846,6 +859,7 @@ export default function DashboardScreen() {
         {/* Right: Icons */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
           <TouchableOpacity
+            onPress={() => router.push('/member/notifications' as any)}
             style={{
               width: 35,
               height: 35,
@@ -853,10 +867,33 @@ export default function DashboardScreen() {
               backgroundColor: '#fbfdfe',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
             }}
             activeOpacity={0.7}
           >
             <NotificationBellIcon />
+            {notificationCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  backgroundColor: '#EF4444',
+                  borderRadius: 10,
+                  minWidth: 18,
+                  height: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 4,
+                  borderWidth: 2,
+                  borderColor: '#fff',
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
