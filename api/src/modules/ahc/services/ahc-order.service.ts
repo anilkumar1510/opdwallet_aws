@@ -10,12 +10,14 @@ import { AhcOrder, AhcOrderStatus, CancelledBy, PaymentStatus } from '../schemas
 import { CreateAhcOrderDto } from '../dto/create-ahc-order.dto';
 import { ValidateAhcOrderDto } from '../dto/validate-ahc-order.dto';
 import { TransactionServiceType } from '../../transactions/schemas/transaction-summary.schema';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class AhcOrderService {
   constructor(
     @InjectModel(AhcOrder.name)
     private ahcOrderModel: Model<AhcOrder>,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -453,6 +455,32 @@ export class AhcOrderService {
       await savedOrder.save();
     }
 
+    // Send notification for AHC order creation
+    const dateStr = createDto.labCollectionDate
+      ? new Date(createDto.labCollectionDate).toLocaleDateString('en-IN', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : createDto.diagnosticAppointmentDate
+      ? new Date(createDto.diagnosticAppointmentDate).toLocaleDateString('en-IN', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : 'Scheduled';
+    const timeSlot = createDto.labCollectionTime || createDto.diagnosticAppointmentTime || '';
+    await this.notificationsService.notifyAppointmentCreated(
+      userId,
+      orderId,
+      'AHC',
+      ahcPackage.name,
+      dateStr,
+      timeSlot,
+    );
+
     return savedOrder;
   }
 
@@ -671,7 +699,34 @@ export class AhcOrderService {
     order.cancelledBy = cancelledBy;
     order.cancellationReason = reason;
 
-    return order.save();
+    await order.save();
+
+    // Send notification for AHC order cancellation
+    const dateStr = order.labOrder?.collectionDate
+      ? new Date(order.labOrder.collectionDate).toLocaleDateString('en-IN', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : order.diagnosticOrder?.appointmentDate
+      ? new Date(order.diagnosticOrder.appointmentDate).toLocaleDateString('en-IN', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : 'Scheduled';
+    await this.notificationsService.notifyAppointmentCancelled(
+      order.userId.toString(),
+      orderId,
+      'AHC',
+      'Annual Health Check',
+      dateStr,
+      reason,
+    );
+
+    return order;
   }
 
   /**

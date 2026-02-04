@@ -26,6 +26,7 @@ import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
     PlanConfigModule,
     WalletModule,
     TransactionSummaryModule,
+    NotificationsModule,
   ],
   controllers: [
     AhcAdminController,
