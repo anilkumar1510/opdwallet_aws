@@ -941,6 +941,34 @@ export class AppointmentsService {
     return appointment ? [appointment] : [];
   }
 
+  async getDoctorBookedSlots(doctorId: string, appointmentType?: string): Promise<{ date: string; timeSlot: string }[]> {
+    // Get booked slots for a doctor (for slot selection UI)
+    const today = new Date().toISOString().split('T')[0];
+
+    const filter: any = {
+      doctorId,
+      status: { $nin: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED] },
+      appointmentDate: { $gte: today },
+    };
+
+    if (appointmentType) {
+      filter.appointmentType = appointmentType;
+    }
+
+    const appointments = await this.appointmentModel
+      .find(filter)
+      .select('appointmentDate timeSlot')
+      .lean()
+      .exec();
+
+    return appointments.map((apt) => ({
+      date: typeof apt.appointmentDate === 'string'
+        ? apt.appointmentDate.split('T')[0]
+        : new Date(apt.appointmentDate).toISOString().split('T')[0],
+      timeSlot: apt.timeSlot,
+    }));
+  }
+
   async findOne(appointmentId: string): Promise<Appointment | null> {
     return this.appointmentModel.findOne({ appointmentId }).lean().exec();
   }

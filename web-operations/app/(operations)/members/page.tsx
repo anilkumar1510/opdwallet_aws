@@ -193,7 +193,7 @@ export default function MembersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {member.name.fullName || `${member.name.firstName} ${member.name.lastName}`}
+                        {member.name?.fullName || (member.name ? `${member.name.firstName || ''} ${member.name.lastName || ''}`.trim() : 'N/A')}
                       </div>
                     </td>
                     <td className="px-6 py-4">
