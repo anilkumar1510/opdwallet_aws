@@ -251,6 +251,10 @@ export default function BookingsPage() {
   const [showAllDiagnosticCarts, setShowAllDiagnosticCarts] = useState(false);
   const [showAllAhcOrders, setShowAllAhcOrders] = useState(false);
 
+  // Expandable CTA sections for Lab and Diagnostic tabs
+  const [expandedLabSection, setExpandedLabSection] = useState<string | null>(null);
+  const [expandedDiagnosticSection, setExpandedDiagnosticSection] = useState<string | null>(null);
+
   // Map tab names to category codes
   const tabToCategoryCode: Record<string, string> = {
     doctors: 'CAT001',      // Doctor Consult / In-Clinic Appointments
@@ -3304,7 +3308,6 @@ export default function BookingsPage() {
           {/* Lab Tab */}
           {activeTab === 'lab' && (() => {
               // Filter out prescriptions that already have carts OR orders created
-              // Both cart.prescriptionId and order.prescriptionId contain the MongoDB _id of the prescription
               const prescriptionIdsWithCarts = new Set(
                 labCarts.map((cart: any) => cart.prescriptionId).filter(Boolean)
               );
@@ -3318,99 +3321,137 @@ export default function BookingsPage() {
                   !prescriptionIdsWithOrders.has(prescription._id)
               );
 
+              const hasAnyLabData = labCarts.length > 0 || labOrders.length > 0 || filteredPrescriptions.length > 0;
+
               return (
             <View>
-              {labCarts.length === 0 && labOrders.length === 0 && filteredPrescriptions.length === 0 ? (
+              {!hasAnyLabData ? (
                 renderEmptyState('lab')
               ) : (
-                <View>
-                  {/* Lab Prescriptions (In Queue) - only show if no cart created yet */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Prescriptions In Queue */}
                   {filteredPrescriptions.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Prescriptions In Queue
-                      </Text>
-                      {(showAllLabPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedLabSection(expandedLabSection === 'prescriptions' ? null : 'prescriptions')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Prescriptions In Queue
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {filteredPrescriptions.length} prescription{filteredPrescriptions.length !== 1 ? 's' : ''} awaiting action
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedLabSection === 'prescriptions' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Prescriptions */}
+                  {expandedLabSection === 'prescriptions' && filteredPrescriptions.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
+                      {filteredPrescriptions.map((prescription: any) => (
                         <View key={prescription._id}>{renderLabPrescriptionCard(prescription)}</View>
                       ))}
-                      {filteredPrescriptions.length > CARDS_PER_PAGE && !showAllLabPrescriptions && (
-                        <TouchableOpacity
-                          onPress={() => setShowAllLabPrescriptions(true)}
-                          style={{ paddingVertical: 12, alignItems: 'center' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                            Load More ({filteredPrescriptions.length - CARDS_PER_PAGE} more)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
 
-                  {/* Lab Orders (Paid) */}
+                  {/* CTA: Lab Test Orders */}
                   {labOrders.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Lab Test Orders
-                      </Text>
-                      {(showAllLabOrders ? labOrders : labOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedLabSection(expandedLabSection === 'orders' ? null : 'orders')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Lab Test Orders
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {labOrders.length} order{labOrders.length !== 1 ? 's' : ''} placed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedLabSection === 'orders' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Orders */}
+                  {expandedLabSection === 'orders' && labOrders.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
+                      {labOrders.map((order) => (
                         <View key={order._id}>{renderLabOrderCard(order)}</View>
                       ))}
-                      {labOrders.length > CARDS_PER_PAGE && !showAllLabOrders && (
-                        <TouchableOpacity
-                          onPress={() => setShowAllLabOrders(true)}
-                          style={{ paddingVertical: 12, alignItems: 'center' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                            Load More ({labOrders.length - CARDS_PER_PAGE} more)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
 
-                  {/* Lab Carts (Active) */}
+                  {/* CTA: Active Carts */}
                   {labCarts.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Active Carts
-                      </Text>
-                      {(showAllLabCarts ? labCarts : labCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedLabSection(expandedLabSection === 'carts' ? null : 'carts')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Active Carts
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {labCarts.length} cart{labCarts.length !== 1 ? 's' : ''} pending checkout
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedLabSection === 'carts' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Carts */}
+                  {expandedLabSection === 'carts' && labCarts.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
+                      {labCarts.map((cart) => (
                         <View key={cart._id}>{renderLabCartCard(cart)}</View>
                       ))}
-                      {labCarts.length > CARDS_PER_PAGE && !showAllLabCarts && (
-                        <TouchableOpacity
-                          onPress={() => setShowAllLabCarts(true)}
-                          style={{ paddingVertical: 12, alignItems: 'center' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                            Load More ({labCarts.length - CARDS_PER_PAGE} more)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
                 </View>
@@ -3435,99 +3476,137 @@ export default function BookingsPage() {
                   !prescriptionIdsWithOrders.has(prescription._id)
               );
 
+              const hasAnyDiagnosticData = diagnosticCarts.length > 0 || diagnosticOrders.length > 0 || filteredPrescriptions.length > 0;
+
               return (
             <View>
-              {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 && filteredPrescriptions.length === 0 ? (
+              {!hasAnyDiagnosticData ? (
                 renderEmptyState('diagnostic')
               ) : (
-                <View>
-                  {/* Diagnostic Prescriptions (In Queue) - only show if no cart created yet */}
+                <View style={{ gap: 12 }}>
+                  {/* CTA: Prescriptions In Queue */}
                   {filteredPrescriptions.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Prescriptions In Queue
-                      </Text>
-                      {(showAllDiagnosticPrescriptions ? filteredPrescriptions : filteredPrescriptions.slice(0, CARDS_PER_PAGE)).map((prescription: any) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedDiagnosticSection(expandedDiagnosticSection === 'prescriptions' ? null : 'prescriptions')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Prescriptions In Queue
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {filteredPrescriptions.length} prescription{filteredPrescriptions.length !== 1 ? 's' : ''} awaiting action
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDiagnosticSection === 'prescriptions' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Prescriptions */}
+                  {expandedDiagnosticSection === 'prescriptions' && filteredPrescriptions.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
+                      {filteredPrescriptions.map((prescription: any) => (
                         <View key={prescription._id}>{renderDiagnosticPrescriptionCard(prescription)}</View>
                       ))}
-                      {filteredPrescriptions.length > CARDS_PER_PAGE && !showAllDiagnosticPrescriptions && (
-                        <TouchableOpacity
-                          onPress={() => setShowAllDiagnosticPrescriptions(true)}
-                          style={{ paddingVertical: 12, alignItems: 'center' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                            Load More ({filteredPrescriptions.length - CARDS_PER_PAGE} more)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
 
-                  {/* Diagnostic Orders (Paid) */}
+                  {/* CTA: Diagnostic Orders */}
                   {diagnosticOrders.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Diagnostic Orders
-                      </Text>
-                      {(showAllDiagnosticOrders ? diagnosticOrders : diagnosticOrders.slice(0, CARDS_PER_PAGE)).map((order) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedDiagnosticSection(expandedDiagnosticSection === 'orders' ? null : 'orders')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Diagnostic Orders
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {diagnosticOrders.length} order{diagnosticOrders.length !== 1 ? 's' : ''} placed
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDiagnosticSection === 'orders' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Orders */}
+                  {expandedDiagnosticSection === 'orders' && diagnosticOrders.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
+                      {diagnosticOrders.map((order) => (
                         <View key={order._id}>{renderDiagnosticOrderCard(order)}</View>
                       ))}
-                      {diagnosticOrders.length > CARDS_PER_PAGE && !showAllDiagnosticOrders && (
-                        <TouchableOpacity
-                          onPress={() => setShowAllDiagnosticOrders(true)}
-                          style={{ paddingVertical: 12, alignItems: 'center' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                            Load More ({diagnosticOrders.length - CARDS_PER_PAGE} more)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
 
-                  {/* Diagnostic Carts (Active) */}
+                  {/* CTA: Active Carts */}
                   {diagnosticCarts.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '600',
-                          color: COLORS.primaryLight,
-                          marginBottom: 12,
-                        }}
-                      >
-                        Active Carts
-                      </Text>
-                      {(showAllDiagnosticCarts ? diagnosticCarts : diagnosticCarts.slice(0, CARDS_PER_PAGE)).map((cart) => (
+                    <TouchableOpacity
+                      onPress={() => setExpandedDiagnosticSection(expandedDiagnosticSection === 'carts' ? null : 'carts')}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: COLORS.white,
+                        borderRadius: 16,
+                        padding: 16,
+                        borderWidth: 1,
+                        borderColor: 'rgba(217, 217, 217, 0.48)',
+                        shadowColor: '#000',
+                        shadowOffset: { width: -2, height: 11 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 23,
+                        elevation: 3,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
+                            Active Carts
+                          </Text>
+                          <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
+                            {diagnosticCarts.length} cart{diagnosticCarts.length !== 1 ? 's' : ''} pending checkout
+                          </Text>
+                        </View>
+                        <View style={{ transform: [{ rotate: expandedDiagnosticSection === 'carts' ? '270deg' : '180deg' }] }}>
+                          <ArrowLeftIcon width={16} height={16} color={COLORS.textGray} />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                  {/* Expanded Carts */}
+                  {expandedDiagnosticSection === 'carts' && diagnosticCarts.length > 0 && (
+                    <View style={{ gap: 8, paddingLeft: 8 }}>
+                      {diagnosticCarts.map((cart) => (
                         <View key={cart._id}>{renderDiagnosticCartCard(cart)}</View>
                       ))}
-                      {diagnosticCarts.length > CARDS_PER_PAGE && !showAllDiagnosticCarts && (
-                        <TouchableOpacity
-                          onPress={() => setShowAllDiagnosticCarts(true)}
-                          style={{ paddingVertical: 12, alignItems: 'center' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: COLORS.primary }}>
-                            Load More ({diagnosticCarts.length - CARDS_PER_PAGE} more)
-                          </Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   )}
                 </View>
