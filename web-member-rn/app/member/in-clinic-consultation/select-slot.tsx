@@ -239,6 +239,44 @@ export default function SelectSlotPage() {
 
   const selectedDaySlots = daySlots.find((day) => day.dateStr === selectedDate);
 
+  // Filter out lapsed time slots for today
+  const getFilteredSlots = useCallback((slots: TimeSlot[], dateStr: string) => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const slotDateStr = dateStr.split('T')[0];
+
+    // If not today, return all slots
+    if (slotDateStr !== todayStr) {
+      return slots;
+    }
+
+    // For today, filter out past time slots
+    const currentHour = today.getHours();
+    const currentMinute = today.getMinutes();
+
+    return slots.filter((slot) => {
+      // Parse time slot (e.g., "10:00 AM", "2:30 PM")
+      const timeMatch = slot.time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!timeMatch) return true; // If can't parse, show the slot
+
+      let hour = parseInt(timeMatch[1], 10);
+      const minute = parseInt(timeMatch[2], 10);
+      const period = timeMatch[3].toUpperCase();
+
+      // Convert to 24-hour format
+      if (period === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (period === 'AM' && hour === 12) {
+        hour = 0;
+      }
+
+      // Compare with current time
+      if (hour > currentHour) return true;
+      if (hour === currentHour && minute > currentMinute) return true;
+      return false;
+    });
+  }, []);
+
   // ============================================================================
   // LOADING STATE
   // ============================================================================
@@ -454,7 +492,7 @@ export default function SelectSlotPage() {
                 Available Time Slots
               </Text>
 
-              {selectedDaySlots.slots.filter((s) => s.available).length === 0 ? (
+              {getFilteredSlots(selectedDaySlots.slots, selectedDaySlots.dateStr).filter((s) => s.available).length === 0 ? (
                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
                   <View
                     style={{
@@ -476,7 +514,7 @@ export default function SelectSlotPage() {
                 </View>
               ) : (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {selectedDaySlots.slots.map((slot) => {
+                  {getFilteredSlots(selectedDaySlots.slots, selectedDaySlots.dateStr).map((slot) => {
                     const isSelected = selectedSlot === slot.time;
                     const isAvailable = slot.available;
 

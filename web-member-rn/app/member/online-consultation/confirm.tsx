@@ -432,9 +432,9 @@ export default function OnlineConfirmPage() {
           ? selectedSlotId
           : `${doctorId}_ONLINE_${appointmentDate}_${appointmentTime.replace(/[:\s]/g, '_')}`;
 
-      // CASE 1: Fully covered by wallet
+      // CASE 1: Fully covered by wallet (based on frontend calculation)
       if (userPayment === 0) {
-        console.log('[OnlineConfirm] Fully covered by wallet - creating appointment directly...');
+        console.log('[OnlineConfirm] Attempting wallet-only booking...');
 
         const appointmentData = {
           userId: loggedInUserId,
@@ -455,9 +455,29 @@ export default function OnlineConfirmPage() {
           clinicAddress: '',
         };
 
-        const response = await apiClient.post<{ appointmentId: string; message: string }>('/appointments', appointmentData);
-        console.log('[OnlineConfirm] Appointment created successfully:', response.data);
-        setAppointmentId(response.data.appointmentId);
+        const response = await apiClient.post<{
+          appointment: { appointmentId: string };
+          paymentRequired: boolean;
+          paymentId: string | null;
+          transactionId: string | null;
+          copayAmount: number;
+          walletDebitAmount: number;
+        }>('/appointments', appointmentData);
+
+        console.log('[OnlineConfirm] Appointment API response:', response.data);
+
+        // Check if payment is still required (backend may have different balance info)
+        if (response.data.paymentRequired && response.data.paymentId) {
+          console.log('[OnlineConfirm] Backend requires payment - redirecting to payment page');
+          const redirectUrl = '/member/online-consultation';
+          router.push(`/member/payments/${response.data.paymentId}?redirect=${encodeURIComponent(redirectUrl)}` as any);
+          return;
+        }
+
+        // Booking successful with wallet only
+        const createdAppointmentId = response.data.appointment?.appointmentId || (response.data as any).appointmentId;
+        console.log('[OnlineConfirm] Appointment created successfully:', createdAppointmentId);
+        setAppointmentId(createdAppointmentId);
         setBookingSuccess(true);
         return;
       }
@@ -536,7 +556,8 @@ export default function OnlineConfirmPage() {
   };
 
   const handleViewAppointments = () => {
-    router.push('/member/online-consultation' as any);
+    // Use replace to remove confirm page from history stack
+    router.replace('/member/online-consultation' as any);
   };
 
   const handleBack = () => {
