@@ -424,14 +424,15 @@ export class DoctorsService {
       return [];
     }
 
-    // Generate slots for the next 7 days
+    // Generate slots for the next 14 days (2 weeks) to show more availability
+    const DAYS_AHEAD = 14;
     const days = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Fetch all existing appointments for this doctor in the next 7 days
+    // Fetch all existing appointments for this doctor in the next 14 days
     const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 7);
+    endDate.setDate(today.getDate() + DAYS_AHEAD);
 
     const existingAppointments = await this.appointmentModel
       .find({
@@ -460,7 +461,7 @@ export class DoctorsService {
 
     console.log(`[DoctorsService] Found ${existingAppointments.length} existing appointments for doctor ${doctorId}`);
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < DAYS_AHEAD; i++) {
       const currentDate = new Date(today);
       currentDate.setDate(today.getDate() + i);
 

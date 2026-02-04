@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Platform,
   ActivityIndicator,
 } from 'react-native';
@@ -337,29 +338,47 @@ export default function SelectSlotPage() {
                 <CalendarIcon width={20} height={20} color={COLORS.primary} />
                 <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.primaryLight }}>Select Date</Text>
               </View>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity
-                  onPress={handlePrevWeek}
+              <View style={{ flexDirection: 'row', gap: 4 }}>
+                <Pressable
+                  onPress={() => {
+                    console.log('[SelectSlot] Prev week clicked, currentWeekStart:', currentWeekStart);
+                    if (currentWeekStart > 0) {
+                      setCurrentWeekStart(Math.max(0, currentWeekStart - 5));
+                    }
+                  }}
                   disabled={currentWeekStart === 0}
-                  style={{
-                    padding: 4,
-                    borderRadius: 6,
-                    opacity: currentWeekStart === 0 ? 0.3 : 1,
-                  }}
+                  style={({ pressed }) => ({
+                    padding: 10,
+                    borderRadius: 8,
+                    backgroundColor: pressed ? COLORS.border : (currentWeekStart === 0 ? COLORS.border : COLORS.background),
+                    opacity: currentWeekStart === 0 ? 0.4 : 1,
+                    cursor: Platform.OS === 'web' ? (currentWeekStart === 0 ? 'not-allowed' : 'pointer') : undefined,
+                  })}
                 >
-                  <ChevronLeftIcon width={20} height={20} color={COLORS.primaryLight} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleNextWeek}
+                  <View pointerEvents="none">
+                    <ChevronLeftIcon width={20} height={20} color={currentWeekStart === 0 ? COLORS.textGray : COLORS.primaryLight} />
+                  </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    console.log('[SelectSlot] Next week clicked, currentWeekStart:', currentWeekStart, 'daySlots.length:', daySlots.length);
+                    if (currentWeekStart + 5 < daySlots.length) {
+                      setCurrentWeekStart(currentWeekStart + 5);
+                    }
+                  }}
                   disabled={currentWeekStart + 5 >= daySlots.length}
-                  style={{
-                    padding: 4,
-                    borderRadius: 6,
-                    opacity: currentWeekStart + 5 >= daySlots.length ? 0.3 : 1,
-                  }}
+                  style={({ pressed }) => ({
+                    padding: 10,
+                    borderRadius: 8,
+                    backgroundColor: pressed ? COLORS.border : (currentWeekStart + 5 >= daySlots.length ? COLORS.border : COLORS.background),
+                    opacity: currentWeekStart + 5 >= daySlots.length ? 0.4 : 1,
+                    cursor: Platform.OS === 'web' ? (currentWeekStart + 5 >= daySlots.length ? 'not-allowed' : 'pointer') : undefined,
+                  })}
                 >
-                  <ChevronRightIcon width={20} height={20} color={COLORS.primaryLight} />
-                </TouchableOpacity>
+                  <View pointerEvents="none">
+                    <ChevronRightIcon width={20} height={20} color={currentWeekStart + 5 >= daySlots.length ? COLORS.textGray : COLORS.primaryLight} />
+                  </View>
+                </Pressable>
               </View>
             </View>
 
