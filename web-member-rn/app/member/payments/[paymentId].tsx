@@ -476,6 +476,8 @@ export default function PaymentGatewayPage() {
           appointmentDate: bookingData.serviceDetails.date,
           timeSlot: bookingData.serviceDetails.time,
           consultationFee: bookingData.consultationFee,
+          paymentAlreadyProcessed: true,
+          existingPaymentId: paymentId,
         };
 
         const appointmentResponse = await apiClient.post('/appointments', appointmentPayload);
@@ -615,6 +617,8 @@ export default function PaymentGatewayPage() {
           consultationFee: bookingData.consultationFee,
           contactNumber: bookingData.serviceDetails.contactNumber,
           callPreference: bookingData.serviceDetails.callPreference,
+          paymentAlreadyProcessed: true,
+          existingPaymentId: paymentId,
         };
 
         const appointmentResponse = await apiClient.post('/appointments', onlineAppointmentPayload);

@@ -16,6 +16,7 @@ export enum PaymentStatus {
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
   CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED',
 }
 
 export enum ServiceType {
@@ -89,6 +90,22 @@ export class Payment {
 
   @Prop()
   failureReason: string;
+
+  // Refund fields
+  @Prop({ default: false })
+  isRefund: boolean;
+
+  @Prop()
+  refundAmount: number;
+
+  @Prop()
+  refundedAt: Date;
+
+  @Prop()
+  refundReason: string;
+
+  @Prop()
+  originalPaymentId: string; // Link to original payment for refund records
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

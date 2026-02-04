@@ -296,6 +296,96 @@ export class PaymentService {
   }
 
   /**
+   * Process refund for a completed payment
+   */
+  async processRefund(
+    paymentId: string,
+    reason?: string,
+  ): Promise<PaymentDocument> {
+    console.log('💰 [PAYMENT SERVICE] Processing refund for payment:', paymentId);
+
+    const payment = await this.paymentModel.findOne({ paymentId });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (payment.status === PaymentStatus.REFUNDED) {
+      throw new BadRequestException('Payment already refunded');
+    }
+
+    if (payment.status !== PaymentStatus.COMPLETED) {
+      throw new BadRequestException('Can only refund completed payments');
+    }
+
+    // Update the original payment to REFUNDED status
+    payment.status = PaymentStatus.REFUNDED;
+    payment.refundedAt = new Date();
+    payment.refundReason = reason || 'Order cancelled';
+    payment.refundAmount = payment.amount;
+    payment.isRefund = false; // This is the original payment, not a refund record
+
+    await payment.save();
+
+    // Create a refund record (credit entry)
+    const refundPaymentId = await this.counterService.generatePaymentId();
+    const refundRecord = new this.paymentModel({
+      paymentId: refundPaymentId,
+      userId: payment.userId,
+      amount: payment.amount,
+      paymentType: payment.paymentType,
+      serviceType: payment.serviceType,
+      serviceId: payment.serviceId,
+      serviceReferenceId: payment.serviceReferenceId,
+      description: `Refund: ${payment.description || 'Payment refund'}`,
+      notes: reason || 'Order cancelled - refund processed',
+      status: PaymentStatus.COMPLETED,
+      paymentMethod: 'REFUND',
+      isActive: true,
+      isRefund: true,
+      refundAmount: payment.amount,
+      refundedAt: new Date(),
+      refundReason: reason || 'Order cancelled',
+      originalPaymentId: payment.paymentId,
+      paidAt: new Date(),
+    });
+
+    await refundRecord.save();
+
+    console.log('✅ [PAYMENT SERVICE] Refund processed:', {
+      originalPaymentId: paymentId,
+      refundPaymentId: refundPaymentId,
+      amount: payment.amount,
+    });
+
+    return refundRecord;
+  }
+
+  /**
+   * Process refund by service (appointment, dental, vision, etc.)
+   */
+  async processRefundByService(
+    serviceType: ServiceType,
+    serviceId: string,
+    reason?: string,
+  ): Promise<PaymentDocument | null> {
+    console.log('💰 [PAYMENT SERVICE] Processing refund by service:', { serviceType, serviceId });
+
+    const payment = await this.paymentModel.findOne({
+      serviceType,
+      serviceId: new Types.ObjectId(serviceId),
+      status: PaymentStatus.COMPLETED,
+    });
+
+    if (!payment) {
+      console.log('⚠️ [PAYMENT SERVICE] No completed payment found for service');
+      return null;
+    }
+
+    return this.processRefund(payment.paymentId, reason);
+  }
+
+  /**
    * Get payment summary for user
    */
   async getPaymentSummary(userId: string): Promise<{
@@ -337,5 +427,39 @@ export class PaymentService {
     });
 
     return summary;
+  }
+
+  /**
+   * Update payment's service link (used when appointment is created after payment)
+   */
+  async updatePaymentServiceLink(
+    paymentId: string,
+    serviceId: string,
+    serviceReferenceId: string,
+    serviceType: ServiceType,
+  ): Promise<void> {
+    console.log('🔗 [PAYMENT SERVICE] Updating payment service link:', {
+      paymentId,
+      serviceId,
+      serviceReferenceId,
+      serviceType,
+    });
+
+    const result = await this.paymentModel.updateOne(
+      { paymentId },
+      {
+        $set: {
+          serviceId: new Types.ObjectId(serviceId),
+          serviceReferenceId,
+          serviceType,
+        },
+      },
+    );
+
+    if (result.modifiedCount > 0) {
+      console.log('✅ [PAYMENT SERVICE] Payment service link updated successfully');
+    } else {
+      console.log('⚠️ [PAYMENT SERVICE] Payment not found or not modified');
+    }
   }
 }

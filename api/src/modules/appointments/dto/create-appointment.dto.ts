@@ -73,4 +73,12 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString()
   transactionId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  paymentAlreadyProcessed?: boolean;
+
+  @IsOptional()
+  @IsString()
+  existingPaymentId?: string;
 }

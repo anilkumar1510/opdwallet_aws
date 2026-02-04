@@ -442,6 +442,43 @@ export class AppointmentsService {
     console.log('🆔 [APPOINTMENT] MongoDB _id toString:', (saved._id as Types.ObjectId).toString());
     console.log('🆔 [APPOINTMENT] appointmentId:', appointmentId);
 
+    // SPECIAL CASE: Payment was already processed (from pay-first flow like online consultations)
+    if (createAppointmentDto.paymentAlreadyProcessed && createAppointmentDto.existingPaymentId) {
+      console.log('💳 [PAYMENT ALREADY PROCESSED] Skipping payment creation - using existing payment');
+      console.log('💳 [EXISTING PAYMENT] Payment ID:', createAppointmentDto.existingPaymentId);
+
+      // Update the existing payment's serviceId to point to this appointment
+      try {
+        await this.paymentService.updatePaymentServiceLink(
+          createAppointmentDto.existingPaymentId,
+          (saved._id as Types.ObjectId).toString(),
+          appointmentId,
+          PaymentServiceType.APPOINTMENT,
+        );
+        console.log('✅ [PAYMENT] Updated existing payment to link to appointment');
+      } catch (linkError) {
+        console.error('❌ [PAYMENT LINK ERROR] Failed to link existing payment:', linkError);
+        // Don't fail the appointment creation, just log the error
+      }
+
+      // Set the paymentId on the appointment
+      saved.paymentId = createAppointmentDto.existingPaymentId;
+      saved.status = AppointmentStatus.CONFIRMED;
+      saved.confirmedAt = new Date();
+      await saved.save();
+
+      console.log('✅ [APPOINTMENT] Appointment confirmed (payment already processed)');
+
+      return {
+        appointment: saved,
+        paymentRequired: false,
+        paymentId: createAppointmentDto.existingPaymentId,
+        transactionId: null,
+        copayAmount,
+        walletDebitAmount,
+      };
+    }
+
     // Now create payment if needed (using saved._id)
     if (!hasSufficientBalance && walletDebitAmount > 0) {
       console.log('💳 [PAYMENT] Creating payment request for insufficient balance scenario...');
@@ -944,14 +981,45 @@ export class AppointmentsService {
         );
 
         console.log('✅ [REFUND] Wallet credited with:', appointment.walletDebitAmount);
-        console.log('✅ [REFUND] Copay amount (₹' + appointment.copayAmount + ') remains in orders/transactions only');
-        console.log('💰 [REFUND] ========== OPS CANCELLATION REFUND COMPLETE ==========');
+        console.log('💰 [REFUND] ========== OPS CANCELLATION WALLET REFUND COMPLETE ==========');
       } catch (walletError) {
         console.error('❌ [REFUND] Failed to refund wallet:', walletError);
         // Continue even if refund fails, appointment is already cancelled
       }
     } else {
       console.log('⚠️ [REFUND] No wallet refund needed - walletDebitAmount is 0');
+    }
+
+    // Process refund for any out-of-pocket payment (copay OR self-paid)
+    // Use the appointment's paymentId to find the payment directly
+    if (appointment.paymentId) {
+      try {
+        console.log('💰 [REFUND] ========== PROCESSING PAYMENT REFUND (OPS) ==========');
+        console.log('💰 [REFUND] Copay Amount on appointment:', appointment.copayAmount);
+        console.log('💰 [REFUND] Consultation Fee:', appointment.consultationFee);
+        console.log('💰 [REFUND] Payment ID from appointment:', appointment.paymentId);
+
+        const refundResult = await this.paymentService.processRefund(
+          appointment.paymentId,
+          `Refund for cancelled appointment (OPS) - ${appointment.doctorName || 'Doctor'}`
+        );
+
+        if (refundResult) {
+          console.log('✅ [REFUND] Payment refund processed successfully');
+          console.log('💰 [REFUND] Refund amount:', refundResult.amount);
+          console.log('💰 [REFUND] Refund payment ID:', refundResult.paymentId);
+        }
+        console.log('💰 [REFUND] ========== PAYMENT REFUND COMPLETE (OPS) ==========');
+      } catch (refundError: any) {
+        // Don't log error if payment was never completed (PENDING status)
+        if (!refundError.message?.includes('only refund completed')) {
+          console.error('❌ [REFUND] Failed to process payment refund:', refundError);
+        } else {
+          console.log('⚠️ [REFUND] Payment was not completed, no refund needed');
+        }
+      }
+    } else {
+      console.log('⚠️ [REFUND] No payment ID on appointment - no refund to process');
     }
 
     return appointment;
@@ -1016,14 +1084,46 @@ export class AppointmentsService {
         );
 
         console.log('✅ [REFUND] Wallet credited with:', appointment.walletDebitAmount);
-        console.log('✅ [REFUND] Copay amount (₹' + appointment.copayAmount + ') remains in orders/transactions only');
-        console.log('💰 [REFUND] ========== USER CANCELLATION REFUND COMPLETE ==========');
+        console.log('💰 [REFUND] ========== USER CANCELLATION WALLET REFUND COMPLETE ==========');
       } catch (walletError) {
         console.error('❌ [REFUND] Failed to refund wallet:', walletError);
         // Continue even if refund fails, appointment is already cancelled
       }
     } else {
       console.log('⚠️ [REFUND] No wallet refund needed - walletDebitAmount is 0');
+    }
+
+    // Process refund for any out-of-pocket payment (copay OR self-paid)
+    // Use the appointment's paymentId to find the payment directly
+    if (appointment.paymentId) {
+      try {
+        console.log('💰 [REFUND] ========== PROCESSING PAYMENT REFUND ==========');
+        console.log('💰 [REFUND] Copay Amount on appointment:', appointment.copayAmount);
+        console.log('💰 [REFUND] Consultation Fee:', appointment.consultationFee);
+        console.log('💰 [REFUND] Payment ID from appointment:', appointment.paymentId);
+
+        const refundResult = await this.paymentService.processRefund(
+          appointment.paymentId,
+          `Refund for cancelled appointment - ${appointment.doctorName || 'Doctor'}`
+        );
+
+        if (refundResult) {
+          console.log('✅ [REFUND] Payment refund processed successfully');
+          console.log('💰 [REFUND] Refund amount:', refundResult.amount);
+          console.log('💰 [REFUND] Refund payment ID:', refundResult.paymentId);
+        }
+        console.log('💰 [REFUND] ========== PAYMENT REFUND COMPLETE ==========');
+      } catch (refundError: any) {
+        // Don't log error if payment was never completed (PENDING status)
+        if (!refundError.message?.includes('only refund completed')) {
+          console.error('❌ [REFUND] Failed to process payment refund:', refundError);
+        } else {
+          console.log('⚠️ [REFUND] Payment was not completed, no refund needed');
+        }
+        // Continue even if refund fails, appointment is already cancelled
+      }
+    } else {
+      console.log('⚠️ [REFUND] No payment ID on appointment - no refund to process');
     }
 
     return appointment;
