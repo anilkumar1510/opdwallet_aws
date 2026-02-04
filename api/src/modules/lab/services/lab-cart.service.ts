@@ -5,6 +5,7 @@ import { LabCart, CartStatus } from '../schemas/lab-cart.schema';
 import { LabPrescription } from '../schemas/lab-prescription.schema';
 import { CreateCartDto } from '../dto/create-cart.dto';
 import { UpdateCartDto } from '../dto/update-cart.dto';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class LabCartService {
@@ -13,6 +14,7 @@ export class LabCartService {
     private cartModel: Model<LabCart>,
     @InjectModel(LabPrescription.name)
     private prescriptionModel: Model<LabPrescription>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createCart(
@@ -85,6 +87,21 @@ export class LabCartService {
         cartId: savedCart.cartId,
         itemsCount: savedCart.items.length,
       });
+
+      // Send notification to user about cart creation
+      try {
+        await this.notificationsService.notifyCartCreated(
+          userId,
+          savedCart.cartId,
+          'lab',
+          savedCart.items.length,
+          savedCart.patientName,
+        );
+        console.log('✅ [CART SERVICE] Notification sent for cart creation');
+      } catch (notifError) {
+        console.error('⚠️ [CART SERVICE] Failed to send notification:', notifError);
+        // Don't fail cart creation if notification fails
+      }
 
       console.log('🔍 [CART SERVICE] ==================== CREATE CART SUCCESS ====================');
       return savedCart;

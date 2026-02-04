@@ -24,6 +24,7 @@ import { AssignmentsModule } from '../assignments/assignments.module';
 import { PlanConfigModule } from '../plan-config/plan-config.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { TransactionSummaryModule } from '../transactions/transaction-summary.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
@@ -43,6 +44,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
     PlanConfigModule,
     WalletModule,
     TransactionSummaryModule,
+    NotificationsModule,
     MulterModule.register({
       storage: diskStorage({
         destination: (req, file, cb) => {

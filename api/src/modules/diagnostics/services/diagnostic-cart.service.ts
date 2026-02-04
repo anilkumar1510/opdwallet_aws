@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { DiagnosticCart, CartStatus, CartItem } from '../schemas/diagnostic-cart.schema';
 import { DiagnosticPrescription } from '../schemas/diagnostic-prescription.schema';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 export interface CreateDiagnosticCartDto {
   prescriptionId: string;
@@ -33,6 +34,7 @@ export class DiagnosticCartService {
     private diagnosticCartModel: Model<DiagnosticCart>,
     @InjectModel(DiagnosticPrescription.name)
     private prescriptionModel: Model<DiagnosticPrescription>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createDto: CreateDiagnosticCartDto): Promise<DiagnosticCart> {
@@ -51,7 +53,22 @@ export class DiagnosticCartService {
       createdBy: createDto.createdBy,
     });
 
-    return cart.save();
+    const savedCart = await cart.save();
+
+    // Send notification to user about cart creation
+    try {
+      await this.notificationsService.notifyCartCreated(
+        createDto.userId,
+        savedCart.cartId,
+        'diagnostic',
+        savedCart.items.length,
+        savedCart.patientName,
+      );
+    } catch (notifError) {
+      console.error('[DiagnosticCart] Failed to send notification:', notifError);
+    }
+
+    return savedCart;
   }
 
   async createCart(
@@ -94,7 +111,22 @@ export class DiagnosticCartService {
       createdBy,
     });
 
-    return cart.save();
+    const savedCart = await cart.save();
+
+    // Send notification to user about cart creation
+    try {
+      await this.notificationsService.notifyCartCreated(
+        userId,
+        savedCart.cartId,
+        'diagnostic',
+        savedCart.items.length,
+        savedCart.patientName,
+      );
+    } catch (notifError) {
+      console.error('[DiagnosticCart] Failed to send notification:', notifError);
+    }
+
+    return savedCart;
   }
 
   async findOne(cartId: string): Promise<DiagnosticCart> {
