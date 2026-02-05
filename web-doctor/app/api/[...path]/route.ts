@@ -14,6 +14,21 @@ try {
   console.error('[API Proxy] CRITICAL: Invalid API_URL format:', API_URL);
 }
 
+// Content types that should be treated as binary (not text)
+const BINARY_CONTENT_TYPES = [
+  'image/',
+  'audio/',
+  'video/',
+  'application/octet-stream',
+  'application/pdf',
+  'application/zip',
+];
+
+function isBinaryContentType(contentType: string | null): boolean {
+  if (!contentType) return false;
+  return BINARY_CONTENT_TYPES.some(type => contentType.toLowerCase().startsWith(type));
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -55,103 +70,131 @@ export async function DELETE(
 }
 
 async function proxyRequest(request: NextRequest, pathSegments: string[]) {
-  console.log('=== API PROXY DEBUG START ===');
-  console.log('[API Proxy] Method:', request.method);
-  console.log('[API Proxy] Path segments:', pathSegments);
-
   const path = pathSegments.join('/');
-  // API_URL already includes /api prefix, so just append the path
   const url = `${API_URL}/${path}`;
 
-  console.log('[API Proxy] Target URL:', url);
-  console.log('[API Proxy] Original URL:', request.url);
-  console.log('[API Proxy] Request headers:', Object.fromEntries(request.headers.entries()));
+  console.log('[API Proxy] Method:', request.method, '| Path:', path);
 
   // Get cookies from request
   const cookies = request.headers.get('cookie');
-  console.log('[API Proxy] Request cookies:', cookies);
 
-  // Prepare headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  // Check if this is a multipart/form-data request (file upload)
+  const requestContentType = request.headers.get('content-type') || '';
+  const isFormData = requestContentType.includes('multipart/form-data');
+
+  // Prepare headers - don't set Content-Type for FormData (let fetch set it with boundary)
+  const headers: Record<string, string> = {};
+
+  if (!isFormData && request.method !== 'GET' && request.method !== 'HEAD') {
+    headers['Content-Type'] = 'application/json';
+  }
 
   // Forward cookies if they exist
   if (cookies) {
     headers['Cookie'] = cookies;
   }
 
-  console.log('[API Proxy] Forwarding headers:', headers);
-
   // Prepare request body for non-GET requests
-  let body: string | undefined;
+  let body: any;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     try {
-      body = await request.text();
-      console.log('[API Proxy] Request body:', body);
+      if (isFormData) {
+        // For FormData, pass it directly
+        body = await request.formData();
+      } else {
+        body = await request.text();
+      }
     } catch (error) {
       console.error('[API Proxy] Failed to read request body:', error);
     }
   }
 
   try {
-    console.log('[API Proxy] Making fetch request...');
     const response = await fetch(url, {
       method: request.method,
       headers,
       body,
     });
 
-    console.log('[API Proxy] Response status:', response.status);
-    console.log('[API Proxy] Response headers:', Object.fromEntries(response.headers.entries()));
+    const responseContentType = response.headers.get('Content-Type');
+    const isBinary = isBinaryContentType(responseContentType);
 
-    // Get response body
+    console.log('[API Proxy] Response:', response.status, '| Content-Type:', responseContentType, '| Binary:', isBinary);
+
+    // Build response headers
+    const responseHeaders: Record<string, string> = {};
+
+    // Forward important headers
+    if (responseContentType) {
+      responseHeaders['Content-Type'] = responseContentType;
+    }
+
+    // Forward cache control headers for images
+    const cacheControl = response.headers.get('Cache-Control');
+    if (cacheControl) {
+      responseHeaders['Cache-Control'] = cacheControl;
+    }
+
+    const pragma = response.headers.get('Pragma');
+    if (pragma) {
+      responseHeaders['Pragma'] = pragma;
+    }
+
+    // Handle binary responses (images, PDFs, etc.)
+    if (isBinary) {
+      const arrayBuffer = await response.arrayBuffer();
+
+      const nextResponse = new NextResponse(arrayBuffer, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      });
+
+      // Forward Set-Cookie headers
+      forwardCookies(response, nextResponse);
+
+      return nextResponse;
+    }
+
+    // Handle text/JSON responses
     const responseBody = await response.text();
-    console.log('[API Proxy] Response body length:', responseBody.length);
-    console.log('[API Proxy] Response body preview:', responseBody.substring(0, 200));
 
-    // Create response with same status
     const nextResponse = new NextResponse(responseBody, {
       status: response.status,
       statusText: response.statusText,
       headers: {
-        'Content-Type': response.headers.get('Content-Type') || 'application/json',
+        ...responseHeaders,
+        'Content-Type': responseContentType || 'application/json',
       },
     });
 
-    // Forward Set-Cookie headers explicitly - use getSetCookie() for multiple cookies
-    const setCookieHeaders = response.headers.getSetCookie?.() || [];
-    console.log('[API Proxy] Set-Cookie headers array:', setCookieHeaders);
-    console.log('[API Proxy] Set-Cookie count:', setCookieHeaders.length);
-
-    if (setCookieHeaders.length > 0) {
-      console.log('[API Proxy] Forwarding Set-Cookie headers...');
-      setCookieHeaders.forEach((cookie, index) => {
-        console.log(`[API Proxy] Set-Cookie [${index}]:`, cookie);
-        nextResponse.headers.append('Set-Cookie', cookie);
-      });
-    } else {
-      console.log('[API Proxy] No Set-Cookie headers in response');
-      // Try fallback method
-      const singleCookie = response.headers.get('set-cookie');
-      if (singleCookie) {
-        console.log('[API Proxy] Found single Set-Cookie via get():', singleCookie);
-        nextResponse.headers.set('Set-Cookie', singleCookie);
-      }
-    }
-
-    console.log('[API Proxy] Final response headers:', Object.fromEntries(nextResponse.headers.entries()));
-    console.log('=== API PROXY DEBUG END ===');
+    // Forward Set-Cookie headers
+    forwardCookies(response, nextResponse);
 
     return nextResponse;
   } catch (error: any) {
-    console.error('[API Proxy] Fetch error:', error);
-    console.error('[API Proxy] Error message:', error.message);
-    console.error('[API Proxy] Error stack:', error.stack);
+    console.error('[API Proxy] Fetch error:', error.message);
 
     return NextResponse.json(
       { error: 'Proxy error: ' + error.message },
       { status: 502 }
     );
+  }
+}
+
+function forwardCookies(sourceResponse: Response, targetResponse: NextResponse) {
+  // Forward Set-Cookie headers explicitly - use getSetCookie() for multiple cookies
+  const setCookieHeaders = sourceResponse.headers.getSetCookie?.() || [];
+
+  if (setCookieHeaders.length > 0) {
+    setCookieHeaders.forEach((cookie) => {
+      targetResponse.headers.append('Set-Cookie', cookie);
+    });
+  } else {
+    // Try fallback method
+    const singleCookie = sourceResponse.headers.get('set-cookie');
+    if (singleCookie) {
+      targetResponse.headers.set('Set-Cookie', singleCookie);
+    }
   }
 }

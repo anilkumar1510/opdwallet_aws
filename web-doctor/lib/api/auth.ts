@@ -253,7 +253,16 @@ export async function uploadSignature(file: File): Promise<UploadSignatureRespon
   if (!response.ok) {
     const error = await response.json();
     console.error('[API-AUTH] ❌ Upload failed:', error)
-    throw new Error(error.message || 'Failed to upload signature');
+    // Handle nested error message objects
+    let errorMessage = 'Failed to upload signature';
+    if (typeof error.message === 'string') {
+      errorMessage = error.message;
+    } else if (typeof error.message === 'object' && error.message?.message) {
+      errorMessage = error.message.message;
+    } else if (error.error) {
+      errorMessage = typeof error.error === 'string' ? error.error : JSON.stringify(error.error);
+    }
+    throw new Error(errorMessage);
   }
 
   const result = await response.json();
