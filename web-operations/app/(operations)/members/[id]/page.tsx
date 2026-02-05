@@ -108,7 +108,7 @@ export default function MemberDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {user.name.fullName || `${user.name.firstName} ${user.name.lastName}`}
+              {user.name?.fullName || (user.name ? `${user.name.firstName || ''} ${user.name.lastName || ''}`.trim() : 'N/A')}
             </h1>
             <p className="text-gray-500 mt-1">
               Member ID: {user.memberId} • UHID: {user.uhid}
@@ -161,7 +161,7 @@ export default function MemberDetailPage() {
           <div>
             <p className="text-xs text-gray-500">Full Name</p>
             <p className="text-sm font-medium text-gray-900">
-              {user.name.fullName || `${user.name.firstName} ${user.name.lastName}`}
+              {user.name?.fullName || (user.name ? `${user.name.firstName || ''} ${user.name.lastName || ''}`.trim() : 'N/A')}
             </p>
           </div>
           <div>
@@ -350,7 +350,7 @@ export default function MemberDetailPage() {
       {showTopupModal && rawWallet && (
         <TopupWalletModal
           memberId={memberId}
-          memberName={user.name.fullName || `${user.name.firstName} ${user.name.lastName}`}
+          memberName={user.name?.fullName || (user.name ? `${user.name.firstName || ''} ${user.name.lastName || ''}`.trim() : 'N/A')}
           wallet={rawWallet}
           onClose={() => setShowTopupModal(false)}
           onSuccess={() => {
