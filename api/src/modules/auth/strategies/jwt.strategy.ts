@@ -58,6 +58,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: payload.role,
       memberId: payload.memberId,
       doctorId: payload.doctorId,
+      name: payload.name, // Include name for status history tracking
     };
 
     console.log('[JwtStrategy] Returning validated user:', JSON.stringify(result, null, 2));

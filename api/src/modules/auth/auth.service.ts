@@ -98,6 +98,7 @@ export class AuthService {
       role: user.role,
       memberId: user.memberId,
       userType: user.userType || (user.role === UserRole.MEMBER || user.role === UserRole.DOCTOR ? 'member' : 'internal'),
+      name: user.name, // Include name in JWT for status history tracking
     };
 
     const token = this.jwtService.sign(payload);

@@ -197,13 +197,13 @@ export class MemberClaim {
   internalNotes: string;
 
   // TPA Assignment fields
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   assignedTo: Types.ObjectId;
 
   @Prop()
   assignedToName: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   assignedBy: Types.ObjectId;
 
   @Prop()
@@ -214,11 +214,11 @@ export class MemberClaim {
 
   @Prop({
     type: [{
-      previousAssignee: { type: Types.ObjectId, ref: 'User' },
+      previousAssignee: { type: Types.ObjectId, ref: 'InternalUser' },
       previousAssigneeName: String,
-      newAssignee: { type: Types.ObjectId, ref: 'User' },
+      newAssignee: { type: Types.ObjectId, ref: 'InternalUser' },
       newAssigneeName: String,
-      reassignedBy: { type: Types.ObjectId, ref: 'User' },
+      reassignedBy: { type: Types.ObjectId, ref: 'InternalUser' },
       reassignedByName: String,
       reassignedAt: Date,
       reason: String,
@@ -238,7 +238,7 @@ export class MemberClaim {
   }[];
 
   // TPA Review fields
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   reviewedByUser: Types.ObjectId;
 
   @Prop()
@@ -249,7 +249,7 @@ export class MemberClaim {
 
   @Prop({
     type: [{
-      reviewedBy: { type: Types.ObjectId, ref: 'User' },
+      reviewedBy: { type: Types.ObjectId, ref: 'InternalUser' },
       reviewedByName: String,
       reviewedAt: Date,
       action: String,
@@ -278,7 +278,7 @@ export class MemberClaim {
   @Prop()
   documentsRequiredAt: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   documentsRequiredBy: Types.ObjectId;
 
   @Prop([String])
@@ -288,7 +288,7 @@ export class MemberClaim {
   @Prop()
   approvalReason: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   approvedBy: Types.ObjectId;
 
   @Prop()
@@ -298,7 +298,7 @@ export class MemberClaim {
   approvedAt: Date;
 
   // Rejection fields (enhanced)
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   rejectedBy: Types.ObjectId;
 
   @Prop()
@@ -321,7 +321,7 @@ export class MemberClaim {
   @Prop({ type: Number })
   paidAmount: number;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'InternalUser' })
   paidBy: Types.ObjectId;
 
   @Prop()
@@ -337,7 +337,7 @@ export class MemberClaim {
   @Prop({
     type: [{
       status: String,
-      changedBy: { type: Types.ObjectId, ref: 'User' },
+      changedBy: { type: Types.ObjectId, ref: 'InternalUser' },
       changedByName: String,
       changedByRole: String,
       changedAt: Date,

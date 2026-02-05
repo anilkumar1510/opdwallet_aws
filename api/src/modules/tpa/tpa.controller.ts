@@ -12,6 +12,8 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { TpaService } from './tpa.service';
 import { AssignClaimDto } from './dto/assign-claim.dto';
 import { ReassignClaimDto } from './dto/reassign-claim.dto';
@@ -24,13 +26,49 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { UserRole } from '@/common/constants/roles.enum';
+import { InternalUser, InternalUserDocument } from '@/modules/internal-users/schemas/internal-user.schema';
 
 @ApiTags('TPA')
 @Controller('tpa')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class TpaController {
-  constructor(private readonly tpaService: TpaService) {}
+  constructor(
+    private readonly tpaService: TpaService,
+    @InjectModel(InternalUser.name) private internalUserModel: Model<InternalUserDocument>,
+  ) {}
+
+  /**
+   * Get user name from JWT or fallback to database lookup
+   */
+  private async getUserName(req: any): Promise<string> {
+    // First try to get name from JWT payload
+    const name = req.user?.name;
+    if (name?.fullName) {
+      return name.fullName;
+    }
+    if (name?.firstName || name?.lastName) {
+      const fullName = `${name.firstName || ''} ${name.lastName || ''}`.trim();
+      if (fullName && fullName !== 'undefined undefined') {
+        return fullName;
+      }
+    }
+
+    // Fallback: fetch from database
+    if (req.user?.userId) {
+      try {
+        const user = await this.internalUserModel.findById(req.user.userId).select('name').lean();
+        if (user?.name) {
+          return user.name.fullName || `${user.name.firstName || ''} ${user.name.lastName || ''}`.trim() || req.user.email;
+        }
+      } catch (error) {
+        console.warn('[TPA Controller] Failed to fetch user name from database:', error.message);
+      }
+    }
+
+    // Last resort fallback
+    return req.user?.email || 'Unknown User';
+  }
 
   @Get('claims')
   @Roles(UserRole.TPA_ADMIN, UserRole.TPA_USER, UserRole.SUPER_ADMIN, UserRole.ADMIN)
@@ -190,7 +228,7 @@ export class TpaController {
     @Body() updateStatusDto: UpdateClaimStatusDto,
     @Request() req: any,
   ) {
-    const userName = req.user.name?.fullName || `${req.user.name?.firstName} ${req.user.name?.lastName}`;
+    const userName = await this.getUserName(req);
 
     return this.tpaService.updateClaimStatus(
       claimId,
@@ -214,7 +252,7 @@ export class TpaController {
     @Body() approveClaimDto: ApproveClaimDto,
     @Request() req: any,
   ) {
-    const userName = req.user.name?.fullName || `${req.user.name?.firstName} ${req.user.name?.lastName}`;
+    const userName = await this.getUserName(req);
 
     return this.tpaService.approveClaim(
       claimId,
@@ -237,7 +275,7 @@ export class TpaController {
     @Body() rejectClaimDto: RejectClaimDto,
     @Request() req: any,
   ) {
-    const userName = req.user.name?.fullName || `${req.user.name?.firstName} ${req.user.name?.lastName}`;
+    const userName = await this.getUserName(req);
 
     return this.tpaService.rejectClaim(
       claimId,
@@ -260,7 +298,7 @@ export class TpaController {
     @Body() requestDocumentsDto: RequestDocumentsDto,
     @Request() req: any,
   ) {
-    const userName = req.user.name?.fullName || `${req.user.name?.firstName} ${req.user.name?.lastName}`;
+    const userName = await this.getUserName(req);
 
     return this.tpaService.requestDocuments(
       claimId,

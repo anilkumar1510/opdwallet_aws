@@ -789,9 +789,10 @@ export class TpaService {
       status: ClaimStatus.UNDER_REVIEW,
     });
 
+    // Approved claims include APPROVED and all payment stages (PAYMENT_PENDING, PAYMENT_PROCESSING, PAYMENT_COMPLETED)
     const approvedClaims = await this.memberClaimModel.countDocuments({
       ...dateFilter,
-      status: ClaimStatus.APPROVED,
+      status: { $in: [ClaimStatus.APPROVED, ClaimStatus.PAYMENT_PENDING, ClaimStatus.PAYMENT_PROCESSING, ClaimStatus.PAYMENT_COMPLETED] },
     });
 
     const partiallyApprovedClaims = await this.memberClaimModel.countDocuments({

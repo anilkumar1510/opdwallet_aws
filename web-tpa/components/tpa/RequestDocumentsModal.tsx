@@ -85,11 +85,18 @@ export default function RequestDocumentsModal({
     setSubmitting(true)
 
     try {
+      // Transform data to match backend DTO format
+      const requiredDocuments = validDocuments.map((doc) => doc.documentType)
+      const documentsRequiredReason = validDocuments
+        .map((doc) => `${doc.documentType}: ${doc.reason}`)
+        .join('; ')
+
       const response = await apiFetch(`/api/tpa/claims/${claimId}/request-documents`, {
         method: 'POST',
         body: JSON.stringify({
-          documents: validDocuments,
-          notes,
+          documentsRequiredReason,
+          requiredDocuments,
+          notes: notes || undefined,
         }),
       })
 

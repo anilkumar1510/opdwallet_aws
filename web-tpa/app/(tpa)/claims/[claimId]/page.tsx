@@ -219,7 +219,21 @@ export default function ClaimDetailPage() {
   const canTakeAction = () => {
     if (!claim || !currentUser) return false
 
-    // TPA_ADMIN can always take action
+    // Don't show action buttons for claims that are already processed
+    const terminalStatuses = [
+      'APPROVED',
+      'PARTIALLY_APPROVED',
+      'REJECTED',
+      'PAYMENT_PENDING',
+      'PAYMENT_PROCESSING',
+      'PAYMENT_COMPLETED',
+      'CANCELLED',
+    ]
+    if (terminalStatuses.includes(claim.status)) {
+      return false
+    }
+
+    // TPA_ADMIN can always take action on non-terminal claims
     if (currentUser.role === 'TPA_ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN') {
       return true
     }
@@ -235,7 +249,15 @@ export default function ClaimDetailPage() {
   }
 
   const canReassign = () => {
+    if (!currentUser || !claim) return false
+    // Reassign is only available when claim is in ASSIGNED status
+    if (claim.status !== 'ASSIGNED') return false
+    return currentUser.role === 'TPA_ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN'
+  }
+
+  const canChangeStatus = () => {
     if (!currentUser) return false
+    // TPA_ADMIN can change status at any time
     return currentUser.role === 'TPA_ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN'
   }
 
@@ -678,47 +700,51 @@ export default function ClaimDetailPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Action Buttons */}
-          {canTakeAction() && (
+          {(canTakeAction() || canChangeStatus()) && (
             <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
               <h3 className="text-sm font-semibold text-gray-900">Actions</h3>
-              <button
-                onClick={() => setShowApprovalModal(true)}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <CheckCircleIcon className="h-4 w-4" />
-                <span>Approve Claim</span>
-              </button>
-              <button
-                onClick={() => setShowRejectionModal(true)}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <XCircleIcon className="h-4 w-4" />
-                <span>Reject Claim</span>
-              </button>
-              <button
-                onClick={() => setShowDocumentsModal(true)}
-                className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <DocumentTextIcon className="h-4 w-4" />
-                <span>Request Documents</span>
-              </button>
-              {canReassign() && (
+              {canTakeAction() && (
                 <>
                   <button
-                    onClick={() => setShowStatusModal(true)}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => setShowApprovalModal(true)}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
                   >
-                    <ArrowPathIcon className="h-4 w-4" />
-                    <span>Change Status</span>
+                    <CheckCircleIcon className="h-4 w-4" />
+                    <span>Approve Claim</span>
                   </button>
                   <button
-                    onClick={() => setShowReassignModal(true)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                    onClick={() => setShowRejectionModal(true)}
+                    className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
                   >
-                    <ArrowPathIcon className="h-4 w-4" />
-                    <span>Reassign</span>
+                    <XCircleIcon className="h-4 w-4" />
+                    <span>Reject Claim</span>
+                  </button>
+                  <button
+                    onClick={() => setShowDocumentsModal(true)}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <DocumentTextIcon className="h-4 w-4" />
+                    <span>Request Documents</span>
                   </button>
                 </>
+              )}
+              {canChangeStatus() && (
+                <button
+                  onClick={() => setShowStatusModal(true)}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ArrowPathIcon className="h-4 w-4" />
+                  <span>Change Status</span>
+                </button>
+              )}
+              {canReassign() && (
+                <button
+                  onClick={() => setShowReassignModal(true)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ArrowPathIcon className="h-4 w-4" />
+                  <span>Reassign</span>
+                </button>
               )}
             </div>
           )}
@@ -809,14 +835,16 @@ export default function ClaimDetailPage() {
                 {claim.reviewHistory.map((review, index) => (
                   <div key={index} className="bg-gray-50 p-3 rounded-lg">
                     <p className="text-sm font-medium text-gray-900">
-                      {review.action} - {review.decision}
+                      {review.action}
                     </p>
                     {review.amountApproved !== undefined && (
                       <p className="text-sm text-green-600 mt-1">
                         Approved: ₹{review.amountApproved.toLocaleString()}
                       </p>
                     )}
-                    <p className="text-xs text-gray-600 mt-1">{review.reason}</p>
+                    {(review.notes || review.reason) && (
+                      <p className="text-xs text-gray-600 mt-1">{review.notes || review.reason}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       By {review.reviewedBy?.name?.fullName || (review as any).reviewedByName || 'Unknown'} on{' '}
                       {formatDate(review.reviewedAt)}
