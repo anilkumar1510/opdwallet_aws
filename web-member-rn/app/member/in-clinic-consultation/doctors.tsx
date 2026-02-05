@@ -158,7 +158,7 @@ export default function DoctorsPage() {
     try {
       console.log('[Doctors] Fetching doctors for specialty:', specialtyId);
 
-      let queryString = `specialtyId=${specialtyId}`;
+      let queryString = `specialtyId=${specialtyId}&isActive=true`;
       if (pincode && pincode.length === 6) {
         queryString += `&pincode=${pincode}`;
         console.log('[Doctors] Adding pincode filter:', pincode);

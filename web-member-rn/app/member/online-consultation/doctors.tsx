@@ -123,7 +123,7 @@ export default function OnlineDoctorsPage() {
     try {
       console.log('[OnlineDoctors] Fetching online doctors for specialty:', specialtyId);
       const response = await apiClient.get<{ data?: Doctor[] } | Doctor[]>(
-        `/doctors?specialtyId=${specialtyId}&type=ONLINE`
+        `/doctors?specialtyId=${specialtyId}&type=ONLINE&isActive=true`
       );
 
       // Handle both pagination wrapper and flat array responses
