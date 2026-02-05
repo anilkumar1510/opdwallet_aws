@@ -178,7 +178,7 @@ export default function LoginPage() {
               <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(30, 74, 141, 0.1)' }}>
                 <p className="text-sm font-medium" style={{ color: '#1E4A8D' }}>Demo Credentials:</p>
                 <p className="text-sm mt-1" style={{ color: '#2563A8' }}>
-                  Email: doctor@opdwallet.com<br />
+                  Email: doctor@gmail.com<br />
                   Password: Doctor@123
                 </p>
               </div>

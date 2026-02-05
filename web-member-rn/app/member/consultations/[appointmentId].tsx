@@ -6,9 +6,14 @@ import {
   ActivityIndicator,
   Platform,
   StyleSheet,
+  Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+import { Camera } from 'expo-camera';
+import { Audio } from 'expo-av';
 import {
   ArrowLeftIcon,
   PhoneXMarkIcon,
@@ -82,9 +87,8 @@ const DailyVideoCall: React.FC<DailyVideoCallProps> = ({
   }, [isLoading]);
 
   useEffect(() => {
-    // Only run on web platform
+    // On native platforms, we use WebView, so skip the Daily.co web SDK initialization
     if (Platform.OS !== 'web') {
-      setError('Video calls are currently only supported on web');
       setIsLoading(false);
       return;
     }
@@ -279,19 +283,115 @@ const DailyVideoCall: React.FC<DailyVideoCallProps> = ({
     );
   }
 
-  // Native fallback (not supported yet)
-  return (
-    <View style={styles.errorContainer}>
-      <View style={styles.errorCard}>
-        <Text style={styles.errorTitle}>Video Calls Not Supported</Text>
-        <Text style={styles.errorMessage}>
-          Video consultations are currently only available on the web version.
-          Please open the app in a browser to join your video consultation.
-        </Text>
-        <TouchableOpacity onPress={onEnd} style={styles.errorButton}>
-          <Text style={styles.errorButtonText}>Back to Appointments</Text>
-        </TouchableOpacity>
+  // Native mobile - use WebView to load Daily.co room
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [permissionError, setPermissionError] = useState('');
+  const webViewRef = useRef<WebView>(null);
+
+  // Request camera and microphone permissions on mount
+  useEffect(() => {
+    const requestPermissions = async () => {
+      try {
+        console.log('[VideoCall] Requesting camera permission...');
+        const cameraResult = await Camera.requestCameraPermissionsAsync();
+        console.log('[VideoCall] Camera permission:', cameraResult.status);
+
+        console.log('[VideoCall] Requesting microphone permission...');
+        const audioResult = await Audio.requestPermissionsAsync();
+        console.log('[VideoCall] Microphone permission:', audioResult.status);
+
+        if (cameraResult.status === 'granted' && audioResult.status === 'granted') {
+          console.log('[VideoCall] All permissions granted');
+          setPermissionsGranted(true);
+        } else {
+          console.log('[VideoCall] Permissions denied');
+          setPermissionError('Camera and microphone permissions are required for video calls. Please enable them in your device settings.');
+        }
+      } catch (err) {
+        console.error('[VideoCall] Permission error:', err);
+        setPermissionError('Failed to request permissions. Please try again.');
+      }
+    };
+
+    if (Platform.OS !== 'web') {
+      requestPermissions();
+    }
+  }, []);
+
+  // Show permission error
+  if (permissionError) {
+    return (
+      <View style={styles.errorContainer}>
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Permissions Required</Text>
+          <Text style={styles.errorMessage}>{permissionError}</Text>
+          <TouchableOpacity
+            onPress={() => Linking.openSettings()}
+            style={[styles.errorButton, { marginBottom: 12 }]}
+          >
+            <Text style={styles.errorButtonText}>Open Settings</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onEnd} style={styles.errorButton}>
+            <Text style={styles.errorButtonText}>Back to Appointments</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+    );
+  }
+
+  // Wait for permissions
+  if (!permissionsGranted) {
+    return (
+      <View style={styles.loadingOverlay}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+        <Text style={styles.loadingText}>Requesting permissions...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.videoContainer}>
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Connecting to video consultation...</Text>
+        </View>
+      )}
+
+      {/* End Call Button */}
+      <TouchableOpacity
+        onPress={handleEndCall}
+        style={styles.endCallButton}
+        activeOpacity={0.8}
+      >
+        <PhoneXMarkIcon width={24} height={24} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <WebView
+        ref={webViewRef}
+        source={{ uri: roomUrl }}
+        style={{ flex: 1 }}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        onLoadStart={() => setIsLoading(true)}
+        onLoadEnd={() => setIsLoading(false)}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.error('[WebView Error]', nativeEvent);
+          setError('Failed to load video consultation. Please check your internet connection.');
+        }}
+        // Android specific - grant all permission requests
+        onPermissionRequest={(request) => {
+          console.log('[WebView] Permission request:', request);
+          request.grant(request.resources);
+        }}
+        // Allow media capture
+        allowsProtectedMedia={true}
+        mediaCapturePermissionGrantType="grant"
+      />
     </View>
   );
 };
