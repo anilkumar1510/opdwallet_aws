@@ -497,6 +497,26 @@ export class DentalBookingsService {
       booking.paymentStatus = 'COMPLETED';
       // Keep status as PENDING_CONFIRMATION - clinic will confirm later
       booking.paymentMethod = 'COPAY';
+
+      // Link payment to booking if paymentId is provided
+      if (createDto.paymentId) {
+        booking.paymentId = new Types.ObjectId(createDto.paymentId);
+        console.log('[DentalBookings] Linked payment to booking:', createDto.paymentId);
+
+        // Update payment record with correct booking references
+        try {
+          await this.paymentService.updatePaymentServiceLink(
+            createDto.paymentId,
+            (booking._id as Types.ObjectId).toString(),
+            bookingId,
+            ServiceType.DENTAL,
+          );
+          console.log('[DentalBookings] Updated payment service link to booking:', bookingId);
+        } catch (error) {
+          console.error('[DentalBookings] Failed to update payment service link:', error);
+        }
+      }
+
       await booking.save();
 
       // Create transaction summary

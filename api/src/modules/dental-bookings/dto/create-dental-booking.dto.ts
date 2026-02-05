@@ -36,4 +36,8 @@ export class CreateDentalBookingDto {
   @IsOptional()
   @IsBoolean()
   paymentAlreadyProcessed?: boolean;
+
+  @IsOptional()
+  @IsString()
+  paymentId?: string;
 }

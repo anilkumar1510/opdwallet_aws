@@ -432,6 +432,7 @@ export default function PaymentGatewayPage() {
           appointmentDate: bookingData.serviceDetails.date,
           appointmentTime: bookingData.serviceDetails.time,
           paymentAlreadyProcessed: true,
+          paymentId: bookingData.paymentId,
         };
 
         console.log('[PaymentGateway] Dental booking payload:', dentalBookingPayload);
