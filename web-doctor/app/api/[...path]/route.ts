@@ -71,9 +71,14 @@ export async function DELETE(
 
 async function proxyRequest(request: NextRequest, pathSegments: string[]) {
   const path = pathSegments.join('/');
-  const url = `${API_URL}/${path}`;
 
-  console.log('[API Proxy] Method:', request.method, '| Path:', path);
+  // Get query string from the original request URL
+  const requestUrl = new URL(request.url);
+  const queryString = requestUrl.search; // includes the '?' if present
+
+  const url = `${API_URL}/${path}${queryString}`;
+
+  console.log('[API Proxy] Method:', request.method, '| Path:', path, '| URL:', url);
 
   // Get cookies from request
   const cookies = request.headers.get('cookie');
@@ -120,6 +125,13 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     const isBinary = isBinaryContentType(responseContentType);
 
     console.log('[API Proxy] Response:', response.status, '| Content-Type:', responseContentType, '| Binary:', isBinary);
+
+    // Log response body for search endpoints (debugging)
+    if (path.includes('search')) {
+      const clonedResponse = response.clone();
+      const bodyText = await clonedResponse.text();
+      console.log('[API Proxy] Search response body:', bodyText.substring(0, 500));
+    }
 
     // Build response headers
     const responseHeaders: Record<string, string> = {};
