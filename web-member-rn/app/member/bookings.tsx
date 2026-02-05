@@ -13,6 +13,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 // ============================================================================
 // COLORS
@@ -257,6 +259,9 @@ export default function BookingsPage() {
   const [expandedVisionSection, setExpandedVisionSection] = useState<string | null>(null);
   const [expandedLabSection, setExpandedLabSection] = useState<string | null>(null);
   const [expandedDiagnosticSection, setExpandedDiagnosticSection] = useState<string | null>(null);
+
+  // Prescription viewing state
+  const [viewingPrescriptionId, setViewingPrescriptionId] = useState<string | null>(null);
 
   // Map tab names to category codes
   const tabToCategoryCode: Record<string, string> = {
@@ -677,6 +682,70 @@ export default function BookingsPage() {
     } catch (error: any) {
       console.error('[DiagnosticPrescriptions] Error fetching diagnostic prescriptions:', error);
       setDiagnosticPrescriptions([]);
+    }
+  };
+
+  // View prescription PDF
+  const viewPrescription = async (prescriptionId: string) => {
+    console.log('[Bookings] Viewing prescription:', prescriptionId);
+    setViewingPrescriptionId(prescriptionId);
+
+    try {
+      if (Platform.OS === 'web') {
+        // Web: Use blob URL
+        const response = await apiClient.get(`/member/prescriptions/${prescriptionId}/download`, {
+          responseType: 'blob',
+        });
+        const blob = response.data;
+        console.log('[Bookings] Prescription PDF received, size:', blob.size);
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      } else {
+        // Native: Use FileSystem to download and Sharing to open
+        const token = await tokenManager.getToken();
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const downloadUrl = `${apiUrl}/member/prescriptions/${prescriptionId}/download`;
+
+        console.log('[Bookings] Downloading prescription from:', downloadUrl);
+
+        const fileUri = `${FileSystem.cacheDirectory}prescription-${prescriptionId}.pdf`;
+
+        const downloadResult = await FileSystem.downloadAsync(downloadUrl, fileUri, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log('[Bookings] Download result:', downloadResult.status, downloadResult.uri);
+
+        if (downloadResult.status !== 200) {
+          throw new Error(`Download failed with status ${downloadResult.status}`);
+        }
+
+        // Check if sharing is available
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'View Prescription',
+            UTI: 'com.adobe.pdf',
+          });
+        } else {
+          // Fallback: Try to open with Linking
+          await Linking.openURL(downloadResult.uri);
+        }
+      }
+    } catch (err: any) {
+      console.error('[Bookings] Error viewing prescription:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to view prescription';
+      if (Platform.OS === 'web') {
+        window.alert(typeof errorMsg === 'string' ? errorMsg : 'Failed to view prescription');
+      } else {
+        Alert.alert('Error', typeof errorMsg === 'string' ? errorMsg : 'Failed to view prescription');
+      }
+    } finally {
+      setViewingPrescriptionId(null);
     }
   };
 
@@ -2111,20 +2180,27 @@ export default function BookingsPage() {
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {appointment.hasPrescription && appointment.prescriptionId && (
               <TouchableOpacity
-                onPress={() => {
-                  Alert.alert('Prescription', 'Prescription viewing will be implemented');
-                }}
+                onPress={() => viewPrescription(appointment.prescriptionId!)}
+                disabled={viewingPrescriptionId === appointment.prescriptionId}
                 style={{
                   flex: 1,
-                  backgroundColor: COLORS.primary,
+                  backgroundColor: viewingPrescriptionId === appointment.prescriptionId ? '#6B7280' : COLORS.primary,
                   paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderRadius: 8,
                   alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 6,
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>View Prescription</Text>
+                {viewingPrescriptionId === appointment.prescriptionId && (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                )}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: COLORS.white }}>
+                  {viewingPrescriptionId === appointment.prescriptionId ? 'Opening...' : 'View Prescription'}
+                </Text>
               </TouchableOpacity>
             )}
 
