@@ -155,6 +155,7 @@ export default function DoctorsPage() {
   // ============================================================================
 
   const fetchDoctors = useCallback(async () => {
+    setLoading(true);
     try {
       console.log('[Doctors] Fetching doctors for specialty:', specialtyId);
 
@@ -197,11 +198,13 @@ export default function DoctorsPage() {
     }
   }, [specialtyId, pincode]);
 
+  // Fetch doctors when specialtyId changes or pincode reaches 6 digits (or is cleared)
   useEffect(() => {
-    if (specialtyId) {
+    if (specialtyId && (pincode.length === 0 || pincode.length === 6)) {
+      console.log('[Doctors] Triggering fetch - specialtyId:', specialtyId, 'pincode:', pincode);
       fetchDoctors();
     }
-  }, [specialtyId, fetchDoctors]);
+  }, [specialtyId, pincode, fetchDoctors]);
 
   // ============================================================================
   // FILTERED DOCTORS
@@ -297,17 +300,30 @@ export default function DoctorsPage() {
     setFetchingLocation(true);
     console.log('[Doctors] Requesting current location...');
 
+    // Timeout wrapper to prevent hanging on web
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Location request timed out')), 15000);
+    });
+
     try {
-      // Request permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      // Request permission with timeout
+      const permissionResult = await Promise.race([
+        Location.requestForegroundPermissionsAsync(),
+        timeoutPromise,
+      ]) as { status: string };
+
+      if (permissionResult.status !== 'granted') {
         setLocationError('Location access denied. Please enable location permissions.');
         setFetchingLocation(false);
         return;
       }
 
-      // Get current position
-      const location = await Location.getCurrentPositionAsync({});
+      // Get current position with timeout
+      const location = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        timeoutPromise,
+      ]) as Location.LocationObject;
+
       const { latitude, longitude } = location.coords;
       console.log('[Doctors] Location obtained:', { latitude, longitude });
 
@@ -331,7 +347,11 @@ export default function DoctorsPage() {
       }
     } catch (error: any) {
       console.error('[Doctors] Location error:', error);
-      setLocationError('Failed to get location. Please enter pincode manually.');
+      if (error.message === 'Location request timed out') {
+        setLocationError('Location request timed out. Please enter pincode manually.');
+      } else {
+        setLocationError('Failed to get location. Please enter pincode manually.');
+      }
     } finally {
       setFetchingLocation(false);
     }
