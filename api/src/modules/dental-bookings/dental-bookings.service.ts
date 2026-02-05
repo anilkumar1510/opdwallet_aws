@@ -734,6 +734,26 @@ export class DentalBookingsService {
       booking.paymentStatus = 'REFUNDED';
     }
 
+    // Process self-paid/copay refund through payment service
+    if (booking.paymentId) {
+      try {
+        console.log('[DentalBookings] Processing self-paid refund for paymentId:', booking.paymentId);
+        const refundResult = await this.paymentService.processRefund(
+          booking.paymentId.toString(),
+          `Refund for cancelled dental booking: ${booking.serviceName}`,
+        );
+        if (refundResult) {
+          console.log('[DentalBookings] Self-paid refund processed:', refundResult.amount);
+        }
+      } catch (refundError: any) {
+        if (!refundError.message?.includes('only refund completed')) {
+          console.error('[DentalBookings] Failed to process self-paid refund:', refundError);
+        } else {
+          console.log('[DentalBookings] Payment was not completed, no self-paid refund needed');
+        }
+      }
+    }
+
     // Update booking status
     booking.status = 'CANCELLED';
     booking.cancelledAt = new Date();
@@ -913,7 +933,7 @@ export class DentalBookingsService {
     // Process refund if wallet was debited (follow appointments pattern)
     if (booking.walletDebitAmount > 0 &&
         (booking.paymentStatus === 'COMPLETED' || booking.status === 'CONFIRMED')) {
-      console.log('[DentalBookingsAdmin] Processing refund:', booking.walletDebitAmount);
+      console.log('[DentalBookingsAdmin] Processing wallet refund:', booking.walletDebitAmount);
 
       await this.walletService.creditWallet(
         booking.userId.toString(),
@@ -927,6 +947,28 @@ export class DentalBookingsService {
 
       console.log('[DentalBookingsAdmin] Wallet refunded:', booking.walletDebitAmount);
       booking.paymentStatus = 'REFUNDED';
+    }
+
+    // Process self-paid/copay refund through payment service
+    if (booking.paymentId) {
+      try {
+        console.log('[DentalBookingsAdmin] Processing self-paid refund for paymentId:', booking.paymentId);
+        const refundResult = await this.paymentService.processRefund(
+          booking.paymentId.toString(),
+          `Admin cancellation refund: ${booking.serviceName} - Reason: ${reason}`,
+        );
+        if (refundResult) {
+          console.log('[DentalBookingsAdmin] Self-paid refund processed:', refundResult.amount);
+        }
+      } catch (refundError: any) {
+        if (!refundError.message?.includes('only refund completed')) {
+          console.error('[DentalBookingsAdmin] Failed to process self-paid refund:', refundError);
+        } else {
+          console.log('[DentalBookingsAdmin] Payment was not completed, no self-paid refund needed');
+        }
+      }
+    } else {
+      console.log('[DentalBookingsAdmin] No paymentId on booking - no self-paid refund to process');
     }
 
     // Update booking status

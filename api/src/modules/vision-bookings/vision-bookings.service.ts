@@ -609,6 +609,26 @@ export class VisionBookingsService {
       booking.paymentStatus = 'REFUNDED';
     }
 
+    // Process self-paid/copay refund through payment service
+    if (booking.paymentId) {
+      try {
+        console.log('[VisionBookings] Processing self-paid refund for paymentId:', booking.paymentId);
+        const refundResult = await this.paymentService.processRefund(
+          booking.paymentId.toString(),
+          `Refund for cancelled vision booking: ${booking.serviceName}`,
+        );
+        if (refundResult) {
+          console.log('[VisionBookings] Self-paid refund processed:', refundResult.amount);
+        }
+      } catch (refundError: any) {
+        if (!refundError.message?.includes('only refund completed')) {
+          console.error('[VisionBookings] Failed to process self-paid refund:', refundError);
+        } else {
+          console.log('[VisionBookings] Payment was not completed, no self-paid refund needed');
+        }
+      }
+    }
+
     // Update booking status
     booking.status = 'CANCELLED';
     booking.cancelledAt = new Date();
@@ -765,7 +785,7 @@ export class VisionBookingsService {
     // Process refund if wallet was debited
     if (booking.walletDebitAmount > 0 &&
         (booking.paymentStatus === 'COMPLETED' || booking.status === 'CONFIRMED')) {
-      console.log('[VisionBookingsAdmin] Processing refund:', booking.walletDebitAmount);
+      console.log('[VisionBookingsAdmin] Processing wallet refund:', booking.walletDebitAmount);
 
       await this.walletService.creditWallet(
         booking.userId.toString(),
@@ -779,6 +799,28 @@ export class VisionBookingsService {
 
       console.log('[VisionBookingsAdmin] Wallet refunded:', booking.walletDebitAmount);
       booking.paymentStatus = 'REFUNDED';
+    }
+
+    // Process self-paid/copay refund through payment service
+    if (booking.paymentId) {
+      try {
+        console.log('[VisionBookingsAdmin] Processing self-paid refund for paymentId:', booking.paymentId);
+        const refundResult = await this.paymentService.processRefund(
+          booking.paymentId.toString(),
+          `Admin cancellation refund: ${booking.serviceName} - Reason: ${reason}`,
+        );
+        if (refundResult) {
+          console.log('[VisionBookingsAdmin] Self-paid refund processed:', refundResult.amount);
+        }
+      } catch (refundError: any) {
+        if (!refundError.message?.includes('only refund completed')) {
+          console.error('[VisionBookingsAdmin] Failed to process self-paid refund:', refundError);
+        } else {
+          console.log('[VisionBookingsAdmin] Payment was not completed, no self-paid refund needed');
+        }
+      }
+    } else {
+      console.log('[VisionBookingsAdmin] No paymentId on booking - no self-paid refund to process');
     }
 
     // Update booking status
