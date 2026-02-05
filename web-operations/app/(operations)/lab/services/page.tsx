@@ -148,11 +148,6 @@ export default function LabServicesPage() {
 
   const handleToggleStatus = async (service: LabService) => {
     const action = service.isActive ? 'deactivate' : 'activate'
-    const confirmMessage = service.isActive
-      ? 'Are you sure you want to deactivate this service?'
-      : 'Are you sure you want to activate this service?'
-
-    if (!confirm(confirmMessage)) return
 
     try {
       const response = await apiFetch(`/api/admin/lab/services/${service.serviceId}/${action}`, {
