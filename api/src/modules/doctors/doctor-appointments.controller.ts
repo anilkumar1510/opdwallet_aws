@@ -37,6 +37,108 @@ export class DoctorAppointmentsController {
     private healthRecordsService: HealthRecordsService,
   ) {}
 
+  @Get()
+  async getAllAppointments(
+    @Request() req: AuthRequest,
+    @Query('status') status?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 50,
+  ) {
+    const doctorId = req.user?.doctorId;
+
+    if (!doctorId) {
+      throw new BadRequestException('Doctor ID is required');
+    }
+
+    // Build query
+    const query: any = { doctorId };
+
+    // Apply status filter if provided
+    if (status && status !== 'all') {
+      const statusLower = status.toLowerCase();
+
+      if (statusLower === 'upcoming') {
+        // Upcoming: appointments with date >= today and not completed/cancelled
+        const today = new Date().toISOString().split('T')[0];
+        query.appointmentDate = { $gte: today };
+        query.status = {
+          $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING_CONFIRMATION]
+        };
+      } else {
+        const statusMap: { [key: string]: AppointmentStatus } = {
+          confirmed: AppointmentStatus.CONFIRMED,
+          completed: AppointmentStatus.COMPLETED,
+          pending: AppointmentStatus.PENDING_CONFIRMATION,
+          cancelled: AppointmentStatus.CANCELLED,
+        };
+        if (statusMap[statusLower]) {
+          query.status = statusMap[statusLower];
+        }
+      }
+    }
+
+    // Get total count for pagination
+    const total = await this.appointmentModel.countDocuments(query);
+
+    // Determine sort order: ascending for upcoming, descending for others
+    const isUpcoming = status?.toLowerCase() === 'upcoming';
+    const sortOrder = isUpcoming ? 1 : -1;
+
+    // Get paginated appointments
+    const appointments = await this.appointmentModel
+      .find(query)
+      .sort({ appointmentDate: sortOrder, timeSlot: sortOrder })
+      .skip((+page - 1) * +limit)
+      .limit(+limit)
+      .exec();
+
+    // Get stats (counts by status for this doctor)
+    const today = new Date().toISOString().split('T')[0];
+    const stats = await this.appointmentModel.aggregate([
+      { $match: { doctorId } },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const statsMap = {
+      total: 0,
+      confirmed: 0,
+      completed: 0,
+      pending: 0,
+      cancelled: 0,
+      upcoming: 0,
+    };
+
+    stats.forEach((s) => {
+      statsMap.total += s.count;
+      if (s._id === AppointmentStatus.CONFIRMED) statsMap.confirmed = s.count;
+      if (s._id === AppointmentStatus.COMPLETED) statsMap.completed = s.count;
+      if (s._id === AppointmentStatus.PENDING_CONFIRMATION) statsMap.pending = s.count;
+      if (s._id === AppointmentStatus.CANCELLED) statsMap.cancelled = s.count;
+    });
+
+    // Get upcoming count separately (future appointments that are not completed/cancelled)
+    statsMap.upcoming = await this.appointmentModel.countDocuments({
+      doctorId,
+      appointmentDate: { $gte: today },
+      status: { $in: [AppointmentStatus.CONFIRMED, AppointmentStatus.PENDING_CONFIRMATION] },
+    });
+
+    return {
+      message: 'Appointments retrieved successfully',
+      appointments: appointments.map((apt) => apt.toObject()),
+      total,
+      page: +page,
+      limit: +limit,
+      totalPages: Math.ceil(total / +limit),
+      stats: statsMap,
+    };
+  }
+
   @Get('counts')
   async getAppointmentCounts(@Request() req: AuthRequest, @Query('days') days?: string) {
     const doctorId = req.user?.doctorId;

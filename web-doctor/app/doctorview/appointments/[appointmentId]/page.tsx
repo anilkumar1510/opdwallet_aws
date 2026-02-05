@@ -6,6 +6,7 @@ import { getAppointmentDetails, markAppointmentComplete } from '@/lib/api/appoin
 import { Appointment } from '@/lib/api/appointments'
 import { getStatusColor, getAppointmentTypeText } from '@/lib/utils/appointment-helpers'
 import { getDigitalPrescription } from '@/lib/api/digital-prescriptions'
+import { getPdfPrescription } from '@/lib/api/prescriptions'
 import PrescriptionUpload from '@/components/PrescriptionUpload'
 import DigitalPrescriptionWriter from '@/components/DigitalPrescriptionWriter'
 import ConsultationNoteEditor from '@/components/ConsultationNoteEditor'
@@ -63,9 +64,19 @@ export default function AppointmentDetailPage() {
       if (appointment?.hasPrescription && appointment?.prescriptionId) {
         try {
           setPrescriptionLoading(true)
-          const data = await getDigitalPrescription(appointment.prescriptionId)
-          // Extract prescription object from API response
-          setPrescription(data.prescription)
+          const prescriptionId = appointment.prescriptionId
+
+          // Check if it's a digital prescription (DPRESC-*) or PDF prescription (PRESC-*)
+          const isDigitalPrescription = prescriptionId.startsWith('DPRESC-')
+
+          if (isDigitalPrescription) {
+            const data = await getDigitalPrescription(prescriptionId)
+            setPrescription({ ...data.prescription, isDigital: true })
+          } else {
+            // PDF prescription
+            const data = await getPdfPrescription(prescriptionId)
+            setPrescription({ ...data.prescription, isDigital: false })
+          }
         } catch (err: any) {
           console.error('Failed to fetch prescription:', err)
         } finally {
@@ -270,8 +281,8 @@ export default function AppointmentDetailPage() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
                   <div className="flex-shrink-0">
-                    <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-green-100">
-                      <ClipboardDocumentListIcon className="h-6 w-6 text-green-600" />
+                    <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${prescription.isDigital ? 'bg-green-100' : 'bg-blue-100'}`}>
+                      <ClipboardDocumentListIcon className={`h-6 w-6 ${prescription.isDigital ? 'text-green-600' : 'text-blue-600'}`} />
                     </div>
                   </div>
 
@@ -280,8 +291,8 @@ export default function AppointmentDetailPage() {
                       <h3 className="font-semibold text-gray-900">
                         {prescription.prescriptionId}
                       </h3>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                        Digital
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${prescription.isDigital ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {prescription.isDigital ? 'Digital' : 'PDF'}
                       </span>
                     </div>
 
@@ -294,7 +305,7 @@ export default function AppointmentDetailPage() {
                       <div className="flex items-center text-sm text-gray-600">
                         <CalendarDaysIcon className="h-4 w-4 mr-2" />
                         <span>
-                          {formatDate(prescription.createdAt)}
+                          {formatDate(prescription.isDigital ? prescription.createdAt : prescription.uploadDate)}
                           {appointment.timeSlot && (
                             <span className="text-gray-500"> • {formatTime(appointment.timeSlot)}</span>
                           )}
@@ -310,29 +321,46 @@ export default function AppointmentDetailPage() {
                       </div>
                     )}
 
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Medicines:</span> {prescription.medicines?.length || 0}
+                    {prescription.isDigital ? (
+                      <div className="flex gap-4 text-sm text-gray-600">
+                        <div>
+                          <span className="font-medium">Medicines:</span> {prescription.medicines?.length || 0}
+                        </div>
+                        <div>
+                          <span className="font-medium">Lab Tests:</span> {prescription.labTests?.length || 0}
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-medium">Lab Tests:</span> {prescription.labTests?.length || 0}
+                    ) : (
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">File:</span> {prescription.fileName}
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2 ml-4">
-                  <Link
-                    href={`/doctorview/prescriptions/${prescription.prescriptionId}`}
-                    className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
-                    title="View Details"
-                  >
-                    <EyeIcon className="h-5 w-5" />
-                  </Link>
-
-                  {prescription.pdfGenerated && (
+                  {prescription.isDigital ? (
+                    <>
+                      <Link
+                        href={`/doctorview/prescriptions/${prescription.prescriptionId}`}
+                        className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+                        title="View Details"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </Link>
+                      {prescription.pdfGenerated && (
+                        <a
+                          href={`/doctor/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
+                          className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
+                          title="Download PDF"
+                        >
+                          <ArrowDownTrayIcon className="h-5 w-5" />
+                        </a>
+                      )}
+                    </>
+                  ) : (
                     <a
-                      href={`/api/doctor/digital-prescriptions/${prescription.prescriptionId}/download-pdf`}
+                      href={`/doctor/api/doctor/prescriptions/${prescription.prescriptionId}/download`}
                       className="p-2 text-gray-600 hover:text-brand-600 transition-colors"
                       title="Download PDF"
                     >

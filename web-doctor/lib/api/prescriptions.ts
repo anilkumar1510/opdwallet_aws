@@ -79,3 +79,16 @@ export async function deletePrescription(prescriptionId: string): Promise<{ mess
 
   return response.json();
 }
+
+export async function getPdfPrescription(prescriptionId: string): Promise<{ message: string; prescription: Prescription }> {
+  const response = await fetch(`/doctor/api/doctor/prescriptions/${prescriptionId}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to fetch prescription');
+  }
+
+  return response.json();
+}

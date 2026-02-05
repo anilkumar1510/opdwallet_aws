@@ -28,6 +28,48 @@ export interface AppointmentsResponse {
   date?: string;
 }
 
+export interface AppointmentStats {
+  total: number;
+  confirmed: number;
+  completed: number;
+  pending: number;
+  cancelled: number;
+  upcoming: number;
+}
+
+export interface AllAppointmentsResponse {
+  message: string;
+  appointments: Appointment[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  stats: AppointmentStats;
+}
+
+export async function getAllAppointments(
+  status?: string,
+  page = 1,
+  limit = 50,
+): Promise<AllAppointmentsResponse> {
+  const params = new URLSearchParams();
+  if (status && status !== 'all') params.append('status', status);
+  params.append('page', String(page));
+  params.append('limit', String(limit));
+
+  const url = `/doctor/api/doctor/appointments?${params.toString()}`;
+
+  const response = await fetch(url, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch appointments');
+  }
+
+  return response.json();
+}
+
 export async function getAppointmentCounts(): Promise<{ message: string; counts: { [date: string]: number } }> {
   console.group('🔍 [API] getAppointmentCounts')
   console.log('🌐 Window location:', window.location.href)

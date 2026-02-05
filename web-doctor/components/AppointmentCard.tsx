@@ -6,6 +6,7 @@ import { Appointment, confirmAppointment } from '@/lib/api/appointments'
 import { getStatusColor, getAppointmentTypeText } from '@/lib/utils/appointment-helpers'
 import {
   ClockIcon,
+  CalendarDaysIcon,
   UserIcon,
   PhoneIcon,
   VideoCameraIcon,
@@ -71,7 +72,9 @@ function AppointmentCard({ appointment, onUpdate }: AppointmentCardProps) {
 
       <div className="space-y-2">
         <div className="flex items-center text-sm text-gray-600">
-          <ClockIcon className="h-4 w-4 mr-2" />
+          <CalendarDaysIcon className="h-4 w-4 mr-2" />
+          <span>{appointment.appointmentDate}</span>
+          <ClockIcon className="h-4 w-4 ml-3 mr-2" />
           <span>{appointment.timeSlot}</span>
         </div>
 

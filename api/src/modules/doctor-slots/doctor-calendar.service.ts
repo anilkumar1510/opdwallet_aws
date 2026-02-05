@@ -224,6 +224,78 @@ export class DoctorCalendarService {
   }
 
   /**
+   * Get unavailabilities for a doctor in a date range with details
+   * Returns both all-day blocked dates and partial-day time ranges
+   */
+  async getUnavailabilitiesForDateRange(
+    doctorId: string,
+    startDate: Date | string,
+    endDate: Date | string,
+    clinicId?: string,
+  ): Promise<{
+    allDayBlockedDates: Set<string>;
+    partialUnavailability: Map<string, { startTime: string; endTime: string }[]>;
+  }> {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    const query: any = {
+      doctorId,
+      isActive: true,
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } },
+      ],
+    };
+
+    if (clinicId) {
+      query.$and = [
+        {
+          $or: [
+            { affectedClinicIds: { $size: 0 } },
+            { affectedClinicIds: clinicId },
+          ],
+        },
+      ];
+    }
+
+    const unavailabilities = await this.unavailabilityModel.find(query).exec();
+
+    const allDayBlockedDates = new Set<string>();
+    const partialUnavailability = new Map<string, { startTime: string; endTime: string }[]>();
+
+    unavailabilities.forEach(unavailability => {
+      const uStart = new Date(unavailability.startDate);
+      const uEnd = new Date(unavailability.endDate);
+      const current = new Date(uStart);
+
+      while (current <= uEnd) {
+        if (current >= start && current <= end) {
+          const dateStr = current.toISOString().split('T')[0];
+
+          if (unavailability.isAllDay || (!unavailability.startTime && !unavailability.endTime)) {
+            // All-day unavailability
+            allDayBlockedDates.add(dateStr);
+          } else if (unavailability.startTime && unavailability.endTime) {
+            // Partial-day unavailability
+            if (!partialUnavailability.has(dateStr)) {
+              partialUnavailability.set(dateStr, []);
+            }
+            partialUnavailability.get(dateStr)!.push({
+              startTime: unavailability.startTime,
+              endTime: unavailability.endTime,
+            });
+          }
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    return { allDayBlockedDates, partialUnavailability };
+  }
+
+  /**
    * Get unavailable dates for a doctor in a date range
    * Used for calendar display
    */

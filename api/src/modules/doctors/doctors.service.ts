@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Doctor, DoctorDocument } from './schemas/doctor.schema';
@@ -11,6 +11,7 @@ import { UpdateDoctorDto } from './dto/update-doctor.dto';
 import { CounterService } from '../counters/counter.service';
 import { LocationService } from '../location/location.service';
 import { DoctorClinicAssignmentsService } from '../doctor-clinic-assignments/doctor-clinic-assignments.service';
+import { DoctorCalendarService } from '../doctor-slots/doctor-calendar.service';
 
 @Injectable()
 export class DoctorsService {
@@ -24,6 +25,8 @@ export class DoctorsService {
     private counterService: CounterService,
     private locationService: LocationService,
     private doctorClinicAssignmentsService: DoctorClinicAssignmentsService,
+    @Inject(forwardRef(() => DoctorCalendarService))
+    private doctorCalendarService: DoctorCalendarService,
   ) {}
 
   async findAll(query: QueryDoctorsDto): Promise<any> {
@@ -461,12 +464,27 @@ export class DoctorsService {
 
     console.log(`[DoctorsService] Found ${existingAppointments.length} existing appointments for doctor ${doctorId}`);
 
+    // Fetch unavailabilities for this doctor (both all-day and partial)
+    const { allDayBlockedDates, partialUnavailability } = await this.doctorCalendarService.getUnavailabilitiesForDateRange(
+      doctorId,
+      today,
+      endDate,
+      clinicId,
+    );
+    console.log(`[DoctorsService] Found ${allDayBlockedDates.size} all-day blocked dates and ${partialUnavailability.size} dates with partial unavailability for doctor ${doctorId}`);
+
     for (let i = 0; i < DAYS_AHEAD; i++) {
       const currentDate = new Date(today);
       currentDate.setDate(today.getDate() + i);
 
       const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
       const dateStr = currentDate.toISOString().split('T')[0];
+
+      // Skip this day completely if doctor has all-day unavailability
+      if (allDayBlockedDates.has(dateStr)) {
+        console.log(`[DoctorsService] Skipping ${dateStr} - doctor has all-day unavailability`);
+        continue;
+      }
 
       // Find all slot configs for this day
       const daySlotConfigs = slotConfigs.filter(config => config.dayOfWeek === dayOfWeek);
@@ -494,6 +512,9 @@ export class DoctorsService {
           return timeA - timeB;
         });
 
+        // Get partial unavailability for this date (if any)
+        const partialBlockedTimes = partialUnavailability.get(dateStr) || [];
+
         days.push({
           date: dateStr,
           dayOfWeek: dayOfWeek,
@@ -506,9 +527,15 @@ export class DoctorsService {
             const slotKey = `${dateStr}_${time}`;
             const isBooked = bookedSlots.has(slotKey) || bookedSlots.has(slotId);
 
+            // Check if this slot falls within any partial unavailability time range
+            const slotTime24 = this.convertTo24Hour(time);
+            const isInUnavailableTimeRange = partialBlockedTimes.some(range => {
+              return slotTime24 >= range.startTime && slotTime24 < range.endTime;
+            });
+
             return {
               time,
-              available: !isBooked, // Mark as unavailable if booked
+              available: !isBooked && !isInUnavailableTimeRange,
               slotId: slotId
             };
           })
@@ -562,6 +589,22 @@ export class DoctorsService {
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+  }
+
+  /**
+   * Convert 12-hour time format (e.g., "10:30 AM") to 24-hour format (e.g., "10:30")
+   */
+  private convertTo24Hour(time12h: string): string {
+    const [time, modifier] = time12h.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (modifier === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (modifier === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 
   // REMOVED: Replaced with counter service for better performance

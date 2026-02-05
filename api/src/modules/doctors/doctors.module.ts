@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -20,6 +20,7 @@ import { CounterModule } from '../counters/counter.module';
 import { PrescriptionsModule } from './prescriptions.module';
 import { LocationModule } from '../location/location.module';
 import { DoctorClinicAssignmentsModule } from '../doctor-clinic-assignments/doctor-clinic-assignments.module';
+import { DoctorSlotsModule } from '../doctor-slots/doctor-slots.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { DoctorClinicAssignmentsModule } from '../doctor-clinic-assignments/doct
     PrescriptionsModule, // Added for DoctorAuthService
     LocationModule, // Added for location-based filtering
     DoctorClinicAssignmentsModule, // Added for clinic assignments
+    forwardRef(() => DoctorSlotsModule), // Added for doctor unavailability checking
   ],
   controllers: [DoctorsController, DoctorAppointmentsController, DoctorAuthController, ConsultationNoteController],
   providers: [DoctorsService, DoctorAuthService, HealthRecordsService, ConsultationNoteService],

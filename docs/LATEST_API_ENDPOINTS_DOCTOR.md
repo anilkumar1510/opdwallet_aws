@@ -23,6 +23,7 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | /doctor/appointments | Get all appointments with filters and stats |
 | GET | /doctor/appointments/counts | Get appointment counts by date |
 | GET | /doctor/appointments/today | Get today's appointments |
 | GET | /doctor/appointments/date/:date | Get appointments by date |
@@ -30,6 +31,41 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 | GET | /doctor/appointments/:appointmentId | Get appointment details |
 | PATCH | /doctor/appointments/:appointmentId/complete | Mark appointment complete |
 | PATCH | /doctor/appointments/:appointmentId/confirm | Confirm appointment |
+
+### GET /doctor/appointments
+
+Get all appointments for the logged-in doctor with optional filtering and statistics.
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| status | string | Filter by status: `all`, `upcoming`, `confirmed`, `completed`, `pending`, `cancelled` |
+| page | number | Page number (default: 1) |
+| limit | number | Items per page (default: 50) |
+
+**Response:**
+```json
+{
+  "message": "Appointments retrieved successfully",
+  "appointments": [...],
+  "total": 100,
+  "page": 1,
+  "limit": 50,
+  "totalPages": 2,
+  "stats": {
+    "total": 100,
+    "upcoming": 15,
+    "confirmed": 20,
+    "completed": 60,
+    "pending": 10,
+    "cancelled": 10
+  }
+}
+```
+
+**Notes:**
+- `upcoming` filter returns appointments with date >= today and status CONFIRMED or PENDING_CONFIRMATION
+- `upcoming` results are sorted ascending (nearest first), others descending (most recent first)
 
 ---
 
@@ -142,7 +178,7 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 
 ---
 
-**Total Endpoints: ~55**
+**Total Endpoints: ~56**
 
 ## Recent Additions (Phase 3)
 
