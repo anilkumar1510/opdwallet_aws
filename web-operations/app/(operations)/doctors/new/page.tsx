@@ -16,6 +16,7 @@ export default function NewDoctorPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     phone: '',
     qualifications: '',
     experienceYears: 0,
@@ -72,9 +73,15 @@ export default function NewDoctorPage() {
     e.preventDefault()
 
     // Validation
-    if (!formData.name || !formData.email || !formData.qualifications || !formData.specialtyId) {
+    if (!formData.name || !formData.email || !formData.password || !formData.qualifications || !formData.specialtyId) {
       setError('Please fill in all required fields')
       toast.error('Please fill in all required fields')
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters')
+      toast.error('Password must be at least 6 characters')
       return
     }
 
@@ -107,6 +114,7 @@ export default function NewDoctorPage() {
       const payload = {
         name: formData.name,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone,
         qualifications: formData.qualifications,
         specializations: formData.specializations.length > 0 ? formData.specializations : [formData.specialty],
@@ -203,6 +211,19 @@ export default function NewDoctorPage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="input"
                 placeholder="doctor@example.com"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="label">Password * (for doctor portal login)</label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="input"
+                placeholder="Minimum 6 characters"
+                minLength={6}
                 required
               />
             </div>

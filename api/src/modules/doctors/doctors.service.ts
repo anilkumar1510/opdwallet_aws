@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { Doctor, DoctorDocument } from './schemas/doctor.schema';
 import { DoctorSlot, DoctorSlotDocument } from '../doctor-slots/schemas/doctor-slot.schema';
 import { Clinic, ClinicDocument } from '../clinics/schemas/clinic.schema';
@@ -300,8 +301,17 @@ export class DoctorsService {
     // PERFORMANCE: Use counter service instead of querying database
     const doctorId = await this.counterService.generateDoctorId();
 
+    // Hash password if provided
+    let hashedPassword: string | undefined;
+    if (createDoctorDto.password) {
+      const saltRounds = 10;
+      hashedPassword = await bcrypt.hash(createDoctorDto.password, saltRounds);
+      this.logger.log(`[create] Hashed password for doctor ${createDoctorDto.email}`);
+    }
+
     const doctorData = {
       ...createDoctorDto,
+      ...(hashedPassword && { password: hashedPassword }),
       doctorId,
       isActive: true,
       rating: 0,
