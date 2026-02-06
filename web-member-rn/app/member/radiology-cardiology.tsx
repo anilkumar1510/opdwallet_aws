@@ -403,11 +403,14 @@ export default function DiagnosticsPage() {
     setShowConfirmationModal(true);
 
     try {
+      const userId = viewingUserId || profileData?.user?._id;
+      const userName = profileData?.user?.name || 'Member';
+
       const requestBody = {
         healthRecordId: selectedPrescription._id,
         prescriptionType: selectedPrescription.type.toUpperCase(),
-        patientId: 'current',
-        patientName: 'Current Member',
+        patientId: userId,
+        patientName: userName,
         patientRelationship: 'Self',
         pincode: selectedAddress.pincode,
         addressId: selectedAddressId,
