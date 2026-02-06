@@ -500,7 +500,7 @@ export class DentalBookingsService {
 
       // Link payment to booking if paymentId is provided
       if (createDto.paymentId) {
-        booking.paymentId = new Types.ObjectId(createDto.paymentId);
+        booking.paymentId = createDto.paymentId;
         console.log('[DentalBookings] Linked payment to booking:', createDto.paymentId);
 
         // Update payment record with correct booking references
@@ -593,7 +593,7 @@ export class DentalBookingsService {
         description: `Dental booking copay: ${createDto.serviceName}`,
       });
 
-      booking.paymentId = new Types.ObjectId((payment as any)._id.toString());
+      booking.paymentId = (payment as any).paymentId;
       booking.paymentMethod = 'COPAY';
       await booking.save();
 
@@ -615,7 +615,7 @@ export class DentalBookingsService {
         description: `Dental booking payment: ${createDto.serviceName}`,
       });
 
-      booking.paymentId = new Types.ObjectId((payment as any)._id.toString());
+      booking.paymentId = (payment as any).paymentId;
       booking.paymentMethod = 'OUT_OF_POCKET';
       await booking.save();
 

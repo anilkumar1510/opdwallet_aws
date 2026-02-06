@@ -102,8 +102,8 @@ export class DentalBooking {
   @Prop({ required: true, enum: ['WALLET_ONLY', 'COPAY', 'OUT_OF_POCKET'] })
   paymentMethod: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Payment', default: null })
-  paymentId: Types.ObjectId;
+  @Prop({ default: null })
+  paymentId: string;
 
   @Prop({ type: Types.ObjectId, ref: 'TransactionSummary', default: null })
   transactionId: Types.ObjectId;
