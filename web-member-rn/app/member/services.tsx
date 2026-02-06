@@ -298,17 +298,17 @@ const services: Service[] = [
     categoryCode: 'CAT005',
   },
   {
-    name: 'Lab Tests',
+    name: 'Pathology (Lab)',
     description: 'Book lab tests and view results',
-    href: '/member/lab-tests',
+    href: '/member/pathology-lab',
     icon: BeakerIcon,
     category: 'Healthcare',
     categoryCode: 'CAT004',
   },
   {
-    name: 'Diagnostics',
+    name: 'Radiology/ Cardiology',
     description: 'Book diagnostic tests and scans',
-    href: '/member/diagnostics',
+    href: '/member/radiology-cardiology',
     icon: ClipboardIcon,
     category: 'Healthcare',
     categoryCode: 'CAT003',
@@ -346,9 +346,9 @@ const services: Service[] = [
 
   // Wellness
   {
-    name: 'Wellness Programs',
+    name: 'Health Packages',
     description: 'Health and wellness programs',
-    href: '/member/wellness-programs',
+    href: '/member/health-packages',
     icon: SparklesIcon,
     category: 'Wellness',
     categoryCode: 'CAT008',

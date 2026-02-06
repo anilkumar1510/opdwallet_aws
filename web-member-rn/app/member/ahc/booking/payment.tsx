@@ -241,7 +241,7 @@ export default function AHCPaymentPage() {
       const packageData = await AsyncStorage.getItem('ahc_package');
       if (!packageData) {
         Alert.alert('Error', 'Package information not found');
-        router.replace('/member/wellness-programs');
+        router.replace('/member/health-packages');
         return;
       }
       const packageInfo = JSON.parse(packageData);
@@ -277,7 +277,7 @@ export default function AHCPaymentPage() {
     } catch (error) {
       console.error('[AHCPayment] Error loading booking data:', error);
       Alert.alert('Error', 'Failed to load booking information');
-      router.replace('/member/wellness-programs');
+      router.replace('/member/health-packages');
     } finally {
       setLoading(false);
     }

@@ -1584,15 +1584,15 @@ export default function BookingsPage() {
         title: 'No lab tests yet',
         description: 'Upload a prescription to get started',
         notCoveredDescription: 'Lab tests are not covered under your policy',
-        buttonText: 'Go to Lab Tests',
-        route: '/member/lab-tests',
+        buttonText: 'Go to Pathology (Lab)',
+        route: '/member/pathology-lab',
       },
       diagnostic: {
         title: 'No diagnostic tests yet',
         description: 'Upload a prescription to book diagnostic services',
         notCoveredDescription: 'Diagnostic services are not covered under your policy',
-        buttonText: 'Go to Diagnostics',
-        route: '/member/diagnostics',
+        buttonText: 'Go to Radiology/ Cardiology',
+        route: '/member/radiology-cardiology',
       },
       pharmacy: {
         title: 'No pharmacy orders yet',
@@ -1606,7 +1606,7 @@ export default function BookingsPage() {
         description: 'Book your annual health checkup',
         notCoveredDescription: 'Annual health check is not covered under your policy',
         buttonText: 'Book Annual Health Check',
-        route: '/member/wellness-programs',
+        route: '/member/health-packages',
       },
     };
 
@@ -2496,7 +2496,7 @@ export default function BookingsPage() {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => router.push(`/member/lab-tests?cartId=${cart.cartId}` as any)}
+        onPress={() => router.push(`/member/pathology-lab?cartId=${cart.cartId}` as any)}
       >
         <View
           style={{
@@ -2579,7 +2579,7 @@ export default function BookingsPage() {
               <View style={{ gap: 8 }}>
                 <Text style={{ fontSize: 12, color: COLORS.success }}>✓ Vendors assigned by operations team</Text>
                 <TouchableOpacity
-                  onPress={() => router.push(`/member/lab-tests/booking/${cart.cartId}` as any)}
+                  onPress={() => router.push(`/member/pathology-lab/booking/${cart.cartId}` as any)}
                   activeOpacity={0.8}
                   style={{
                     paddingVertical: 10,
@@ -2852,7 +2852,7 @@ export default function BookingsPage() {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => router.push(`/member/diagnostics?cartId=${cart.cartId}` as any)}
+        onPress={() => router.push(`/member/radiology-cardiology?cartId=${cart.cartId}` as any)}
       >
         <View
           style={{
@@ -2935,7 +2935,7 @@ export default function BookingsPage() {
               <View style={{ gap: 8 }}>
                 <Text style={{ fontSize: 12, color: COLORS.success }}>✓ Centers assigned by operations team</Text>
                 <TouchableOpacity
-                  onPress={() => router.push(`/member/diagnostics/booking/${cart.cartId}` as any)}
+                  onPress={() => router.push(`/member/radiology-cardiology/booking/${cart.cartId}` as any)}
                   activeOpacity={0.8}
                   style={{
                     paddingVertical: 10,
@@ -4127,7 +4127,7 @@ export default function BookingsPage() {
 
                   {/* Book Another CTA */}
                   <TouchableOpacity
-                    onPress={() => router.push('/member/wellness-programs' as any)}
+                    onPress={() => router.push('/member/health-packages' as any)}
                     activeOpacity={0.8}
                     style={{
                       marginTop: 8,

@@ -487,8 +487,8 @@ const MORE_SERVICES = [
 const HEALTH_BENEFITS = [
   { id: 'CAT001', name: 'Doctor Consult', available: 15000, total: 20000, href: '/member/in-clinic-consultation' },
   { id: 'CAT005', name: 'Online Consult', available: 5000, total: 8000, href: '/member/online-consultation' },
-  { id: 'CAT004', name: 'Pathology (Lab)', available: 8000, total: 10000, href: '/member/lab-tests' },
-  { id: 'CAT003', name: 'Radiology/ Cardiology', available: 12000, total: 15000, href: '/member/diagnostics' },
+  { id: 'CAT004', name: 'Pathology (Lab)', available: 8000, total: 10000, href: '/member/pathology-lab' },
+  { id: 'CAT003', name: 'Radiology/ Cardiology', available: 12000, total: 15000, href: '/member/radiology-cardiology' },
   { id: 'CAT006', name: 'Dental', available: 7000, total: 10000, href: '/member/dental' },
   { id: 'CAT007', name: 'Vision', available: 4000, total: 5000, href: '/member/vision' },
 ];
@@ -728,8 +728,10 @@ export default function DashboardScreen() {
       'dental services': '/member/dental',
       'dental': '/member/dental',
       'vision care': '/member/vision',
-      'laboratory services': '/member/lab-tests',
-      'diagnostic services': '/member/diagnostics',
+      'pathology (lab)': '/member/pathology-lab',
+      'radiology/ cardiology': '/member/radiology-cardiology',
+      'health packages': '/member/health-packages',
+      'wellness programs': '/member/health-packages',
     };
 
     const lowerName = categoryName.toLowerCase();

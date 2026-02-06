@@ -480,7 +480,7 @@ export default function LabTestsPage() {
             <View style={{ gap: 12 }}>
               {/* Upload New Prescription */}
               <TouchableOpacity
-                onPress={() => router.push('/member/lab-tests/upload')}
+                onPress={() => router.push('/member/pathology-lab/upload')}
                 activeOpacity={0.8}
                 style={{
                   borderRadius: 12,

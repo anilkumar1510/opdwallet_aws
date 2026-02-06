@@ -492,7 +492,7 @@ export default function DiagnosticBookingPage() {
       <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
         <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 16 }}>Cart not found</Text>
         <TouchableOpacity
-          onPress={() => router.push('/member/diagnostics' as any)}
+          onPress={() => router.push('/member/radiology-cardiology' as any)}
           activeOpacity={0.8}
           style={{
             backgroundColor: COLORS.primary,

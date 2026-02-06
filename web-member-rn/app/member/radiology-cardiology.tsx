@@ -480,7 +480,7 @@ export default function DiagnosticsPage() {
             <View style={{ gap: 12 }}>
               {/* Upload New Prescription */}
               <TouchableOpacity
-                onPress={() => router.push('/member/diagnostics/upload')}
+                onPress={() => router.push('/member/radiology-cardiology/upload')}
                 activeOpacity={0.8}
                 style={{
                   borderRadius: 12,

@@ -212,8 +212,8 @@ export default function CartsScreen() {
 
   const handleCartPress = (cart: CartItem) => {
     const route = cart.type === 'lab'
-      ? `/member/lab-tests/booking/${cart.cartId}`
-      : `/member/diagnostics/booking/${cart.cartId}`;
+      ? `/member/pathology-lab/booking/${cart.cartId}`
+      : `/member/radiology-cardiology/booking/${cart.cartId}`;
     router.push(route as any);
   };
 
