@@ -16,7 +16,7 @@ import {
   Modal,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
@@ -451,6 +451,7 @@ export default function NewClaimPage() {
   const { width } = useWindowDimensions();
   const { activeMember, profileData } = useFamily();
   const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // State
   const [currentStep, setCurrentStep] = useState(1);
@@ -2263,7 +2264,8 @@ export default function NewClaimPage() {
           backgroundColor: COLORS.white,
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
-          paddingVertical: 16,
+          paddingTop: 16,
+          paddingBottom: Platform.OS === 'web' ? 16 : Math.max(16, insets.bottom),
           paddingHorizontal: 16,
           shadowColor: '#000',
           shadowOffset: { width: -2, height: 11 },
