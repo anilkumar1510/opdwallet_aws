@@ -223,6 +223,7 @@ export default function DiagnosticsPage() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
+  }, [fetchData]);
 
   // Fetch addresses
   const fetchAddresses = async () => {
@@ -304,7 +305,6 @@ export default function DiagnosticsPage() {
       setAddingAddress(false);
     }
   };
-  }, [fetchData]);
 
   // ============================================================================
   // PRESCRIPTION SELECTOR MODAL
