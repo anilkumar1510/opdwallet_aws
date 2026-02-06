@@ -1545,12 +1545,12 @@ export default function BookingsPage() {
 
   const tabs = [
     { id: 'doctors', label: 'Doctors', icon: HeartIcon },
-    { id: 'lab', label: 'Lab', icon: BeakerIcon },
-    { id: 'diagnostic', label: 'Diagnostic', icon: BeakerIcon },
+    { id: 'lab', label: 'Pathology', icon: BeakerIcon },
+    { id: 'diagnostic', label: 'Radiology', icon: BeakerIcon },
     { id: 'pharmacy', label: 'Pharmacy', icon: BuildingStorefrontIcon },
     { id: 'dental', label: 'Dental', icon: SparklesIcon },
     { id: 'vision', label: 'Vision', icon: EyeIcon },
-    { id: 'ahc', label: 'AHC', icon: HeartIcon },
+    { id: 'ahc', label: 'Health Packages', icon: HeartIcon },
   ];
 
   // ============================================================================
@@ -2380,7 +2380,7 @@ export default function BookingsPage() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-              Lab Test Order
+              Pathology (Lab) Order
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
               {order.items?.length || 0} test(s)
@@ -2517,7 +2517,7 @@ export default function BookingsPage() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                Lab Test Cart
+                Pathology (Lab) Cart
               </Text>
               <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                 {cart.items?.length || 0} test(s)
@@ -2634,7 +2634,7 @@ export default function BookingsPage() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-              Diagnostic Prescription
+              Radiology/ Cardiology Prescription
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
               {statusText}
@@ -2736,7 +2736,7 @@ export default function BookingsPage() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-              Diagnostic Order
+              Radiology/ Cardiology Order
             </Text>
             <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
               {order.items?.length || 0} service(s)
@@ -2873,7 +2873,7 @@ export default function BookingsPage() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primaryLight }}>
-                Diagnostic Cart
+                Radiology/ Cardiology Cart
               </Text>
               <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                 {cart.items?.length || 0} service(s)
@@ -3015,10 +3015,10 @@ export default function BookingsPage() {
             </Text>
             <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
               {hasLabPortion && hasDiagnosticPortion
-                ? 'Lab + Diagnostic Tests'
+                ? 'Pathology + Radiology Tests'
                 : hasLabPortion
-                ? 'Lab Tests'
-                : 'Diagnostic Tests'}
+                ? 'Pathology Tests'
+                : 'Radiology Tests'}
             </Text>
           </View>
           <View
@@ -3039,7 +3039,7 @@ export default function BookingsPage() {
         {hasLabPortion && (
           <View style={{ marginBottom: 12, padding: 12, backgroundColor: '#FFFFFF', borderRadius: 8 }}>
             <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
-              Lab Tests {labData.items?.length ? `(${labData.items.length})` : ''}
+              Pathology Tests {labData.items?.length ? `(${labData.items.length})` : ''}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <CalendarIcon width={14} height={14} color="#6B7280" />
@@ -3085,11 +3085,11 @@ export default function BookingsPage() {
           </View>
         )}
 
-        {/* Diagnostic Portion */}
+        {/* Radiology/ Cardiology Portion */}
         {hasDiagnosticPortion && (
           <View style={{ marginBottom: 12, padding: 12, backgroundColor: '#FFFFFF', borderRadius: 8 }}>
             <Text style={{ fontSize: 13, fontWeight: '600', color: '#0E51A2', marginBottom: 8 }}>
-              Diagnostic Tests {diagnosticData.items?.length ? `(${diagnosticData.items.length})` : ''}
+              Radiology Tests {diagnosticData.items?.length ? `(${diagnosticData.items.length})` : ''}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <CalendarIcon width={14} height={14} color="#6B7280" />
@@ -3126,7 +3126,7 @@ export default function BookingsPage() {
                   >
                     <DocumentArrowDownIcon width={16} height={16} color="#059669" />
                     <Text style={{ fontSize: 12, color: '#059669', flex: 1 }} numberOfLines={1}>
-                      {report.originalName || report.fileName || `Diagnostic Report ${index + 1}`}
+                      {report.originalName || report.fileName || `Radiology Report ${index + 1}`}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -3538,7 +3538,7 @@ export default function BookingsPage() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
-                            Lab Test Orders
+                            Pathology (Lab) Orders
                           </Text>
                           <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                             {labOrders.length} order{labOrders.length !== 1 ? 's' : ''} placed
@@ -3726,7 +3726,7 @@ export default function BookingsPage() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 15, fontWeight: '600', color: COLORS.primary }}>
-                            Diagnostic Orders
+                            Radiology/ Cardiology Orders
                           </Text>
                           <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 2 }}>
                             {diagnosticOrders.length} order{diagnosticOrders.length !== 1 ? 's' : ''} placed
@@ -4138,7 +4138,7 @@ export default function BookingsPage() {
                     }}
                   >
                     <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>
-                      View Wellness Packages
+                      View Health Packages
                     </Text>
                   </TouchableOpacity>
                 </View>

@@ -76,8 +76,8 @@ const getStatusColor = (status: string) => {
 // CUSTOM ICONS
 // ============================================================================
 
-// Lab Test Icon - Flask/Beaker
-const LabTestIcon = ({ width = 24, height = 24, color = '#034DA2' }: { width?: number; height?: number; color?: string }) => (
+// Pathology (Lab) Icon - Flask/Beaker
+const PathologyIcon = ({ width = 24, height = 24, color = '#034DA2' }: { width?: number; height?: number; color?: string }) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
     <Path
       d="M9.75 3v3.268M9.75 6.268C9.75 7.2 9.011 7.943 8.25 8.5L3 12.5v0a2 2 0 00-.75 1.561v2.689A3.25 3.25 0 005.5 20h13a3.25 3.25 0 003.25-3.25v-2.689a2 2 0 00-.75-1.561l-5.25-4a1.82 1.82 0 01-.75-1.232V3M14.25 3v3.268M14.25 6.268c0 .932.739 1.675 1.5 2.232L21 12.5M6 16h4M9 3h6"
@@ -89,8 +89,8 @@ const LabTestIcon = ({ width = 24, height = 24, color = '#034DA2' }: { width?: n
   </Svg>
 );
 
-// Diagnostic Icon - Microscope/Scan
-const DiagnosticIcon = ({ width = 24, height = 24, color = '#F5821E' }: { width?: number; height?: number; color?: string }) => (
+// Radiology/ Cardiology Icon - Microscope/Scan
+const RadiologyIcon = ({ width = 24, height = 24, color = '#F5821E' }: { width?: number; height?: number; color?: string }) => (
   <Svg width={width} height={height} viewBox="0 0 24 24" fill="none">
     <Path
       d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6"
@@ -315,7 +315,7 @@ export default function CartsScreen() {
               No Active Carts
             </Text>
             <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
-              Your lab test and diagnostic carts will appear here once created by our operations team.
+              Your Pathology (Lab) and Radiology/ Cardiology carts will appear here once created by our operations team.
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/member' as any)}
@@ -334,7 +334,7 @@ export default function CartsScreen() {
           </View>
         ) : (
           <>
-            {/* Lab Test Carts Section */}
+            {/* Pathology (Lab) Carts Section */}
             {labCarts.length > 0 && (
               <View
                 style={{
@@ -363,11 +363,11 @@ export default function CartsScreen() {
                       marginRight: 12,
                     }}
                   >
-                    <LabTestIcon width={22} height={22} color={COLORS.primary} />
+                    <PathologyIcon width={22} height={22} color={COLORS.primary} />
                   </View>
                   <View>
                     <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.primary }}>
-                      Lab Tests
+                      Pathology (Lab)
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.textGray }}>
                       {labCarts.length} cart{labCarts.length !== 1 ? 's' : ''} available
@@ -432,7 +432,7 @@ export default function CartsScreen() {
               </View>
             )}
 
-            {/* Diagnostic Carts Section */}
+            {/* Radiology/ Cardiology Carts Section */}
             {diagnosticCarts.length > 0 && (
               <View
                 style={{
@@ -461,11 +461,11 @@ export default function CartsScreen() {
                       marginRight: 12,
                     }}
                   >
-                    <DiagnosticIcon width={22} height={22} color={COLORS.orange} />
+                    <RadiologyIcon width={22} height={22} color={COLORS.orange} />
                   </View>
                   <View>
                     <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.orange }}>
-                      Diagnostics
+                      Radiology/ Cardiology
                     </Text>
                     <Text style={{ fontSize: 12, color: COLORS.textGray }}>
                       {diagnosticCarts.length} cart{diagnosticCarts.length !== 1 ? 's' : ''} available
