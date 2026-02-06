@@ -385,7 +385,7 @@ export default function DiagnosticsPage() {
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
-                  Diagnostic Services
+                  Radiology/ Cardiology
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
                   Book diagnostic imaging & tests

@@ -91,8 +91,8 @@ async function seed() {
     const categories = [
       { categoryId: 'CAT001', code: 'CAT001', name: 'In-Clinic Consultation', displayOrder: 1, isActive: true },
       { categoryId: 'CAT002', code: 'CAT002', name: 'Pharmacy Services', displayOrder: 2, isActive: true },
-      { categoryId: 'CAT003', code: 'CAT003', name: 'Diagnostic Services', displayOrder: 3, isActive: true },
-      { categoryId: 'CAT004', code: 'CAT004', name: 'Laboratory Services', displayOrder: 4, isActive: true },
+      { categoryId: 'CAT003', code: 'CAT003', name: 'Radiology/ Cardiology', displayOrder: 3, isActive: true },
+      { categoryId: 'CAT004', code: 'CAT004', name: 'Pathology (Lab)', displayOrder: 4, isActive: true },
       { categoryId: 'CAT005', code: 'CAT005', name: 'Online Consultation', displayOrder: 5, isActive: true },
     ];
 

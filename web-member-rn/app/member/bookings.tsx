@@ -268,8 +268,8 @@ export default function BookingsPage() {
     doctors: 'CAT001',      // Doctor Consult / In-Clinic Appointments
     dental: 'CAT006',       // Dental Services
     vision: 'CAT007',       // Vision Care
-    lab: 'CAT004',          // Lab Tests
-    diagnostic: 'CAT003',   // Diagnostic Services
+    lab: 'CAT004',          // Pathology (Lab)
+    diagnostic: 'CAT003',   // Radiology/ Cardiology
     pharmacy: 'CAT002',     // Pharmacy
     // Note: AHC is checked separately via ahcCovered state
   };

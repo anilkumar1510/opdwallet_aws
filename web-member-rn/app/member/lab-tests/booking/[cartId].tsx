@@ -380,7 +380,7 @@ export default function LabBookingPage() {
         paymentType: (breakdown?.copayAmount || 0) > 0 ? 'COPAY' : 'OUT_OF_POCKET',
         serviceType: 'LAB',
         serviceReferenceId: cart.cartId,
-        description: `Lab Tests: ${cart.items.map(i => i.serviceName).join(', ')} from ${selectedVendor.name}`,
+        description: `Pathology (Lab): ${cart.items.map(i => i.serviceName).join(', ')} from ${selectedVendor.name}`,
         userId: userId,
         patientId: cart.patientId,
         metadata: {
@@ -589,7 +589,7 @@ export default function LabBookingPage() {
                 <ArrowLeftIcon width={20} height={20} color="#374151" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Book Lab Tests</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>Book Pathology Tests</Text>
                 <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>Cart ID: {cart.cartId}</Text>
               </View>
             </View>

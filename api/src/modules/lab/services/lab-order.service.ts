@@ -78,7 +78,7 @@ export class LabOrderService {
         throw new BadRequestException('Plan configuration not found');
       }
 
-      // 4. Resolve lab benefits (CAT004 = Laboratory Services)
+      // 4. Resolve lab benefits (CAT004 = Pathology (Lab))
       const labBenefit = BenefitResolver.resolve(
         planConfig,
         'CAT004',
@@ -306,7 +306,7 @@ export class LabOrderService {
       await this.walletService.debitWallet(
         userId.toString(),
         paymentBreakdown.walletDeduction,
-        'CAT004',  // Laboratory Services category code
+        'CAT004',  // Pathology (Lab) category code
         (savedOrder._id as Types.ObjectId).toString(),
         'LAB',
         vendor.name,
@@ -329,7 +329,7 @@ export class LabOrderService {
         copayAmount: paymentBreakdown.copay,
         paymentMethod: PaymentMethod.COPAY,
         categoryCode: 'CAT004',
-        categoryName: 'Laboratory Services',
+        categoryName: 'Pathology (Lab)',
         description: `Lab order: ${orderItems.map(i => i.serviceName).join(', ')}`,
         status: TransactionStatus.COMPLETED,
       });
@@ -498,7 +498,7 @@ export class LabOrderService {
       await this.walletService.creditWallet(
         order.userId.toString(),
         order.walletDeduction,
-        'CAT004', // Laboratory Services category code
+        'CAT004', // Pathology (Lab) category code
         (order._id as Types.ObjectId).toString(),
         'LAB',
         order.vendorName,

@@ -225,8 +225,8 @@ interface Service {
 // Category codes mapping:
 // CAT001: In-Clinic Consultation
 // CAT002: Pharmacy
-// CAT003: Diagnostic Services
-// CAT004: Laboratory Services
+// CAT003: Radiology/ Cardiology
+// CAT004: Pathology (Lab)
 // CAT005: Online Consultation
 // CAT006: Dental Services
 // CAT007: Vision Care

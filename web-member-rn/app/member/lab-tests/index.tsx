@@ -385,10 +385,10 @@ export default function LabTestsPage() {
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.primary }}>
-                  Lab Tests
+                  Pathology (Lab)
                 </Text>
                 <Text style={{ fontSize: 12, color: COLORS.textGray, marginTop: 2 }}>
-                  Book lab tests with ease
+                  Book pathology tests with ease
                 </Text>
               </View>
             </View>

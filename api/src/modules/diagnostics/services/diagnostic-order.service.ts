@@ -216,7 +216,7 @@ export class DiagnosticOrderService {
       await this.walletService.debitWallet(
         createDto.userId,
         paymentBreakdown.walletDeduction,
-        'CAT003',  // Diagnostic Services category code
+        'CAT003',  // Radiology/ Cardiology category code
         (savedOrder._id as Types.ObjectId).toString(),
         'DIAGNOSTIC',
         vendor.name,
@@ -239,7 +239,7 @@ export class DiagnosticOrderService {
         copayAmount: paymentBreakdown.copay,
         paymentMethod: PaymentMethod.COPAY,
         categoryCode: 'CAT003',
-        categoryName: 'Diagnostic Services',
+        categoryName: 'Radiology/ Cardiology',
         description: `Diagnostic order: ${orderItems.map(i => i.serviceName).join(', ')}`,
         status: TransactionStatus.COMPLETED,
       });
@@ -350,7 +350,7 @@ export class DiagnosticOrderService {
       await this.walletService.creditWallet(
         order.userId.toString(),
         order.walletDeduction,
-        'CAT003', // Diagnostic Services category code
+        'CAT003', // Radiology/ Cardiology category code
         (order._id as Types.ObjectId).toString(),
         'DIAGNOSTIC',
         order.vendorName,
@@ -461,7 +461,7 @@ export class DiagnosticOrderService {
         throw new BadRequestException('Plan configuration not found');
       }
 
-      // 4. Resolve diagnostic benefits (CAT003 = Diagnostic Services)
+      // 4. Resolve diagnostic benefits (CAT003 = Radiology/ Cardiology)
       const diagnosticBenefit = BenefitResolver.resolve(
         planConfig,
         'CAT003',

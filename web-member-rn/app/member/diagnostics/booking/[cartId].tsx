@@ -406,7 +406,7 @@ export default function DiagnosticBookingPage() {
         paymentType: (breakdown?.copayAmount || 0) > 0 ? 'COPAY' : 'OUT_OF_POCKET',
         serviceType: 'DIAGNOSTIC',
         serviceReferenceId: cart.cartId,
-        description: `Diagnostic Services: ${cart.items.map(i => i.serviceName).join(', ')} from ${selectedVendor.name}`,
+        description: `Radiology/ Cardiology: ${cart.items.map(i => i.serviceName).join(', ')} from ${selectedVendor.name}`,
         userId: userId,
         patientId: cart.patientId,
         metadata: {
