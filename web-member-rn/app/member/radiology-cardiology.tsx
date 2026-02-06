@@ -413,18 +413,20 @@ export default function DiagnosticsPage() {
         patientName: userName,
         patientRelationship: 'Self',
         pincode: selectedAddress.pincode,
-        addressId: selectedAddressId,
         prescriptionDate: new Date().toISOString(),
       };
 
+      console.log('[Diagnostics] Submitting prescription with body:', JSON.stringify(requestBody, null, 2));
       await apiClient.post('/member/diagnostics/prescriptions/submit-existing', requestBody);
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Diagnostics] Error submitting prescription:', error);
+      console.error('[Diagnostics] Error response:', error.response?.data);
+      const errorMsg = error.response?.data?.message || 'Failed to submit prescription';
       if (Platform.OS === 'web') {
-        window.alert('Failed to submit prescription');
+        window.alert(errorMsg);
       } else {
-        Alert.alert('Error', 'Failed to submit prescription');
+        Alert.alert('Error', errorMsg);
       }
     } finally {
       setSubmittingPrescription(false);
