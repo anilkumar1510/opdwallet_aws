@@ -72,7 +72,7 @@ export const PREDEFINED_CATEGORIES = [
   {
     categoryId: 'CAT008',
     code: 'WELLNESS',
-    name: 'Wellness Programs',
+    name: 'Health Packages',
     description: 'Preventive health services including annual health checks, vaccinations, and wellness programs',
     displayOrder: 8,
     isActive: true,
