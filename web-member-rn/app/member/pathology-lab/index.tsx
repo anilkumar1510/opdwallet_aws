@@ -9,6 +9,7 @@ import {
   Alert,
   RefreshControl,
   Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -74,6 +75,17 @@ interface HealthRecordPrescription {
   prescribedDate: string;
   patientName: string;
   type: 'digital' | 'pdf';
+}
+
+interface Address {
+  _id: string;
+  addressId: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
 }
 
 // ============================================================================
@@ -147,10 +159,28 @@ export default function LabTestsPage() {
   // Modal states
   const [showSelectorModal, setShowSelectorModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [healthRecordPrescriptions, setHealthRecordPrescriptions] = useState<HealthRecordPrescription[]>([]);
   const [selectedPrescription, setSelectedPrescription] = useState<HealthRecordPrescription | null>(null);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const [submittingPrescription, setSubmittingPrescription] = useState(false);
+
+  // Address states
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+  const [addingAddress, setAddingAddress] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    addressType: 'HOME' as 'HOME' | 'WORK' | 'OTHER',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    landmark: '',
+    isDefault: false,
+  });
 
   // ============================================================================
   // DATA FETCHING
@@ -194,6 +224,87 @@ export default function LabTestsPage() {
     setRefreshing(true);
     fetchData();
   }, [fetchData]);
+
+  // Fetch addresses
+  const fetchAddresses = async () => {
+    setLoadingAddresses(true);
+    try {
+      const response = await apiClient.get('/member/addresses');
+      if (response.data?.data) {
+        setAddresses(response.data.data);
+        // Auto-select default address
+        const defaultAddr = response.data.data.find((a: Address) => a.isDefault);
+        if (defaultAddr) {
+          setSelectedAddressId(defaultAddr._id);
+        } else if (response.data.data.length > 0) {
+          setSelectedAddressId(response.data.data[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error('[LabTests] Error fetching addresses:', error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  // Handle adding new address
+  const handleAddAddress = async () => {
+    if (!newAddress.addressLine1.trim()) {
+      Alert.alert('Missing Field', 'Please enter address line 1');
+      return;
+    }
+    if (!newAddress.city.trim()) {
+      Alert.alert('Missing Field', 'Please enter city');
+      return;
+    }
+    if (!newAddress.state.trim()) {
+      Alert.alert('Missing Field', 'Please enter state');
+      return;
+    }
+    if (!newAddress.pincode.trim() || newAddress.pincode.length !== 6) {
+      Alert.alert('Invalid Pincode', 'Please enter a valid 6-digit pincode');
+      return;
+    }
+
+    setAddingAddress(true);
+    try {
+      const response = await apiClient.post('/member/addresses', {
+        addressType: newAddress.addressType,
+        addressLine1: newAddress.addressLine1.trim(),
+        addressLine2: newAddress.addressLine2.trim() || undefined,
+        city: newAddress.city.trim(),
+        state: newAddress.state.trim(),
+        pincode: newAddress.pincode.trim(),
+        landmark: newAddress.landmark.trim() || undefined,
+        isDefault: newAddress.isDefault,
+      });
+
+      if (response.data?.data) {
+        setNewAddress({
+          addressType: 'HOME',
+          addressLine1: '',
+          addressLine2: '',
+          city: '',
+          state: '',
+          pincode: '',
+          landmark: '',
+          isDefault: false,
+        });
+        setShowAddAddressModal(false);
+        await fetchAddresses();
+        // Select newly added address
+        if (response.data.data._id) {
+          setSelectedAddressId(response.data.data._id);
+        }
+        Alert.alert('Success', 'Address added successfully');
+      }
+    } catch (error: any) {
+      console.error('[LabTests] Error adding address:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to add address');
+    } finally {
+      setAddingAddress(false);
+    }
+  };
 
   // ============================================================================
   // PRESCRIPTION SELECTOR MODAL
@@ -262,12 +373,32 @@ export default function LabTestsPage() {
   const handleOpenSelectorModal = () => {
     setShowSelectorModal(true);
     fetchHealthRecordPrescriptions();
+    fetchAddresses();
   };
 
+  // When user selects a prescription, show address modal
+  const handlePrescriptionSelected = () => {
+    if (!selectedPrescription) return;
+    setShowSelectorModal(false);
+    setShowAddressModal(true);
+  };
+
+  // Submit prescription with selected address
   const handlePrescriptionSelect = async () => {
     if (!selectedPrescription) return;
 
-    setShowSelectorModal(false);
+    if (!selectedAddressId) {
+      Alert.alert('Missing Address', 'Please select an address for sample collection');
+      return;
+    }
+
+    const selectedAddress = addresses.find(addr => addr._id === selectedAddressId);
+    if (!selectedAddress) {
+      Alert.alert('Error', 'Selected address not found');
+      return;
+    }
+
+    setShowAddressModal(false);
     setSubmittingPrescription(true);
     setShowConfirmationModal(true);
 
@@ -278,7 +409,8 @@ export default function LabTestsPage() {
         patientId: 'current',
         patientName: 'Current Member',
         patientRelationship: 'Self',
-        pincode: '',
+        pincode: selectedAddress.pincode,
+        addressId: selectedAddressId,
         prescriptionDate: new Date().toISOString(),
       };
 
@@ -890,7 +1022,7 @@ export default function LabTestsPage() {
                 <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={handlePrescriptionSelect}
+                onPress={handlePrescriptionSelected}
                 disabled={!selectedPrescription}
                 style={{
                   flex: 1,
@@ -901,6 +1033,306 @@ export default function LabTestsPage() {
                 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '500', color: '#FFFFFF' }}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Address Selection Modal */}
+      <Modal
+        visible={showAddressModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddressModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              backgroundColor: COLORS.white,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              maxHeight: '80%',
+              padding: 20,
+            }}
+          >
+            {/* Modal Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.textDark }}>
+                Select Address
+              </Text>
+              <TouchableOpacity onPress={() => setShowAddressModal(false)} style={{ padding: 4 }}>
+                <XMarkIcon width={24} height={24} color={COLORS.textGray} />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 20 }}>
+              Select address for sample collection
+            </Text>
+
+            {/* Address List */}
+            {loadingAddresses ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : addresses.length === 0 ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, color: COLORS.textGray, marginBottom: 12 }}>
+                  No addresses found. Please add an address.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowAddAddressModal(true)}
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ color: COLORS.white, fontWeight: '500' }}>Add New Address</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 300 }}>
+                {addresses.map((address) => (
+                  <TouchableOpacity
+                    key={address._id}
+                    onPress={() => setSelectedAddressId(address._id)}
+                    activeOpacity={0.8}
+                    style={{
+                      borderWidth: 2,
+                      borderRadius: 12,
+                      padding: 16,
+                      marginBottom: 12,
+                      borderColor: selectedAddressId === address._id ? COLORS.primary : COLORS.border,
+                      backgroundColor: selectedAddressId === address._id ? '#EFF4FF' : COLORS.white,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>
+                      {address.addressLine1}
+                      {address.addressLine2 ? `, ${address.addressLine2}` : ''}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: COLORS.textGray, marginTop: 4 }}>
+                      {address.city}, {address.state} - {address.pincode}
+                    </Text>
+                    {address.isDefault && (
+                      <View style={{ marginTop: 8 }}>
+                        <Text style={{ fontSize: 11, color: COLORS.primary, fontWeight: '500' }}>Default Address</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Add Address Button */}
+            {addresses.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setShowAddAddressModal(true)}
+                style={{
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  marginTop: 8,
+                }}
+              >
+                <Text style={{ fontSize: 14, color: COLORS.primary, fontWeight: '500' }}>+ Add New Address</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border }}>
+              <TouchableOpacity
+                onPress={() => setShowAddressModal(false)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlePrescriptionSelect}
+                disabled={!selectedAddressId}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 8,
+                  backgroundColor: selectedAddressId ? COLORS.primary : '#D1D5DB',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.white }}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Address Modal */}
+      <Modal
+        visible={showAddAddressModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => !addingAddress && setShowAddAddressModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              backgroundColor: COLORS.white,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              maxHeight: '90%',
+              padding: 20,
+            }}
+          >
+            {/* Modal Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.textDark }}>
+                Add New Address
+              </Text>
+              <TouchableOpacity onPress={() => !addingAddress && setShowAddAddressModal(false)} style={{ padding: 4 }}>
+                <XMarkIcon width={24} height={24} color={COLORS.textGray} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Address Type */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>Address Type</Text>
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                {(['HOME', 'WORK', 'OTHER'] as const).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => setNewAddress(prev => ({ ...prev, addressType: type }))}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: newAddress.addressType === type ? COLORS.primary : COLORS.border,
+                      backgroundColor: newAddress.addressType === type ? 'rgba(3, 77, 162, 0.1)' : COLORS.white,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, color: newAddress.addressType === type ? COLORS.primary : COLORS.textGray }}>
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Address Line 1 */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>Address Line 1 *</Text>
+              <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginBottom: 16 }}>
+                <TextInput
+                  value={newAddress.addressLine1}
+                  onChangeText={(text) => setNewAddress(prev => ({ ...prev, addressLine1: text }))}
+                  placeholder="House/Flat No., Building Name"
+                  placeholderTextColor="#9CA3AF"
+                  style={{ padding: 12, fontSize: 14, color: COLORS.textDark }}
+                />
+              </View>
+
+              {/* Address Line 2 */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>Address Line 2</Text>
+              <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginBottom: 16 }}>
+                <TextInput
+                  value={newAddress.addressLine2}
+                  onChangeText={(text) => setNewAddress(prev => ({ ...prev, addressLine2: text }))}
+                  placeholder="Street, Area, Locality"
+                  placeholderTextColor="#9CA3AF"
+                  style={{ padding: 12, fontSize: 14, color: COLORS.textDark }}
+                />
+              </View>
+
+              {/* City */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>City *</Text>
+              <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginBottom: 16 }}>
+                <TextInput
+                  value={newAddress.city}
+                  onChangeText={(text) => setNewAddress(prev => ({ ...prev, city: text }))}
+                  placeholder="City"
+                  placeholderTextColor="#9CA3AF"
+                  style={{ padding: 12, fontSize: 14, color: COLORS.textDark }}
+                />
+              </View>
+
+              {/* State */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>State *</Text>
+              <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginBottom: 16 }}>
+                <TextInput
+                  value={newAddress.state}
+                  onChangeText={(text) => setNewAddress(prev => ({ ...prev, state: text }))}
+                  placeholder="State"
+                  placeholderTextColor="#9CA3AF"
+                  style={{ padding: 12, fontSize: 14, color: COLORS.textDark }}
+                />
+              </View>
+
+              {/* Pincode */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>Pincode *</Text>
+              <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginBottom: 16 }}>
+                <TextInput
+                  value={newAddress.pincode}
+                  onChangeText={(text) => {
+                    const numericText = text.replace(/[^0-9]/g, '').slice(0, 6);
+                    setNewAddress(prev => ({ ...prev, pincode: numericText }));
+                  }}
+                  placeholder="6-digit pincode"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  style={{ padding: 12, fontSize: 14, color: COLORS.textDark }}
+                />
+              </View>
+
+              {/* Landmark */}
+              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: COLORS.textDark }}>Landmark</Text>
+              <View style={{ borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginBottom: 16 }}>
+                <TextInput
+                  value={newAddress.landmark}
+                  onChangeText={(text) => setNewAddress(prev => ({ ...prev, landmark: text }))}
+                  placeholder="Near landmark (optional)"
+                  placeholderTextColor="#9CA3AF"
+                  style={{ padding: 12, fontSize: 14, color: COLORS.textDark }}
+                />
+              </View>
+            </ScrollView>
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+              <TouchableOpacity
+                onPress={() => setShowAddAddressModal(false)}
+                disabled={addingAddress}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.textDark }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleAddAddress}
+                disabled={addingAddress}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 8,
+                  backgroundColor: COLORS.primary,
+                  alignItems: 'center',
+                }}
+              >
+                {addingAddress ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={{ fontSize: 14, fontWeight: '500', color: COLORS.white }}>Add Address</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
