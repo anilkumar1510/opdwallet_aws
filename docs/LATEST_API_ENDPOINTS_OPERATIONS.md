@@ -17,6 +17,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 | POST | /auth/login | User login with credentials (OPS role validation) |
 | POST | /auth/logout | User logout |
 | GET | /auth/me | Get current user information |
+| POST | /auth/refresh | Refresh access token using refresh token |
 
 ---
 

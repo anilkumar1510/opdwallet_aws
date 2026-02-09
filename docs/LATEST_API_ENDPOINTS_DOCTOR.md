@@ -11,6 +11,7 @@ This document lists all API endpoints used by the Doctor Portal (web-doctor).
 | POST | /auth/doctor/login | Doctor login with credentials |
 | POST | /auth/doctor/logout | Doctor logout |
 | GET | /auth/doctor/profile | Get doctor profile |
+| POST | /auth/refresh | Refresh access token using refresh token |
 | PATCH | /auth/doctor/profile | Update doctor profile |
 | POST | /auth/doctor/profile/signature | Upload doctor signature (PNG/JPG, max 500KB) |
 | GET | /auth/doctor/profile/signature | Get doctor signature image (returns image file) |

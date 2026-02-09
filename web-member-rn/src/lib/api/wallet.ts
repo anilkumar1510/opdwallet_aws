@@ -1,4 +1,6 @@
 import apiClient from './client';
+import { logger } from '../utils/productionLogger';
+import { auditLogger } from '../audit/auditLogger';
 
 /**
  * Wallet API - Matches web-member API calls
@@ -28,15 +30,18 @@ export interface WalletCategory {
  */
 export const fetchWalletBalance = async (userId: string): Promise<WalletBalance> => {
   try {
-    console.log('Fetching wallet balance for userId:', userId);
+    logger.debug('[Wallet] Fetching wallet balance');
     const response = await apiClient.get<WalletBalance>(`/wallet/balance`, {
       params: { userId },
     });
 
-    console.log('Wallet balance response:', response.data);
+    // Log PHI access for wallet data
+    auditLogger.viewPHI('WALLET', userId, userId);
+
+    logger.debug('[Wallet] Wallet balance fetched successfully');
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch wallet balance:', error);
+    logger.error('[Wallet] Failed to fetch wallet balance:', error);
     throw error;
   }
 };
@@ -52,9 +57,12 @@ export const fetchWalletTransactions = async (userId: string) => {
       params: { userId },
     });
 
+    // Log PHI access for transaction data
+    auditLogger.viewPHI('WALLET', userId, userId);
+
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch wallet transactions:', error);
+    logger.error('[Wallet] Failed to fetch wallet transactions:', error);
     throw error;
   }
 };

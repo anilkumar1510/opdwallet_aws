@@ -1,7 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorage } from './storage/secureStorage';
+import { logger } from './utils/productionLogger';
 
 /**
  * Document preview interface for React Native
@@ -39,7 +40,7 @@ export async function pickDocuments(): Promise<DocumentPreview[]> {
       mimeType: asset.mimeType || 'application/octet-stream',
     }));
   } catch (error) {
-    console.error('Error picking documents:', error);
+    logger.error('[ClaimHelpers] Error picking documents:', error);
     return [];
   }
 }
@@ -78,7 +79,7 @@ export async function takePhoto(): Promise<DocumentPreview | null> {
       mimeType: 'image/jpeg',
     };
   } catch (error) {
-    console.error('Error taking photo:', error);
+    logger.error('[ClaimHelpers] Error taking photo:', error);
     return null;
   }
 }
@@ -117,7 +118,7 @@ export async function pickImage(): Promise<DocumentPreview | null> {
       mimeType: asset.mimeType || 'image/jpeg',
     };
   } catch (error) {
-    console.error('Error picking image:', error);
+    logger.error('[ClaimHelpers] Error picking image:', error);
     return null;
   }
 }
@@ -138,37 +139,38 @@ export function getFileSizeErrorMessage(maxSizeMB: number = 5): string {
 }
 
 /**
- * Save draft to AsyncStorage
+ * Save draft to secure storage
+ * PHI in claim drafts is encrypted at rest
  */
 export async function saveDraft(data: any): Promise<void> {
   try {
-    await AsyncStorage.setItem('claimDraft', JSON.stringify(data));
+    await secureStorage.setItem('claimDraft', JSON.stringify(data));
   } catch (error) {
-    console.error('Failed to save draft:', error);
+    logger.error('[ClaimHelpers] Failed to save draft:', error);
   }
 }
 
 /**
- * Load draft from AsyncStorage
+ * Load draft from secure storage
  */
 export async function loadDraft(): Promise<any | null> {
   try {
-    const draft = await AsyncStorage.getItem('claimDraft');
+    const draft = await secureStorage.getItem('claimDraft');
     return draft ? JSON.parse(draft) : null;
   } catch (error) {
-    console.error('Failed to load draft:', error);
+    logger.error('[ClaimHelpers] Failed to load draft:', error);
     return null;
   }
 }
 
 /**
- * Clear draft from AsyncStorage
+ * Clear draft from secure storage
  */
 export async function clearDraft(): Promise<void> {
   try {
-    await AsyncStorage.removeItem('claimDraft');
+    await secureStorage.removeItem('claimDraft');
   } catch (error) {
-    console.error('Failed to clear draft:', error);
+    logger.error('[ClaimHelpers] Failed to clear draft:', error);
   }
 }
 
@@ -207,7 +209,7 @@ export async function createClaimFormData(
         formData.append('documents', file);
       }
     } catch (error) {
-      console.error('Error adding file to FormData:', error);
+      logger.error('[ClaimHelpers] Error adding file to FormData:', error);
     }
   }
 
@@ -245,7 +247,7 @@ export async function createConsultationFormData(
         formData.append('prescriptionFiles', file);
       }
     } catch (error) {
-      console.error('Error adding prescription file:', error);
+      logger.error('[ClaimHelpers] Error adding prescription file:', error);
     }
   }
 
@@ -262,7 +264,7 @@ export async function createConsultationFormData(
         formData.append('billFiles', file);
       }
     } catch (error) {
-      console.error('Error adding bill file:', error);
+      logger.error('[ClaimHelpers] Error adding bill file:', error);
     }
   }
 

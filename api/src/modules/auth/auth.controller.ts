@@ -61,6 +61,37 @@ export class AuthController {
       ...result.user,  // Spread user properties for backward compatibility
       user: result.user,  // Also include nested user object for new clients
       token: result.token,  // Include token for mobile clients
+      refreshToken: result.refreshToken,  // Include refresh token for token refresh
+      expiresIn: result.expiresIn,  // Token expiry in seconds
+    };
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  async refreshToken(
+    @Body() body: { refreshToken: string },
+    @Response({ passthrough: true }) res: ExpressResponse,
+  ) {
+    const result = await this.authService.refreshToken(body.refreshToken);
+    const cookieConfig = this.configService.get('cookie');
+
+    // Update the session cookie with the new access token
+    res.cookie(cookieConfig.name, result.token, {
+      httpOnly: cookieConfig.httpOnly,
+      secure: cookieConfig.secure,
+      sameSite: cookieConfig.sameSite,
+      maxAge: cookieConfig.maxAge,
+      path: '/',
+    });
+
+    return {
+      token: result.token,
+      refreshToken: result.refreshToken,
+      expiresIn: result.expiresIn,
     };
   }
 

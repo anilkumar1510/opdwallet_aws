@@ -22,6 +22,7 @@ This document lists all API endpoints used by the Admin Portal (web-admin) for c
 | POST | /auth/login | User login with credentials |
 | POST | /auth/logout | User logout |
 | GET | /auth/me | Get current user information |
+| POST | /auth/refresh | Refresh access token using refresh token |
 
 ---
 

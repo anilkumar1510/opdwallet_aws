@@ -36,6 +36,8 @@ export interface AuthResponse {
   user: User
   role: string
   token?: string // Added for React Native token-based auth
+  refreshToken?: string // Refresh token for token rotation
+  expiresIn?: number // Token expiry time in seconds
 }
 
 // ============================================================================

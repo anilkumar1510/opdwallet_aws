@@ -17,6 +17,7 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 | POST | /auth/login | User login with credentials (TPA role validation) |
 | POST | /auth/logout | User logout |
 | GET | /auth/me | Get current user information |
+| POST | /auth/refresh | Refresh access token using refresh token |
 
 ---
 

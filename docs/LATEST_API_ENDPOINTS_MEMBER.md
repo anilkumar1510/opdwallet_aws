@@ -19,6 +19,47 @@ See [REDIS_CACHING.md](./REDIS_CACHING.md) for detailed caching implementation.
 | POST | /auth/login | Member login with credentials |
 | POST | /auth/logout | Member logout |
 | GET | /auth/me | Get current member information |
+| POST | /auth/refresh | Refresh access token using refresh token |
+
+### POST /auth/login - Response
+
+```json
+{
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "role": "MEMBER",
+    "name": "John Doe"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 900
+}
+```
+
+### POST /auth/refresh - Token Refresh
+
+**Request:**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 900
+}
+```
+
+**Notes:**
+- Access token expiry is configurable via `JWT_EXPIRY` env variable (default: 15m)
+- Refresh token expiry is configurable via `JWT_REFRESH_EXPIRY` env variable (default: 7d)
+- Token rotation: Each refresh returns a new refresh token (old one is invalidated)
+- Frontend automatically refreshes token when it's about to expire (5 minutes before expiry)
 
 ---
 
@@ -643,4 +684,69 @@ OR → CANCELLED (can cancel before collection)
 
 ---
 
-**Total Endpoints: ~107**
+## Audit Logging (HIPAA Compliance)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /audit/log | Submit audit events for PHI access logging |
+
+### POST /audit/log - Audit Event Batch
+
+**Request:**
+```json
+{
+  "events": [
+    {
+      "action": "VIEW_PHI",
+      "resourceType": "PROFILE",
+      "resourceId": "user_123",
+      "timestamp": "2025-01-15T10:30:00.000Z",
+      "metadata": {
+        "sessionId": "session_abc",
+        "userAgent": "Mozilla/5.0...",
+        "ip": "192.168.1.1"
+      }
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Audit events processed",
+  "eventsProcessed": 1
+}
+```
+
+**Supported Actions:**
+- `VIEW_PHI` - Viewing protected health information
+- `DOWNLOAD` - Downloading documents/reports
+- `PRINT` - Printing documents
+- `EXPORT` - Exporting data
+- `SHARE` - Sharing information
+- `LOGIN` - User login
+- `LOGOUT` - User logout
+- `LOGIN_FAILED` - Failed login attempt
+- `SESSION_TIMEOUT` - Session expired due to inactivity
+- `PROFILE_SWITCH` - Switching between family member profiles
+
+**Supported Resource Types:**
+- `PROFILE` - User profile data
+- `PRESCRIPTION` - Prescription documents
+- `CLAIM` - Insurance claims
+- `HEALTH_RECORD` - Health records
+- `LAB_REPORT` - Laboratory reports
+- `APPOINTMENT` - Appointment details
+- `WALLET` - Wallet/financial data
+- `POLICY` - Policy documents
+
+**Notes:**
+- Audit logging must be enabled via `AUDIT_LOG_ENABLED=true` env variable
+- Events are batched on frontend and sent periodically
+- Logs are retained per `AUDIT_LOG_RETENTION_DAYS` (default: 730 days / 2 years)
+- Required for HIPAA compliance (§164.312(b) - Audit Controls)
+
+---
+
+**Total Endpoints: ~109**

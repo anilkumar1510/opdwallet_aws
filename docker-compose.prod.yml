@@ -68,6 +68,9 @@ services:
       PORT: 4000
       MONGODB_URI: mongodb://opd-mongodb-prod:27017/opd_wallet
       JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
       COOKIE_NAME: ${COOKIE_NAME}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       COOKIE_SECURE: ${COOKIE_SECURE}
@@ -85,6 +88,9 @@ services:
       CACHE_TTL_WALLET: ${CACHE_TTL_WALLET:-300}
       CACHE_TTL_PLAN_CONFIG: ${CACHE_TTL_PLAN_CONFIG:-1800}
       CACHE_TTL_CATEGORIES: ${CACHE_TTL_CATEGORIES:-3600}
+      # Audit Logging (HIPAA Compliance)
+      AUDIT_LOG_ENABLED: ${AUDIT_LOG_ENABLED:-true}
+      AUDIT_LOG_RETENTION_DAYS: ${AUDIT_LOG_RETENTION_DAYS:-730}
     volumes:
       - ./api/uploads:/app/uploads
     depends_on:

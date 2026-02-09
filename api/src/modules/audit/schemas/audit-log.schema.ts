@@ -17,7 +17,25 @@ export class AuditLog {
   @Prop({ required: true })
   userRole: string;
 
-  @Prop({ required: true, enum: ['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'AUTH_FAILURE', 'ASSIGNMENT_PLAN_VERSION_UPDATE', 'PLAN_VERSION_CREATE', 'PLAN_VERSION_PUBLISH', 'PLAN_VERSION_MAKE_CURRENT', 'BENEFIT_COMPONENTS_UPSERT', 'WALLET_RULES_UPSERT', 'CLAIM_ASSIGNED', 'CLAIM_REASSIGNED', 'CLAIM_APPROVED', 'CLAIM_PARTIALLY_APPROVED', 'CLAIM_REJECTED', 'DOCUMENTS_REQUESTED', 'CLAIM_STATUS_UPDATED', 'PAYMENT_COMPLETED', 'PAYMENT_FAILED', 'DOCUMENTS_RESUBMITTED'] })
+  @Prop({
+    required: true,
+    enum: [
+      // Core actions
+      'CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'AUTH_FAILURE',
+      // PHI-specific actions (HIPAA compliance)
+      'VIEW_PHI', 'DOWNLOAD', 'PRINT', 'EXPORT', 'SHARE',
+      'LOGIN_FAILED', 'SESSION_TIMEOUT', 'PROFILE_SWITCH',
+      // Admin actions
+      'ASSIGNMENT_PLAN_VERSION_UPDATE', 'PLAN_VERSION_CREATE',
+      'PLAN_VERSION_PUBLISH', 'PLAN_VERSION_MAKE_CURRENT',
+      'BENEFIT_COMPONENTS_UPSERT', 'WALLET_RULES_UPSERT',
+      // Claims actions
+      'CLAIM_ASSIGNED', 'CLAIM_REASSIGNED', 'CLAIM_APPROVED',
+      'CLAIM_PARTIALLY_APPROVED', 'CLAIM_REJECTED', 'DOCUMENTS_REQUESTED',
+      'CLAIM_STATUS_UPDATED', 'PAYMENT_COMPLETED', 'PAYMENT_FAILED',
+      'DOCUMENTS_RESUBMITTED',
+    ],
+  })
   action: string;
 
   @Prop({ required: true })
@@ -40,6 +58,13 @@ export class AuditLog {
     path?: string;
     statusCode?: number;
     duration?: number;
+    // PHI access tracking fields
+    sessionId?: string;
+    patientId?: string;
+    accessGranted?: boolean;
+    denialReason?: string;
+    frontendTimestamp?: string;
+    [key: string]: any;
   };
 
   @Prop()

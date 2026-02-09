@@ -4,11 +4,52 @@ import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import { AuditLog, AuditLogDocument } from './schemas/audit-log.schema';
 
+/**
+ * Audit action types
+ * Includes both backend actions and PHI-specific actions from member portal
+ */
+export type AuditActionType =
+  // Core actions
+  | 'CREATE'
+  | 'READ'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'AUTH_FAILURE'
+  // PHI-specific actions (from member portal)
+  | 'VIEW_PHI'
+  | 'DOWNLOAD'
+  | 'PRINT'
+  | 'EXPORT'
+  | 'SHARE'
+  | 'LOGIN_FAILED'
+  | 'SESSION_TIMEOUT'
+  | 'PROFILE_SWITCH'
+  // Admin actions
+  | 'ASSIGNMENT_PLAN_VERSION_UPDATE'
+  | 'PLAN_VERSION_CREATE'
+  | 'PLAN_VERSION_PUBLISH'
+  | 'PLAN_VERSION_MAKE_CURRENT'
+  | 'BENEFIT_COMPONENTS_UPSERT'
+  | 'WALLET_RULES_UPSERT'
+  // Claims actions
+  | 'CLAIM_ASSIGNED'
+  | 'CLAIM_REASSIGNED'
+  | 'CLAIM_APPROVED'
+  | 'CLAIM_PARTIALLY_APPROVED'
+  | 'CLAIM_REJECTED'
+  | 'DOCUMENTS_REQUESTED'
+  | 'CLAIM_STATUS_UPDATED'
+  | 'PAYMENT_COMPLETED'
+  | 'PAYMENT_FAILED'
+  | 'DOCUMENTS_RESUBMITTED';
+
 export interface AuditLogDto {
   userId: string;
   userEmail: string;
   userRole: string;
-  action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'AUTH_FAILURE' | 'ASSIGNMENT_PLAN_VERSION_UPDATE' | 'PLAN_VERSION_CREATE' | 'PLAN_VERSION_PUBLISH' | 'PLAN_VERSION_MAKE_CURRENT' | 'BENEFIT_COMPONENTS_UPSERT' | 'WALLET_RULES_UPSERT';
+  action: AuditActionType;
   resource: string;
   resourceId?: string;
   before?: Record<string, any>;
@@ -20,6 +61,11 @@ export interface AuditLogDto {
     path?: string;
     statusCode?: number;
     duration?: number;
+    sessionId?: string;
+    patientId?: string;
+    accessGranted?: boolean;
+    denialReason?: string;
+    frontendTimestamp?: string;
     [key: string]: any; // Allow additional fields
   };
   description?: string;
@@ -35,11 +81,23 @@ export class AuditService {
     @InjectModel(AuditLog.name) private auditLogModel: Model<AuditLogDocument>,
     private configService: ConfigService,
   ) {
-    this.isEnabled = this.configService.get<boolean>('audit.enabled', false);
+    // Debug: Log raw environment variable
+    const envValue = process.env.AUDIT_LOG_ENABLED;
+    this.logger.log(`AUDIT_LOG_ENABLED env var: "${envValue}" (type: ${typeof envValue})`);
+
+    // Handle both boolean and string values from config/env
+    const auditEnabled = this.configService.get('audit.enabled');
+    this.logger.log(`audit.enabled from config: ${auditEnabled} (type: ${typeof auditEnabled})`);
+
+    // Enable if env var is 'true' or config is true
+    this.isEnabled = envValue === 'true' || auditEnabled === true || auditEnabled === 'true';
+
+    this.logger.log(`Audit logging initialized: enabled=${this.isEnabled}`);
   }
 
   async log(auditData: AuditLogDto): Promise<void> {
     if (!this.isEnabled) {
+      this.logger.debug('Audit logging is disabled, skipping log');
       return;
     }
 
@@ -50,6 +108,8 @@ export class AuditService {
       });
 
       await auditLog.save();
+
+      this.logger.debug(`Audit log saved: ${auditData.action} on ${auditData.resource}`);
 
       // Log critical actions
       if (['DELETE', 'AUTH_FAILURE'].includes(auditData.action)) {

@@ -62,7 +62,10 @@ services:
     environment:
       NODE_ENV: development
       MONGODB_URI: mongodb://admin:admin123@mongo:27017/opd_wallet?authSource=admin
-      JWT_SECRET: dev_jwt_secret_change_in_production
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
+      JWT_EXPIRY: ${JWT_EXPIRY:-10m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_in_production}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
       COOKIE_NAME: opd_session
       PORT: 4000
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
@@ -76,6 +79,9 @@ services:
       CACHE_TTL_WALLET: ${CACHE_TTL_WALLET:-300}
       CACHE_TTL_PLAN_CONFIG: ${CACHE_TTL_PLAN_CONFIG:-1800}
       CACHE_TTL_CATEGORIES: ${CACHE_TTL_CATEGORIES:-3600}
+      # Audit Logging (HIPAA Compliance)
+      AUDIT_LOG_ENABLED: "true"
+      AUDIT_LOG_RETENTION_DAYS: "730"
     depends_on:
       - mongo
       - redis

@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { InternalUser, InternalUserDocument } from '../internal-users/schemas/internal-user.schema';
@@ -10,8 +10,29 @@ import { Address, AddressDocument } from '../users/schemas/address.schema';
 import { UserStatus } from '@/common/constants/status.enum';
 import { UserRole } from '@/common/constants/roles.enum';
 
+/**
+ * Parse JWT expiry string (e.g., '15m', '7d', '1h') to seconds
+ */
+function parseExpiryToSeconds(expiry: string): number {
+  const match = expiry.match(/^(\d+)([smhd])$/);
+  if (!match) {
+    return 3600; // Default 1 hour
+  }
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case 's': return value;
+    case 'm': return value * 60;
+    case 'h': return value * 60 * 60;
+    case 'd': return value * 60 * 60 * 24;
+    default: return 3600;
+  }
+}
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(InternalUser.name) private internalUserModel: Model<InternalUserDocument>,
@@ -92,6 +113,11 @@ export class AuthService {
   }
 
   async login(user: any) {
+    const jwtConfig = this.configService.get('jwt');
+    const accessTokenExpiry = jwtConfig.expiresIn || '7d';
+    const refreshTokenExpiry = jwtConfig.refreshExpiresIn || '30d';
+    const refreshSecret = jwtConfig.refreshSecret || jwtConfig.secret;
+
     const payload = {
       email: user.email,
       sub: user._id.toString(),
@@ -101,7 +127,24 @@ export class AuthService {
       name: user.name, // Include name in JWT for status history tracking
     };
 
-    const token = this.jwtService.sign(payload);
+    // Generate access token
+    const token = this.jwtService.sign(payload, {
+      expiresIn: accessTokenExpiry,
+    });
+
+    // Generate refresh token with different secret and longer expiry
+    const refreshToken = this.jwtService.sign(
+      { sub: user._id.toString(), type: 'refresh' },
+      {
+        secret: refreshSecret,
+        expiresIn: refreshTokenExpiry,
+      },
+    );
+
+    // Calculate expiresIn in seconds for frontend
+    const expiresIn = parseExpiryToSeconds(accessTokenExpiry);
+
+    this.logger.debug(`Login successful for ${user.email}, token expires in ${accessTokenExpiry} (${expiresIn}s)`);
 
     return {
       user: {
@@ -114,7 +157,86 @@ export class AuthService {
         mustChangePassword: user.mustChangePassword,
       },
       token,
+      refreshToken,
+      expiresIn,
     };
+  }
+
+  /**
+   * Refresh access token using a valid refresh token
+   */
+  async refreshToken(refreshToken: string) {
+    const jwtConfig = this.configService.get('jwt');
+    const refreshSecret = jwtConfig.refreshSecret || jwtConfig.secret;
+    const accessTokenExpiry = jwtConfig.expiresIn || '7d';
+    const newRefreshTokenExpiry = jwtConfig.refreshExpiresIn || '30d';
+
+    try {
+      // Verify the refresh token
+      const decoded = this.jwtService.verify(refreshToken, {
+        secret: refreshSecret,
+      });
+
+      if (decoded.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      const userId = decoded.sub;
+
+      // Fetch user from database to ensure they still exist and are active
+      const userDoc = await this.userModel.findById(userId).select('-passwordHash');
+      const internalUserDoc = !userDoc
+        ? await this.internalUserModel.findById(userId).select('-passwordHash')
+        : null;
+
+      const user = userDoc || internalUserDoc;
+
+      if (!user || user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      const userIdStr = (user._id as Types.ObjectId).toString();
+      const userEmail = user.email;
+      const userRole = user.role;
+      const userName = user.name;
+      const userMemberId = (user as UserDocument).memberId;
+
+      // Generate new access token
+      const payload = {
+        email: userEmail,
+        sub: userIdStr,
+        role: userRole,
+        memberId: userMemberId,
+        userType: userRole === UserRole.MEMBER || userRole === UserRole.DOCTOR ? 'member' : 'internal',
+        name: userName,
+      };
+
+      const newToken = this.jwtService.sign(payload, {
+        expiresIn: accessTokenExpiry,
+      });
+
+      // Generate new refresh token (token rotation for security)
+      const newRefreshToken = this.jwtService.sign(
+        { sub: userIdStr, type: 'refresh' },
+        {
+          secret: refreshSecret,
+          expiresIn: newRefreshTokenExpiry,
+        },
+      );
+
+      const expiresIn = parseExpiryToSeconds(accessTokenExpiry);
+
+      this.logger.debug(`Token refreshed for ${userEmail}`);
+
+      return {
+        token: newToken,
+        refreshToken: newRefreshToken,
+        expiresIn,
+      };
+    } catch (error) {
+      this.logger.warn(`Token refresh failed: ${error.message}`);
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 
   async getCurrentUser(userId: string) {

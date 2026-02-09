@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { storage } from '../lib/api/client';
 import { usersApi } from '../lib/api/users';
+import { logger } from '../lib/utils/productionLogger';
+import { auditLogger } from '../lib/audit/auditLogger';
 
 export interface FamilyMember {
   _id: string;
@@ -55,14 +57,13 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      console.log('[FamilyContext] Loading family data');
+      logger.debug('[FamilyContext] Loading family data');
 
       // Fetch profile data which includes family members
       const data = await usersApi.getMemberProfile();
 
-      console.log('[FamilyContext] Profile data loaded:', {
+      logger.debug('[FamilyContext] Profile data loaded:', {
         userId: data.user._id,
-        userName: `${data.user.name?.firstName} ${data.user.name?.lastName}`,
         dependentsCount: data.dependents?.length || 0,
       });
 
@@ -130,13 +131,12 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       setActiveMember(initialMember);
       setViewingUserId(initialMember._id);
 
-      console.log('[FamilyContext] Active member set:', {
+      logger.debug('[FamilyContext] Active member set:', {
         memberId: initialMember._id,
-        memberName: `${initialMember.name?.firstName} ${initialMember.name?.lastName}`,
         isPrimary: initialMember.isPrimary,
       });
     } catch (err: any) {
-      console.error('[FamilyContext] Error loading family data:', err);
+      logger.error('[FamilyContext] Error loading family data:', err);
       setError('Failed to load family data');
     } finally {
       setIsLoading(false);
@@ -144,20 +144,22 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   };
 
   const handleSetActiveMember = async (member: FamilyMember) => {
-    console.log('[FamilyContext] Switching active member to:', {
-      memberId: member._id,
-      memberName: `${member.name?.firstName} ${member.name?.lastName}`,
-    });
+    logger.debug('[FamilyContext] Switching active member');
+
+    // Log audit event for profile switch (PHI access)
+    if (activeMember && activeMember._id !== member._id) {
+      auditLogger.profileSwitch(activeMember._id, member._id);
+    }
 
     setActiveMember(member);
     setViewingUserId(member._id);
 
-    // Store in AsyncStorage for session persistence
+    // Store in secure storage for session persistence
     try {
       await storage.setItem(VIEWING_USER_KEY, member._id);
-      console.log('[FamilyContext] Stored viewingUserId:', member._id);
+      logger.debug('[FamilyContext] Stored viewingUserId');
     } catch (error) {
-      console.error('[FamilyContext] Failed to store viewingUserId:', error);
+      logger.error('[FamilyContext] Failed to store viewingUserId:', error);
     }
   };
 

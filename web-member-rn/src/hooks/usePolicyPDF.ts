@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Platform, Alert } from 'react-native';
+import { logger } from '../lib/utils/productionLogger';
+import { auditLogger } from '../lib/audit/auditLogger';
 // Note: pdfGenerator is imported dynamically only on web to avoid native crashes
 
 interface WalletCategory {
@@ -80,7 +82,7 @@ export function usePolicyPDF() {
       setIsGenerating(true);
       setError(null);
 
-      console.log('[PolicyPDF] Generating PDF with data:', { profileData, walletData });
+      logger.debug('[PolicyPDF] Generating PDF');
 
       // Extract user info
       const user = profileData.user;
@@ -182,10 +184,15 @@ export function usePolicyPDF() {
         copayDetails,
       });
 
-      console.log('[PolicyPDF] PDF generated successfully');
+      // Log audit event for policy document download
+      if (profileData.user?._id) {
+        auditLogger.download('POLICY', profileData.user._id, profileData.user._id);
+      }
+
+      logger.info('[PolicyPDF] PDF generated successfully');
 
     } catch (err: any) {
-      console.error('[PolicyPDF] Error generating PDF:', err);
+      logger.error('[PolicyPDF] Error generating PDF:', err);
       const errorMessage = err.message || 'Failed to generate PDF';
       setError(errorMessage);
 

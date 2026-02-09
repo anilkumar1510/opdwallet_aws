@@ -349,23 +349,25 @@ export default function LoginScreen() {
                   </Text>
                 </View>
 
-                {/* Demo Credentials */}
-                <View
-                  style={{
-                    marginTop: 24,
-                    padding: 16,
-                    borderRadius: 8,
-                    backgroundColor: 'rgba(30, 74, 141, 0.1)',
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#1E4A8D' }}>
-                    Demo Credentials:
-                  </Text>
-                  <Text style={{ fontSize: 14, marginTop: 4, color: '#2563A8' }}>
-                    Email: john.doe@company.com{'\n'}
-                    Password: Member@123
-                  </Text>
-                </View>
+                {/* Demo Credentials - Only shown in development */}
+                {__DEV__ && (
+                  <View
+                    style={{
+                      marginTop: 24,
+                      padding: 16,
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(30, 74, 141, 0.1)',
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: '#1E4A8D' }}>
+                      Demo Credentials (Dev Only):
+                    </Text>
+                    <Text style={{ fontSize: 14, marginTop: 4, color: '#2563A8' }}>
+                      Email: john.doe@company.com{'\n'}
+                      Password: Member@123
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -685,8 +687,8 @@ export default function LoginScreen() {
                 </View>
               )}
 
-              {/* Demo Credentials - hidden on mobile */}
-              {isTablet && (
+              {/* Demo Credentials - Only shown in development on tablet */}
+              {__DEV__ && isTablet && (
                 <View
                   style={{
                     marginTop: 24,
@@ -696,7 +698,7 @@ export default function LoginScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '500', color: '#1E4A8D' }}>
-                    Demo Credentials:
+                    Demo Credentials (Dev Only):
                   </Text>
                   <Text style={{ fontSize: 14, marginTop: 4, color: '#2563A8' }}>
                     Email: john.doe@company.com{'\n'}
