@@ -23,8 +23,8 @@ function AdminLayoutContent({
     if (pathname.startsWith('/policies') || pathname.startsWith('/admin/policies')) return 'Policies'
     if (pathname.startsWith('/categories') || pathname.startsWith('/admin/categories')) return 'Categories'
     if (pathname.startsWith('/services') || pathname.startsWith('/admin/services')) return 'Service Types'
-    if (pathname.startsWith('/lab') || pathname.startsWith('/admin/lab')) return 'Lab Diagnostics'
-    if (pathname.startsWith('/diagnostics') || pathname.startsWith('/admin/diagnostics')) return 'Diagnostics'
+    if (pathname.startsWith('/pathology') || pathname.startsWith('/admin/pathology')) return 'Pathology'
+    if (pathname.startsWith('/radiology') || pathname.startsWith('/admin/radiology')) return 'Radiology'
     if (pathname.startsWith('/cugs') || pathname.startsWith('/admin/cugs')) return 'CUG Management'
     if (pathname.startsWith('/ahc') || pathname.startsWith('/admin/ahc')) return 'AHC Master'
     if (pathname.startsWith('/masters') || pathname.startsWith('/admin/masters')) return 'Masters'
@@ -66,14 +66,14 @@ function AdminLayoutContent({
       current: pathname.startsWith('/services') || pathname.startsWith('/admin/services')
     },
     {
-      name: 'Lab',
-      path: '/lab',
-      current: pathname.startsWith('/lab') || pathname.startsWith('/admin/lab')
+      name: 'Pathology',
+      path: '/pathology',
+      current: pathname.startsWith('/pathology') || pathname.startsWith('/admin/pathology')
     },
     {
-      name: 'Diagnostics',
-      path: '/diagnostics',
-      current: pathname.startsWith('/diagnostics') || pathname.startsWith('/admin/diagnostics')
+      name: 'Radiology',
+      path: '/radiology',
+      current: pathname.startsWith('/radiology') || pathname.startsWith('/admin/radiology')
     },
     {
       name: 'CUGs',

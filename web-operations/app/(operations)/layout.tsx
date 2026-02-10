@@ -27,8 +27,8 @@ function OperationsLayoutContent({
     if (pathname.startsWith('/vision-services')) return 'Vision Services'
     if (pathname.startsWith('/prescriptions')) return 'Prescriptions'
     if (pathname.startsWith('/orders')) return 'Orders'
-    if (pathname.startsWith('/diagnostics')) return 'Diagnostics'
-    if (pathname.startsWith('/lab')) return 'Lab'
+    if (pathname.startsWith('/radiology')) return 'Radiology'
+    if (pathname.startsWith('/pathology')) return 'Pathology'
     return 'Operations'
   }
 
@@ -59,14 +59,14 @@ function OperationsLayoutContent({
       current: pathname.startsWith('/appointments')
     },
     {
-      name: 'Lab',
-      path: '/lab',
-      current: pathname.startsWith('/lab')
+      name: 'Pathology',
+      path: '/pathology',
+      current: pathname.startsWith('/pathology')
     },
     {
-      name: 'Diagnostics',
-      path: '/diagnostics',
-      current: pathname.startsWith('/diagnostics')
+      name: 'Radiology',
+      path: '/radiology',
+      current: pathname.startsWith('/radiology')
     },
     {
       name: 'Dental Services',
