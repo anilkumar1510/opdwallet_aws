@@ -22,7 +22,7 @@ export const PREDEFINED_CATEGORIES = [
   {
     categoryId: 'CAT003',
     code: 'DIAGNOSTIC',
-    name: 'Radiology/ Cardiology',
+    name: 'Radiology-Cardiology',
     description: 'Diagnostic imaging services including X-ray, MRI, CT scan, and ultrasound',
     displayOrder: 3,
     isActive: true,
@@ -32,7 +32,7 @@ export const PREDEFINED_CATEGORIES = [
   {
     categoryId: 'CAT004',
     code: 'LABORATORY',
-    name: 'Pathology (Lab)',
+    name: 'Pathology(Labs)',
     description: 'Clinical laboratory tests including blood tests, urine tests, and pathology',
     displayOrder: 4,
     isActive: true,

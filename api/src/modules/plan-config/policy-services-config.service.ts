@@ -15,8 +15,8 @@ export class PolicyServicesConfigService {
   private readonly LAB_CATEGORIES = ['CAT003', 'CAT004'];
   private readonly SERVICE_TYPE_CATEGORIES = ['CAT006', 'CAT007', 'CAT008'];
   private readonly LAB_SERVICE_CATEGORIES = {
-    CAT003: ['RADIOLOGY', 'ENDOSCOPY'], // Diagnostic
-    CAT004: ['PATHOLOGY', 'CARDIOLOGY', 'OTHER'], // Laboratory
+    CAT003: ['RADIOLOGY', 'CARDIOLOGY', 'ENDOSCOPY', 'OTHER'], // Diagnostic
+    CAT004: ['PATHOLOGY', 'OTHER'], // Laboratory
   };
 
   constructor(

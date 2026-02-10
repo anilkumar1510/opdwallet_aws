@@ -225,12 +225,12 @@ interface Service {
 // Category codes mapping:
 // CAT001: In-Clinic Consultation
 // CAT002: Pharmacy
-// CAT003: Radiology/ Cardiology
-// CAT004: Pathology (Lab)
+// CAT003: Radiology-Cardiology
+// CAT004: Pathology(Labs)
 // CAT005: Online Consultation
 // CAT006: Dental Services
 // CAT007: Vision Care
-// CAT008: Wellness Programs
+// CAT008: Health Packages
 
 const services: Service[] = [
   // Core Services
@@ -298,7 +298,7 @@ const services: Service[] = [
     categoryCode: 'CAT005',
   },
   {
-    name: 'Pathology (Lab)',
+    name: 'Pathology(Labs)',
     description: 'Book lab tests and view results',
     href: '/member/pathology-lab',
     icon: BeakerIcon,
@@ -306,7 +306,7 @@ const services: Service[] = [
     categoryCode: 'CAT004',
   },
   {
-    name: 'Radiology/ Cardiology',
+    name: 'Radiology-Cardiology',
     description: 'Book diagnostic tests and scans',
     href: '/member/radiology-cardiology',
     icon: ClipboardIcon,
