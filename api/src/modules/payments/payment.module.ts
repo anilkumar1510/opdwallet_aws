@@ -7,6 +7,7 @@ import { CounterModule } from '../counters/counter.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
 import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module';
 import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module';
+import { VaccinationModule } from '../vaccination/vaccination.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module'
     forwardRef(() => AppointmentsModule),
     forwardRef(() => DentalBookingsModule),
     forwardRef(() => VisionBookingsModule),
+    forwardRef(() => VaccinationModule),
   ],
   controllers: [PaymentController],
   providers: [PaymentService],

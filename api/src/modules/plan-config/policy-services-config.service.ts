@@ -8,12 +8,14 @@ import { CategorySpecialtyMapping, CategorySpecialtyMappingDocument } from '../m
 import { LabService } from '../lab/schemas/lab-service.schema';
 import { CategoryLabServiceMapping, CategoryLabServiceMappingDocument } from '../masters/schemas/category-lab-service-mapping.schema';
 import { ServiceMaster, ServiceMasterDocument } from '../masters/schemas/service-master.schema';
+import { VaccinationServiceService } from '../vaccination/services/vaccination-service.service';
 
 @Injectable()
 export class PolicyServicesConfigService {
   private readonly SPECIALTY_CATEGORIES = ['CAT001', 'CAT005'];
   private readonly LAB_CATEGORIES = ['CAT003', 'CAT004'];
   private readonly SERVICE_TYPE_CATEGORIES = ['CAT006', 'CAT007', 'CAT008'];
+  private readonly VACCINATION_CATEGORIES = ['CAT009'];
   private readonly LAB_SERVICE_CATEGORIES = {
     CAT003: ['RADIOLOGY', 'CARDIOLOGY', 'ENDOSCOPY', 'OTHER'], // Diagnostic
     CAT004: ['PATHOLOGY', 'OTHER'], // Laboratory
@@ -34,6 +36,7 @@ export class PolicyServicesConfigService {
     private categoryLabServiceMappingModel: Model<CategoryLabServiceMappingDocument>,
     @InjectModel(ServiceMaster.name)
     private serviceMasterModel: Model<ServiceMasterDocument>,
+    private vaccinationServiceService: VaccinationServiceService,
   ) {}
 
   /**
@@ -49,6 +52,8 @@ export class PolicyServicesConfigService {
       return this.getAvailableLabCategories(upperCategoryId);
     } else if (this.SERVICE_TYPE_CATEGORIES.includes(upperCategoryId)) {
       return this.getAvailableServiceTypes(upperCategoryId);
+    } else if (this.VACCINATION_CATEGORIES.includes(upperCategoryId)) {
+      return this.getAvailableVaccinationServices();
     } else {
       throw new BadRequestException(`Category ${categoryId} does not support service-level configuration`);
     }
@@ -176,6 +181,31 @@ export class PolicyServicesConfigService {
   }
 
   /**
+   * Get available vaccination services for CAT009
+   */
+  private async getAvailableVaccinationServices(): Promise<any[]> {
+    console.log(`[PolicyServicesConfigService] Getting vaccination services for CAT009`);
+
+    const services = await this.vaccinationServiceService.getAllServices();
+
+    const result = services
+      .filter((s) => s.isActive)
+      .map((s: any) => ({
+        _id: s._id.toString(),
+        serviceId: s.serviceId,
+        code: s.code,
+        name: s.name,
+        description: s.description,
+        vaccineType: s.vaccineType,
+        manufacturer: s.manufacturer,
+        dosesRequired: s.dosesRequired,
+      }));
+
+    console.log(`[PolicyServicesConfigService] Found ${result.length} vaccination services`);
+    return result;
+  }
+
+  /**
    * Update service configuration for a benefit (admin: save service selections)
    */
   async updateServiceConfiguration(
@@ -220,6 +250,10 @@ export class PolicyServicesConfigService {
       // Validate service codes exist
       const validatedCodes = await this.validateServiceCodes(serviceIds, upperCategoryId);
       (planConfig.benefits as any)[benefitKey].allowedServiceCodes = validatedCodes;
+    } else if (this.VACCINATION_CATEGORIES.includes(upperCategoryId)) {
+      // Validate vaccination service IDs exist
+      const validatedServiceIds = await this.validateVaccinationServiceIds(serviceIds);
+      (planConfig.benefits as any)[benefitKey].allowedVaccinationServiceIds = validatedServiceIds;
     } else {
       throw new BadRequestException(`Category ${categoryId} does not support service-level configuration`);
     }
@@ -326,6 +360,8 @@ export class PolicyServicesConfigService {
       return this.getMemberAllowedLabCategories(benefit, upperCategoryId);
     } else if (this.SERVICE_TYPE_CATEGORIES.includes(upperCategoryId)) {
       return this.getMemberAllowedServiceTypes(benefit, upperCategoryId);
+    } else if (this.VACCINATION_CATEGORIES.includes(upperCategoryId)) {
+      return this.getMemberAllowedVaccinationServices(benefit);
     }
 
     return [];
@@ -432,6 +468,40 @@ export class PolicyServicesConfigService {
   }
 
   /**
+   * Get member's allowed vaccination services
+   */
+  private async getMemberAllowedVaccinationServices(benefit: any): Promise<any[]> {
+    const allowedVaccinationServiceIds = benefit.allowedVaccinationServiceIds;
+
+    // If undefined or null, return all active vaccination services (unrestricted)
+    if (!allowedVaccinationServiceIds) {
+      return this.getAvailableVaccinationServices();
+    }
+
+    // If empty array, return no vaccination services (fully restricted)
+    if (Array.isArray(allowedVaccinationServiceIds) && allowedVaccinationServiceIds.length === 0) {
+      return [];
+    }
+
+    // Return only allowed vaccination services
+    const allServices = await this.vaccinationServiceService.getAllServices();
+    const allowedSet = new Set(allowedVaccinationServiceIds);
+
+    return allServices
+      .filter((s) => s.isActive && allowedSet.has(s.serviceId))
+      .map((s: any) => ({
+        _id: s._id.toString(),
+        serviceId: s.serviceId,
+        code: s.code,
+        name: s.name,
+        description: s.description,
+        vaccineType: s.vaccineType,
+        manufacturer: s.manufacturer,
+        dosesRequired: s.dosesRequired,
+      }));
+  }
+
+  /**
    * Validate service access for a member (before booking/claiming)
    */
   async validateServiceAccess(
@@ -450,6 +520,8 @@ export class PolicyServicesConfigService {
       return allowedServices.some((s) => s.category === serviceId);
     } else if (this.SERVICE_TYPE_CATEGORIES.includes(categoryId.toUpperCase())) {
       return allowedServices.some((s) => s.code === serviceId);
+    } else if (this.VACCINATION_CATEGORIES.includes(categoryId.toUpperCase())) {
+      return allowedServices.some((s) => s.serviceId === serviceId);
     }
 
     return false;
@@ -468,6 +540,7 @@ export class PolicyServicesConfigService {
       CAT006: 'CAT006',
       CAT007: 'CAT007',
       CAT008: 'CAT008',
+      CAT009: 'CAT009',
     };
 
     return (keyMap as any)[categoryId] || categoryId;
@@ -554,5 +627,33 @@ export class PolicyServicesConfigService {
     }
 
     return validatedCodes;
+  }
+
+  /**
+   * Validate vaccination service IDs exist and are active
+   */
+  private async validateVaccinationServiceIds(serviceIds: string[]): Promise<string[]> {
+    const validatedIds: string[] = [];
+
+    for (const serviceId of serviceIds) {
+      try {
+        const service = await this.vaccinationServiceService.getServiceById(serviceId);
+        if (!service.isActive) {
+          throw new BadRequestException(
+            `Vaccination service ${serviceId} is not active`
+          );
+        }
+        validatedIds.push(serviceId);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          throw new NotFoundException(
+            `Vaccination service with ID ${serviceId} not found`
+          );
+        }
+        throw error;
+      }
+    }
+
+    return validatedIds;
   }
 }

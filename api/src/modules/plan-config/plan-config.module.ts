@@ -7,11 +7,13 @@ import { CategorySpecialtyMapping, CategorySpecialtyMappingSchema } from '../mas
 import { LabService, LabServiceSchema } from '../lab/schemas/lab-service.schema';
 import { CategoryLabServiceMapping, CategoryLabServiceMappingSchema } from '../masters/schemas/category-lab-service-mapping.schema';
 import { ServiceMaster, ServiceMasterSchema } from '../masters/schemas/service-master.schema';
+import { VaccinationService, VaccinationServiceSchema } from '../vaccination/schemas/vaccination-service.schema';
 import { PlanConfigController } from './plan-config.controller';
 import { PlanConfigService } from './plan-config.service';
 import { PolicyServicesConfigController } from './policy-services-config.controller';
 import { MemberServicesController } from './member-services.controller';
 import { PolicyServicesConfigService } from './policy-services-config.service';
+import { VaccinationServiceService } from '../vaccination/services/vaccination-service.service';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { PolicyServicesConfigService } from './policy-services-config.service';
       { name: LabService.name, schema: LabServiceSchema },
       { name: CategoryLabServiceMapping.name, schema: CategoryLabServiceMappingSchema },
       { name: ServiceMaster.name, schema: ServiceMasterSchema },
+      { name: VaccinationService.name, schema: VaccinationServiceSchema },
     ]),
   ],
   controllers: [
@@ -33,6 +36,7 @@ import { PolicyServicesConfigService } from './policy-services-config.service';
   providers: [
     PlanConfigService,
     PolicyServicesConfigService,
+    VaccinationServiceService,
   ],
   exports: [
     PlanConfigService,

@@ -266,6 +266,55 @@ Cache TTLs are configurable via environment variables:
 
 ---
 
+## Vaccination Services
+
+| Path | Description |
+|------|-------------|
+| /member/vaccination | Vaccination services landing with service selection |
+| /member/vaccination/select-vendor | Search vendors by pincode or location, select vaccination vendor |
+| /member/vaccination/select-patient | Select family member for vaccination appointment |
+| /member/vaccination/select-slot | Select date and time slot for vaccination |
+| /member/vaccination/confirm | Review and confirm vaccination booking with payment |
+
+**Vaccination Booking Flow:**
+1. **Service Selection** (`/member/vaccination`)
+   - Browse available vaccination services
+   - View service descriptions and pricing
+   - Select vaccination service to book
+
+2. **Vendor Selection** (`/member/vaccination/select-vendor`)
+   - Enter pincode or use current location to search vendors
+   - List eligible vaccination vendors by location
+   - View vendor details (name, address, contact)
+   - Select vendor for appointment
+
+3. **Patient Selection** (`/member/vaccination/select-patient`)
+   - Select family member for vaccination
+   - View member details and eligibility
+   - Support for primary member and dependents
+
+4. **Slot Selection** (`/member/vaccination/select-slot`)
+   - Select appointment date from available dates
+   - Choose time slot from vendor's schedule
+   - View slot availability
+
+5. **Booking Confirmation** (`/member/vaccination/confirm`)
+   - Review booking summary (service, vendor, patient, date/time)
+   - Payment breakdown with wallet balance and copay
+   - PaymentProcessor integration for payment handling
+   - After payment success, booking created with PENDING_CONFIRMATION status
+
+**Key Features:**
+- Pincode-based vendor search (vendors not shown by default)
+- Location-based vendor filtering with "Use my location" option
+- Service-level pricing per vendor
+- Wallet category deduction (CAT009 - Vaccination)
+- Copay support for services requiring partial payment
+- Invoice generation on booking completion
+- Family member access control
+
+---
+
 ## Health & Wellness
 
 | Path | Description |
@@ -346,7 +395,7 @@ Cache TTLs are configurable via environment variables:
 
 | Path | Description |
 |------|-------------|
-| /member/bookings | Multi-tab view for doctors, lab, diagnostic, dental, vision, and AHC bookings (supports tab navigation via ?tab=ahc query parameter) |
+| /member/bookings | Multi-tab view for doctors, lab, diagnostic, dental, vision, vaccination, and AHC bookings (supports tab navigation via ?tab=vaccination query parameter) |
 | /member/bookings/new | Multi-step booking wizard |
 | /member/services | Directory of all available services |
 
@@ -356,8 +405,17 @@ Cache TTLs are configurable via environment variables:
 3. **Diagnostic** - Diagnostic test orders (separate from lab)
 4. **Dental** - Dental service bookings
 5. **Vision** - Vision care bookings
-6. **Pharmacy** - Medicine orders (coming soon)
-7. **AHC** - Annual Health Check orders with report downloads
+6. **Vaccination** - Vaccination service bookings
+7. **Pharmacy** - Medicine orders (coming soon)
+8. **AHC** - Annual Health Check orders with report downloads
+
+**Vaccination Tab Features:**
+- Display upcoming and past vaccination bookings
+- Status badges (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW)
+- View booking details (service name, vendor, date, time, pincode)
+- View invoice for completed bookings
+- Payment breakdown display
+- Support for family member bookings
 
 **AHC Tab Features:**
 - Display all AHC orders with status badges
@@ -379,9 +437,13 @@ Cache TTLs are configurable via environment variables:
 
 ---
 
-**Total Pages: 64**
+**Total Pages: 69**
 
 **Recent Updates:**
+- Added Vaccination booking flow with 5 pages (service selection, vendor search, patient selection, slot selection, confirmation)
+- Added Vaccination tab to bookings page
+- Pincode-based vendor search (vendors not shown by default until search)
+- Invoice generation for completed vaccination bookings
 - Added AHC (Annual Health Check) booking flow with 3 pages
 - Updated wellness page with AHC package display
 - Added AHC tab to bookings page

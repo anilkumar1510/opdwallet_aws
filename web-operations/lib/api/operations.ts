@@ -227,6 +227,105 @@ export const operationsApi = {
     console.log('[OperationsAPI] Booking marked no-show:', bookingId)
     return result
   },
+
+  // Vaccination Bookings Operations
+  getVaccinationBookings: async (params?: {
+    status?: string
+    vendorId?: string
+    serviceCode?: string
+    dateFrom?: string
+    dateTo?: string
+    searchTerm?: string
+    page?: number
+    limit?: number
+  }) => {
+    console.log('[OperationsAPI] getVaccinationBookings - Params:', params)
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.vendorId) searchParams.set('vendorId', params.vendorId)
+    if (params?.serviceCode) searchParams.set('serviceCode', params.serviceCode)
+    if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom)
+    if (params?.dateTo) searchParams.set('dateTo', params.dateTo)
+    if (params?.searchTerm) searchParams.set('searchTerm', params.searchTerm)
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+
+    const response = await apiFetch(`/api/admin/vaccination-bookings?${searchParams}`)
+    const result = await response.json()
+    console.log('[OperationsAPI] getVaccinationBookings - Results:', result.data?.length, 'bookings')
+    return result
+  },
+
+  confirmVaccinationBooking: async (bookingId: string) => {
+    console.log('[OperationsAPI] Confirming vaccination booking:', bookingId)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/${bookingId}/confirm`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking confirmed:', bookingId)
+    return result
+  },
+
+  cancelVaccinationBooking: async (bookingId: string, reason: string) => {
+    console.log('[OperationsAPI] Cancelling vaccination booking:', bookingId, 'Reason:', reason)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/${bookingId}/admin-cancel`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking cancelled:', bookingId)
+    return result
+  },
+
+  rescheduleVaccinationBooking: async (
+    bookingId: string,
+    data: { slotId: string; appointmentDate: string; appointmentTime: string; reason: string }
+  ) => {
+    console.log('[OperationsAPI] Rescheduling vaccination booking:', bookingId, data)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/${bookingId}/reschedule`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking rescheduled:', bookingId)
+    return result
+  },
+
+  markVaccinationBookingCompleted: async (bookingId: string) => {
+    console.log('[OperationsAPI] Marking vaccination booking completed:', bookingId)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/${bookingId}/complete`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking marked completed:', bookingId)
+    return result
+  },
+
+  markVaccinationBookingNoShow: async (bookingId: string) => {
+    console.log('[OperationsAPI] Marking vaccination booking no-show:', bookingId)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/${bookingId}/no-show`, {
+      method: 'PATCH',
+    })
+    const result = await response.json()
+    console.log('[OperationsAPI] Booking marked no-show:', bookingId)
+    return result
+  },
+
+  getVaccinationSlots: async (vendorId: string, pincode: string, date: string) => {
+    console.log('[OperationsAPI] Getting vaccination slots for vendor:', vendorId, 'pincode:', pincode, 'date:', date)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/slots?vendorId=${vendorId}&pincode=${pincode}&date=${date}`)
+    const result = await response.json()
+    console.log('[OperationsAPI] Slots fetched:', result.slots?.length || 0)
+    return result
+  },
+
+  downloadVaccinationInvoice: async (bookingId: string) => {
+    console.log('[OperationsAPI] Downloading vaccination invoice for booking:', bookingId)
+    const response = await apiFetch(`/api/admin/vaccination-bookings/${bookingId}/invoice`)
+    const result = await response.json()
+    console.log('[OperationsAPI] Invoice details fetched:', result)
+    return result
+  },
 }
 
 export default operationsApi

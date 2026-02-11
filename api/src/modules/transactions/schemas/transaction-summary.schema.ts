@@ -12,6 +12,7 @@ export enum TransactionServiceType {
   PHARMACY = 'PHARMACY',
   DENTAL = 'DENTAL',
   VISION = 'VISION',
+  VACCINATION = 'VACCINATION',
 }
 
 export enum TransactionStatus {

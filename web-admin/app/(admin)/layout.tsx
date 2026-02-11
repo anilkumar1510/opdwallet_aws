@@ -25,6 +25,7 @@ function AdminLayoutContent({
     if (pathname.startsWith('/services') || pathname.startsWith('/admin/services')) return 'Service Types'
     if (pathname.startsWith('/pathology') || pathname.startsWith('/admin/pathology')) return 'Pathology'
     if (pathname.startsWith('/radiology') || pathname.startsWith('/admin/radiology')) return 'Radiology'
+    if (pathname.startsWith('/vaccination') || pathname.startsWith('/admin/vaccination')) return 'Vaccination'
     if (pathname.startsWith('/cugs') || pathname.startsWith('/admin/cugs')) return 'CUG Management'
     if (pathname.startsWith('/ahc') || pathname.startsWith('/admin/ahc')) return 'AHC Master'
     if (pathname.startsWith('/masters') || pathname.startsWith('/admin/masters')) return 'Masters'
@@ -74,6 +75,11 @@ function AdminLayoutContent({
       name: 'Radiology',
       path: '/radiology',
       current: pathname.startsWith('/radiology') || pathname.startsWith('/admin/radiology')
+    },
+    {
+      name: 'Vaccination',
+      path: '/vaccination',
+      current: pathname.startsWith('/vaccination') || pathname.startsWith('/admin/vaccination')
     },
     {
       name: 'CUGs',

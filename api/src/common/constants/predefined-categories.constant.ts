@@ -79,4 +79,14 @@ export const PREDEFINED_CATEGORIES = [
     isAvailableOnline: true,
     isPredefined: true,
   },
+  {
+    categoryId: 'CAT009',
+    code: 'VACCINATION',
+    name: 'Vaccination',
+    description: 'Immunization services including preventive vaccines and boosters',
+    displayOrder: 9,
+    isActive: true,
+    isAvailableOnline: true,
+    isPredefined: true,
+  },
 ];

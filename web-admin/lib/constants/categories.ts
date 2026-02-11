@@ -64,6 +64,15 @@ export const PREDEFINED_CATEGORIES = [
     hasLabServices: false,
     hasServiceManagement: true,
   },
+  {
+    id: 'CAT009',
+    name: 'Vaccines',
+    fullName: 'Vaccination Services',
+    hasSpecialties: false,
+    hasLabServices: false,
+    hasServiceManagement: false,
+    hasVaccinationServices: true,
+  },
 ] as const;
 
 export type CategoryId = typeof PREDEFINED_CATEGORIES[number]['id'];

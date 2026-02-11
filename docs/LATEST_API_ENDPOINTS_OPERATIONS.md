@@ -403,6 +403,48 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
+## Operations - Vaccination Bookings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /admin/vaccination-bookings | List all vaccination bookings with filters (status, date range, search) |
+| GET | /admin/vaccination-bookings/slots | Get available slots for rescheduling (vendorId, pincode, date required) |
+| PATCH | /admin/vaccination-bookings/:bookingId/confirm | Confirm pending vaccination booking |
+| PATCH | /admin/vaccination-bookings/:bookingId/complete | Mark as completed and generate invoice |
+| PATCH | /admin/vaccination-bookings/:bookingId/no-show | Mark booking as no-show |
+| PATCH | /admin/vaccination-bookings/:bookingId/admin-cancel | Cancel booking with refund |
+| PATCH | /admin/vaccination-bookings/:bookingId/reschedule | Reschedule booking to new slot |
+| GET | /admin/vaccination-bookings/:bookingId/invoice | Download invoice PDF |
+
+**Query Parameters for GET /admin/vaccination-bookings:**
+- `status`: Filter by booking status (PENDING_CONFIRMATION, CONFIRMED, COMPLETED, CANCELLED, NO_SHOW)
+- `dateFrom`: Filter bookings from date (YYYY-MM-DD)
+- `dateTo`: Filter bookings to date (YYYY-MM-DD)
+- `searchTerm`: Search by patient name or booking ID
+- `page`: Page number (default: 1)
+- `limit`: Results per page (default: 20)
+
+**Reschedule Body:**
+```json
+{
+  "slotId": "unique-slot-id-with-time",
+  "appointmentDate": "YYYY-MM-DD",
+  "appointmentTime": "HH:mm",
+  "reason": "Reason for rescheduling"
+}
+```
+
+**Notes:**
+- All endpoints require authentication (JWT token via cookie)
+- Access restricted to SUPER_ADMIN, ADMIN, OPS_ADMIN, and OPS_USER roles
+- Booking status workflow: PENDING_CONFIRMATION → CONFIRMED → COMPLETED/CANCELLED/NO_SHOW
+- Admin cancellation automatically processes wallet refund
+- Completing booking automatically generates PDF invoice
+- Invoice shows vendor name and pincode (no full address)
+- Category: CAT009 (Vaccination)
+
+---
+
 ## Health Check
 
 | Method | Endpoint | Description |
@@ -411,7 +453,7 @@ This document lists all API endpoints used by the Operations Portal (web-operati
 
 ---
 
-**Total Endpoints: ~115**
+**Total Endpoints: ~123**
 
 **Access Control:**
 - Login page validates OPS role only

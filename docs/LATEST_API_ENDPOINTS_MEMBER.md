@@ -684,6 +684,64 @@ OR → CANCELLED (can cancel before collection)
 
 ---
 
+## Vaccination Bookings (Member)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /member/vaccination/services | Get vaccination services assigned to member based on policy (CAT009) |
+| GET | /member/vaccination/vendors | Get vendors offering specific service (?serviceId, ?pincode optional) |
+| GET | /member/vaccination/vendors/:vendorId/slots | Get available slots (?pincode, ?date optional - returns upcoming if no date) |
+| POST | /member/vaccination/bookings/validate | Pre-validate booking and return payment breakdown |
+| POST | /member/vaccination/bookings | Create vaccination booking with payment processing |
+| GET | /member/vaccination/bookings | Get all vaccination bookings for user (supports ?userId for family access) |
+| GET | /member/vaccination/bookings/:bookingId | Get single vaccination booking details |
+| POST | /member/vaccination/bookings/:bookingId/cancel | Cancel booking and process refund |
+| GET | /member/vaccination/bookings/:bookingId/invoice | Download invoice PDF for completed booking |
+
+**Family Access Control:**
+- Primary members can view their own and their dependents' vaccination bookings
+- Dependents can only view their own vaccination bookings
+- Access verified through `FamilyAccessHelper.verifyFamilyAccess()`
+
+**Vaccination Booking Flow:**
+1. Get assigned vaccination services from policy (CAT009 category)
+2. Enter pincode or use location to find vendors
+3. Select vendor and view available slots
+4. Select patient (self or family member)
+5. Select date and time slot
+6. Validate booking to get payment breakdown
+7. Confirm booking with payment processing
+8. View bookings in member portal under "Vaccination" tab
+9. Download invoice after booking completion
+
+**Payment Scenarios:**
+- **Wallet Only**: Sufficient balance, no copay → Debit wallet immediately, status: PENDING_CONFIRMATION
+- **Wallet + Copay**: Sufficient balance, copay required → Debit wallet for insurance portion, create payment request for copay
+- **Insufficient Balance**: Create payment request for shortfall + copay
+
+**Validate Booking Request:**
+```json
+{
+  "patientId": "member-or-family-member-id",
+  "vendorId": "VVEN-xxx",
+  "serviceId": "service-object-id",
+  "slotId": "unique-slot-id-with-time",
+  "price": 500,
+  "appointmentDate": "2025-12-20"
+}
+```
+
+**Notes:**
+- Vaccination services availability depends on member's policy coverage (CAT009)
+- Payment calculation includes copay based on relationship and service transaction limits
+- Wallet deductions tracked with categoryCode: 'CAT009'
+- Bookings require available slot capacity (prevents double booking)
+- Cancellation processes refund to wallet
+- Invoice generated automatically when booking is completed by operations
+- Pincode is optional - vendors can serve multiple pincodes
+
+---
+
 ## Audit Logging (HIPAA Compliance)
 
 | Method | Endpoint | Description |

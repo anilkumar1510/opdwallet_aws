@@ -276,6 +276,7 @@ export class NotificationsService {
       'DENTAL': 'Dental',
       'VISION': 'Vision',
       'AHC': 'Annual Health Check',
+      'VACCINATION': 'Vaccination',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({
@@ -303,6 +304,7 @@ export class NotificationsService {
       'DENTAL': 'Dental',
       'VISION': 'Vision',
       'AHC': 'Annual Health Check',
+      'VACCINATION': 'Vaccination',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({
@@ -330,6 +332,7 @@ export class NotificationsService {
       'DENTAL': 'Dental',
       'VISION': 'Vision',
       'AHC': 'Annual Health Check',
+      'VACCINATION': 'Vaccination',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({
@@ -358,6 +361,7 @@ export class NotificationsService {
       'DENTAL': 'Dental',
       'VISION': 'Vision',
       'AHC': 'Annual Health Check',
+      'VACCINATION': 'Vaccination',
     };
     const label = typeLabels[appointmentType] || appointmentType;
     return this.createNotification({

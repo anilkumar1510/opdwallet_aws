@@ -160,7 +160,66 @@ This document lists all frontend pages/routes in the Operations Portal (web-oper
 
 ---
 
-**Total Pages: 18**
+## Vaccination Administration
+
+| Path | Description |
+|------|-------------|
+| /operations/vaccination | Vaccination dashboard with service and vendor statistics |
+| /operations/vaccination/services | Manage vaccination services catalog |
+| /operations/vaccination/vendors | Manage vaccination vendor partners |
+| /operations/vaccination/vendors/[vendorId]/pricing | Manage vendor-specific vaccination service pricing |
+| /operations/vaccination/vendors/[vendorId]/slots | Manage booking slots for vaccination vendor |
+| /operations/vaccination/master-tests | Manage master vaccine catalog for standardization |
+
+**Features:**
+- Service management with activate/deactivate functionality
+- Vendor management with contact information
+- Pricing configuration per vendor per service
+- Slot schedule management with day-of-week configuration
+- Master vaccine catalog for standardized vaccine names
+
+---
+
+## Vaccination Bookings (Operations Tab)
+
+Vaccination bookings are managed in the Appointments page under a dedicated "Vaccination" tab.
+
+| Path | Description |
+|------|-------------|
+| /operations/appointments?tab=vaccination | Vaccination bookings tab with booking management |
+
+**Features:**
+- List all vaccination bookings with filters (status, date range, search)
+- Confirm pending bookings
+- Mark bookings as completed (generates invoice)
+- Mark bookings as no-show
+- Cancel bookings with reason (processes refund)
+- Reschedule bookings to new slot/date
+- View/download invoice for completed bookings
+- Payment breakdown display (expandable per booking)
+
+**Booking Status Workflow:**
+```
+PENDING_CONFIRMATION (created by member)
+  ↓ (ops confirms)
+CONFIRMED
+  ↓ (vaccination administered)
+COMPLETED (invoice generated)
+
+OR cancellation:
+PENDING_CONFIRMATION/CONFIRMED → CANCELLED (refund processed)
+
+OR no show:
+CONFIRMED → NO_SHOW
+```
+
+**Components:**
+- `VaccinationBookingsTab` - Main tab component with booking list and actions
+- `VaccinationRescheduleModal` - Modal for rescheduling bookings with slot selection
+
+---
+
+**Total Pages: 24**
 
 **Key Features:**
 - Independent authentication with `/operations` cookie path

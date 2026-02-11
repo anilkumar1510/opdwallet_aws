@@ -29,6 +29,7 @@ function OperationsLayoutContent({
     if (pathname.startsWith('/orders')) return 'Orders'
     if (pathname.startsWith('/radiology')) return 'Radiology'
     if (pathname.startsWith('/pathology')) return 'Pathology'
+    if (pathname.startsWith('/vaccination')) return 'Vaccination'
     return 'Operations'
   }
 
@@ -67,6 +68,11 @@ function OperationsLayoutContent({
       name: 'Radiology',
       path: '/radiology',
       current: pathname.startsWith('/radiology')
+    },
+    {
+      name: 'Vaccination',
+      path: '/vaccination',
+      current: pathname.startsWith('/vaccination')
     },
     {
       name: 'Dental Services',

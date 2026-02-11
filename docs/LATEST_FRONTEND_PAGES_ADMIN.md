@@ -141,7 +141,27 @@ This document lists all frontend pages/routes in the Admin Portal (web-admin) fo
 
 ---
 
-**Total Pages: 34**
+## Vaccination Administration
+
+| Path | Description |
+|------|-------------|
+| /admin/vaccination | Vaccination dashboard with service and vendor statistics |
+| /admin/vaccination/services | Manage vaccination services catalog |
+| /admin/vaccination/vendors | Manage vaccination vendor partners |
+| /admin/vaccination/vendors/[vendorId]/pricing | Manage vendor-specific vaccination service pricing |
+| /admin/vaccination/vendors/[vendorId]/slots | Manage booking slots for vaccination vendor |
+| /admin/vaccination/master-tests | Manage master vaccine catalog for standardization |
+
+**Features:**
+- Service management with activate/deactivate functionality
+- Vendor management with contact information
+- Pricing configuration per vendor per service
+- Slot schedule management with day-of-week configuration
+- Master vaccine catalog for standardized vaccine names
+
+---
+
+**Total Pages: 40**
 
 **Key Features:**
 - Core administrative functions: users, policies, masters

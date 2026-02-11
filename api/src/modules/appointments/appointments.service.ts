@@ -23,7 +23,9 @@ export class AppointmentsService {
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
     private readonly counterService: CounterService,
     private readonly walletService: WalletService,
+    @Inject(forwardRef(() => PlanConfigService))
     private readonly planConfigService: PlanConfigService,
+    @Inject(forwardRef(() => PaymentService))
     private readonly paymentService: PaymentService,
     private readonly transactionService: TransactionSummaryService,
     @Inject(forwardRef(() => AssignmentsService))

@@ -5,6 +5,7 @@ import { PREDEFINED_CATEGORIES } from '@/lib/constants/categories'
 import { SpecialtyMappingTab } from './components/SpecialtyMappingTab'
 import { LabServiceMappingTab } from './components/LabServiceMappingTab'
 import { ServiceManagementTab } from './components/ServiceManagementTab'
+import { VaccinationServiceTab } from './components/VaccinationServiceTab'
 import { EmptyStateTab } from './components/EmptyStateTab'
 
 export default function ServicesPage() {
@@ -20,7 +21,7 @@ export default function ServicesPage() {
 
       {/* Category Tabs */}
       <Tabs defaultValue="CAT001" className="w-full">
-        <TabsList className="grid w-full grid-cols-8 bg-white border border-gray-200">
+        <TabsList className="grid w-full grid-cols-9 bg-white border border-gray-200">
           {PREDEFINED_CATEGORIES.map((cat) => (
             <TabsTrigger
               key={cat.id}
@@ -47,6 +48,11 @@ export default function ServicesPage() {
               />
             ) : 'hasServiceManagement' in cat && cat.hasServiceManagement ? (
               <ServiceManagementTab
+                categoryId={cat.id}
+                categoryName={cat.fullName}
+              />
+            ) : 'hasVaccinationServices' in cat && cat.hasVaccinationServices ? (
+              <VaccinationServiceTab
                 categoryId={cat.id}
                 categoryName={cat.fullName}
               />

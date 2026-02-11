@@ -155,7 +155,7 @@ function WarningIcon({ size = 24 }: { size?: number }) {
 // TYPES
 // ============================================================================
 
-type ServiceType = 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC' | 'APPOINTMENT' | 'IN_CLINIC_APPOINTMENT' | 'ONLINE_CONSULTATION';
+type ServiceType = 'DENTAL' | 'VISION' | 'LAB' | 'DIAGNOSTIC' | 'AHC' | 'APPOINTMENT' | 'IN_CLINIC_APPOINTMENT' | 'ONLINE_CONSULTATION' | 'VACCINATION';
 type PaymentMethod = 'WALLET_ONLY' | 'COPAY' | 'OUT_OF_POCKET' | 'FULL_PAYMENT';
 type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
@@ -195,6 +195,7 @@ interface PendingBookingData {
     clinicAddress?: string;
     serviceCode?: string;
     serviceName?: string;
+    serviceId?: string;
     slotId: string;
     date: string;
     time: string;
@@ -221,6 +222,11 @@ interface PendingBookingData {
     diagnosticSlotId?: string;
     diagnosticDate?: string;
     diagnosticTime?: string;
+    // Vaccination-specific fields
+    vaccineType?: string;
+    manufacturer?: string;
+    dosesRequired?: number;
+    pincode?: string;
   };
   patientId: string;
   patientName: string;
@@ -626,6 +632,53 @@ export default function PaymentGatewayPage() {
         createdBookingId = appointmentResponse.data?.appointmentId || appointmentResponse.data?._id || '';
         console.log('[PaymentGateway] Online consultation appointment created:', createdBookingId);
       }
+      // Handle VACCINATION bookings
+      else if (bookingData.serviceType === 'VACCINATION') {
+        console.log('[PaymentGateway] Creating VACCINATION booking...');
+        console.log('[PaymentGateway] Booking data serviceDetails:', bookingData.serviceDetails);
+
+        // Get pincode - optional, filter out invalid values like "undefined"
+        let pincode = bookingData.serviceDetails.pincode || (bookingData as any).pincode || '';
+        if (pincode === 'undefined' || pincode === 'null') {
+          pincode = '';
+        }
+
+        const vaccinationBookingPayload: Record<string, any> = {
+          patientId: bookingData.patientId,
+          vendorId: bookingData.serviceDetails.vendorId,
+          serviceId: bookingData.serviceDetails.serviceId,
+          serviceCode: bookingData.serviceDetails.serviceCode,
+          serviceName: bookingData.serviceDetails.serviceName,
+          slotId: bookingData.serviceDetails.slotId,
+          appointmentDate: bookingData.serviceDetails.date,
+          appointmentTime: bookingData.serviceDetails.time,
+          price: bookingData.consultationFee,
+          paymentAlreadyProcessed: true,
+          paymentId: bookingData.paymentId,
+        };
+
+        // Only add pincode if it's a valid value
+        if (pincode && pincode.trim().length > 0) {
+          vaccinationBookingPayload.pincode = pincode.trim();
+        }
+
+        // Only add optional fields if they exist
+        if (bookingData.serviceDetails.vaccineType) {
+          vaccinationBookingPayload.vaccineType = bookingData.serviceDetails.vaccineType;
+        }
+        if (bookingData.serviceDetails.manufacturer) {
+          vaccinationBookingPayload.manufacturer = bookingData.serviceDetails.manufacturer;
+        }
+        if (bookingData.serviceDetails.dosesRequired) {
+          vaccinationBookingPayload.dosesRequired = bookingData.serviceDetails.dosesRequired;
+        }
+
+        console.log('[PaymentGateway] Vaccination booking payload:', vaccinationBookingPayload);
+
+        const bookingResponse = await apiClient.post('/member/vaccination/bookings', vaccinationBookingPayload);
+        createdBookingId = bookingResponse.data?.bookingId || bookingResponse.data?._id || '';
+        console.log('[PaymentGateway] Vaccination booking created:', createdBookingId);
+      }
       else {
         console.warn('[PaymentGateway] Service type not yet supported for booking creation:', bookingData.serviceType);
       }
@@ -682,6 +735,7 @@ export default function PaymentGatewayPage() {
             APPOINTMENT: 'doctors',
             IN_CLINIC_APPOINTMENT: 'doctors',
             ONLINE_CONSULTATION: 'doctors',
+            VACCINATION: 'vaccination',
           };
           const tab = tabMap[bookingData.serviceType] || 'dental';
           router.replace(`/member/bookings?tab=${tab}` as any);

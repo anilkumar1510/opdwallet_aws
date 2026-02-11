@@ -391,6 +391,60 @@ docker logs opd-api-dev -f | grep "CACHE DELETE"
 
 ---
 
+## Vaccination Administration
+
+### Vaccination Services
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/vaccination/services | Create vaccination service |
+| GET | /admin/vaccination/services | Get all vaccination services (supports ?search) |
+| GET | /admin/vaccination/services/:id | Get vaccination service by ID |
+| PATCH | /admin/vaccination/services/:id | Update vaccination service |
+| DELETE | /admin/vaccination/services/:id | Deactivate vaccination service |
+| PATCH | /admin/vaccination/services/:id/activate | Activate vaccination service |
+| PATCH | /admin/vaccination/services/:id/deactivate | Deactivate vaccination service |
+
+### Vaccination Vendors
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/vaccination/vendors | Create vaccination vendor |
+| GET | /admin/vaccination/vendors | Get all vaccination vendors |
+| GET | /admin/vaccination/vendors/:id | Get vaccination vendor by ID |
+| PATCH | /admin/vaccination/vendors/:id | Update vaccination vendor |
+
+### Vaccination Vendor Pricing
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/vaccination/vendors/:vendorId/pricing | Create vendor pricing for service |
+| GET | /admin/vaccination/vendors/:vendorId/pricing | Get all pricing for vendor |
+| PATCH | /admin/vaccination/vendors/:vendorId/pricing/:serviceId | Update vendor pricing |
+
+### Vaccination Vendor Slots
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/vaccination/vendors/:vendorId/slots | Create slot schedule for vendor |
+| GET | /admin/vaccination/vendors/:vendorId/slots | Get all slot schedules for vendor |
+| PATCH | /admin/vaccination/vendors/:vendorId/slots/:slotId/activate | Activate slot schedule |
+| PATCH | /admin/vaccination/vendors/:vendorId/slots/:slotId/deactivate | Deactivate slot schedule |
+| DELETE | /admin/vaccination/vendors/:vendorId/slots/:slotId | Delete slot schedule |
+
+### Vaccination Master Vaccines
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /admin/vaccination/master-tests | Create master vaccine entry |
+| GET | /admin/vaccination/master-tests | Get all master vaccines (supports ?search) |
+| GET | /admin/vaccination/master-tests/search | Search master vaccines (?q) |
+| GET | /admin/vaccination/master-tests/:id | Get master vaccine by ID |
+| PATCH | /admin/vaccination/master-tests/:id | Update master vaccine |
+| DELETE | /admin/vaccination/master-tests/:id | Deactivate master vaccine |
+
+---
+
 ## Payments
 
 | Method | Endpoint | Description |

@@ -28,6 +28,7 @@ export enum ServiceType {
   PHARMACY = 'PHARMACY',
   DENTAL = 'DENTAL',
   VISION = 'VISION',
+  VACCINATION = 'VACCINATION',
   WALLET_TOPUP = 'WALLET_TOPUP',
 }
 

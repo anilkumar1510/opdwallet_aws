@@ -39,6 +39,7 @@ import { PaymentModule } from './modules/payments/payment.module';
 import { TransactionSummaryModule } from './modules/transactions/transaction-summary.module';
 import { AhcModule } from './modules/ahc/ahc.module';
 import { DoctorClinicAssignmentsModule } from './modules/doctor-clinic-assignments/doctor-clinic-assignments.module';
+import { VaccinationModule } from './modules/vaccination/vaccination.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -134,6 +135,7 @@ import configuration from './config/configuration';
     TransactionSummaryModule,
     AhcModule,
     DoctorClinicAssignmentsModule,
+    VaccinationModule,
   ],
 })
 export class AppModule {}

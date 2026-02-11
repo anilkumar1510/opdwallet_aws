@@ -9,6 +9,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { SpecialtySelector } from './SpecialtySelector';
 import { LabCategorySelector } from './LabCategorySelector';
 import { ServiceTypeSelector } from './ServiceTypeSelector';
+import { VaccinationServiceSelector } from './VaccinationServiceSelector';
 import { ServiceTransactionLimitsEditor } from './ServiceTransactionLimitsEditor';
 import { AhcPackageSelector } from './AhcPackageSelector';
 
@@ -104,10 +105,11 @@ export function BenefitsConfigTab({
     return enabledServices[categoryId]?.has('AHC') || false;
   };
 
-  const getCategoryType = (categoryId: string): 'specialty' | 'lab' | 'service' | 'none' => {
+  const getCategoryType = (categoryId: string): 'specialty' | 'lab' | 'service' | 'vaccination' | 'none' => {
     if (categoryId === 'CAT001' || categoryId === 'CAT005') return 'specialty';
     if (categoryId === 'CAT003' || categoryId === 'CAT004') return 'lab';
     if (categoryId === 'CAT006' || categoryId === 'CAT007' || categoryId === 'CAT008') return 'service';
+    if (categoryId === 'CAT009') return 'vaccination';
     return 'none';
   };
 
@@ -125,6 +127,8 @@ export function BenefitsConfigTab({
       if (categoryId === 'CAT008' && benefit?.ahcPackageId) {
         count += 1;
       }
+    } else if (type === 'vaccination') {
+      count = benefit?.allowedVaccinationServiceIds?.length || 0;
     }
 
     return count;
@@ -138,6 +142,8 @@ export function BenefitsConfigTab({
       onUpdateBenefit(categoryId, 'allowedLabServiceCategories', selection);
     } else if (type === 'service') {
       onUpdateBenefit(categoryId, 'allowedServiceCodes', selection);
+    } else if (type === 'vaccination') {
+      onUpdateBenefit(categoryId, 'allowedVaccinationServiceIds', selection);
     }
   };
 
@@ -149,6 +155,8 @@ export function BenefitsConfigTab({
       return benefit?.allowedLabServiceCategories || [];
     } else if (type === 'service') {
       return benefit?.allowedServiceCodes || [];
+    } else if (type === 'vaccination') {
+      return benefit?.allowedVaccinationServiceIds || [];
     }
     return [];
   };
@@ -239,6 +247,19 @@ export function BenefitsConfigTab({
           version={version}
           selectedServiceCodes={benefit?.allowedServiceCodes || []}
           onSelectionChange={(codes) => handleServiceSelectionChange(categoryId, codes)}
+          disabled={isDisabled || !benefit?.enabled}
+          isNew={isNew}
+        />
+      );
+    } else if (type === 'vaccination') {
+      return (
+        <VaccinationServiceSelector
+          categoryId={categoryId}
+          categoryName={categoryName}
+          policyId={policyId}
+          version={version}
+          selectedServiceIds={benefit?.allowedVaccinationServiceIds || []}
+          onSelectionChange={(ids) => handleServiceSelectionChange(categoryId, ids)}
           disabled={isDisabled || !benefit?.enabled}
           isNew={isNew}
         />
@@ -419,7 +440,7 @@ export function BenefitsConfigTab({
                             {/* Service Transaction Limits Editor */}
                             <ServiceTransactionLimitsEditor
                               categoryId={category.categoryId}
-                              categoryType={getCategoryType(category.categoryId)}
+                              categoryType={categoryType as 'specialty' | 'lab' | 'service' | 'vaccination'}
                               selectedServiceIds={getSelectedServiceIds(category.categoryId, benefit)}
                               currentLimits={benefit?.serviceTransactionLimits || {}}
                               onLimitsChange={(limits) =>

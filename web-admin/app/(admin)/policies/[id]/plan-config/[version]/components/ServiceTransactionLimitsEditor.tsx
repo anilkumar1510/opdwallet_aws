@@ -20,7 +20,7 @@ interface Service {
 
 interface ServiceTransactionLimitsEditorProps {
   categoryId: string;
-  categoryType: 'specialty' | 'lab' | 'service';
+  categoryType: 'specialty' | 'lab' | 'service' | 'vaccination';
   selectedServiceIds: string[];
   currentLimits: { [serviceId: string]: number };
   onLimitsChange: (limits: { [serviceId: string]: number }) => void;
@@ -64,11 +64,12 @@ export function ServiceTransactionLimitsEditor({
       if (response.ok) {
         const data = await response.json();
         // Filter to only show selected services
-        // Handle IDs (for specialties), codes (for service types), and categories (for lab services)
+        // Handle IDs (for specialties), codes (for service types), categories (for lab services), and serviceId (for vaccination)
         const filtered = data.filter((service: Service) =>
           selectedServiceIds.includes(service._id) ||
           selectedServiceIds.includes(service.code) ||
-          (service.category && selectedServiceIds.includes(service.category))
+          (service.category && selectedServiceIds.includes(service.category)) ||
+          (service.serviceId && selectedServiceIds.includes(service.serviceId))
         );
 
         // EXCLUDE 'AHC' from transaction limits - it's a special service type
@@ -89,9 +90,10 @@ export function ServiceTransactionLimitsEditor({
   };
 
   const getServiceKey = (service: Service): string => {
-    // For service type categories, use code; for lab categories, use category; for specialties, use _id
+    // For service type categories, use code; for lab categories, use category; for vaccination, use serviceId; for specialties, use _id
     if (categoryType === 'service') return service.code;
     if (categoryType === 'lab') return service.category || service._id;
+    if (categoryType === 'vaccination') return service.serviceId || service._id;
     return service._id;
   };
 
