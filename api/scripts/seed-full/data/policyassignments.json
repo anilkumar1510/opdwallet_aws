@@ -1,0 +1,1 @@
+[{"_id":{"$oid":"695cd65e9260df71346c7d31"},"userId":{"$oid":"693d752d8990f4b120255eef"},"policyId":{"$oid":"693d752d8990f4b120255eec"},"status":"ACTIVE","effectiveFrom":{"$date":"2025-01-01T00:00:00Z"},"effectiveTo":{"$date":"2025-12-31T00:00:00Z"},"isFloater":false,"createdAt":{"$date":"2026-01-06T09:31:10.287Z"},"updatedAt":{"$date":"2026-01-06T09:31:10.287Z"}}]

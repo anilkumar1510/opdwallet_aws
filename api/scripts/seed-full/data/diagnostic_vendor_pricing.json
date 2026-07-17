@@ -1,0 +1,1 @@
+[{"_id":{"$oid":"6979a39caef224daaa1f44dc"},"vendorId":{"$oid":"6979a368aef224daaa1f44a4"},"serviceId":{"$oid":"6979a37aaef224daaa1f44ae"},"actualPrice":1000,"discountedPrice":800,"homeCollectionCharges":0,"isActive":true,"createdAt":{"$date":"2026-01-28T05:50:20.282Z"},"updatedAt":{"$date":"2026-01-28T05:50:20.282Z"},"__v":0}]

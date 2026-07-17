@@ -6,7 +6,8 @@ This directory contains all database-related scripts for the OPD Wallet applicat
 
 ```
 scripts/
-├── seed-all-collections.ts    # PRIMARY comprehensive seeder
+├── seed-all-collections.ts    # PRIMARY comprehensive seeder (generated master + test data)
+├── seed-full/                  # FULL DB snapshot seeder (exact copy of a real database)
 ├── seed/                       # Individual seed scripts
 ├── utilities/                  # Utility scripts
 ├── init/                       # Initialization scripts
@@ -26,6 +27,18 @@ npm run seed:all
 - **Use Case:** Fresh database setup, complete data reset
 - **Collections:** Counters, categories, relationships, CUG, services, specialties, medicines, symptoms, diagnoses, lab tests, clinics, doctors, users, policies, plan configs
 - **Features:** Tier-based seeding (Tier 0-3), comprehensive master data, test users
+
+**Full DB Snapshot Seeder (exact reproduction):**
+```bash
+npm run seed:full
+```
+- **Folder:** `seed-full/` (`seed-full.js` + `data/*.json`)
+- **Purpose:** Restores an EXACT snapshot of a real `opd_wallet` database — all portals'
+  data (2238 docs / 74 collections), including the member `shivam@gmail.com`
+- **Use Case:** Reproduce the current database state on another machine/environment
+- **vs `seed:all`:** `seed:all` generates fresh sample data; `seed:full` restores a
+  captured copy of actual data with original ObjectIds/dates preserved
+- **Docs:** see `seed-full/README.md` (flags, refreshing the snapshot)
 
 **Individual Seeders (Optional):**
 ```bash

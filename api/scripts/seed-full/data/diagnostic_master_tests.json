@@ -1,0 +1,1 @@
+[{"_id":{"$oid":"6979a38caef224daaa1f44ce"},"parameterId":"DIAG-MPARAM-1769579404575-6KPOSUJHS","code":"CT SCAN","standardName":"CT Scan","category":"RADIOLOGY","synonyms":["CTS"],"isActive":true,"displayOrder":0,"createdAt":{"$date":"2026-01-28T05:50:04.577Z"},"updatedAt":{"$date":"2026-01-28T05:50:04.577Z"},"__v":0}]

@@ -1,0 +1,1 @@
+[{"_id":{"$oid":"69b8e1105ba6e900c12de247"},"parameterId":"VPARAM-1773723920846-WTMZR4CG7","code":"SER09","standardName":"HPV","category":"VACCINATION","synonyms":["HPV01","HPV90"],"isActive":true,"displayOrder":0,"createdAt":{"$date":"2026-03-17T05:05:20.848Z"},"updatedAt":{"$date":"2026-03-30T05:14:56.928Z"},"__v":1}]

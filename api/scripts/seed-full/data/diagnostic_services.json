@@ -1,0 +1,1 @@
+[{"_id":{"$oid":"6979a37aaef224daaa1f44ae"},"serviceId":"DIAG-SVC-1769579386416-1O3NKBILR","code":"CT SCAN","name":"CT Scan","category":"RADIOLOGY","bodyPart":"Chest","requiresContrast":false,"isActive":true,"displayOrder":0,"createdAt":{"$date":"2026-01-28T05:49:46.422Z"},"updatedAt":{"$date":"2026-01-28T05:49:46.422Z"},"__v":0}]

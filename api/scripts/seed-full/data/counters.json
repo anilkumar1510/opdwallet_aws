@@ -1,0 +1,1 @@
+[{"_id":"user","seq":36,"__v":0},{"_id":"policy","seq":8,"__v":0},{"_id":"doctor","__v":0,"seq":7},{"_id":"clinic","__v":0,"seq":8},{"_id":"transaction","__v":0,"seq":182},{"_id":"doctor-slot","__v":0,"seq":50},{"_id":"payment","__v":0,"seq":143},{"_id":"appointment","__v":0,"seq":45},{"_id":"doctor-clinic-assignment","__v":0,"seq":18},{"_id":"consultation-note","__v":0,"seq":2}]
