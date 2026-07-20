@@ -72,11 +72,20 @@ export default function PolicyAssignmentsPage() {
     try {
       const response = await apiFetch(`/api/policies/${params.id}/config`)
       if (response.ok) {
-        const data = await response.json()
-        console.log('🟢 [PLAN CONFIG] Fetched successfully:', data)
-        console.log('🟢 [PLAN CONFIG] coveredRelationships:', data.coveredRelationships)
-        setPlanConfig(data)
-        setCoveredRelationships(data.coveredRelationships || [])
+        // The API returns an empty body (null) when the policy has no plan
+        // config yet, so guard against parsing an empty response as JSON.
+        const text = await response.text()
+        const data = text ? JSON.parse(text) : null
+        if (data) {
+          console.log('🟢 [PLAN CONFIG] Fetched successfully:', data)
+          console.log('🟢 [PLAN CONFIG] coveredRelationships:', data.coveredRelationships)
+          setPlanConfig(data)
+          setCoveredRelationships(data.coveredRelationships || [])
+        } else {
+          console.log('ℹ️ [PLAN CONFIG] No plan configuration for this policy yet')
+          setPlanConfig(null)
+          setCoveredRelationships([])
+        }
       } else {
         console.error('❌ [PLAN CONFIG] Failed to fetch:', response.status, response.statusText)
       }

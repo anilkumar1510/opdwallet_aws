@@ -233,8 +233,18 @@ export class PolicyServicesConfigService {
     // Get the benefit key (CAT001, CAT002, etc. or dental, vision, wellness)
     const benefitKey = this.getBenefitKey(upperCategoryId);
 
+    // The admin enables a benefit in the editor (local state) but that toggle is
+    // only persisted when the whole config is saved. The service selector, however,
+    // saves each selection immediately — so selecting a service before saving the
+    // config would fail here. Initialize the benefit if it isn't persisted yet;
+    // the editor only exposes service configuration for benefits the admin has
+    // enabled, so defaulting enabled:true matches intent.
     if (!(planConfig.benefits as any)[benefitKey]) {
-      throw new BadRequestException(`Benefit ${benefitKey} is not configured in this policy`);
+      (planConfig.benefits as any)[benefitKey] = {
+        enabled: true,
+        claimEnabled: false,
+        vasEnabled: false,
+      };
     }
 
     // Validate and convert service IDs based on category type
@@ -259,6 +269,9 @@ export class PolicyServicesConfigService {
     }
 
     planConfig.updatedBy = userId;
+    // benefits is a Mixed (Object) type, so Mongoose won't detect the nested
+    // mutations above unless we mark the path dirty explicitly.
+    planConfig.markModified('benefits');
     await planConfig.save();
 
     console.log(`[PolicyServicesConfigService] Service configuration updated successfully`);

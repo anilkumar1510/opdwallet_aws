@@ -23,10 +23,26 @@ class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : exception;
+    // Flatten the exception into a plain string so clients can render it
+    // directly. HttpException.getResponse() is usually an object
+    // ({ message, error, statusCode }) and passing that straight to the client
+    // caused React "Objects are not valid as a React child" crashes.
+    let message: string;
+    if (exception instanceof HttpException) {
+      const res = exception.getResponse();
+      if (typeof res === 'string') {
+        message = res;
+      } else {
+        const inner = (res as Record<string, unknown>)?.message;
+        message = Array.isArray(inner)
+          ? inner.join(', ')
+          : typeof inner === 'string'
+            ? inner
+            : exception.message;
+      }
+    } else {
+      message = 'Internal server error';
+    }
 
     // Log the full error details
     const timestamp = new Date().toISOString();
@@ -41,7 +57,7 @@ class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       timestamp,
       path: request.url,
-      message: exception instanceof HttpException ? message : 'Internal server error',
+      message,
     });
   }
 }

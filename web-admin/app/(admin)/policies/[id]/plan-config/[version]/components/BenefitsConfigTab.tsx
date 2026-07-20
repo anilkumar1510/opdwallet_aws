@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -321,8 +321,8 @@ export function BenefitsConfigTab({
                   const servicesCount = getServicesCount(category.categoryId, benefit);
 
                   return (
-                    <>
-                      <tr key={category.categoryId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                    <Fragment key={category.categoryId}>
+                      <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                         <td className="px-4 py-3">
                           {hasServiceConfig && benefit?.enabled && (
                             <button
@@ -454,7 +454,7 @@ export function BenefitsConfigTab({
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
