@@ -26,7 +26,8 @@ const categoryMaster = [
   { categoryId: "CAT004", code: "LABORATORY", name: "Pathology (Lab)", isActive: true, displayOrder: 4, description: "Clinical laboratory tests including blood tests, urine tests, and pathology", isAvailableOnline: true, isPredefined: true },
   { categoryId: "CAT006", code: "DENTAL", name: "Dental Services", isActive: true, displayOrder: 6, description: "Dental care including checkups, cleaning, fillings, and oral treatments", isAvailableOnline: true, isPredefined: true },
   { categoryId: "CAT007", code: "VISION", name: "Vision Care", isActive: true, displayOrder: 7, description: "Eye care services including eye exams, glasses, and contact lenses", isAvailableOnline: true, isPredefined: true },
-  { categoryId: "CAT008", code: "WELLNESS", name: "Wellness Programs", isActive: true, displayOrder: 8, description: "Preventive health services including annual health checks, vaccinations, and wellness programs", isAvailableOnline: true, isPredefined: true }
+  { categoryId: "CAT008", code: "WELLNESS", name: "Wellness Programs", isActive: true, displayOrder: 8, description: "Preventive health services including annual health checks, vaccinations, and wellness programs", isAvailableOnline: true, isPredefined: true },
+  { categoryId: "CAT009", code: "VACCINATION", name: "Vaccination", isActive: true, displayOrder: 9, description: "Immunization services including preventive vaccines and boosters", isAvailableOnline: true, isPredefined: true }
 ];
 
 // ============================================================================
@@ -82,7 +83,7 @@ const cugMaster = [
 // INTERNAL USERS (Admin, TPA, Operations, Finance)
 // Password for all: Password123! (bcrypt hash below)
 // ============================================================================
-const passwordHash = "$2b$12$OMlbfZDYX23sqtwrKnkZVOcVN04k1MQ9t6OXo.oZeR/.vz50xMbKG";
+const passwordHash = "$2b$12$6SJqh54T6J3Vz4TTmvzck.Jsq86mQq8Y4Z/Gg94eorPHwc6wkZ7zS";
 
 const internalUsers = [
   {
@@ -268,7 +269,7 @@ const doctors = [
 // USERS (Members)
 // Password: Password123!
 // ============================================================================
-const memberPasswordHash = "$2b$10$Hsm6Z6g3XseVqapFLLU38.4S0Hotc37ujB7jUh8x7FEWy48Rh48tW";
+const memberPasswordHash = "$2b$10$nXnZb3mhqqvdI5UiPCGT6u.gEA8ONXBNTh.2NFp9w6uOeii/KiKOG";
 
 const users = [
   {
@@ -599,7 +600,22 @@ db.ahc_packages.insertMany(ahcPackages);
 print("✓ Inserted ahc_packages");
 
 db.category_specialty_mapping.deleteMany({});
-db.category_specialty_mapping.insertMany(categorySpecialtyMapping);
+// The schema stores specialtyId as an ObjectId ref to specialty_master, so the
+// SPECnnn codes above have to be resolved to the inserted specialties' _ids.
+const seededSpecialties = db.specialty_master.find({}).toArray();
+const specialtyOidByCode = {};
+seededSpecialties.forEach(function (s) {
+  specialtyOidByCode[s.specialtyId] = s._id;
+});
+db.category_specialty_mapping.insertMany(
+  categorySpecialtyMapping.map(function (m) {
+    return {
+      categoryId: m.categoryId,
+      specialtyId: specialtyOidByCode[m.specialtyCode],
+      isEnabled: m.isEnabled
+    };
+  })
+);
 print("✓ Inserted category_specialty_mapping");
 
 // Get the inserted policy to create plan_config and user policy assignment

@@ -1751,7 +1751,7 @@ export default function BookingsPage() {
         description: 'Book your first appointment to get started',
         notCoveredDescription: 'Doctor consultations are not covered under your policy',
         buttonText: 'Book Appointment',
-        route: '/member/appointments',
+        route: '/member/in-clinic-consultation',
       },
       dental: {
         title: 'No dental bookings yet',

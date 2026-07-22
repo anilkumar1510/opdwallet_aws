@@ -358,11 +358,19 @@ export default function HealthRecordsPage() {
       // Handle different response structures
       const allPayments = response.data?.payments || response.data || [];
 
-      // Filter for dental, vision, lab, and appointment service types
+      // Filter for service bills (exclude wallet top-ups and reimbursement claims)
+      const BILL_SERVICE_TYPES = [
+        'APPOINTMENT',
+        'DENTAL',
+        'VISION',
+        'LAB_ORDER',
+        'DIAGNOSTIC_ORDER',
+        'AHC_ORDER',
+        'PHARMACY',
+        'VACCINATION',
+      ];
       const filteredBills = Array.isArray(allPayments)
-        ? allPayments.filter(
-            (p: Bill) => ['DENTAL', 'VISION', 'LAB_ORDER', 'APPOINTMENT'].includes(p.serviceType)
-          )
+        ? allPayments.filter((p: Bill) => BILL_SERVICE_TYPES.includes(p.serviceType))
         : [];
 
       console.log('[HealthRecords] Bills fetched:', filteredBills.length);
@@ -1259,6 +1267,14 @@ function BillCard({ bill }: { bill: Bill }) {
         return 'Vision Service';
       case 'LAB_ORDER':
         return 'Lab Test';
+      case 'DIAGNOSTIC_ORDER':
+        return 'Diagnostic Test';
+      case 'AHC_ORDER':
+        return 'Health Package';
+      case 'PHARMACY':
+        return 'Pharmacy Order';
+      case 'VACCINATION':
+        return 'Vaccination';
       case 'APPOINTMENT':
         return 'Consultation';
       default:
