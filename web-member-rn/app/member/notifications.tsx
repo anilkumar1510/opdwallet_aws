@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, G } from 'react-native-svg';
 import { ArrowLeftIcon } from '../../src/components/icons/InlineSVGs';
-import apiClient from '../../src/lib/api/client';
+import { apiClient } from '../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -409,7 +409,7 @@ export default function NotificationsScreen() {
                 No Notifications
               </Text>
               <Text style={{ fontSize: 14, color: COLORS.textGray, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
-                You're all caught up! New notifications about your carts, appointments, and claims will appear here.
+                You&apos;re all caught up! New notifications about your carts, appointments, and claims will appear here.
               </Text>
               <TouchableOpacity
                 onPress={() => router.push('/member' as any)}

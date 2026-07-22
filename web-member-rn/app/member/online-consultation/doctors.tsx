@@ -19,7 +19,7 @@ import {
   ClockIcon,
   FunnelIcon,
 } from '../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS

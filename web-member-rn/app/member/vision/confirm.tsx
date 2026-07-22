@@ -15,7 +15,7 @@ import {
   ArrowLeftIcon,
   MapPinIcon,
 } from '../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -225,7 +225,7 @@ export default function ConfirmVisionBookingPage() {
         // Fetch patient profile to get name
         const profileResponse = await apiClient.get<{
           user: { _id: string; name: { firstName: string; lastName: string } };
-          dependents?: Array<{ _id: string; name: { firstName: string; lastName: string } }>;
+          dependents?: { _id: string; name: { firstName: string; lastName: string } }[];
         }>('/member/profile');
 
         // Check if patient is self or dependent

@@ -292,7 +292,7 @@ export default function PharmacyPage() {
                   maxWidth: 320,
                 }}
               >
-                We're working hard to bring you convenient pharmacy services. Soon you'll be able to order medicines, manage prescriptions, and get doorstep delivery.
+                We&apos;re working hard to bring you convenient pharmacy services. Soon you&apos;ll be able to order medicines, manage prescriptions, and get doorstep delivery.
               </Text>
 
               {/* Features Box */}

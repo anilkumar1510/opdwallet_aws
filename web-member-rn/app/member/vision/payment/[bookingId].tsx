@@ -16,7 +16,7 @@ import {
   ArrowLeftIcon,
   MapPinIcon,
 } from '../../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../../src/lib/api/client';
+import { apiClient } from '../../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page

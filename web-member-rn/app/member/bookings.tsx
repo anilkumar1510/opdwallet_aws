@@ -28,7 +28,7 @@ import {
   CheckCircleIcon,
   ShieldCheckIcon,
 } from '../../src/components/icons/InlineSVGs';
-import apiClient, { tokenManager } from '../../src/lib/api/client';
+import { apiClient, tokenManager } from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { fetchWalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 

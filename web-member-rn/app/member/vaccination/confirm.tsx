@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeftIcon } from '../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 const COLORS = {
   primary: '#034DA2',

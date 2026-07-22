@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Linking,
   Platform,
   Alert,
 } from 'react-native';
@@ -19,7 +18,7 @@ import { WebView } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Dashboard

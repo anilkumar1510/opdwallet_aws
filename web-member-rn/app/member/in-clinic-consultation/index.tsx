@@ -20,7 +20,7 @@ import {
   MapPinIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS

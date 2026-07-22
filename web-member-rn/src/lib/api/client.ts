@@ -96,7 +96,7 @@ export const tokenManager = {
         const expiryTime = Date.now() + expiresIn * 1000;
         await storage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
       }
-    } catch (error) {
+    } catch {
       logger.error('[TokenManager] Failed to save token');
     }
   },
@@ -112,7 +112,7 @@ export const tokenManager = {
   setRefreshToken: async (token: string): Promise<void> => {
     try {
       await storage.setItem(REFRESH_TOKEN_KEY, token);
-    } catch (error) {
+    } catch {
       logger.error('[TokenManager] Failed to save refresh token');
     }
   },
@@ -126,7 +126,7 @@ export const tokenManager = {
       if (Platform.OS === 'web') {
         await clearSecureStorage();
       }
-    } catch (error) {
+    } catch {
       logger.error('[TokenManager] Failed to remove token');
     }
   },
@@ -274,7 +274,7 @@ async function refreshAccessToken(): Promise<string | null> {
     }
 
     return token;
-  } catch (error) {
+  } catch {
     logger.error('[API Client] Token refresh failed');
     return null;
   }

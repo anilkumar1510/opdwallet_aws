@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Platform,
   StyleSheet,
-  Alert,
   Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -20,7 +19,7 @@ import {
   VideoCameraIcon,
   UserIcon,
 } from '../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS
@@ -558,7 +557,7 @@ export default function VideoConsultationPage() {
             <Text style={styles.waitingTitle}>Waiting for Doctor</Text>
             <Text style={styles.waitingSubtitle}>
               Please wait while the doctor starts the consultation.
-              You'll be connected automatically.
+              You&apos;ll be connected automatically.
             </Text>
 
             {/* Status indicator */}

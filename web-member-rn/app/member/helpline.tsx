@@ -220,7 +220,7 @@ export default function HelplinePage() {
                   maxWidth: 320,
                 }}
               >
-                We're working on bringing you 24/7 helpline support. This feature will be available soon!
+                We&apos;re working on bringing you 24/7 helpline support. This feature will be available soon!
               </Text>
 
               {/* Info Box */}

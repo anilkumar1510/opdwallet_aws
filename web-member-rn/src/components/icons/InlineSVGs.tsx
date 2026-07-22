@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import Svg, { Path, G, Circle, Rect, Defs, ClipPath } from 'react-native-svg';
+import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 
 interface IconProps {
   width?: number;

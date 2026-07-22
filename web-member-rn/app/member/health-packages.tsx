@@ -11,13 +11,13 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import {
   ArrowLeftIcon,
   CalendarIcon,
   CheckCircleIcon,
 } from '../../src/components/icons/InlineSVGs';
-import apiClient from '../../src/lib/api/client';
+import { apiClient } from '../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -79,18 +79,18 @@ interface AHCPackage {
   name: string;
   effectiveFrom: string;
   effectiveTo: string;
-  labServices: Array<{
+  labServices: {
     _id: string;
     name: string;
     code: string;
     category?: string;
-  }>;
-  diagnosticServices: Array<{
+  }[];
+  diagnosticServices: {
     _id: string;
     name: string;
     code: string;
     category?: string;
-  }>;
+  }[];
   totalLabTests: number;
   totalDiagnosticTests: number;
   totalTests: number;

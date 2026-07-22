@@ -20,12 +20,11 @@ import {
   MapPinIcon,
   BuildingOfficeIcon,
   HomeIcon,
-  CheckCircleIcon,
   ClockIcon,
   ChevronDownIcon,
   PlusIcon,
 } from '../../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../../src/lib/api/client';
+import { apiClient } from '../../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -52,7 +51,7 @@ interface AHCPackage {
   id: string;
   name: string;
   description?: string;
-  tests?: Array<{ name: string }>;
+  tests?: { name: string }[];
   totalTests?: number;
   totalLabTests?: number;
   totalDiagnosticTests?: number;
@@ -81,13 +80,13 @@ interface Vendor {
   totalActualPrice: number;
   totalDiscountedPrice: number;
   totalWithHomeCollection: number;
-  pricing: Array<{
+  pricing: {
     serviceId: string;
     serviceName: string;
     serviceCode: string;
     actualPrice: number;
     discountedPrice: number;
-  }>;
+  }[];
 }
 
 interface TimeSlot {

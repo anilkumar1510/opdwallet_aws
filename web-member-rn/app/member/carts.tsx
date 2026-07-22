@@ -11,10 +11,10 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, G } from 'react-native-svg';
-import { ArrowLeftIcon, CartIcon } from '../../src/components/icons/InlineSVGs';
+import { ArrowLeftIcon } from '../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { useAuth } from '../../src/contexts/AuthContext';
-import apiClient from '../../src/lib/api/client';
+import { apiClient } from '../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -39,7 +39,7 @@ const COLORS = {
 // ============================================================================
 interface CartItem {
   cartId: string;
-  items: Array<{ serviceName: string }>;
+  items: { serviceName: string }[];
   status: string;
   createdAt: string;
   patientName?: string;

@@ -17,7 +17,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
 } from '../../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../../src/lib/api/client';
+import { apiClient } from '../../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -81,13 +81,13 @@ interface DiagnosticVendor {
   totalActualPrice: number;
   totalDiscountedPrice: number;
   totalWithHomeCollection: number;
-  pricing: Array<{
+  pricing: {
     serviceId: string;
     serviceName: string;
     serviceCode: string;
     actualPrice: number;
     discountedPrice: number;
-  }>;
+  }[];
 }
 
 interface TimeSlot {

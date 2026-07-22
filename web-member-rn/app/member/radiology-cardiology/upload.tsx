@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import { useAuth } from '../../../src/contexts/AuthContext';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 import {
   ArrowLeftIcon,
   CalendarIcon,
@@ -129,7 +129,7 @@ export default function UploadDiagnosticPrescriptionPage() {
   const [selectedAddressId, setSelectedAddressId] = useState('');
 
   // Data state
-  const [memberList, setMemberList] = useState<Array<{ userId: string; name: string; relationship: string }>>([]);
+  const [memberList, setMemberList] = useState<{ userId: string; name: string; relationship: string }[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
 
@@ -158,7 +158,7 @@ export default function UploadDiagnosticPrescriptionPage() {
 
   useEffect(() => {
     // Build member list
-    const members: Array<{ userId: string; name: string; relationship: string }> = [];
+    const members: { userId: string; name: string; relationship: string }[] = [];
 
     // Add self
     const selfId = viewingUserId || profileData?.user?._id || profile?.user?._id || user?._id;

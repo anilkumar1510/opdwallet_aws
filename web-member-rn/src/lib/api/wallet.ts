@@ -1,4 +1,4 @@
-import apiClient from './client';
+import { apiClient } from './client';
 import { logger } from '../utils/productionLogger';
 import { auditLogger } from '../audit/auditLogger';
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,13 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeftIcon,
-  UserIcon,
-  CalendarIcon,
   ClockIcon,
-  MapPinIcon,
   BeakerIcon,
   HomeIcon,
   BuildingOfficeIcon,
@@ -25,7 +21,7 @@ import {
   BanknotesIcon,
   WalletIcon,
 } from '../../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../../src/lib/api/client';
+import { apiClient } from '../../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -55,11 +51,11 @@ interface LabCart {
   patientId: string;
   patientName: string;
   prescriptionId: string;
-  items: Array<{
+  items: {
     serviceId: string;
     serviceName: string;
     serviceCode: string;
-  }>;
+  }[];
   selectedVendorIds: string[];
   pincode: string;
   status: string;
@@ -76,13 +72,13 @@ interface LabVendor {
   totalActualPrice: number;
   totalDiscountedPrice: number;
   totalWithHomeCollection: number;
-  pricing: Array<{
+  pricing: {
     serviceId: string;
     serviceName: string;
     serviceCode: string;
     actualPrice: number;
     discountedPrice: number;
-  }>;
+  }[];
 }
 
 interface TimeSlot {

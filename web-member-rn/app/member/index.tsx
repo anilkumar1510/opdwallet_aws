@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   RefreshControl,
   useWindowDimensions,
   NativeScrollEvent,
@@ -15,17 +14,17 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Rect, Circle, Ellipse, G, Defs, ClipPath } from 'react-native-svg';
+import Svg, { Path, Rect, Circle, G, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { fetchWalletBalance, WalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 import { usePolicyPDF } from '../../src/hooks/usePolicyPDF';
-import apiClient from '../../src/lib/api/client';
+import { apiClient } from '../../src/lib/api/client';
 
 // Cart interface
 interface CartItem {
   cartId: string;
-  items: Array<{ serviceName: string }>;
+  items: { serviceName: string }[];
   status: string;
   createdAt: string;
   patientName?: string;
@@ -1521,7 +1520,7 @@ export default function DashboardScreen() {
               backgroundColor: '#F9FAFB',
             }}>
               <Text style={{ fontSize: 11, color: '#6B7280', textAlign: 'center' }}>
-                The page will reload to show the selected member's data
+                The page will reload to show the selected member&apos;s data
               </Text>
             </View>
           </View>

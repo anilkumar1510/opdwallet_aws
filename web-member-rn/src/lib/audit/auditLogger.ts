@@ -3,7 +3,6 @@ import { secureStorage } from '../storage/secureStorage';
 import { logger } from '../utils/productionLogger';
 import type {
   AuditEvent,
-  AuditAction,
   AuditResourceType,
   CreateAuditEventParams,
 } from './types';

@@ -16,7 +16,7 @@ import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
 } from '../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 const COLORS = {
   primary: '#034DA2',
@@ -190,7 +190,7 @@ export default function SelectVendorPage() {
         if (geocodeResponse.data.pincode) {
           detectedPincode = geocodeResponse.data.pincode;
         }
-      } catch (backendError: any) {
+      } catch {
         try {
           const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`;
           const nominatimResponse = await fetch(nominatimUrl, {

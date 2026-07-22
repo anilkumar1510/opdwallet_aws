@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
-  Alert,
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -18,7 +17,6 @@ import {
   HomeIcon,
   CalendarIcon,
   DocumentTextIcon,
-  ClockIcon,
   UserIcon,
   MagnifyingGlassIcon,
   ChevronRightIcon,

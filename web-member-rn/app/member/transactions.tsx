@@ -12,13 +12,13 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
+import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import {
   ChevronDownIcon,
   CheckIcon,
   XCircleIcon,
 } from '../../src/components/icons/InlineSVGs';
-import apiClient from '../../src/lib/api/client';
+import { apiClient } from '../../src/lib/api/client';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import { fetchWalletBalance } from '../../src/lib/api/wallet';
 

@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await handleLogout();
           }
         }
-      } catch (error) {
+      } catch {
         logger.error('[AuthContext] Auth initialization error');
       } finally {
         setIsLoading(false);
@@ -227,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileData.user?._id) {
         auditLogger.viewPHI('PROFILE', profileData.user._id);
       }
-    } catch (error) {
+    } catch {
       logger.error('[AuthContext] Failed to refresh profile');
     }
   }, []);

@@ -181,7 +181,7 @@ export default function LoginScreen() {
       } else {
         setError(result.error || 'Invalid credentials');
       }
-    } catch (err) {
+    } catch {
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);

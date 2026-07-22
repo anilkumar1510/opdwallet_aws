@@ -22,11 +22,10 @@ import {
   VideoCameraIcon,
   CheckCircleIcon,
   BanknotesIcon,
-  WalletIcon,
   XMarkIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS
@@ -176,7 +175,7 @@ export default function OnlineConfirmPage() {
       console.log('[OnlineConfirm] Fetching family members from /member/profile');
       const response = await apiClient.get<{
         user: { _id: string; name: { firstName: string; lastName: string }; gender?: string; dob?: string; phone?: string; mobileNumber?: string };
-        dependents?: Array<{ _id: string; name: { firstName: string; lastName: string }; relationship?: string; gender?: string; dob?: string }>;
+        dependents?: { _id: string; name: { firstName: string; lastName: string }; relationship?: string; gender?: string; dob?: string }[];
       }>('/member/profile');
 
       const data = response.data;

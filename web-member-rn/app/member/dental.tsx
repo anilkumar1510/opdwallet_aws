@@ -15,7 +15,7 @@ import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
 } from '../../src/components/icons/InlineSVGs';
-import apiClient from '../../src/lib/api/client';
+import { apiClient } from '../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -409,7 +409,7 @@ export default function DentalPage() {
               {filteredServices.length === 0 && searchTerm && (
                 <View style={{ paddingVertical: 48, alignItems: 'center' }}>
                   <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
-                    No services match your search "{searchTerm}"
+                    No services match your search &quot;{searchTerm}&quot;
                   </Text>
                 </View>
               )}

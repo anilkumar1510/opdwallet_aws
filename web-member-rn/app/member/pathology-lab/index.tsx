@@ -22,7 +22,7 @@ import {
   XMarkIcon,
 } from '../../../src/components/icons/InlineSVGs';
 import { useFamily } from '../../../src/contexts/FamilyContext';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
@@ -54,15 +54,15 @@ interface Prescription {
   cartId?: string;
   doctorName?: string;
   prescriptionDate?: string;
-  labTests?: Array<{ testName: string } | string>;
+  labTests?: ({ testName: string } | string)[];
   hasOrder?: boolean;
 }
 
 interface Cart {
   cartId: string;
-  items: Array<{
+  items: {
     serviceName: string;
-  }>;
+  }[];
   status: string;
   createdAt: string;
 }
@@ -332,7 +332,7 @@ export default function LabTestsPage() {
           }));
           allPrescriptions.push(...digitalPrescriptions);
         }
-      } catch (e) {
+      } catch {
         console.log('[LabTests] No digital prescriptions');
       }
 
@@ -353,7 +353,7 @@ export default function LabTestsPage() {
           }));
           allPrescriptions.push(...pdfPrescriptions);
         }
-      } catch (e) {
+      } catch {
         console.log('[LabTests] No PDF prescriptions');
       }
 
@@ -1410,8 +1410,8 @@ export default function LabTestsPage() {
                       </Text>
                       <Text style={{ fontSize: 12, color: COLORS.textGray, lineHeight: 18 }}>
                         • Our team will digitize your prescription{'\n'}
-                        • We'll find the best labs for you{'\n'}
-                        • You'll receive a notification when ready{'\n'}
+                        • We&apos;ll find the best labs for you{'\n'}
+                        • You&apos;ll receive a notification when ready{'\n'}
                         • Review vendors and book your slot
                       </Text>
                     </View>

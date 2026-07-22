@@ -132,7 +132,7 @@ const webSecureStorage = {
       const encryptedValue = localStorage.getItem(STORAGE_PREFIX + key);
       if (!encryptedValue) return null;
       return await decrypt(encryptedValue);
-    } catch (error) {
+    } catch {
       // If decryption fails (e.g., key changed), remove the corrupted data
       localStorage.removeItem(STORAGE_PREFIX + key);
       return null;

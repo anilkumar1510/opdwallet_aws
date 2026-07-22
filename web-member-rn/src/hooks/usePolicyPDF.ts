@@ -34,7 +34,7 @@ interface ProfileData {
     dob?: string;
     corporateName?: string;
   };
-  assignments?: Array<{
+  assignments?: {
     userId: string;
     assignment: {
       effectiveTo?: string;
@@ -46,12 +46,12 @@ interface ProfileData {
         copayPercentage?: number;
       };
     };
-  }>;
-  healthBenefits?: Array<{
+  }[];
+  healthBenefits?: {
     categoryCode: string;
     name: string;
     description?: string;
-  }>;
+  }[];
 }
 
 export function usePolicyPDF() {

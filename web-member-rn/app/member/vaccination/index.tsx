@@ -15,7 +15,7 @@ import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
 } from '../../../src/components/icons/InlineSVGs';
-import apiClient from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 const COLORS = {
   primary: '#034DA2',
@@ -424,7 +424,7 @@ export default function VaccinationPage() {
               {filteredServices.length === 0 && searchTerm && (
                 <View style={{ paddingVertical: 48, alignItems: 'center' }}>
                   <Text style={{ fontSize: 14, color: COLORS.textGray, textAlign: 'center' }}>
-                    No vaccines match your search "{searchTerm}"
+                    No vaccines match your search &quot;{searchTerm}&quot;
                   </Text>
                 </View>
               )}

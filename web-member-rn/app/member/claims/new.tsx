@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 // DateTimePicker only works on native - we'll handle web separately
@@ -26,7 +26,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFamily } from '../../../src/contexts/FamilyContext';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { fetchWalletBalance } from '../../../src/lib/api/wallet';
-import apiClient, { storage } from '../../../src/lib/api/client';
+import { apiClient } from '../../../src/lib/api/client';
 
 // ============================================================================
 // COLORS - Matching Home Page
