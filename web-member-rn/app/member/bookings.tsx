@@ -15,6 +15,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import {
+  ArrowLeftIcon,
+  CalendarIcon,
+  UserIcon,
+  SparklesIcon,
+  BeakerIcon,
+  BuildingStorefrontIcon,
+  EyeIcon,
+  HeartIcon,
+  DocumentArrowDownIcon,
+  CheckCircleIcon,
+  ShieldCheckIcon,
+} from '../../src/components/icons/InlineSVGs';
+import apiClient, { tokenManager } from '../../src/lib/api/client';
+import { useFamily } from '../../src/contexts/FamilyContext';
+import { fetchWalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 
 // ============================================================================
 // COLORS
@@ -34,25 +50,6 @@ const COLORS = {
   selectedBorder: '#86ACD8',
   iconBg: 'rgba(3, 77, 162, 0.1)',
 };
-import {
-  ArrowLeftIcon,
-  CalendarIcon,
-  ClockIcon,
-  MapPinIcon,
-  UserIcon,
-  SparklesIcon,
-  BeakerIcon,
-  BuildingStorefrontIcon,
-  EyeIcon,
-  HeartIcon,
-  DocumentArrowDownIcon,
-  CheckCircleIcon,
-  VideoCameraIcon,
-  ShieldCheckIcon,
-} from '../../src/components/icons/InlineSVGs';
-import apiClient, { tokenManager } from '../../src/lib/api/client';
-import { useFamily } from '../../src/contexts/FamilyContext';
-import { fetchWalletBalance, WalletCategory } from '../../src/lib/api/wallet';
 
 // ============================================================================
 // TYPES
@@ -894,7 +891,7 @@ export default function BookingsPage() {
         } else if (Array.isArray(data)) {
           ordersData = data;
         }
-      } catch (ordersError: any) {
+      } catch {
         console.log('[AhcOrders] /member/ahc/orders failed, trying /member/ahc/bookings...');
 
         // Try alternative endpoint
@@ -908,7 +905,7 @@ export default function BookingsPage() {
           } else if (Array.isArray(altData)) {
             ordersData = altData;
           }
-        } catch (bookingsError) {
+        } catch {
           console.log('[AhcOrders] Both endpoints failed');
         }
       }
@@ -1228,13 +1225,13 @@ export default function BookingsPage() {
           } else if (typeof errorData === 'string') {
             errorMessage = errorData;
           }
-        } catch (jsonError) {
+        } catch {
           console.error('[Bookings] Could not parse error response as JSON');
           // Try to get text response
           try {
             const textError = await response.text();
             if (textError) errorMessage = textError;
-          } catch (textErr) {
+          } catch {
             // Use status text as fallback
             errorMessage = response.statusText || `HTTP ${response.status}`;
           }
@@ -1677,23 +1674,6 @@ export default function BookingsPage() {
     }
   };
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return { backgroundColor: '#DCFCE7', color: '#166534' };
-      case 'PENDING':
-        return { backgroundColor: '#FEF3C7', color: '#92400E' };
-      case 'FAILED':
-        return { backgroundColor: '#FEE2E2', color: '#991B1B' };
-      default:
-        return { backgroundColor: '#F3F4F6', color: '#374151' };
-    }
-  };
-
-  const getPaymentStatusText = (status: string) => {
-    return status.charAt(0) + status.slice(1).toLowerCase();
-  };
-
   // Unified status for dental/vision bookings - single status that considers both booking and payment status
   const getUnifiedBookingStatus = (bookingStatus: string, paymentStatus?: string) => {
     // Priority order: Cancelled > Completed > Payment issues > Confirmed > Pending
@@ -1918,7 +1898,7 @@ export default function BookingsPage() {
             // Fallback: open URL directly
             window.open(fullUrl, '_blank');
           }
-        } catch (fetchError) {
+        } catch {
           // Fallback: open URL directly
           window.open(fullUrl, '_blank');
         }
@@ -2696,7 +2676,7 @@ export default function BookingsPage() {
           ) : (
             <View style={{ backgroundColor: COLORS.iconBg, padding: 12, borderRadius: 8 }}>
               <Text style={{ fontSize: 12, color: COLORS.primary }}>
-                Our team is processing your prescription. You will be notified once it's ready for ordering.
+                Our team is processing your prescription. You will be notified once it&apos;s ready for ordering.
               </Text>
             </View>
           )}
@@ -3052,7 +3032,7 @@ export default function BookingsPage() {
           ) : (
             <View style={{ backgroundColor: '#DBEAFE', padding: 12, borderRadius: 8 }}>
               <Text style={{ fontSize: 12, color: '#1E40AF' }}>
-                Our team is processing your prescription. You will be notified once it's ready for booking.
+                Our team is processing your prescription. You will be notified once it&apos;s ready for booking.
               </Text>
             </View>
           )}

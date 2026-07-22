@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useFamily } from '../../src/contexts/FamilyContext';
 import apiClient from '../../src/lib/api/client';
 
@@ -1153,7 +1153,7 @@ function PDFPrescriptionCard({
             {prescription.notes && (
               <View>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: COLORS.textGray, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-                  Doctor's Notes
+                  Doctor&apos;s Notes
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.textDark, lineHeight: 20 }}>{prescription.notes}</Text>
               </View>
