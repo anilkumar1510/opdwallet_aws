@@ -85,6 +85,42 @@ const DailyVideoCall: React.FC<DailyVideoCallProps> = ({
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
+  // Native-only permission state. Declared here (before any early return) so the
+  // hook order is identical on web and native — see rules-of-hooks.
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [permissionError, setPermissionError] = useState('');
+  const webViewRef = useRef<WebView>(null);
+
+  // Request camera and microphone permissions on mount (native only)
+  useEffect(() => {
+    const requestPermissions = async () => {
+      try {
+        console.log('[VideoCall] Requesting camera permission...');
+        const cameraResult = await Camera.requestCameraPermissionsAsync();
+        console.log('[VideoCall] Camera permission:', cameraResult.status);
+
+        console.log('[VideoCall] Requesting microphone permission...');
+        const audioResult = await Audio.requestPermissionsAsync();
+        console.log('[VideoCall] Microphone permission:', audioResult.status);
+
+        if (cameraResult.status === 'granted' && audioResult.status === 'granted') {
+          console.log('[VideoCall] All permissions granted');
+          setPermissionsGranted(true);
+        } else {
+          console.log('[VideoCall] Permissions denied');
+          setPermissionError('Camera and microphone permissions are required for video calls. Please enable them in your device settings.');
+        }
+      } catch (err) {
+        console.error('[VideoCall] Permission error:', err);
+        setPermissionError('Failed to request permissions. Please try again.');
+      }
+    };
+
+    if (Platform.OS !== 'web') {
+      requestPermissions();
+    }
+  }, []);
+
   useEffect(() => {
     // On native platforms, we use WebView, so skip the Daily.co web SDK initialization
     if (Platform.OS !== 'web') {
@@ -283,39 +319,7 @@ const DailyVideoCall: React.FC<DailyVideoCallProps> = ({
   }
 
   // Native mobile - use WebView to load Daily.co room
-  const [permissionsGranted, setPermissionsGranted] = useState(false);
-  const [permissionError, setPermissionError] = useState('');
-  const webViewRef = useRef<WebView>(null);
-
-  // Request camera and microphone permissions on mount
-  useEffect(() => {
-    const requestPermissions = async () => {
-      try {
-        console.log('[VideoCall] Requesting camera permission...');
-        const cameraResult = await Camera.requestCameraPermissionsAsync();
-        console.log('[VideoCall] Camera permission:', cameraResult.status);
-
-        console.log('[VideoCall] Requesting microphone permission...');
-        const audioResult = await Audio.requestPermissionsAsync();
-        console.log('[VideoCall] Microphone permission:', audioResult.status);
-
-        if (cameraResult.status === 'granted' && audioResult.status === 'granted') {
-          console.log('[VideoCall] All permissions granted');
-          setPermissionsGranted(true);
-        } else {
-          console.log('[VideoCall] Permissions denied');
-          setPermissionError('Camera and microphone permissions are required for video calls. Please enable them in your device settings.');
-        }
-      } catch (err) {
-        console.error('[VideoCall] Permission error:', err);
-        setPermissionError('Failed to request permissions. Please try again.');
-      }
-    };
-
-    if (Platform.OS !== 'web') {
-      requestPermissions();
-    }
-  }, []);
+  // (permission state + request effect are declared at the top of the component)
 
   // Show permission error
   if (permissionError) {
