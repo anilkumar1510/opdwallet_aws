@@ -134,7 +134,7 @@ export default function PolicyDetailsPage() {
           transition={{ duration: 0.3 }}
           className="rounded-2xl p-6 shadow-md border-2"
           style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}
         >
@@ -199,7 +199,7 @@ export default function PolicyDetailsPage() {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="rounded-2xl p-5 lg:p-6 shadow-md border-2"
             style={{
-              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+              background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
               borderColor: '#86ACD8'
             }}
           >
@@ -240,7 +240,7 @@ export default function PolicyDetailsPage() {
             transition={{ duration: 0.3, delay: 0.2 }}
             className="rounded-2xl p-5 lg:p-6 shadow-md border-2"
             style={{
-              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+              background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
               borderColor: '#86ACD8'
             }}
           >

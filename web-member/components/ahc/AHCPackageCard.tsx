@@ -47,7 +47,7 @@ export function AHCPackageCard({ package: pkg, canBook, lastBooking, onBookClick
 
   return (
     <div className="rounded-2xl overflow-hidden border-2 shadow-lg" style={{
-      background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+      background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
       borderColor: '#86ACD8'
     }}>
       {/* Header */}

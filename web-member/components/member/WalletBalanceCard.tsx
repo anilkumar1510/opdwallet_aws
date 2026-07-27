@@ -19,9 +19,9 @@ export default function WalletBalanceCard({
   };
 
   return (
-    <div className="px-5 lg:px-6 max-w-[480px] mx-auto lg:max-w-full">
+    <div className="px-5 lg:px-0">
       {/* Desktop only header */}
-      <h2 className="hidden lg:block text-xl font-bold text-black mb-6">Your Wallet Balance</h2>
+      <h2 className="hidden lg:block text-xl font-bold text-black mb-5">Your Wallet Balance</h2>
 
       {/* Mobile View - Figma Design */}
       <Link
@@ -125,9 +125,9 @@ export default function WalletBalanceCard({
       {/* Desktop View - Original Design */}
       <Link
         href="/member/transactions"
-        className="hidden lg:block bg-white border-2 border-surface-border rounded-xl lg:rounded-2xl p-4 lg:p-6 transition-all duration-300 hover:border-brand-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+        className="hidden lg:flex lg:items-center lg:w-full lg:h-[143px] bg-white border-2 border-surface-border rounded-xl lg:rounded-2xl p-4 lg:p-6 transition-all duration-300 hover:border-brand-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
       >
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 w-full">
           {/* Left Section */}
           <div className="flex-1">
             {/* Label */}

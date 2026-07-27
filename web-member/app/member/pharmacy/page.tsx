@@ -28,7 +28,7 @@ export default function PharmacyPage() {
       <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-8 lg:py-12">
         {/* Coming Soon Card */}
         <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md mb-6" style={{
-          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
           borderColor: '#F7DCAF'
         }}>
           {/* Icon */}

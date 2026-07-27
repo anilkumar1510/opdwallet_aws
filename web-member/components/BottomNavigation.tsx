@@ -94,52 +94,45 @@ export default function BottomNavigation() {
     <>
       {/* Top Navigation for Desktop */}
       <div className="hidden lg:block fixed top-0 left-0 right-0 z-50 bg-[#2B4D8C] shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Profile and Logo */}
-            <div className="flex items-center space-x-6">
-              <ProfileDropdown user={user} theme="dark" />
-              <div style={{ width: '20rem' }}>
-                <Logo variant="white" size="full" />
-              </div>
+            {/* Left: Logo + Navigation Items */}
+            <div className="flex items-center" style={{ gap: '20px' }}>
+              <img
+                src="/logos/habit-logo-white.png"
+                alt="Habit Health"
+                style={{ height: '32px', width: 'auto' }}
+              />
+              <nav className="flex items-center" style={{ gap: '4px' }}>
+                {bottomNavItems.map((item) => {
+                  const active = isActive(item.href)
+                  const Icon = active ? item.activeIcon : item.icon
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`flex items-center rounded-lg transition-all duration-200 ${
+                        active
+                          ? 'bg-white/15 text-white'
+                          : 'text-white/80 hover:bg-white/[0.08] hover:text-white'
+                      }`}
+                      style={{ padding: '7px 14px', fontWeight: 500 }}
+                    >
+                      <Icon
+                        className={`mr-2 ${active ? 'text-white' : 'text-white/70'}`}
+                        style={{ width: '18px', height: '18px' }}
+                      />
+                      <span>{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
             </div>
 
-            {/* Navigation Items */}
-            <div className="flex items-center space-x-1">
-              {bottomNavItems.map((item) => {
-                const active = isActive(item.href)
-                const Icon = active ? item.activeIcon : item.icon
-
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`
-                      flex items-center px-4 py-2 rounded-lg
-                      transition-all duration-200
-                      ${active
-                        ? 'bg-white/15 text-white'
-                        : 'text-white/80 hover:bg-white/8 hover:text-white'
-                      }
-                    `}
-                  >
-                    <Icon
-                      className={`
-                        h-5 w-5 mr-2
-                        ${active ? 'text-white' : 'text-white/70'}
-                      `}
-                    />
-                    <span className="font-medium">
-                      {item.name}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-
-            {/* Right side - notifications */}
-            <div className="flex items-center space-x-2">
+            {/* Right: Notification Bell + Profile Avatar */}
+            <div className="flex items-center" style={{ gap: '8px' }}>
               <NotificationBell theme="dark" />
+              <ProfileDropdown user={user} theme="dark" />
             </div>
           </div>
         </div>

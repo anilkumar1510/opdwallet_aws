@@ -33,9 +33,9 @@ export default function MoreServices({ services }: MoreServicesProps) {
   };
 
   return (
-    <section className="px-5 lg:px-6 pt-4 lg:pt-6 pb-0 max-w-[480px] mx-auto lg:max-w-full">
+    <section className="px-5 lg:px-0 pt-4 lg:pt-0 pb-0">
       {/* Header */}
-      <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-3 lg:mb-6" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
+      <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-3 lg:mb-5" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
         More Services
       </h2>
 
@@ -61,7 +61,7 @@ export default function MoreServices({ services }: MoreServicesProps) {
       </div>
 
       {/* Desktop: Original Grid layout */}
-      <div className="hidden lg:grid lg:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
+      <div className="hidden lg:grid lg:grid-cols-4 gap-3 lg:gap-4">
         {services.map((service) => (
           <Link
             key={service.id}
@@ -71,7 +71,7 @@ export default function MoreServices({ services }: MoreServicesProps) {
             <div
               className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center flex-shrink-0"
               style={{
-                background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+                background: 'linear-gradient(180deg, #CDDDFE 0%, #E4EBFE 100%)',
                 border: '1px solid #A4BFFE7A',
                 boxShadow: '-2px 11px 46.1px 0px #0000000D'
               }}

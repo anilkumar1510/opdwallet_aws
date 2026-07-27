@@ -1024,7 +1024,7 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {appointments.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                 borderColor: '#86ACD8'
               }}>
                 <div
@@ -1294,7 +1294,7 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {labCarts.length === 0 && labOrders.length === 0 && labPrescriptions.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                 borderColor: '#86ACD8'
               }}>
                 <div
@@ -1613,7 +1613,7 @@ export default function BookingsPage() {
 
         {activeTab === 'pharmacy' && (
           <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}>
             <div
@@ -1635,7 +1635,7 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {diagnosticCarts.length === 0 && diagnosticOrders.length === 0 && diagnosticPrescriptions.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                 borderColor: '#86ACD8'
               }}>
                 <div
@@ -1952,7 +1952,7 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {dentalBookings.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                 borderColor: '#86ACD8'
               }}>
                 <div
@@ -2248,7 +2248,7 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {visionBookings.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                 borderColor: '#86ACD8'
               }}>
                 <div
@@ -2499,7 +2499,7 @@ export default function BookingsPage() {
           <div className="space-y-4">
             {ahcOrders.length === 0 ? (
               <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                 borderColor: '#86ACD8'
               }}>
                 <div

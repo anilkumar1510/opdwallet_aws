@@ -30,14 +30,14 @@ export default function HelplinePage() {
       {/* Coming Soon Content */}
       <div className="max-w-[480px] mx-auto lg:max-w-full px-4 lg:px-6 py-8 lg:py-12">
         <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
           borderColor: '#86ACD8'
         }}>
           {/* Icon */}
           <div
             className="w-20 h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-6"
             style={{
-              background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+              background: 'linear-gradient(180deg, #CDDDFE 0%, #E4EBFE 100%)',
               border: '1px solid #A4BFFE7A',
               boxShadow: '-2px 11px 46.1px 0px #0000000D'
             }}

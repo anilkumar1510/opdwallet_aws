@@ -114,31 +114,31 @@ export default function PolicyCardEnhanced({
       {/* Desktop View - Original Design */}
       <Link
         href={href}
-        className={`hidden lg:flex flex-shrink-0 lg:w-[340px] rounded-2xl p-6 transition-all duration-300 ${
+        className={`hidden lg:flex lg:flex-col lg:justify-center flex-shrink-0 lg:w-[300px] lg:h-[143px] rounded-2xl p-5 transition-all duration-300 ${
           isActive
             ? 'opacity-100 scale-100'
             : 'opacity-60 scale-95'
         }`}
         style={{
-          background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+          background: 'linear-gradient(180deg, #CDDDFE 0%, #E4EBFE 100%)',
           border: '1px solid #A4BFFE7A',
           boxShadow: '-2px 11px 46.1px 0px #0000000D'
         }}
       >
         {/* Top Section: User Icon + Name + Age */}
-        <div className="flex items-start gap-4 mb-6">
+        <div className="flex items-center gap-3 mb-3">
           {/* User Icon */}
-          <div className="flex-shrink-0 w-16 h-16 bg-white rounded-full flex items-center justify-center">
-            <UserIcon className="w-8 h-8 text-brand-600" />
+          <div className="flex-shrink-0 w-10 h-10 bg-white rounded-full flex items-center justify-center">
+            <UserIcon className="w-5 h-5 text-brand-600" />
           </div>
 
           {/* Name and Age */}
-          <div className="flex-1 pt-1">
-            <h3 className="text-lg font-bold text-brand-600 mb-1">
+          <div className="flex-1">
+            <h3 className="text-base font-bold text-brand-600 mb-0.5">
               {policyHolder}
             </h3>
             {age && (
-              <p className="text-sm text-gray-600">
+              <p className="text-[13px] text-gray-600">
                 Age: {age} years
               </p>
             )}
@@ -146,23 +146,23 @@ export default function PolicyCardEnhanced({
         </div>
 
         {/* Data Rows */}
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {/* Policy Number Row */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Policy Number</span>
-            <span className="text-sm font-semibold text-brand-600">{policyNumber}</span>
+            <span className="text-[13px] text-gray-600">Policy Number</span>
+            <span className="text-[13px] font-semibold text-brand-600">{policyNumber}</span>
           </div>
 
           {/* Valid Till Row */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Valid Till</span>
-            <span className="text-sm font-semibold text-brand-600">{formatDate(expiryDate)}</span>
+            <span className="text-[13px] text-gray-600">Valid Till</span>
+            <span className="text-[13px] font-semibold text-brand-600">{formatDate(expiryDate)}</span>
           </div>
 
           {/* Corporate Row */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Corporate</span>
-            <span className="text-sm font-semibold text-brand-600">{corporate}</span>
+            <span className="text-[13px] text-gray-600">Corporate</span>
+            <span className="text-[13px] font-semibold text-brand-600">{corporate}</span>
           </div>
         </div>
       </Link>

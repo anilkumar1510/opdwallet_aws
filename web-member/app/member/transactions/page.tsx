@@ -543,7 +543,7 @@ export default function TransactionsPage() {
         >
           {/* Current Balance */}
           <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}>
             <div className="flex items-center gap-2 mb-3">
@@ -559,7 +559,7 @@ export default function TransactionsPage() {
 
           {/* Total Credits */}
           <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}>
             <div className="flex items-center gap-2 mb-3">
@@ -575,7 +575,7 @@ export default function TransactionsPage() {
 
           {/* Total Debits */}
           <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}>
             <div className="flex items-center gap-2 mb-3">
@@ -591,7 +591,7 @@ export default function TransactionsPage() {
 
           {/* Net Change */}
           <div className="rounded-2xl p-4 lg:p-5 border-2 shadow-md" style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}>
             <div className="flex items-center gap-2 mb-3">
@@ -861,7 +861,7 @@ export default function TransactionsPage() {
           transition={{ duration: 0.3, delay: 0.2 }}
           className="rounded-2xl p-4 lg:p-5 border-2 shadow-md mb-6"
           style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}
         >
@@ -1166,7 +1166,7 @@ export default function TransactionsPage() {
         >
           {filteredTransactions.length === 0 ? (
             <div className="rounded-2xl p-12 text-center border-2 shadow-md" style={{
-              background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+              background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
               borderColor: '#86ACD8'
             }}>
               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">

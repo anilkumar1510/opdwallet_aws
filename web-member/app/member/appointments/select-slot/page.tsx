@@ -268,7 +268,7 @@ function SelectSlotContent() {
                       selectedSlot === slot.time
                         ? { background: 'linear-gradient(90deg, #1F63B4 0%, #5DA4FB 100%)' }
                         : slot.available
-                        ? { background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)', border: '1px solid #F7DCAF', color: '#0E51A2' }
+                        ? { background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)', border: '1px solid #F7DCAF', color: '#0E51A2' }
                         : { background: '#f3f4f6', color: '#9ca3af' }
                     }
                   >

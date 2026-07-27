@@ -607,7 +607,7 @@ export default function ClaimsPage() {
       {loading ? (
         // Loading State
         <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
           borderColor: '#86ACD8'
         }}>
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent mx-auto mb-4" style={{ borderColor: '#0F5FDC', borderTopColor: 'transparent' }}></div>
@@ -814,7 +814,7 @@ export default function ClaimsPage() {
       {/* Empty State */}
       {!loading && filteredAndSortedClaims.length === 0 && (
         <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
           borderColor: '#86ACD8'
         }}>
           <div
