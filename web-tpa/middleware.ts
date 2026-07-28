@@ -23,6 +23,71 @@ const publicRoutes = [
   '/reset-password',
 ]
 
+// Roles allowed to use this portal (must match app/login/page.tsx)
+const allowedRoles = ['TPA_ADMIN', 'TPA_USER']
+
+interface SessionClaims {
+  role?: string
+  exp?: number
+}
+
+// Cookies are NOT scoped by port, so every portal on localhost shares one jar.
+// A session minted by another portal (e.g. a MEMBER token at Path=/) would
+// otherwise satisfy a presence-only check here and bounce the user between
+// /login and the dashboard forever. Decode the token and check role + expiry.
+//
+// This is a routing decision, not a security boundary: the payload is read
+// without verifying the signature, and the API still authenticates every
+// request on its own.
+function decodeSession(token: string | undefined): SessionClaims | null {
+  if (!token) return null
+
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
+    const bytes = Uint8Array.from(atob(padded), char => char.charCodeAt(0))
+    return JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    return null
+  }
+}
+
+function isPortalSession(token: string): boolean {
+  const claims = decodeSession(token)
+  if (!claims?.role) return false
+
+  // exp is in seconds since epoch
+  if (typeof claims.exp === 'number' && claims.exp * 1000 <= Date.now()) return false
+
+  return allowedRoles.includes(claims.role)
+}
+
+// The browser can hold several opd_session cookies at once for host "localhost"
+// (one per Path, since ports don't scope cookies). It sends them all on one
+// header, and request.cookies.get() surfaces only the LAST one -- which is not
+// necessarily this portal's. Read every value and use the first that belongs
+// to this portal, so a leftover cookie from another portal cannot mask a valid
+// session and lock the user out of login.
+function findPortalToken(request: NextRequest): string | null {
+  const header = request.headers.get('cookie')
+  if (!header) return null
+
+  for (const part of header.split(';')) {
+    const trimmed = part.trim()
+    const separator = trimmed.indexOf('=')
+    if (separator === -1) continue
+    if (trimmed.slice(0, separator) !== 'opd_session') continue
+
+    const value = trimmed.slice(separator + 1)
+    if (value && isPortalSession(value)) return value
+  }
+
+  return null
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -39,10 +104,11 @@ export function middleware(request: NextRequest) {
   })
 
   // Get auth token from cookies
-  const token = request.cookies.get('opd_session')?.value
+  const token = findPortalToken(request)
+  const isAuthenticated = token !== null
 
-  // Redirect to login if accessing protected route without auth
-  if (isProtectedRoute && !isPublicRoute && !token) {
+  // Redirect to login if accessing protected route without a session for THIS portal
+  if (isProtectedRoute && !isPublicRoute && !isAuthenticated) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('from', pathname)
@@ -50,14 +116,14 @@ export function middleware(request: NextRequest) {
   }
 
   // Redirect to dashboard if accessing login page while authenticated
-  if (pathname === '/login' && token) {
+  if (pathname === '/login' && isAuthenticated) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
   // For authenticated requests, add user info to headers (for server components)
-  if (token && isProtectedRoute) {
+  if (isAuthenticated && isProtectedRoute) {
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-auth-token', token)
 
