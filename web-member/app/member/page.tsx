@@ -544,14 +544,20 @@ export default function DashboardPage() {
         familyMembers={familyMembers}
       />
 
-      {/* Main Content */}
-      <div className="max-w-[480px] mx-auto lg:max-w-full">
-        {/* Policy Carousel Section */}
-        <PolicyCarousel policies={policies} />
+      {/* Main Content — single stack on mobile, two-column dashboard on desktop */}
+      <div className="max-w-[480px] mx-auto lg:max-w-[1240px] lg:px-8 lg:pt-1">
+        <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-7 lg:items-stretch">
+          {/* LEFT COLUMN — Your Policy + Quick Links */}
+          <div className="lg:flex lg:flex-col lg:gap-6">
+            {/* Policy Carousel Section */}
+            <PolicyCarousel policies={policies} />
 
-        {/* Quick Links Section - Before Wallet on mobile per Figma */}
-        <QuickLinks />
+            {/* Quick Links Section - Before Wallet on mobile per Figma */}
+            <QuickLinks />
+          </div>
 
+          {/* RIGHT COLUMN — Wallet + Health Benefits + More Services */}
+          <div className="lg:flex lg:flex-col lg:gap-8">
         {/* Wallet Balance Card Section */}
         <WalletBalanceCard
           currentBalance={totalAvailableBalance}
@@ -559,17 +565,17 @@ export default function DashboardPage() {
         />
 
         {/* Health Benefits Section */}
-        <section className="pt-6 pb-4 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
+        <section className="pt-6 pb-4 lg:pt-0 lg:pb-0 lg:flex-1">
           {/* Header */}
-          <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-4 lg:mb-6 px-5 lg:px-6" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
+          <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-4 lg:mb-5 px-5 lg:px-0" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
             Health Benefits
           </h2>
 
-          {/* Benefits Grid - 2x2 grid with 16px gap */}
-          <div className="relative group px-5 lg:px-6">
+          {/* Benefits Grid - 4-up on desktop to match dashboard mockup */}
+          <div className="relative group px-5 lg:px-0">
             <div
               ref={benefitsScrollRef}
-              className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4"
             >
               {walletCategories.map((category: any, index: number) => (
                 <BenefitCardEnhanced
@@ -620,6 +626,10 @@ export default function DashboardPage() {
 
         {/* More Services Section */}
         <MoreServices services={MORE_SERVICES} />
+          </div>
+          {/* end RIGHT COLUMN */}
+        </div>
+        {/* end two-column grid */}
 
         {/* Extra padding for mobile to prevent overlap with bottom nav */}
         <div className="h-2 lg:hidden" aria-hidden="true" />

@@ -112,7 +112,7 @@ export default function UserGreeting({ userName, familyMembers = [] }: UserGreet
 
   return (
     <>
-      <section className="px-5 lg:px-6 pt-4 lg:pt-6 pb-3 lg:pb-4 max-w-[480px] mx-auto lg:max-w-full" style={{ backgroundColor: '#f7f7fc' }}>
+      <section className="px-5 lg:px-8 pt-4 lg:pt-6 pb-3 lg:pb-4 max-w-[480px] mx-auto lg:max-w-[1240px]" style={{ backgroundColor: '#f7f7fc' }}>
         {/* Mobile View - Figma Design */}
         <div className="lg:hidden flex items-center justify-between gap-4">
           {/* Left: Avatar + Greeting */}

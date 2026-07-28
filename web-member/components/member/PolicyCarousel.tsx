@@ -73,13 +73,13 @@ export default function PolicyCarousel({ policies }: PolicyCarouselProps) {
   };
 
   return (
-    <section className="pt-3 pb-0 lg:py-6 max-w-[480px] mx-auto lg:max-w-full">
-      <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-3 lg:mb-6 px-5 lg:px-6" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
-        Your Policies
+    <section className="pt-3 pb-0 lg:py-0 max-w-[480px] mx-auto lg:max-w-full">
+      <h2 className="text-[18px] font-medium text-[#1c1c1c] mb-3 lg:mb-[26px] px-5 lg:px-0" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
+        Your Policy
       </h2>
 
       {/* Carousel Container with Navigation Arrows */}
-      <div className="relative group px-5 lg:px-6">
+      <div className="relative group px-5 lg:px-0">
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}

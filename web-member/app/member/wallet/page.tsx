@@ -567,7 +567,7 @@ export default function WalletPage() {
         <div
           className="rounded-2xl p-5 lg:p-6 mb-6 border-2 shadow-lg"
           style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#F7DCAF'
           }}
         >

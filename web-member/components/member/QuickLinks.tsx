@@ -212,16 +212,16 @@ export default function QuickLinks() {
     const content = (
       <>
         <div
-          className="rounded-full w-16 h-16 flex items-center justify-center flex-shrink-0"
+          className="rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"
           style={{
-            background: 'linear-gradient(261.92deg, rgba(223, 232, 255, 0.75) 4.4%, rgba(189, 209, 255, 0.75) 91.97%)',
+            background: 'linear-gradient(180deg, #CDDDFE 0%, #E4EBFE 100%)',
             border: '1px solid #A4BFFE7A',
             boxShadow: '-2px 11px 46.1px 0px #0000000D'
           }}
         >
           {link.icon}
         </div>
-        <span className="text-gray-700 text-sm text-center leading-snug font-semibold w-full">
+        <span className="text-[#374151] text-sm text-left leading-snug font-semibold flex-1">
           {link.id === 'download-policy' && isGenerating ? 'Generating...' : link.label}
         </span>
       </>
@@ -233,7 +233,7 @@ export default function QuickLinks() {
           key={link.id}
           onClick={() => handleLinkClick(link)}
           disabled={isGenerating}
-          className={`flex-1 min-h-[140px] bg-white border-2 border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-start gap-4 transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95 ${isGenerating ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+          className={`w-[300px] h-[88px] flex-shrink-0 bg-white border-2 border-[#E5E7EB] rounded-[14px] px-[14px] flex items-center gap-3 transition-all duration-200 hover:border-[#A4BFFE7A] hover:shadow-md active:scale-[0.99] ${isGenerating ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
         >
           {content}
         </button>
@@ -244,7 +244,7 @@ export default function QuickLinks() {
       <Link
         key={link.id}
         href={link.href!}
-        className="flex-1 min-h-[140px] bg-white border-2 border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-start gap-4 transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95"
+        className="w-[300px] h-[88px] flex-shrink-0 bg-white border-2 border-[#E5E7EB] rounded-[14px] px-[14px] flex items-center gap-3 transition-all duration-200 hover:border-[#A4BFFE7A] hover:shadow-md active:scale-[0.99]"
       >
         {content}
       </Link>
@@ -252,8 +252,8 @@ export default function QuickLinks() {
   };
 
   return (
-    <section className="px-5 lg:px-6 pt-2 pb-0 lg:py-8 max-w-[480px] mx-auto lg:max-w-full">
-      <h2 className="text-[18px] lg:text-xl font-medium text-[#1c1c1c] mb-2 lg:mb-6" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
+    <section className="px-5 lg:px-0 pt-2 pb-0 lg:py-0 max-w-[480px] mx-auto lg:max-w-full">
+      <h2 className="text-[18px] font-medium text-[#1c1c1c] mb-2 lg:mb-[14px]" style={{ fontFamily: 'SF Pro Display, system-ui, sans-serif', lineHeight: '1.2' }}>
         Quick Links
       </h2>
 
@@ -262,8 +262,8 @@ export default function QuickLinks() {
         {mobileQuickLinksConfig.map((link) => renderMobileQuickLink(link))}
       </div>
 
-      {/* Desktop: Grid layout with original design */}
-      <div className="hidden lg:flex lg:gap-4">
+      {/* Desktop: vertical stack of compact icon-left cards (dashboard mockup) */}
+      <div className="hidden lg:flex lg:flex-col lg:gap-[10px]">
         {quickLinksConfig.map((link) => renderDesktopQuickLink(link))}
       </div>
 

@@ -655,7 +655,7 @@ export default function HealthRecordsPage() {
 
               {totalPrescriptions === 0 && !loading && (
                 <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-                  background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+                  background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
                   borderColor: '#86ACD8'
                 }}>
                   <div
@@ -678,7 +678,7 @@ export default function HealthRecordsPage() {
           )
         ) : (
           <div className="rounded-2xl p-8 lg:p-12 text-center border-2 shadow-md" style={{
-            background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+            background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
             borderColor: '#86ACD8'
           }}>
             <div

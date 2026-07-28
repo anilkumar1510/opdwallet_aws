@@ -117,8 +117,8 @@ export default function BenefitCardEnhanced({
           border: '1.5px solid #E5E7EB',
           borderRadius: '16px',
           boxShadow: '0 1px 8px 0 rgba(3, 77, 162, 0.24)',
-          minHeight: '123px',
-          padding: '18px 11px 11px 11px'
+          minHeight: '96px',
+          padding: '16px 14px'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.border = '1.5px solid #0F5FDC'
@@ -128,39 +128,26 @@ export default function BenefitCardEnhanced({
         }}
       >
         {/* Title and Chevron */}
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start justify-between mb-2.5">
           <h3 className="text-base font-semibold leading-tight flex-1 pr-2" style={{ color: '#034DA2', fontSize: '16px' }}>
             {title}
           </h3>
           <ChevronRightIcon className="w-[13.5px] h-[13.5px] flex-shrink-0" style={{ color: '#545454' }} />
         </div>
 
-        {/* Amount Display */}
-        <div style={{ marginBottom: '4px' }}>
-          <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030' }}>
-            ₹{formatCurrency(current)}
-          </span>
-          <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px' }}>
-            / ₹{formatCurrency(total)}
-          </span>
-        </div>
-
-        {/* Progress Bar */}
-        <div style={{ marginBottom: '4px' }}>
-          <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#F6F6F6' }}>
-            <div
-              className="h-full transition-all duration-500"
-              style={{
-                width: `${Math.min(availablePercentage, 100)}%`,
-                backgroundColor: getProgressColor()
-              }}
-            />
+        {/* Amount + Amount Left, grouped at the bottom (no progress bar per mockup) */}
+        <div className="mt-auto">
+          <div style={{ marginBottom: '2px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 400, color: '#303030' }}>
+              ₹{formatCurrency(current)}
+            </span>
+            <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.40)', marginLeft: '4px' }}>
+              / ₹{formatCurrency(total)}
+            </span>
           </div>
-        </div>
-
-        {/* Amount Left */}
-        <div className="mt-auto" style={{ fontSize: '12px', fontWeight: 400, color: '#303030', lineHeight: '120%' }}>
-          ₹{formatCurrency(amountLeft)} left
+          <div style={{ fontSize: '12px', fontWeight: 400, color: '#303030', lineHeight: '120%' }}>
+            ₹{formatCurrency(amountLeft)} left
+          </div>
         </div>
       </Link>
     </>

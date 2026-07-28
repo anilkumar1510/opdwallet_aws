@@ -64,7 +64,7 @@ export function DocumentUploadSection({
       <div className="space-y-5 lg:space-y-6 animate-fadeIn">
         {/* Prescription Upload Section */}
         <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
-          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
           borderColor: '#F7DCAF'
         }}>
           <div className="flex items-center gap-4 mb-6">
@@ -165,7 +165,7 @@ export function DocumentUploadSection({
 
         {/* Bills Upload Section */}
         <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
-          background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+          background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
           borderColor: '#F7DCAF'
         }}>
           <div className="flex items-center gap-4 mb-6">
@@ -271,7 +271,7 @@ export function DocumentUploadSection({
   return (
     <div className="space-y-5 lg:space-y-6 animate-fadeIn">
       <div className="rounded-2xl p-6 lg:p-8 border-2 shadow-md" style={{
-        background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+        background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
         borderColor: '#F7DCAF'
       }}>
         {/* Upload Area */}

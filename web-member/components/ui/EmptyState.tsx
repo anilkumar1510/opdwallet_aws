@@ -21,7 +21,7 @@ export default function EmptyState({
     <div
       className="rounded-xl p-8 lg:p-12 text-center overflow-hidden break-words"
       style={{
-        background: 'linear-gradient(169.98deg, #EFF4FF 19.71%, #FEF3E9 66.63%, #FEF3E9 108.92%)',
+        background: 'linear-gradient(135deg, rgba(224, 233, 255, 0.48) 0%, rgba(200, 216, 255, 0.48) 100%)',
         border: '2px solid #F7DCAF',
       }}
     >
