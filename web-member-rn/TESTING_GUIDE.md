@@ -1,363 +1,208 @@
 # Testing the RN Member Portal Locally
 
-## Quick Start
+**Last verified:** July 28, 2026
 
-### 1. Start the Backend (if not running)
+All paths below are relative to the repository root. Run the commands from wherever you cloned
+the repo — do not copy absolute paths out of this file.
+
+---
+
+## 1. Start the Backend
+
+The RN app talks to the NestJS API on port **4000**. Either method works.
+
+### Option A — Without Docker (Windows-friendly)
+
+Requires MongoDB running locally on `localhost:27017`.
 
 ```bash
-cd /Users/nitendraagarwal/opdwallet_aws
+cd api
+npm run start:dev
+```
+
+The API reads `api/.env`. For a local no-Docker setup that means:
+
+```bash
+MONGODB_URI=mongodb://localhost:27017/opd_wallet
+USE_SECRETS_MANAGER=false
+PORT=4000
+```
+
+Redis is optional — the API starts and serves requests without it, cache reads simply miss.
+
+### Option B — With Docker
+
+```bash
 docker-compose up -d
 ```
 
-Wait for the backend to be ready (~30 seconds).
+Wait ~30 seconds for the containers to become healthy.
 
-### 2. Start the RN App
+### Verify the backend is up
 
-Open a new terminal:
-
-```bash
-cd /Users/nitendraagarwal/opdwallet_aws/web-member-rn
-npm start
-```
-
-### 3. Access the App
-
-Once Expo Dev Server starts, you'll see options:
-
-```
-› Press w │ open web
-› Press a │ open Android
-› Press i │ open iOS
-```
-
-**Press `w` to open in web browser** - This will test the responsive login!
-
----
-
-## 🌐 Web Testing URLs
-
-After pressing `w`, the app will automatically open at:
-
-```
-http://localhost:8081
-```
-
-Or manually visit:
-- **Main URL:** http://localhost:8081
-- **Alternative:** http://localhost:19006 (if 8081 is busy)
-
----
-
-## 📱 Testing Responsive Design
-
-### Test Desktop Layout (Side-by-Side)
-
-1. Open in browser: http://localhost:8081
-2. Resize browser window to **≥ 1024px wide**
-3. You should see:
-   - ✅ Login form on LEFT
-   - ✅ Brand section on RIGHT
-   - ✅ 3 feature cards
-   - ✅ Large text (32px)
-   - ✅ Large member illustration (256px)
-
-### Test Tablet Layout
-
-1. Open browser developer tools (F12)
-2. Toggle device toolbar (Ctrl+Shift+M / Cmd+Shift+M)
-3. Select iPad or set width to **768px**
-4. You should see:
-   - ✅ Vertical stack layout
-   - ✅ 3 feature cards
-   - ✅ Medium text (28px)
-   - ✅ All elements visible
-
-### Test Mobile Layout
-
-1. In device toolbar, select iPhone or set width to **375px**
-2. You should see:
-   - ✅ Vertical stack layout
-   - ✅ Only 1 feature card (OPD Coverage)
-   - ✅ Small text (24px)
-   - ✅ Hidden: subtitle, demo credentials, contact support
-   - ✅ Small member illustration (128px)
-
----
-
-## 🧪 Test Checklist
-
-### Visual Tests
-
-- [ ] **Desktop (≥1024px):** Side-by-side layout
-- [ ] **Desktop:** 3 feature cards visible
-- [ ] **Desktop:** Large text and images
-- [ ] **Tablet (640-1024px):** Vertical layout, 3 cards
-- [ ] **Mobile (<640px):** Vertical layout, 1 card
-- [ ] **Mobile:** Demo credentials hidden
-- [ ] **Mobile:** Subtitle hidden
-
-### Functionality Tests
-
-- [ ] **Login works** with demo credentials
-  ```
-  Email: john.doe@company.com
-  Password: Member@123
-  ```
-- [ ] **Password toggle** shows/hides password
-- [ ] **Input focus** shows blue border and ring
-- [ ] **Button hover** (web) changes color on hover
-- [ ] **Contact Support** link is clickable (desktop/tablet)
-- [ ] **Error message** displays on invalid login
-- [ ] **Loading state** shows spinner during login
-
-### Responsive Tests
-
-- [ ] **Resize window** from mobile → tablet → desktop
-- [ ] **Layout changes** at 640px breakpoint
-- [ ] **Layout changes** at 1024px breakpoint
-- [ ] **Elements show/hide** correctly at breakpoints
-- [ ] **Text sizes** scale smoothly
-- [ ] **Images** scale smoothly
-- [ ] **Spacing** scales smoothly
-
----
-
-## 🔐 Login Credentials
-
-Use these demo credentials to test login:
-
-```
-Email: john.doe@company.com
-Password: Member@123
-```
-
-After successful login, you'll be redirected to the dashboard at:
-```
-http://localhost:8081/member
-```
-
----
-
-## 📊 Compare with Next.js Web Portal
-
-To compare side-by-side:
-
-### 1. Start Next.js Portal
-
-```bash
-# In a new terminal
-cd /Users/nitendraagarwal/opdwallet_aws/web-member
-npm run dev
-```
-
-Access at: http://localhost:3001
-
-### 2. Start RN Portal (Web)
-
-```bash
-# In another terminal
-cd /Users/nitendraagarwal/opdwallet_aws/web-member-rn
-npm run web
-```
-
-Access at: http://localhost:8081
-
-### 3. Compare Side-by-Side
-
-Open both URLs in different browser tabs/windows:
-- **Tab 1:** http://localhost:3001 (Next.js)
-- **Tab 2:** http://localhost:8081 (RN Web)
-
-**Desktop (≥1024px):** Should look nearly identical!
-- Same side-by-side layout
-- Same 3 feature cards
-- Same colors and styling
-- Same responsive behavior
-
----
-
-## 📱 Test on Physical Device
-
-### iOS/Android (Physical Device)
-
-1. Install **Expo Go** app from App Store/Play Store
-2. Start the dev server:
-   ```bash
-   cd web-member-rn
-   npm start
-   ```
-3. Scan the QR code shown in terminal with:
-   - **iOS:** Camera app
-   - **Android:** Expo Go app
-
-4. The app will load on your device
-5. Test the login with mobile layout
-
----
-
-## 🐛 Troubleshooting
-
-### Backend Not Running
-
-If you see connection errors:
-
-```bash
-cd /Users/nitendraagarwal/opdwallet_aws
-docker-compose up -d
-```
-
-Wait ~30 seconds, then check:
 ```bash
 curl http://localhost:4000/api/health
 ```
 
-Should return: `{"status":"ok"}`
+Returns `status`, `uptime`, `environment`, a `database` field (`healthy` / `unhealthy`), and
+memory usage. If `database` says `unhealthy`, Mongo is not reachable — fix that before
+testing the app, since every screen will fail on data load.
 
-### Port Already in Use
+---
 
-If port 8081 is busy:
+## 2. Configure the API URL
+
+The RN app reads `EXPO_PUBLIC_API_URL` from `web-member-rn/.env`:
 
 ```bash
-# Kill the process using port 8081
-lsof -ti:8081 | xargs kill -9
-
-# Or use alternative port
-npm start -- --port 19006
+EXPO_PUBLIC_API_URL=http://localhost:4000/api
+EXPO_PUBLIC_SESSION_TIMEOUT_MINUTES=15
 ```
 
-### Expo Cache Issues
+Use `localhost` for browser/web testing. For a **physical device** over Expo Go, `localhost`
+points at the phone, so set this to your machine's LAN IP instead (for example
+`http://192.168.1.20:4000/api`) and make sure the phone is on the same network.
 
-Clear Expo cache:
+`EXPO_PUBLIC_SESSION_TIMEOUT_MINUTES` controls the HIPAA automatic-logoff timer — lower it if
+you want to test idle logout without waiting 15 minutes.
+
+---
+
+## 3. Start the RN App
 
 ```bash
 cd web-member-rn
+npx expo start --web --port 8081
+```
+
+Or run `npm start` and press `w` for web, `a` for Android, `i` for iOS.
+
+The app serves at **http://localhost:8081**. The API already allows this origin — its
+development CORS list covers ports 8081, 8082, 8083 and 19006 in addition to all six web
+portals, so no backend change is needed to run Expo on an alternate port.
+
+### Physical device
+
+1. Install **Expo Go** from the App Store / Play Store.
+2. Run `npm start` in `web-member-rn`.
+3. Scan the QR code (iOS: Camera app, Android: Expo Go).
+4. Confirm `EXPO_PUBLIC_API_URL` uses your LAN IP, not `localhost`.
+
+---
+
+## 4. Login Credentials
+
+Login is by **email**. The API returns an httpOnly `opd_session` cookie.
+
+| Account | Password | Notes |
+|---------|----------|-------|
+| `standard@gmail.com` | `User@123` | Preferred demo member — fullest seeded data |
+| `john.doe@company.com` | `Member@123` | Alternate member account |
+
+Member password hashes live in the `users` collection under `passwordHash`. Other seeded
+member emails use custom passwords that are not documented — stick to the two above.
+
+After login you land on the dashboard at `http://localhost:8081/member`.
+
+---
+
+## 5. Test Checklist
+
+### Session & Auth
+
+- [ ] Login succeeds with valid credentials
+- [ ] Invalid password shows a readable error (not a crash or raw object)
+- [ ] Session survives a page refresh on web
+- [ ] Idle logout fires after `EXPO_PUBLIC_SESSION_TIMEOUT_MINUTES`
+- [ ] Logout clears the session and returns to login
+
+### Core Screens
+
+- [ ] Dashboard loads wallet balance and policy cards from the API (not mock data)
+- [ ] Pull-to-refresh re-fetches dashboard data
+- [ ] Wallet and Transactions show real balances and history
+- [ ] Profile and Health Records load
+- [ ] Bookings and Carts list existing records
+
+### Service Flows
+
+- [ ] In-clinic consultation: specialties → doctors → patient → slot → confirm
+- [ ] Online consultation: specialties → doctors → confirm
+- [ ] Dental and Vision: clinics → patient → slot → confirm
+- [ ] Vaccination: home → patient → vendor → slot → confirm (RN-only flow)
+- [ ] Pathology Lab and Radiology/Cardiology: upload prescription, then booking
+- [ ] Claims: list, detail, and new-claim submission
+
+### Responsive (web target)
+
+| Width | Expected |
+|-------|----------|
+| 375px | Vertical stack, single feature card, compact type |
+| 768px | Vertical stack, three feature cards |
+| ≥1024px | Side-by-side login form and brand panel |
+
+- [ ] Layout switches cleanly at the 640px and 1024px breakpoints
+- [ ] No horizontal scrollbar at any width
+- [ ] Images and spacing scale rather than clip
+
+### Error Handling
+
+- [ ] Screens show a loading state, not a blank screen, while fetching
+- [ ] API failure shows an error state with a retry affordance
+- [ ] Stopping the API mid-session surfaces an error rather than hanging
+
+---
+
+## 6. Comparing Against the Next.js Portal
+
+```bash
+cd web-member
+npm run dev
+```
+
+The web member portal runs on **port 3002** and has **no basePath**, so it is reachable at
+`http://localhost:3002` directly. Open it beside `http://localhost:8081` to compare.
+
+Note that parity is not total and is not expected to be: vaccination, notifications, the
+unified cart screen and the AHC home screen exist only on RN, while settings, benefits,
+family management, orders and wellness exist only on web. See
+[docs/member_portal_rn/SCREENS_CHECKLIST.md](../docs/member_portal_rn/SCREENS_CHECKLIST.md)
+for the current mapping.
+
+---
+
+## 7. Troubleshooting
+
+**Connection errors on every screen** — the API is down or `EXPO_PUBLIC_API_URL` is wrong.
+Check `curl http://localhost:4000/api/health` first.
+
+**Works in browser, fails on phone** — `EXPO_PUBLIC_API_URL` is set to `localhost`. Change it
+to your machine's LAN IP and restart Expo (env changes are read at bundle time).
+
+**Port 8081 already in use** — start on another allowed port:
+
+```bash
+npx expo start --web --port 8082
+```
+
+**Stale bundle after changing `.env` or config** — clear the cache:
+
+```bash
 npx expo start --clear
 ```
 
-### Module Not Found
-
-Reinstall dependencies:
+**Module not found after a dependency change**
 
 ```bash
-cd web-member-rn
 rm -rf node_modules
 npm install
 ```
 
 ---
 
-## 🎨 Visual Comparison Guide
+## Related Documentation
 
-### Expected Desktop Layout (≥1024px)
-
-```
-┌─────────────────────────────────────────────────────┐
-│  [Habit Logo]                                       │
-├──────────────────────┬──────────────────────────────┤
-│                      │                              │
-│   LOGIN FORM         │   BRAND SECTION              │
-│   (Left - 50%)       │   (Right - 50%)              │
-│                      │                              │
-│   Welcome Member     │   [Member Illustration]      │
-│                      │   Member Portal              │
-│   Email: [ ]         │                              │
-│   Password: [ ]      │   ┌─────────────────────┐   │
-│                      │   │ OPD Coverage        │   │
-│   [Sign In]          │   └─────────────────────┘   │
-│                      │   ┌─────────────────────┐   │
-│   Contact Support    │   │ Easy Claims         │   │
-│                      │   └─────────────────────┘   │
-│   Demo Credentials   │   ┌─────────────────────┐   │
-│                      │   │ Family Coverage     │   │
-│                      │   └─────────────────────┘   │
-└──────────────────────┴──────────────────────────────┘
-```
-
-### Expected Mobile Layout (<640px)
-
-```
-┌───────────────────────┐
-│  [Habit Logo]         │
-├───────────────────────┤
-│ BRAND SECTION (Top)   │
-│                       │
-│ [Member Illustration] │
-│ Member Portal         │
-│                       │
-│ ┌───────────────────┐ │
-│ │ OPD Coverage      │ │
-│ └───────────────────┘ │
-├───────────────────────┤
-│ LOGIN FORM (Bottom)   │
-│                       │
-│ Welcome Member        │
-│                       │
-│ Email: [ ]            │
-│ Password: [ ]         │
-│                       │
-│ [Sign In]             │
-└───────────────────────┘
-```
-
----
-
-## 📸 Screenshot Breakpoints
-
-Test at these exact widths:
-
-1. **375px** - iPhone SE (Mobile)
-2. **640px** - Breakpoint transition
-3. **768px** - iPad (Tablet)
-4. **1024px** - Breakpoint transition
-5. **1280px** - Desktop
-6. **1920px** - Large Desktop
-
----
-
-## ✅ Success Criteria
-
-Your responsive login is working correctly if:
-
-1. ✅ Desktop shows side-by-side layout
-2. ✅ Mobile shows vertical stacked layout
-3. ✅ Feature cards: 1 on mobile, 3 on desktop
-4. ✅ Text sizes scale (24px → 32px)
-5. ✅ Images scale (128px → 256px)
-6. ✅ Demo credentials hidden on mobile
-7. ✅ Contact support link works
-8. ✅ Input focus shows blue ring
-9. ✅ Button hover works on web
-10. ✅ Login works with demo credentials
-
----
-
-## 🎯 Quick Test Commands
-
-```bash
-# Full test sequence
-cd /Users/nitendraagarwal/opdwallet_aws
-
-# 1. Start backend
-docker-compose up -d
-
-# 2. Start RN web (in new terminal)
-cd web-member-rn && npm run web
-
-# 3. Open browser
-open http://localhost:8081
-```
-
----
-
-## 📞 Need Help?
-
-If something doesn't work:
-
-1. Check backend is running: `docker-compose ps`
-2. Check logs: `cd web-member-rn && npm start`
-3. Clear cache: `npx expo start --clear`
-4. Restart: Kill terminal and run again
-
----
-
-*Happy Testing! 🚀*
+- [STRATEGY.md](../docs/member_portal_rn/STRATEGY.md) — why the RN portal exists and its constraints
+- [COMPONENT_PATTERNS.md](../docs/member_portal_rn/COMPONENT_PATTERNS.md) — UI building blocks
+- [SCREENS_CHECKLIST.md](../docs/member_portal_rn/SCREENS_CHECKLIST.md) — web/RN screen parity
+- [docs/TECH_DEBT.md](../docs/TECH_DEBT.md) — known outstanding work

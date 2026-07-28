@@ -1,5 +1,19 @@
 # Member Portal Documentation
 
+This document covers the **Next.js** member portal (`web-member`). A second member client, a
+React Native / Expo app (`web-member-rn`), shares the same API and database — see
+[member_portal_rn/](./member_portal_rn/) and the
+[screen parity mapping](./member_portal_rn/SCREENS_CHECKLIST.md).
+
+**Two things that regularly cause confusion:**
+
+1. **Vaccination booking exists only in the React Native app.** There are no vaccination pages
+   in this portal, though the Admin and Operations portals both have management screens for it.
+2. **Service categories were renamed in February 2026** (Lab → Pathology, Diagnostics →
+   Radiology, CAT008 Wellness Programs → Health Packages), but the **web routes below still use
+   the older path names**. The React Native app uses the new names. Route paths and displayed
+   category labels therefore do not match each other.
+
 ## Pages
 
 ### Landing & Dashboard
@@ -39,13 +53,50 @@
 ### Health Records
 - **/member/health-records** - View all prescriptions and medical records from past consultations
 
-### Lab Tests
+### Lab Tests (category now labelled "Pathology")
 - **/member/lab-tests** - Lab diagnostics homepage
 - **/member/lab-tests/upload** - Upload prescription photo to order lab tests
 - **/member/lab-tests/cart/[id]** - Review lab test cart created from prescription
 - **/member/lab-tests/cart/[id]/vendor/[vendorId]** - Select lab vendor and pick time slot for sample collection
+- **/member/lab-tests/booking/[cartId]** - Complete booking for a lab cart
 - **/member/lab-tests/orders** - View all lab test orders (pending, completed, cancelled)
 - **/member/lab-tests/orders/[orderId]** - View detailed lab order status and information
+
+### Diagnostics (category now labelled "Radiology & Cardiology")
+- **/member/diagnostics** - Diagnostic services homepage
+- **/member/diagnostics/upload** - Upload prescription photo to order diagnostic tests
+- **/member/diagnostics/cart/[id]** - Review diagnostic cart created from prescription
+- **/member/diagnostics/cart/[id]/vendor/[vendorId]** - Select diagnostic centre and time slot
+- **/member/diagnostics/booking/[cartId]** - Complete booking for a diagnostic cart
+- **/member/diagnostics/orders** - View all diagnostic orders
+- **/member/diagnostics/orders/[orderId]** - View detailed diagnostic order status
+
+### Dental
+- **/member/dental** - Dental services homepage
+- **/member/dental/clinics** - Browse and select a dental clinic
+- **/member/dental/select-patient** - Choose which family member the booking is for
+- **/member/dental/select-slot** - Pick date and time slot
+- **/member/dental/confirm** - Review and confirm the dental booking
+
+### Vision
+- **/member/vision** - Vision care homepage
+- **/member/vision/clinics** - Browse and select a vision clinic
+- **/member/vision/select-patient** - Choose which family member the booking is for
+- **/member/vision/select-slot** - Pick date and time slot
+- **/member/vision/confirm** - Review and confirm the vision booking
+- **/member/vision/payment/[bookingId]** - Pay for a vision booking
+
+### Annual Health Checkup (AHC)
+- **/member/ahc/booking** - Start an AHC booking from the eligible package
+- **/member/ahc/booking/diagnostic** - Select diagnostic components of the AHC package
+- **/member/ahc/booking/payment** - Pay for the AHC booking
+
+### Wellness & Health Packages
+- **/member/wellness** - Wellness services, driven by the AHC package and eligibility (category CAT008, now labelled "Health Packages")
+- **/member/health-checkup** - Annual Health Check landing page (placeholder — Coming Soon)
+
+### Support
+- **/member/helpline** - Helpline and support contact information
 
 ### Pharmacy
 - **/member/pharmacy** - Pharmacy services (Coming Soon)

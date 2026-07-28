@@ -1,19 +1,26 @@
-# Screens Replication Checklist
+# Screens Parity Checklist — web-member-rn
 
-Track progress of replicating web-member portal screens to React Native.
+Tracks parity between the Next.js member portal (`web-member`) and the React Native / Expo member portal (`web-member-rn`).
+
+**Last verified:** July 28, 2026 (against `web-member-rn/app/` and `web-member/app/`)
 
 Legend:
-- [x] Completed
-- [ ] Not started
-- [WIP] Work in progress
+- [x] Built in RN
+- [ ] Not built in RN
+- **RN-only** — exists in RN but not in the web portal
+
+> Route naming diverges between the two apps. RN uses `app/member/...` (Expo Router) with
+> service-oriented names, while web uses `app/member/...` with the older names. The mapping
+> below is the source of truth — do not assume the paths match.
 
 ---
 
-## Authentication
+## Authentication & Entry
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Login | `/` | `/(auth)/index.tsx` | [x] Completed |
+| Entry / redirect | `/` | `app/index.tsx` | [x] |
+| Login | `/` | `app/login.tsx` | [x] |
 
 ---
 
@@ -21,37 +28,18 @@ Legend:
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Dashboard | `/member` | `/(member)/index.tsx` | [x] Completed |
-| Profile | `/member/profile` | `/(member)/profile.tsx` | [ ] |
-| Settings | `/member/settings` | `/(member)/settings.tsx` | [ ] |
-| Wallet | `/member/wallet` | `/(member)/wallet.tsx` | [ ] |
-| Transactions | `/member/transactions` | `/(member)/transactions.tsx` | [ ] |
-| Benefits | `/member/benefits` | `/(member)/benefits.tsx` | [ ] |
-| Services | `/member/services` | `/(member)/services.tsx` | [ ] |
-| Helpline | `/member/helpline` | `/(member)/helpline.tsx` | [ ] |
-| Health Records | `/member/health-records` | `/(member)/health-records.tsx` | [ ] |
-
----
-
-## Appointments Flow
-
-| Screen | Web Path | RN Path | Status |
-|--------|----------|---------|--------|
-| Appointments List | `/member/appointments` | `/(member)/appointments/index.tsx` | [ ] |
-| Specialties | `/member/appointments/specialties` | `/(member)/appointments/specialties.tsx` | [ ] |
-| Doctors | `/member/appointments/doctors` | `/(member)/appointments/doctors.tsx` | [ ] |
-| Select Patient | `/member/appointments/select-patient` | `/(member)/appointments/select-patient.tsx` | [ ] |
-| Select Slot | `/member/appointments/select-slot` | `/(member)/appointments/select-slot.tsx` | [ ] |
-| Confirm | `/member/appointments/confirm` | `/(member)/appointments/confirm.tsx` | [ ] |
-
----
-
-## Bookings
-
-| Screen | Web Path | RN Path | Status |
-|--------|----------|---------|--------|
-| Bookings List | `/member/bookings` | `/(member)/bookings/index.tsx` | [ ] |
-| New Booking | `/member/bookings/new` | `/(member)/bookings/new.tsx` | [ ] |
+| Dashboard | `/member` | `member/index.tsx` | [x] |
+| Profile | `/member/profile` | `member/profile.tsx` | [x] |
+| Wallet | `/member/wallet` | `member/wallet.tsx` | [x] |
+| Transactions | `/member/transactions` | `member/transactions.tsx` | [x] |
+| Services | `/member/services` | `member/services.tsx` | [x] |
+| Health Records | `/member/health-records` | `member/health-records.tsx` | [x] |
+| Helpline | `/member/helpline` | `member/helpline.tsx` | [x] |
+| Bookings | `/member/bookings` | `member/bookings.tsx` | [x] |
+| Notifications | — | `member/notifications.tsx` | **RN-only** |
+| Carts (unified) | — | `member/carts.tsx` | **RN-only** |
+| Settings | `/member/settings` | — | [ ] |
+| Benefits | `/member/benefits` | — | [ ] |
 
 ---
 
@@ -59,58 +47,64 @@ Legend:
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Claims List | `/member/claims` | `/(member)/claims/index.tsx` | [ ] |
-| Claim Details | `/member/claims/[id]` | `/(member)/claims/[id].tsx` | [ ] |
-| New Claim | `/member/claims/new` | `/(member)/claims/new.tsx` | [ ] |
+| Claims List | `/member/claims` | `member/claims.tsx` | [x] |
+| Claim Details | `/member/claims/[id]` | `member/claims/[id].tsx` | [x] |
+| New Claim | `/member/claims/new` | `member/claims/new.tsx` | [x] |
+
+> Draft persistence for the new-claim form is still outstanding — see [TECH_DEBT.md](../TECH_DEBT.md).
 
 ---
 
-## Orders
+## In-Clinic Consultation (web: "Appointments")
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Orders List | `/member/orders` | `/(member)/orders/index.tsx` | [ ] |
-| Order Details | `/member/orders/[transactionId]` | `/(member)/orders/[transactionId].tsx` | [ ] |
+| Home / List | `/member/appointments` | `member/in-clinic-consultation/index.tsx` | [x] |
+| Specialties | `/member/appointments/specialties` | `member/in-clinic-consultation/specialties.tsx` | [x] |
+| Doctors | `/member/appointments/doctors` | `member/in-clinic-consultation/doctors.tsx` | [x] |
+| Select Patient | `/member/appointments/select-patient` | `member/in-clinic-consultation/select-patient.tsx` | [x] |
+| Select Slot | `/member/appointments/select-slot` | `member/in-clinic-consultation/select-slot.tsx` | [x] |
+| Confirm | `/member/appointments/confirm` | `member/in-clinic-consultation/confirm.tsx` | [x] |
 
 ---
 
-## Lab Tests
+## Online Consultation (web: "Online Consult")
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Lab Tests Home | `/member/lab-tests` | `/(member)/lab-tests/index.tsx` | [ ] |
-| Cart | `/member/lab-tests/cart/[id]` | `/(member)/lab-tests/cart/[id].tsx` | [ ] |
-| Vendor Selection | `/member/lab-tests/cart/[id]/vendor/[vendorId]` | `/(member)/lab-tests/vendor/[vendorId].tsx` | [ ] |
-| Booking | `/member/lab-tests/booking/[cartId]` | `/(member)/lab-tests/booking/[cartId].tsx` | [ ] |
-| Orders | `/member/lab-tests/orders` | `/(member)/lab-tests/orders/index.tsx` | [ ] |
-| Order Details | `/member/lab-tests/orders/[orderId]` | `/(member)/lab-tests/orders/[orderId].tsx` | [ ] |
-| Upload | `/member/lab-tests/upload` | `/(member)/lab-tests/upload.tsx` | [ ] |
+| Home | `/member/online-consult` | `member/online-consultation.tsx` | [x] |
+| Specialties | `/member/online-consult/specialties` | `member/online-consultation/specialties.tsx` | [x] |
+| Doctors | `/member/online-consult/doctors` | `member/online-consultation/doctors.tsx` | [x] |
+| Confirm | `/member/online-consult/confirm` | `member/online-consultation/confirm.tsx` | [x] |
+| Consultation Room | `/member/consultations/[appointmentId]` | `member/consultations/[appointmentId].tsx` | [x] |
 
 ---
 
-## Diagnostics
+## Pathology Lab (web: "Lab Tests")
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Diagnostics Home | `/member/diagnostics` | `/(member)/diagnostics/index.tsx` | [ ] |
-| Cart | `/member/diagnostics/cart/[id]` | `/(member)/diagnostics/cart/[id].tsx` | [ ] |
-| Vendor Selection | `/member/diagnostics/cart/[id]/vendor/[vendorId]` | `/(member)/diagnostics/vendor/[vendorId].tsx` | [ ] |
-| Booking | `/member/diagnostics/booking/[cartId]` | `/(member)/diagnostics/booking/[cartId].tsx` | [ ] |
-| Orders | `/member/diagnostics/orders` | `/(member)/diagnostics/orders/index.tsx` | [ ] |
-| Order Details | `/member/diagnostics/orders/[orderId]` | `/(member)/diagnostics/orders/[orderId].tsx` | [ ] |
-| Upload | `/member/diagnostics/upload` | `/(member)/diagnostics/upload.tsx` | [ ] |
+| Home | `/member/lab-tests` | `member/pathology-lab/index.tsx` | [x] |
+| Upload Prescription | `/member/lab-tests/upload` | `member/pathology-lab/upload.tsx` | [x] |
+| Booking | `/member/lab-tests/booking/[cartId]` | `member/pathology-lab/booking/[cartId].tsx` | [x] |
+| Cart | `/member/lab-tests/cart/[id]` | — (folded into `member/carts.tsx`) | [ ] |
+| Vendor Selection | `/member/lab-tests/cart/[id]/vendor/[vendorId]` | — | [ ] |
+| Orders List | `/member/lab-tests/orders` | — (folded into `member/bookings.tsx`) | [ ] |
+| Order Details | `/member/lab-tests/orders/[orderId]` | — | [ ] |
 
 ---
 
-## Online Consult
+## Radiology & Cardiology (web: "Diagnostics")
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Online Consult Home | `/member/online-consult` | `/(member)/online-consult/index.tsx` | [ ] |
-| Specialties | `/member/online-consult/specialties` | `/(member)/online-consult/specialties.tsx` | [ ] |
-| Doctors | `/member/online-consult/doctors` | `/(member)/online-consult/doctors.tsx` | [ ] |
-| Confirm | `/member/online-consult/confirm` | `/(member)/online-consult/confirm.tsx` | [ ] |
-| Consultation Room | `/member/consultations/[appointmentId]` | `/(member)/consultations/[appointmentId].tsx` | [ ] |
+| Home | `/member/diagnostics` | `member/radiology-cardiology.tsx` | [x] |
+| Upload Prescription | `/member/diagnostics/upload` | `member/radiology-cardiology/upload.tsx` | [x] |
+| Booking | `/member/diagnostics/booking/[cartId]` | `member/radiology-cardiology/booking/[cartId].tsx` | [x] |
+| Cart | `/member/diagnostics/cart/[id]` | — (folded into `member/carts.tsx`) | [ ] |
+| Vendor Selection | `/member/diagnostics/cart/[id]/vendor/[vendorId]` | — | [ ] |
+| Orders List | `/member/diagnostics/orders` | — (folded into `member/bookings.tsx`) | [ ] |
+| Order Details | `/member/diagnostics/orders/[orderId]` | — | [ ] |
 
 ---
 
@@ -118,11 +112,11 @@ Legend:
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Dental Home | `/member/dental` | `/(member)/dental/index.tsx` | [ ] |
-| Clinics | `/member/dental/clinics` | `/(member)/dental/clinics.tsx` | [ ] |
-| Select Patient | `/member/dental/select-patient` | `/(member)/dental/select-patient.tsx` | [ ] |
-| Select Slot | `/member/dental/select-slot` | `/(member)/dental/select-slot.tsx` | [ ] |
-| Confirm | `/member/dental/confirm` | `/(member)/dental/confirm.tsx` | [ ] |
+| Dental Home | `/member/dental` | `member/dental.tsx` | [x] |
+| Clinics | `/member/dental/clinics` | `member/dental/clinics.tsx` | [x] |
+| Select Patient | `/member/dental/select-patient` | `member/dental/select-patient.tsx` | [x] |
+| Select Slot | `/member/dental/select-slot` | `member/dental/select-slot.tsx` | [x] |
+| Confirm | `/member/dental/confirm` | `member/dental/confirm.tsx` | [x] |
 
 ---
 
@@ -130,22 +124,27 @@ Legend:
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Vision Home | `/member/vision` | `/(member)/vision/index.tsx` | [ ] |
-| Clinics | `/member/vision/clinics` | `/(member)/vision/clinics.tsx` | [ ] |
-| Select Patient | `/member/vision/select-patient` | `/(member)/vision/select-patient.tsx` | [ ] |
-| Select Slot | `/member/vision/select-slot` | `/(member)/vision/select-slot.tsx` | [ ] |
-| Confirm | `/member/vision/confirm` | `/(member)/vision/confirm.tsx` | [ ] |
-| Payment | `/member/vision/payment/[bookingId]` | `/(member)/vision/payment/[bookingId].tsx` | [ ] |
+| Vision Home | `/member/vision` | `member/vision.tsx` | [x] |
+| Clinics | `/member/vision/clinics` | `member/vision/clinics.tsx` | [x] |
+| Select Patient | `/member/vision/select-patient` | `member/vision/select-patient.tsx` | [x] |
+| Select Slot | `/member/vision/select-slot` | `member/vision/select-slot.tsx` | [x] |
+| Confirm | `/member/vision/confirm` | `member/vision/confirm.tsx` | [x] |
+| Payment | `/member/vision/payment/[bookingId]` | `member/vision/payment/[bookingId].tsx` | [x] |
 
 ---
 
-## Other Healthcare
+## Vaccination (RN-only — ahead of web)
 
-| Screen | Web Path | RN Path | Status |
-|--------|----------|---------|--------|
-| Pharmacy | `/member/pharmacy` | `/(member)/pharmacy.tsx` | [ ] |
-| Health Checkup | `/member/health-checkup` | `/(member)/health-checkup.tsx` | [ ] |
-| Wellness | `/member/wellness` | `/(member)/wellness.tsx` | [ ] |
+Added February 11, 2026. The web member portal has **no** vaccination screens; booking is
+available on RN only. Admin and Operations portals have the corresponding management screens.
+
+| Screen | RN Path | Status |
+|--------|---------|--------|
+| Vaccination Home | `member/vaccination/index.tsx` | **RN-only** |
+| Select Patient | `member/vaccination/select-patient.tsx` | **RN-only** |
+| Select Vendor | `member/vaccination/select-vendor.tsx` | **RN-only** |
+| Select Slot | `member/vaccination/select-slot.tsx` | **RN-only** |
+| Confirm | `member/vaccination/confirm.tsx` | **RN-only** |
 
 ---
 
@@ -153,18 +152,25 @@ Legend:
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| AHC Booking | `/member/ahc/booking` | `/(member)/ahc/booking/index.tsx` | [ ] |
-| AHC Diagnostic | `/member/ahc/booking/diagnostic` | `/(member)/ahc/booking/diagnostic.tsx` | [ ] |
-| AHC Payment | `/member/ahc/booking/payment` | `/(member)/ahc/booking/payment.tsx` | [ ] |
+| AHC Home | — | `member/ahc/index.tsx` | **RN-only** |
+| AHC Booking | `/member/ahc/booking` | `member/ahc/booking/index.tsx` | [x] |
+| AHC Diagnostic | `/member/ahc/booking/diagnostic` | `member/ahc/booking/diagnostic.tsx` | [x] |
+| AHC Payment | `/member/ahc/booking/payment` | `member/ahc/booking/payment.tsx` | [x] |
 
 ---
 
-## Family
+## Other Healthcare
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Family Members | `/member/family` | `/(member)/family/index.tsx` | [ ] |
-| Add Family Member | `/member/family/add` | `/(member)/family/add.tsx` | [ ] |
+| Pharmacy | `/member/pharmacy` | `member/pharmacy.tsx` | [x] |
+| Health Packages (web: "Wellness Services") | `/member/wellness` | `member/health-packages.tsx` | [x] |
+| Annual Health Check | `/member/health-checkup` | — | [ ] |
+
+> `health-packages.tsx` is internally still named `WellnessProgramsPage` — it loads the AHC
+> package and eligibility, then routes into the AHC booking flow. It corresponds to web's
+> **Wellness**, not to `/member/health-checkup`, which is a "Coming Soon" placeholder.
+> Category CAT008 was renamed from *Wellness Programs* to *Health Packages* in February 2026.
 
 ---
 
@@ -172,63 +178,35 @@ Legend:
 
 | Screen | Web Path | RN Path | Status |
 |--------|----------|---------|--------|
-| Policy Details | `/member/policy-details/[policyId]` | `/(member)/policy-details/[policyId].tsx` | [ ] |
-| Payments | `/member/payments/[paymentId]` | `/(member)/payments/[paymentId].tsx` | [ ] |
+| Policy Details | `/member/policy-details/[policyId]` | `member/policy-details/[policyId].tsx` | [x] |
+| Payments | `/member/payments/[paymentId]` | `member/payments/[paymentId].tsx` | [x] |
+
+---
+
+## Not Yet Started
+
+| Screen | Web Path |
+|--------|----------|
+| Settings | `/member/settings` |
+| Benefits | `/member/benefits` |
+| Family Members | `/member/family` |
+| Add Family Member | `/member/family/add` |
+| Orders List | `/member/orders` |
+| Order Details | `/member/orders/[transactionId]` |
+| Annual Health Check | `/member/health-checkup` (placeholder on web too) |
+| Pathology / Radiology cart + vendor + order-detail screens | see sections above |
 
 ---
 
 ## Summary
 
-| Category | Total | Completed | Remaining |
-|----------|-------|-----------|-----------|
-| Auth | 1 | 1 | 0 |
-| Core | 9 | 1 | 8 |
-| Appointments | 6 | 0 | 6 |
-| Bookings | 2 | 0 | 2 |
-| Claims | 3 | 0 | 3 |
-| Orders | 2 | 0 | 2 |
-| Lab Tests | 7 | 0 | 7 |
-| Diagnostics | 7 | 0 | 7 |
-| Online Consult | 5 | 0 | 5 |
-| Dental | 5 | 0 | 5 |
-| Vision | 6 | 0 | 6 |
-| Other Healthcare | 3 | 0 | 3 |
-| AHC | 3 | 0 | 3 |
-| Family | 2 | 0 | 2 |
-| Policy & Payments | 2 | 0 | 2 |
-| **TOTAL** | **63** | **2** | **61** |
+| | Count |
+|---|---|
+| RN screen files (excluding `_layout.tsx`) | **56** |
+| Web member routes | 61 |
+| Web screens still missing in RN | 8 standalone + 8 cart/vendor/order sub-screens |
+| RN-only screens (no web equivalent) | 8 (vaccination ×5, notifications, carts, AHC home) |
 
 ---
 
-## Recommended Build Order
-
-For efficient development, build screens in this order:
-
-### Phase 1: Core User Features
-1. Profile
-2. Settings
-3. Wallet
-4. Transactions
-
-### Phase 2: Main Service Flows
-5. Appointments (full flow)
-6. Bookings
-7. Claims
-
-### Phase 3: Lab & Diagnostics
-8. Lab Tests (full flow)
-9. Diagnostics (full flow)
-
-### Phase 4: Healthcare Services
-10. Online Consult (full flow)
-11. Dental (full flow)
-12. Vision (full flow)
-
-### Phase 5: Remaining Features
-13. Family
-14. AHC
-15. Other (Pharmacy, Wellness, etc.)
-
----
-
-*Update this checklist as screens are completed.*
+*Re-verify this file by listing `web-member-rn/app/**/*.tsx` and `web-member/app/**/page.tsx` — do not update it from memory.*

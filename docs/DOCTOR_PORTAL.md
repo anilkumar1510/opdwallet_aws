@@ -104,6 +104,30 @@
 - **DELETE /api/doctor/consultation-notes/:noteId** - Delete consultation note
 - **POST /api/doctor/consultation-notes/:noteId/link-prescription** - Link prescription to consultation note
 
+## Prescription Signatures & PDF Downloads
+
+### Signature Storage and Validation
+
+- A doctor must upload a signature before any digital prescription can be created. `digital-prescription.service.ts` rejects creation when `doctor.hasValidSignature` is false, citing MCI guidelines.
+- The signature is **snapshotted per prescription**, not read live from the doctor profile. At creation time the current signature file is copied into `uploads/prescriptions/signatures/` and its path is stored on the prescription as `doctorSignatureImage`. A later signature change therefore does not alter already-issued prescriptions.
+- `pdf-generation.service.ts` embeds that stored image on the right side of the PDF (x=400) above the doctor's name and credentials, and falls back to text-only output if the file is missing or fails to load.
+
+### Download URL Requirement
+
+The doctor portal is served under a `basePath` of `/doctor`. Prescription download and PDF-preview links must therefore use the **absolute API URL** (`NEXT_PUBLIC_API_URL`, defaulting to `http://localhost:4000/api`), never a root-relative path — a relative `/api/...` link resolves under the portal basePath and returns 404. This applies to the prescriptions list page, the prescription detail page, the PDF preview iframe, and the signature preview image in profile settings.
+
+### Member-Side Download Endpoints
+
+Members download the same prescriptions through their own routes:
+
+- **GET /api/member/digital-prescriptions/:prescriptionId/download-pdf** - Generates the PDF on demand if it has not been generated yet
+- **GET /api/member/prescriptions/:prescriptionId/download** - Serves a doctor-uploaded prescription file
+
+### Known Limitations
+
+- Signature dimensions in the PDF are fixed, so unusual aspect ratios may render distorted.
+- Prescription PDFs and signature images are stored on the server filesystem (`api/uploads/`), which does not survive container replacement unless volume-mounted.
+
 ## Recent Enhancements (Phase 3)
 
 ### MCI-Compliant Prescriptions
