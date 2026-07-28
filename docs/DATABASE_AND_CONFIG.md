@@ -19,8 +19,12 @@ The system runs on **AWS EC2** using Docker containers with these components:
    - TPA Portal - For insurance claim processors
    - Operations Portal - For operations team
    - Finance Portal - For finance team
+6. **1 React Native (Expo) App** - `web-member-rn`, a mobile member portal sharing the same
+   API and database. Not containerised and not part of the Docker deployment; it runs from the
+   Expo dev server locally and ships as a mobile build. See
+   [member_portal_rn/STRATEGY.md](./member_portal_rn/STRATEGY.md).
 
-All services communicate through an internal Docker network. Only Nginx is exposed to the internet on ports 80 (HTTP) and 443 (HTTPS).
+All containerised services communicate through an internal Docker network. Only Nginx is exposed to the internet on ports 80 (HTTP) and 443 (HTTPS).
 
 ### Technology Stack
 
@@ -50,6 +54,11 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - Port: 27017 (internal)
 - Username: admin
 - Connection String: `mongodb://admin:admin123@opd-mongo-prod:27017/opd_wallet?authSource=admin`
+
+**Local development without Docker**: if MongoDB is installed directly on the machine with
+authentication disabled, use `mongodb://localhost:27017/opd_wallet` and set
+`USE_SECRETS_MANAGER=false` in `api/.env`. The API also starts without Redis — cache reads
+simply miss, and no code path requires it to be present.
 
 **Important**: The database name `opd_wallet` must be used consistently across all services and configurations.
 
@@ -106,6 +115,18 @@ All services communicate through an internal Docker network. Only Nginx is expos
 - **diagnostic_orders** - Orders placed for diagnostic services
 - **diagnostic_master_tests** - Master catalog of diagnostic tests/parameters
 
+### Vaccination Services
+
+Added February 2026. Member-side booking is currently available in the React Native portal
+only; management screens live in the Admin and Operations portals.
+
+- **vaccination_services** - Catalog of vaccines offered
+- **vaccination_master_parameters** - Master reference data for vaccination services
+- **vaccination_vendors** - Vaccination providers with locations and serviceable pincodes
+- **vaccination_vendor_pricing** - Vendor-specific pricing per vaccine
+- **vaccination_vendor_slots** - Vendor availability slots for administering vaccines
+- **vaccination_bookings** - Member vaccination bookings with patient, vendor, slot and payment tracking
+
 ### Dental & Vision Services
 - **dental_bookings** - Dental service appointments with pricing and payment tracking
 - **dental_service_slots** - Dental clinic availability slots for appointment scheduling
@@ -136,6 +157,7 @@ All services communicate through an internal Docker network. Only Nginx is expos
 
 ### Doctor Calendar Management
 - **doctor_unavailabilities** - Doctor vacation/leave periods for blocking appointment slots
+- **doctorClinicAssignments** - Links doctors to the clinics they practise at
 
 ### Category Mappings
 - **category_specialty_mapping** - Maps service categories to medical specialties
@@ -152,7 +174,10 @@ All services communicate through an internal Docker network. Only Nginx is expos
 ### Migration & Backup
 - **users_backup_pre_segregation** - Backup of users collection before user segregation migration
 
-**Total Collections**: 56 (plus 1 backup collection)
+**Total Collections**: 60 explicitly named collections in the API schemas, plus a small number
+that rely on Mongoose default pluralisation (noted inline above) and 1 backup collection.
+
+*Verify with:* `grep -rho "collection: '[a-zA-Z_]*'" api/src --include=*.ts | sort -u`
 
 ---
 
@@ -226,18 +251,47 @@ All services communicate through an internal Docker network. Only Nginx is expos
 
 ### Environment Variables
 
-**API Backend** (.env.production):
-- `NODE_ENV=production`
-- `MONGODB_URI=mongodb://admin:admin123@opd-mongo-prod:27017/opd_wallet?authSource=admin`
-- `PORT=4000`
-- `JWT_SECRET=[generated secret key]`
-- `GOOGLE_MAPS_API_KEY=[API key for location services]`
-- `DAILY_API_KEY=[Daily.co API key for video consultations]`
+The authoritative list, with every name checked against
+`api/src/config/configuration.ts` and `api/src/main.ts`, is in **`.env.example`** at the
+repository root. Key points that are easy to get wrong:
+
+| Variable | Notes |
+|----------|-------|
+| `PORT` / `API_PORT` | `API_PORT` wins if both are set |
+| `JWT_EXPIRY` | **Not** `JWT_EXPIRES_IN` — that name is ignored |
+| `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRY` | Separate secret and lifetime for refresh tokens |
+| `COOKIE_SECURE` | Defaults to true only when `NODE_ENV=production` |
+| `COOKIE_SAMESITE`, `COOKIE_DOMAIN` | Leave domain unset on localhost |
+| `CORS_ORIGIN` | Read **only** in production; development uses a hardcoded allowlist |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DB`, `REDIS_TTL` | Optional — API runs without Redis |
+| `CACHE_TTL_PROFILE`, `CACHE_TTL_WALLET`, `CACHE_TTL_PLAN_CONFIG`, `CACHE_TTL_CATEGORIES` | In **seconds**, converted to ms internally |
+| `USE_SECRETS_MANAGER` | Forces AWS Secrets Manager on; also implied by `NODE_ENV=production` |
+| `AUDIT_LOG_ENABLED`, `AUDIT_LOG_RETENTION_DAYS` | HIPAA audit trail; 730 days = 2 years |
+| `MONITORING_ENABLED`, `DB_QUERY_TIMEOUT` | Consumed by the performance interceptor |
+| `DAILY_API_KEY`, `GOOGLE_MAPS_API_KEY` | Video consultations and location lookup |
+
+**Development CORS allowlist** (hardcoded in `main.ts`, used whenever `NODE_ENV` is not
+production): `localhost:3000`–`localhost:3006` for the web portals, plus `localhost:8081`,
+`8082`, `8083` and `19006` for the Expo member app.
+
+**Not wired up.** These are parsed into config but never read, so setting them does nothing:
+`RATE_LIMIT_WINDOW`, `RATE_LIMIT_GLOBAL`, `RATE_LIMIT_AUTH`, `RATE_LIMIT_API`,
+`MAX_LOGIN_ATTEMPTS`, `LOCK_TIME`, `DB_POOL_SIZE`. Rate limiting is hardcoded in `main.ts` at
+a 15-minute window with 1000 global requests per IP, and 50 auth requests in production
+(500 in development).
 
 **Web Portals**:
 - `NODE_ENV=production`
 - `NEXT_PUBLIC_API_URL=/api` (browser-side calls)
 - `API_URL=http://opd-api-prod:4000/api` (server-side calls)
+
+Portals served under a `basePath` (`/admin`, `/doctor`, `/tpa`, `/operations`, `/finance`)
+must use an **absolute** API URL for direct links such as file downloads — a root-relative
+`/api/...` path resolves under the basePath and 404s.
+
+**React Native app** (`web-member-rn/.env`):
+- `EXPO_PUBLIC_API_URL` — use the machine's LAN IP, not `localhost`, when testing on a device
+- `EXPO_PUBLIC_SESSION_TIMEOUT_MINUTES` — HIPAA automatic-logoff timer (default 15)
 
 ### Security Configuration
 

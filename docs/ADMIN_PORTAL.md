@@ -55,6 +55,15 @@
 - **/admin/lab/vendors/[vendorId]/pricing** - Set vendor pricing for each test
 - **/admin/lab/vendors/[vendorId]/slots** - Manage vendor availability time slots
 
+### Vaccination Management
+Added February 2026. The Operations Portal has an equivalent set of pages under `/operations/vaccination`.
+- **/admin/vaccination** - Vaccination management dashboard
+- **/admin/vaccination/services** - Manage the vaccine catalog
+- **/admin/vaccination/master-tests** - Manage master reference parameters for vaccination services
+- **/admin/vaccination/vendors** - Manage vaccination providers
+- **/admin/vaccination/vendors/[vendorId]/pricing** - Set vendor pricing per vaccine
+- **/admin/vaccination/vendors/[vendorId]/slots** - Manage vendor availability slots
+
 ### TPA (Third Party Administrator)
 - **/admin/tpa** - TPA dashboard showing claim statistics
 - **/admin/tpa/analytics** - View claim analytics and reports
@@ -168,6 +177,34 @@
 - **GET /api/admin/lab/prescriptions** - Get all uploaded lab prescriptions
 - **GET /api/admin/lab/prescriptions/:id** - Get prescription details
 - **POST /api/admin/lab/prescriptions/:id/digitize** - Convert prescription to cart by adding test items
+
+### Vaccination Management
+All routes are under `/api/admin/vaccination`.
+- **POST /services** - Add a vaccine to the catalog
+- **GET /services** - List vaccines in the catalog
+- **GET /services/:id** - Get a single vaccine
+- **PATCH /services/:id** - Update vaccine details
+- **DELETE /services/:id** - Remove a vaccine
+- **PATCH /services/:id/activate** - Activate a vaccine
+- **PATCH /services/:id/deactivate** - Deactivate a vaccine
+- **POST /vendors** - Add a vaccination provider
+- **GET /vendors** - List vaccination providers
+- **GET /vendors/:id** - Get a single provider
+- **PATCH /vendors/:id** - Update provider details
+- **POST /vendors/:vendorId/pricing** - Set provider pricing
+- **GET /vendors/:vendorId/pricing** - Get provider pricing
+- **PATCH /vendors/:vendorId/pricing/:serviceId** - Update pricing for one vaccine
+- **POST /vendors/:vendorId/slots** - Create availability slots
+- **GET /vendors/:vendorId/slots** - List availability slots
+- **PATCH /vendors/:vendorId/slots/:slotId/activate** - Activate a slot
+- **PATCH /vendors/:vendorId/slots/:slotId/deactivate** - Deactivate a slot
+- **DELETE /vendors/:vendorId/slots/:slotId** - Delete a slot
+- **POST /master-tests** - Create a master reference parameter
+- **GET /master-tests** - List master reference parameters
+- **GET /master-tests/search** - Search master reference parameters
+- **GET /master-tests/:id** - Get one master reference parameter
+- **PATCH /master-tests/:id** - Update a master reference parameter
+- **DELETE /master-tests/:id** - Delete a master reference parameter
 
 ### TPA Management
 - **GET /api/tpa/claims** - Get all claims (admins see all, TPA users see assigned claims only)

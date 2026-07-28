@@ -1,6 +1,6 @@
 # OPD Wallet - Project Rules
 
-**Last Updated:** January 2025
+**Last Updated:** July 28, 2026
 
 ---
 
@@ -78,15 +78,35 @@ This file contains important rules and guidelines that Claude must follow when w
 
 - ✅ **MANDATORY:** After completing ANY change, UPDATE the project documentation to reflect that change
 - ✅ Documentation must always stay in sync with the codebase
-- ✅ Update relevant files in `/docs` folder:
+- ✅ Update **existing** files in `/docs`:
   - API endpoint docs (`LATEST_API_ENDPOINTS_*.md`)
   - Frontend page docs (`LATEST_FRONTEND_PAGES_*.md`)
   - Portal documentation (`*_PORTAL.md`)
   - Main API reference (`API_REFERENCE.md`)
+  - Database and configuration (`DATABASE_AND_CONFIG.md`)
+  - Deferred work (`TECH_DEBT.md`)
+  - React Native app (`member_portal_rn/`)
 - ✅ Keep CHANGELOG.md updated with notable changes
 - ✅ Document new features, API changes, and bug fixes
+- ✅ If you add a NEW doc file, add it to `docs/README.md` — anything not in that index rots unnoticed
 
-**Key Point:** Documentation must always reflect current code. No exceptions.
+### ❌ Do NOT Create Per-Task Completion Documents
+
+This rule means *update the docs*, not *write a report about your work*.
+
+- ❌ NEVER create files like `PHASE1_*.md`, `*_FIX_COMPLETE.md`, `FIXES_APPLIED.md`,
+  `IMPLEMENTATION_COMPLETE_SUMMARY.md`, `SESSION_*_SUMMARY.md`
+- ❌ NEVER write a doc whose subject is "what I just did" — git history already records that
+- ✅ Durable facts (how a feature works, endpoints, schema, config) go in the **existing** topic doc
+- ✅ What changed and when goes in **CHANGELOG.md**
+- ✅ Phase/progress trackers are temporary, like `PLAN.md` — delete them when the work is done
+
+*(On 2026-07-28, 11 such files were deleted from `docs/member_portal_rn/` and `web-doctor/`.
+They described work finished in January 2026, were linked from nothing, and had drifted so far
+from the code that one screen checklist reported 3 of 63 screens built when 56 existed.)*
+
+**Key Point:** Documentation must always reflect current code. Update existing docs — do not
+add new files narrating completed work.
 
 ---
 

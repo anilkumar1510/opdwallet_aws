@@ -2,6 +2,124 @@
 
 All notable changes to the OPD Wallet project will be documented in this file.
 
+## [Unreleased] - 2026-07-28
+
+### Removed
+
+- **Documentation cleanup — deleted 11 dead files**
+  - Removed ten one-off session logs from `docs/member_portal_rn/`: `PHASE1_DEEP_UNDERSTANDING.md`,
+    `PHASE2_UI_IMPLEMENTATION_COMPLETE.md`, `PHASE3_BACKEND_IMPLEMENTATION.md`,
+    `PHASE4_BACKEND_VERIFICATION.md`, `PHASE5_USER_TESTING_REQUEST.md`,
+    `IMPLEMENTATION_COMPLETE_SUMMARY.md`, `DASHBOARD_FIX_COMPLETE.md`, `FIXES_APPLIED.md`,
+    `LOGIN_RESPONSIVE_FIX.md`, `SESSION_FIX_SUMMARY.md`
+  - Removed `web-doctor/PRESCRIPTION_SIGNATURE_FIXES.md`; its durable content was merged into
+    `docs/DOCTOR_PORTAL.md` before deletion
+  - All eleven described work completed in January 2026, were unlinked from the docs index, and
+    duplicated information already in git history
+
+### Changed
+
+- **`docs/README.md`** — index refreshed
+  - Added the React Native member app (`web-member-rn`) to the portal list, tech stack, project
+    structure and ports table; it was previously absent from the index entirely
+  - Corrected endpoint counts, which were understated across the board (Admin 90→183,
+    Member 80→147, Operations 104→127, Doctor 25→63, TPA 15→18, Finance 9→10)
+  - Added links to previously orphaned docs: `REDIS_CACHING.md`, `TECH_DEBT.md`, the audit
+    reports, and the `member_portal_rn/` folder
+  - Documented portal `basePath` behaviour and the no-Docker local run path
+  - Updated review dates from January 2025 to July 2026
+- **`docs/member_portal_rn/SCREENS_CHECKLIST.md`** — rewritten
+  - Previously claimed 3 of 63 screens built; 56 screens actually exist
+  - Now maps the diverged route names between the two apps (`in-clinic-consultation` ↔
+    `appointments`, `pathology-lab` ↔ `lab-tests`, `radiology-cardiology` ↔ `diagnostics`,
+    `health-packages` ↔ `wellness`) and marks RN-only screens
+- **`web-member-rn/TESTING_GUIDE.md`** — rewritten
+  - Removed hardcoded absolute macOS paths and the assumption that Docker is required
+  - Documented the no-Docker local path, the `/api/health` check, `EXPO_PUBLIC_*` variables,
+    LAN-IP configuration for physical devices, and the correct web-member port (3002, not 3001)
+  - Replaced the login-only responsive checklist with coverage of session, core screens and
+    service flows
+- **`docs/DOCTOR_PORTAL.md`** — added a prescription signature and PDF download section
+  covering per-prescription signature snapshotting, the absolute-URL requirement under the
+  `/doctor` basePath, and member-side download endpoints
+- **`docs/DATABASE_AND_CONFIG.md`** — added the vaccination collections and
+  `doctorClinicAssignments`, corrected the collection total, added the React Native app to the
+  architecture overview, added a no-Docker local development note, and replaced the thin
+  environment variable list with a verified reference
+- **`.env.example`** — corrected against `api/src/config/configuration.ts`
+  - Fixed `JWT_EXPIRES_IN` → `JWT_EXPIRY` (the documented name was silently ignored)
+  - Removed the dead `JITSI_DOMAIN` entry left over from the Daily.co migration
+  - Added the missing Redis, cache TTL, refresh token, cookie, CORS, monitoring, Secrets
+    Manager and Expo variables
+  - Flagged variables that are parsed but never consumed: the `RATE_LIMIT_*` family,
+    `MAX_LOGIN_ATTEMPTS`, `LOCK_TIME` and `DB_POOL_SIZE` (rate limiting is hardcoded in `main.ts`)
+
+---
+
+## [2026-07-27] - Member Portal Desktop Redesign
+
+### Changed
+
+- Redesigned the web member portal desktop dashboard with gradients matched to the mobile app
+- Updated dashboard components: benefit cards, policy cards and carousel, quick links, wallet
+  balance card, user greeting, bottom navigation, and shared UI primitives
+
+---
+
+## [2026-07-17] - Seed Data
+
+### Added
+
+- Full-database seed snapshot covering data for all portals
+
+---
+
+## [2026-02-11] - Vaccination Booking
+
+### Added
+
+- **Vaccination booking feature across all portals**
+  - New API module with admin, member and operations controllers
+  - Six new collections: `vaccination_services`, `vaccination_master_parameters`,
+    `vaccination_vendors`, `vaccination_vendor_pricing`, `vaccination_vendor_slots`,
+    `vaccination_bookings`
+  - Admin portal: 6 management pages; Operations portal: 6 management pages
+  - Member booking flow implemented in the **React Native app only** (home → select patient →
+    select vendor → select slot → confirm). The Next.js member portal has no vaccination screens.
+
+---
+
+## [2026-02-10] - Service Category Renaming
+
+### Changed
+
+- Renamed Lab to Pathology and Diagnostics to Radiology across service categories
+- Reorganised service categories and updated category names
+- Renamed CAT008 from "Wellness Programs" to "Health Packages"
+- Updated the admin diagnostics services page to match the operations portal
+- Note: web member portal routes still use the older `lab-tests` and `diagnostics` paths, while
+  the React Native app uses the new names — see `docs/member_portal_rn/SCREENS_CHECKLIST.md`
+
+---
+
+## [2026-02-09] - Security & HIPAA Compliance
+
+### Added
+
+- Security and HIPAA compliance work for the member portal, including AES-256-GCM encrypted
+  local storage (`secureStorage.ts`) and a session inactivity timeout for automatic logoff
+- `docs/TECH_DEBT.md` created to track deferred work
+
+---
+
+## [2026-02-03] - TPA RBAC
+
+### Added
+
+- Comprehensive role-based access control for the TPA Portal
+
+---
+
 ## [Unreleased] - 2026-01-27
 
 ### Changed
