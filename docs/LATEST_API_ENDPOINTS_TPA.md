@@ -30,6 +30,7 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 | GET | /tpa/claims/assigned | Get assigned claims (all roles) |
 | GET | /tpa/claims/:claimId | Get claim details |
 | POST | /tpa/claims/:claimId/assign | Assign claim to TPA user |
+| POST | /tpa/claims/auto-assign | Distribute unassigned claims across available TPA users (admin only) |
 | POST | /tpa/claims/:claimId/reassign | Reassign claim to different user |
 | PATCH | /tpa/claims/:claimId/status | Update claim status |
 | POST | /tpa/claims/:claimId/approve | Approve claim (full/partial) |
@@ -48,6 +49,27 @@ This document lists all API endpoints used by the TPA Portal (web-tpa) for claim
 - Document requests pause claim processing until documents are submitted
 - Partial approvals allow for copay adjustments
 - All actions are logged for audit trail
+
+**POST /tpa/claims/auto-assign** (TPA_ADMIN, ADMIN, SUPER_ADMIN):
+
+Request body:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| assigneeIds | string[] | Yes | Internal user IDs of the TPA users marked available. All must be ACTIVE with role TPA_USER or TPA_ADMIN, otherwise the request is rejected with 400 |
+| claimIds | string[] | No | Business claim IDs to distribute. Omit to take every unassigned claim |
+| strategy | `BALANCED` \| `ROUND_ROBIN` | No | Defaults to `BALANCED` |
+| notes | string | No | Recorded on every assignment in the batch |
+| maxClaims | number (1-500) | No | Safety cap per run, defaults to 200 |
+
+Behaviour:
+- Picks up the same claims the unassigned list shows: status SUBMITTED or UNASSIGNED with no `assignedTo`.
+- Distributes oldest claim first (`submittedAt` ascending), so the longest-waiting member is served first.
+- `BALANCED` seeds each user with the open claims they already hold and always hands the next claim to the lowest, which levels the queue. `ROUND_ROBIN` starts everyone at zero, splitting only this batch evenly.
+- Ties go to whoever sorts first by `name.fullName` — the same order `GET /tpa/users` returns, so the portal's preview matches the outcome exactly.
+- Each claim is saved individually and records the same status/review history as a single assign. A claim that fails to save is reported in `failed[]` and does not abort the run (some legacy claim documents are missing required fields and cannot be saved by any assign path).
+
+Response: `assignedCount`, `totalCandidates`, `strategy`, `distribution[]` (per user: `assigned`, `previousWorkload`, `newWorkload`) and `failed[]`.
 
 **Redis Cache Invalidation:**
 - **POST /tpa/claims/:claimId/approve**: When claim is approved, wallet is credited, triggering invalidation of `wallet:balance:{userId}` cache. Member Portal reflects updated balance immediately on next load.

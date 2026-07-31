@@ -93,7 +93,7 @@ Custom React hook for route protection:
 | Path | Role Access | Description |
 |------|-------------|-------------|
 | /tpa/claims | Both (filtered) | **TPA_ADMIN:** Browse all claims with assignedTo filter<br>**TPA_USER:** See only assigned claims, page titled "My Claims", no Unassigned button, no assignedTo filter |
-| /tpa/claims/unassigned | TPA_ADMIN only | View claims awaiting assignment. **Protected:** TPA_USER redirected to `/claims` |
+| /tpa/claims/unassigned | TPA_ADMIN only | View claims awaiting assignment, assign one at a time, or Auto-Assign a batch across available users. **Protected:** TPA_USER redirected to `/claims` |
 | /tpa/claims/assigned | TPA_ADMIN only | View all assigned claims. **Protected:** TPA_USER redirected to `/claims` |
 | /tpa/claims/[claimId] | Both (conditional) | **TPA_ADMIN:** Can view and take actions on any claim<br>**TPA_USER:** Can only view assigned claims, action buttons visible only for assigned claims |
 
@@ -112,6 +112,14 @@ Custom React hook for route protection:
 - TPA_USER can only see actions for claims assigned to them
 - Backend returns `assignedToId` field to handle cases where populate fails
 - Authorization check uses `.lean()` query before populate to access raw ObjectId
+
+**Unassigned Claims Page** (`/web-tpa/app/(tpa)/claims/unassigned/page.tsx`):
+- Loads up to 100 claims at a time; the header count comes from the API's `total`, so it stays accurate when more claims exist than are shown
+- **Auto-Assign** opens a modal where the admin ticks which TPA users are available today (everyone starts ticked, each row shows that user's open-claim count from `GET /api/tpa/users`)
+- Scope choice: all unassigned claims, or only the claims currently listed (which sends explicit `claimIds`)
+- Strategy choice: *Balance workload* (`BALANCED`) levels open claims across users, or *Split evenly* (`ROUND_ROBIN`) ignores existing load
+- A live preview shows exactly how many claims each user will receive. It replays the API's allocation client-side, and both sides iterate users in `GET /api/tpa/users` order so ties resolve identically — the preview and the result agree
+- After the run the modal shows the actual per-user split, the before/after workloads, and any claims that could not be assigned
 
 **Protected Pages** (Unassigned, Assigned):
 - Use `useRoleGuard(['TPA_ADMIN', 'SUPER_ADMIN'])` hook

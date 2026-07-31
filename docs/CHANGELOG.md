@@ -2,6 +2,31 @@
 
 All notable changes to the OPD Wallet project will be documented in this file.
 
+## [Unreleased] - 2026-07-31
+
+### Added
+
+- **TPA auto-assignment of unassigned claims**
+  - New endpoint `POST /api/tpa/claims/auto-assign` (TPA_ADMIN / ADMIN / SUPER_ADMIN) distributes
+    unassigned claims across the TPA users an admin marks as available, oldest claim first
+  - Two strategies: `BALANCED` levels each user's open-claim count, `ROUND_ROBIN` splits the batch
+    evenly regardless of existing load. Capped at 200 claims per run by default (`maxClaims`, max 500)
+  - `/tpa/claims/unassigned` gained an **Auto-Assign** button: tick the users who are available,
+    choose scope and strategy, and see a live preview of who receives how many before confirming.
+    The result view reports the actual split, before/after workloads, and any claims that failed
+  - Assignment writes (fields, status history, review history) were extracted into one shared
+    service helper, so single assign and auto-assign record claims identically
+  - Per-claim error isolation: a claim that fails validation on save is reported in `failed[]`
+    instead of aborting the batch. Some legacy claim documents are missing required fields
+    (`treatmentDate`, `claimType`, `memberName`) and cannot be assigned by any path — see TECH_DEBT
+
+### Changed
+
+- **`/tpa/claims/unassigned`** now loads up to 100 claims per fetch (was the API default of 10) and
+  takes its header count from the API's `total`, so the count no longer understates the queue
+- TPA user names on that page fall back to first/last name, then email, when `name.fullName`
+  is absent — several seeded internal users have no `fullName` and rendered blank
+
 ## [Unreleased] - 2026-07-28
 
 ### Removed

@@ -8,6 +8,7 @@ import { UserRole } from '@/common/constants/roles.enum';
 import { UserStatus } from '@/common/constants/status.enum';
 import { AssignClaimDto } from './dto/assign-claim.dto';
 import { ReassignClaimDto } from './dto/reassign-claim.dto';
+import { AutoAssignClaimsDto, AutoAssignStrategy } from './dto/auto-assign-claims.dto';
 import { ApproveClaimDto } from './dto/approve-claim.dto';
 import { RejectClaimDto } from './dto/reject-claim.dto';
 import { RequestDocumentsDto } from './dto/request-documents.dto';
@@ -55,6 +56,43 @@ export class TpaService {
     });
 
     claim.status = newStatus;
+  }
+
+  // Helper method to read a display name off an internal user
+  private getInternalUserName(user: InternalUserDocument): string {
+    return user.name?.fullName || `${user.name?.firstName || ''} ${user.name?.lastName || ''}`.trim();
+  }
+
+  /**
+   * Write the assignment fields and history onto a claim. Shared by single assignment
+   * and auto-assignment so both record the claim exactly the same way. Does not save.
+   */
+  private applyAssignment(
+    claim: MemberClaimDocument,
+    assignee: InternalUserDocument,
+    adminUserId: string,
+    adminName: string,
+    notes?: string,
+  ) {
+    const adminObjectId = new Types.ObjectId(adminUserId);
+
+    claim.assignedTo = new Types.ObjectId(String(assignee._id));
+    claim.assignedToName = this.getInternalUserName(assignee);
+    claim.assignedBy = adminObjectId;
+    claim.assignedByName = adminName;
+    claim.assignedAt = new Date();
+
+    this.addStatusHistory(
+      claim,
+      ClaimStatus.ASSIGNED,
+      adminObjectId,
+      adminName,
+      UserRole.TPA_ADMIN,
+      'Claim assigned to TPA user',
+      notes,
+    );
+
+    this.addReviewHistory(claim, 'ASSIGNED', adminObjectId, adminName, notes);
   }
 
   // Helper method to add review history
@@ -342,7 +380,7 @@ export class TpaService {
     if (!adminUser) {
       throw new NotFoundException('Admin user not found');
     }
-    const adminName = adminUser.name.fullName || `${adminUser.name.firstName} ${adminUser.name.lastName}`;
+    const adminName = this.getInternalUserName(adminUser);
 
     // Verify the assignee is a TPA_USER
     const assignee = await this.internalUserModel.findById(assignClaimDto.assignedTo);
@@ -354,38 +392,140 @@ export class TpaService {
       throw new BadRequestException('Can only assign claims to TPA users');
     }
 
-    // Update claim assignment
-    claim.assignedTo = new Types.ObjectId(assignClaimDto.assignedTo);
-    claim.assignedToName = assignee.name.fullName || `${assignee.name.firstName} ${assignee.name.lastName}`;
-    claim.assignedBy = new Types.ObjectId(adminUserId);
-    claim.assignedByName = adminName;
-    claim.assignedAt = new Date();
-
-    // Update status to ASSIGNED
-    this.addStatusHistory(
-      claim,
-      ClaimStatus.ASSIGNED,
-      new Types.ObjectId(adminUserId),
-      adminName,
-      UserRole.TPA_ADMIN,
-      'Claim assigned to TPA user',
-      assignClaimDto.notes,
-    );
-
-    // Add to review history
-    this.addReviewHistory(
-      claim,
-      'ASSIGNED',
-      new Types.ObjectId(adminUserId),
-      adminName,
-      assignClaimDto.notes,
-    );
+    this.applyAssignment(claim, assignee, adminUserId, adminName, assignClaimDto.notes);
 
     await claim.save();
 
     return {
       message: 'Claim assigned successfully',
       claim,
+    };
+  }
+
+  /**
+   * Auto-assign unassigned claims across the TPA users an admin has marked as available.
+   *
+   * BALANCED seeds each user with the open claims they already hold and always hands the
+   * next claim to whoever is lowest, which levels the queue. ROUND_ROBIN ignores existing
+   * load and splits this batch evenly. Claims go out oldest-first so the longest-waiting
+   * member is served first, and a failure on one claim never aborts the rest of the run.
+   */
+  async autoAssignClaims(autoAssignDto: AutoAssignClaimsDto, adminUserId: string) {
+    const adminUser = await this.internalUserModel.findById(adminUserId);
+    if (!adminUser) {
+      throw new NotFoundException('Admin user not found');
+    }
+    const adminName = this.getInternalUserName(adminUser);
+
+    const strategy = autoAssignDto.strategy || AutoAssignStrategy.BALANCED;
+    const maxClaims = autoAssignDto.maxClaims ?? 200;
+
+    // Resolve the selected users, and reject the request if any of them cannot take claims
+    const requestedIds = [...new Set(autoAssignDto.assigneeIds.map((id) => new Types.ObjectId(id).toString()))];
+    const assignees = await this.internalUserModel
+      .find({
+        _id: { $in: requestedIds.map((id) => new Types.ObjectId(id)) },
+        role: { $in: [UserRole.TPA_USER, UserRole.TPA_ADMIN] },
+        status: UserStatus.ACTIVE,
+      })
+      // Same order as getTPAUsers so a tie breaks toward the same person the portal
+      // preview shows - otherwise the preview and the actual split can disagree by one.
+      .sort({ 'name.fullName': 1 });
+
+    if (assignees.length !== requestedIds.length) {
+      const resolved = new Set(assignees.map((user) => String(user._id)));
+      const invalid = requestedIds.filter((id) => !resolved.has(id));
+      throw new BadRequestException(
+        `Cannot auto-assign to these users - they are not active TPA users: ${invalid.join(', ')}`,
+      );
+    }
+
+    // Same definition of "unassigned" the unassigned-claims list uses
+    const query: any = {
+      status: { $in: [ClaimStatus.SUBMITTED, ClaimStatus.UNASSIGNED] },
+      $or: [
+        { assignedTo: { $exists: false } },
+        { assignedTo: null },
+      ],
+    };
+
+    if (autoAssignDto.claimIds?.length) {
+      query.claimId = { $in: autoAssignDto.claimIds };
+    }
+
+    const claims = await this.memberClaimModel
+      .find(query)
+      .sort({ submittedAt: 1 })
+      .limit(maxClaims)
+      .exec();
+
+    // One slot per available user, kept in selection order so ties resolve predictably
+    const slots = await Promise.all(
+      assignees.map(async (user) => {
+        // The open claims a user already holds - the same count the TPA users list shows.
+        // Always reported, so the result reads truthfully under either strategy.
+        const startingWorkload = await this.memberClaimModel.countDocuments({
+          assignedTo: user._id,
+          status: { $nin: [ClaimStatus.APPROVED, ClaimStatus.REJECTED, ClaimStatus.PAYMENT_COMPLETED] },
+        });
+
+        return {
+          user,
+          userId: String(user._id),
+          startingWorkload,
+          // BALANCED picks on real workload so the queue levels out; ROUND_ROBIN starts
+          // everyone at zero so this batch alone is split evenly.
+          score: strategy === AutoAssignStrategy.BALANCED ? startingWorkload : 0,
+          assigned: 0,
+        };
+      }),
+    );
+
+    const failed: Array<{ claimId: string; reason: string }> = [];
+    let assignedCount = 0;
+
+    for (const claim of claims) {
+      // Lowest score wins; ties fall to the earlier user in the selection order
+      let target = slots[0];
+      for (const slot of slots) {
+        if (slot.score < target.score) {
+          target = slot;
+        }
+      }
+
+      try {
+        this.applyAssignment(claim, target.user, adminUserId, adminName, autoAssignDto.notes);
+        await claim.save();
+
+        target.score++;
+        target.assigned++;
+        assignedCount++;
+      } catch (error) {
+        // One bad claim must not strand the rest of the batch
+        console.error(`[TPA] Auto-assign failed for claim ${claim.claimId}:`, error?.message);
+        failed.push({ claimId: claim.claimId, reason: error?.message || 'Failed to save assignment' });
+      }
+    }
+
+    const distribution = slots.map((slot) => ({
+      userId: slot.userId,
+      name: this.getInternalUserName(slot.user),
+      email: slot.user.email,
+      assigned: slot.assigned,
+      previousWorkload: slot.startingWorkload,
+      newWorkload: slot.startingWorkload + slot.assigned,
+    }));
+
+    return {
+      message:
+        assignedCount > 0
+          ? `${assignedCount} claim${assignedCount === 1 ? '' : 's'} auto-assigned across ${assignees.length} TPA user${assignees.length === 1 ? '' : 's'}`
+          : 'No unassigned claims were available to distribute',
+      strategy,
+      assignedCount,
+      totalCandidates: claims.length,
+      distribution,
+      failed,
     };
   }
 

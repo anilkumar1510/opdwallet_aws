@@ -41,6 +41,36 @@ The `secureStorage` module encrypts all data at rest using AES-256-GCM, ensuring
 
 ---
 
+### 2. Legacy Claim Documents Fail Schema Validation on Save
+**Status:** Not Started
+**Priority:** High
+**Added:** 2026-07-31
+**Component:** api (memberclaims / TPA assignment)
+
+**Description:**
+Some claim documents in the database are missing fields the Mongoose schema marks required, so
+*any* code path that calls `claim.save()` on them throws. They can never be assigned, reviewed,
+approved or rejected — they are stuck in the queue permanently.
+
+**Proof:**
+`CLM-1767691892734` sits in the unassigned queue. `POST /api/tpa/claims/CLM-1767691892734/assign`
+returns 500, and the API log shows:
+`MemberClaim validation failed: treatmentDate: Path 'treatmentDate' is required., claimType: Path 'claimType' is required., memberName: Path 'memberName' is required.`
+
+**Impact:**
+- Single assign returns a bare 500 with no explanation to the admin
+- Auto-assign (`POST /api/tpa/claims/auto-assign`) survives it — the claim is reported in `failed[]`
+  and the rest of the batch still goes through — but the claim itself remains unassignable
+
+**Proposed Fix:**
+- Audit `memberclaims` for documents missing required fields (`treatmentDate`, `claimType`, `memberName`)
+- Either backfill them from related data or mark them cancelled so they leave the queue
+- Consider making the single-assign path report the validation error instead of a 500
+
+**Estimated Effort:** 2-3 hours (audit + backfill script)
+
+---
+
 ## Medium Priority
 
 ### 2. Rate Limiting Is Hardcoded, Ignoring Its Own Config

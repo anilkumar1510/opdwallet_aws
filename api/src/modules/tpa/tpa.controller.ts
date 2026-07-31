@@ -17,6 +17,7 @@ import { Model } from 'mongoose';
 import { TpaService } from './tpa.service';
 import { AssignClaimDto } from './dto/assign-claim.dto';
 import { ReassignClaimDto } from './dto/reassign-claim.dto';
+import { AutoAssignClaimsDto } from './dto/auto-assign-claims.dto';
 import { ApproveClaimDto } from './dto/approve-claim.dto';
 import { RejectClaimDto } from './dto/reject-claim.dto';
 import { RequestDocumentsDto } from './dto/request-documents.dto';
@@ -193,6 +194,19 @@ export class TpaController {
       req.user.userId,
       adminName,
     );
+  }
+
+  @Post('claims/auto-assign')
+  @Roles(UserRole.TPA_ADMIN, UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Auto-assign unassigned claims across available TPA users (TPA_ADMIN only)' })
+  @ApiResponse({ status: 200, description: 'Claims distributed successfully' })
+  @ApiResponse({ status: 400, description: 'No available users selected, or a selected user is not an active TPA user' })
+  async autoAssignClaims(
+    @Body() autoAssignDto: AutoAssignClaimsDto,
+    @Request() req: any,
+  ) {
+    return this.tpaService.autoAssignClaims(autoAssignDto, req.user.userId);
   }
 
   @Post('claims/:claimId/reassign')

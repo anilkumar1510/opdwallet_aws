@@ -72,7 +72,7 @@ Endpoint counts below are the number of documented rows in each file as of July 
 | **Member Portal** | 147 | [LATEST_API_ENDPOINTS_MEMBER.md](./LATEST_API_ENDPOINTS_MEMBER.md) |
 | **Operations Portal** | 127 | [LATEST_API_ENDPOINTS_OPERATIONS.md](./LATEST_API_ENDPOINTS_OPERATIONS.md) |
 | **Doctor Portal** | 63 | [LATEST_API_ENDPOINTS_DOCTOR.md](./LATEST_API_ENDPOINTS_DOCTOR.md) |
-| **TPA Portal** | 18 | [LATEST_API_ENDPOINTS_TPA.md](./LATEST_API_ENDPOINTS_TPA.md) |
+| **TPA Portal** | 19 | [LATEST_API_ENDPOINTS_TPA.md](./LATEST_API_ENDPOINTS_TPA.md) |
 | **Finance Portal** | 10 | [LATEST_API_ENDPOINTS_FINANCE.md](./LATEST_API_ENDPOINTS_FINANCE.md) |
 
 *Recount with:* `grep -cE '^\| *(GET|POST|PUT|PATCH|DELETE) *\|' docs/LATEST_API_ENDPOINTS_*.md`
