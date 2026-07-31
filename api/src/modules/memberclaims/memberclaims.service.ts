@@ -264,11 +264,25 @@ export class MemberClaimsService {
         }
       }
 
+      // memberName is denormalised onto the claim so TPA/Ops lists can show who filed it
+      // without joining users. It used to be hardcoded to 'Test User', which is what every
+      // claim list rendered - read the real member instead.
+      const member = await this.userModel
+        .findById(userId)
+        .select('name')
+        .lean();
+
+      const memberName =
+        member?.name?.fullName ||
+        [member?.name?.firstName, member?.name?.lastName].filter(Boolean).join(' ') ||
+        createClaimDto.patientName ||
+        'Unknown Member';
+
       // Ensure all required fields are present
       const claimData: any = {
         claimId,
         userId: new Types.ObjectId(userId),
-        memberName: 'Test User', // Add a default for now
+        memberName,
         claimType: createClaimDto.claimType || ClaimType.REIMBURSEMENT,
         category: createClaimDto.category || ClaimCategory.CONSULTATION,
         treatmentDate: createClaimDto.treatmentDate || new Date(),

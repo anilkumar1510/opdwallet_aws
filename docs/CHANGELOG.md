@@ -20,6 +20,19 @@ All notable changes to the OPD Wallet project will be documented in this file.
     instead of aborting the batch. Some legacy claim documents are missing required fields
     (`treatmentDate`, `claimType`, `memberName`) and cannot be assigned by any path — see TECH_DEBT
 
+### Fixed
+
+- **Every claim showed the member as "Test User"**
+  - `MemberClaimsService.create()` hardcoded `memberName: 'Test User'` with a "default for now"
+    comment, so the denormalised name written onto every claim was a placeholder. It now reads the
+    claim owner from the `users` collection, falling back to `patientName` then `Unknown Member`
+  - This is the field the Member column renders on the TPA claims, unassigned and assigned lists —
+    all of them displayed "Test User" against real member IDs. The claim detail page was unaffected
+    because it already prefers the populated `userId.name.fullName`
+  - Backfilled the 11 existing claims from their linked user records; 0 remain with the placeholder
+  - `patientName` is unchanged and still independent — it is who was treated (possibly a dependent),
+    while `memberName` is the member the claim belongs to
+
 ### Changed
 
 - **`/tpa/claims/unassigned`** now loads up to 100 claims per fetch (was the API default of 10) and
