@@ -1314,6 +1314,23 @@ export class VaccinationBookingService {
 
     console.log('[VaccinationBookingsAdmin] Booking confirmed:', bookingId);
 
+    // Sheet requires the member be told the cart is ready the moment the
+    // vendor confirms — this was the one step in the lifecycle nothing sent.
+    const dateStr = booking.appointmentDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentConfirmed(
+      booking.userId,
+      bookingId,
+      'VACCINATION',
+      booking.vendorName,
+      dateStr,
+      booking.appointmentTime,
+    );
+
     return booking;
   }
 

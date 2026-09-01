@@ -17,6 +17,7 @@ import {
   CalendarIcon,
 } from '@heroicons/react/24/outline'
 import { useRoleGuard } from '@/lib/hooks/useRoleGuard'
+import { apiFetch } from '@/lib/api'
 
 interface AnalyticsSummary {
   totalClaims: number
@@ -64,9 +65,7 @@ export default function TPAAnalyticsPage() {
         params.append('toDate', toDate.toISOString())
       }
 
-      const response = await fetch(`/api/tpa/analytics/summary?${params.toString()}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/tpa/analytics/summary?${params.toString()}`)
 
       if (response.ok) {
         const data = await response.json()

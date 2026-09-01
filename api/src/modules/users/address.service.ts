@@ -166,6 +166,55 @@ export class AddressService {
     return this.getAddressById(addressId);
   }
 
+  /**
+   * Full-replace update of one address the member owns. `id` may be either the
+   * `ADDR-...` addressId or the Mongo `_id` — the member API hands clients both
+   * and the clients pick `_id` first.
+   */
+  async updateAddress(
+    userId: Types.ObjectId,
+    id: string,
+    dto: CreateAddressDto,
+  ): Promise<Address> {
+    const address = await this.findOwned(userId, id);
+
+    if (dto.isDefault) {
+      await this.addressModel.updateMany({ userId, isDefault: true }, { isDefault: false });
+    }
+
+    const { addressType, addressLine1, addressLine2, city, state, pincode, landmark } = dto;
+    await this.addressModel.updateOne(
+      { addressId: address.addressId },
+      {
+        addressType,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        pincode,
+        landmark,
+        isDefault: dto.isDefault ?? address.isDefault,
+      },
+    );
+
+    return this.getAddressById(address.addressId);
+  }
+
+  private async findOwned(userId: Types.ObjectId, id: string): Promise<Address> {
+    const address = await this.addressModel.findOne({
+      $or: [
+        { addressId: id },
+        ...(Types.ObjectId.isValid(id) ? [{ _id: new Types.ObjectId(id) }] : []),
+      ],
+    });
+
+    if (!address) throw new NotFoundException(`Address ${id} not found`);
+    if (address.userId.toString() !== userId.toString()) {
+      throw new ConflictException('Address does not belong to user');
+    }
+    return address;
+  }
+
   async deleteAddress(userId: Types.ObjectId, addressId: string): Promise<void> {
     const address = await this.getAddressById(addressId);
 

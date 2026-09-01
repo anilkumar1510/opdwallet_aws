@@ -68,9 +68,22 @@ export class DoctorAuthController {
       });
       console.log('[DoctorAuthController] Cookie set successfully');
 
+      // The token is returned to the client as well as set as a cookie.
+      //
+      // The cookie alone is not enough: it is named `opd_session`, the SAME name
+      // the member portal uses, and cookies are scoped to HOST not port. With
+      // both apps on localhost they overwrite each other, so a doctor request
+      // could be authenticated as whichever member last signed in — which is
+      // precisely how the dashboard came to answer 403 on every
+      // @Roles(DOCTOR) route.
+      //
+      // With the token in the body the doctor client can send
+      // `Authorization: Bearer`, which the JWT strategy checks BEFORE any
+      // cookie, so the two portals stop fighting over one session.
       const response = {
         message: 'Login successful',
         doctor: result.doctor,
+        token: result.token,
       };
 
       console.log('[DoctorAuthController] Sending response:', response);

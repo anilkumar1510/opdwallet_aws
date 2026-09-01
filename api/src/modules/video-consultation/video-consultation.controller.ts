@@ -37,6 +37,18 @@ export class VideoConsultationController {
     return this.videoConsultationService.endConsultation(consultationId, req.user.userId, endDto);
   }
 
+  /**
+   * A fresh Agora token for a call already in progress.
+   *
+   * Both roles, because both are participants and both tokens expire. The
+   * service checks the caller is actually in this consultation before signing
+   * anything.
+   */
+  @Get(':consultationId/token')
+  async refreshAgoraToken(@Request() req: any, @Param('consultationId') consultationId: string) {
+    return this.videoConsultationService.refreshAgoraToken(consultationId, req.user.userId);
+  }
+
   @Get(':consultationId/status')
   async getConsultationStatus(@Param('consultationId') consultationId: string) {
     return this.videoConsultationService.getConsultationStatus(consultationId);

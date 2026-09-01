@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 export interface PatientHealthRecords {
   patient: {
     name: string;
@@ -35,7 +36,7 @@ export interface PatientHealthRecords {
 }
 
 export async function getPatientHealthRecords(patientId: string): Promise<PatientHealthRecords> {
-  const response = await fetch(`/doctor/api/doctor/appointments/patients/${patientId}/health-records`, {
+  const response = await doctorFetch(`/doctor/api/doctor/appointments/patients/${patientId}/health-records`, {
     credentials: 'include',
   });
 

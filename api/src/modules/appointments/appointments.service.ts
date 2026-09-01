@@ -1045,6 +1045,22 @@ export class AppointmentsService {
     appointment.confirmedAt = new Date();
     await appointment.save();
 
+    // Sheet requires the member be told the cart is ready the moment the
+    // clinic confirms — this was the one step in the lifecycle nothing sent.
+    const dateStr = new Date(appointment.appointmentDate).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    await this.notificationsService.notifyAppointmentConfirmed(
+      appointment.userId,
+      appointmentId,
+      appointment.appointmentType,
+      appointment.doctorName || 'Doctor',
+      dateStr,
+      appointment.timeSlot,
+    );
+
     return appointment;
   }
 

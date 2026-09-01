@@ -37,7 +37,6 @@ export default function OrdersPage() {
 
   const fetchTransactions = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams();
 
       // Add userId parameter if viewing dependent
@@ -49,9 +48,7 @@ export default function OrdersPage() {
       if (filterService !== 'ALL') params.append('serviceType', filterService);
 
       const response = await fetch(`/api/transactions?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -72,11 +69,8 @@ export default function OrdersPage() {
 
   const fetchSummary = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/transactions/summary', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {

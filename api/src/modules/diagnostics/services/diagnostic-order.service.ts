@@ -26,6 +26,7 @@ import { BenefitResolver } from '../../plan-config/utils/benefit-resolver';
 import { CopayResolver } from '../../plan-config/utils/copay-resolver';
 import { CopayCalculator } from '../../plan-config/utils/copay-calculator';
 import { ServiceTransactionLimitCalculator } from '../../plan-config/utils/service-transaction-limit-calculator';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 export interface CreateDiagnosticOrderDto {
   userId: string;
@@ -71,6 +72,7 @@ export class DiagnosticOrderService {
     private walletService: WalletService,
     private transactionSummaryService: TransactionSummaryService,
     private paymentService: PaymentService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createDto: CreateDiagnosticOrderDto): Promise<DiagnosticOrder> {
@@ -323,6 +325,17 @@ export class DiagnosticOrderService {
     if (status === OrderStatus.CONFIRMED) {
       order.confirmedAt = new Date();
       order.confirmedBy = confirmedBy;
+
+      // Sheet requires the member be told the order is ready, with any
+      // adjustments, the moment adjudication confirms it — nothing sent this before.
+      await this.notificationsService.notifyAppointmentConfirmed(
+        order.userId,
+        (order._id as Types.ObjectId).toString(),
+        'DIAGNOSTIC',
+        order.vendorName,
+        order.appointmentDate || 'the scheduled date',
+        order.appointmentTime || 'the scheduled slot',
+      );
     }
 
     if (status === OrderStatus.SCHEDULED) {

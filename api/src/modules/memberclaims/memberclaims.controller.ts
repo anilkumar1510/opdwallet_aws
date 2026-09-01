@@ -23,7 +23,7 @@ import { Model } from 'mongoose';
 import { FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
-import { join } from 'path';
+import { join, isAbsolute, posix } from 'path';
 import { MemberClaimsService } from './memberclaims.service';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { UpdateClaimDto } from './dto/update-claim.dto';
@@ -369,9 +369,31 @@ export class MemberClaimsController {
       filePath = filePath.replace('/app/', '');
     }
 
-    // If it's a relative path, make it absolute from cwd
-    if (!filePath.startsWith('/')) {
+    // If it's a relative path, make it absolute from cwd. isAbsolute() is used
+    // instead of a leading-slash check so Windows paths ('C:\...') are not
+    // mistaken for relative ones and joined onto cwd.
+    if (!isAbsolute(filePath)) {
       filePath = join(process.cwd(), filePath);
+    }
+
+    // Stored paths are whatever the machine that handled the upload recorded,
+    // so a claim uploaded elsewhere points at a directory that does not exist
+    // here. Fall back to the same file inside this instance's uploads dir,
+    // locating it from the stored path rather than the request params so the
+    // URL cannot be used to reach outside the claims directory.
+    if (!existsSync(filePath)) {
+      const storedPath = document.filePath.replace(/\\/g, '/');
+      const localPath = join(
+        process.cwd(),
+        'uploads',
+        'claims',
+        posix.basename(posix.dirname(storedPath)),
+        posix.basename(storedPath),
+      );
+
+      if (existsSync(localPath)) {
+        filePath = localPath;
+      }
     }
 
     if (!existsSync(filePath)) {

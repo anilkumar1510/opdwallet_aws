@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 import { MedicineItem, LabTestItem } from './digital-prescriptions'
 
 export interface PrescriptionTemplate {
@@ -42,7 +43,7 @@ export interface UpdateTemplateDto {
 }
 
 export async function createTemplate(data: CreateTemplateDto): Promise<PrescriptionTemplate> {
-  const response = await fetch('/doctor/api/doctor/prescription-templates', {
+  const response = await doctorFetch('/doctor/api/doctor/prescription-templates', {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -61,7 +62,7 @@ export async function createTemplate(data: CreateTemplateDto): Promise<Prescript
 }
 
 export async function getTemplates(): Promise<PrescriptionTemplate[]> {
-  const response = await fetch('/doctor/api/doctor/prescription-templates', {
+  const response = await doctorFetch('/doctor/api/doctor/prescription-templates', {
     credentials: 'include',
   })
 
@@ -74,7 +75,7 @@ export async function getTemplates(): Promise<PrescriptionTemplate[]> {
 }
 
 export async function getTemplate(templateId: string): Promise<PrescriptionTemplate> {
-  const response = await fetch(`/doctor/api/doctor/prescription-templates/${templateId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescription-templates/${templateId}`, {
     credentials: 'include',
   })
 
@@ -90,7 +91,7 @@ export async function updateTemplate(
   templateId: string,
   data: UpdateTemplateDto
 ): Promise<PrescriptionTemplate> {
-  const response = await fetch(`/doctor/api/doctor/prescription-templates/${templateId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescription-templates/${templateId}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: {
@@ -109,7 +110,7 @@ export async function updateTemplate(
 }
 
 export async function deleteTemplate(templateId: string): Promise<void> {
-  const response = await fetch(`/doctor/api/doctor/prescription-templates/${templateId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescription-templates/${templateId}`, {
     method: 'DELETE',
     credentials: 'include',
   })
@@ -121,7 +122,7 @@ export async function deleteTemplate(templateId: string): Promise<void> {
 }
 
 export async function incrementTemplateUsage(templateId: string): Promise<void> {
-  const response = await fetch(`/doctor/api/doctor/prescription-templates/${templateId}/use`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescription-templates/${templateId}/use`, {
     method: 'POST',
     credentials: 'include',
   })

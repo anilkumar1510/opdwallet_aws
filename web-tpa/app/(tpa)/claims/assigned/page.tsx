@@ -11,6 +11,7 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline'
 import { useRoleGuard } from '@/lib/hooks/useRoleGuard'
+import { apiFetch } from '@/lib/api'
 
 interface Claim {
   _id: string
@@ -58,9 +59,7 @@ export default function AssignedClaimsPage() {
 
       params.append('sortBy', sortBy)
 
-      const response = await fetch(`/api/tpa/claims/assigned?${params.toString()}`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/tpa/claims/assigned?${params.toString()}`)
 
       if (response.ok) {
         const data = await response.json()

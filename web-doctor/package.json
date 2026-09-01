@@ -10,6 +10,7 @@
   "dependencies": {
     "@daily-co/daily-js": "^0.85.0",
     "@daily-co/daily-react": "^0.23.2",
+    "agora-rtc-sdk-ng": "^4.24.7",
     "next": "14.2.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",

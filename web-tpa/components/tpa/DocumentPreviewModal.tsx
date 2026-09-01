@@ -7,6 +7,7 @@ import {
   DocumentTextIcon,
   PhotoIcon,
 } from '@heroicons/react/24/outline'
+import { apiUrl } from '@/lib/api'
 
 interface DocumentPreviewModalProps {
   isOpen: boolean
@@ -49,7 +50,7 @@ export default function DocumentPreviewModal({
   }
 
   // Construct the proper file URL using the extracted userId
-  const fileUrl = `/api/member/claims/files/${fileUserId}/${document.fileName}`
+  const fileUrl = apiUrl(`/api/member/claims/files/${fileUserId}/${document.fileName}`)
 
   // Determine if it's a PDF or image
   const isPDF = document.fileName?.toLowerCase().endsWith('.pdf') ||

@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 export interface ClinicalFindings {
   generalExamination?: string;
   systemicExamination?: string;
@@ -61,7 +62,7 @@ export interface UpdateConsultationNoteDto {
 export async function createConsultationNote(data: CreateConsultationNoteDto): Promise<ConsultationNote> {
   console.log('🔵 [API] Creating consultation note with data:', data);
 
-  const response = await fetch('/doctor/api/doctor/consultation-notes', {
+  const response = await doctorFetch('/doctor/api/doctor/consultation-notes', {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -94,7 +95,7 @@ export async function createConsultationNote(data: CreateConsultationNoteDto): P
 }
 
 export async function getConsultationNoteByAppointment(appointmentId: string): Promise<ConsultationNote | null> {
-  const response = await fetch(`/doctor/api/doctor/consultation-notes/appointment/${appointmentId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/consultation-notes/appointment/${appointmentId}`, {
     credentials: 'include',
   });
 
@@ -107,7 +108,7 @@ export async function getConsultationNoteByAppointment(appointmentId: string): P
 }
 
 export async function getConsultationNotesByPatient(patientId: string): Promise<ConsultationNote[]> {
-  const response = await fetch(`/doctor/api/doctor/consultation-notes/patient/${patientId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/consultation-notes/patient/${patientId}`, {
     credentials: 'include',
   });
 
@@ -120,7 +121,7 @@ export async function getConsultationNotesByPatient(patientId: string): Promise<
 }
 
 export async function getConsultationNote(noteId: string): Promise<ConsultationNote> {
-  const response = await fetch(`/doctor/api/doctor/consultation-notes/${noteId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/consultation-notes/${noteId}`, {
     credentials: 'include',
   });
 
@@ -138,7 +139,7 @@ export async function updateConsultationNote(
 ): Promise<ConsultationNote> {
   console.log('🔵 [API] Updating consultation note:', noteId, 'with data:', data);
 
-  const response = await fetch(`/doctor/api/doctor/consultation-notes/${noteId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/consultation-notes/${noteId}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: {
@@ -168,7 +169,7 @@ export async function updateConsultationNote(
 }
 
 export async function deleteConsultationNote(noteId: string): Promise<void> {
-  const response = await fetch(`/doctor/api/doctor/consultation-notes/${noteId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/consultation-notes/${noteId}`, {
     method: 'DELETE',
     credentials: 'include',
   });
@@ -180,7 +181,7 @@ export async function deleteConsultationNote(noteId: string): Promise<void> {
 }
 
 export async function linkPrescriptionToNote(noteId: string, prescriptionId: string): Promise<ConsultationNote> {
-  const response = await fetch(`/doctor/api/doctor/consultation-notes/${noteId}/link-prescription`, {
+  const response = await doctorFetch(`/doctor/api/doctor/consultation-notes/${noteId}/link-prescription`, {
     method: 'POST',
     credentials: 'include',
     headers: {

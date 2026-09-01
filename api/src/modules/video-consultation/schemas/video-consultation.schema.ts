@@ -38,7 +38,12 @@ export class VideoConsultation {
   @Prop()
   jitsiDomain: string;
 
-  @Prop({ required: true })
+  /**
+   * The Daily.co room. NO LONGER REQUIRED: an Agora consultation has a channel
+   * and a token instead, and forcing a room here made Daily an unavoidable
+   * dependency of starting any call — including calls that will not use it.
+   */
+  @Prop()
   roomUrl: string;
 
   // Scheduling

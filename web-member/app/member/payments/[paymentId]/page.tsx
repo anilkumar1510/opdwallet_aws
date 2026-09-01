@@ -31,11 +31,8 @@ export default function PaymentPage() {
   const fetchPaymentDetails = useCallback(async () => {
     try {
       console.log('🔍 [PaymentPage] Fetching payment details for:', paymentId);
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/payments/${paymentId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       console.log('🔍 [PaymentPage] Response status:', response.status);
@@ -457,11 +454,10 @@ export default function PaymentPage() {
 
       // Mark payment as completed
       console.log('💳 [PaymentPage] Marking payment as completed...');
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/payments/${paymentId}/mark-paid`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });

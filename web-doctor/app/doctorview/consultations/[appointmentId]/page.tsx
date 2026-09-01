@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { startVideoConsultation, endVideoConsultation } from '@/lib/api/video-consultations'
 import { getAppointmentDetails } from '@/lib/api/appointments'
 import DailyVideoCall from '@/components/DailyVideoCall'
+import AgoraVideoCall, { type AgoraCallFields } from '@/components/AgoraVideoCall'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
@@ -15,6 +16,12 @@ interface ConsultationData {
   doctorName: string
   patientName: string
   status: string
+  /**
+   * Present only once the API mints Agora credentials. While it is absent the
+   * page uses the Daily room exactly as before — every consultation in flight
+   * today is a Daily room, and swapping outright would break them all.
+   */
+  agora?: AgoraCallFields
 }
 
 export default function VideoConsultationPage() {
@@ -168,13 +175,25 @@ export default function VideoConsultationPage() {
 
       {/* Video Container */}
       <div className="absolute top-16 bottom-0 left-0 right-0">
-        <DailyVideoCall
-          roomUrl={consultation.roomUrl}
-          doctorName={consultation.doctorName}
-          patientName={consultation.patientName}
-          consultationId={consultation.consultationId}
-          onEnd={handleEndConsultation}
-        />
+        {consultation.agora?.appId &&
+        consultation.agora?.channel &&
+        consultation.agora?.token ? (
+          <AgoraVideoCall
+            agora={consultation.agora}
+            doctorName={consultation.doctorName}
+            patientName={consultation.patientName}
+            consultationId={consultation.consultationId}
+            onEnd={handleEndConsultation}
+          />
+        ) : (
+          <DailyVideoCall
+            roomUrl={consultation.roomUrl}
+            doctorName={consultation.doctorName}
+            patientName={consultation.patientName}
+            consultationId={consultation.consultationId}
+            onEnd={handleEndConsultation}
+          />
+        )}
       </div>
     </div>
   )

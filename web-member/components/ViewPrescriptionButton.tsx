@@ -7,12 +7,15 @@ interface ViewPrescriptionButtonProps {
   prescriptionId: string
   hasPrescription?: boolean
   className?: string
+  /** Override the button text; defaults to "View Prescription". */
+  label?: string
 }
 
 export default function ViewPrescriptionButton({
   prescriptionId,
   hasPrescription = false,
-  className = ''
+  className = '',
+  label = 'View Prescription'
 }: ViewPrescriptionButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -82,7 +85,7 @@ export default function ViewPrescriptionButton({
       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm ${className}`}
     >
       <EyeIcon className="h-5 w-5" />
-      {loading ? 'Loading...' : 'View Prescription'}
+      {loading ? 'Loading...' : label}
     </button>
   )
 }

@@ -20,6 +20,7 @@ import { CopayCalculator } from '../../plan-config/utils/copay-calculator';
 import { ServiceTransactionLimitCalculator } from '../../plan-config/utils/service-transaction-limit-calculator';
 import { TransactionSummaryService } from '../../transactions/transaction-summary.service';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../../transactions/schemas/transaction-summary.schema';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class LabOrderService {
@@ -37,6 +38,7 @@ export class LabOrderService {
     private walletService: WalletService,
     private transactionSummaryService: TransactionSummaryService,
     private paymentService: PaymentService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async validateOrder(userId: string, validateDto: ValidateLabOrderDto) {
@@ -424,6 +426,17 @@ export class LabOrderService {
     if (updateDto.status === OrderStatus.CONFIRMED) {
       order.confirmedAt = new Date();
       order.confirmedBy = userId;
+
+      // Sheet requires the member be told the order is ready, with any
+      // adjustments, the moment adjudication confirms it — nothing sent this before.
+      await this.notificationsService.notifyAppointmentConfirmed(
+        order.userId,
+        (order._id as Types.ObjectId).toString(),
+        order.serviceType,
+        order.vendorName,
+        order.collectionDate || 'the scheduled date',
+        order.collectionTime || 'the scheduled slot',
+      );
     }
 
     if (updateDto.status === OrderStatus.SAMPLE_COLLECTED) {

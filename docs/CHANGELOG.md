@@ -2,6 +2,32 @@
 
 All notable changes to the OPD Wallet project will be documented in this file.
 
+## [Unreleased] - 2026-08-17
+
+### Added
+
+- **In-clinic consultation journey in the Angular member portal (front end only, no API changes)**
+  - New route `/member/appointments/journey/:appointmentId` carries everything after the request is
+    raised — waiting on the clinic, the cart, payment, receipt, cashless letter, prescription upload,
+    invoice — on one screen, because the member returns to the same booking for each of them
+  - New route `/member/appointments/suggest-doctor` for the empanelment side journey off the doctor
+    list. Requests are held on the device; there is no empanelment queue in the API to file them to
+  - Follows the revised patient-flows sequence: the request is raised and left pending, operations
+    confirm the slot with the clinic, and only then does the member review the cart and settle the
+    self-payment. Nothing is asked of the member's card before the clinic has agreed the slot
+  - In-clinic bookings now send `useWallet: false`. Measured against the running API, this keeps the
+    request at PENDING_CONFIRMATION instead of auto-confirming a slot the clinic never agreed to. It
+    does **not** stop the wallet debit where a copay applies — that branch debits before it collects
+    and ignores the flag (`appointments.service.ts:690`), which is the defect the wallet-block change
+    exists to fix
+  - Real where the API allows it: the appointment, its pending status, the copay payment (kept and
+    settled at the payment step), and the release — every exit from the journey cancels the
+    appointment, which credits the wallet back in full. Drawn: the clinic confirmation, the cashless
+    letter, the visit, the invoice, and the block becoming a debit. The screens say which is which
+  - Journey state is held in `localStorage` and cleared on sign-out. Stage rules are covered by
+    `inclinic-flow.check.ts` (`node projects/member/src/app/core/appointments/inclinic-flow.check.ts`)
+  - Planned properly in `openspec/changes/wallet-block-and-razorpay`
+
 ## [Unreleased] - 2026-07-31
 
 ### Added

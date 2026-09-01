@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 export interface Unavailability {
   _id: string
   unavailabilityId: string
@@ -47,7 +48,7 @@ export interface UpdateUnavailabilityDto {
 }
 
 export async function createUnavailability(data: CreateUnavailabilityDto): Promise<Unavailability> {
-  const response = await fetch('/doctor/api/doctor/calendar/unavailability', {
+  const response = await doctorFetch('/doctor/api/doctor/calendar/unavailability', {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -67,7 +68,7 @@ export async function createUnavailability(data: CreateUnavailabilityDto): Promi
 
 export async function getUnavailabilities(includeInactive = false): Promise<Unavailability[]> {
   const url = `/doctor/api/doctor/calendar/unavailability?includeInactive=${includeInactive}`
-  const response = await fetch(url, {
+  const response = await doctorFetch(url, {
     credentials: 'include',
   })
 
@@ -80,7 +81,7 @@ export async function getUnavailabilities(includeInactive = false): Promise<Unav
 }
 
 export async function getUpcomingUnavailabilities(): Promise<Unavailability[]> {
-  const response = await fetch('/doctor/api/doctor/calendar/unavailability/upcoming', {
+  const response = await doctorFetch('/doctor/api/doctor/calendar/unavailability/upcoming', {
     credentials: 'include',
   })
 
@@ -96,7 +97,7 @@ export async function updateUnavailability(
   unavailabilityId: string,
   data: UpdateUnavailabilityDto
 ): Promise<Unavailability> {
-  const response = await fetch(`/doctor/api/doctor/calendar/unavailability/${unavailabilityId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/calendar/unavailability/${unavailabilityId}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: {
@@ -115,7 +116,7 @@ export async function updateUnavailability(
 }
 
 export async function deleteUnavailability(unavailabilityId: string): Promise<void> {
-  const response = await fetch(`/doctor/api/doctor/calendar/unavailability/${unavailabilityId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/calendar/unavailability/${unavailabilityId}`, {
     method: 'DELETE',
     credentials: 'include',
   })
@@ -140,7 +141,7 @@ export async function getUnavailableDates(
     params.append('clinicId', clinicId)
   }
 
-  const response = await fetch(`/doctor/api/doctor/calendar/unavailable-dates?${params}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/calendar/unavailable-dates?${params}`, {
     credentials: 'include',
   })
 

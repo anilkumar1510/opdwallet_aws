@@ -100,3 +100,7 @@ logs/
  test-*.html 
 # Runtime upload artifacts (patient PHI - must not be committed)
 api/uploads/
+
+# curl cookie jars written during API probing - these hold live session tokens
+j4.txt
+*.cookiejar

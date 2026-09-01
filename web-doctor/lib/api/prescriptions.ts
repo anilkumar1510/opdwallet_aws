@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 export interface Prescription {
   _id: string;
   prescriptionId: string;
@@ -35,7 +36,7 @@ export async function uploadPrescription(data: UploadPrescriptionData): Promise<
     formData.append('notes', data.notes);
   }
 
-  const response = await fetch('/doctor/api/doctor/prescriptions/upload', {
+  const response = await doctorFetch('/doctor/api/doctor/prescriptions/upload', {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -56,7 +57,7 @@ export async function getDoctorPrescriptions(page = 1, limit = 20): Promise<{
   page: number;
   totalPages: number;
 }> {
-  const response = await fetch(`/doctor/api/doctor/prescriptions?page=${page}&limit=${limit}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescriptions?page=${page}&limit=${limit}`, {
     credentials: 'include',
   });
 
@@ -68,7 +69,7 @@ export async function getDoctorPrescriptions(page = 1, limit = 20): Promise<{
 }
 
 export async function deletePrescription(prescriptionId: string): Promise<{ message: string }> {
-  const response = await fetch(`/doctor/api/doctor/prescriptions/${prescriptionId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescriptions/${prescriptionId}`, {
     method: 'DELETE',
     credentials: 'include',
   });
@@ -81,7 +82,7 @@ export async function deletePrescription(prescriptionId: string): Promise<{ mess
 }
 
 export async function getPdfPrescription(prescriptionId: string): Promise<{ message: string; prescription: Prescription }> {
-  const response = await fetch(`/doctor/api/doctor/prescriptions/${prescriptionId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/prescriptions/${prescriptionId}`, {
     credentials: 'include',
   });
 

@@ -11,8 +11,9 @@ Welcome to the OPD Wallet documentation! This folder contains comprehensive docu
 New to the project? Start here:
 
 1. **[Project Overview](./PROJECT_OVERVIEW.md)** - Understand what OPD Wallet does and how it works
-2. **[Database and Configuration](./DATABASE_AND_CONFIG.md)** - Database schema and configuration
-3. **[Manual Deployment](./MANUAL_DEPLOYMENT.md)** - How to deploy the application
+2. **[User Flows](./USER_FLOWS.md)** - Every portal, role, responsibility and cross-portal flow
+3. **[Database and Configuration](./DATABASE_AND_CONFIG.md)** - Database schema and configuration
+4. **[Manual Deployment](./MANUAL_DEPLOYMENT.md)** - How to deploy the application
 
 ---
 

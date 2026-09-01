@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Post,
+  Put,
   Delete,
   Body,
   Param,
@@ -160,6 +161,25 @@ export class MemberController {
       console.log('[ADDRESS-API] ========== CREATE ADDRESS FAILED ==========');
       throw error;
     }
+  }
+
+  @Put('addresses/:addressId')
+  @Roles(UserRole.MEMBER)
+  @ApiOperation({ summary: 'Update an address of the logged-in member' })
+  @ApiResponse({ status: 200, description: 'Address updated successfully' })
+  @ApiResponse({ status: 404, description: 'Address not found' })
+  @ApiResponse({ status: 409, description: 'Address does not belong to user' })
+  async updateAddress(
+    @Request() req: AuthRequest,
+    @Param('addressId') addressId: string,
+    @Body() updateAddressDto: CreateAddressDto,
+  ) {
+    const data = await this.addressService.updateAddress(
+      new Types.ObjectId(req.user.userId),
+      addressId,
+      updateAddressDto,
+    );
+    return { success: true, data, message: 'Address updated successfully' };
   }
 
   @Patch('addresses/:addressId/default')

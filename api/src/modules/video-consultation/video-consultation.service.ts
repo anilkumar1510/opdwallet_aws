@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { VideoConsultation, VideoConsultationDocument } from './schemas/video-consultation.schema';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { RtcTokenBuilder, RtcRole } from 'agora-token';
 
 @Injectable()
 export class VideoConsultationService {
@@ -162,6 +163,10 @@ export class VideoConsultationService {
         doctorName: existingConsultation.doctorName,
         patientName: existingConsultation.patientName,
         status: existingConsultation.status,
+        agora: this.agoraFor(
+          existingConsultation.consultationId,
+          VideoConsultationService.AGORA_UID_DOCTOR,
+        ),
       };
     }
 
@@ -171,9 +176,28 @@ export class VideoConsultationService {
     const roomId = uuidv4();
     const roomName = `opd-consult-${appointmentId}-${roomId.slice(0, 8)}`;
 
-    // Create Daily.co room
-    const dailyRoom = await this.createDailyRoom(roomName);
-    const roomUrl = dailyRoom.url;
+    // Create the Daily.co room — BEST EFFORT once Agora is configured.
+    //
+    // This used to be fatal: `startConsultation` created a Daily room first and
+    // threw if it failed, so no consultation record existed, the member could
+    // not join, and Agora never got a chance. The doctor saw only "Failed to
+    // create video consultation room".
+    //
+    // Daily is still the transport for every client that has not moved, so it is
+    // still attempted and still fatal when Agora is NOT configured. What changed
+    // is that an Agora-capable server no longer depends on a third party it does
+    // not need for this call.
+    let roomUrl = '';
+    try {
+      const dailyRoom = await this.createDailyRoom(roomName);
+      roomUrl = dailyRoom.url;
+    } catch (error) {
+      if (!this.agoraConfigured()) throw error;
+      console.warn(
+        '[VideoConsultation] Daily room creation failed; continuing with Agora only:',
+        error?.message ?? error,
+      );
+    }
 
     // Create consultation record
     const consultation = await this.videoConsultationModel.create({
@@ -205,6 +229,10 @@ export class VideoConsultationService {
       doctorName: consultation.doctorName,
       patientName: consultation.patientName,
       status: consultation.status,
+      agora: this.agoraFor(
+        consultation.consultationId,
+        VideoConsultationService.AGORA_UID_DOCTOR,
+      ),
     };
 
     console.log('\n========================================');
@@ -220,6 +248,88 @@ export class VideoConsultationService {
     console.log('========================================\n');
 
     return result;
+  }
+
+
+  /**
+   * Agora participant ids. A consultation is two-party, so fixed ids are
+   * enough — and they MUST differ, or the second joiner evicts the first.
+   */
+  private static readonly AGORA_UID_DOCTOR = 1;
+  private static readonly AGORA_UID_PATIENT = 2;
+
+  /**
+   * Agora channel names allow letters, digits, space and a fixed punctuation
+   * set, under 64 bytes. `consultationId` is the natural key — both ends must
+   * derive the SAME string or they join different channels and never meet — but
+   * it is sanitised rather than trusted, so an id format change cannot silently
+   * produce an unjoinable channel.
+   */
+  private agoraChannel(consultationId: string): string {
+    return consultationId.replace(/[^A-Za-z0-9!#$%&()+\-:;<=.>?@\[\]^_{}|~,]/g, '-').slice(0, 63);
+  }
+
+  /**
+   * Mint an RTC token, or return null when Agora is not configured.
+   *
+   * **Returning null is the designed path, not a failure.** While AGORA_APP_ID
+   * or AGORA_APP_CERTIFICATE is blank the response carries no `agora` block, and
+   * both clients fall back to the Daily.co room they use today. Nothing breaks
+   * by adding this; video only changes once the credentials exist.
+   *
+   * The certificate is read here and never returned. Only the app id, which is
+   * public, and the signed token reach the browser.
+   */
+  /** Whether this server can mint Agora tokens at all. */
+  private agoraConfigured(): boolean {
+    return Boolean(process.env.AGORA_APP_ID?.trim() && process.env.AGORA_APP_CERTIFICATE?.trim());
+  }
+
+  private agoraFor(consultationId: string, uid: number) {
+    const appId = process.env.AGORA_APP_ID?.trim();
+    const certificate = process.env.AGORA_APP_CERTIFICATE?.trim();
+    if (!appId || !certificate) return null;
+
+    const ttl = Number(process.env.AGORA_TOKEN_TTL_SECONDS ?? 3600) || 3600;
+    const channel = this.agoraChannel(consultationId);
+    // Both expiries are SECONDS FROM NOW, not absolute timestamps.
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      appId,
+      certificate,
+      channel,
+      uid,
+      RtcRole.PUBLISHER,
+      ttl,
+      ttl,
+    );
+    return { appId, channel, token, uid, expiresIn: ttl };
+  }
+
+  /**
+   * A fresh token for a consultation already in progress.
+   *
+   * Tokens expire — the default here is an hour — and a consultation running
+   * past that would drop mid-call. The clients renew on
+   * `token-privilege-will-expire` rather than waiting to be disconnected.
+   */
+  async refreshAgoraToken(consultationId: string, userId: string) {
+    const consultation = await this.videoConsultationModel.findOne({ consultationId });
+    if (!consultation) throw new NotFoundException('Consultation not found');
+
+    const isDoctor = consultation.doctorId.toString() === userId;
+    const isPatient = consultation.patientId.toString() === userId;
+    if (!isDoctor && !isPatient) {
+      throw new ForbiddenException('You are not a participant in this consultation');
+    }
+
+    const agora = this.agoraFor(
+      consultation.consultationId,
+      isDoctor
+        ? VideoConsultationService.AGORA_UID_DOCTOR
+        : VideoConsultationService.AGORA_UID_PATIENT,
+    );
+    if (!agora) throw new BadRequestException('Agora is not configured on this server');
+    return agora;
   }
 
   async joinConsultation(appointmentId: string, patientId: string) {
@@ -248,6 +358,10 @@ export class VideoConsultationService {
       doctorName: consultation.doctorName,
       patientName: consultation.patientName,
       status: consultation.status,
+      agora: this.agoraFor(
+        consultation.consultationId,
+        VideoConsultationService.AGORA_UID_PATIENT,
+      ),
     };
   }
 

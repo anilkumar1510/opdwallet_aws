@@ -272,7 +272,11 @@ export class DoctorCalendarService {
 
       while (current <= uEnd) {
         if (current >= start && current <= end) {
-          const dateStr = current.toISOString().split('T')[0];
+          // en-CA (LOCAL time) not toISOString() (UTC) — this server runs on
+          // IST (+5:30), where a UTC conversion rolls every date back one day,
+          // silently mismatching against doctors.service.ts's getSlots(),
+          // which keys its own dates the same (fixed) way.
+          const dateStr = current.toLocaleDateString('en-CA');
 
           if (unavailability.isAllDay || (!unavailability.startTime && !unavailability.endTime)) {
             // All-day unavailability
@@ -340,7 +344,7 @@ export class DoctorCalendarService {
 
       while (current <= uEnd) {
         if (current >= start && current <= end) {
-          unavailableDates.add(current.toISOString().split('T')[0]);
+          unavailableDates.add(current.toLocaleDateString('en-CA'));
         }
         current.setDate(current.getDate() + 1);
       }

@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 export interface Appointment {
   _id: string;
   appointmentId: string;
@@ -59,7 +60,7 @@ export async function getAllAppointments(
 
   const url = `/doctor/api/doctor/appointments?${params.toString()}`;
 
-  const response = await fetch(url, {
+  const response = await doctorFetch(url, {
     credentials: 'include',
   });
 
@@ -80,7 +81,7 @@ export async function getAppointmentCounts(): Promise<{ message: string; counts:
 
   console.log('📡 Making fetch request...')
   const fetchStart = Date.now()
-  const response = await fetch(url, {
+  const response = await doctorFetch(url, {
     credentials: 'include',
   });
   const fetchDuration = Date.now() - fetchStart
@@ -107,7 +108,7 @@ export async function getAppointmentCounts(): Promise<{ message: string; counts:
 }
 
 export async function getTodayAppointments(): Promise<AppointmentsResponse> {
-  const response = await fetch('/doctor/api/doctor/appointments/today', {
+  const response = await doctorFetch('/doctor/api/doctor/appointments/today', {
     credentials: 'include',
   });
 
@@ -133,7 +134,7 @@ export async function getAppointmentsByDate(date: string): Promise<AppointmentsR
   try {
     console.log('📡 Making fetch request...')
     const fetchStart = Date.now()
-    const response = await fetch(url, {
+    const response = await doctorFetch(url, {
       credentials: 'include',
       signal: controller.signal,
     });
@@ -186,7 +187,7 @@ export async function getUpcomingAppointments(limit = 10): Promise<AppointmentsR
 
   console.log('📡 Making fetch request...')
   const fetchStart = Date.now()
-  const response = await fetch(url, {
+  const response = await doctorFetch(url, {
     credentials: 'include',
   });
   const fetchDuration = Date.now() - fetchStart
@@ -214,7 +215,7 @@ export async function getUpcomingAppointments(limit = 10): Promise<AppointmentsR
 }
 
 export async function getAppointmentDetails(appointmentId: string): Promise<{ message: string; appointment: Appointment }> {
-  const response = await fetch(`/doctor/api/doctor/appointments/${appointmentId}`, {
+  const response = await doctorFetch(`/doctor/api/doctor/appointments/${appointmentId}`, {
     credentials: 'include',
   });
 
@@ -226,7 +227,7 @@ export async function getAppointmentDetails(appointmentId: string): Promise<{ me
 }
 
 export async function markAppointmentComplete(appointmentId: string): Promise<{ message: string; appointment: Appointment }> {
-  const response = await fetch(`/doctor/api/doctor/appointments/${appointmentId}/complete`, {
+  const response = await doctorFetch(`/doctor/api/doctor/appointments/${appointmentId}/complete`, {
     method: 'PATCH',
     credentials: 'include',
   });
@@ -239,7 +240,7 @@ export async function markAppointmentComplete(appointmentId: string): Promise<{ 
 }
 
 export async function confirmAppointment(appointmentId: string): Promise<{ message: string; appointment: Appointment }> {
-  const response = await fetch(`/doctor/api/doctor/appointments/${appointmentId}/confirm`, {
+  const response = await doctorFetch(`/doctor/api/doctor/appointments/${appointmentId}/confirm`, {
     method: 'PATCH',
     credentials: 'include',
   });

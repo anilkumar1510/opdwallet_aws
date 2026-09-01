@@ -30,11 +30,8 @@ export default function OrderDetailsPage() {
 
   const fetchTransactionDetails = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/transactions/${transactionId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {

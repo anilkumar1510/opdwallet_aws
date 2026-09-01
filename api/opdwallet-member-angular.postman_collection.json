@@ -1,0 +1,3913 @@
+{
+  "info": {
+    "name": "OPD Wallet API — web-angular member",
+    "description": "Scoped to the routes \\web-angular\\projects\\member\\src\\app\\core is seen to call. Recovered by scanning source for request paths, so it is a lower bound: a path assembled at runtime from a variable does not appear here.\n\nGenerated from http://localhost:4000/api/docs-json — do not hand-edit, it is overwritten on regeneration.\n\nAuth: httpOnly `opd_session` cookie. Log in via the auth folder first; Postman's cookie jar carries it to every other request.\n\n23 descriptions authored via @ApiOperation, 100 derived from handler names and marked as such.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    }
+  ],
+  "item": [
+    {
+      "name": "AhcMember",
+      "item": [
+        {
+          "name": "GET /api/member/ahc/eligibility",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/eligibility",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "eligibility"
+              ]
+            },
+            "description": "Check eligibility _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get user orders _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/ahc/orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "orders"
+              ]
+            },
+            "description": "Create order _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/orders/{orderId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/orders/:orderId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "orders",
+                ":orderId"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Get order details _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/package",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/package",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "package"
+              ]
+            },
+            "description": "Get package _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/reports/{orderId}/diagnostic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/reports/:orderId/diagnostic",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "reports",
+                ":orderId",
+                "diagnostic"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Download diagnostic report _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/reports/{orderId}/lab",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/reports/:orderId/lab",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "reports",
+                ":orderId",
+                "lab"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Download lab report _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/vendors/diagnostic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/vendors/diagnostic",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "vendors",
+                "diagnostic"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get eligible diagnostic vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/ahc/vendors/lab",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/ahc/vendors/lab",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "ahc",
+                "vendors",
+                "lab"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get eligible lab vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "GET /api/appointments/{appointmentId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/:appointmentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                ":appointmentId"
+              ],
+              "variable": [
+                {
+                  "key": "appointmentId",
+                  "value": "",
+                  "description": "appointmentId path parameter"
+                }
+              ]
+            },
+            "description": "Find one _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/appointments/{appointmentId}/user-cancel",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/:appointmentId/user-cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                ":appointmentId",
+                "user-cancel"
+              ],
+              "variable": [
+                {
+                  "key": "appointmentId",
+                  "value": "",
+                  "description": "appointmentId path parameter"
+                }
+              ]
+            },
+            "description": "User cancel _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/appointments/user/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "user",
+                ":userId"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "userId path parameter"
+                }
+              ]
+            },
+            "description": "Get user appointments _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/appointments/validate-booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/validate-booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "validate-booking"
+              ]
+            },
+            "description": "Validate booking _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "assignments",
+      "item": [
+        {
+          "name": "GET /api/assignments/my-policy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments/my-policy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments",
+                "my-policy"
+              ]
+            },
+            "description": "Get current user policy configuration with copay details"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "auth",
+      "item": [
+        {
+          "name": "POST /api/auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "User login",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "User logout"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/auth/me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get current user"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/refresh",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh access token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DentalBookings",
+      "item": [
+        {
+          "name": "GET /api/dental-bookings/{bookingId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/:bookingId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                ":bookingId"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Get booking by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/dental-bookings/{bookingId}/cancel",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/:bookingId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                ":bookingId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Cancel booking _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/dental-bookings/{bookingId}/invoice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/:bookingId/invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                ":bookingId",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Get member invoice _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/dental-bookings/clinics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/clinics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                "clinics"
+              ]
+            },
+            "description": "Get clinics for service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/dental-bookings/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get available slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/dental-bookings/user/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                "user",
+                ":userId"
+              ],
+              "query": [
+                {
+                  "key": "viewingUserId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "userId path parameter"
+                }
+              ]
+            },
+            "description": "Get user bookings _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/dental-bookings/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dental-bookings/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dental-bookings",
+                "validate"
+              ]
+            },
+            "description": "Validate booking _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DiagnosticMember",
+      "item": [
+        {
+          "name": "GET /api/member/diagnostics/carts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/carts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "carts"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch carts for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get my carts _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/diagnostics/carts/{cartId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/carts/:cartId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "carts",
+                ":cartId"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Get cart _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/diagnostics/carts/{cartId}/vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/carts/:cartId/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "carts",
+                ":cartId",
+                "vendors"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Get cart vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/diagnostics/orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch orders for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get my orders _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/diagnostics/orders",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "orders"
+              ]
+            },
+            "description": "Create order _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/diagnostics/orders/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/orders/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "orders",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get order _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/diagnostics/orders/{id}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/orders/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "orders",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Cancel order _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/diagnostics/orders/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/orders/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "orders",
+                "validate"
+              ]
+            },
+            "description": "Validate order _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/diagnostics/prescriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/prescriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "prescriptions"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch prescriptions for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get my prescriptions _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/diagnostics/prescriptions/{id}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/prescriptions/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "prescriptions",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Cancel prescription _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/diagnostics/prescriptions/submit-existing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/prescriptions/submit-existing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "prescriptions",
+                "submit-existing"
+              ]
+            },
+            "description": "Submit existing prescription _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/diagnostics/prescriptions/upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/prescriptions/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "prescriptions",
+                "upload"
+              ]
+            },
+            "description": "Upload prescription _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/diagnostics/vendors/{vendorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/diagnostics/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "diagnostics",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get vendor slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "item": [
+        {
+          "name": "GET /api/doctors/{doctorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/:doctorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                ":doctorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "doctorId",
+                  "value": "",
+                  "description": "doctorId path parameter"
+                }
+              ]
+            },
+            "description": "Get slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "LabMember",
+      "item": [
+        {
+          "name": "GET /api/member/lab/carts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/carts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "carts"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch carts for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get carts _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/member/lab/carts/{cartId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/carts/:cartId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "carts",
+                ":cartId"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Delete cart _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/carts/{cartId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/carts/:cartId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "carts",
+                ":cartId"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Get cart by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/carts/{cartId}/vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/carts/:cartId/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "carts",
+                ":cartId",
+                "vendors"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Get cart vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/carts/active",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/carts/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "carts",
+                "active"
+              ]
+            },
+            "description": "Get active carts _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch orders for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get user orders _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/lab/orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "orders"
+              ]
+            },
+            "description": "Create order _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/orders/{orderId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/orders/:orderId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "orders",
+                ":orderId"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Get order by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/lab/orders/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/orders/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "orders",
+                "validate"
+              ]
+            },
+            "description": "Validate order _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/prescriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/prescriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "prescriptions"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch prescriptions for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get prescriptions _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/lab/prescriptions/{id}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/prescriptions/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "prescriptions",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Cancel prescription _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/lab/prescriptions/submit-existing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/prescriptions/submit-existing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "prescriptions",
+                "submit-existing"
+              ]
+            },
+            "description": "Submit existing prescription _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/lab/prescriptions/upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/prescriptions/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "prescriptions",
+                "upload"
+              ]
+            },
+            "description": "Upload prescription _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/lab/vendors/{vendorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/lab/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "lab",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get available slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "item": [
+        {
+          "name": "GET /api/location/autocomplete",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/location/autocomplete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "location",
+                "autocomplete"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Search locations _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/location/geocode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/location/geocode",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "location",
+                "geocode"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Forward geocode _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/location/reverse-geocode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/location/reverse-geocode",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "location",
+                "reverse-geocode"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "lng",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Reverse geocode _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "member",
+      "item": [
+        {
+          "name": "GET /api/member/addresses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "addresses"
+              ]
+            },
+            "description": "Get all addresses for logged-in member"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/addresses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "addresses"
+              ]
+            },
+            "description": "Create a new address for logged-in member",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/family",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/family",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "family"
+              ]
+            },
+            "description": "Get family members"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "profile"
+              ]
+            },
+            "description": "Get member profile with family members"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/member/profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "profile"
+              ]
+            },
+            "description": "Update member profile (email/mobile)",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "member-services",
+      "item": [
+        {
+          "name": "GET /api/member/benefits/{categoryId}/services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/benefits/:categoryId/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "benefits",
+                ":categoryId",
+                "services"
+              ],
+              "variable": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                }
+              ]
+            },
+            "description": "Get member allowed services for a category (filtered by policy)"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/benefits/{categoryId}/specialties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/benefits/:categoryId/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "benefits",
+                ":categoryId",
+                "specialties"
+              ],
+              "variable": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                }
+              ]
+            },
+            "description": "Get member allowed specialties (CAT001 or CAT005)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MemberClaims",
+      "item": [
+        {
+          "name": "GET /api/member/claims",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch claims for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Find all _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/claims",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims"
+              ]
+            },
+            "description": "Create _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/member/claims/{claimId}/cancel",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:claimId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":claimId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "claimId",
+                  "value": "",
+                  "description": "claimId path parameter"
+                }
+              ]
+            },
+            "description": "Cancel claim _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/claims/{claimId}/resubmit-documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:claimId/resubmit-documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":claimId",
+                "resubmit-documents"
+              ],
+              "variable": [
+                {
+                  "key": "claimId",
+                  "value": "",
+                  "description": "claimId path parameter"
+                }
+              ]
+            },
+            "description": "Resubmit documents _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/claims/{claimId}/submit",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:claimId/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":claimId",
+                "submit"
+              ],
+              "variable": [
+                {
+                  "key": "claimId",
+                  "value": "",
+                  "description": "claimId path parameter"
+                }
+              ]
+            },
+            "description": "Submit claim _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/claims/{claimId}/timeline",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:claimId/timeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":claimId",
+                "timeline"
+              ],
+              "variable": [
+                {
+                  "key": "claimId",
+                  "value": "",
+                  "description": "claimId path parameter"
+                }
+              ]
+            },
+            "description": "Get claim timeline _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/claims/{claimId}/tpa-notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:claimId/tpa-notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":claimId",
+                "tpa-notes"
+              ],
+              "variable": [
+                {
+                  "key": "claimId",
+                  "value": "",
+                  "description": "claimId path parameter"
+                }
+              ]
+            },
+            "description": "Get tpa notes _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/member/claims/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Remove _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/claims/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Find one _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/member/claims/{id}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/claims/available-categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/available-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                "available-categories"
+              ]
+            },
+            "description": "Get available claim categories _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/claims/files/{userId}/{filename}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/files/:userId/:filename",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                "files",
+                ":userId",
+                ":filename"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "userId path parameter"
+                },
+                {
+                  "key": "filename",
+                  "value": "",
+                  "description": "filename path parameter"
+                }
+              ]
+            },
+            "description": "Get file _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/claims/summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/claims/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "claims",
+                "summary"
+              ]
+            },
+            "description": "Get user summary _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MemberDigitalPrescriptions",
+      "item": [
+        {
+          "name": "GET /api/member/digital-prescriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/digital-prescriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "digital-prescriptions"
+              ],
+              "query": [
+                {
+                  "key": "filterUsed",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch digital prescriptions for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get member digital prescriptions _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/digital-prescriptions/{prescriptionId}/download-pdf",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/digital-prescriptions/:prescriptionId/download-pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "digital-prescriptions",
+                ":prescriptionId",
+                "download-pdf"
+              ],
+              "variable": [
+                {
+                  "key": "prescriptionId",
+                  "value": "",
+                  "description": "prescriptionId path parameter"
+                }
+              ]
+            },
+            "description": "Download pdf _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MemberPrescriptions",
+      "item": [
+        {
+          "name": "GET /api/member/prescriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/prescriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "prescriptions"
+              ],
+              "query": [
+                {
+                  "key": "filterUsed",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch prescriptions for (family access verification applies)"
+                }
+              ]
+            },
+            "description": "Get member prescriptions _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/prescriptions/{prescriptionId}/download",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/prescriptions/:prescriptionId/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "prescriptions",
+                ":prescriptionId",
+                "download"
+              ],
+              "variable": [
+                {
+                  "key": "prescriptionId",
+                  "value": "",
+                  "description": "prescriptionId path parameter"
+                }
+              ]
+            },
+            "description": "Download prescription _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "PATCH /api/notifications/{id}/read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/:id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                ":id",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Mark notification as read"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/notifications/mark-all-read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/mark-all-read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "mark-all-read"
+              ]
+            },
+            "description": "Mark all notifications as read"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/notifications/unread-count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "Get unread notifications count"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "payments",
+      "item": [
+        {
+          "name": "GET /api/payments/{paymentId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:paymentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":paymentId"
+              ],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": "",
+                  "description": "paymentId path parameter"
+                }
+              ]
+            },
+            "description": "Get payment details by payment ID"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/payments/{paymentId}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:paymentId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":paymentId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": "",
+                  "description": "paymentId path parameter"
+                }
+              ]
+            },
+            "description": "Cancel a payment"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/payments/{paymentId}/mark-paid",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:paymentId/mark-paid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":paymentId",
+                "mark-paid"
+              ],
+              "variable": [
+                {
+                  "key": "paymentId",
+                  "value": "",
+                  "description": "paymentId path parameter"
+                }
+              ]
+            },
+            "description": "Mark payment as paid (dummy gateway)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PharmacyMember",
+      "item": [
+        {
+          "name": "POST /api/member/pharmacy/carts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/carts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "carts"
+              ]
+            },
+            "description": "Create cart _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/pharmacy/carts/{cartId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/carts/:cartId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "carts",
+                ":cartId"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Get cart _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/pharmacy/carts/{cartId}/items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/carts/:cartId/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "carts",
+                ":cartId",
+                "items"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                }
+              ]
+            },
+            "description": "Add item _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/member/pharmacy/carts/{cartId}/items/{medicineId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/carts/:cartId/items/:medicineId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "carts",
+                ":cartId",
+                "items",
+                ":medicineId"
+              ],
+              "variable": [
+                {
+                  "key": "cartId",
+                  "value": "",
+                  "description": "cartId path parameter"
+                },
+                {
+                  "key": "medicineId",
+                  "value": "",
+                  "description": "medicineId path parameter"
+                }
+              ]
+            },
+            "description": "Remove item _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/pharmacy/medicines",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/medicines",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "medicines"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Search medicines _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/pharmacy/orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "orders"
+              ]
+            },
+            "description": "List orders _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/pharmacy/orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "orders"
+              ]
+            },
+            "description": "Create order _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/pharmacy/orders/{orderId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/orders/:orderId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "orders",
+                ":orderId"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Get order _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/pharmacy/orders/{orderId}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/orders/:orderId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "orders",
+                ":orderId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Cancel _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/pharmacy/orders/{orderId}/invoice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/orders/:orderId/invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "orders",
+                ":orderId",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Get invoice _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/pharmacy/orders/{orderId}/pay",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/pharmacy/orders/:orderId/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "pharmacy",
+                "orders",
+                ":orderId",
+                "pay"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "",
+                  "description": "orderId path parameter"
+                }
+              ]
+            },
+            "description": "Pay _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "policies",
+      "item": [
+        {
+          "name": "GET /api/policies/{id}/current",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:id/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":id",
+                "current"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get policy with current configuration for members"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "transactions",
+      "item": [
+        {
+          "name": "GET /api/transactions/{transactionId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/:transactionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transactions",
+                ":transactionId"
+              ],
+              "variable": [
+                {
+                  "key": "transactionId",
+                  "value": "",
+                  "description": "transactionId path parameter"
+                }
+              ]
+            },
+            "description": "Get transaction details by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions/summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transactions",
+                "summary"
+              ]
+            },
+            "description": "Get transaction summary statistics"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "VaccinationMember",
+      "item": [
+        {
+          "name": "GET /api/member/vaccination/bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get user bookings _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/vaccination/bookings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "bookings"
+              ]
+            },
+            "description": "Create booking _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/vaccination/bookings/{bookingId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/bookings/:bookingId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "bookings",
+                ":bookingId"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Get booking by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/vaccination/bookings/{bookingId}/cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/bookings/:bookingId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "bookings",
+                ":bookingId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Cancel booking _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/vaccination/bookings/{bookingId}/invoice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/bookings/:bookingId/invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "bookings",
+                ":bookingId",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Get invoice _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/member/vaccination/bookings/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/bookings/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "bookings",
+                "validate"
+              ]
+            },
+            "description": "Validate booking _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/vaccination/services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "services"
+              ]
+            },
+            "description": "Get member vaccination services _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/vaccination/vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "vendors"
+              ],
+              "query": [
+                {
+                  "key": "serviceId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get vendors for service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/member/vaccination/vendors/{vendorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/member/vaccination/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "member",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get available slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "VideoConsultation",
+      "item": [
+        {
+          "name": "GET /api/video-consultations/{consultationId}/status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/video-consultations/:consultationId/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "video-consultations",
+                ":consultationId",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "consultationId",
+                  "value": "",
+                  "description": "consultationId path parameter"
+                }
+              ]
+            },
+            "description": "Get consultation status _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/video-consultations/{consultationId}/token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/video-consultations/:consultationId/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "video-consultations",
+                ":consultationId",
+                "token"
+              ],
+              "variable": [
+                {
+                  "key": "consultationId",
+                  "value": "",
+                  "description": "consultationId path parameter"
+                }
+              ]
+            },
+            "description": "Refresh agora token _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/video-consultations/join",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/video-consultations/join",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "video-consultations",
+                "join"
+              ]
+            },
+            "description": "Join consultation _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/video-consultations/patient/history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/video-consultations/patient/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "video-consultations",
+                "patient",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get patient consultations _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "VisionBookings",
+      "item": [
+        {
+          "name": "GET /api/vision-bookings/{bookingId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/:bookingId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                ":bookingId"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Get booking by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/vision-bookings/{bookingId}/cancel",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/:bookingId/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                ":bookingId",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Cancel booking _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/vision-bookings/{bookingId}/invoice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/:bookingId/invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                ":bookingId",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Get member invoice _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/vision-bookings/{bookingId}/process-payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/:bookingId/process-payment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                ":bookingId",
+                "process-payment"
+              ],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "",
+                  "description": "bookingId path parameter"
+                }
+              ]
+            },
+            "description": "Process payment _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/vision-bookings/clinics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/clinics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                "clinics"
+              ]
+            },
+            "description": "Get clinics for service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/vision-bookings/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get available slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/vision-bookings/user/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                "user",
+                ":userId"
+              ],
+              "query": [
+                {
+                  "key": "viewingUserId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "userId path parameter"
+                }
+              ]
+            },
+            "description": "Get user bookings _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/vision-bookings/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vision-bookings/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vision-bookings",
+                "validate"
+              ]
+            },
+            "description": "Validate booking _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "wallet",
+      "item": [
+        {
+          "name": "GET /api/wallet/balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/balance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "balance"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch balance for (must be in same family)"
+                }
+              ]
+            },
+            "description": "Get wallet balance for logged-in member or family member"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/wallet/transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "User ID to fetch transactions for (must be in same family)"
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Number of transactions to return (default: 15)"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Transaction types (comma-separated): DEBIT,CREDIT,REFUND,ADJUSTMENT,INITIALIZATION"
+                },
+                {
+                  "key": "categoryCode",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Category codes (comma-separated)"
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Start date (ISO format: YYYY-MM-DD)"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "",
+                  "disabled": true,
+                  "description": "End date (ISO format: YYYY-MM-DD)"
+                },
+                {
+                  "key": "minAmount",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Minimum transaction amount"
+                },
+                {
+                  "key": "maxAmount",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Maximum transaction amount"
+                },
+                {
+                  "key": "serviceType",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Service types (comma-separated)"
+                },
+                {
+                  "key": "includeReversed",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Include reversed transactions (true/false, default: true)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Sort field: date or amount (default: date)"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Sort order: asc or desc (default: desc)"
+                }
+              ]
+            },
+            "description": "Get wallet transactions for logged-in member or family member with filtering"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

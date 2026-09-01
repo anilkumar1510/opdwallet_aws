@@ -1,3 +1,4 @@
+import { doctorFetch } from './session';
 // Use relative path with basePath prefix for doctor portal
 // This ensures API calls go through Next.js proxy: /doctor/api/* -> /api/* -> backend
 const API_BASE = '/doctor/api';
@@ -91,7 +92,7 @@ export async function createDigitalPrescription(
 
   try {
     console.log('🔵 [API Client] Sending POST request...');
-    const response = await fetch(`${API_BASE}/doctor/digital-prescriptions`, {
+    const response = await doctorFetch(`${API_BASE}/doctor/digital-prescriptions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export async function updateDigitalPrescription(
   prescriptionId: string,
   payload: UpdateDigitalPrescriptionPayload
 ): Promise<any> {
-  const response = await fetch(`${API_BASE}/doctor/digital-prescriptions/${prescriptionId}`, {
+  const response = await doctorFetch(`${API_BASE}/doctor/digital-prescriptions/${prescriptionId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ export async function updateDigitalPrescription(
 }
 
 export async function generatePrescriptionPDF(prescriptionId: string): Promise<any> {
-  const response = await fetch(`${API_BASE}/doctor/digital-prescriptions/${prescriptionId}/generate-pdf`, {
+  const response = await doctorFetch(`${API_BASE}/doctor/digital-prescriptions/${prescriptionId}/generate-pdf`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -176,7 +177,7 @@ export async function getDigitalPrescription(prescriptionId: string): Promise<an
 
   try {
     console.log('🔵 [API Client] Sending GET request...');
-    const response = await fetch(`${API_BASE}/doctor/digital-prescriptions/${prescriptionId}`, {
+    const response = await doctorFetch(`${API_BASE}/doctor/digital-prescriptions/${prescriptionId}`, {
       credentials: 'include',
     });
 
@@ -226,7 +227,7 @@ export async function searchMedicines(query: string, limit = 20): Promise<Medici
   console.log('🔵 [API Client] Fetching medicines from:', url);
 
   try {
-    const response = await fetch(url, {
+    const response = await doctorFetch(url, {
       credentials: 'include',
     });
 
@@ -259,7 +260,7 @@ export async function searchDiagnoses(query: string, limit = 20): Promise<Diagno
   console.log('🔵 [API Client] Fetching diagnoses from:', url);
 
   try {
-    const response = await fetch(url, {
+    const response = await doctorFetch(url, {
       credentials: 'include',
     });
 
@@ -292,7 +293,7 @@ export async function searchSymptoms(query: string, limit = 20): Promise<Symptom
   console.log('🔵 [API Client] Fetching symptoms from:', url);
 
   try {
-    const response = await fetch(url, {
+    const response = await doctorFetch(url, {
       credentials: 'include',
     });
 

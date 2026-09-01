@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "OPD Wallet (Angular)",
+    "slug": "opdwallet-angular-shell",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": { "backgroundColor": "#0F5FDC" },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true },
+    "android": { "package": "com.opdwallet.angularshell" }
+  }
+}

@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationType, NotificationPriority } from './schemas/notification.schema';
+import { MockChannelService } from './mock-channel.service';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name) private notificationModel: Model<Notification>,
+    private readonly channels: MockChannelService,
   ) {}
 
   async createNotification(data: {
@@ -20,6 +22,12 @@ export class NotificationsService {
     metadata?: any;
     actionUrl?: string;
   }) {
+    // Every notification the sheet describes is meant to go out over
+    // WhatsApp and push as well as in-app — there is no real provider for
+    // either yet, so both are mocked here rather than per call site.
+    const whatsapp = this.channels.sendWhatsApp(data.userId, data.title, data.message);
+    const push = this.channels.sendPush(data.userId, data.title, data.message);
+
     const notification = new this.notificationModel({
       userId: new Types.ObjectId(data.userId),
       type: data.type,
@@ -28,7 +36,7 @@ export class NotificationsService {
       claimId: data.claimId ? new Types.ObjectId(data.claimId) : undefined,
       claimNumber: data.claimNumber,
       priority: data.priority || NotificationPriority.MEDIUM,
-      metadata: data.metadata,
+      metadata: { ...data.metadata, channels: { whatsapp, push } },
       actionUrl: data.actionUrl,
     });
 

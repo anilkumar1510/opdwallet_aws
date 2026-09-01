@@ -35,6 +35,12 @@ export class DoctorsService {
     const limit = parseInt(query.limit || '20');
     const skip = (page - 1) * limit;
 
+    // ONLINE consultation has no clinic to be "near" — everything below keyed
+    // on IN_CLINIC slots and a clinic list would silently drop any doctor who
+    // only does online consults (zero in-clinic clinics -> filtered out at
+    // the end). This flag branches the two paths that must differ.
+    const isOnlineMode = query.type === 'ONLINE';
+
     const filter: any = {};
 
     // Filter by isActive if provided, otherwise show all
@@ -42,6 +48,10 @@ export class DoctorsService {
       this.logger.log(`[findAll] isActive filter: ${query.isActive} (type: ${typeof query.isActive})`);
       filter.isActive = query.isActive === 'true';
       this.logger.log(`[findAll] Converted isActive to boolean: ${filter.isActive}`);
+    }
+
+    if (isOnlineMode) {
+      filter.availableOnline = true;
     }
 
     if (query.specialtyId) {
@@ -93,7 +103,7 @@ export class DoctorsService {
       .find({
         doctorId: { $in: doctorIds },
         isActive: true,
-        consultationType: 'IN_CLINIC'
+        consultationType: isOnlineMode ? 'ONLINE' : 'IN_CLINIC'
       })
       .lean()
       .exec();
@@ -124,9 +134,30 @@ export class DoctorsService {
     });
 
     // Transform doctors with their clinics using the maps (no more DB queries!)
-    const doctorsWithClinics = doctors.map(doctor => {
+    const doctorsWithClinics = await Promise.all(doctors.map(async doctor => {
       const doctorObj = doctor.toObject();
       const slots = doctorSlotsMap.get(doctor.doctorId) || [];
+
+      // ONLINE: no physical clinic to build or sort by distance — "sorted by
+      // fastest available doctor" (the sheet's own words) instead. Skip
+      // straight to the online-specific shape.
+      if (isOnlineMode) {
+        const next = slots.length > 0 ? await this.computeNextAvailableOnlineSlot(doctor.doctorId, slots) : null;
+        // Sheet: "Consult Now is shown in grey scale and cannot be tapped if
+        // no doctor is available within 5 minutes." Recurring weekly slot
+        // templates have no real "online now" presence to check, so this
+        // reads it off the same next-available computation the sort uses —
+        // real data, just a proxy for a concept the schema doesn't model.
+        const canConsultNow = next !== null && next.at.getTime() - Date.now() <= 5 * 60 * 1000;
+        return {
+          ...doctorObj,
+          clinics: [] as any[],
+          hasOnlineSlots: slots.length > 0,
+          nextAvailableAt: next?.at ?? null,
+          nextAvailableLabel: next?.label ?? null,
+          canConsultNow,
+        };
+      }
 
       // Build clinicId -> consultation fee map for this doctor
       const clinicFeeMap = new Map();
@@ -216,10 +247,25 @@ export class DoctorsService {
         ...doctorObj,
         clinics: transformedClinics,
       };
-    });
+    }));
 
-    // Filter out doctors with no clinics at all (neither slots nor clinics array)
-    const filteredDoctors = doctorsWithClinics.filter(doctor => doctor.clinics.length > 0);
+    // In-clinic: a doctor with no clinic (neither slots nor a clinics array)
+    // has nothing to book. Online: a doctor with no online slot configured
+    // has nothing to book either — the equivalent gate on hasOnlineSlots.
+    let filteredDoctors = isOnlineMode
+      ? doctorsWithClinics.filter((doctor: any) => doctor.hasOnlineSlots)
+      : doctorsWithClinics.filter((doctor: any) => doctor.clinics.length > 0);
+
+    if (isOnlineMode) {
+      // Fastest available first; doctors with no resolvable next slot (fully
+      // booked out through the window checked) sort last rather than drop out.
+      filteredDoctors = [...filteredDoctors].sort((a: any, b: any) => {
+        if (a.nextAvailableAt && b.nextAvailableAt) return a.nextAvailableAt.getTime() - b.nextAvailableAt.getTime();
+        if (a.nextAvailableAt) return -1;
+        if (b.nextAvailableAt) return 1;
+        return 0;
+      });
+    }
 
     this.logger.log(`[findAll] Returning ${filteredDoctors.length} doctors (page ${page} of ${Math.ceil(total / limit)})`);
 
@@ -452,8 +498,13 @@ export class DoctorsService {
         doctorId: doctorId,
         ...(clinicId && { clinicId: clinicId }),
         appointmentDate: {
-          $gte: today.toISOString().split('T')[0],
-          $lte: endDate.toISOString().split('T')[0]
+          // en-CA gives YYYY-MM-DD in LOCAL time, matching dayOfWeek's basis
+          // below — toISOString() converts to UTC first, which rolls the date
+          // back a full day on this server's IST (+5:30) clock (local midnight
+          // is 18:30 UTC the day before), permanently mismatching every date
+          // this function generates against its own correctly-local dayOfWeek.
+          $gte: today.toLocaleDateString('en-CA'),
+          $lte: endDate.toLocaleDateString('en-CA')
         },
         status: { $in: [AppointmentStatus.PENDING_CONFIRMATION, AppointmentStatus.CONFIRMED] }
       })
@@ -488,7 +539,7 @@ export class DoctorsService {
       currentDate.setDate(today.getDate() + i);
 
       const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = currentDate.toLocaleDateString('en-CA');
 
       // Skip this day completely if doctor has all-day unavailability
       if (allDayBlockedDates.has(dateStr)) {
@@ -515,15 +566,19 @@ export class DoctorsService {
           slots.forEach(slot => allSlots.add(slot));
         });
 
-        // Convert Set to sorted array
+        // Convert Set to sorted array. Must go through convertTo24Hour first —
+        // stripping " AM"/" PM" and parsing what's left treats every hour as
+        // its 12-hour-clock number regardless of meridiem, so "1:00 PM" (60)
+        // sorted before "9:00 AM" (540) and the whole afternoon came first.
         const sortedSlots = Array.from(allSlots).sort((a, b) => {
-          const timeA = this.parseTime(a.replace(' AM', '').replace(' PM', ''));
-          const timeB = this.parseTime(b.replace(' AM', '').replace(' PM', ''));
+          const timeA = this.parseTime(this.convertTo24Hour(a));
+          const timeB = this.parseTime(this.convertTo24Hour(b));
           return timeA - timeB;
         });
 
         // Get partial unavailability for this date (if any)
         const partialBlockedTimes = partialUnavailability.get(dateStr) || [];
+        const now = new Date();
 
         days.push({
           date: dateStr,
@@ -543,9 +598,13 @@ export class DoctorsService {
               return slotTime24 >= range.startTime && slotTime24 < range.endTime;
             });
 
+            // Only today (i === 0) can have a slot already behind "now" —
+            // every later day in this loop is entirely in the future.
+            const isPast = i === 0 && this.parseTime(slotTime24) < now.getHours() * 60 + now.getMinutes();
+
             return {
               time,
-              available: !isBooked && !isInUnavailableTimeRange,
+              available: !isBooked && !isInUnavailableTimeRange && !isPast,
               slotId: slotId
             };
           })
@@ -615,6 +674,75 @@ export class DoctorsService {
     }
 
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Earliest bookable ONLINE slot for one doctor across the next 14 days, or
+   * null once every slot in that window is taken. Backs findAll()'s "sorted
+   * by fastest available doctor" (the sheet's own wording) — a list-level
+   * hint, not a hold: getSlots() re-checks the exact slot when the member
+   * actually opens this doctor's page.
+   */
+  private async computeNextAvailableOnlineSlot(
+    doctorId: string,
+    slotConfigs: any[],
+  ): Promise<{ at: Date; label: string } | null> {
+    const DAYS_AHEAD = 14;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + DAYS_AHEAD);
+
+    const existingAppointments = await this.appointmentModel
+      .find({
+        doctorId,
+        appointmentType: 'ONLINE',
+        appointmentDate: {
+          $gte: today.toLocaleDateString('en-CA'),
+          $lte: endDate.toLocaleDateString('en-CA'),
+        },
+        status: {
+          $in: [
+            AppointmentStatus.PENDING_PAYMENT,
+            AppointmentStatus.PENDING_CONFIRMATION,
+            AppointmentStatus.CONFIRMED,
+          ],
+        },
+      })
+      .select('appointmentDate timeSlot')
+      .lean()
+      .exec();
+    const booked = new Set(existingAppointments.map(a => `${a.appointmentDate}_${a.timeSlot}`));
+
+    const now = new Date();
+
+    for (let i = 0; i < DAYS_AHEAD; i++) {
+      const currentDate = new Date(today);
+      currentDate.setDate(today.getDate() + i);
+      const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+      const dateStr = currentDate.toLocaleDateString('en-CA');
+
+      const dayConfigs = slotConfigs.filter(config => config.dayOfWeek === dayOfWeek);
+      if (!dayConfigs.length) continue;
+
+      const times = new Set<string>();
+      dayConfigs.forEach(config => {
+        this.generateTimeSlots(config.startTime, config.endTime, config.slotDuration).forEach(t => times.add(t));
+      });
+      const sortedTimes = Array.from(times).sort(
+        (a, b) => this.parseTime(this.convertTo24Hour(a)) - this.parseTime(this.convertTo24Hour(b)),
+      );
+
+      for (const time of sortedTimes) {
+        if (booked.has(`${dateStr}_${time}`)) continue;
+        const slotMinutes = this.parseTime(this.convertTo24Hour(time));
+        const at = new Date(currentDate);
+        at.setHours(Math.floor(slotMinutes / 60), slotMinutes % 60, 0, 0);
+        if (at < now) continue; // today's slot already passed
+        return { at, label: `${i === 0 ? 'Today' : dateStr}, ${time}` };
+      }
+    }
+    return null;
   }
 
   // REMOVED: Replaced with counter service for better performance

@@ -1,3 +1,4 @@
+import { storeDoctorToken } from './session';
 export interface DoctorLoginDto {
   email: string;
   password: string;
@@ -15,6 +16,8 @@ export interface Doctor {
 export interface LoginResponse {
   message: string;
   doctor: Doctor;
+  /** Also set as a cookie, but the header is what survives sharing localhost. */
+  token?: string;
 }
 
 export async function loginDoctor(credentials: DoctorLoginDto): Promise<LoginResponse> {
@@ -164,6 +167,10 @@ export async function loginDoctor(credentials: DoctorLoginDto): Promise<LoginRes
         role: data.doctor?.role
       });
       console.log('🎉 [AUTH API] ========== DOCTOR LOGIN API CALL SUCCESS ==========');
+      // Keep the token for `Authorization: Bearer`. The cookie is still set, but
+      // it shares a name with the member portal's on localhost, so the header is
+      // what keeps the two sessions apart. See lib/api/session.ts.
+      storeDoctorToken(data?.token);
       return data
     } catch (parseError: any) {
       console.error('❌ [SUCCESS PATH] JSON parse failed');

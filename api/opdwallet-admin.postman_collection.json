@@ -1,0 +1,4563 @@
+{
+  "info": {
+    "name": "OPD Wallet API — web-admin",
+    "description": "Scoped to the routes \\web-admin is seen to call. Recovered by scanning source for request paths, so it is a lower bound: a path assembled at runtime from a variable does not appear here.\n\nGenerated from http://localhost:4000/api/docs-json — do not hand-edit, it is overwritten on regeneration.\n\nAuth: httpOnly `opd_session` cookie. Log in via the auth folder first; Postman's cookie jar carries it to every other request.\n\n77 descriptions authored via @ApiOperation, 66 derived from handler names and marked as such.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    }
+  ],
+  "item": [
+    {
+      "name": "AhcAdmin",
+      "item": [
+        {
+          "name": "GET /api/admin/ahc/packages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ahc/packages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ahc",
+                "packages"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get packages _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/ahc/packages",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ahc/packages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ahc",
+                "packages"
+              ]
+            },
+            "description": "Create package _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/admin/ahc/packages/{packageId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ahc/packages/:packageId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ahc",
+                "packages",
+                ":packageId"
+              ],
+              "variable": [
+                {
+                  "key": "packageId",
+                  "value": "",
+                  "description": "packageId path parameter"
+                }
+              ]
+            },
+            "description": "Delete package _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/ahc/packages/{packageId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ahc/packages/:packageId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ahc",
+                "packages",
+                ":packageId"
+              ],
+              "variable": [
+                {
+                  "key": "packageId",
+                  "value": "",
+                  "description": "packageId path parameter"
+                }
+              ]
+            },
+            "description": "Get package by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/ahc/packages/{packageId}",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ahc/packages/:packageId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ahc",
+                "packages",
+                ":packageId"
+              ],
+              "variable": [
+                {
+                  "key": "packageId",
+                  "value": "",
+                  "description": "packageId path parameter"
+                }
+              ]
+            },
+            "description": "Update package _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/ahc/packages/{packageId}/toggle-active",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/ahc/packages/:packageId/toggle-active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "ahc",
+                "packages",
+                ":packageId",
+                "toggle-active"
+              ],
+              "variable": [
+                {
+                  "key": "packageId",
+                  "value": "",
+                  "description": "packageId path parameter"
+                }
+              ]
+            },
+            "description": "Toggle active _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "assignments",
+      "item": [
+        {
+          "name": "GET /api/assignments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments"
+              ]
+            },
+            "description": "Get all assignments with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/assignments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments"
+              ]
+            },
+            "description": "Assign policy to user",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/assignments/{assignmentId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments/:assignmentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments",
+                ":assignmentId"
+              ],
+              "variable": [
+                {
+                  "key": "assignmentId",
+                  "value": "",
+                  "description": "assignmentId path parameter"
+                }
+              ]
+            },
+            "description": "Remove assignment (deactivate)"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/assignments/policy/{policyId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments/policy/:policyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments",
+                "policy",
+                ":policyId"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                }
+              ]
+            },
+            "description": "Get assignments for a specific policy"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/assignments/search-primary-members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments/search-primary-members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments",
+                "search-primary-members"
+              ],
+              "query": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Search primary members assigned to a policy"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/assignments/user/{userId}/policy/{policyId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assignments/user/:userId/policy/:policyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assignments",
+                "user",
+                ":userId",
+                "policy",
+                ":policyId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "userId path parameter"
+                },
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                }
+              ]
+            },
+            "description": "Unassign policy from user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "auth",
+      "item": [
+        {
+          "name": "POST /api/auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "User login",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "User logout"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/auth/me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get current user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "categories",
+      "item": [
+        {
+          "name": "GET /api/categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "description": "Get all categories"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "description": "Create a new category",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/categories/{categoryId}/lab-services/{labServiceId}/toggle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:categoryId/lab-services/:labServiceId/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":categoryId",
+                "lab-services",
+                ":labServiceId",
+                "toggle"
+              ],
+              "variable": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                },
+                {
+                  "key": "labServiceId",
+                  "value": "",
+                  "description": "labServiceId path parameter"
+                }
+              ]
+            },
+            "description": "Toggle lab service mapping for a category",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/categories/{categoryId}/specialties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:categoryId/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":categoryId",
+                "specialties"
+              ],
+              "variable": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                }
+              ]
+            },
+            "description": "Get all specialties with mapping status for a category"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/categories/{categoryId}/specialties/{specialtyId}/toggle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:categoryId/specialties/:specialtyId/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":categoryId",
+                "specialties",
+                ":specialtyId",
+                "toggle"
+              ],
+              "variable": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                },
+                {
+                  "key": "specialtyId",
+                  "value": "",
+                  "description": "specialtyId path parameter"
+                }
+              ]
+            },
+            "description": "Toggle specialty mapping for a category",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/categories/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete a category"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/categories/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get a category by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/categories/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update a category",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/categories/{id}/toggle-active",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/:id/toggle-active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories",
+                ":id",
+                "toggle-active"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Toggle category active status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "clinics",
+      "item": [
+        {
+          "name": "GET /api/clinics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clinics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clinics"
+              ]
+            },
+            "description": "Get all clinics"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/clinics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clinics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clinics"
+              ]
+            },
+            "description": "Create a new clinic",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/clinics/{clinicId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clinics/:clinicId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clinics",
+                ":clinicId"
+              ],
+              "variable": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "description": "clinicId path parameter"
+                }
+              ]
+            },
+            "description": "Delete a clinic"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/clinics/{clinicId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clinics/:clinicId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clinics",
+                ":clinicId"
+              ],
+              "variable": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "description": "clinicId path parameter"
+                }
+              ]
+            },
+            "description": "Get a clinic by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/clinics/{clinicId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clinics/:clinicId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clinics",
+                ":clinicId"
+              ],
+              "variable": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "description": "clinicId path parameter"
+                }
+              ]
+            },
+            "description": "Update a clinic",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "cugs",
+      "item": [
+        {
+          "name": "GET /api/cugs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs"
+              ]
+            },
+            "description": "Get all CUGs"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/cugs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs"
+              ]
+            },
+            "description": "Create a new CUG",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/cugs/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete CUG"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/cugs/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get CUG by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/cugs/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update CUG",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/cugs/{id}/toggle-active",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs/:id/toggle-active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs",
+                ":id",
+                "toggle-active"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Toggle CUG active status"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/cugs/active",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cugs/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cugs",
+                "active"
+              ]
+            },
+            "description": "Get all active CUGs"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DiagnosticAdmin",
+      "item": [
+        {
+          "name": "GET /api/admin/diagnostics/master-tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/master-tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "master-tests"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get master tests _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/diagnostics/master-tests",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/master-tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "master-tests"
+              ]
+            },
+            "description": "Create master test _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/diagnostics/master-tests/{id}/status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/master-tests/:id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "master-tests",
+                ":id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update master test status _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/diagnostics/services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "services"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get services _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/diagnostics/services",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "services"
+              ]
+            },
+            "description": "Create service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/diagnostics/services/{id}/activate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/services/:id/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "services",
+                ":id",
+                "activate"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Activate service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/diagnostics/services/{id}/deactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/services/:id/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "services",
+                ":id",
+                "deactivate"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Deactivate service patch _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/diagnostics/vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "vendors"
+              ]
+            },
+            "description": "Get vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/diagnostics/vendors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "vendors"
+              ]
+            },
+            "description": "Create vendor _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/diagnostics/vendors/{vendorId}/pricing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/vendors/:vendorId/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "vendors",
+                ":vendorId",
+                "pricing"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get vendor pricing _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/diagnostics/vendors/{vendorId}/pricing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/vendors/:vendorId/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "vendors",
+                ":vendorId",
+                "pricing"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Create pricing _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/diagnostics/vendors/{vendorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/diagnostics/vendors/{vendorId}/slots",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/diagnostics/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "diagnostics",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Create slot _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "item": [
+        {
+          "name": "GET /api/doctors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors"
+              ]
+            },
+            "description": "Find all _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/doctors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors"
+              ]
+            },
+            "description": "Create _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/doctors/{doctorId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/:doctorId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                ":doctorId"
+              ],
+              "variable": [
+                {
+                  "key": "doctorId",
+                  "value": "",
+                  "description": "doctorId path parameter"
+                }
+              ]
+            },
+            "description": "Find one _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/doctors/{doctorId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/:doctorId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                ":doctorId"
+              ],
+              "variable": [
+                {
+                  "key": "doctorId",
+                  "value": "",
+                  "description": "doctorId path parameter"
+                }
+              ]
+            },
+            "description": "Update _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/doctors/{doctorId}/photo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/:doctorId/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                ":doctorId",
+                "photo"
+              ],
+              "variable": [
+                {
+                  "key": "doctorId",
+                  "value": "",
+                  "description": "doctorId path parameter"
+                }
+              ]
+            },
+            "description": "Upload photo _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/doctors/{doctorId}/set-password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/:doctorId/set-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                ":doctorId",
+                "set-password"
+              ],
+              "variable": [
+                {
+                  "key": "doctorId",
+                  "value": "",
+                  "description": "doctorId path parameter"
+                }
+              ]
+            },
+            "description": "Set password _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Internal Users",
+      "item": [
+        {
+          "name": "GET /api/internal-users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal-users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal-users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Number of results per page (default: 10)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Search term (searches in name, email, employeeId)"
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by role"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by user status"
+                },
+                {
+                  "key": "department",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by department"
+                }
+              ]
+            },
+            "description": "Get all internal users with pagination and filtering"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/internal-users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal-users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal-users"
+              ]
+            },
+            "description": "Create a new internal user (staff)",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/internal-users/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal-users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal-users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete an internal user"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/internal-users/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal-users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal-users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get an internal user by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/internal-users/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal-users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal-users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update an internal user",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "LabAdmin",
+      "item": [
+        {
+          "name": "GET /api/admin/lab/master-tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/master-tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "master-tests"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get master tests _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/lab/master-tests",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/master-tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "master-tests"
+              ]
+            },
+            "description": "Create master test _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/lab/services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "services"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get services _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/lab/services",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "services"
+              ]
+            },
+            "description": "Create service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/lab/services/{id}/activate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/services/:id/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "services",
+                ":id",
+                "activate"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Activate service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/lab/services/{id}/deactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/services/:id/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "services",
+                ":id",
+                "deactivate"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Deactivate service patch _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/admin/lab/test-aliases/{aliasId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/test-aliases/:aliasId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "test-aliases",
+                ":aliasId"
+              ],
+              "variable": [
+                {
+                  "key": "aliasId",
+                  "value": "",
+                  "description": "aliasId path parameter"
+                }
+              ]
+            },
+            "description": "Delete test alias _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/lab/test-aliases/{aliasId}",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/test-aliases/:aliasId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "test-aliases",
+                ":aliasId"
+              ],
+              "variable": [
+                {
+                  "key": "aliasId",
+                  "value": "",
+                  "description": "aliasId path parameter"
+                }
+              ]
+            },
+            "description": "Update test alias _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/lab/test-aliases/vendor/{vendorId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/test-aliases/vendor/:vendorId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "test-aliases",
+                "vendor",
+                ":vendorId"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get vendor test aliases _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/lab/vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors"
+              ]
+            },
+            "description": "Get vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/lab/vendors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors"
+              ]
+            },
+            "description": "Create vendor _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/lab/vendors/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get vendor by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/lab/vendors/{id}",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update vendor _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/lab/vendors/{vendorId}/pricing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors/:vendorId/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors",
+                ":vendorId",
+                "pricing"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get vendor pricing _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/lab/vendors/{vendorId}/pricing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors/:vendorId/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors",
+                ":vendorId",
+                "pricing"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Create pricing _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/lab/vendors/{vendorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "pincode",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/lab/vendors/{vendorId}/slots",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/lab/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "lab",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Create slot _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "GET /api/members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Number of results per page (default: 10)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Search term (searches in name, email, uhid, memberId)"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by member status"
+                },
+                {
+                  "key": "relationship",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by relationship"
+                },
+                {
+                  "key": "primaryMemberId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by primary member ID (to get all dependents)"
+                },
+                {
+                  "key": "cugId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by CUG ID"
+                }
+              ]
+            },
+            "description": "Get all members with pagination and filtering"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/members",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ]
+            },
+            "description": "Create a new member",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/members/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete a member"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/members/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get a member by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/members/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update a member",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/members/{id}/assignments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id/assignments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id",
+                "assignments"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get policy assignments for a member"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/members/{id}/dependents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id/dependents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id",
+                "dependents"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get all dependents of a primary member"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Operations - Dental Services",
+      "item": [
+        {
+          "name": "GET /api/ops/dental-services/clinics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/dental-services/clinics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "dental-services",
+                "clinics"
+              ]
+            },
+            "description": "Get all clinics with dental service status"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/ops/dental-services/clinics/{clinicId}/toggle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/dental-services/clinics/:clinicId/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "dental-services",
+                "clinics",
+                ":clinicId",
+                "toggle"
+              ],
+              "variable": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "description": "clinicId path parameter"
+                }
+              ]
+            },
+            "description": "Toggle dental services enabled/disabled for a clinic",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Operations - Vision Services",
+      "item": [
+        {
+          "name": "GET /api/ops/vision-services/clinics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/vision-services/clinics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "vision-services",
+                "clinics"
+              ]
+            },
+            "description": "Get all clinics with vision service status"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/ops/vision-services/clinics/{clinicId}/toggle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ops/vision-services/clinics/:clinicId/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ops",
+                "vision-services",
+                "clinics",
+                ":clinicId",
+                "toggle"
+              ],
+              "variable": [
+                {
+                  "key": "clinicId",
+                  "value": "",
+                  "description": "clinicId path parameter"
+                }
+              ]
+            },
+            "description": "Toggle vision services enabled/disabled for a clinic",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "plan-config",
+      "item": [
+        {
+          "name": "GET /api/policies/{policyId}/config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config"
+              ],
+              "query": [
+                {
+                  "key": "version",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                }
+              ]
+            },
+            "description": "Get plan configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/policies/{policyId}/config",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                }
+              ]
+            },
+            "description": "Create new plan configuration",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/policies/{policyId}/config/{version}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config/:version",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config",
+                ":version"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                },
+                {
+                  "key": "version",
+                  "value": "",
+                  "description": "version path parameter"
+                }
+              ]
+            },
+            "description": "Delete plan configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/policies/{policyId}/config/{version}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config/:version",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config",
+                ":version"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                },
+                {
+                  "key": "version",
+                  "value": "",
+                  "description": "version path parameter"
+                }
+              ]
+            },
+            "description": "Update plan configuration",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/policies/{policyId}/config/{version}/publish",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config/:version/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config",
+                ":version",
+                "publish"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                },
+                {
+                  "key": "version",
+                  "value": "",
+                  "description": "version path parameter"
+                }
+              ]
+            },
+            "description": "Publish plan configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/policies/{policyId}/config/{version}/set-current",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config/:version/set-current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config",
+                ":version",
+                "set-current"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                },
+                {
+                  "key": "version",
+                  "value": "",
+                  "description": "version path parameter"
+                }
+              ]
+            },
+            "description": "Set configuration as current"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/policies/{policyId}/config/all",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config",
+                "all"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                }
+              ]
+            },
+            "description": "Get all plan configurations for a policy"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "policies",
+      "item": [
+        {
+          "name": "GET /api/policies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get all policies with pagination and filters"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/policies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies"
+              ]
+            },
+            "description": "Create a new policy",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/policies/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete policy"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/policies/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get policy by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/policies/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update policy",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "policy-services-config",
+      "item": [
+        {
+          "name": "GET /api/admin/categories/{categoryId}/available-services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories/:categoryId/available-services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "categories",
+                ":categoryId",
+                "available-services"
+              ],
+              "variable": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                }
+              ]
+            },
+            "description": "Get available services for a category (admin: for selection)"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/policies/{policyId}/config/{version}/services/{categoryId}",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/policies/:policyId/config/:version/services/:categoryId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "policies",
+                ":policyId",
+                "config",
+                ":version",
+                "services",
+                ":categoryId"
+              ],
+              "variable": [
+                {
+                  "key": "policyId",
+                  "value": "",
+                  "description": "policyId path parameter"
+                },
+                {
+                  "key": "version",
+                  "value": "",
+                  "description": "version path parameter"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "categoryId path parameter"
+                }
+              ]
+            },
+            "description": "Update service configuration for a benefit (admin: save selections)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "relationships",
+      "item": [
+        {
+          "name": "GET /api/relationships",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships"
+              ]
+            },
+            "description": "Get all active relationships"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/relationships",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships"
+              ]
+            },
+            "description": "Create new relationship",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/relationships/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete relationship"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/relationships/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get relationship by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/relationships/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update relationship",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/relationships/{id}/toggle-active",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships/:id/toggle-active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships",
+                ":id",
+                "toggle-active"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Toggle relationship active status"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/relationships/all",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relationships/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relationships",
+                "all"
+              ]
+            },
+            "description": "Get all relationships including inactive"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "services",
+      "item": [
+        {
+          "name": "GET /api/services/categories/{category}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/categories/:category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "categories",
+                ":category"
+              ],
+              "variable": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "category path parameter"
+                }
+              ]
+            },
+            "description": "Get services by category"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/services/types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types"
+              ]
+            },
+            "description": "Get all service types"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/services/types",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types"
+              ]
+            },
+            "description": "Create a new service type",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/services/types/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Delete a service type"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/services/types/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get a service type by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/services/types/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update a service type",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/services/types/{id}/toggle-active",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types/:id/toggle-active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types",
+                ":id",
+                "toggle-active"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Toggle service type active status"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/services/types/codes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/types/codes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "services",
+                "types",
+                "codes"
+              ]
+            },
+            "description": "Get all service codes"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Specialties",
+      "item": [
+        {
+          "name": "GET /api/specialties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties"
+              ]
+            },
+            "description": "Find all _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/specialties",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties"
+              ]
+            },
+            "description": "Create _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/specialties/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Remove _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/specialties/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/specialties/{id}/toggle-active",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties/:id/toggle-active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties",
+                ":id",
+                "toggle-active"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Toggle active _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/specialties/{specialtyId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties/:specialtyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties",
+                ":specialtyId"
+              ],
+              "variable": [
+                {
+                  "key": "specialtyId",
+                  "value": "",
+                  "description": "specialtyId path parameter"
+                }
+              ]
+            },
+            "description": "Find one _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/specialties/all",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/specialties/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "specialties",
+                "all"
+              ]
+            },
+            "description": "Find all for admin _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "item": [
+        {
+          "name": "GET /api/users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get all users with pagination and filters"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Create a new user",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "VaccinationAdmin",
+      "item": [
+        {
+          "name": "GET /api/admin/vaccination/master-tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/master-tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "master-tests"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get master vaccines _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/vaccination/master-tests",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/master-tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "master-tests"
+              ]
+            },
+            "description": "Create master vaccine _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/admin/vaccination/master-tests/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/master-tests/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "master-tests",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Deactivate master vaccine _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/vaccination/master-tests/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/master-tests/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "master-tests",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Get master vaccine by id _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/vaccination/master-tests/{id}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/master-tests/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "master-tests",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Update master vaccine _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/vaccination/services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "services"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get services _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/vaccination/services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "services"
+              ]
+            },
+            "description": "Create service _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/vaccination/services/{id}/activate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/services/:id/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "services",
+                ":id",
+                "activate"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Activate service _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/vaccination/services/{id}/deactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/services/:id/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "services",
+                ":id",
+                "deactivate"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "id path parameter"
+                }
+              ]
+            },
+            "description": "Deactivate service patch _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/vaccination/vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors"
+              ]
+            },
+            "description": "Get vendors _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/vaccination/vendors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors"
+              ]
+            },
+            "description": "Create vendor _(derived from handler name — not authored documentation)_",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/vaccination/vendors/{vendorId}/pricing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors/:vendorId/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "pricing"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get vendor pricing _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/vaccination/vendors/{vendorId}/pricing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors/:vendorId/pricing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "pricing"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Create pricing _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/vaccination/vendors/{vendorId}/slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Get slots _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/vaccination/vendors/{vendorId}/slots",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors/:vendorId/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "slots"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                }
+              ]
+            },
+            "description": "Create slot _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/vaccination/vendors/{vendorId}/slots/{slotId}/activate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors/:vendorId/slots/:slotId/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "slots",
+                ":slotId",
+                "activate"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                },
+                {
+                  "key": "slotId",
+                  "value": "",
+                  "description": "slotId path parameter"
+                }
+              ]
+            },
+            "description": "Activate slot _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/vaccination/vendors/{vendorId}/slots/{slotId}/deactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/vaccination/vendors/:vendorId/slots/:slotId/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "vaccination",
+                "vendors",
+                ":vendorId",
+                "slots",
+                ":slotId",
+                "deactivate"
+              ],
+              "variable": [
+                {
+                  "key": "vendorId",
+                  "value": "",
+                  "description": "vendorId path parameter"
+                },
+                {
+                  "key": "slotId",
+                  "value": "",
+                  "description": "slotId path parameter"
+                }
+              ]
+            },
+            "description": "Deactivate slot _(derived from handler name — not authored documentation)_"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
