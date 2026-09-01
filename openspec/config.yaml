@@ -1,0 +1,34 @@
+schema: intent-driven
+
+context: |
+  Monorepo: opdwallet_aws. Node/Nest API in `api/`, several web frontends
+  (`web-member`, `web-admin`, `web-doctor`, `web-finance`, `web-operations`,
+  `web-tpa`) plus an Angular workspace in `web-angular/`.
+
+  Domain: OPD (outpatient) health-benefit wallet. Corporates assign policies to
+  members; each member+dependents get a wallet with a total balance and
+  per-category balances (consultation, pharmacy, diagnostics, dental, vision,
+  wellness). Members book appointments, lab tests, dental/vision/AHC visits,
+  file reimbursement claims, and spend wallet balance with copay / self-pay
+  splits.
+
+  `web-member` is Next.js 14 (app router) + React 18 + TanStack Query + axios +
+  Tailwind. It is the reference implementation for the Angular member portal
+  and is READ-ONLY for that work - it must not be modified.
+
+  Member-facing UI is responsive: one codebase and one set of routes serves
+  both mobile and desktop. There is no separate mobile app or mobile-only
+  route tree - layout, navigation, and density adapt at breakpoints.
+
+  Conventions: TypeScript strict, kebab-case capability names, conventional
+  commits.
+
+rules:
+  proposal:
+    - Must use grill-me skill
+  design:
+    - Must use c4-diagrams skill
+  adr:
+    - Must use architectural-decision-records skill
+  specs:
+    - Must use gherkin-authoring skill
