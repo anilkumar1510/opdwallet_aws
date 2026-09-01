@@ -393,8 +393,22 @@ export class DiagnosticVendorService {
     return slot.save();
   }
 
-  async releaseSlot(slotId: string): Promise<DiagnosticVendorSlot> {
-    const slot = await this.diagnosticVendorSlotModel.findOne({ slotId });
+  /**
+   * Frees one booking on a slot.
+   *
+   * Accepts EITHER the business `slotId` or the Mongo `_id`, because callers
+   * hold different ones: `DiagnosticOrder.slotId` stores the `_id`, while this
+   * lookup was written against the business id. Passing the `_id` therefore
+   * threw NotFoundException, and the one caller that exists was doing exactly
+   * that — cancelling an order raised "Slot not found" after the cancellation
+   * had already been saved, and the slot stayed booked.
+   */
+  async releaseSlot(slotIdOrObjectId: string): Promise<DiagnosticVendorSlot> {
+    const slot =
+      (await this.diagnosticVendorSlotModel.findOne({ slotId: slotIdOrObjectId })) ??
+      (Types.ObjectId.isValid(slotIdOrObjectId)
+        ? await this.diagnosticVendorSlotModel.findById(slotIdOrObjectId)
+        : null);
 
     if (!slot) {
       throw new NotFoundException('Slot not found');

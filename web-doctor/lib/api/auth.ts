@@ -103,17 +103,28 @@ export async function loginDoctor(credentials: DoctorLoginDto): Promise<LoginRes
 
     if (contentType && contentType.includes('application/json')) {
       console.log('🔍 [ERROR PATH] Content-Type is JSON, attempting to parse...');
+
+      let error: any
       try {
-        const error = JSON.parse(errorText)
+        error = JSON.parse(errorText)
         console.log('📋 [ERROR PATH] Parsed error object:', JSON.stringify(error, null, 2));
-        console.log('📋 [ERROR PATH] Error message:', error.message || 'NO MESSAGE');
-        throw new Error(error.message || 'Login failed');
       } catch (parseError: any) {
         console.error('❌ [ERROR PATH] JSON parse failed');
         console.error('❌ [ERROR PATH] Parse error:', parseError);
         console.error('❌ [ERROR PATH] Raw text that failed to parse:', errorText);
         throw new Error('Invalid JSON in error response')
       }
+
+      // Throw outside the try above: it used to sit inside, so its own catch
+      // swallowed it and every failed login reported a JSON parse error. The
+      // API nests the real text under message.message.
+      const message = typeof error.message === 'object' && error.message !== null
+        ? error.message.message
+        : error.message
+      console.log('📋 [ERROR PATH] Error message:', message || 'NO MESSAGE');
+      throw new Error(
+        (Array.isArray(message) ? message.join(', ') : message) || 'Login failed',
+      );
     } else {
       console.error('❌ [ERROR PATH] Content-Type is not JSON');
       console.error('❌ [ERROR PATH] Actual Content-Type:', contentType);

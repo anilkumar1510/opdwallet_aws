@@ -144,4 +144,16 @@ export class MembersController {
   async resetPassword(@Param('id') id: string) {
     return this.membersService.resetPassword(id);
   }
+
+  @Post(':id/set-password')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Set member password' })
+  @ApiResponse({ status: 200, description: 'Password set successfully' })
+  @ApiResponse({ status: 404, description: 'Member not found' })
+  async setPassword(
+    @Param('id') id: string,
+    @Body('password') password: string,
+  ) {
+    return this.membersService.setPassword(id, password);
+  }
 }

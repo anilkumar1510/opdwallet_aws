@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { findAdminToken } from '@/lib/session';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,14 +12,12 @@ export async function GET(request: NextRequest) {
     const cookie = request.headers.get('cookie');
     console.log('[API Route /api/auth/me] Cookie from request:', cookie);
 
-    // Extract only opd_session cookie to send to backend
-    let opdSessionCookie = null;
-    if (cookie) {
-      const cookies = cookie.split(';').map(c => c.trim());
-      const opdSession = cookies.find(c => c.startsWith('opd_session='));
-      opdSessionCookie = opdSession || null;
-      console.log('[API Route /api/auth/me] Extracted opd_session:', opdSessionCookie);
-    }
+    // Extract only opd_session cookie to send to backend. There may be several
+    // (another portal on localhost sets the same name), so pick the admin one —
+    // forwarding a member's session made the layout log the admin straight out.
+    const adminToken = findAdminToken(cookie);
+    const opdSessionCookie = adminToken ? `opd_session=${adminToken}` : null;
+    console.log('[API Route /api/auth/me] Extracted opd_session:', opdSessionCookie);
 
     // Forward the request to the backend API with the cookie
     const fetchHeaders: HeadersInit = {

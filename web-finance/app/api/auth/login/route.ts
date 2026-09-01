@@ -20,11 +20,6 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     const nextResponse = NextResponse.json(data, { status: response.status });
 
-    nextResponse.cookies.delete({
-      name: 'opd_session',
-      path: '/',
-    });
-
     const setCookieHeader = response.headers.get('set-cookie');
 
     if (setCookieHeader) {
@@ -45,6 +40,16 @@ export async function POST(request: NextRequest) {
       };
 
       nextResponse.cookies.set(name, value, cookieOptions);
+
+      // Expire any session another portal left at '/'. Cookies ignore ports, so
+      // a member session from :3002 is also sent here, and the browser would
+      // send both. This must be appended raw and after the set() above:
+      // nextResponse.cookies is keyed by name, so a delete() here would just be
+      // overwritten by the set() and never reach the browser.
+      nextResponse.headers.append(
+        'Set-Cookie',
+        'opd_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax',
+      );
     }
 
     return nextResponse;

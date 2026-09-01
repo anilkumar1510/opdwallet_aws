@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-message'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -102,7 +103,7 @@ export default function LoginPage() {
         console.error('❌ [LOGIN] Login failed with status:', response.status)
         const errorData = await response.json().catch(() => null)
         console.error('❌ [LOGIN] Error data:', errorData)
-        setError(errorData?.message || 'Invalid email or password')
+        setError(getErrorMessage(errorData) || 'Invalid email or password')
       }
     } catch (err) {
       console.error('❌ [LOGIN] Exception during login:', err)

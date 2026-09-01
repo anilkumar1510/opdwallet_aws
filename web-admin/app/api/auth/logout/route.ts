@@ -24,10 +24,16 @@ export async function POST(request: NextRequest) {
 
     // Create NextResponse and delete the opd_session cookie
     const nextResponse = NextResponse.json(data, { status: response.status });
-    // Use same path as when setting the cookie
+    // Clear both paths: '/admin' is what the login route sets, while '/' is what
+    // the API sets directly for portals without a basePath. Leaving the '/' one
+    // behind kept the browser looking authenticated after logout.
     nextResponse.cookies.delete({
       name: 'opd_session',
       path: '/admin',
+    });
+    nextResponse.cookies.delete({
+      name: 'opd_session',
+      path: '/',
     });
 
     return nextResponse;

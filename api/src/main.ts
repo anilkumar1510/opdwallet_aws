@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe, Logger, ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+import { verify as verifyJwt } from 'jsonwebtoken';
 import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
 import rateLimit from 'express-rate-limit';
@@ -170,6 +171,47 @@ async function bootstrap() {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     next();
+  });
+
+  /*
+   * Require a session for the static uploads mount.
+   *
+   * ServeStaticModule publishes the whole uploads tree at /api/uploads
+   * (app.module.ts), and it served EVERY file — diagnostic and lab reports,
+   * prescriptions, claim documents, doctor signatures — to anyone who could
+   * reach the API, with no account at all. Filenames are returned in ordinary
+   * API responses, so they were never a secret either.
+   *
+   * Mounted here rather than as module middleware because ServeStaticModule
+   * binds its own middleware during module init and answers the request before
+   * anything registered in AppModule.configure() is reached. app.use() during
+   * bootstrap lands ahead of both. Verified: as module middleware this did not
+   * run at all and anonymous requests still returned 200.
+   *
+   * This closes ANONYMOUS access, not per-file authorisation: a signed-in
+   * member who knows another member's filename can still fetch it here. The
+   * per-resource download routes (lab, diagnostics and AHC reports) load the
+   * record and check ownership before streaming, and are the path consumers
+   * should move onto so this mount can eventually be removed.
+   */
+  app.use('/api/uploads', (req: any, res: any, next: any) => {
+    const header: string | undefined = req.headers?.authorization;
+    const token = header?.startsWith('Bearer ')
+      ? header.slice('Bearer '.length)
+      : req.cookies?.[configService.get<string>('cookie.name') || 'opd_session'];
+
+    if (!token) {
+      return res.status(401).json({ statusCode: 401, message: 'Sign in to view this file' });
+    }
+
+    try {
+      verifyJwt(token, configService.get<string>('jwt.secret') || 'dev_jwt_secret');
+      return next();
+    } catch {
+      // Expired, tampered and foreign tokens are all the same answer here:
+      // which one it was is not the caller's business.
+      return res.status(401).json({ statusCode: 401, message: 'Sign in to view this file' });
+    }
   });
 
   // Global Rate Limiting (Rule #5)

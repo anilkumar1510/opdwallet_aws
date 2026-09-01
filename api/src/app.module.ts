@@ -40,6 +40,7 @@ import { TransactionSummaryModule } from './modules/transactions/transaction-sum
 import { AhcModule } from './modules/ahc/ahc.module';
 import { DoctorClinicAssignmentsModule } from './modules/doctor-clinic-assignments/doctor-clinic-assignments.module';
 import { VaccinationModule } from './modules/vaccination/vaccination.module';
+import { PharmacyModule } from './modules/pharmacy/pharmacy.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -136,6 +137,7 @@ import configuration from './config/configuration';
     AhcModule,
     DoctorClinicAssignmentsModule,
     VaccinationModule,
+    PharmacyModule,
   ],
 })
 export class AppModule {}

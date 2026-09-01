@@ -10,9 +10,13 @@ import {
   UseInterceptors,
   UploadedFile,
   Request,
+  Res,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiQuery } from '@nestjs/swagger';
+import { streamStoredFile } from '../../../common/helpers/stored-file.helper';
 import { InjectModel } from '@nestjs/mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Model, Types } from 'mongoose';
@@ -333,28 +337,93 @@ export class DiagnosticMemberController {
   async cancelOrder(
     @Param('id') id: string,
     @Body() body: { reason: string },
+    @Request() req: any,
   ) {
+    // Ownership is checked BEFORE cancelling, not after: this endpoint took no
+    // userId at all, so any authenticated member could cancel any order by id.
+    // Same check `cancelPrescription` above already makes.
+    const existing = await this.orderService.findOne(id);
+    if (existing.userId.toString() !== req.user.userId) {
+      throw new ForbiddenException('You can only cancel your own orders');
+    }
+
     const order = await this.orderService.cancelOrder(id, body.reason, CancelledBy.MEMBER);
 
-    // Release the slot if it was booked
+    /*
+     * Release the slot if it was booked. `releaseSlot` now accepts the Mongo
+     * _id this field holds as well as the business slotId it used to require;
+     * before that it threw "Slot not found" AFTER the cancellation had saved.
+     *
+     * Still wrapped: the release is cleanup, not the operation. A slot that
+     * cannot be freed must not turn a successful cancellation into a failure —
+     * it is reported instead, so a leak is visible rather than silent.
+     */
+    let slotWarning: string | undefined;
     if (order.slotId) {
-      await this.vendorService.releaseSlot(order.slotId.toString());
+      try {
+        await this.vendorService.releaseSlot(order.slotId.toString());
+      } catch {
+        slotWarning = 'The booking slot could not be released.';
+      }
     }
 
     return {
       success: true,
       message: 'Order cancelled successfully',
+      ...(slotWarning ? { warning: slotWarning } : {}),
       data: order,
     };
   }
 
   @Get('orders/:id/reports')
-  async getOrderReports(@Param('id') id: string) {
+  async getOrderReports(@Param('id') id: string, @Request() req: any) {
     const order = await this.orderService.findOne(id);
+
+    // This endpoint took no userId, so any authenticated member could read any
+    // other member's diagnostic reports by order id. Medical documents, so the
+    // check is not optional.
+    if (order.userId.toString() !== req.user.userId) {
+      throw new ForbiddenException('This order belongs to another member');
+    }
 
     return {
       success: true,
       data: order.reports,
     };
+  }
+
+  /**
+   * Serves one report file — patient-flows flow 7, step 15.
+   *
+   * The list above returns fileName and filePath, and until this existed
+   * NOTHING served the file back: the stored `/api/uploads/diagnostic-reports/…`
+   * path 404s, and there is no static handler for it. The member portal could
+   * say a report existed and offer no way to open it.
+   *
+   * The report is addressed by its own `_id`, and the path comes off that
+   * record — never off the URL. See `streamStoredFile`.
+   */
+  @Get('orders/:id/reports/:reportId/download')
+  async downloadReport(
+    @Param('id') id: string,
+    @Param('reportId') reportId: string,
+    @Request() req: any,
+    @Res() res: Response,
+  ) {
+    const order = await this.orderService.findOne(id);
+
+    if (order.userId.toString() !== req.user.userId) {
+      throw new ForbiddenException('This order belongs to another member');
+    }
+
+    const report = (order.reports ?? []).find(
+      (item: any) => item?._id?.toString() === reportId,
+    );
+
+    if (!report) {
+      throw new NotFoundException('Report not found on this order');
+    }
+
+    streamStoredFile(res, report, 'diagnostic-reports', 'Report file is missing');
   }
 }

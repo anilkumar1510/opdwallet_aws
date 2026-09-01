@@ -11,8 +11,12 @@ import {
   UploadedFile,
   UseInterceptors,
   ForbiddenException,
+  NotFoundException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiQuery } from '@nestjs/swagger';
+import { streamStoredFile } from '../../../common/helpers/stored-file.helper';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -340,12 +344,53 @@ export class LabMemberController {
   }
 
   @Get('orders/:orderId')
-  async getOrderById(@Param('orderId') orderId: string) {
+  async getOrderById(@Param('orderId') orderId: string, @Request() req: any) {
     const order = await this.orderService.getOrderById(orderId);
+
+    // This took no userId, so any authenticated member could read any other
+    // member's order — the tests ordered, the vendor, the amounts. Same check
+    // `cancelPrescription` above already makes.
+    if (order.userId.toString() !== req.user.userId) {
+      throw new ForbiddenException('This order belongs to another member');
+    }
 
     return {
       success: true,
       data: order,
     };
+  }
+
+  /**
+   * Serves one report file — patient-flows flow 7, step 15, pathology side.
+   *
+   * Lab orders carry `reports` in the order payload already, so no list
+   * endpoint is needed; what was missing was any way to open one. Radiology has
+   * the same route on `member/diagnostics`.
+   *
+   * The report is addressed by its own `_id` and the path comes off that
+   * record, never off the URL. See `streamStoredFile`.
+   */
+  @Get('orders/:orderId/reports/:reportId/download')
+  async downloadReport(
+    @Param('orderId') orderId: string,
+    @Param('reportId') reportId: string,
+    @Request() req: any,
+    @Res() res: Response,
+  ) {
+    const order = await this.orderService.getOrderById(orderId);
+
+    if (order.userId.toString() !== req.user.userId) {
+      throw new ForbiddenException('This order belongs to another member');
+    }
+
+    const report = ((order as any).reports ?? []).find(
+      (item: any) => item?._id?.toString() === reportId,
+    );
+
+    if (!report) {
+      throw new NotFoundException('Report not found on this order');
+    }
+
+    streamStoredFile(res, report, 'lab-reports', 'Report file is missing');
   }
 }

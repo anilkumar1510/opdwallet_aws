@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error-message'
 
 export default function FinanceLoginPage() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function FinanceLoginPage() {
         }
       } else {
         const errorData = await response.json().catch(() => null)
-        setError(errorData?.message || 'Invalid email or password')
+        setError(getErrorMessage(errorData) || 'Invalid email or password')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')

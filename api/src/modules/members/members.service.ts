@@ -417,4 +417,29 @@ export class MembersService {
       tempPassword,
     };
   }
+
+  /**
+   * Set a specific member password (admin-provided)
+   */
+  async setPassword(id: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters');
+    }
+
+    const member = await this.userModel.findById(id);
+    if (!member || member.role !== UserRole.MEMBER) {
+      throw new NotFoundException('Member not found');
+    }
+
+    const passwordHash = await this.commonUserService.hashPassword(newPassword);
+
+    await this.userModel.findByIdAndUpdate(id, {
+      passwordHash,
+      mustChangePassword: false,
+    });
+
+    return {
+      message: 'Password set successfully',
+    };
+  }
 }

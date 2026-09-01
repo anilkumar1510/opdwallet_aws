@@ -9,10 +9,14 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { streamStoredFile } from '../../../common/helpers/stored-file.helper';
 import { AuthGuard } from '@nestjs/passport';
 import { AhcPackageMemberService } from '../services/ahc-package-member.service';
 import { AhcPackageService } from '../services/ahc-package.service';
@@ -36,6 +40,25 @@ import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 @Controller('member/ahc')
 @UseGuards(AuthGuard('jwt'))
 export class AhcMemberController {
+  /**
+   * Whether `userId` owns this order.
+   *
+   * `getOrderByOrderId` does `.populate('userId', 'name phone')`, so `userId`
+   * comes back as a DOCUMENT, not an id. The three call sites below all did
+   * `order.userId.toString() !== userId`, which stringifies that document to
+   * "[object Object]" and is therefore ALWAYS true — every member was refused
+   * their own order, their own lab report and their own diagnostic report.
+   *
+   * Fixed here rather than by dropping the populate: `getOrderByOrderId` has
+   * ten-plus callers, including the ops portal, which needs the populated name
+   * and phone to display.
+   */
+  private ownedBy(order: { userId: unknown }, userId: string): boolean {
+    const owner = order.userId as { _id?: unknown } | null;
+    const ownerId = owner && typeof owner === 'object' && '_id' in owner ? owner._id : owner;
+    return String(ownerId) === String(userId);
+  }
+
   constructor(
     private readonly ahcPackageMemberService: AhcPackageMemberService,
     private readonly ahcPackageService: AhcPackageService,
@@ -186,23 +209,27 @@ export class AhcMemberController {
   ) {
     const userId = (req.user as any).userId;
 
-    // TODO: Inject dependencies when module is updated
-    const ahcPackageService = null; // AhcPackageService
-    const labVendorService = null; // this.labVendorService
-    const diagnosticVendorService = null; // this.diagnosticVendorService
-    const assignmentsService = null; // this.assignmentsService
-    const planConfigService = null; // this.planConfigService
-    const copayCalculator = null; // this.copayCalculator
-
+    /*
+     * These were six `null`s behind a "TODO: Inject dependencies when module is
+     * updated". The module HAS since been updated — every one of them is already
+     * on the constructor above and used by other handlers in this same file
+     * (`checkEligibility` passes `this.assignmentsService`, for instance). The
+     * TODO outlived the work it described, and the nulls made this endpoint
+     * throw a TypeError at `ahcPackageService.getPackageById()` for every
+     * request that got past validation.
+     *
+     * `CopayCalculator` is a static utility, not an injectable — that is how
+     * diagnostics and lab use it too.
+     */
     const validation = await this.ahcOrderService.validateOrder(
       userId,
       validateDto,
-      ahcPackageService,
-      labVendorService,
-      diagnosticVendorService,
-      assignmentsService,
-      planConfigService,
-      copayCalculator,
+      this.ahcPackageService,
+      this.labVendorService,
+      this.diagnosticVendorService,
+      this.assignmentsService,
+      this.planConfigService,
+      CopayCalculator,
     );
 
     return {
@@ -337,7 +364,7 @@ export class AhcMemberController {
 
     // Verify user has access to this order
     const userId = (req.user as any).userId;
-    if (order.userId.toString() !== userId) {
+    if (!this.ownedBy(order, userId)) {
       return {
         success: false,
         error: 'Unauthorized access to order',
@@ -363,7 +390,7 @@ export class AhcMemberController {
 
     // Verify user has access
     const userId = (req.user as any).userId;
-    if (order.userId.toString() !== userId) {
+    if (!this.ownedBy(order, userId)) {
       return {
         success: false,
         error: 'Unauthorized access to report',
@@ -404,7 +431,7 @@ export class AhcMemberController {
 
     // Verify user has access
     const userId = (req.user as any).userId;
-    if (order.userId.toString() !== userId) {
+    if (!this.ownedBy(order, userId)) {
       return {
         success: false,
         error: 'Unauthorized access to report',
@@ -430,5 +457,70 @@ export class AhcMemberController {
         uploadedAt: latestReport.uploadedAt,
       },
     };
+  }
+
+  /**
+   * Serves an AHC report file — patient-flows flow 8.
+   *
+   * The two routes above are named "download" but return JSON metadata; until
+   * this existed nothing served the file, so the portal could say a report was
+   * ready and offer no way to open it. These stream it.
+   *
+   * One route per leg, matching how the reports are stored — `labOrder.reports`
+   * and `diagnosticOrder.reports` are separate arrays on the order.
+   */
+  @Get('reports/:orderId/lab/download')
+  async downloadLabReportFile(
+    @Req() req: Request,
+    @Param('orderId') orderId: string,
+    @Res() res: Response,
+  ) {
+    await this.streamLatestReport(req, orderId, 'lab', res);
+  }
+
+  @Get('reports/:orderId/diagnostic/download')
+  async downloadDiagnosticReportFile(
+    @Req() req: Request,
+    @Param('orderId') orderId: string,
+    @Res() res: Response,
+  ) {
+    await this.streamLatestReport(req, orderId, 'diagnostic', res);
+  }
+
+  /**
+   * Shared by both legs. Serves the LATEST report, which is what the metadata
+   * routes above already return — so the member opens the same file the screen
+   * told them about, rather than a different one.
+   */
+  private async streamLatestReport(
+    req: Request,
+    orderId: string,
+    leg: 'lab' | 'diagnostic',
+    res: Response,
+  ): Promise<void> {
+    const order = await this.ahcOrderService.getOrderByOrderId(orderId);
+    const userId = (req.user as any).userId;
+
+    if (!this.ownedBy(order, userId)) {
+      throw new ForbiddenException('This order belongs to another member');
+    }
+
+    const reports =
+      leg === 'lab' ? order.labOrder?.reports : order.diagnosticOrder?.reports;
+
+    if (!reports || reports.length === 0) {
+      throw new NotFoundException(
+        leg === 'lab' ? 'Lab report not uploaded yet' : 'Diagnostic report not uploaded yet',
+      );
+    }
+
+    // Uploads are split by leg (`ahc.module.ts:48-50`), so the fallback lookup
+    // has to be too — 'ahc-reports' alone would never find the file.
+    streamStoredFile(
+      res,
+      reports[reports.length - 1],
+      `ahc-reports/${leg}`,
+      'Report file is missing',
+    );
   }
 }
