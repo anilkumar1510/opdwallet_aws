@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "path": "member/lab/carts/CART-1770207916329-WHUXE6OQD",
+    "status": 200,
+    "account": "all"
+  },
+  "body": {
+    "success": true,
+    "data": {
+      "_id": "69833aac8b9ef5e0537e787a",
+      "cartId": "CART-1770207916329-WHUXE6OQD",
+      "prescriptionId": "698339a77ae54b0e856dd556",
+      "userId": "6979a1e3aef224daaa1f4332",
+      "patientId": "6979a1e3aef224daaa1f4332",
+      "patientName": "All All",
+      "pincode": "201307",
+      "serviceType": "LAB",
+      "items": [
+        {
+          "serviceId": "693d7a7e084d9daaa6b75818",
+          "serviceName": "Complete Blood Count (CBC)",
+          "serviceCode": "CBC",
+          "category": "PATHOLOGY"
+        }
+      ],
+      "selectedVendorIds": [
+        "693d78a650b1a7f6df869999",
+        "693d78a650b1a7f6df86999a"
+      ],
+      "status": "CREATED",
+      "createdBy": "6979a285aef224daaa1f4366",
+      "createdAt": "2026-02-04T12:25:16.331Z",
+      "updatedAt": "2026-02-04T12:25:16.331Z",
+      "__v": 0
+    }
+  }
+}

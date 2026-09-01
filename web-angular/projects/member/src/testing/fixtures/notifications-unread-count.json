@@ -1,0 +1,10 @@
+{
+  "_meta": {
+    "path": "notifications/unread-count",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "unreadCount": 14
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "path": "policies/6a34ca5c4e45325c5a7c06e7/current",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "policyNumber": "POL-2026-0008",
+    "policyName": "HCL Healthcare OPD Plan 2026-27",
+    "corporateName": "PwC",
+    "validTill": "30 Jun 2027",
+    "policyDescription": {
+      "inclusions": [
+        {
+          "headline": "Doctor Consultation ",
+          "description": "Online and Offline"
+        },
+        {
+          "headline": "Annual Health Check",
+          "description": "Done once yearly"
+        },
+        {
+          "headline": "Diagnostics ",
+          "description": "Radiology and Pathology "
+        },
+        {
+          "headline": "Add Ons",
+          "description": "Dental and Vision"
+        }
+      ],
+      "exclusions": [
+        {
+          "headline": "Pre-Existing Diseases (Waiting Period Applicable)",
+          "description": "PED not covered "
+        }
+      ]
+    }
+  }
+}

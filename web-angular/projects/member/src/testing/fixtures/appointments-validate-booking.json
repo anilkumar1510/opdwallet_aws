@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "path": "appointments/validate-booking",
+    "status": 201,
+    "account": "shivam"
+  },
+  "body": {
+    "isAllowed": true,
+    "breakdown": {
+      "billAmount": 800,
+      "copayAmount": 160,
+      "copayPercentage": 20,
+      "insuranceEligibleAmount": 640,
+      "serviceTransactionLimit": 300,
+      "insurancePayment": 300,
+      "excessAmount": 340,
+      "totalMemberPayment": 500,
+      "walletBalance": 1680,
+      "walletDebitAmount": 300,
+      "needsPayment": true,
+      "wasServiceLimitApplied": true
+    },
+    "warnings": [
+      "Service transaction limit of ₹300 applied. You need to pay ₹340 additional out-of-pocket."
+    ]
+  }
+}

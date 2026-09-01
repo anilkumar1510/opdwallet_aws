@@ -1,0 +1,345 @@
+{
+  "_meta": {
+    "path": "doctors?specialtyId=SPEC001",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "data": [
+      {
+        "_id": "6979a7efaef224daaa1f52cb",
+        "doctorId": "DOC10003",
+        "name": "Jammy",
+        "qualifications": "MBBS",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 25,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "",
+        "email": "jam@gmail.com",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": false,
+        "clinics": [
+          {
+            "clinicId": "CLN00007",
+            "name": "Noida Final",
+            "address": "Noida, Noida, UP - 201307",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201307",
+            "consultationFee": 1500,
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 1400,
+        "availableOnline": true,
+        "availableOffline": true,
+        "hasValidSignature": false,
+        "createdAt": "2026-01-28T06:08:47.027Z",
+        "updatedAt": "2026-03-17T05:28:24.225Z",
+        "__v": 0,
+        "password": "$2b$10$/n/Zgzallpin9AmAZfwIL.Hx1BnbWWUBceR0pWRDzTRjzWbWRP.Zu"
+      },
+      {
+        "_id": "698430671dd1abe59578d6a9",
+        "doctorId": "DOC10004",
+        "name": "Doctor",
+        "qualifications": "MBBS,MD",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 8,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "7890",
+        "email": "doctor@gmail.com",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": false,
+        "clinics": [
+          {
+            "clinicId": "CLN00007",
+            "name": "Noida Final",
+            "address": "Noida, Noida, UP - 201307",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201307",
+            "consultationFee": 900,
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 1000,
+        "availableOnline": true,
+        "availableOffline": true,
+        "hasValidSignature": false,
+        "createdAt": "2026-02-05T05:53:43.095Z",
+        "updatedAt": "2026-03-17T05:28:27.363Z",
+        "__v": 0,
+        "password": "$2b$10$/n/Zgzallpin9AmAZfwIL.Hx1BnbWWUBceR0pWRDzTRjzWbWRP.Zu",
+        "lastLogin": "2026-02-05T07:16:10.638Z"
+      },
+      {
+        "_id": "69843ea01dd1abe59578d9dc",
+        "doctorId": "DOC10005",
+        "name": "Hi",
+        "qualifications": "MBBS,MD",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 7,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "",
+        "email": "hi@gmail.com",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": false,
+        "clinics": [
+          {
+            "clinicId": "CLN00007",
+            "name": "Noida Final",
+            "address": "Noida",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201307",
+            "consultationFee": 100,
+            "location": null,
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 100,
+        "availableOnline": true,
+        "availableOffline": true,
+        "hasValidSignature": false,
+        "createdAt": "2026-02-05T06:54:24.200Z",
+        "updatedAt": "2026-03-17T05:28:17.952Z",
+        "__v": 0,
+        "password": "$2b$10$RrV5vTQwtBVdEzijZOTwgOQzNgqN8.EXQAnb7xZtw7/NsVROySwK6",
+        "lastLogin": "2026-02-05T06:55:29.602Z"
+      },
+      {
+        "_id": "694129a3648613a43d054dfd",
+        "doctorId": "DOC10002",
+        "name": "Anil",
+        "qualifications": "MBBS",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 5,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "56565656545",
+        "email": "anil@doctor.com",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": true,
+        "clinics": [
+          {
+            "clinicId": "CLN00006",
+            "name": "Noida clinic 2",
+            "address": "sectir25, Noida, UP - 201301",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201301",
+            "consultationFee": 500,
+            "location": {
+              "latitude": 0,
+              "longitude": 0,
+              "_id": "6941291e648613a43d054d9d"
+            },
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          },
+          {
+            "clinicId": "CLN00007",
+            "name": "Noida Final",
+            "address": "Noida, Noida, UP - 201307",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201307",
+            "consultationFee": 500,
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 1000,
+        "availableOnline": true,
+        "availableOffline": true,
+        "createdAt": "2025-12-16T09:42:59.057Z",
+        "updatedAt": "2026-07-29T04:30:58.527Z",
+        "__v": 0,
+        "password": "$2b$12$WhSzH0Gcyk.I2d8bnkERbOm6I0YcalxcQxoAtWttaJunNBYf.ygfa",
+        "hasValidSignature": true,
+        "lastLogin": "2026-07-29T04:30:58.526Z",
+        "signatureImage": "uploads/signatures/SIG-DOC10002-1770274850755-22663792.jpeg",
+        "signatureUploadedAt": "2026-02-05T07:00:50.760Z"
+      },
+      {
+        "_id": "69b8dfe55ba6e900c12de19d",
+        "doctorId": "DOC10006",
+        "name": "Archana Madhan",
+        "qualifications": "MBBS, MD",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 8,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "6771066645",
+        "email": "archana@gmail.com",
+        "password": "$2b$10$BJeohRasqm2i.5RYzjmsaOeQTJNd/DkhYATMrDqAR.plhJqu3leOa",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": true,
+        "clinics": [
+          {
+            "clinicId": "CLN00008",
+            "name": "HCL Healthcare Noida Clinic ",
+            "address": "A-5, Coast Guard Office, Noida, UP - 201301",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201301",
+            "consultationFee": 900,
+            "location": {
+              "latitude": 0,
+              "longitude": 0,
+              "_id": "69b8df8d5ba6e900c12de179"
+            },
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 900,
+        "availableOnline": true,
+        "availableOffline": true,
+        "hasValidSignature": true,
+        "createdAt": "2026-03-17T05:00:21.403Z",
+        "updatedAt": "2026-04-01T09:17:58.302Z",
+        "__v": 0,
+        "lastLogin": "2026-04-01T09:17:58.300Z",
+        "signatureImage": "uploads/signatures/SIG-DOC10006-1773728630255-328756563.jpeg",
+        "signatureUploadedAt": "2026-03-17T06:23:50.259Z"
+      },
+      {
+        "_id": "6a34c7074e45325c5a7c0392",
+        "doctorId": "DOC10007",
+        "name": "Dr Ramkrishan",
+        "qualifications": "MBBS,MD",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 5,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "1234567890",
+        "email": "ramk@gmail.com",
+        "password": "$2b$10$B4hfLr9HPiJXS/7./XVOm.5nXUI3p2Ycia7fZJbQdXKzxgWVt9RpG",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": true,
+        "clinics": [
+          {
+            "clinicId": "CLN00005",
+            "name": "Noida Clinic",
+            "address": "Sector 24, Noida, UP - 201301",
+            "city": "Noida",
+            "state": "UP",
+            "pincode": "201301",
+            "consultationFee": 800,
+            "location": {
+              "latitude": 0,
+              "longitude": 0,
+              "_id": "6940ed9cf4ab7cb0cba60ff7"
+            },
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 800,
+        "availableOnline": true,
+        "availableOffline": true,
+        "hasValidSignature": false,
+        "createdAt": "2026-06-19T04:35:19.120Z",
+        "updatedAt": "2026-06-25T10:19:09.415Z",
+        "__v": 0,
+        "lastLogin": "2026-06-25T10:19:09.415Z"
+      },
+      {
+        "_id": "6a6af74cc8fb7a27c70a15a2",
+        "doctorId": "DOC10008",
+        "name": "testdr ",
+        "qualifications": "mbbs",
+        "specializations": [
+          "General Physician"
+        ],
+        "specialtyId": "SPEC001",
+        "specialty": "General Physician",
+        "experienceYears": 5,
+        "rating": 0,
+        "reviewCount": 0,
+        "phone": "919971485187",
+        "email": "testdr@gmail.com",
+        "password": "$2b$10$6UbmRa5do/hI.XtR7z2K7uvnxRlaQnQOi18qYQfPC6xDIbXvRjld2",
+        "role": "DOCTOR",
+        "languages": [],
+        "isActive": true,
+        "clinics": [
+          {
+            "clinicId": "CLN00009",
+            "name": "xyz",
+            "address": "L133 GULSHAN VIVANTE SEC 137 NOIDA EXPRESSWAY 201305 UTTAR PRADESH, Gautam Buddha Nagar, Uttar Pradesh - 201305",
+            "city": "Gautam Buddha Nagar",
+            "state": "Uttar Pradesh",
+            "pincode": "201305",
+            "consultationFee": 500,
+            "location": {
+              "latitude": 0,
+              "longitude": 0,
+              "_id": "6a6af6c1c8fb7a27c70a1534"
+            },
+            "facilities": [],
+            "distance": null,
+            "distanceText": null
+          }
+        ],
+        "consultationFee": 1000,
+        "availableOnline": true,
+        "availableOffline": true,
+        "hasValidSignature": false,
+        "createdAt": "2026-07-30T07:03:40.653Z",
+        "updatedAt": "2026-08-04T09:10:59.519Z",
+        "__v": 0,
+        "lastLogin": "2026-08-04T09:10:59.518Z"
+      }
+    ],
+    "page": 1,
+    "limit": 20,
+    "total": 7,
+    "pages": 1
+  }
+}

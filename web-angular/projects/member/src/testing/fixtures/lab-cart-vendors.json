@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "path": "member/lab/carts/CART-1770207916329-WHUXE6OQD/vendors",
+    "status": 200,
+    "account": "all"
+  },
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "_id": "693d78a650b1a7f6df869999",
+        "vendorId": "VENDOR-002",
+        "name": "Dr. Lal PathLabs",
+        "code": "DRLAL",
+        "homeCollection": true,
+        "centerVisit": true,
+        "homeCollectionCharges": 75,
+        "pricing": [
+          {
+            "serviceId": "693d7a7e084d9daaa6b75818",
+            "serviceName": "Complete Blood Count (CBC)",
+            "serviceCode": "CBC",
+            "actualPrice": 500,
+            "discountedPrice": 400
+          }
+        ],
+        "totalActualPrice": 500,
+        "totalDiscountedPrice": 400,
+        "totalWithHomeCollection": 475
+      },
+      {
+        "_id": "693d78a650b1a7f6df86999a",
+        "vendorId": "VENDOR-004",
+        "name": "Metropolis Healthcare",
+        "code": "METROPOLIS",
+        "homeCollection": true,
+        "centerVisit": true,
+        "homeCollectionCharges": 60,
+        "pricing": [
+          {
+            "serviceId": "693d7a7e084d9daaa6b75818",
+            "serviceName": "Complete Blood Count (CBC)",
+            "serviceCode": "CBC",
+            "actualPrice": 800,
+            "discountedPrice": 600
+          }
+        ],
+        "totalActualPrice": 800,
+        "totalDiscountedPrice": 600,
+        "totalWithHomeCollection": 660
+      }
+    ]
+  }
+}

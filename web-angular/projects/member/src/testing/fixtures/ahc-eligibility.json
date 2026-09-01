@@ -1,0 +1,13 @@
+{
+  "_meta": {
+    "path": "member/ahc/eligibility",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "success": true,
+    "data": {
+      "isEligible": true
+    }
+  }
+}

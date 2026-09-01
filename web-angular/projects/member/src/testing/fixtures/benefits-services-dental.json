@@ -1,0 +1,31 @@
+{
+  "_meta": {
+    "path": "member/benefits/CAT006/services",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "categoryId": "CAT006",
+    "services": [
+      {
+        "_id": "693d7b92a876dfadbd43ebcf",
+        "code": "DENTAL_CHECKUP",
+        "name": "Dental Checkup & Cleaning",
+        "description": "Routine dental examination and professional cleaning"
+      },
+      {
+        "_id": "693d7b92a876dfadbd43ebd0",
+        "code": "DENTAL_FILLING",
+        "name": "Tooth Filling",
+        "description": "Cavity filling and restoration"
+      },
+      {
+        "_id": "693d7b92a876dfadbd43ebd3",
+        "code": "DENTAL_XRAY",
+        "name": "Dental X-Ray",
+        "description": "Radiographic imaging of teeth and jaw"
+      }
+    ],
+    "total": 3
+  }
+}

@@ -1,0 +1,96 @@
+@import 'tailwindcss';
+
+/* Design tokens copied from web-member/tailwind.config.ts.
+   Copied, not imported: web-member is read-only reference and must not become
+   a build dependency of this app. These become canonical here at cutover. */
+@theme {
+  --breakpoint-xs: 375px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  --color-brand: #1e3a8c;
+  --color-brand-50: #eef2f9;
+  --color-brand-100: #d4e1f5;
+  --color-brand-200: #a9c2eb;
+  --color-brand-300: #7ea4e1;
+  --color-brand-400: #5385d7;
+  --color-brand-500: #2867cd;
+  --color-brand-600: #1e3a8c;
+  --color-brand-700: #172b6a;
+  --color-brand-800: #101c47;
+  --color-brand-900: #0a0e25;
+
+  --color-accent: #f7931e;
+  --color-accent-50: #fef5e7;
+  --color-accent-100: #feeac8;
+  --color-accent-500: #f7931e;
+  --color-accent-600: #e8890b;
+  --color-accent-700: #d97706;
+
+  --color-ink-900: #0f172a;
+  --color-ink-700: #334155;
+  --color-ink-500: #64748b;
+  --color-ink-300: #cbd5e1;
+
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8fafc;
+  --color-surface-border: #e5e7eb;
+
+  --color-success: #22c55e;
+  --color-success-50: #f0fdf4;
+  --color-success-700: #15803d;
+  --color-danger: #ef4444;
+  --color-danger-50: #fef2f2;
+  --color-danger-700: #b91c1c;
+  --color-warning: #f59e0b;
+  --color-warning-50: #fffbeb;
+  --color-warning-700: #b45309;
+
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', Inter, sans-serif;
+
+  --shadow-soft: 0 4px 24px rgb(30 58 140 / 0.06);
+  --shadow-medium: 0 10px 40px rgb(30 58 140 / 0.08);
+
+  /* Minimum accessible touch target, and the fixed nav bands the shell
+     reserves space for. */
+  --spacing-touch: 44px;
+  --spacing-nav: 64px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* Horizontal carousels scroll by drag/swipe and by their pagination dots;
+   the native scrollbar is noise. Matches web-member's `scrollbar-hide`. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  @apply bg-surface-alt text-ink-900 font-sans antialiased;
+}
+
+/* Respect users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

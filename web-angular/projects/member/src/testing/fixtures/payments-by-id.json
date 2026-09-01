@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "path": "payments/PAY-20260618-0136",
+    "status": 200,
+    "account": "all"
+  },
+  "body": {
+    "_id": "6a33c9bf4e45325c5a7c00c0",
+    "paymentId": "PAY-20260618-0136",
+    "userId": "6979a1e3aef224daaa1f4332",
+    "amount": 200,
+    "paymentType": "COPAY",
+    "status": "PENDING",
+    "serviceType": "CLAIM",
+    "serviceId": "6a33c9bf4e45325c5a7c00a5",
+    "serviceReferenceId": "CLM-20260618-0001",
+    "description": "Copay for claim CLM-20260618-0001 - IN_CLINIC_CONSULTATION",
+    "paymentMethod": "DUMMY_GATEWAY",
+    "isActive": true,
+    "isRefund": false,
+    "createdAt": "2026-06-18T10:34:39.568Z",
+    "updatedAt": "2026-06-18T10:34:39.568Z",
+    "__v": 0
+  }
+}

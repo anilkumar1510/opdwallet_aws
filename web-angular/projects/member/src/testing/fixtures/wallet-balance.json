@@ -1,0 +1,200 @@
+{
+  "_meta": {
+    "path": "wallet/balance",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "totalBalance": {
+      "allocated": 20000,
+      "current": 15480,
+      "consumed": 4520,
+      "_id": "6a34cd374e45325c5a7c074f",
+      "lastUpdated": "2026-08-05T05:36:20.042Z"
+    },
+    "categories": [
+      {
+        "categoryCode": "CAT005",
+        "name": "Online Consultation",
+        "available": 1500,
+        "total": 3000,
+        "consumed": 1500,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT001",
+        "name": "In-Clinic Consultation",
+        "available": 1680,
+        "total": 3000,
+        "consumed": 1320,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT002",
+        "name": "Pharmacy",
+        "available": 2200,
+        "total": 3000,
+        "consumed": 800,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT003",
+        "name": "Radiology/ Cardiology",
+        "available": 2500,
+        "total": 3000,
+        "consumed": 500,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT004",
+        "name": "Pathology (Lab)",
+        "available": 3000,
+        "total": 3000,
+        "consumed": 0,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT006",
+        "name": "Dental Services",
+        "available": 2600,
+        "total": 3000,
+        "consumed": 400,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT007",
+        "name": "Vision Care",
+        "available": 3000,
+        "total": 3000,
+        "consumed": 0,
+        "isUnlimited": false
+      },
+      {
+        "categoryCode": "CAT008",
+        "name": "Wellness Programs",
+        "available": 5000,
+        "total": 5000,
+        "consumed": 0,
+        "isUnlimited": false
+      }
+    ],
+    "isFloater": false,
+    "config": {
+      "benefits": {
+        "CAT005": {
+          "enabled": true,
+          "allowedSpecialties": [
+            "693d75d116b936465c15218e"
+          ],
+          "claimEnabled": true,
+          "annualLimit": 3000,
+          "perClaimLimit": 300,
+          "serviceTransactionLimits": {
+            "693d75d116b936465c15218e": 300
+          }
+        },
+        "CAT001": {
+          "enabled": true,
+          "claimEnabled": true,
+          "annualLimit": 3000,
+          "perClaimLimit": 300,
+          "allowedSpecialties": [
+            "693d75d116b936465c15218e"
+          ],
+          "serviceTransactionLimits": {
+            "693d75d116b936465c15218e": 300
+          }
+        },
+        "CAT002": {
+          "enabled": true,
+          "claimEnabled": true,
+          "annualLimit": 3000,
+          "perClaimLimit": 500
+        },
+        "CAT003": {
+          "enabled": true,
+          "annualLimit": 3000,
+          "claimEnabled": true,
+          "perClaimLimit": 500,
+          "allowedLabServiceCategories": [
+            "RADIOLOGY"
+          ],
+          "serviceTransactionLimits": {
+            "RADIOLOGY": 500
+          }
+        },
+        "CAT004": {
+          "enabled": true,
+          "annualLimit": 3000,
+          "claimEnabled": true,
+          "perClaimLimit": 500,
+          "allowedLabServiceCategories": [
+            "PATHOLOGY"
+          ],
+          "serviceTransactionLimits": {
+            "PATHOLOGY": 500
+          }
+        },
+        "CAT006": {
+          "enabled": true,
+          "allowedServiceCodes": [
+            "DENTAL_CHECKUP",
+            "DENTAL_FILLING",
+            "DENTAL_XRAY"
+          ],
+          "claimEnabled": true,
+          "annualLimit": 3000,
+          "perClaimLimit": 500,
+          "serviceTransactionLimits": {
+            "DENTAL_CHECKUP": 400,
+            "DENTAL_FILLING": 400,
+            "DENTAL_XRAY": 400
+          }
+        },
+        "CAT007": {
+          "enabled": true,
+          "annualLimit": 3000,
+          "claimEnabled": true,
+          "perClaimLimit": 500,
+          "allowedServiceCodes": [
+            "CONTACT_LENS_FITTING",
+            "EYEGLASSES"
+          ],
+          "serviceTransactionLimits": {
+            "CONTACT_LENS_FITTING": 500,
+            "EYEGLASSES": 500
+          }
+        },
+        "CAT008": {
+          "enabled": true,
+          "claimEnabled": true,
+          "annualLimit": 5000,
+          "perClaimLimit": 5000,
+          "allowedServiceCodes": [
+            "ANNUAL_HEALTH_CHECKUP"
+          ],
+          "serviceTransactionLimits": {
+            "ANNUAL_HEALTH_CHECKUP": 3000
+          },
+          "ahcPackageId": "AHC-PKG-1774847536610-UYARU81IB"
+        }
+      },
+      "wallet": {
+        "allocationType": "INDIVIDUAL",
+        "totalAnnualAmount": 20000,
+        "perClaimLimit": 0,
+        "copay": {
+          "mode": "PERCENT",
+          "value": 20
+        },
+        "partialPaymentEnabled": false,
+        "carryForward": {
+          "enabled": false,
+          "percent": 0,
+          "months": 0
+        },
+        "topUpAllowed": false
+      }
+    }
+  }
+}

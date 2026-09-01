@@ -1,0 +1,503 @@
+{
+  "_meta": {
+    "path": "member/profile",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "user": {
+      "_id": "6a34c98e4e45325c5a7c06b5",
+      "userId": "USR-2026-0035",
+      "uhid": "UHID35637",
+      "memberId": "MEM35637",
+      "employeeId": "EMP9878",
+      "name": {
+        "firstName": "Shivam ",
+        "lastName": "Jha",
+        "_id": "6a34c98e4e45325c5a7c06b6",
+        "fullName": "Shivam  Jha"
+      },
+      "email": "shivam@gmail.com",
+      "phone": "95710665645",
+      "dob": "1999-01-01T00:00:00.000Z",
+      "gender": "MALE",
+      "bloodGroup": "B+",
+      "cugId": "69ca065d5ba6e900c12df0e3",
+      "address": {
+        "line1": "A5, Sector-24",
+        "line2": "",
+        "city": "Noida",
+        "state": "UP",
+        "pincode": "201301",
+        "_id": "6a34c98e4e45325c5a7c06b7"
+      },
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "mustChangePassword": false,
+      "createdBy": "693d752d8990f4b120255ee7",
+      "createdAt": "2026-06-19T04:46:06.326Z",
+      "updatedAt": "2026-06-19T05:01:43.556Z",
+      "__v": 0,
+      "relationship": "REL001"
+    },
+    "dependents": [
+      {
+        "_id": "6a34c9e54e45325c5a7c06cb",
+        "userId": "USR-2026-0036",
+        "uhid": "UHID43673",
+        "memberId": "UHID43673",
+        "employeeId": "EMP122",
+        "name": {
+          "firstName": "Sayani",
+          "lastName": "Kumari",
+          "_id": "6a34c9e54e45325c5a7c06cc",
+          "fullName": "Sayani Kumari"
+        },
+        "email": "sayani@gmail.com",
+        "phone": "8571064545",
+        "dob": "1999-01-23T00:00:00.000Z",
+        "gender": "FEMALE",
+        "bloodGroup": "A+",
+        "cugId": "69ca065d5ba6e900c12df0e3",
+        "address": {
+          "line1": "A5, Sector-24",
+          "line2": "",
+          "city": "Noida",
+          "state": "UP",
+          "pincode": "201301",
+          "_id": "6a34c9e54e45325c5a7c06cd"
+        },
+        "role": "MEMBER",
+        "status": "ACTIVE",
+        "mustChangePassword": false,
+        "createdBy": "693d752d8990f4b120255ee7",
+        "createdAt": "2026-06-19T04:47:33.602Z",
+        "updatedAt": "2026-06-19T05:02:35.714Z",
+        "__v": 0,
+        "primaryMemberId": "MEM35637",
+        "relationship": "REL002"
+      }
+    ],
+    "familyMembers": [
+      {
+        "_id": "6a34c98e4e45325c5a7c06b5",
+        "userId": "USR-2026-0035",
+        "uhid": "UHID35637",
+        "memberId": "MEM35637",
+        "employeeId": "EMP9878",
+        "name": {
+          "firstName": "Shivam ",
+          "lastName": "Jha",
+          "_id": "6a34c98e4e45325c5a7c06b6",
+          "fullName": "Shivam  Jha"
+        },
+        "email": "shivam@gmail.com",
+        "phone": "95710665645",
+        "dob": "1999-01-01T00:00:00.000Z",
+        "gender": "MALE",
+        "bloodGroup": "B+",
+        "cugId": "69ca065d5ba6e900c12df0e3",
+        "address": {
+          "line1": "A5, Sector-24",
+          "line2": "",
+          "city": "Noida",
+          "state": "UP",
+          "pincode": "201301",
+          "_id": "6a34c98e4e45325c5a7c06b7"
+        },
+        "role": "MEMBER",
+        "status": "ACTIVE",
+        "mustChangePassword": false,
+        "createdBy": "693d752d8990f4b120255ee7",
+        "createdAt": "2026-06-19T04:46:06.326Z",
+        "updatedAt": "2026-06-19T05:01:43.556Z",
+        "__v": 0,
+        "relationship": "REL001"
+      },
+      {
+        "_id": "6a34c9e54e45325c5a7c06cb",
+        "userId": "USR-2026-0036",
+        "uhid": "UHID43673",
+        "memberId": "UHID43673",
+        "employeeId": "EMP122",
+        "name": {
+          "firstName": "Sayani",
+          "lastName": "Kumari",
+          "_id": "6a34c9e54e45325c5a7c06cc",
+          "fullName": "Sayani Kumari"
+        },
+        "email": "sayani@gmail.com",
+        "phone": "8571064545",
+        "dob": "1999-01-23T00:00:00.000Z",
+        "gender": "FEMALE",
+        "bloodGroup": "A+",
+        "cugId": "69ca065d5ba6e900c12df0e3",
+        "address": {
+          "line1": "A5, Sector-24",
+          "line2": "",
+          "city": "Noida",
+          "state": "UP",
+          "pincode": "201301",
+          "_id": "6a34c9e54e45325c5a7c06cd"
+        },
+        "role": "MEMBER",
+        "status": "ACTIVE",
+        "mustChangePassword": false,
+        "createdBy": "693d752d8990f4b120255ee7",
+        "createdAt": "2026-06-19T04:47:33.602Z",
+        "updatedAt": "2026-06-19T05:02:35.714Z",
+        "__v": 0,
+        "primaryMemberId": "MEM35637",
+        "relationship": "REL002"
+      }
+    ],
+    "assignments": [
+      {
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "memberId": "MEM35637",
+        "memberName": "Shivam  Jha",
+        "assignment": {
+          "_id": "6a34cd374e45325c5a7c0749",
+          "assignmentId": "ASG-1781845303547-YDHZH",
+          "userId": {
+            "_id": "6a34c98e4e45325c5a7c06b5",
+            "memberId": "MEM35637",
+            "name": {
+              "firstName": "Shivam ",
+              "lastName": "Jha",
+              "_id": "6a34c98e4e45325c5a7c06b6",
+              "fullName": "Shivam  Jha"
+            },
+            "email": "shivam@gmail.com"
+          },
+          "policyId": {
+            "_id": "6a34ca5c4e45325c5a7c06e7",
+            "policyNumber": "POL-2026-0008",
+            "name": "HCL Healthcare OPD Plan 2026-27",
+            "description": "Valid for 2026-27",
+            "status": "ACTIVE",
+            "effectiveFrom": "2026-06-18T00:00:00.000Z",
+            "effectiveTo": "2027-06-30T00:00:00.000Z"
+          },
+          "effectiveFrom": "2026-06-19T00:00:00.000Z",
+          "effectiveTo": "2027-06-16T00:00:00.000Z",
+          "isActive": true,
+          "relationshipId": "REL001",
+          "planConfigId": "6a34cd194e45325c5a7c0712",
+          "createdBy": "693d752d8990f4b120255ee7",
+          "updatedBy": "693d752d8990f4b120255ee7",
+          "createdAt": "2026-06-19T05:01:43.551Z",
+          "updatedAt": "2026-06-19T05:01:43.551Z",
+          "__v": 0
+        }
+      },
+      {
+        "userId": "6a34c9e54e45325c5a7c06cb",
+        "memberId": "UHID43673",
+        "memberName": "Sayani Kumari",
+        "assignment": {
+          "_id": "6a34cd6b4e45325c5a7c07a3",
+          "assignmentId": "ASG-1781845355710-WMYLG",
+          "userId": {
+            "_id": "6a34c9e54e45325c5a7c06cb",
+            "memberId": "UHID43673",
+            "name": {
+              "firstName": "Sayani",
+              "lastName": "Kumari",
+              "_id": "6a34c9e54e45325c5a7c06cc",
+              "fullName": "Sayani Kumari"
+            },
+            "email": "sayani@gmail.com"
+          },
+          "policyId": {
+            "_id": "6a34ca5c4e45325c5a7c06e7",
+            "policyNumber": "POL-2026-0008",
+            "name": "HCL Healthcare OPD Plan 2026-27",
+            "description": "Valid for 2026-27",
+            "status": "ACTIVE",
+            "effectiveFrom": "2026-06-18T00:00:00.000Z",
+            "effectiveTo": "2027-06-30T00:00:00.000Z"
+          },
+          "effectiveFrom": "2026-06-19T00:00:00.000Z",
+          "effectiveTo": "2027-07-19T00:00:00.000Z",
+          "isActive": true,
+          "relationshipId": "REL002",
+          "primaryMemberId": "MEM35637",
+          "planConfigId": "6a34cd194e45325c5a7c0712",
+          "createdBy": "693d752d8990f4b120255ee7",
+          "updatedBy": "693d752d8990f4b120255ee7",
+          "createdAt": "2026-06-19T05:02:35.711Z",
+          "updatedAt": "2026-06-19T05:02:35.711Z",
+          "__v": 0
+        }
+      }
+    ],
+    "wallet": {
+      "totalBalance": {
+        "allocated": 20000,
+        "current": 15480,
+        "consumed": 4520,
+        "_id": "6a34cd374e45325c5a7c074f",
+        "lastUpdated": "2026-08-05T05:36:20.042Z"
+      },
+      "categories": [
+        {
+          "categoryCode": "CAT005",
+          "name": "Online Consultation",
+          "available": 1500,
+          "total": 3000,
+          "consumed": 1500,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT001",
+          "name": "In-Clinic Consultation",
+          "available": 1680,
+          "total": 3000,
+          "consumed": 1320,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT002",
+          "name": "Pharmacy",
+          "available": 2200,
+          "total": 3000,
+          "consumed": 800,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT003",
+          "name": "Radiology/ Cardiology",
+          "available": 2500,
+          "total": 3000,
+          "consumed": 500,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT004",
+          "name": "Pathology (Lab)",
+          "available": 3000,
+          "total": 3000,
+          "consumed": 0,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT006",
+          "name": "Dental Services",
+          "available": 2600,
+          "total": 3000,
+          "consumed": 400,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT007",
+          "name": "Vision Care",
+          "available": 3000,
+          "total": 3000,
+          "consumed": 0,
+          "isUnlimited": false
+        },
+        {
+          "categoryCode": "CAT008",
+          "name": "Wellness Programs",
+          "available": 5000,
+          "total": 5000,
+          "consumed": 0,
+          "isUnlimited": false
+        }
+      ],
+      "isFloater": false
+    },
+    "walletCategories": [
+      {
+        "name": "Online Consultation",
+        "available": 1500,
+        "total": 3000,
+        "categoryCode": "CAT005"
+      },
+      {
+        "name": "In-Clinic Consultation",
+        "available": 1680,
+        "total": 3000,
+        "categoryCode": "CAT001"
+      },
+      {
+        "name": "Pharmacy",
+        "available": 2200,
+        "total": 3000,
+        "categoryCode": "CAT002"
+      },
+      {
+        "name": "Radiology-Cardiology",
+        "available": 2500,
+        "total": 3000,
+        "categoryCode": "CAT003"
+      },
+      {
+        "name": "Pathology(Labs)",
+        "available": 3000,
+        "total": 3000,
+        "categoryCode": "CAT004"
+      },
+      {
+        "name": "Dental Services",
+        "available": 2600,
+        "total": 3000,
+        "categoryCode": "CAT006"
+      },
+      {
+        "name": "Vision Care",
+        "available": 3000,
+        "total": 3000,
+        "categoryCode": "CAT007"
+      },
+      {
+        "name": "Health Packages",
+        "available": 5000,
+        "total": 5000,
+        "categoryCode": "CAT008"
+      }
+    ],
+    "healthBenefits": [
+      {
+        "name": "Online Consultation",
+        "description": "Online Consultation upto Rs 3000",
+        "categoryCode": "CAT005"
+      },
+      {
+        "name": "In-Clinic Consultation",
+        "description": "In-Clinic Consultation upto Rs 3000",
+        "categoryCode": "CAT001"
+      },
+      {
+        "name": "Pharmacy",
+        "description": "Pharmacy upto Rs 3000",
+        "categoryCode": "CAT002"
+      },
+      {
+        "name": "Radiology-Cardiology",
+        "description": "Radiology-Cardiology upto Rs 3000",
+        "categoryCode": "CAT003"
+      },
+      {
+        "name": "Pathology(Labs)",
+        "description": "Pathology(Labs) upto Rs 3000",
+        "categoryCode": "CAT004"
+      },
+      {
+        "name": "Dental Services",
+        "description": "Dental Services upto Rs 3000",
+        "categoryCode": "CAT006"
+      },
+      {
+        "name": "Vision Care",
+        "description": "Vision Care upto Rs 3000",
+        "categoryCode": "CAT007"
+      },
+      {
+        "name": "Health Packages",
+        "description": "Health Packages upto Rs 5000",
+        "categoryCode": "CAT008"
+      }
+    ],
+    "policyBenefits": {
+      "CAT005": {
+        "enabled": true,
+        "allowedSpecialties": [
+          "693d75d116b936465c15218e"
+        ],
+        "claimEnabled": true,
+        "annualLimit": 3000,
+        "perClaimLimit": 300,
+        "serviceTransactionLimits": {
+          "693d75d116b936465c15218e": 300
+        }
+      },
+      "CAT001": {
+        "enabled": true,
+        "claimEnabled": true,
+        "annualLimit": 3000,
+        "perClaimLimit": 300,
+        "allowedSpecialties": [
+          "693d75d116b936465c15218e"
+        ],
+        "serviceTransactionLimits": {
+          "693d75d116b936465c15218e": 300
+        }
+      },
+      "CAT002": {
+        "enabled": true,
+        "claimEnabled": true,
+        "annualLimit": 3000,
+        "perClaimLimit": 500
+      },
+      "CAT003": {
+        "enabled": true,
+        "annualLimit": 3000,
+        "claimEnabled": true,
+        "perClaimLimit": 500,
+        "allowedLabServiceCategories": [
+          "RADIOLOGY"
+        ],
+        "serviceTransactionLimits": {
+          "RADIOLOGY": 500
+        }
+      },
+      "CAT004": {
+        "enabled": true,
+        "annualLimit": 3000,
+        "claimEnabled": true,
+        "perClaimLimit": 500,
+        "allowedLabServiceCategories": [
+          "PATHOLOGY"
+        ],
+        "serviceTransactionLimits": {
+          "PATHOLOGY": 500
+        }
+      },
+      "CAT006": {
+        "enabled": true,
+        "allowedServiceCodes": [
+          "DENTAL_CHECKUP",
+          "DENTAL_FILLING",
+          "DENTAL_XRAY"
+        ],
+        "claimEnabled": true,
+        "annualLimit": 3000,
+        "perClaimLimit": 500,
+        "serviceTransactionLimits": {
+          "DENTAL_CHECKUP": 400,
+          "DENTAL_FILLING": 400,
+          "DENTAL_XRAY": 400
+        }
+      },
+      "CAT007": {
+        "enabled": true,
+        "annualLimit": 3000,
+        "claimEnabled": true,
+        "perClaimLimit": 500,
+        "allowedServiceCodes": [
+          "CONTACT_LENS_FITTING",
+          "EYEGLASSES"
+        ],
+        "serviceTransactionLimits": {
+          "CONTACT_LENS_FITTING": 500,
+          "EYEGLASSES": 500
+        }
+      },
+      "CAT008": {
+        "enabled": true,
+        "claimEnabled": true,
+        "annualLimit": 5000,
+        "perClaimLimit": 5000,
+        "allowedServiceCodes": [
+          "ANNUAL_HEALTH_CHECKUP"
+        ],
+        "serviceTransactionLimits": {
+          "ANNUAL_HEALTH_CHECKUP": 3000
+        },
+        "ahcPackageId": "AHC-PKG-1774847536610-UYARU81IB"
+      }
+    }
+  }
+}

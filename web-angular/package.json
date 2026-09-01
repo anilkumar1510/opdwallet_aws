@@ -1,0 +1,35 @@
+{
+  "name": "opd-wallet-angular",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve member",
+    "build": "ng build member",
+    "watch": "ng build member --watch --configuration development",
+    "test": "ng test member",
+    "lint": "ng lint",
+    "pack:member": "ng build member && node tools/pack-member.mjs",
+    "publish:member": "npm run pack:member && npm publish ./dist/member/browser"
+  },
+  "dependencies": {
+    "@angular/common": "~21.2.19",
+    "@angular/compiler": "~21.2.19",
+    "@angular/core": "~21.2.19",
+    "@angular/forms": "~21.2.19",
+    "@angular/platform-browser": "~21.2.19",
+    "@angular/router": "~21.2.19",
+    "agora-rtc-sdk-ng": "^4.24.7",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "~21.2.19",
+    "@angular/cli": "~21.2.19",
+    "@angular/compiler-cli": "~21.2.19",
+    "@tailwindcss/postcss": "^4.1.0",
+    "playwright": "^1.62.1",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "~5.9.0"
+  }
+}

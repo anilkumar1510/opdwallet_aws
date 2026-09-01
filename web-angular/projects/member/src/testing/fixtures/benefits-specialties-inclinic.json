@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "path": "member/benefits/CAT001/specialties",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "categoryId": "CAT001",
+    "services": [
+      {
+        "_id": "693d75d116b936465c15218e",
+        "specialtyId": "SPEC001",
+        "code": "GENERAL_PHYSICIAN",
+        "name": "General Physician",
+        "description": "General medical consultation",
+        "icon": "stethoscope",
+        "displayOrder": 1
+      }
+    ],
+    "total": 1
+  }
+}

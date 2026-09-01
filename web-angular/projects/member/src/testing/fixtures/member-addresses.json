@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "path": "member/addresses",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "_id": "6a3922d0f850e643fc79289f",
+        "addressId": "ADDR-1782129360783-TKUF97IUQ",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "addressType": "HOME",
+        "addressLine1": "5A",
+        "city": "Noida",
+        "state": "UP",
+        "pincode": "201301",
+        "isDefault": true,
+        "createdAt": "2026-06-22T11:56:00.811Z",
+        "updatedAt": "2026-06-22T11:56:00.811Z",
+        "__v": 0
+      }
+    ]
+  }
+}
