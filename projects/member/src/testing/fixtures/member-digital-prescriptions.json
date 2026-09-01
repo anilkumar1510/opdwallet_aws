@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "path": "member/digital-prescriptions",
+    "status": 200,
+    "account": "all"
+  },
+  "body": {
+    "message": "Digital prescriptions retrieved successfully",
+    "prescriptions": [
+      {
+        "_id": "698445241dd1abe59578de68",
+        "prescriptionId": "DPRESC-1770276132708-244077562",
+        "appointmentId": {
+          "_id": "698347f16f2900dfafb138a2",
+          "appointmentId": "APT000032",
+          "appointmentNumber": "000032",
+          "specialty": "General Physician",
+          "clinicName": "",
+          "clinicAddress": "",
+          "appointmentType": "ONLINE",
+          "appointmentDate": "2026-02-05",
+          "timeSlot": "10:00 AM",
+          "consultationFee": 1000,
+          "status": "COMPLETED"
+        },
+        "doctorId": "DOC10002",
+        "doctorName": "Anil",
+        "doctorQualification": "MBBS",
+        "doctorSpecialty": "General Physician",
+        "doctorRegistrationNumber": "",
+        "doctorSignatureImage": "/Users/nitendraagarwal/opdwallet_aws/api/uploads/prescriptions/signatures/signature-DPRESC-1770276132708-244077562.jpeg",
+        "userId": "6979a1e3aef224daaa1f4332",
+        "patientName": "All All",
+        "chiefComplaint": "Fever",
+        "diagnosis": "Bronchial Asthma (J45.9)",
+        "medicines": [
+          {
+            "medicineName": "PARACETAMOL (Crocin)",
+            "genericName": "Paracetamol",
+            "dosage": "500mg",
+            "frequency": "BD (Twice Daily)",
+            "duration": "5 days",
+            "route": "Oral",
+            "instructions": "After Food",
+            "refills": 0,
+            "isControlled": false,
+            "substitutionAllowed": true
+          }
+        ],
+        "labTests": [],
+        "followUpDate": "2026-02-06T00:00:00.000Z",
+        "prescriptionType": "DIGITAL",
+        "pdfGenerated": true,
+        "createdDate": "2026-02-05T07:22:12.709Z",
+        "isActive": true,
+        "validityDays": 30,
+        "isEmergency": false,
+        "createdAt": "2026-02-05T07:22:12.711Z",
+        "updatedAt": "2026-08-06T12:31:46.223Z",
+        "__v": 0,
+        "pdfFileName": "prescription-DPRESC-1770276132708-244077562-1786019506151.pdf",
+        "pdfPath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\prescriptions\\generated\\prescription-DPRESC-1770276132708-244077562-1786019506151.pdf"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "totalPages": 1
+  }
+}

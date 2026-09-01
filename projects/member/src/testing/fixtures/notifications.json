@@ -1,0 +1,225 @@
+{
+  "_meta": {
+    "path": "notifications?limit=10",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "notifications": [
+      {
+        "_id": "6a71bab0cabca5ade3b4b3bb",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "In-Clinic Appointment Booked",
+        "message": "Your in-clinic appointment with Dr Ramkrishan is scheduled for 05 Aug 2026 at 1:30 PM.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000055",
+          "appointmentType": "IN_CLINIC",
+          "doctorName": "Dr Ramkrishan",
+          "appointmentDate": "05 Aug 2026",
+          "timeSlot": "1:30 PM"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T10:10:56.990Z",
+        "updatedAt": "2026-08-04T10:10:56.990Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a71b978cabca5ade3b4b313",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "Online Appointment Booked",
+        "message": "Your online appointment with Dr Ramkrishan is scheduled for 04 Aug 2026 at Immediate.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000054",
+          "appointmentType": "ONLINE",
+          "doctorName": "Dr Ramkrishan",
+          "appointmentDate": "04 Aug 2026",
+          "timeSlot": "Immediate"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T10:05:44.612Z",
+        "updatedAt": "2026-08-04T10:05:44.612Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a71b790cabca5ade3b4b28d",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "Online Appointment Booked",
+        "message": "Your online appointment with Dr Ramkrishan is scheduled for 05 Aug 2026 at 10:00 AM.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000053",
+          "appointmentType": "ONLINE",
+          "doctorName": "Dr Ramkrishan",
+          "appointmentDate": "05 Aug 2026",
+          "timeSlot": "10:00 AM"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T09:57:36.154Z",
+        "updatedAt": "2026-08-04T09:57:36.154Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a71ad65cabca5ade3b4aedd",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CANCELLED",
+        "title": "Online Appointment Cancelled",
+        "message": "Your online appointment with testdr  on 04 Aug 2026 has been cancelled. Reason: Cancelled by user",
+        "priority": "HIGH",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000052",
+          "appointmentType": "ONLINE",
+          "doctorName": "testdr ",
+          "appointmentDate": "04 Aug 2026",
+          "reason": "Cancelled by user"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T09:14:13.379Z",
+        "updatedAt": "2026-08-04T09:14:13.379Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a71ad2acabca5ade3b4ae02",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "Online Appointment Booked",
+        "message": "Your online appointment with testdr  is scheduled for 04 Aug 2026 at Immediate.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000052",
+          "appointmentType": "ONLINE",
+          "doctorName": "testdr ",
+          "appointmentDate": "04 Aug 2026",
+          "timeSlot": "Immediate"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T09:13:14.745Z",
+        "updatedAt": "2026-08-04T09:13:14.745Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a71ad20cabca5ade3b4addb",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CANCELLED",
+        "title": "Online Appointment Cancelled",
+        "message": "Your online appointment with testdr  on 04 Aug 2026 has been cancelled. Reason: Cancelled by user",
+        "priority": "HIGH",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000051",
+          "appointmentType": "ONLINE",
+          "doctorName": "testdr ",
+          "appointmentDate": "04 Aug 2026",
+          "reason": "Cancelled by user"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T09:13:04.090Z",
+        "updatedAt": "2026-08-04T09:13:04.090Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a71acf8cabca5ade3b4acdf",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "Online Appointment Booked",
+        "message": "Your online appointment with testdr  is scheduled for 04 Aug 2026 at Immediate.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000051",
+          "appointmentType": "ONLINE",
+          "doctorName": "testdr ",
+          "appointmentDate": "04 Aug 2026",
+          "timeSlot": "Immediate"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-08-04T09:12:24.194Z",
+        "updatedAt": "2026-08-04T09:12:24.194Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a6af7adc8fb7a27c70a1671",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "Online Appointment Booked",
+        "message": "Your online appointment with testdr  is scheduled for 30 Jul 2026 at Immediate.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000050",
+          "appointmentType": "ONLINE",
+          "doctorName": "testdr ",
+          "appointmentDate": "30 Jul 2026",
+          "timeSlot": "Immediate"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-07-30T07:05:17.801Z",
+        "updatedAt": "2026-07-30T07:05:17.801Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a698a80efb77b6e4fc0cc47",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "In-Clinic Appointment Booked",
+        "message": "Your in-clinic appointment with Dr Ramkrishan is scheduled for 28 Jul 2026 at 12:30 PM.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000049",
+          "appointmentType": "IN_CLINIC",
+          "doctorName": "Dr Ramkrishan",
+          "appointmentDate": "28 Jul 2026",
+          "timeSlot": "12:30 PM"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-07-29T05:07:12.688Z",
+        "updatedAt": "2026-07-29T05:07:12.688Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a3923c8f850e643fc7929e4",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "type": "APPOINTMENT_CREATED",
+        "title": "Online Appointment Booked",
+        "message": "Your online appointment with Dr Ramkrishan is scheduled for 22 Jun 2026 at Immediate.",
+        "priority": "MEDIUM",
+        "isRead": false,
+        "metadata": {
+          "appointmentId": "APT000045",
+          "appointmentType": "ONLINE",
+          "doctorName": "Dr Ramkrishan",
+          "appointmentDate": "22 Jun 2026",
+          "timeSlot": "Immediate"
+        },
+        "actionUrl": "/member/bookings",
+        "isActive": true,
+        "createdAt": "2026-06-22T12:00:08.859Z",
+        "updatedAt": "2026-06-22T12:00:08.859Z",
+        "__v": 0
+      }
+    ],
+    "total": 14,
+    "unreadCount": 14,
+    "page": 1,
+    "totalPages": 2
+  }
+}

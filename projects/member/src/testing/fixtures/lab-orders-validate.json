@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "path": "member/lab/orders/validate",
+    "status": 201,
+    "account": "all"
+  },
+  "body": {
+    "valid": false,
+    "breakdown": null,
+    "error": "Slot not found"
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "path": "member/claims/available-categories",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": [
+    {
+      "categoryId": "CAT001",
+      "categoryCode": "CLINIC_CONSULT",
+      "name": "In-Clinic Consultation",
+      "description": "Face-to-face consultations with doctors at clinic or hospital",
+      "claimCategory": "IN_CLINIC_CONSULTATION",
+      "annualLimit": 3000,
+      "perClaimLimit": 300,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 1
+    },
+    {
+      "categoryId": "CAT002",
+      "categoryCode": "PHARMACY",
+      "name": "Pharmacy",
+      "description": "Purchase of prescribed medicines and pharmaceutical products",
+      "claimCategory": "PHARMACY",
+      "annualLimit": 3000,
+      "perClaimLimit": 500,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 2
+    },
+    {
+      "categoryId": "CAT003",
+      "categoryCode": "DIAGNOSTIC",
+      "name": "Radiology-Cardiology",
+      "description": "Diagnostic imaging services including X-ray, MRI, CT scan, and ultrasound",
+      "claimCategory": "DIAGNOSTIC_SERVICES",
+      "annualLimit": 3000,
+      "perClaimLimit": 500,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 3
+    },
+    {
+      "categoryId": "CAT004",
+      "categoryCode": "LABORATORY",
+      "name": "Pathology(Labs)",
+      "description": "Clinical laboratory tests including blood tests, urine tests, and pathology",
+      "claimCategory": "LABORATORY_SERVICES",
+      "annualLimit": 3000,
+      "perClaimLimit": 500,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 4
+    },
+    {
+      "categoryId": "CAT005",
+      "categoryCode": "ONLINE_CONSULT",
+      "name": "Online Consultation",
+      "description": "Virtual consultations with doctors via video call or chat",
+      "claimCategory": "ONLINE_CONSULTATION",
+      "annualLimit": 3000,
+      "perClaimLimit": 300,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 5
+    },
+    {
+      "categoryId": "CAT006",
+      "categoryCode": "DENTAL",
+      "name": "Dental Services",
+      "description": "Dental care including checkups, cleaning, fillings, and oral treatments",
+      "claimCategory": "DENTAL_SERVICES",
+      "annualLimit": 3000,
+      "perClaimLimit": 500,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 6
+    },
+    {
+      "categoryId": "CAT007",
+      "categoryCode": "VISION",
+      "name": "Vision Care",
+      "description": "Eye care services including eye exams, glasses, and contact lenses",
+      "claimCategory": "VISION_CARE",
+      "annualLimit": 3000,
+      "perClaimLimit": 500,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 7
+    },
+    {
+      "categoryId": "CAT008",
+      "categoryCode": "WELLNESS",
+      "name": "Health Packages",
+      "description": "Preventive health services including annual health checks, vaccinations, and wellness programs",
+      "claimCategory": "WELLNESS_PROGRAMS",
+      "annualLimit": 5000,
+      "perClaimLimit": 5000,
+      "enabled": true,
+      "claimEnabled": true,
+      "displayOrder": 8
+    }
+  ]
+}

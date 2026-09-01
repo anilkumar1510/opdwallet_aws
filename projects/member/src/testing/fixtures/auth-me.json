@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "path": "auth/me",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "_id": "6a34c98e4e45325c5a7c06b5",
+    "userId": "USR-2026-0035",
+    "uhid": "UHID35637",
+    "memberId": "MEM35637",
+    "employeeId": "EMP9878",
+    "name": {
+      "firstName": "Shivam ",
+      "lastName": "Jha",
+      "_id": "6a34c98e4e45325c5a7c06b6",
+      "fullName": "Shivam  Jha"
+    },
+    "email": "shivam@gmail.com",
+    "phone": "95710665645",
+    "dob": "1999-01-01T00:00:00.000Z",
+    "gender": "MALE",
+    "bloodGroup": "B+",
+    "cugId": "69ca065d5ba6e900c12df0e3",
+    "address": {
+      "line1": "A5, Sector-24",
+      "line2": "",
+      "city": "Noida",
+      "state": "UP",
+      "pincode": "201301",
+      "_id": "6a34c98e4e45325c5a7c06b7"
+    },
+    "role": "MEMBER",
+    "status": "ACTIVE",
+    "mustChangePassword": false,
+    "createdBy": "693d752d8990f4b120255ee7",
+    "createdAt": "2026-06-19T04:46:06.326Z",
+    "updatedAt": "2026-06-19T05:01:43.556Z",
+    "__v": 0,
+    "relationship": "REL001"
+  }
+}

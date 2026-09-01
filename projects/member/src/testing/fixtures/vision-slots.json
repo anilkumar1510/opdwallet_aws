@@ -1,0 +1,171 @@
+{
+  "_meta": {
+    "path": "vision-bookings/slots?clinicId=CLN00008&date=2026-06-20",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "slots": [
+      {
+        "_id": "6a34c8794e45325c5a7c0531-09:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "09:00",
+        "endTime": "09:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-09:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "09:30",
+        "endTime": "10:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-10:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "10:00",
+        "endTime": "10:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-10:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "10:30",
+        "endTime": "11:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-11:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "11:00",
+        "endTime": "11:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-11:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "11:30",
+        "endTime": "12:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-12:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "12:00",
+        "endTime": "12:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-12:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "12:30",
+        "endTime": "13:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-13:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "13:00",
+        "endTime": "13:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-13:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "13:30",
+        "endTime": "14:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-14:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "14:00",
+        "endTime": "14:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-14:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "14:30",
+        "endTime": "15:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-15:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "15:00",
+        "endTime": "15:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-15:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "15:30",
+        "endTime": "16:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-16:00",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "16:00",
+        "endTime": "16:30",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      },
+      {
+        "_id": "6a34c8794e45325c5a7c0531-16:30",
+        "slotId": "6a34c8794e45325c5a7c0531",
+        "date": "2026-06-20",
+        "startTime": "16:30",
+        "endTime": "17:00",
+        "isAvailable": true,
+        "currentBookings": 0,
+        "maxAppointments": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,1041 @@
+{
+  "_meta": {
+    "path": "doctors/DOC10007/slots?clinicId=CLN00005",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": [
+    {
+      "date": "2026-08-05",
+      "dayOfWeek": "THURSDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": false,
+          "slotId": "DOC10007_CLN00005_2026-08-05_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-05_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "dayOfWeek": "FRIDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-06_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "dayOfWeek": "SATURDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-07_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "dayOfWeek": "MONDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-09_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "dayOfWeek": "TUESDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-10_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "dayOfWeek": "WEDNESDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-11_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "dayOfWeek": "THURSDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-12_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "dayOfWeek": "FRIDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-13_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "dayOfWeek": "SATURDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-14_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "dayOfWeek": "MONDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-16_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "dayOfWeek": "TUESDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-17_12:30 PM"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "dayOfWeek": "WEDNESDAY",
+      "slots": [
+        {
+          "time": "1:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_1:00 PM"
+        },
+        {
+          "time": "1:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_1:30 PM"
+        },
+        {
+          "time": "2:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_2:00 PM"
+        },
+        {
+          "time": "2:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_2:30 PM"
+        },
+        {
+          "time": "3:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_3:00 PM"
+        },
+        {
+          "time": "3:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_3:30 PM"
+        },
+        {
+          "time": "4:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_4:00 PM"
+        },
+        {
+          "time": "4:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_4:30 PM"
+        },
+        {
+          "time": "9:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_9:00 AM"
+        },
+        {
+          "time": "9:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_9:30 AM"
+        },
+        {
+          "time": "10:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_10:00 AM"
+        },
+        {
+          "time": "10:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_10:30 AM"
+        },
+        {
+          "time": "11:00 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_11:00 AM"
+        },
+        {
+          "time": "11:30 AM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_12:00 PM"
+        },
+        {
+          "time": "12:30 PM",
+          "available": true,
+          "slotId": "DOC10007_CLN00005_2026-08-18_12:30 PM"
+        }
+      ]
+    }
+  ]
+}

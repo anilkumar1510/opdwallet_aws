@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "path": "member/benefits/CAT007/services",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "categoryId": "CAT007",
+    "services": [
+      {
+        "_id": "693d7b92a876dfadbd43ebd7",
+        "code": "CONTACT_LENS_FITTING",
+        "name": "Contact Lens Fitting",
+        "description": "Professional contact lens consultation and fitting"
+      },
+      {
+        "_id": "693d7b92a876dfadbd43ebda",
+        "code": "EYEGLASSES",
+        "name": "Eyeglasses (Frames + Lenses)",
+        "description": "Prescription eyeglasses with frames and lenses"
+      }
+    ],
+    "total": 2
+  }
+}

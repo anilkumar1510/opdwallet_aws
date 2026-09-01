@@ -1,0 +1,215 @@
+{
+  "_meta": {
+    "path": "member/claims",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "message": "Claims retrieved successfully",
+    "claims": [
+      {
+        "_id": "6a72cbd3cabca5ade3b4b96a",
+        "claimId": "CLM-20260805-0001",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "memberName": "Shivam  Jha",
+        "claimType": "REIMBURSEMENT",
+        "category": "IN_CLINIC_CONSULTATION",
+        "treatmentDate": "2026-08-02T00:00:00.000Z",
+        "providerName": "Self Service",
+        "billAmount": 300,
+        "billNumber": "1234",
+        "documents": [
+          {
+            "fileName": "claim-1785908179856-328894823.pdf",
+            "originalName": "Daksh%20Singh%20resume.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 133105,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785908179856-328894823.pdf",
+            "uploadedAt": "2026-08-05T05:36:19.915Z",
+            "documentType": "PRESCRIPTION",
+            "_id": "6a72cbd3cabca5ade3b4b96b"
+          },
+          {
+            "fileName": "claim-1785908179863-267120965.pdf",
+            "originalName": "Daksh%20Singh%20resume.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 133105,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785908179863-267120965.pdf",
+            "uploadedAt": "2026-08-05T05:36:19.915Z",
+            "documentType": "INVOICE",
+            "_id": "6a72cbd3cabca5ade3b4b96c"
+          }
+        ],
+        "status": "SUBMITTED",
+        "wasAutoCapped": true,
+        "paymentStatus": "PENDING",
+        "isUrgent": false,
+        "requiresPreAuth": false,
+        "createdAt": "2026-08-05T05:36:19.931Z",
+        "cappedAmount": 300,
+        "originalBillAmount": 500,
+        "perClaimLimitApplied": 300,
+        "submittedAt": "2026-08-05T05:36:20.185Z"
+      },
+      {
+        "_id": "6a71b5eacabca5ade3b4b082",
+        "claimId": "CLM-20260804-0002",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "memberName": "Shivam  Jha",
+        "claimType": "REIMBURSEMENT",
+        "category": "IN_CLINIC_CONSULTATION",
+        "treatmentDate": "2026-08-03T00:00:00.000Z",
+        "providerName": "Self Service",
+        "billAmount": 300,
+        "billNumber": "678",
+        "documents": [
+          {
+            "fileName": "claim-1785837034527-541038859.pdf",
+            "originalName": "Policy_POL-2026-0008_2026-07-27.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 20141,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785837034527-541038859.pdf",
+            "uploadedAt": "2026-08-04T09:50:34.540Z",
+            "documentType": "PRESCRIPTION",
+            "_id": "6a71b5eacabca5ade3b4b083"
+          },
+          {
+            "fileName": "claim-1785837034528-394317604.pdf",
+            "originalName": "Policy_POL-2026-0008_2026-07-27.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 20141,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785837034528-394317604.pdf",
+            "uploadedAt": "2026-08-04T09:50:34.540Z",
+            "documentType": "INVOICE",
+            "_id": "6a71b5eacabca5ade3b4b084"
+          }
+        ],
+        "status": "PAYMENT_PENDING",
+        "wasAutoCapped": true,
+        "paymentStatus": "APPROVED",
+        "isUrgent": false,
+        "requiresPreAuth": false,
+        "createdAt": "2026-08-04T09:50:34.548Z",
+        "cappedAmount": 300,
+        "originalBillAmount": 600,
+        "perClaimLimitApplied": 300,
+        "submittedAt": "2026-08-04T09:50:34.653Z",
+        "approvedAmount": 300
+      },
+      {
+        "_id": "6a71adf1cabca5ade3b4aefc",
+        "claimId": "CLM-20260804-0001",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "memberName": "Shivam  Jha",
+        "claimType": "REIMBURSEMENT",
+        "category": "PHARMACY",
+        "treatmentDate": "2026-08-03T00:00:00.000Z",
+        "providerName": "Self Service",
+        "billAmount": 500,
+        "documents": [
+          {
+            "fileName": "claim-1785834993246-131956956.pdf",
+            "originalName": "Daksh%20Singh%20resume.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 133105,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785834993246-131956956.pdf",
+            "uploadedAt": "2026-08-04T09:16:33.262Z",
+            "documentType": "OTHER",
+            "_id": "6a71adf1cabca5ade3b4aefd"
+          }
+        ],
+        "status": "ASSIGNED",
+        "wasAutoCapped": true,
+        "paymentStatus": "PENDING",
+        "isUrgent": false,
+        "requiresPreAuth": false,
+        "createdAt": "2026-08-04T09:16:33.270Z",
+        "cappedAmount": 500,
+        "originalBillAmount": 1000,
+        "perClaimLimitApplied": 500,
+        "submittedAt": "2026-08-04T09:16:33.333Z"
+      },
+      {
+        "_id": "6a6afc91c8fb7a27c70a1844",
+        "claimId": "CLM-20260730-0001",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "memberName": "Shivam  Jha",
+        "claimType": "REIMBURSEMENT",
+        "category": "IN_CLINIC_CONSULTATION",
+        "treatmentDate": "2026-07-29T00:00:00.000Z",
+        "providerName": "Self Service",
+        "billAmount": 300,
+        "documents": [
+          {
+            "fileName": "claim-1785396369647-130342846.pdf",
+            "originalName": "Daksh%20Singh%20resume.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 133105,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785396369647-130342846.pdf",
+            "uploadedAt": "2026-07-30T07:26:09.798Z",
+            "documentType": "PRESCRIPTION",
+            "_id": "6a6afc91c8fb7a27c70a1845"
+          },
+          {
+            "fileName": "claim-1785396369655-757624802.jpg",
+            "originalName": "photo_1785396368139.jpg",
+            "fileType": "image/jpeg",
+            "fileSize": 3982113,
+            "filePath": "C:\\Users\\singh\\OneDrive\\Desktop\\opdwallet_aws\\api\\uploads\\claims\\6a34c98e4e45325c5a7c06b5\\claim-1785396369655-757624802.jpg",
+            "uploadedAt": "2026-07-30T07:26:09.798Z",
+            "documentType": "INVOICE",
+            "_id": "6a6afc91c8fb7a27c70a1846"
+          }
+        ],
+        "status": "ASSIGNED",
+        "wasAutoCapped": true,
+        "paymentStatus": "APPROVED",
+        "isUrgent": false,
+        "requiresPreAuth": false,
+        "createdAt": "2026-07-30T07:26:09.805Z",
+        "cappedAmount": 300,
+        "originalBillAmount": 1000,
+        "perClaimLimitApplied": 300,
+        "submittedAt": "2026-07-30T07:26:09.894Z",
+        "approvedAmount": 300
+      },
+      {
+        "_id": "6a3924acf850e643fc792a68",
+        "claimId": "CLM-20260622-0001",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "memberName": "Shivam  Jha",
+        "claimType": "REIMBURSEMENT",
+        "category": "PHARMACY",
+        "treatmentDate": "2026-06-22T00:00:00.000Z",
+        "providerName": "Self Service",
+        "billAmount": 500,
+        "billNumber": "1234",
+        "documents": [
+          {
+            "fileName": "claim-1782129836114-968173060.pdf",
+            "originalName": "HealthBridge_SOW_PwC.pdf",
+            "fileType": "application/pdf",
+            "fileSize": 53624,
+            "filePath": "/Users/nitendraagarwal/opdwallet_aws/api/uploads/claims/6a34c98e4e45325c5a7c06b5/claim-1782129836114-968173060.pdf",
+            "uploadedAt": "2026-06-22T12:03:56.122Z",
+            "documentType": "OTHER",
+            "_id": "6a3924acf850e643fc792a69"
+          }
+        ],
+        "status": "ASSIGNED",
+        "wasAutoCapped": true,
+        "paymentStatus": "PENDING",
+        "isUrgent": false,
+        "requiresPreAuth": false,
+        "createdAt": "2026-06-22T12:03:56.127Z",
+        "cappedAmount": 500,
+        "originalBillAmount": 600,
+        "perClaimLimitApplied": 500,
+        "submittedAt": "2026-06-22T12:03:56.168Z"
+      }
+    ],
+    "total": 5,
+    "page": 1,
+    "totalPages": 1
+  }
+}

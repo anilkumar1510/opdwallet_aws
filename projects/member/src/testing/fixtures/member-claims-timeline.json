@@ -1,0 +1,13 @@
+{
+  "_meta": {
+    "path": "member/claims/CLM-20260805-0001/timeline",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "claimId": "CLM-20260805-0001",
+    "currentStatus": "SUBMITTED",
+    "timeline": [],
+    "submittedAt": "2026-08-05T05:36:20.185Z"
+  }
+}

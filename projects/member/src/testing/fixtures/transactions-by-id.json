@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "path": "transactions/TXN-20260805-0216",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "_id": "6a72cbd4cabca5ade3b4b988",
+    "transactionId": "TXN-20260805-0216",
+    "userId": "6a34c98e4e45325c5a7c06b5",
+    "serviceType": "CLAIM",
+    "serviceId": "6a72cbd3cabca5ade3b4b96a",
+    "serviceReferenceId": "CLM-20260805-0001",
+    "serviceName": "IN_CLINIC_CONSULTATION Claim - Self Service",
+    "serviceDate": "2026-08-02T00:00:00.000Z",
+    "totalAmount": 300,
+    "walletAmount": 240,
+    "selfPaidAmount": 60,
+    "copayAmount": 60,
+    "paymentMethod": "COPAY",
+    "paymentId": {
+      "_id": "6a72cbd4cabca5ade3b4b985",
+      "paymentId": "PAY-20260805-0170",
+      "userId": "6a34c98e4e45325c5a7c06b5",
+      "amount": 60,
+      "paymentType": "COPAY",
+      "status": "PENDING",
+      "serviceType": "CLAIM",
+      "serviceId": "6a72cbd3cabca5ade3b4b96a",
+      "serviceReferenceId": "CLM-20260805-0001",
+      "description": "Copay for claim CLM-20260805-0001 - IN_CLINIC_CONSULTATION",
+      "paymentMethod": "DUMMY_GATEWAY",
+      "isActive": true,
+      "isRefund": false,
+      "createdAt": "2026-08-05T05:36:20.157Z",
+      "updatedAt": "2026-08-05T05:36:20.157Z",
+      "__v": 0
+    },
+    "status": "PENDING_PAYMENT",
+    "walletTransactionIds": [],
+    "isActive": true,
+    "wasServiceLimitApplied": false,
+    "excessAmount": 0,
+    "createdAt": "2026-08-05T05:36:20.177Z",
+    "updatedAt": "2026-08-05T05:36:20.177Z",
+    "__v": 0
+  }
+}

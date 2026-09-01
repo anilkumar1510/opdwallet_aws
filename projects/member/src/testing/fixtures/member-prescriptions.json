@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "path": "member/prescriptions",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "message": "Prescriptions retrieved successfully",
+    "prescriptions": [],
+    "total": 0,
+    "page": 1,
+    "totalPages": 0
+  }
+}

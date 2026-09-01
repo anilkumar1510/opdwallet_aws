@@ -1,0 +1,358 @@
+{
+  "_meta": {
+    "path": "wallet/transactions",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "transactions": [
+      {
+        "_id": "6a72cbd4cabca5ade3b4b980",
+        "transactionId": "TXN-20260805-0215",
+        "type": "DEBIT",
+        "amount": 240,
+        "categoryCode": "CAT001",
+        "previousBalance": {
+          "total": 15720,
+          "category": 1920,
+          "_id": "6a72cbd4cabca5ade3b4b981"
+        },
+        "newBalance": {
+          "total": 15480,
+          "category": 1680,
+          "_id": "6a72cbd4cabca5ade3b4b982"
+        },
+        "serviceType": "CLAIM",
+        "serviceProvider": "Self Service",
+        "bookingId": "6a72cbd3cabca5ade3b4b96a",
+        "notes": "Claim CLM-20260805-0001 (wallet portion) - IN_CLINIC_CONSULTATION - Self Service",
+        "isReversed": false,
+        "createdAt": "2026-08-05T05:36:20.117Z"
+      },
+      {
+        "_id": "6a71bab0cabca5ade3b4b3b2",
+        "transactionId": "TXN-20260804-0211",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT001",
+        "previousBalance": {
+          "total": 16020,
+          "category": 2220,
+          "_id": "6a71bab0cabca5ade3b4b3b3"
+        },
+        "newBalance": {
+          "total": 15720,
+          "category": 1920,
+          "_id": "6a71bab0cabca5ade3b4b3b4"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "Dr Ramkrishan",
+        "bookingId": "6a71bab0cabca5ade3b4b3a5",
+        "notes": "Consultation fee (wallet portion) - Dr Ramkrishan",
+        "isReversed": false,
+        "createdAt": "2026-08-04T10:10:56.961Z"
+      },
+      {
+        "_id": "6a71b978cabca5ade3b4b30a",
+        "transactionId": "TXN-20260804-0209",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 16320,
+          "category": 1800,
+          "_id": "6a71b978cabca5ade3b4b30b"
+        },
+        "newBalance": {
+          "total": 16020,
+          "category": 1500,
+          "_id": "6a71b978cabca5ade3b4b30c"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "Dr Ramkrishan",
+        "bookingId": "6a71b978cabca5ade3b4b2fd",
+        "notes": "Consultation fee (wallet portion) - Dr Ramkrishan",
+        "isReversed": false,
+        "createdAt": "2026-08-04T10:05:44.584Z"
+      },
+      {
+        "_id": "6a71b790cabca5ade3b4b284",
+        "transactionId": "TXN-20260804-0207",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 16620,
+          "category": 2100,
+          "_id": "6a71b790cabca5ade3b4b285"
+        },
+        "newBalance": {
+          "total": 16320,
+          "category": 1800,
+          "_id": "6a71b790cabca5ade3b4b286"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "Dr Ramkrishan",
+        "bookingId": "6a71b790cabca5ade3b4b277",
+        "notes": "Consultation fee (wallet portion) - Dr Ramkrishan",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:57:36.122Z"
+      },
+      {
+        "_id": "6a71b5eacabca5ade3b4b098",
+        "transactionId": "TXN-20260804-0205",
+        "type": "DEBIT",
+        "amount": 240,
+        "categoryCode": "CAT001",
+        "previousBalance": {
+          "total": 16860,
+          "category": 2460,
+          "_id": "6a71b5eacabca5ade3b4b099"
+        },
+        "newBalance": {
+          "total": 16620,
+          "category": 2220,
+          "_id": "6a71b5eacabca5ade3b4b09a"
+        },
+        "serviceType": "CLAIM",
+        "serviceProvider": "Self Service",
+        "bookingId": "6a71b5eacabca5ade3b4b082",
+        "notes": "Claim CLM-20260804-0002 (wallet portion) - IN_CLINIC_CONSULTATION - Self Service",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:50:34.632Z"
+      },
+      {
+        "_id": "6a71adf1cabca5ade3b4af10",
+        "transactionId": "TXN-20260804-0203",
+        "type": "DEBIT",
+        "amount": 400,
+        "categoryCode": "CAT002",
+        "previousBalance": {
+          "total": 17260,
+          "category": 2600,
+          "_id": "6a71adf1cabca5ade3b4af11"
+        },
+        "newBalance": {
+          "total": 16860,
+          "category": 2200,
+          "_id": "6a71adf1cabca5ade3b4af12"
+        },
+        "serviceType": "CLAIM",
+        "serviceProvider": "Self Service",
+        "bookingId": "6a71adf1cabca5ade3b4aefc",
+        "notes": "Claim CLM-20260804-0001 (wallet portion) - PHARMACY - Self Service",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:16:33.319Z"
+      },
+      {
+        "_id": "6a71ad65cabca5ade3b4aed4",
+        "transactionId": "TXN-20260804-0202",
+        "type": "CREDIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 16960,
+          "category": 1800,
+          "_id": "6a71ad65cabca5ade3b4aed5"
+        },
+        "newBalance": {
+          "total": 17260,
+          "category": 2100,
+          "_id": "6a71ad65cabca5ade3b4aed6"
+        },
+        "serviceType": "CONSULTATION_REFUND",
+        "serviceProvider": "testdr ",
+        "bookingId": "6a71ad2acabca5ade3b4adec",
+        "notes": "Refund for cancelled appointment - testdr  - ONLINE",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:14:13.363Z"
+      },
+      {
+        "_id": "6a71ad2acabca5ade3b4adf9",
+        "transactionId": "TXN-20260804-0200",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 17260,
+          "category": 2100,
+          "_id": "6a71ad2acabca5ade3b4adfa"
+        },
+        "newBalance": {
+          "total": 16960,
+          "category": 1800,
+          "_id": "6a71ad2acabca5ade3b4adfb"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "testdr ",
+        "bookingId": "6a71ad2acabca5ade3b4adec",
+        "notes": "Consultation fee (wallet portion) - testdr ",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:13:14.721Z"
+      },
+      {
+        "_id": "6a71ad20cabca5ade3b4add2",
+        "transactionId": "TXN-20260804-0199",
+        "type": "CREDIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 16960,
+          "category": 1800,
+          "_id": "6a71ad20cabca5ade3b4add3"
+        },
+        "newBalance": {
+          "total": 17260,
+          "category": 2100,
+          "_id": "6a71ad20cabca5ade3b4add4"
+        },
+        "serviceType": "CONSULTATION_REFUND",
+        "serviceProvider": "testdr ",
+        "bookingId": "6a71acf8cabca5ade3b4acc9",
+        "notes": "Refund for cancelled appointment - testdr  - ONLINE",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:13:04.072Z"
+      },
+      {
+        "_id": "6a71acf8cabca5ade3b4acd6",
+        "transactionId": "TXN-20260804-0197",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 17260,
+          "category": 2100,
+          "_id": "6a71acf8cabca5ade3b4acd7"
+        },
+        "newBalance": {
+          "total": 16960,
+          "category": 1800,
+          "_id": "6a71acf8cabca5ade3b4acd8"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "testdr ",
+        "bookingId": "6a71acf8cabca5ade3b4acc9",
+        "notes": "Consultation fee (wallet portion) - testdr ",
+        "isReversed": false,
+        "createdAt": "2026-08-04T09:12:24.168Z"
+      },
+      {
+        "_id": "6a6afc91c8fb7a27c70a185a",
+        "transactionId": "TXN-20260730-0195",
+        "type": "DEBIT",
+        "amount": 240,
+        "categoryCode": "CAT001",
+        "previousBalance": {
+          "total": 17500,
+          "category": 2700,
+          "_id": "6a6afc91c8fb7a27c70a185b"
+        },
+        "newBalance": {
+          "total": 17260,
+          "category": 2460,
+          "_id": "6a6afc91c8fb7a27c70a185c"
+        },
+        "serviceType": "CLAIM",
+        "serviceProvider": "Self Service",
+        "bookingId": "6a6afc91c8fb7a27c70a1844",
+        "notes": "Claim CLM-20260730-0001 (wallet portion) - IN_CLINIC_CONSULTATION - Self Service",
+        "isReversed": false,
+        "createdAt": "2026-07-30T07:26:09.878Z"
+      },
+      {
+        "_id": "6a6af7adc8fb7a27c70a1668",
+        "transactionId": "TXN-20260730-0193",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 17800,
+          "category": 2400,
+          "_id": "6a6af7adc8fb7a27c70a1669"
+        },
+        "newBalance": {
+          "total": 17500,
+          "category": 2100,
+          "_id": "6a6af7adc8fb7a27c70a166a"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "testdr ",
+        "bookingId": "6a6af7adc8fb7a27c70a165b",
+        "notes": "Consultation fee (wallet portion) - testdr ",
+        "isReversed": false,
+        "createdAt": "2026-07-30T07:05:17.770Z"
+      },
+      {
+        "_id": "6a698a80efb77b6e4fc0cc3b",
+        "transactionId": "TXN-20260729-0191",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT001",
+        "previousBalance": {
+          "total": 18100,
+          "category": 3000,
+          "_id": "6a698a80efb77b6e4fc0cc3c"
+        },
+        "newBalance": {
+          "total": 17800,
+          "category": 2700,
+          "_id": "6a698a80efb77b6e4fc0cc3d"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "Dr Ramkrishan",
+        "bookingId": "6a698a80efb77b6e4fc0cc2e",
+        "notes": "Consultation fee (wallet portion) - Dr Ramkrishan",
+        "isReversed": false,
+        "createdAt": "2026-07-29T05:07:12.639Z"
+      },
+      {
+        "_id": "6a3924acf850e643fc792a7c",
+        "transactionId": "TXN-20260622-0181",
+        "type": "DEBIT",
+        "amount": 400,
+        "categoryCode": "CAT002",
+        "previousBalance": {
+          "total": 18500,
+          "category": 3000,
+          "_id": "6a3924acf850e643fc792a7d"
+        },
+        "newBalance": {
+          "total": 18100,
+          "category": 2600,
+          "_id": "6a3924acf850e643fc792a7e"
+        },
+        "serviceType": "CLAIM",
+        "serviceProvider": "Self Service",
+        "bookingId": "6a3924acf850e643fc792a68",
+        "notes": "Claim CLM-20260622-0001 (wallet portion) - PHARMACY - Self Service",
+        "isReversed": false,
+        "createdAt": "2026-06-22T12:03:56.154Z"
+      },
+      {
+        "_id": "6a3923c8f850e643fc7929db",
+        "transactionId": "TXN-20260622-0179",
+        "type": "DEBIT",
+        "amount": 300,
+        "categoryCode": "CAT005",
+        "previousBalance": {
+          "total": 18800,
+          "category": 2700,
+          "_id": "6a3923c8f850e643fc7929dc"
+        },
+        "newBalance": {
+          "total": 18500,
+          "category": 2400,
+          "_id": "6a3923c8f850e643fc7929dd"
+        },
+        "serviceType": "CONSULTATION",
+        "serviceProvider": "Dr Ramkrishan",
+        "bookingId": "6a3923c8f850e643fc7929ce",
+        "notes": "Consultation fee (wallet portion) - Dr Ramkrishan",
+        "isReversed": false,
+        "createdAt": "2026-06-22T12:00:08.845Z"
+      }
+    ],
+    "total": 15,
+    "limit": 15
+  }
+}

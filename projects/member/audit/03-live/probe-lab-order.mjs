@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const APP='http://localhost:4200';
+const b=await chromium.launch();
+const p=await (await b.newContext()).newPage();
+p.on('response',async r=>{const u=new URL(r.url()).pathname;if(u.startsWith('/api')&&r.request().method()!=='GET'){
+  console.log('NET',r.request().method(),u,r.status());
+  console.log('   req:',(r.request().postData()||'').slice(0,400));
+  console.log('   res:',(await r.text().catch(()=>'')).slice(0,400));}});
+await p.goto(APP+'/login',{waitUntil:'domcontentloaded'});await p.waitForLoadState('networkidle');
+await p.getByLabel(/email/i).fill('shivam@gmail.com');await p.getByLabel(/password/i).fill('12345678');
+await p.getByRole('button',{name:/sign in/i}).click();await p.waitForURL('**/member**',{timeout:20000});
+await p.goto(APP+'/member/lab-tests/cart/CART-1786253711175-DAWV92M4N/vendor/VENDOR-002',{waitUntil:'domcontentloaded'});
+await p.waitForLoadState('networkidle');await p.waitForTimeout(1500);
+console.log('--- FULL RENDER ---');
+console.log((await p.locator('#main, body').first().innerText()).replace(/\s+/g,' '));
+const slots=p.locator('button').filter({hasText:/\d{2}:\d{2}\s*[–-]\s*\d{2}:\d{2}/});
+console.log('slot buttons:',await slots.count());
+await slots.first().click().catch(()=>{});
+await p.waitForTimeout(1200);
+await p.getByRole('button',{name:/confirm booking/i}).first().click().catch(()=>{});
+await p.waitForTimeout(5000);
+console.log('--- AFTER CONFIRM --- url:',p.url());
+console.log((await p.locator('#main, body').first().innerText()).replace(/\s+/g,' ').slice(0,900));
+await b.close();

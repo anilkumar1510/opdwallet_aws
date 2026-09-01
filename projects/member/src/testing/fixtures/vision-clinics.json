@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "path": "vision-bookings/clinics?serviceCode=CONTACT_LENS_FITTING",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "clinics": [
+      {
+        "clinicId": "CLN00008",
+        "clinicName": "HCL Healthcare Noida Clinic ",
+        "address": {
+          "line1": "A-5, Coast Guard Office",
+          "city": "Noida",
+          "state": "UP",
+          "pincode": "201301",
+          "country": "India",
+          "_id": "69b8df8d5ba6e900c12de178"
+        },
+        "contactNumber": "2224562",
+        "servicePrice": 0,
+        "availableSlots": 120
+      }
+    ]
+  }
+}

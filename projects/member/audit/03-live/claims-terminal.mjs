@@ -1,0 +1,30 @@
+import { chromium } from 'playwright';
+const APP='http://localhost:4200';
+const D='C:/Users/singh/OneDrive/Desktop/opdwallet_aws/web-angular/projects/member/audit/03-live';
+const b=await chromium.launch();
+try{
+const p=await (await b.newContext()).newPage();
+const net=[];p.on('response',r=>{const u=new URL(r.url()).pathname;if(u.startsWith('/api'))net.push(`${r.request().method()} ${u} ${r.status()}`);});
+await p.goto(APP+'/login',{waitUntil:'domcontentloaded'});
+await p.getByLabel(/email/i).fill('shivam@gmail.com');
+await p.getByLabel(/password/i).fill('12345678');
+await p.getByRole('button',{name:/sign in/i}).click();
+await p.waitForURL('**/member**',{timeout:20000});
+await p.goto(APP+'/member/claims/new',{waitUntil:'domcontentloaded'});
+await p.waitForLoadState('networkidle');await p.waitForTimeout(1200);
+await p.selectOption('select[name=category]',{index:1}).catch(()=>{});
+await p.fill('input[name=treatmentDate]','2026-08-01');
+await p.fill('input[name=provider]','Audit Terminal Check');
+await p.fill('input[name=billAmount]','50');
+await p.locator('#doc-prescription').setInputFiles(D+'/presc.pdf');
+await p.locator('#doc-bill').setInputFiles(D+'/bill.pdf');
+await p.waitForTimeout(500);
+net.length=0;
+await p.getByRole('button',{name:/submit claim/i}).click();
+await p.waitForTimeout(4000);
+console.log('url after submit :', p.url().replace(APP,''));
+console.log('API calls        :', net.join(' | ')||'(none)');
+const t=(await p.locator('body').innerText()).replace(/\s+/g,' ');
+console.log('claim visible in list?', /Audit Terminal Check|CLM/i.test(t));
+console.log('list text        :', t.slice(t.indexOf('Claims'), t.indexOf('Claims')+180));
+} finally { await b.close(); }

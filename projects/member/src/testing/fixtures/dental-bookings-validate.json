@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "path": "dental-bookings/validate",
+    "status": 201,
+    "account": "shivam"
+  },
+  "body": {
+    "valid": false,
+    "breakdown": null,
+    "warnings": [
+      "Cast to ObjectId failed for value \"SLOT-UNKNOWN\" (type string) at path \"_id\" for model \"DentalServiceSlot\""
+    ]
+  }
+}

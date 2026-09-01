@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "path": "member/lab/vendors/VENDOR-002/slots?pincode=201307&date=2026-06-25",
+    "status": 200,
+    "account": "all"
+  },
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "_id": "6a33d7034e45325c5a7c0254",
+        "slotId": "SLOT-1781782275513-PUYTSI83Q",
+        "vendorId": "693d78a650b1a7f6df869999",
+        "pincode": "201307",
+        "date": "2026-06-25",
+        "timeSlot": "MORNING",
+        "startTime": "08:00",
+        "endTime": "12:00",
+        "maxBookings": 5,
+        "currentBookings": 0,
+        "isActive": true,
+        "createdAt": "2026-06-18T11:31:15.513Z",
+        "updatedAt": "2026-06-18T11:31:15.513Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a33d7034e45325c5a7c0257",
+        "slotId": "SLOT-1781782275517-2EF4B5WMT",
+        "vendorId": "693d78a650b1a7f6df869999",
+        "pincode": "201307",
+        "date": "2026-06-25",
+        "timeSlot": "AFTERNOON",
+        "startTime": "12:00",
+        "endTime": "16:00",
+        "maxBookings": 5,
+        "currentBookings": 0,
+        "isActive": true,
+        "createdAt": "2026-06-18T11:31:15.517Z",
+        "updatedAt": "2026-06-18T11:31:15.517Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a33d7034e45325c5a7c025a",
+        "slotId": "SLOT-1781782275523-Y1VYKXBEQ",
+        "vendorId": "693d78a650b1a7f6df869999",
+        "pincode": "201307",
+        "date": "2026-06-25",
+        "timeSlot": "EVENING",
+        "startTime": "16:00",
+        "endTime": "20:00",
+        "maxBookings": 5,
+        "currentBookings": 0,
+        "isActive": true,
+        "createdAt": "2026-06-18T11:31:15.523Z",
+        "updatedAt": "2026-06-18T11:31:15.523Z",
+        "__v": 0
+      }
+    ]
+  }
+}

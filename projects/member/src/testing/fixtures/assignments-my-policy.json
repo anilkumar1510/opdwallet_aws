@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "path": "assignments/my-policy",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "policyId": {
+      "_id": "6a34ca5c4e45325c5a7c06e7",
+      "policyNumber": "POL-2026-0008",
+      "name": "HCL Healthcare OPD Plan 2026-27",
+      "description": "Valid for 2026-27",
+      "status": "ACTIVE",
+      "effectiveFrom": "2026-06-18T00:00:00.000Z",
+      "effectiveTo": "2027-06-30T00:00:00.000Z"
+    },
+    "assignmentId": "ASG-1781845303547-YDHZH",
+    "effectiveFrom": "2026-06-19T00:00:00.000Z",
+    "effectiveTo": "2027-06-16T00:00:00.000Z",
+    "copay": {
+      "percentage": 20,
+      "mode": "PERCENT",
+      "value": 20
+    },
+    "copaySource": "Global wallet config",
+    "walletEnabled": true,
+    "planConfig": {
+      "copay": {
+        "percentage": 20,
+        "mode": "PERCENT",
+        "value": 20
+      },
+      "wallet": {
+        "allocationType": "INDIVIDUAL",
+        "totalAnnualAmount": 20000,
+        "perClaimLimit": 0,
+        "copay": {
+          "mode": "PERCENT",
+          "value": 20
+        },
+        "partialPaymentEnabled": false,
+        "carryForward": {
+          "enabled": false,
+          "percent": 0,
+          "months": 0
+        },
+        "topUpAllowed": false
+      },
+      "version": 1
+    }
+  }
+}

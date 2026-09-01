@@ -1,0 +1,11 @@
+{
+  "_meta": {
+    "path": "member/claims/CLM-20260805-0001/tpa-notes",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "claimId": "CLM-20260805-0001",
+    "notes": []
+  }
+}

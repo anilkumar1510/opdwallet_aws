@@ -1,0 +1,59 @@
+{
+  "_meta": {
+    "path": "member/diagnostics/prescriptions",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "_id": "6a744f40f88ca3fd52227739",
+        "prescriptionId": "DIAG-RX-1786007360488-ZWLYJP5V2",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "patientId": "USR-2026-0035",
+        "patientName": "Shivam  Jha",
+        "patientRelationship": "SELF",
+        "prescriptionDate": "2026-08-05T00:00:00.000Z",
+        "addressId": "6a3922d0f850e643fc79289f",
+        "pincode": "201301",
+        "source": "UPLOAD",
+        "fileName": "4926ced827e123692be4b10e5490ed544.pdf",
+        "originalName": "Policy_POL-2026-0008_2026-07-27.pdf",
+        "fileType": "application/pdf",
+        "fileSize": 20141,
+        "filePath": "uploads\\diagnostic-prescriptions\\4926ced827e123692be4b10e5490ed544.pdf",
+        "uploadedAt": "2026-08-06T09:09:20.488Z",
+        "status": "UPLOADED",
+        "createdAt": "2026-08-06T09:09:20.490Z",
+        "updatedAt": "2026-08-06T09:09:20.490Z",
+        "__v": 0
+      },
+      {
+        "_id": "6a3922d5f850e643fc7928a2",
+        "prescriptionId": "DIAG-RX-1782129365407-BOY8T6TZF",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "patientId": "6a34c98e4e45325c5a7c06b5",
+        "patientName": "Shivam  Jha",
+        "patientRelationship": "SELF",
+        "prescriptionDate": "2026-06-15T00:00:00.000Z",
+        "addressId": "6a3922d0f850e643fc79289f",
+        "pincode": "201301",
+        "source": "UPLOAD",
+        "fileName": "48bf29921dfadfab03101792c8989b2fe.pdf",
+        "originalName": "HealthBridge_SOW_PwC.pdf",
+        "fileType": "application/pdf",
+        "fileSize": 53624,
+        "filePath": "uploads/diagnostic-prescriptions/48bf29921dfadfab03101792c8989b2fe.pdf",
+        "uploadedAt": "2026-06-22T11:56:05.407Z",
+        "status": "DIGITIZED",
+        "createdAt": "2026-06-22T11:56:05.408Z",
+        "updatedAt": "2026-06-22T11:57:11.255Z",
+        "__v": 0,
+        "digitizedAt": "2026-06-22T11:57:11.223Z",
+        "digitizedBy": "6979a285aef224daaa1f4366",
+        "cartId": "6a392317f850e643fc7928c1"
+      }
+    ]
+  }
+}

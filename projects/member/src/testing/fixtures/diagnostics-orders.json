@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "path": "member/diagnostics/orders",
+    "status": 200,
+    "account": "shivam"
+  },
+  "body": {
+    "success": true,
+    "data": [
+      {
+        "_id": "6a392360f850e643fc792907",
+        "orderId": "DIAG-ORD-1782129504669-XF1CC92BQ",
+        "userId": "6a34c98e4e45325c5a7c06b5",
+        "cartId": "6a392317f850e643fc7928c1",
+        "prescriptionId": "6a3922d5f850e643fc7928a2",
+        "vendorId": "6979a368aef224daaa1f44a4",
+        "vendorName": "HCL ",
+        "items": [
+          {
+            "serviceId": "6979a37aaef224daaa1f44ae",
+            "serviceName": "CT Scan",
+            "serviceCode": "CT SCAN",
+            "category": "RADIOLOGY",
+            "actualPrice": 1000,
+            "discountedPrice": 800
+          }
+        ],
+        "status": "PLACED",
+        "collectionType": "CENTER_VISIT",
+        "appointmentDate": "2026-06-22",
+        "appointmentTime": "MORNING",
+        "slotId": "6a34c8b84e45325c5a7c059b",
+        "totalActualPrice": 1000,
+        "totalDiscountedPrice": 800,
+        "homeCollectionCharges": 0,
+        "finalAmount": 800,
+        "copayAmount": 160,
+        "serviceLimitDeduction": 500,
+        "walletDeduction": 500,
+        "finalPayable": 300,
+        "paymentStatus": "COMPLETED",
+        "paymentDate": "2026-06-22T11:58:24.710Z",
+        "reports": [],
+        "placedAt": "2026-06-22T11:58:24.710Z",
+        "createdAt": "2026-06-22T11:58:24.712Z",
+        "updatedAt": "2026-06-22T11:58:24.763Z",
+        "__v": 0,
+        "transactionId": "6a392360f850e643fc792919"
+      }
+    ]
+  }
+}
