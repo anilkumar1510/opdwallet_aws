@@ -154,6 +154,11 @@ export class AuthService {
         name: user.name,
         role: user.role,
         memberId: user.memberId,
+        // Portals decide primary-vs-dependent from this code, which gates the
+        // family policy list and the member switcher. Omitting it made a
+        // primary member look like a dependent until /auth/me was called.
+        relationship: user.relationship,
+        uhid: user.uhid,
         mustChangePassword: user.mustChangePassword,
       },
       token,
