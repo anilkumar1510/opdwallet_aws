@@ -171,6 +171,11 @@ export class MemberClaimsService {
 
     // Filter and enrich categories
     const benefits = planConfig.benefits as any; // Type assertion to allow dynamic indexing
+    // Co-payment is configured once at the wallet level and applies to every
+    // category. Surfaced here so the member claim form can show the real
+    // co-payment (and per-service transaction limits) in its cost breakdown.
+    const wallet = (planConfig as any).wallet || {};
+    const copay = wallet.copay || null;
     const availableCategories = PREDEFINED_CATEGORIES
       .filter(category => {
         const benefitKey = category.categoryId;
@@ -191,6 +196,11 @@ export class MemberClaimsService {
           claimCategory: REVERSE_CATEGORY_MAP[category.categoryId],
           annualLimit: benefit.annualLimit || null,
           perClaimLimit: benefit.perClaimLimit || null,
+          // Wallet-level co-payment ({ mode: 'PERCENT'|'FLAT', value }) and the
+          // per-service transaction limits for this category, so the claim form
+          // shows the member's real cost breakdown instead of placeholders.
+          copay: copay ? { mode: copay.mode, value: copay.value } : null,
+          serviceTransactionLimits: benefit.serviceTransactionLimits || null,
           enabled: benefit.enabled,
           claimEnabled: benefit.claimEnabled,
           displayOrder: category.displayOrder,

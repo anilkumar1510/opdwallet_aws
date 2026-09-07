@@ -137,6 +137,10 @@ export interface ClaimCategoryDto {
   perClaimLimit?: number;
   annualLimit?: number;
   claimEnabled?: boolean;
+  /** Wallet-level co-payment, applied to every category. */
+  copay?: { mode?: string; value?: number } | null;
+  /** Per-service transaction limits, keyed by service/specialty/lab code. */
+  serviceTransactionLimits?: Record<string, number> | null;
 }
 
 export interface ClaimCategory {
@@ -145,6 +149,15 @@ export interface ClaimCategory {
   /** The value the create endpoint expects in `category`. */
   readonly claimCategory: string;
   readonly perClaimLimit: number;
+  /** Real co-payment from the plan config, or null when the API omits it. */
+  readonly copayMode: 'PERCENT' | 'FLAT' | null;
+  readonly copayValue: number | null;
+  /**
+   * The binding per-transaction cap for this category, taken as the smallest of
+   * the per-service limits (the claim does not name a service, so the most
+   * restrictive one is used). Null when none configured.
+   */
+  readonly perTransactionLimit: number | null;
   /**
    * True for a category the member's plan does NOT actually have configured,
    * injected so the whole claim flow can be tested against every category. The
@@ -155,11 +168,19 @@ export interface ClaimCategory {
 }
 
 export function toClaimCategory(dto: ClaimCategoryDto, index: number): ClaimCategory {
+  const mode = dto.copay?.mode?.trim().toUpperCase();
+  const copayMode = mode === 'PERCENT' || mode === 'FLAT' ? mode : null;
+  const limits = dto.serviceTransactionLimits
+    ? Object.values(dto.serviceTransactionLimits).filter((v) => typeof v === 'number' && v > 0)
+    : [];
   return {
     id: dto.categoryId ?? dto.categoryCode ?? String(index),
     name: dto.name?.trim() || 'Category',
     claimCategory: dto.claimCategory ?? dto.categoryCode ?? '',
     perClaimLimit: dto.perClaimLimit ?? 0,
+    copayMode,
+    copayValue: copayMode && typeof dto.copay?.value === 'number' ? dto.copay!.value : null,
+    perTransactionLimit: limits.length ? Math.min(...limits) : null,
     isPlaceholder: false,
   };
 }
@@ -170,15 +191,29 @@ export function toClaimCategory(dto: ClaimCategoryDto, index: number): ClaimCate
  * the category-master codes (`core/domain/codes.ts`). PLACEHOLDER — remove, or
  * gate behind a test flag, once real plans carry the full set.
  */
+function placeholderCategory(code: string, name: string): ClaimCategory {
+  // No real limits/copay — the estimate falls back to placeholder policy rules.
+  return {
+    id: code,
+    name,
+    claimCategory: code,
+    perClaimLimit: 0,
+    copayMode: null,
+    copayValue: null,
+    perTransactionLimit: null,
+    isPlaceholder: true,
+  };
+}
+
 export const CANONICAL_CLAIM_CATEGORIES: readonly ClaimCategory[] = [
-  { id: 'CAT001', name: 'In-Clinic / Offline Consultation', claimCategory: 'CAT001', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT005', name: 'Teleconsultation', claimCategory: 'CAT005', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT002', name: 'Pharmacy', claimCategory: 'CAT002', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT004', name: 'Pathology (Labs)', claimCategory: 'CAT004', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT003', name: 'Radiology & Cardiology', claimCategory: 'CAT003', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT007', name: 'Vision Care', claimCategory: 'CAT007', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT006', name: 'Dental Services', claimCategory: 'CAT006', perClaimLimit: 0, isPlaceholder: true },
-  { id: 'CAT009', name: 'Vaccination', claimCategory: 'CAT009', perClaimLimit: 0, isPlaceholder: true },
+  placeholderCategory('CAT001', 'In-Clinic / Offline Consultation'),
+  placeholderCategory('CAT005', 'Teleconsultation'),
+  placeholderCategory('CAT002', 'Pharmacy'),
+  placeholderCategory('CAT004', 'Pathology (Labs)'),
+  placeholderCategory('CAT003', 'Radiology & Cardiology'),
+  placeholderCategory('CAT007', 'Vision Care'),
+  placeholderCategory('CAT006', 'Dental Services'),
+  placeholderCategory('CAT009', 'Vaccination'),
 ];
 
 /**
