@@ -1,4 +1,4 @@
-import { toDate } from '../domain/codes';
+import { BenefitCategory, toBenefitCategory, toDate } from '../domain/codes';
 import { money } from '../domain/money';
 import { ClaimDto, ClaimsSummaryDto } from './claim.dto';
 import { Claim, ClaimStatus, ClaimsSummary, StatusTone } from './claim.model';
@@ -77,7 +77,7 @@ const RESUBMIT_TYPES = [
   'image/webp',
   'application/pdf',
 ];
-const RESUBMIT_MAX_BYTES = 15 * 1024 * 1024;
+const RESUBMIT_MAX_BYTES = 5 * 1024 * 1024;
 export const RESUBMIT_MAX_FILES = 10;
 
 export function validateResubmitFile(file: File): string | null {
@@ -85,7 +85,7 @@ export function validateResubmitFile(file: File): string | null {
     return 'send a PDF or a photo (JPG, PNG, GIF or WebP).';
   }
   if (file.size > RESUBMIT_MAX_BYTES) {
-    return 'that file is larger than 15 MB. Try a smaller scan or photo.';
+    return 'that file is larger than 5 MB. Try a smaller scan or photo.';
   }
   return null;
 }
@@ -145,6 +145,13 @@ export interface ClaimCategory {
   /** The value the create endpoint expects in `category`. */
   readonly claimCategory: string;
   readonly perClaimLimit: number;
+  /**
+   * True for a category the member's plan does NOT actually have configured,
+   * injected so the whole claim flow can be tested against every category. The
+   * form marks these and skips the balance gate — there is no wallet bucket
+   * behind a placeholder. Real submissions of one would be rejected server-side.
+   */
+  readonly isPlaceholder?: boolean;
 }
 
 export function toClaimCategory(dto: ClaimCategoryDto, index: number): ClaimCategory {
@@ -153,7 +160,49 @@ export function toClaimCategory(dto: ClaimCategoryDto, index: number): ClaimCate
     name: dto.name?.trim() || 'Category',
     claimCategory: dto.claimCategory ?? dto.categoryCode ?? '',
     perClaimLimit: dto.perClaimLimit ?? 0,
+    isPlaceholder: false,
   };
+}
+
+/**
+ * Every claim category in the patient-flows matrix, used to fill in the ones a
+ * member's plan has not configured so the flow is testable end to end. Keyed to
+ * the category-master codes (`core/domain/codes.ts`). PLACEHOLDER — remove, or
+ * gate behind a test flag, once real plans carry the full set.
+ */
+export const CANONICAL_CLAIM_CATEGORIES: readonly ClaimCategory[] = [
+  { id: 'CAT001', name: 'In-Clinic / Offline Consultation', claimCategory: 'CAT001', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT005', name: 'Teleconsultation', claimCategory: 'CAT005', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT002', name: 'Pharmacy', claimCategory: 'CAT002', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT004', name: 'Pathology (Labs)', claimCategory: 'CAT004', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT003', name: 'Radiology & Cardiology', claimCategory: 'CAT003', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT007', name: 'Vision Care', claimCategory: 'CAT007', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT006', name: 'Dental Services', claimCategory: 'CAT006', perClaimLimit: 0, isPlaceholder: true },
+  { id: 'CAT009', name: 'Vaccination', claimCategory: 'CAT009', perClaimLimit: 0, isPlaceholder: true },
+];
+
+/**
+ * The plan's real categories first, then a placeholder for every canonical
+ * category the plan is missing. Matched on the NORMALISED benefit identity, not
+ * the raw code — the API sends benefit-name codes (e.g. IN_CLINIC_CONSULTATION)
+ * while placeholders are keyed to CAT0xx, and both resolve to the same
+ * `BenefitCategory`. Without this every real category was duplicated by its
+ * placeholder (In-Clinic Consultation vs "In-Clinic / Offline (test)"), since
+ * those name the same benefit. Only genuinely-absent benefits (e.g. Vaccination)
+ * survive as a placeholder.
+ */
+export function withPlaceholderCategories(
+  configured: readonly ClaimCategory[],
+): readonly ClaimCategory[] {
+  const present = new Set<BenefitCategory>(
+    configured
+      .map((c) => toBenefitCategory(c.claimCategory || c.id))
+      .filter((benefit) => benefit !== BenefitCategory.Unknown),
+  );
+  const fillers = CANONICAL_CLAIM_CATEGORIES.filter(
+    (c) => !present.has(toBenefitCategory(c.claimCategory)),
+  );
+  return [...configured, ...fillers];
 }
 
 /** Fields POST member/claims expects, sent as multipart. */

@@ -6,6 +6,7 @@ import { formatMoney, money } from '../domain/money';
 import { FamilyStore } from '../family/family.store';
 import { AppError, appError, isAppError } from '../http/app-error';
 import { SessionStore } from '../session/session.store';
+import { WalletStore } from '../wallet/wallet.store';
 import { ClaimDto, ClaimsResponseDto, ClaimsSummaryDto } from './claim.dto';
 import {
   CLAIMS_API,
@@ -23,6 +24,7 @@ import {
   toClaimFormData,
   toClaimsSummary,
   toResubmitFormData,
+  withPlaceholderCategories,
   ResubmitDocumentType,
 } from './claim.mapper';
 import { Claim, ClaimsSummary } from './claim.model';
@@ -35,6 +37,7 @@ export class ClaimsStore {
   private readonly http = inject(HttpClient);
   private readonly family = inject(FamilyStore);
   private readonly session = inject(SessionStore);
+  private readonly wallet = inject(WalletStore);
 
   private readonly _claims = signal<readonly Claim[]>([]);
   private readonly _summary = signal<ClaimsSummary | null>(null);
@@ -73,15 +76,23 @@ export class ClaimsStore {
     if (activeId) void this.load(activeId);
   }
 
-  /** Claim categories the member's plan allows. Empty on failure. */
+  /**
+   * Claim categories for the form: the plan's configured ones, then a
+   * PLACEHOLDER for every canonical category the plan is missing so the flow can
+   * be tested against all of them. If the API call fails the member still gets
+   * the full placeholder set rather than an empty dropdown.
+   */
   async categories(): Promise<readonly ClaimCategory[]> {
     try {
       const rows = await firstValueFrom(
         this.http.get<ClaimCategoryDto[]>(CLAIMS_API.availableCategories),
       );
-      return (rows ?? []).filter((row) => row.claimEnabled !== false).map(toClaimCategory);
+      const configured = (rows ?? [])
+        .filter((row) => row.claimEnabled !== false)
+        .map(toClaimCategory);
+      return withPlaceholderCategories(configured);
     } catch {
-      return [];
+      return withPlaceholderCategories([]);
     }
   }
 
@@ -142,6 +153,8 @@ export class ClaimsStore {
         this.loadedFor = activeId;
         void this.load(activeId);
       }
+      // Cancelling releases the wallet block; reload so the balance returns.
+      this.wallet.retry();
       return true;
     } catch (error: unknown) {
       this._submitError.set(
@@ -247,6 +260,10 @@ export class ClaimsStore {
         this.loadedFor = activeId;
         void this.load(activeId);
       }
+      // Submit blocks/debits the wallet server-side; reload it so the reduced
+      // balance shows without a manual refresh. No effect on a placeholder
+      // category, which has no wallet bucket.
+      this.wallet.retry();
       return mongoId;
     } catch (error: unknown) {
       this._submitError.set(
