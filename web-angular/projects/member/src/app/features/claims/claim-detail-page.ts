@@ -11,6 +11,7 @@ import {
 } from '../../core/claims/claim.mapper';
 import { ClaimDocument } from '../../core/claims/claim.model';
 import { ClaimsStore } from '../../core/claims/claims.store';
+import { BankDetailsStore } from '../../core/member/bank-details.store';
 import { formatMoney } from '../../core/domain/money';
 import { EmptyView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
@@ -96,6 +97,45 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
               }
             </dl>
           </section>
+
+          <!-- Payment / credit. Shown once the claim reaches a payout stage.
+               PLACEHOLDER — the claim payload carries no payment fields yet
+               (paymentStatus/paymentId/transactionId/paymentDate/
+               paymentReferenceNumber/paymentMode). See PLACEHOLDER-APIS.md. -->
+          @if (isPaymentStage(detail.statusCode)) {
+            <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+              <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">Payment</h2>
+              <dl class="space-y-2 text-sm">
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Status</dt>
+                  <dd class="font-medium text-ink-900">{{ detail.status.label }}</dd>
+                </div>
+                @if (detail.approvedAmount; as approved) {
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Amount credited</dt>
+                    <dd class="font-medium text-success-700">{{ money(approved) }}</dd>
+                  </div>
+                }
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Paid to</dt>
+                  <dd class="font-medium text-ink-900">
+                    {{ bank.hasDetails() ? bank.maskedAccount() : 'Bank account on file' }}
+                  </dd>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Payment reference</dt>
+                  <dd class="text-ink-500">Awaiting payout details</dd>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Credited on</dt>
+                  <dd class="text-ink-500">Awaiting payout details</dd>
+                </div>
+              </dl>
+              <p class="mt-3 text-xs text-warning-700">
+                Payment reference and date will appear once the payout details are available.
+              </p>
+            </section>
+          }
 
           @if (detail.documentCount) {
             <!-- This used to be the COUNT and nothing else: "3 documents submitted
@@ -317,9 +357,21 @@ export class ClaimDetailPage {
   readonly claimId = input<string>('');
 
   protected readonly store = inject(ClaimsStore);
+  protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   protected readonly money = formatMoney;
+
+  /** Payout-stage statuses that surface the (placeholder) Payment section. */
+  private static readonly PAYMENT_STAGES = new Set([
+    'PAYMENT_PENDING',
+    'PAYMENT_PROCESSING',
+    'PAYMENT_COMPLETED',
+    'PAID',
+  ]);
+  protected isPaymentStage(statusCode: string): boolean {
+    return ClaimDetailPage.PAYMENT_STAGES.has(statusCode);
+  }
 
   protected readonly confirming = signal(false);
   protected readonly downloading = signal<string | null>(null);
