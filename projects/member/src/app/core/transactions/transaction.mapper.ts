@@ -50,6 +50,8 @@ export interface Payment {
   readonly methodLabel: string;
   readonly description: string | null;
   readonly serviceReference: string | null;
+  /** Which service line raised it, so a screen can offer that line's next step. */
+  readonly serviceTypeCode: string;
   readonly status: ClaimStatus;
   readonly paidAt: Date | null;
 }
@@ -63,6 +65,7 @@ export function toPayment(dto: PaymentDto): Payment {
     methodLabel: humanise(dto.paymentMethod, 'Not recorded'),
     description: dto.description?.trim() || null,
     serviceReference: dto.serviceReferenceId?.trim() || null,
+    serviceTypeCode: dto.serviceType?.trim().toUpperCase() ?? '',
     status: toStatus(dto.status),
     paidAt: toDate(dto.paidAt ?? dto.createdAt),
   };

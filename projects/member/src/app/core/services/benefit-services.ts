@@ -82,3 +82,28 @@ export function bookingPath(category: BenefitCategory, serviceCode: string): str
       : '/member/dental/clinics';
   return `${base}?serviceCode=${encodeURIComponent(serviceCode)}`;
 }
+
+/**
+ * The one dental service a member can book directly: the consultation.
+ *
+ * Flow 4 books a VISIT, not a treatment. A filling or an X-ray is only reached
+ * the way steps 15 to 21 describe — the dentist sees you, writes a
+ * prescription, you send the estimate, and it is adjudicated before anything is
+ * charged. Offering those as things to book up front invites a member to buy a
+ * treatment nobody has examined them for, and there is no adjudication on that
+ * path to stop them.
+ *
+ * Matched on the code rather than pinned to DENTAL_CHECKUP, because the covered
+ * list comes from the plan and another plan may name its consultation
+ * differently. If nothing matches, the first service stands in: booking the
+ * wrong service is recoverable, a dental card that books nothing is not.
+ */
+export function consultationService(
+  services: readonly BenefitService[],
+): BenefitService | null {
+  if (!services.length) return null;
+  return (
+    services.find((service) => /CHECKUP|CONSULT|EXAM/.test(service.code.toUpperCase())) ??
+    services[0]
+  );
+}

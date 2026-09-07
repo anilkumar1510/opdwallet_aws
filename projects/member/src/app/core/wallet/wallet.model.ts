@@ -19,6 +19,17 @@ export interface WalletCategoryBalance {
   readonly consumed: Money;
   readonly isUnlimited: boolean;
   readonly isExhausted: boolean;
+  /**
+   * The cap this benefit renews against each policy year, from plan config.
+   * Distinct from `allocated`, which is what this member's wallet was given —
+   * they are usually equal and are not the same thing.
+   *
+   * Null when the plan carries no configured limit for the category, which is
+   * why the screens test for null instead of rendering a confident zero.
+   */
+  readonly annualLimit: Money | null;
+  /** The most that can be spent in one transaction, when the plan caps it. */
+  readonly perClaimLimit: Money | null;
 }
 
 export interface FamilyConsumption {

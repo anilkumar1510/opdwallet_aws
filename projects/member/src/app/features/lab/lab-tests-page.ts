@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { formatMoney } from '../../core/domain/money';
 import { LabKind, LabPrescription } from '../../core/lab/lab.model';
 import { LabStore } from '../../core/lab/lab.store';
+import { CONCERNS } from '../../core/diagnostics-flow/diagnostics-flow';
 import { PrescriptionSelector } from './prescription-selector';
 import { WalletStore } from '../../core/wallet/wallet.store';
 import { Icon } from '../../shared/ui/icon';
@@ -91,6 +92,26 @@ const COVERED_TESTS: readonly string[] = [
                 >
                   Use a saved one
                 </button>
+              </div>
+
+              <!--
+                Flow 7 steps 1 and 2: the card opens on health concerns, not on
+                an upload box. Shown above the prescription options rather than
+                as a footnote under them — the sheet has no prescription in this
+                journey at all, and this is the entrance it describes.
+              -->
+              <div class="mt-5 border-t border-surface-border pt-4">
+                <p class="text-sm font-medium text-ink-900">Or start from what you are checking on</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  @for (concern of concerns; track concern.id) {
+                    <a
+                      [routerLink]="['/member', kind() === 'LAB' ? 'pathology' : 'radiology', 'flow']"
+                      [queryParams]="{ concern: concern.id }"
+                      class="inline-flex min-h-touch items-center rounded-xl border border-surface-border px-4 text-sm font-semibold text-ink-900 hover:border-[#0F5FDC] hover:bg-surface-sunk"
+                      >{{ concern.label }}</a
+                    >
+                  }
+                </div>
               </div>
 
               <opd-prescription-selector #selector [kind]="kind()" />
@@ -387,6 +408,9 @@ const COVERED_TESTS: readonly string[] = [
   `,
 })
 export class LabTestsPage {
+  /** Flow 7 step 2's tabs, on the card itself so it is the first screen. */
+  protected readonly concerns = CONCERNS;
+
   /** 'LAB' or 'DIAGNOSTIC', supplied by the route's data. */
   readonly kind = input<LabKind>(LabKind.Lab);
 

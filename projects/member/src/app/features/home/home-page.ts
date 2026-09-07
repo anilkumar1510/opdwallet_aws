@@ -131,7 +131,15 @@ const CATEGORY_SCREENS: Readonly<Partial<Record<BenefitCategory, string>>> = {
   [BenefitCategory.Dental]: '/member/dental',
   // Specialty -> doctor journeys.
   [BenefitCategory.InClinicConsultation]: '/member/appointments/specialties',
-  [BenefitCategory.OnlineConsultation]: '/member/online-consult/specialties',
+  /*
+   * The hub, not the specialties list.
+   *
+   * This card could only ever START a booking, even when a confirmed call was
+   * minutes away — and the hub carrying the Join call button had no inbound
+   * link at all. The hub leads with Book Consultation, so nothing is lost for
+   * a member who wants a new one.
+   */
+  [BenefitCategory.OnlineConsultation]: '/member/online-consult',
   // Vaccine-then-vendor journey, same shape as vision/dental's pick-a-clinic flow.
   [BenefitCategory.Vaccination]: '/member/vaccination',
   // Search-and-cart journey — previously had no card destination at all,

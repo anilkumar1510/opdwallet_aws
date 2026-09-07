@@ -44,6 +44,17 @@
   --color-success-700: #15803d;
   --color-danger: #ef4444;
   --color-danger-50: #fef2f2;
+  /*
+   * Only -50 and -700 existed, but bg-danger-600 is used on four screens for
+   * destructive confirmations - withdraw a claim, cancel an order, cancel a
+   * coupon, end a consultation. An undefined token produces NO background, so
+   * those were white text on a white card: present, clickable, invisible. The
+   * claims one has been shipped that way.
+   *
+   * Defined here rather than rewriting ten call sites, so any future
+   * bg-danger-600 also works.
+   */
+  --color-danger-600: #dc2626;
   --color-danger-700: #b91c1c;
   --color-warning: #f59e0b;
   --color-warning-50: #fffbeb;

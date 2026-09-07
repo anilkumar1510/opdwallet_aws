@@ -8,7 +8,24 @@ import { formatMoney } from '../../core/domain/money';
 import { ProfileStore } from '../../core/member/profile.store';
 import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 
-/** Step 1: clinics offering the chosen service. */
+/**
+ * Flow 4 step 2 — compare dentists.
+ *
+ * The sheet wants a comparison as the entry point, on four dimensions: fees,
+ * availability, experience and distance. Two of them exist. The clinics
+ * endpoint returns clinicId, clinicName, address, contactNumber, servicePrice
+ * and availableSlots — no dentist, and no coordinates.
+ *
+ * So this compares what it can and NAMES the two it cannot, rather than
+ * quietly showing a two-column comparison as though that were the whole thing.
+ * "Not recorded" and "Not available" are different claims on purpose: one needs
+ * a dentist to exist in the model, the other needs the endpoint to accept a
+ * location it already knows how to use elsewhere.
+ *
+ * It is also still reached from a service picker rather than being the entry
+ * point itself, because a fee is per service — there is nothing to compare
+ * until a service is chosen.
+ */
 @Component({
   selector: 'opd-clinics-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,6 +92,44 @@ import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
                     <p class="text-xl font-bold text-[#0B2C63]">{{ money(clinic.servicePrice) }}</p>
                   }
                 </div>
+
+                <!--
+                  Flow 4 step 2 — "Fees, availability, experience and distance
+                  are compared side by side."
+
+                  Two of the four are real. The other two are shown as gaps
+                  rather than left out, because a comparison silently missing
+                  half its dimensions reads as a complete one:
+
+                    experience — dental has no dentist record at all. The
+                      booking stores a clinic and nothing else, which is the
+                      same gap that stops step 24's "same dentist" rule working.
+                    distance   — never requested. The API can measure it (it
+                      does for flow 2's doctor list) but the dental clinics
+                      endpoint neither takes a location nor returns one.
+                -->
+                <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-surface-border pt-4 text-sm sm:grid-cols-4">
+                  <div>
+                    <dt class="text-xs text-ink-500">Fee</dt>
+                    <dd class="font-semibold text-ink-900">
+                      {{ clinic.servicePrice.amount > 0 ? money(clinic.servicePrice) : 'Not priced' }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs text-ink-500">Availability</dt>
+                    <dd class="font-semibold text-ink-900">
+                      {{ clinic.availableSlots }} slot{{ clinic.availableSlots === 1 ? '' : 's' }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs text-ink-500">Experience</dt>
+                    <dd class="font-medium text-ink-500">Not recorded</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs text-ink-500">Distance</dt>
+                    <dd class="font-medium text-ink-500">Not available</dd>
+                  </div>
+                </dl>
 
                 <a
                   [routerLink]="['/member', basePath(), 'select-patient']"

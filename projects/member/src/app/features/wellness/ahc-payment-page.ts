@@ -210,17 +210,26 @@ export class AhcPaymentPage {
     }
     this.blockedReason.set(null);
 
-    const placed = await this.store.place({
-      packageId: pkg.id,
-      collectionAddress: {
-        fullName: member.fullName,
-        phone: member.phone ?? '',
-        addressLine1: line1,
-        pincode: address.pincode,
-        city: address.city,
-        state: address.state,
-      },
-    });
+    /*
+     * Radiology after pathology ADDS a leg to the check that already exists.
+     * Placing a second order would be refused — the annual health check is once
+     * a year — so this route was offered on screen and could never complete.
+     */
+    const existing = this.store.booked().orderId;
+    const placed =
+      this.store.route() === 'RADIOLOGY' && existing
+        ? await this.store.attachDiagnostic(existing)
+        : await this.store.place({
+            packageId: pkg.id,
+            collectionAddress: {
+              fullName: member.fullName,
+              phone: member.phone ?? '',
+              addressLine1: line1,
+              pincode: address.pincode,
+              city: address.city,
+              state: address.state,
+            },
+          });
     if (!placed) return;
     this.store.clearBooking();
     // The wellness screen greys its options off this.

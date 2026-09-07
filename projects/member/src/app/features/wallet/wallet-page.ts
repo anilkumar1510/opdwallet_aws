@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { formatMoney } from '../../core/domain/money';
 import { FamilyStore } from '../../core/family/family.store';
@@ -12,7 +13,7 @@ import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 @Component({
   selector: 'opd-wallet-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LoadingView, ErrorView, EmptyView, BackLink, WalletLedger, PageHeader],
+  imports: [RouterLink, LoadingView, ErrorView, EmptyView, BackLink, WalletLedger, PageHeader],
   template: `
     <opd-page-header title="Wallet" [subtitle]="store.memberName()" />
 
@@ -111,6 +112,19 @@ import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
                   </li>
                 }
               </ul>
+
+              <!--
+                Every benefit above is this member's own. The plan can be set to
+                FLOATER, which shares one pot across the family, but that is a
+                plan-wide switch with no per-benefit form — so rather than a
+                badge on a card that could never be true for one benefit alone,
+                the whole list carries one honest line.
+              -->
+              <a
+                routerLink="/member/wallet/shared-cover"
+                class="mt-3 block text-sm text-ink-500 underline hover:text-ink-700"
+                >Is any of this shared with my family?</a
+              >
             </section>
           }
 

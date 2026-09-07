@@ -237,6 +237,63 @@ type DocKind = 'prescription' | 'bill';
 
         </section>
 
+        <!--
+          Flow 9 step 5: "summary shows the claim details and the payment
+          breakdown of bill amount, wallet deduction and out of pocket amount".
+          The form went straight from documents to Submit, so the member never
+          saw what they would actually get back before committing.
+
+          The figures are what this screen can know: the bill they typed, the
+          per-claim limit on their plan, and what is left in the category. The
+          real split is decided by the assessor, and the panel says so rather
+          than presenting an estimate as a promise.
+        -->
+        @if (billAmount(); as bill) {
+          @if (selectedCategory(); as chosen) {
+            <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm lg:p-5">
+              <h2 class="text-base font-semibold text-[#0E51A2] lg:text-lg">Review your claim</h2>
+              <dl class="mt-3 space-y-2 text-sm">
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Bill amount</dt>
+                  <dd class="font-medium text-ink-900">{{ amount(bill) }}</dd>
+                </div>
+                @if (chosen.perClaimLimit > 0) {
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Most this claim can pay</dt>
+                    <dd class="font-medium text-ink-900">{{ amount(chosen.perClaimLimit) }}</dd>
+                  </div>
+                }
+                <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
+                  <dt class="text-ink-700">Expected back</dt>
+                  <dd class="font-semibold text-success-700">{{ amount(expectedBack()) }}</dd>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <dt class="font-semibold text-ink-900">Out of your pocket</dt>
+                  <dd class="text-lg font-bold text-ink-900">
+                    {{ amount(bill - expectedBack()) }}
+                  </dd>
+                </div>
+              </dl>
+              <p class="mt-3 rounded-xl bg-surface-sunk px-3 py-2 text-sm text-ink-500">
+                What you get back is decided when the claim is assessed. This is what your plan
+                allows on the figures above — it can come back lower if part of the bill is not
+                covered.
+              </p>
+              <!--
+                Step 9 pays a reimbursement into a BANK account, not the wallet,
+                and the sheet asks for those details on the first claim. Nothing
+                holds them, so the member is told here rather than after an
+                approval that cannot be paid.
+              -->
+              <a
+                routerLink="/member/claims/bank-details"
+                class="mt-3 inline-block text-sm font-medium text-brand-700 underline"
+                >Where does the money go?</a
+              >
+            </section>
+          }
+        }
+
         @if (overBalance()) {
           <p class="mt-4 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">
             Amount exceeds available balance {{ amount(categoryBalance()!.amount) }}
@@ -378,6 +435,18 @@ export class NewClaimPage {
 
   /** Only the in-flight guard; completeness is checked on attempt so it can be reported. */
   protected readonly canSubmit = computed(() => !this.store.submitting());
+
+  /**
+   * The most this claim can pay: the bill, held down by the per-claim limit and
+   * by whatever is left in the category. Deliberately not called a settlement —
+   * the assessor decides, and the panel above says so.
+   */
+  protected expectedBack(): number {
+    const bill = this.billAmount() ?? 0;
+    const limit = this.selectedCategory()?.perClaimLimit ?? 0;
+    const left = this.categoryBalance()?.amount ?? 0;
+    return Math.max(0, Math.min(bill, limit > 0 ? limit : bill, left > 0 ? left : bill));
+  }
 
   /** First unmet requirement, named. Follows the order the form presents them in. */
   protected missingField(): string | null {

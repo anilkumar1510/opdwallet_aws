@@ -6,6 +6,7 @@ import {
   WalletCategoryDto,
   WalletTotalsDto,
   WalletTransactionDto,
+  BenefitConfigDto,
 } from './wallet.dto';
 import { FamilyConsumption, TransactionDirection, Wallet, WalletActivityTotals, WalletCategoryBalance, WalletTotals, WalletTransaction } from './wallet.model';
 
@@ -33,7 +34,10 @@ function toTotals(dto: WalletTotalsDto | undefined): WalletTotals {
   };
 }
 
-function toCategory(dto: WalletCategoryDto): WalletCategoryBalance {
+function toCategory(
+  dto: WalletCategoryDto,
+  config: BenefitConfigDto | undefined,
+): WalletCategoryBalance {
   const category = toBenefitCategory(dto.categoryCode);
   const available = money(dto.available);
   const isUnlimited = dto.isUnlimited === true;
@@ -50,6 +54,11 @@ function toCategory(dto: WalletCategoryDto): WalletCategoryBalance {
     isUnlimited,
     // Unlimited is never exhausted, however the numbers read.
     isExhausted: !isUnlimited && available.amount <= 0,
+    // Only when the plan actually states one: a missing limit is unknown, not
+    // zero, and rendering zero would tell the member they have no cover.
+    annualLimit: typeof config?.annualLimit === 'number' ? money(config.annualLimit) : null,
+    perClaimLimit:
+      typeof config?.perClaimLimit === 'number' ? money(config.perClaimLimit) : null,
   };
 }
 
@@ -58,7 +67,13 @@ function toFamilyConsumption(dto: MemberConsumptionDto): FamilyConsumption {
 }
 
 export function toWallet(dto: WalletBalanceDto | null | undefined): Wallet {
-  const categories = (dto?.categories ?? []).map(toCategory);
+  // Limits live in a separate `config.benefits` block keyed by category code,
+  // not on the balance entries, so they are joined on here rather than in
+  // every screen that wants to show what a benefit is worth.
+  const benefits = dto?.config?.benefits ?? {};
+  const categories = (dto?.categories ?? []).map((category) =>
+    toCategory(category, benefits[category.categoryCode?.trim().toUpperCase() ?? '']),
+  );
   const totals = toTotals(dto?.totalBalance);
   const isShared = dto?.isFloater === true;
 

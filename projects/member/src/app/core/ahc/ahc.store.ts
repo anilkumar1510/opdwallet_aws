@@ -88,6 +88,17 @@ export class AhcStore {
     });
   }
 
+  /**
+   * Reads eligibility and the package again, ignoring the once-only guard on
+   * `load`. Needed when something outside this store changes whether the check
+   * can be taken — cancelling this year's order, for instance.
+   */
+  refresh(): Promise<void> {
+    this.loaded = false;
+    this.inFlight = null;
+    return this.load();
+  }
+
   load(): Promise<void> {
     if (this.loaded) return Promise.resolve();
     this.inFlight ??= this.run().finally(() => {
