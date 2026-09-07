@@ -45,6 +45,41 @@ export const CLINIC_BOOKING_API = {
   },
 } as const;
 
+/**
+ * Dental-only routes — flow 4 steps 15 and 18 onwards.
+ *
+ * Kept out of CLINIC_BOOKING_API, which is symmetric across both areas, so a
+ * caller cannot reach for a vision equivalent that does not exist. Vision has
+ * no visit to close and no procedure route: its journey ends at a coupon.
+ */
+export const DENTAL_ONLY_API = {
+  /** Multipart: `file` plus `procedureRecommended`. */
+  closeVisit: (bookingId: string) => `dental-bookings/${bookingId}/close-visit`,
+  /**
+   * Steps 7-8 done by the member. Development only — the API refuses it
+   * anywhere else. Stands in for operations the way the dummy gateway stands
+   * in for Razorpay, so the journey can be walked end to end.
+   */
+  demoConfirm: (bookingId: string) => `dental-bookings/${bookingId}/demo-confirm`,
+  /**
+   * Step 17 reported by the member — development only. The clinic tells us
+   * about a missed visit; this stands in for the clinic so the ending can be
+   * reached at all.
+   */
+  demoNoShow: (bookingId: string) => `dental-bookings/${bookingId}/demo-no-show`,
+  /**
+   * The prescription uploaded at step 15, streamed back. Owner-scoped on the
+   * API — the path comes off the booking, never off the URL.
+   */
+  prescriptionFile: (bookingId: string) => `dental-bookings/${bookingId}/prescription`,
+  /** One booking, to read its status before offering to close the visit. */
+  bookingById: (bookingId: string) => `dental-bookings/${bookingId}`,
+  procedures: 'member/dental/procedures',
+  procedureById: (procedureId: string) => `member/dental/procedures/${procedureId}`,
+  scheduleProcedure: (procedureId: string) =>
+    `member/dental/procedures/${procedureId}/schedule`,
+} as const;
+
 export interface ClinicAddressDto {
   line1?: string;
   city?: string;

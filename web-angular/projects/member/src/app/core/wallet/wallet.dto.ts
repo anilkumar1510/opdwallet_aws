@@ -10,6 +10,13 @@ export interface WalletTotalsDto {
   consumed?: number;
 }
 
+export interface BenefitConfigDto {
+  enabled?: boolean;
+  annualLimit?: number;
+  perClaimLimit?: number;
+  allowedServiceCodes?: string[];
+}
+
 export interface WalletCategoryDto {
   categoryCode?: string;
   name?: string;
@@ -31,7 +38,12 @@ export interface WalletBalanceDto {
   isFloater?: boolean;
   memberConsumption?: MemberConsumptionDto[];
   viewingUserId?: string;
-  config?: unknown;
+  /**
+   * Plan configuration keyed by category code. Carries the limits the wallet
+   * balance itself does not: the annual cap the benefit renews against and the
+   * most that can be spent in one go.
+   */
+  config?: { benefits?: Record<string, BenefitConfigDto> };
 }
 
 export interface WalletTransactionDto {

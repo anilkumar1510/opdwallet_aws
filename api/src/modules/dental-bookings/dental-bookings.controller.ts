@@ -10,7 +10,12 @@ import {
   UseGuards,
   Request,
   Response,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { dentalPrescriptionMulterConfig } from './config/dental-multer.config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DentalBookingsService } from './dental-bookings.service';
@@ -26,12 +31,16 @@ import { Roles } from '@/common/decorators/roles.decorator';
 import { UserRole } from '@/common/constants/roles.enum';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
+import { streamStoredFile } from '@/common/helpers/stored-file.helper';
+import { ConfigService } from '@nestjs/config';
+import { ForbiddenException } from '@nestjs/common';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class DentalBookingsController {
   constructor(
     private readonly dentalBookingsService: DentalBookingsService,
+    private readonly configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
@@ -64,6 +73,86 @@ export class DentalBookingsController {
       query.pincode,
       query.city,
     );
+  }
+
+  /**
+   * GET /api/dental-bookings/:bookingId/prescription
+   *
+   * The prescription the member uploaded at step 15, streamed back.
+   *
+   * It exists because step 20 adjudicates "against the policy details and the
+   * uploaded prescription" — so the member is entitled to see the document that
+   * decision rests on, and to check they sent the right one before an estimate
+   * is judged against it.
+   *
+   * Owner-scoped, and the path comes off the booking rather than the URL: the
+   * files sit under a mount any signed-in member can read, so a route that took
+   * a filename would hand one member another's prescription.
+   */
+  @Get('dental-bookings/:bookingId/prescription')
+  async getPrescription(
+    @Param('bookingId') bookingId: string,
+    @Request() req: any,
+    @Response() res: any,
+  ) {
+    const booking: any = await this.dentalBookingsService.getBookingById(
+      bookingId,
+      req.user.userId,
+    );
+    streamStoredFile(
+      res,
+      booking?.prescription,
+      'dental-prescriptions',
+      'No prescription has been uploaded for this visit',
+    );
+  }
+
+  /**
+   * POST /api/dental-bookings/:bookingId/demo-confirm
+   *
+   * Steps 7 and 8 performed by the member, for demonstrations only.
+   *
+   * Confirming a slot is an OPERATIONS decision: someone rings the clinic and
+   * agrees it. There is no member-facing route to it and there should not be
+   * one, so this exists purely so the dental journey can be walked end to end
+   * on a demo database, the same way the dummy gateway stands in for Razorpay.
+   *
+   * Two things keep it from becoming a hole: it refuses outright unless the API
+   * is running in development, and it checks the caller owns the booking. It
+   * calls the very same service method the operations route calls — no second
+   * path through the state machine, so a demo cannot reach a state real
+   * operations could not.
+   */
+  @Post('dental-bookings/:bookingId/demo-confirm')
+  async demoConfirm(@Param('bookingId') bookingId: string, @Request() req: any) {
+    if (this.configService.get<string>('nodeEnv') !== 'development') {
+      throw new ForbiddenException('Bookings are confirmed by our team');
+    }
+    // Scoped to the caller: it throws NotFound for anyone else's booking, so
+    // the ownership check and the lookup are the same query.
+    await this.dentalBookingsService.getBookingById(bookingId, req.user.userId);
+    return this.dentalBookingsService.confirmBooking(bookingId);
+  }
+
+  /**
+   * POST /api/dental-bookings/:bookingId/demo-no-show
+   *
+   * Step 17 reported by the member, for demonstrations only.
+   *
+   * The sheet is explicit that "no show information comes from the network" —
+   * the clinic tells us, the member does not confess. So this is a stand-in for
+   * the clinic, not a member feature, and it is refused outside development.
+   *
+   * It calls the same service method the operations route calls, which keeps
+   * the rule that an appointment cannot be a no-show before its own time.
+   */
+  @Post('dental-bookings/:bookingId/demo-no-show')
+  async demoNoShow(@Param('bookingId') bookingId: string, @Request() req: any) {
+    if (this.configService.get<string>('nodeEnv') !== 'development') {
+      throw new ForbiddenException('The clinic tells us about a missed visit');
+    }
+    await this.dentalBookingsService.getBookingById(bookingId, req.user.userId);
+    return this.dentalBookingsService.markNoShow(bookingId);
   }
 
   /**
@@ -156,6 +245,35 @@ export class DentalBookingsController {
    * PUT /api/dental-bookings/:bookingId/cancel
    * Cancel booking and process refund
    */
+  /**
+   * Flow 4 step 15 — the visit is over: upload the prescription and answer
+   * whether a procedure was recommended.
+   *
+   * `procedureRecommended` arrives as a multipart string, so it is compared
+   * rather than trusted as a boolean: 'false' is truthy, and reading it that
+   * way would open the procedure route for every member who said no.
+   */
+  @Post('dental-bookings/:bookingId/close-visit')
+  @UseInterceptors(FileInterceptor('file', dentalPrescriptionMulterConfig))
+  async closeVisit(
+    @Param('bookingId') bookingId: string,
+    @UploadedFile() file: any,
+    @Body() body: { procedureRecommended?: string | boolean },
+    @Request() req: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Upload the prescription the dentist gave you');
+    }
+    const recommended = body?.procedureRecommended === true || body?.procedureRecommended === 'true';
+    const booking = await this.dentalBookingsService.closeVisit(
+      bookingId,
+      req.user.userId,
+      file,
+      recommended,
+    );
+    return { success: true, data: booking };
+  }
+
   @Put('dental-bookings/:bookingId/cancel')
   async cancelBooking(
     @Request() req: any,

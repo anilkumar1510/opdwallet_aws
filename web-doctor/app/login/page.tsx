@@ -174,14 +174,17 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Demo Credentials */}
-              <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(30, 74, 141, 0.1)' }}>
-                <p className="text-sm font-medium" style={{ color: '#1E4A8D' }}>Demo Credentials:</p>
-                <p className="text-sm mt-1" style={{ color: '#2563A8' }}>
-                  Email: doctor@gmail.com<br />
-                  Password: Doctor@123
-                </p>
-              </div>
+              {/*
+                A demo email and password used to be printed here. The account
+                it named is inactive, so `validateDoctor` filters it out and the
+                login could never succeed — anyone who tried it concluded the
+                portal was broken.
+
+                Removed rather than replaced with a working pair: a password on
+                a sign-in page is read by everyone who reaches it, and the
+                accounts that do work are real doctors with real appointments.
+                Local credentials belong in the seed scripts and the docs.
+              */}
             </form>
           </div>
         </div>

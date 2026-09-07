@@ -23,6 +23,17 @@ export const AHC_API = {
   /** One placed order, by its business AHC-ORD-… id. */
   orderById: (orderId: string) => `member/ahc/orders/${orderId}`,
   /**
+   * Flow 8 step 11 — book radiology onto a check that already has pathology.
+   * A second order is not possible: the check is once a year, so the second leg
+   * is attached to the first order rather than placed on its own.
+   */
+  addDiagnosticLeg: (orderId: string) => `member/ahc/orders/${orderId}/diagnostic`,
+  /**
+   * Frees the once-a-year limit so the journey can be shown again. Development
+   * only — the API refuses it anywhere else.
+   */
+  demoReset: 'member/ahc/demo-reset',
+  /**
    * Report metadata per leg. These two return fileName/filePath as JSON despite
    * being named "download"; the `…ReportFile` routes below stream the actual
    * file. Both exist because the screen needs to know a report is there before

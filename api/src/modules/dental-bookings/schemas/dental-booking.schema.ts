@@ -126,6 +126,37 @@ export class DentalBooking {
   })
   status: string;
 
+  /**
+   * The physical prescription the dentist gave at the visit — flow 4 step 15.
+   * Uploading it is what closes the consultation, so a booking without one
+   * cannot be marked completed.
+   */
+  @Prop({
+    type: {
+      fileName: String,
+      originalName: String,
+      filePath: String,
+      uploadedAt: Date,
+    },
+    default: null,
+  })
+  prescription?: {
+    fileName: string;
+    originalName: string;
+    filePath: string;
+    uploadedAt: Date;
+  };
+
+  /**
+   * "Was a procedure recommended, yes or no" — flow 4 step 15, and the branch
+   * the entire second half of the flow hangs off.
+   *
+   * Null until the member answers. `false` takes the consultation straight to
+   * completed; `true` opens the procedure route.
+   */
+  @Prop({ type: Boolean, default: null })
+  procedureRecommended?: boolean | null;
+
   // Metadata
   @Prop({ required: true, default: 'MEMBER_PORTAL' })
   bookingSource: string;

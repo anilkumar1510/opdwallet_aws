@@ -107,6 +107,20 @@ export class PlanConfig {
       notes?: string;
       allowedServiceCodes?: string[]; // Service-level filtering: which service types are covered
     };
+    CAT009?: { // Vaccination
+      enabled: boolean;
+      claimEnabled: boolean;
+      vasEnabled?: boolean;
+      annualLimit?: number;
+      perClaimLimit?: number;
+      notes?: string;
+      /**
+       * Which vaccines are covered. Undefined means every active vaccine —
+       * getMemberAllowedVaccinationServices treats absent as unrestricted and
+       * an empty array as none.
+       */
+      allowedVaccinationServiceIds?: string[];
+    };
     wellness?: { // Future: Will be CAT008
       enabled: boolean;
       claimEnabled: boolean;

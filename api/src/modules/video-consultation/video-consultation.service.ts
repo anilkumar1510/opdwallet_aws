@@ -120,6 +120,28 @@ export class VideoConsultationService {
     }
   }
 
+  /**
+   * Development only — see the controller. Starts the call on the member's own
+   * appointment, using the doctor recorded on it, so every check in
+   * `startConsultation` still runs.
+   */
+  async demoStartAsMember(appointmentId: string, userId: string) {
+    const appointment = await this.appointmentModel.findById(appointmentId);
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    const owner =
+      typeof (appointment as any).userId === 'object' && (appointment as any).userId?._id
+        ? (appointment as any).userId._id.toString()
+        : String((appointment as any).userId);
+    if (owner !== userId) {
+      throw new ForbiddenException('That appointment belongs to another member');
+    }
+
+    return this.startConsultation(appointmentId, (appointment as any).doctorId);
+  }
+
   async startConsultation(appointmentId: string, doctorId: string) {
     // Get appointment details
     const appointment = await this.appointmentModel
@@ -199,22 +221,65 @@ export class VideoConsultationService {
       );
     }
 
-    // Create consultation record
-    const consultation = await this.videoConsultationModel.create({
-      consultationId: `VID${Date.now()}`,
-      appointmentId: new Types.ObjectId(appointmentId),
-      doctorId: doctor._id, // Use MongoDB _id from doctor lookup
-      doctorName: appointment.doctorName,
-      patientId: appointment.userId._id,
-      patientName: appointment.patientName,
-      roomId,
-      roomName,
-      roomUrl,
-      scheduledStartTime: appointment.appointmentDate,
-      actualStartTime: new Date(),
-      status: 'IN_PROGRESS',
-      doctorJoinedAt: new Date(),
-    });
+    /*
+     * One consultation per appointment, created atomically.
+     *
+     * The check above ("is there an active one?") and this create used to be
+     * two separate round trips, so two starts a few milliseconds apart — a
+     * double-mounted effect in React dev, a double click, the doctor and an
+     * automation at once — both found nothing and both created a record.
+     *
+     * That is not a harmless duplicate. The Agora channel IS the consultation
+     * id, so the second start put the doctor in a different channel from the
+     * member, and both sides sat looking at "waiting for the other to join"
+     * while each was alone in their own room. It happened live: VID1788689464775
+     * and VID1788689464789, 14ms apart, same appointment.
+     *
+     * `findOneAndUpdate` with `upsert` makes the find and the insert one
+     * operation, so concurrent callers converge on the same document and the
+     * loser of the race is handed the winner's consultation. `$setOnInsert`
+     * means an existing consultation is never overwritten — a second start is
+     * a no-op that returns what is already running.
+     */
+    const consultation = await this.videoConsultationModel.findOneAndUpdate(
+      {
+        appointmentId: new Types.ObjectId(appointmentId),
+        status: { $in: ['SCHEDULED', 'IN_PROGRESS'] },
+      },
+      {
+        $setOnInsert: {
+          consultationId: `VID${Date.now()}`,
+          appointmentId: new Types.ObjectId(appointmentId),
+          doctorId: doctor._id, // Use MongoDB _id from doctor lookup
+          doctorName: appointment.doctorName,
+          patientId: appointment.userId._id,
+          patientName: appointment.patientName,
+          roomId,
+          roomName,
+          roomUrl,
+          scheduledStartTime: appointment.appointmentDate,
+          actualStartTime: new Date(),
+          status: 'IN_PROGRESS',
+          doctorJoinedAt: new Date(),
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+        /*
+         * The SAME document `joinConsultation` picks.
+         *
+         * Without a sort, findOneAndUpdate takes whichever match the storage
+         * engine offers first. On an appointment that already carries
+         * duplicates from before this was atomic, that could be the older
+         * record while the member's join — which sorts newest-first — took the
+         * newer one, putting them back in different channels. Both sides now
+         * order the same way, so they agree even on old data.
+         */
+        sort: { createdAt: -1, _id: -1 },
+      },
+    );
 
     // Update appointment status
     await this.appointmentModel.findByIdAndUpdate(appointmentId, {
@@ -316,6 +381,21 @@ export class VideoConsultationService {
     const consultation = await this.videoConsultationModel.findOne({ consultationId });
     if (!consultation) throw new NotFoundException('Consultation not found');
 
+    /*
+     * A finished consultation gets no token.
+     *
+     * This handed out a perfectly valid token for an ENDED consultation, so a
+     * tab still holding an old id would rejoin a channel nobody else is in and
+     * sit there looking connected and alone — which is exactly what a stale tab
+     * did after a duplicate was closed. Refusing tells the client to start
+     * again, which returns the consultation that is actually running.
+     */
+    if (consultation.status !== 'SCHEDULED' && consultation.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(
+        `This consultation is ${consultation.status.toLowerCase()}. Reopen it from your appointment.`,
+      );
+    }
+
     const isDoctor = consultation.doctorId.toString() === userId;
     const isPatient = consultation.patientId.toString() === userId;
     if (!isDoctor && !isPatient) {
@@ -333,12 +413,22 @@ export class VideoConsultationService {
   }
 
   async joinConsultation(appointmentId: string, patientId: string) {
-    // Find existing consultation
-    const consultation = await this.videoConsultationModel.findOne({
-      appointmentId: new Types.ObjectId(appointmentId),
-      patientId: new Types.ObjectId(patientId),
-      status: { $in: ['SCHEDULED', 'IN_PROGRESS'] },
-    });
+    /*
+     * The one the doctor is actually in.
+     *
+     * Sorted newest-first so that where duplicates already exist — created
+     * before `startConsultation` was made atomic — the member lands on the
+     * same one a fresh start would return, instead of whichever the storage
+     * engine happened to hand back. Without the sort this silently put the two
+     * of them in different Agora channels.
+     */
+    const consultation = await this.videoConsultationModel
+      .findOne({
+        appointmentId: new Types.ObjectId(appointmentId),
+        patientId: new Types.ObjectId(patientId),
+        status: { $in: ['SCHEDULED', 'IN_PROGRESS'] },
+      })
+      .sort({ createdAt: -1, _id: -1 });
 
     if (!consultation) {
       throw new NotFoundException('No active consultation found for this appointment');

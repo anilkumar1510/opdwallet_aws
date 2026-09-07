@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { AhcBookingStore, AhcRoute } from '../../core/ahc/ahc-booking.store';
@@ -138,6 +138,16 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', 
           <!-- Three entry options (Patient Flows section 8, step 2) -->
           <section class="mt-5 rounded-2xl border border-surface-border bg-white p-6">
             <h3 class="text-lg font-semibold text-[#034DA2]">Book your health check</h3>
+            <!--
+              Flow 8 branches into two routes that close each other off, and the
+              rule that pathology comes first only shows up when you hit it.
+              This walks all 23 steps and says which are built as described.
+            -->
+            <a
+              [routerLink]="['/member/ahc/walkthrough', 1]"
+              class="mt-1 inline-block text-sm font-medium text-brand-700 underline"
+              >See how the whole journey works</a
+            >
             <p class="mt-1 text-sm text-ink-700">
               @if (anyOpen()) {
                 Book the two legs separately or take the whole package in one go. This benefit can
@@ -146,6 +156,28 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', 
                 {{ store.eligibility()?.reason ?? 'You have already used this benefit for the current policy year.' }}
               }
             </p>
+
+            <!--
+              Demonstration only. The once-a-year rule is right, and it closes
+              every option the moment a check has been taken — which on a demo
+              database is permanent, and leaves the whole journey unreachable.
+              The API refuses this outside development.
+            -->
+            @if (!anyOpen()) {
+              <div class="mt-3 border-t border-surface-border pt-3">
+                <p class="text-xs text-ink-500">
+                  For demonstrations: cancel this year's check and open the options again.
+                </p>
+                <button
+                  type="button"
+                  class="mt-2 min-h-touch w-full rounded-xl border border-dashed border-surface-border px-4 text-sm font-semibold text-ink-700 hover:bg-surface-sunk disabled:opacity-60"
+                  [disabled]="resetting()"
+                  (click)="startOver()"
+                >
+                  {{ resetting() ? 'Starting over…' : 'Start over (demo)' }}
+                </button>
+              </div>
+            }
 
             <ul class="mt-4 space-y-3">
               @for (option of options(); track option.route) {
@@ -245,6 +277,18 @@ export class WellnessPage {
 
   /** Whether any of the three options can still be taken. */
   protected readonly anyOpen = computed(() => this.options().some((o) => !o.disabled));
+
+  protected readonly resetting = signal(false);
+
+  /** See the button's comment — development only, refused elsewhere. */
+  protected async startOver(): Promise<void> {
+    this.resetting.set(true);
+    try {
+      if (await this.booking.demoReset()) await this.store.refresh();
+    } finally {
+      this.resetting.set(false);
+    }
+  }
 
   protected async start(route: AhcRoute): Promise<void> {
     this.booking.setRoute(route);

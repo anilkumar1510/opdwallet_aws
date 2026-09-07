@@ -41,6 +41,8 @@ import { AhcModule } from './modules/ahc/ahc.module';
 import { DoctorClinicAssignmentsModule } from './modules/doctor-clinic-assignments/doctor-clinic-assignments.module';
 import { VaccinationModule } from './modules/vaccination/vaccination.module';
 import { PharmacyModule } from './modules/pharmacy/pharmacy.module';
+import { VisionOrdersModule } from './modules/vision-orders/vision-orders.module';
+import { DentalProceduresModule } from './modules/dental-procedures/dental-procedures.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -138,6 +140,8 @@ import configuration from './config/configuration';
     DoctorClinicAssignmentsModule,
     VaccinationModule,
     PharmacyModule,
+    VisionOrdersModule,
+    DentalProceduresModule,
   ],
 })
 export class AppModule {}

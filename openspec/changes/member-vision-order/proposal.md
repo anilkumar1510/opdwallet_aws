@@ -88,7 +88,74 @@ each changes what gets built.
    status visibility … Order status, approval, rejection and fulfilment are all
    communicated outside the application."* Confirming that is intended, rather
    than a gap to close, decides whether an order history screen exists at all.
-5. **Does the clinic booking journey survive?** See BREAKING above.
+5. ~~**Does the clinic booking journey survive?**~~ **Decided 2026-09-01: no,
+   for vision.** The service cards that opened it are removed from
+   `/member/vision`; the way in is gone. The routes, the API and existing
+   bookings are untouched, so old links still resolve and a member who booked
+   before can still see it — retiring the endpoints is a separate step with its
+   own blast radius. Dental keeps its cards: flow 4 *is* a clinic visit, and the
+   two areas share one component, so the removal is gated rather than global.
+6. **Who collects the excess above the coupon?** The two sheets disagree, and
+   this one is member-facing, so it cannot be left ambiguous on screen:
+   - *Patient Flows*, flow 3 step 8: "Anything above the coupon value is paid by
+     the member **to the partner**."
+   - *Vision Backend*, row 17: "the balance is collected directly from the
+     customer … through **our own channel**, not through the member portal wallet
+     and **not through Lenskart**." Row 37 adds that it "never appears in the
+     member payment breakdown, the receipt or the invoice the member sees".
+
+   The coupon screen currently states only what both agree on — what the coupon
+   covers — and names nobody, because telling a member to expect a bill from the
+   wrong party is worse than telling them nothing. If collection really is via
+   our own channel, that is a member-facing step with no screen and no endpoint,
+   and it belongs in this change rather than outside it.
+
+## The coupon reserves nothing, and that is a live double-spend path
+
+The `Vision Backend` tab, row 36: *"No wallet block is placed. Every other paid
+service line blocks the wallet at transaction. Vision reserves value against the
+coupon instead, and nothing is held on the member ledger while the order is
+open."*
+
+Built as written, that reservation does not exist. **The coupon is the
+reservation and nothing enforces it:**
+
+- The coupon records `eligibleAmount` as a SNAPSHOT of remaining vision cover at
+  the moment it is issued. Nothing re-reads it afterwards.
+- **Nothing outside the vision order module knows a coupon exists.** Searching
+  `api/src` for `couponCode` outside `vision-orders` returns nothing.
+- Two other paths spend the same CAT007 balance and neither consults it:
+  `vision-bookings.service.ts` debits at three call sites, and
+  `memberclaims.service.ts` at two, for a vision reimbursement claim.
+
+So a member can hold a live ₹3,000 coupon, then book a vision clinic visit or
+file a vision claim against the same ₹3,000. The coupon keeps quoting a figure
+the wallet no longer backs, and the partner honours it — the redemption file
+settles later against money already spent. Nothing detects this, at either end.
+
+**This is not a bug in the code as specified — it is what "no wallet block"
+means once written down.** It needs a decision, and the options differ in cost:
+
+1. **Hold the amount.** The honest reading of "reserves value", but it needs the
+   held-balance primitive that `wallet-block-and-razorpay` is building and which
+   explicitly excludes vision today.
+2. **Re-check at redemption.** Cheap, but there is no redemption event: nothing
+   tells this platform a coupon was spent.
+3. **Accept it and reconcile.** Treat over-issue as a settlement problem for the
+   redemption file. Viable only if someone owns that reconciliation.
+
+Until one is chosen, the member-facing surface says only what is true: the
+screen states that this app is not told when a coupon is used, rather than
+implying an unspent coupon is still backed.
+
+## Step 9 has no member surface, deliberately
+
+Flow 3 step 9, "Payment after order processing", is partner settlement:
+"Settlement with the partner happens once the order is processed", against a
+*vision partner redemption file*. It is back-office reconciliation between this
+platform and the partner, with nothing the member does or sees — which is why
+the journey on screen ends at the coupon. Its absence from the portal is
+correct, not a gap.
 
 ## Capabilities
 

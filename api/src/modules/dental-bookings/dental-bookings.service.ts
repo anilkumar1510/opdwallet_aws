@@ -709,6 +709,50 @@ export class DentalBookingsService {
   /**
    * 8. Cancel booking and process refund
    */
+  /**
+   * Closes the visit — flow 4 step 15, "Upload prescription and answer whether
+   * a procedure was recommended, yes or no".
+   *
+   * The answer is the branch the whole second half of the flow turns on:
+   * **No** takes the consultation straight to completed. **Yes** leaves it
+   * completed too, but flags that a procedure was recommended, which is what
+   * the procedure route reads to know it may start.
+   *
+   * Only a CONFIRMED booking can be closed this way. A visit that never
+   * happened has no prescription to give.
+   */
+  async closeVisit(
+    bookingId: string,
+    userId: string,
+    file: { filename: string; originalname: string; path: string },
+    procedureRecommended: boolean,
+  ) {
+    const booking = await this.dentalBookingModel.findOne({ bookingId });
+    if (!booking) {
+      throw new NotFoundException(`Booking ${bookingId} not found`);
+    }
+    if (booking.userId.toString() !== userId) {
+      throw new ForbiddenException('This booking belongs to another member');
+    }
+    if (booking.status !== 'CONFIRMED') {
+      throw new BadRequestException(
+        `Only a confirmed visit can be closed. This one is ${booking.status}.`,
+      );
+    }
+
+    booking.prescription = {
+      fileName: file.filename,
+      originalName: file.originalname,
+      filePath: file.path,
+      uploadedAt: new Date(),
+    };
+    booking.procedureRecommended = procedureRecommended;
+    // Completed either way: the consultation is over. A recommended procedure
+    // is a NEW journey against the same prescription, not this one continuing.
+    booking.status = 'COMPLETED';
+    return booking.save();
+  }
+
   async cancelBooking(bookingId: string, userId: string, reason: string) {
     console.log('[DentalBookings] Cancelling booking:', bookingId, 'Reason:', reason);
 
@@ -818,9 +862,16 @@ export class DentalBookingsService {
   async handlePaymentComplete(paymentId: string) {
     console.log('[DentalBookings] Handling payment completion for:', paymentId);
 
-    const booking = await this.dentalBookingModel.findOne({
-      paymentId: new Types.ObjectId(paymentId),
-    });
+    /*
+     * Matched on the business id, because that is what the three places that
+     * set `booking.paymentId` actually store, and the field is a string.
+     *
+     * This used to search for `new Types.ObjectId(paymentId)` against the
+     * payment's Mongo _id — wrong value AND wrong type, so it never matched.
+     * The NotFound it threw was swallowed by the caller, which is why a member
+     * could pay their co-payment and watch the booking sit at PENDING for ever.
+     */
+    const booking = await this.dentalBookingModel.findOne({ paymentId });
 
     if (!booking) {
       throw new NotFoundException('Booking not found for payment');

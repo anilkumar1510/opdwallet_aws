@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { LabKind, LabPrescription } from '../../core/lab/lab.model';
 import { LabStore } from '../../core/lab/lab.store';
+import { CONCERNS } from '../../core/diagnostics-flow/diagnostics-flow';
 import { PrescriptionSelector } from './prescription-selector';
 import { Icon } from '../../shared/ui/icon';
 import { ErrorView, LoadingView } from '../../shared/ui/state-views';
@@ -37,10 +38,35 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', 
       </header>
 
       <div class="mx-auto max-w-[900px] px-5 py-6 lg:px-8">
-        <!-- Get Started -->
+        <!--
+          Flow 7 steps 1 and 2: opening the card lands on the health concerns,
+          not on an upload box. The prescription route stays underneath because
+          it is the one that reaches a real order today — but it is the second
+          thing on the page now, not the whole page.
+        -->
         <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+          <h2 class="text-base font-semibold text-[#0E51A2] lg:text-lg">
+            What are you checking on?
+          </h2>
+          <p class="mt-1 text-sm text-ink-700">
+            Scans grouped by health concern — heart, full body and the rest.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            @for (concern of concerns; track concern.id) {
+              <a
+                routerLink="/member/radiology/flow"
+                [queryParams]="{ concern: concern.id }"
+                class="inline-flex min-h-touch items-center rounded-xl border border-surface-border px-4 text-sm font-semibold text-ink-900 hover:border-[#0F5FDC] hover:bg-surface-sunk"
+                >{{ concern.label }}</a
+              >
+            }
+          </div>
+        </section>
+
+        <!-- Get Started -->
+        <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
           <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:mb-4 lg:text-lg">
-            Get Started
+            Already have a prescription?
           </h2>
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -220,6 +246,9 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', 
   `,
 })
 export class DiagnosticsPage {
+  /** Flow 7 step 2's tabs, shown on the card itself so it is the first screen. */
+  protected readonly concerns = CONCERNS;
+
   protected readonly store = inject(LabStore);
   /** This screen is diagnostics-only; the route carries no `kind` to bind. */
   protected readonly diagnosticKind = LabKind.Diagnostic;

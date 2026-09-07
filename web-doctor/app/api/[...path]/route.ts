@@ -99,6 +99,25 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     headers['Cookie'] = cookies;
   }
 
+  /*
+   * Forward the doctor's bearer token.
+   *
+   * `lib/api/session.ts` attaches one to every call precisely because the
+   * member portal and this one share the `opd_session` cookie — cookies are
+   * scoped to HOST, not port, so signing into the member app on localhost made
+   * every doctor request arrive as a MEMBER and every @Roles(DOCTOR) route
+   * answer 403. The API's JWT strategy reads the Authorization header before
+   * any cookie, which is what settles it.
+   *
+   * This proxy never copied the header, so the token stopped here and the
+   * collision it was added to fix was still live for everything routed through
+   * /doctor/api/*.
+   */
+  const authorization = request.headers.get('authorization');
+  if (authorization) {
+    headers['Authorization'] = authorization;
+  }
+
   // Prepare request body for non-GET requests
   let body: any;
   if (request.method !== 'GET' && request.method !== 'HEAD') {

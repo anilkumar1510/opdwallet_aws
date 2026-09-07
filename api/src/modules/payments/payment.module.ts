@@ -6,6 +6,7 @@ import { Payment, PaymentSchema } from './schemas/payment.schema';
 import { CounterModule } from '../counters/counter.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
 import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module';
+import { DentalProceduresModule } from '../dental-procedures/dental-procedures.module';
 import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module';
 import { VaccinationModule } from '../vaccination/vaccination.module';
 
@@ -15,6 +16,7 @@ import { VaccinationModule } from '../vaccination/vaccination.module';
     CounterModule,
     forwardRef(() => AppointmentsModule),
     forwardRef(() => DentalBookingsModule),
+    forwardRef(() => DentalProceduresModule),
     forwardRef(() => VisionBookingsModule),
     forwardRef(() => VaccinationModule),
   ],

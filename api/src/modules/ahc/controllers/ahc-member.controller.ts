@@ -13,6 +13,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request, Response } from 'express';
@@ -21,6 +22,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AhcPackageMemberService } from '../services/ahc-package-member.service';
 import { AhcPackageService } from '../services/ahc-package.service';
 import { AhcOrderService } from '../services/ahc-order.service';
+import { CancelledBy } from '../schemas/ahc-order.schema';
 import { CreateAhcOrderDto } from '../dto/create-ahc-order.dto';
 import { ValidateAhcOrderDto } from '../dto/validate-ahc-order.dto';
 import { AssignmentsService } from '../../assignments/assignments.service';
@@ -60,6 +62,7 @@ export class AhcMemberController {
   }
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly ahcPackageMemberService: AhcPackageMemberService,
     private readonly ahcPackageService: AhcPackageService,
     private readonly ahcOrderService: AhcOrderService,
@@ -75,6 +78,71 @@ export class AhcMemberController {
     @InjectModel(DiagnosticVendorSlot.name) private diagnosticSlotModel: Model<DiagnosticVendorSlot>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
+
+  /**
+   * POST /api/member/ahc/orders/:orderId/diagnostic
+   *
+   * Flow 8 step 11 — book radiology onto a check that already has pathology.
+   */
+  @Post('orders/:orderId/diagnostic')
+  @HttpCode(HttpStatus.OK)
+  async addDiagnosticLeg(
+    @Param('orderId') orderId: string,
+    @Req() req: any,
+    @Body()
+    body: {
+      diagnosticVendorId: string;
+      diagnosticSlotId?: string;
+      diagnosticAppointmentDate?: string;
+      diagnosticAppointmentTime?: string;
+    },
+  ) {
+    const order = await this.ahcOrderService.attachDiagnosticLeg(
+      orderId,
+      req.user.userId,
+      this.diagnosticVendorService,
+      body,
+    );
+    return { success: true, data: order };
+  }
+
+  /**
+   * POST /api/member/ahc/demo-reset
+   *
+   * Frees the once-a-year limit, for demonstrations only.
+   *
+   * The annual health check is frequency-based: one per policy year, and the
+   * eligibility check refuses a second. That is correct, and it makes the
+   * journey unwalkable on a demo database the moment anyone has booked once —
+   * which someone had, in August.
+   *
+   * Cancels the caller's own open order through the same service the member's
+   * own cancel button uses, so the wallet is credited back exactly as it would
+   * be. Refused outside development.
+   */
+  @Post('demo-reset')
+  @HttpCode(HttpStatus.OK)
+  async demoReset(@Req() req: any) {
+    if (this.configService.get<string>('nodeEnv') !== 'development') {
+      throw new ForbiddenException('The annual health check can be taken once a year');
+    }
+
+    const userId = req.user.userId;
+    const orders = await this.ahcOrderService.getUserOrders(userId);
+    const open = orders.find(
+      (order: any) => order.status !== 'CANCELLED' && order.status !== 'COMPLETED',
+    );
+    if (!open) {
+      return { success: true, data: { cancelled: null } };
+    }
+
+    await this.ahcOrderService.cancelOrder(
+      (open as any).orderId,
+      'Reset for a demonstration',
+      CancelledBy.MEMBER,
+    );
+    return { success: true, data: { cancelled: (open as any).orderId } };
+  }
 
   /**
    * GET /api/member/ahc/package

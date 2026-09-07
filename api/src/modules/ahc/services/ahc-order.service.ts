@@ -150,11 +150,21 @@ export class AhcOrderService {
     let diagnosticTotalDiscounted = 0;
     let diagnosticHomeCollectionCharges = 0;
 
-    // Get diagnostic vendor and pricing ONLY if package has diagnostic services
-    if (hasDiagnosticServices) {
-      if (!validateDto.diagnosticVendorId) {
-        throw new BadRequestException('Diagnostic vendor is required for this package');
-      }
+    /*
+     * The diagnostic leg is optional at creation, even when the package carries
+     * diagnostic services.
+     *
+     * Flow 8's individual route books pathology FIRST and radiology afterwards:
+     * "billing happens irrespective of whether radiology is booked". Demanding
+     * a diagnostic vendor up front made that route impossible — a pathology-only
+     * order was rejected outright, and since eligibility then blocks a second
+     * order for the year, radiology could never be added either. Only the
+     * package route could place anything at all.
+     *
+     * With no vendor supplied the diagnostic totals stay at zero and the order
+     * records the lab leg alone, which is exactly the state step 10 describes.
+     */
+    if (hasDiagnosticServices && validateDto.diagnosticVendorId) {
 
       diagnosticVendor = await diagnosticVendorService.getVendorById(
         validateDto.diagnosticVendorId,
@@ -697,6 +707,76 @@ export class AhcOrderService {
   /**
    * Cancel order
    */
+  /**
+   * Flow 8 step 11 — add the radiology leg to a check that has already booked
+   * pathology.
+   *
+   * The individual route needs this and had nowhere to put it: an order is
+   * created once, eligibility refuses a second for the year, and there was no
+   * way to complete a half-booked one. So radiology-after-pathology could be
+   * offered on screen and never actually placed.
+   *
+   * Only fills a leg that is empty, and only on an order still running. The
+   * money is left alone: the check is billed once, when the first leg is
+   * booked, which is what step 10 says happens.
+   */
+  async attachDiagnosticLeg(
+    orderId: string,
+    userId: string,
+    diagnosticVendorService: any,
+    input: {
+      diagnosticVendorId: string;
+      diagnosticSlotId?: string;
+      diagnosticAppointmentDate?: string;
+      diagnosticAppointmentTime?: string;
+    },
+  ): Promise<AhcOrder> {
+    const order = await this.getOrderByOrderId(orderId);
+
+    const ownerId =
+      typeof order.userId === 'object' && (order.userId as any)._id
+        ? (order.userId as any)._id.toString()
+        : order.userId.toString();
+    if (ownerId !== userId) {
+      throw new BadRequestException('That health check belongs to another member');
+    }
+
+    if (
+      order.status === AhcOrderStatus.CANCELLED ||
+      order.status === AhcOrderStatus.COMPLETED
+    ) {
+      throw new BadRequestException(`This health check is ${order.status.toLowerCase()}`);
+    }
+
+    if (order.diagnosticOrder?.vendorId) {
+      throw new BadRequestException('Radiology is already booked on this health check');
+    }
+
+    if (!input.diagnosticVendorId) {
+      throw new BadRequestException('Choose a diagnostic centre');
+    }
+
+    const vendor = await diagnosticVendorService.getVendorById(input.diagnosticVendorId);
+    if (!vendor) {
+      throw new NotFoundException('Diagnostic vendor not found');
+    }
+
+    order.diagnosticOrder = {
+      ...(order.diagnosticOrder ?? ({} as any)),
+      vendorId: vendor._id,
+      vendorName: vendor.name,
+      items: order.diagnosticOrder?.items ?? [],
+      appointmentDate: input.diagnosticAppointmentDate,
+      appointmentTime: input.diagnosticAppointmentTime,
+      slotId: input.diagnosticSlotId,
+      totalActualPrice: order.diagnosticOrder?.totalActualPrice ?? 0,
+      totalDiscountedPrice: order.diagnosticOrder?.totalDiscountedPrice ?? 0,
+    } as any;
+
+    await (order as any).save();
+    return order;
+  }
+
   async cancelOrder(
     orderId: string,
     reason: string,
@@ -776,7 +856,11 @@ export class AhcOrderService {
         })
       : 'Scheduled';
     await this.notificationsService.notifyAppointmentCancelled(
-      order.userId.toString(),
+      // `getOrderByOrderId` populates userId, so calling toString() on it
+      // yields the document rather than the id and the notification threw a
+      // BSONError — after the order had already been cancelled and the wallet
+      // credited. The caller saw a 500 on a cancellation that had worked.
+      userIdString,
       orderId,
       'AHC',
       'Annual Health Check',

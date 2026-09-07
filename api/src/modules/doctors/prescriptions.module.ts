@@ -65,7 +65,17 @@ import { CounterModule } from '../counters/counter.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('DOCTOR_JWT_SECRET') || configService.get('JWT_SECRET'),
+        /*
+         * The same key JwtStrategy verifies with — see doctor-auth.service.ts.
+         *
+         * This still held the old expression after the signing path was fixed:
+         * raw env keys, and a live DOCTOR_JWT_SECRET read. Inert today only
+         * because its one consumer passes an explicit secret that wins, but the
+         * first sign() or verify() in this module's scope without one would
+         * reopen the bug. It also resolved to undefined with JWT_SECRET unset,
+         * where jwt.secret has a default.
+         */
+        secret: configService.get<string>('jwt.secret') || 'dev_jwt_secret',
         signOptions: {
           expiresIn: configService.get('DOCTOR_JWT_EXPIRY') || '8h',
         },

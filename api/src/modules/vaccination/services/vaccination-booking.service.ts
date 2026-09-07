@@ -147,6 +147,23 @@ export class VaccinationBookingService {
   }
 
   /**
+   * A vaccination service by either of the two ids that name it.
+   *
+   * The catalogue gives the member a BUSINESS id (VSVC-...) while every
+   * reference between records uses the Mongo _id, so which one a caller holds
+   * depends only on where it came from. `findById` on the business id threw a
+   * cast error, which surfaced as a 500 on the vendor list and as a blocked
+   * "Confirm booking" with a zero breakdown — three call sites, one cause.
+   */
+  private async findVaccinationService(serviceId: string) {
+    return this.vaccinationServiceModel.findOne(
+      Types.ObjectId.isValid(serviceId)
+        ? { $or: [{ _id: new Types.ObjectId(serviceId) }, { serviceId }] }
+        : { serviceId },
+    );
+  }
+
+  /**
    * 2. Get vendors for a specific service
    * If pincode is provided, filter by vendors serving that pincode
    * If no pincode, return all active vendors offering the service
@@ -158,6 +175,23 @@ export class VaccinationBookingService {
       'pincode:',
       pincode || 'ALL',
     );
+
+    /*
+     * The catalogue hands the member a BUSINESS id (VSVC-...), and pricing
+     * references the service by its Mongo _id. Casting the one to the other
+     * threw a BSONError and the whole vendor list came back as a 500, so
+     * picking any vaccine ended the journey at step 4.
+     *
+     * Resolved from the record instead, accepting either form: the two ids
+     * name the same service, and which one a caller holds depends on where it
+     * came from.
+     */
+    const service = await this.findVaccinationService(serviceId);
+
+    if (!service) {
+      throw new NotFoundException(`Vaccination service ${serviceId} not found`);
+    }
+    const serviceObjectId = (service as any)._id;
 
     // Build vendor query - filter by pincode only if provided
     const vendorQuery: any = { isActive: true };
@@ -178,7 +212,7 @@ export class VaccinationBookingService {
       const pricing = await this.pricingModel
         .findOne({
           vendorId: vendor._id,
-          serviceId: new Types.ObjectId(serviceId),
+          serviceId: serviceObjectId,
           isActive: true,
         })
         .populate('serviceId', 'name code');
@@ -531,9 +565,7 @@ export class VaccinationBookingService {
 
     try {
       // 1. Validate service exists
-      const service = await this.vaccinationServiceModel.findById(
-        validateDto.serviceId,
-      );
+      const service = await this.findVaccinationService(validateDto.serviceId);
       if (!service) {
         throw new BadRequestException('Vaccination service not found');
       }
@@ -548,7 +580,8 @@ export class VaccinationBookingService {
 
       const pricing = await this.pricingModel.findOne({
         vendorId: vendor._id,
-        serviceId: new Types.ObjectId(validateDto.serviceId),
+        // The resolved record's _id, not whichever id the caller sent.
+        serviceId: service._id,
         isActive: true,
       });
       if (!pricing) {
@@ -680,9 +713,7 @@ export class VaccinationBookingService {
     );
 
     // 1. Validate service exists
-    const service = await this.vaccinationServiceModel.findById(
-      createDto.serviceId,
-    );
+    const service = await this.findVaccinationService(createDto.serviceId);
     if (!service) {
       throw new BadRequestException('Vaccination service not found');
     }

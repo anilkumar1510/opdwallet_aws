@@ -9,7 +9,10 @@ import {
   UseGuards,
   Request,
   Response,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VaccinationBookingService } from '../services/vaccination-booking.service';
@@ -24,8 +27,52 @@ import { FamilyAccessHelper } from '@/common/helpers/family-access.helper';
 export class VaccinationMemberController {
   constructor(
     private readonly vaccinationBookingService: VaccinationBookingService,
+    private readonly configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
+
+  /**
+   * POST /api/member/vaccination/bookings/:bookingId/demo-advance
+   *
+   * Steps 7-8 and 15 performed by the member, for demonstrations only.
+   *
+   * Flow 6 gives both to other people: operations confirm the slot with the
+   * vendor, and *"completion or a no show is confirmed by the vendor, not by
+   * the member"*. Nothing in the member portal can reach those states, so on a
+   * demo database a vaccination booking stops at step 6 and the whole tail —
+   * cart, payment, the dose, the invoice — cannot be seen.
+   *
+   * Refused outside development, scoped to the caller's own booking, and it
+   * calls the same service methods operations call, so a demo cannot reach a
+   * state real operations could not.
+   */
+  @Post('bookings/:bookingId/demo-advance')
+  async demoAdvance(
+    @Request() req: any,
+    @Param('bookingId') bookingId: string,
+    @Body('outcome') outcome?: 'completed' | 'no-show',
+  ) {
+    if (this.configService.get<string>('nodeEnv') !== 'development') {
+      throw new ForbiddenException('Our team and the vendor confirm this');
+    }
+    const booking: any = await this.vaccinationBookingService.getBookingById(
+      bookingId,
+      req.user.userId,
+    );
+
+    if (booking.status === 'PENDING_CONFIRMATION') {
+      return this.vaccinationBookingService.confirmBooking(bookingId);
+    }
+    if (booking.status === 'CONFIRMED') {
+      // Step 15 is one report with two answers, so the caller says which.
+      return outcome === 'no-show'
+        ? this.vaccinationBookingService.markNoShow(bookingId)
+        : this.vaccinationBookingService.completeBooking(bookingId);
+    }
+    throw new BadRequestException(
+      `This booking is ${booking.status}, which is not waiting on us or the vendor.`,
+    );
+  }
 
   /**
    * GET /api/member/vaccination/services

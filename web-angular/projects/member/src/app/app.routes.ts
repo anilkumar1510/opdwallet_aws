@@ -32,6 +32,21 @@ export const routes: Routes = [
         loadComponent: () => import('./features/claims/claims-page').then((m) => m.ClaimsPage),
       },
       {
+        /*
+         * Flow 9 step 9 — "credit goes to the member bank account, not the
+         * wallet", with the bank details "captured once in the profile".
+         *
+         * Nothing in this system holds a bank account: no field on the user, no
+         * payout service, no capture on first submission. A reimbursement is
+         * approved and then has nowhere to go, which is the one gap in this
+         * flow a member would feel directly.
+         */
+        path: 'claims/bank-details',
+        data: { title: 'Where your money goes', reason: 'no-api' },
+        loadComponent: () =>
+          import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
+      },
+      {
         path: 'claims/new',
         loadComponent: () =>
           import('./features/claims/new-claim-page').then((m) => m.NewClaimPage),
@@ -56,9 +71,55 @@ export const routes: Routes = [
          * this is the one step after it with no backend at all.
          */
         path: 'bookings/:reference/cashless-letter',
-        data: { title: 'Cashless letter', reason: 'no-api' },
+        data: { kind: 'cashless-letter', area: 'dental' },
+        loadComponent: () =>
+          import('./features/clinic-booking/dental-document-page').then(
+            (m) => m.DentalDocumentPage,
+          ),
+      },
+      {
+        /*
+         * Flow 4 steps 12 and 27 — "Receipt generated ... Receipt confirms the
+         * payment only. It is not the tax invoice."
+         *
+         * Nothing issues one. An invoice exists and is downloadable, but it is
+         * a different document raised at a different moment, so showing it here
+         * would be answering a question the member did not ask.
+         */
+        /*
+         * Flow 4 step 17 — "No show on the consultation".
+         *
+         * The sheet puts this on the network ("no show information comes from
+         * the network") and leaves the consequence open: "penalisation is still
+         * to be discussed". So there is nothing for a member to submit, and
+         * nothing decided about what happens if they do. It stands here so the
+         * branch is visible in the journey rather than silently absent.
+         */
+        /*
+         * Flow 4 steps 7 and 8 — operations confirm the slot with the clinic.
+         *
+         * A real step that works, with no member-facing screen because there is
+         * nothing for a member to do in it. It is here so the wait has a name:
+         * without it, a booking sits at "pending confirmation" and the member
+         * cannot tell whether something is expected of them.
+         */
+        path: 'bookings/:reference/confirmation',
+        data: { title: 'Waiting on us', reason: 'with-us' },
         loadComponent: () =>
           import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
+      },
+      {
+        path: 'bookings/:reference/not-attended',
+        loadComponent: () =>
+          import('./features/clinic-booking/not-attended-page').then((m) => m.NotAttendedPage),
+      },
+      {
+        path: 'bookings/:reference/receipt',
+        data: { kind: 'receipt', area: 'dental' },
+        loadComponent: () =>
+          import('./features/clinic-booking/dental-document-page').then(
+            (m) => m.DentalDocumentPage,
+          ),
       },
       {
         path: 'bookings',
@@ -89,6 +150,69 @@ export const routes: Routes = [
         // prescription-first (`lab-tests/upload`), which never browses a
         // catalogue. Needs a member-side test catalogue: there is none —
         // `admin/lab/master-tests` is admin-only.
+        /*
+         * Flow 7 as the sheet describes it, test-first: concerns, test,
+         * provider, collection, slot, review, hold. One set of screens for both
+         * cards — `area` binds from route data, the way vision and dental
+         * share theirs.
+         *
+         * The prescription-first journey stays where it is. This is the second
+         * door the sheet opens on, not a replacement for the one that works.
+         */
+        path: 'pathology/flow',
+        data: { area: 'pathology' },
+        loadComponent: () =>
+          import('./features/diagnostics-flow/concerns-page').then((m) => m.ConcernsPage),
+      },
+      {
+        path: 'radiology/flow',
+        data: { area: 'radiology' },
+        loadComponent: () =>
+          import('./features/diagnostics-flow/concerns-page').then((m) => m.ConcernsPage),
+      },
+      ...(['pathology', 'radiology'] as const).flatMap((area) => [
+        {
+          path: `${area}/flow/test`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/test-detail-page').then((m) => m.TestDetailPage),
+        },
+        {
+          path: `${area}/flow/provider`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/provider-page').then((m) => m.ProviderPage),
+        },
+        {
+          path: `${area}/flow/collection`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/collection-mode-page').then(
+              (m) => m.CollectionModePage,
+            ),
+        },
+        {
+          path: `${area}/flow/slot`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/slot-page').then((m) => m.DiagnosticsSlotPage),
+        },
+        {
+          path: `${area}/flow/review`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/order-review-page').then((m) => m.OrderReviewPage),
+        },
+        {
+          path: `${area}/flow/hold`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/order-hold-page').then((m) => m.OrderHoldPage),
+        },
+        {
+          // Steps 8 to 17, one screen each, walked with Back and Next.
+          path: `${area}/flow/step/:step`,
+          loadComponent: () =>
+            import('./features/diagnostics-flow/order-progress-page').then(
+              (m) => m.OrderProgressPage,
+            ),
+        },
+      ]),
+      {
         path: 'lab-tests/browse',
         data: {
           title: 'Browse tests by health concern',
@@ -193,38 +317,98 @@ export const routes: Routes = [
       },
       {
         /*
-         * Sheet flow 3, steps 3-9 — the whole vision journey the sheet and the
-         * `Vision Backend` tab describe: start an order, pick partner and mode
-         * of purchase, upload the eye prescription, get a coupon code, buy on
-         * the partner site.
+         * The vision cart, built from what the partner reported.
          *
-         * `/member/vision` above is a DIFFERENT model, not a partial one — a
-         * clinic booking with slots and a payment page, on `vision-bookings/*`.
-         * The order/partner/coupon journey has no endpoint anywhere: no order
-         * creation, no partner or mode selection, no prescription upload, no
-         * coupon issue. Nothing in the repo mentions a coupon.
+         * Two states, no input: waiting on the partner, or settled. The member
+         * never enters an amount — the coupon is a reference id, Lenskart
+         * prices the basket and reports its value, and operations record it
+         * (`ops/vision/orders/:id/report`) until an integration replaces them.
+         *
+         * Addressed per order so a member with two orders in a year does not
+         * share one page.
+         */
+        path: 'vision/order/:orderId/cart',
+        loadComponent: () =>
+          import('./features/services/vision-cart-page').then((m) => m.VisionCartPage),
+      },
+      {
+        /*
+         * Sheet flow 3, steps 3-7 — the member's half of the vision journey:
+         * start an order, pick partner and mode of purchase, upload the eye
+         * prescription, submit, receive a coupon bound to the order id.
+         *
+         * Steps 8-14 are NOT missing. They run on Lenskart's checkout and its
+         * Insurance Dashboard, per the sheet's `Vision Backend` tab, and never
+         * belonged to this portal.
+         *
+         * `/member/vision` above is a different model — a clinic booking with
+         * slots on `vision-bookings/*`, which appears in neither sheet and has
+         * no clinics on the live database. Both are routed while retiring one
+         * is an open decision in openspec/changes/member-vision-order.
          */
         path: 'vision/order',
-        data: { title: 'Vision order and coupon', reason: 'no-api' },
+        loadComponent: () =>
+          import('./features/services/vision-order-page').then((m) => m.VisionOrderPage),
+      },
+      {
+        // Flow 4 step 2 — "Compare dentists", as the entry point the sheet
+        // describes rather than a list two steps in. The service picker lives
+        // inside it, because a fee is per service and there is otherwise
+        // nothing to put in the fee column.
+        path: 'dental/compare',
+        loadComponent: () =>
+          import('./features/clinic-booking/compare-dentists-page').then(
+            (m) => m.CompareDentistsPage,
+          ),
+      },
+      {
+        // Flow 4 step 15 — the visit is over: upload the prescription and answer
+        // whether a procedure was recommended. That answer is the branch the
+        // whole second half of the flow turns on.
+        path: 'dental/visit/:bookingId/close',
+        loadComponent: () =>
+          import('./features/clinic-booking/close-visit-page').then((m) => m.CloseVisitPage),
+      },
+      {
+        // Flow 4 steps 18-19 — add the estimate the dentist quoted; the cart
+        // then waits on adjudication. Nothing is charged at this point.
+        path: 'dental/procedure/:bookingId/estimate',
+        loadComponent: () =>
+          import('./features/clinic-booking/procedure-estimate-page').then(
+            (m) => m.ProcedureEstimatePage,
+          ),
+      },
+      {
+        /*
+         * Flow 4 steps 22-28 — the procedure cart: what was approved and what
+         * was not, a slot at the same clinic, payment, then the wait while
+         * operations confirm with the clinic.
+         *
+         * Adjudication (20-21) and confirmation (29) are deliberately absent:
+         * they are decisions made ABOUT the member, so they live on ops.
+         */
+        /*
+         * Flow 4 steps 27, 30 and 32 — the three documents the procedure route
+         * promises after payment. None is produced, so each says so on its own
+         * page rather than being left off the screen: a member told a cashless
+         * letter exists will look for it, and finding nothing reads as a fault
+         * with their booking.
+         *
+         * Step 30's letter is the same missing generator as the consultation's
+         * step 13, and step 32's invoice exists for a CONSULTATION only —
+         * dental-bookings raises one, dental-procedures has no equivalent.
+         */
+        path: 'dental/procedure/:procedureId/document/:kind',
+        data: { reason: 'not-issued' },
         loadComponent: () =>
           import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
       },
       {
-        /*
-         * Sheet flow 4, steps 18-33 — the procedure route that branches off a
-         * dental consultation when the dentist recommends one: capture the
-         * estimate, create a cart on hold, backend adjudication, adjudicator
-         * builds the approved cart, slot with the SAME dentist, pay, confirm.
-         *
-         * The consultation half is built. The procedure half has no endpoints:
-         * `dental-bookings/*` covers booking only, and the admin side is
-         * confirm / cancel / reschedule / no-show / complete — no estimate, no
-         * adjudication, no cart.
-         */
-        path: 'dental/procedure',
-        data: { title: 'Dental procedure route', reason: 'no-api' },
+        path: 'dental/procedure/:procedureId',
         loadComponent: () =>
-          import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
+          import('./features/clinic-booking/procedure-detail-page').then(
+            (m) => m.ProcedureDetailPage,
+          ),
       },
       // Appointments and Online consult share specialties -> doctors -> confirm.
       // Online skips clinic and slot, matching web-member.
@@ -343,6 +527,17 @@ export const routes: Routes = [
           ),
       },
       {
+        /*
+         * Flow 6 step 3 — the optional prescription, between choosing the
+         * vaccine and choosing the provider, where the sheet puts it.
+         */
+        path: 'vaccination/prescription',
+        loadComponent: () =>
+          import('./features/vaccination/vaccination-prescription-page').then(
+            (m) => m.VaccinationPrescriptionPage,
+          ),
+      },
+      {
         path: 'vaccination/vendors',
         loadComponent: () =>
           import('./features/vaccination/vaccination-vendors-page').then(
@@ -361,6 +556,52 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/vaccination/vaccination-slot-page').then(
             (m) => m.VaccinationSlotPage,
+          ),
+      },
+      {
+        /*
+         * Flow 6 steps 12 and 13 — the receipt and the cashless letter, which
+         * are the same two documents dental raises, so they are the same
+         * screen with the vendor's wording.
+         */
+        /*
+         * Flow 6 steps 15 and 16 — the vendor's report and the invoice. Both
+         * are other people's actions, so the screen tells rather than asks.
+         */
+        path: 'vaccination/booking/:reference/outcome',
+        loadComponent: () =>
+          import('./features/vaccination/vaccination-outcome-page').then(
+            (m) => m.VaccinationOutcomePage,
+          ),
+      },
+      {
+        /*
+         * Flow 6 step 16 — the invoice. A real one is generated when the
+         * vendor confirms the dose, and the appointment page hands that over;
+         * this stands in before it exists, and shows the same figures after,
+         * so the step is never a dead end.
+         */
+        path: 'vaccination/booking/:reference/invoice',
+        data: { kind: 'invoice', area: 'vaccination' },
+        loadComponent: () =>
+          import('./features/clinic-booking/dental-document-page').then(
+            (m) => m.DentalDocumentPage,
+          ),
+      },
+      {
+        path: 'vaccination/booking/:reference/receipt',
+        data: { kind: 'receipt', area: 'vaccination' },
+        loadComponent: () =>
+          import('./features/clinic-booking/dental-document-page').then(
+            (m) => m.DentalDocumentPage,
+          ),
+      },
+      {
+        path: 'vaccination/booking/:reference/cashless-letter',
+        data: { kind: 'cashless-letter', area: 'vaccination' },
+        loadComponent: () =>
+          import('./features/clinic-booking/dental-document-page').then(
+            (m) => m.DentalDocumentPage,
           ),
       },
       {
@@ -395,6 +636,12 @@ export const routes: Routes = [
         path: 'ahc/orders/:orderId',
         loadComponent: () =>
           import('./features/wellness/ahc-order-page').then((m) => m.AhcOrderPage),
+      },
+      {
+        // Flow 8's 23 steps, one screen each — see AhcWalkthroughPage.
+        path: 'ahc/walkthrough/:step',
+        loadComponent: () =>
+          import('./features/wellness/ahc-walkthrough-page').then((m) => m.AhcWalkthroughPage),
       },
       {
         path: 'ahc/booking/payment',
@@ -468,6 +715,25 @@ export const routes: Routes = [
         path: 'health-records',
         loadComponent: () =>
           import('./features/records/health-records-page').then((m) => m.HealthRecordsPage),
+      },
+      {
+        /*
+         * A floater — one pot of cover shared by the whole family — as flow 6
+         * and the wallet configuration sheet describe it.
+         *
+         * `allocationType` is a single PLAN-WIDE setting ('INDIVIDUAL' or
+         * 'FLOATER') on the plan config's wallet block. There is no per-benefit
+         * allocation, so "vaccination is shared but dental is not" has nowhere
+         * to live: it needs a field on the benefit and `wallet.service.ts` to
+         * read it where it now reads the plan-level one.
+         *
+         * Marked 'not-modelled' rather than 'no-api' for exactly that reason —
+         * this is a schema decision, not a missing screen.
+         */
+        path: 'wallet/shared-cover',
+        data: { title: 'Shared with your family', reason: 'not-modelled' },
+        loadComponent: () =>
+          import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
       },
       {
         path: 'family',

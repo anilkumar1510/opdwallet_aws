@@ -2,6 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { isAppError } from '../http/app-error';
+
 import { Money, money } from '../domain/money';
 import { SessionStore } from '../session/session.store';
 import { PAYMENTS_API } from '../transactions/transaction.mapper';
@@ -212,6 +214,23 @@ export class AhcBookingStore {
     }
   }
 
+  /**
+   * Cancels the check already taken this year, so the three options open again.
+   *
+   * Development only. The once-a-year rule is correct and the API keeps it —
+   * this asks the API to release it, and the API refuses outside development.
+   */
+  async demoReset(): Promise<boolean> {
+    try {
+      await firstValueFrom(this.http.post(AHC_API.demoReset, {}));
+      this.clearBooking();
+      await this.loadBookedLegs();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   setLab(leg: AhcLeg): void {
     this._lab.set(leg);
   }
@@ -243,6 +262,55 @@ export class AhcBookingStore {
    * Also returns what is still owed, because the caller has to create the
    * payment for it - see `createCopayPayment` below.
    */
+  /**
+   * Flow 8 step 11 — attach the radiology leg to the check already booked.
+   *
+   * The individual route cannot place a second order: the annual health check
+   * is once a year, and eligibility refuses one. Radiology after pathology is
+   * therefore an addition to the existing order, not a booking of its own —
+   * which is also why nothing is owed here. The check was billed when the
+   * pathology leg was placed.
+   */
+  async attachDiagnostic(orderId: string): Promise<PlacedAhcOrder | null> {
+    const diagnostic = this._diagnostic();
+    if (!diagnostic) {
+      this._placeError.set('Choose a diagnostic centre first.');
+      return null;
+    }
+
+    this._placing.set(true);
+    this._placeError.set(null);
+    try {
+      const response = await firstValueFrom(
+        this.http.post<AhcEnvelopeDto<PlacedAhcOrderDto>>(AHC_API.addDiagnosticLeg(orderId), {
+          diagnosticVendorId: diagnostic.vendorId,
+          ...(diagnostic.slotId ? { diagnosticSlotId: diagnostic.slotId } : {}),
+          ...(diagnostic.date ? { diagnosticAppointmentDate: diagnostic.date } : {}),
+          ...(diagnostic.time ? { diagnosticAppointmentTime: diagnostic.time } : {}),
+        }),
+      );
+      const order = response?.data;
+      return {
+        orderId: order?.orderId ?? orderId,
+        // Nothing more to pay: the check was billed on the first leg.
+        owed: 0,
+        packageName: order?.packageName ?? '',
+      };
+    } catch (error: unknown) {
+      const message =
+        (error as { error?: { message?: unknown } } | null)?.error?.message ??
+        (isAppError(error) ? error.message : undefined);
+      this._placeError.set(
+        typeof message === 'string' && message.trim()
+          ? message
+          : 'We could not add radiology to your health check.',
+      );
+      return null;
+    } finally {
+      this._placing.set(false);
+    }
+  }
+
   async place(input: PlaceAhcOrderInput): Promise<PlacedAhcOrder | null> {
     this._placing.set(true);
     this._placeError.set(null);
@@ -288,10 +356,20 @@ export class AhcBookingStore {
       const owed = order?.finalPayable ?? order?.copayAmount ?? 0;
       return { orderId, owed: owed > 0 ? owed : 0, packageName: order?.packageName ?? '' };
     } catch (error: unknown) {
-      // The API's own words when it has them — "Already booked AHC for this
-      // policy year" is the one the radiology-after-pathology route hits, and a
-      // generic retry message would send the member round the loop for nothing.
-      const message = (error as { error?: { message?: unknown } } | null)?.error?.message;
+      /*
+       * The API's own words when it has them — "Already booked AHC for this
+       * policy year" is the one the radiology-after-pathology route hits, and a
+       * generic retry message would send the member round the loop for nothing.
+       *
+       * Read off BOTH shapes: `errorInterceptor` turns a transport failure into
+       * an AppError carrying `message`, so looking only at `error.error.message`
+       * found nothing and every refusal read "please try again" — including
+       * "Diagnostic vendor is required for this package", which no amount of
+       * trying again would have fixed.
+       */
+      const message =
+        (error as { error?: { message?: unknown } } | null)?.error?.message ??
+        (isAppError(error) ? error.message : undefined);
       this._placeError.set(
         typeof message === 'string' && message.trim()
           ? message

@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { CLINIC_BOOKING_API, ClinicArea, ClinicSlot } from '../../core/clinic-booking/clinic-booking';
@@ -67,8 +76,10 @@ const DAY = new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric',
                     appointmentTime: slot.startTime,
                   }"
                   class="flex min-h-touch items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-medium text-ink-700 transition-colors hover:border-[#0F5FDC] hover:text-[#034DA2]"
-                  [class.pointer-events-none]="!slot.isAvailable"
-                  [class.opacity-40]="!slot.isAvailable"
+                  [class.pointer-events-none]="!bookable(slot)"
+                  [class.opacity-40]="!bookable(slot)"
+                  [attr.aria-disabled]="!bookable(slot)"
+                  [title]="hasPassed(slot) ? 'This time has already passed' : ''"
                 >
                   {{ slot.startTime }}
                 </a>
@@ -107,9 +118,48 @@ export class SelectSlotPage {
   });
 
   protected readonly date = signal(this.days[0].iso);
+
+  /**
+   * Ticks so today's grid greys out as the day passes.
+   *
+   * Without it a member who opens the page at 08:55 keeps a bookable 09:00
+   * long after it has gone. A minute is fine: slots are half-hourly, so
+   * nothing can be stale by more than one tick.
+   */
+  private readonly now = signal(Date.now());
+
+  /**
+   * A slot in the past cannot be booked.
+   *
+   * Only ever true for TODAY — a future date has no passed times, and comparing
+   * against wall-clock without that guard would grey out tomorrow morning as
+   * soon as this morning went by.
+   *
+   * Built from the slot's own date and time in LOCAL time rather than parsing
+   * an ISO string: `new Date('2026-09-02T09:00')` with no zone is local, which
+   * is what the clinic means by 09:00. Appending 'Z' would shift it by the
+   * offset and grey out the wrong slots — 05:30 off, for IST.
+   */
+  protected hasPassed(slot: { date: string; startTime: string }): boolean {
+    const [hours, minutes] = slot.startTime.split(':').map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return false;
+
+    const [year, month, day] = slot.date.split('-').map(Number);
+    const at = new Date(year, (month ?? 1) - 1, day, hours, minutes, 0, 0);
+    return at.getTime() <= this.now();
+  }
+
+  /** Available at the clinic AND still to come. */
+  protected bookable(slot: { date: string; startTime: string; isAvailable: boolean }): boolean {
+    return slot.isAvailable && !this.hasPassed(slot);
+  }
   protected readonly basePath = computed(() => CLINIC_BOOKING_API[this.area()].basePath);
 
   constructor() {
+    // Re-evaluate the grid on the minute, and stop when the screen goes away.
+    const tick = setInterval(() => this.now.set(Date.now()), 60_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(tick));
+
     effect(() => {
       const clinic = this.clinicId();
       const day = this.date();

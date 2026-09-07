@@ -17,6 +17,7 @@ import {
 import { CounterService } from '../counters/counter.service';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { DentalBookingsService } from '../dental-bookings/dental-bookings.service';
+import { DentalProceduresService } from '../dental-procedures/dental-procedures.service';
 import { VisionBookingsService } from '../vision-bookings/vision-bookings.service';
 import { VaccinationBookingService } from '../vaccination/services/vaccination-booking.service';
 
@@ -30,6 +31,8 @@ export class PaymentService {
     private readonly appointmentsService: AppointmentsService,
     @Inject(forwardRef(() => DentalBookingsService))
     private readonly dentalBookingsService: DentalBookingsService,
+    @Inject(forwardRef(() => DentalProceduresService))
+    private readonly dentalProceduresService: DentalProceduresService,
     @Inject(forwardRef(() => VisionBookingsService))
     private readonly visionBookingsService: VisionBookingsService,
     @Inject(forwardRef(() => VaccinationBookingService))
@@ -156,7 +159,16 @@ export class PaymentService {
     if (payment.serviceType === ServiceType.DENTAL && payment._id) {
       console.log('🦷 [PAYMENT SERVICE] Triggering dental booking confirmation for payment:', payment._id.toString());
       try {
-        await this.dentalBookingsService.handlePaymentComplete(payment._id.toString());
+        // A DENTAL payment is raised by either journey — the consultation or
+        // the procedure route. Procedures answer first and say whether the
+        // payment was theirs, so nothing has to read the reference prefix to
+        // tell them apart.
+        const wasProcedure = await this.dentalProceduresService.handlePaymentComplete(
+          payment.paymentId,
+        );
+        if (!wasProcedure) {
+          await this.dentalBookingsService.handlePaymentComplete(payment.paymentId);
+        }
         console.log('✅ [PAYMENT SERVICE] Dental booking confirmed successfully');
       } catch (error) {
         console.error('❌ [PAYMENT SERVICE] Failed to confirm dental booking:', error);

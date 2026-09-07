@@ -108,6 +108,33 @@ function AppointmentCard({ appointment, onUpdate }: AppointmentCardProps) {
       )}
     </Link>
 
+    {/*
+      The way into the video room from the list.
+
+      Until now the only entry was the appointment DETAIL page, so a doctor with
+      a patient waiting had to open the appointment first and find "Start Video
+      Consultation" there. The member's side has the same button on their own
+      list; this is its counterpart.
+
+      Shown on the same terms the member's is: an online consultation that has
+      been confirmed and has no prescription yet, since a prescription means the
+      consultation is over. It sits OUTSIDE the wrapping Link so it navigates to
+      the room rather than to the appointment.
+    */}
+    {appointment.appointmentType === 'ONLINE' &&
+      appointment.status === 'CONFIRMED' &&
+      !appointment.hasPrescription && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <Link
+            href={`/doctorview/consultations/${appointment.appointmentId}`}
+            className="flex w-full items-center justify-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors font-medium text-sm"
+          >
+            <VideoCameraIcon className="h-4 w-4 mr-2" />
+            Join call
+          </Link>
+        </div>
+      )}
+
     {appointment.status === 'PENDING_CONFIRMATION' && (
       <div className="mt-4 pt-4 border-t border-gray-200">
         <button

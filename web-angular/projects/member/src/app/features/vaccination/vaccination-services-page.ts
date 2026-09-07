@@ -58,7 +58,7 @@ import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
                 </div>
 
                 <a
-                  [routerLink]="['/member/vaccination/vendors']"
+                  [routerLink]="['/member/vaccination/prescription']"
                   [queryParams]="{ serviceId: service.id }"
                   class="mt-4 flex min-h-touch w-full items-center justify-center rounded-xl bg-[#0F5FDC] px-5 text-sm font-semibold text-white hover:bg-[#034DA2]"
                 >

@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input } f
 import { RouterLink } from '@angular/router';
 
 import { BookingsStore } from '../../core/bookings/bookings.store';
+import { WalletStore } from '../../core/wallet/wallet.store';
 import { BookingKind } from '../../core/bookings/booking.model';
 import { formatBookingWhen } from '../../core/bookings/booking-when';
 import { formatMoney } from '../../core/domain/money';
+import { consultationService } from '../../core/services/benefit-services';
 import { BenefitServicesStore } from '../../core/services/benefit-services.store';
 import { SERVICE_SCREEN_COPY } from '../../core/services/benefit-services';
 import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
@@ -75,8 +77,121 @@ const SCREENS: Readonly<Record<string, ScreenConfig>> = {
         } @else if (store.error(); as error) {
           <opd-error [error]="error" (retry)="store.retry()" />
         } @else if (store.services().length) {
+          <!--
+            Sheet flow 3 step 2 - "Policy coverage details appear: eligible
+            amount, frequency and covered items are shown. Coverage is shown
+            instead of a payment breakdown, because nothing is charged here."
+
+            The covered items were always the cards below; what was missing was
+            the money. Every figure comes from wallet/balance - available and
+            total from the category, the two limits from the config block beside
+            it. Nothing is computed here.
+          -->
+          @if (cover(); as cover) {
+            <section class="mb-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+              <h2 class="text-base font-semibold text-[#0E51A2] lg:text-lg">Your cover</h2>
+              <dl class="mt-3 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Available to use</dt>
+                  <dd class="font-semibold text-ink-900">
+                    {{ cover.isUnlimited ? 'Unlimited' : money(cover.available) }}
+                  </dd>
+                </div>
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Used so far</dt>
+                  <dd class="font-medium text-ink-900">{{ money(cover.consumed) }}</dd>
+                </div>
+                @if (cover.annualLimit; as annual) {
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Each policy year</dt>
+                    <dd class="font-medium text-ink-900">{{ money(annual) }}</dd>
+                  </div>
+                }
+                @if (cover.perClaimLimit; as perClaim) {
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Most per booking</dt>
+                    <dd class="font-medium text-ink-900">{{ money(perClaim) }}</dd>
+                  </div>
+                }
+              </dl>
+
+              @if (cover.isExhausted) {
+                <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700">
+                  You have used all of this cover for the current policy year.
+                </p>
+              }
+            </section>
+          }
+
+          <!--
+            Flow 4 step 2 - "Compare dentists". The sheet makes this the ENTRY
+            POINT: "Fees, availability, experience and distance are compared
+            side by side. Comparison view is the entry point, not a plain list."
+
+            It is not built as an entry point and cannot be yet, for two
+            reasons worth keeping visible rather than burying:
+
+              - There are no dentists. A dental booking records a clinic and
+                nothing else, so there is nobody to compare or to show
+                experience for. It is the same gap that stops step 24's "same
+                dentist who recommended the procedure" from being enforceable.
+              - A fee is per service. Nothing can be priced until a service is
+                chosen, so a comparison ahead of that has no fee column.
+
+            What exists is a CLINIC comparison one step in, on fees and
+            availability, naming the two dimensions it cannot fill. This says so
+            and points at it, instead of leaving the member to discover that the
+            sheet's first real step is missing.
+          -->
+          @if (isDental()) {
+            <section class="mb-5 rounded-2xl border border-dashed border-[#0F5FDC] bg-white p-5">
+              <h2 class="text-base font-semibold text-[#0E51A2] lg:text-lg">Compare dentists</h2>
+              <p class="mt-1 text-sm text-ink-700">
+                Comparing dentists by experience is not available yet — we do not hold a dentist on
+                a dental booking, only the clinic.
+              </p>
+              <p class="mt-2 text-sm text-ink-500">
+                You can still compare the clinics that offer each treatment, on fee and
+                availability.
+              </p>
+              <a
+                routerLink="/member/dental/compare"
+                class="mt-4 flex min-h-touch w-full items-center justify-center rounded-xl bg-[#0F5FDC] px-5 text-sm font-semibold text-white hover:bg-[#034DA2]"
+                >Compare clinics side by side</a
+              >
+            </section>
+          }
+
+          <!--
+            Step 3. The order journey is the one the sheet describes; the cards
+            below are a clinic booking, which appears in neither sheet. Both are
+            offered while retiring one is an open decision.
+          -->
+          @if (isVision()) {
+            <a
+              routerLink="/member/vision/order"
+              class="mb-5 flex min-h-touch w-full items-center justify-center rounded-xl bg-[#0F5FDC] px-5 text-sm font-semibold text-white hover:bg-[#034DA2]"
+              >Start a new order and get a coupon</a
+            >
+          }
+
+          <!--
+            Dental only. These cards open the clinic-booking journey - clinics,
+            slots, confirm, pay - which is dental's actual flow 4: compare
+            dentists, book a visit, pick a slot.
+
+            Vision does not work that way. Its journey is an order and a coupon
+            spent at a partner, and the clinic model appears in neither the
+            Patient Flows sheet nor the Vision Backend tab. It also had no data:
+            vision-bookings/clinics returned an empty list on the live database,
+            so every card led to a dead end.
+
+            The booking routes are left in place so existing bookings and old
+            links still resolve; what is removed is the way in.
+          -->
+          @if (!isVision()) {
           <ul class="grid gap-5 lg:grid-cols-2">
-            @for (service of store.services(); track service.id) {
+            @for (service of bookable(); track service.id) {
               <li
                 class="rounded-2xl border border-[#F0C89A] p-6"
                 style="background: linear-gradient(180deg,#F3F7FF 0%,#E9F1FF 100%)"
@@ -96,6 +211,12 @@ const SCREENS: Readonly<Record<string, ScreenConfig>> = {
               </li>
             }
           </ul>
+          <p class="mt-4 rounded-xl bg-surface-sunk px-4 py-3 text-sm text-ink-500">
+            Fillings, X-rays and other treatment are not booked here. Your dentist recommends them
+            at the visit and gives you an estimate — we check that against your plan before anything
+            is charged.
+          </p>
+          }
         } @else {
           <opd-empty
             [title]="config().emptyTitle"
@@ -147,10 +268,41 @@ export class BenefitServicesPage {
 
   protected readonly store = inject(BenefitServicesStore);
   private readonly bookings = inject(BookingsStore);
+  private readonly wallet = inject(WalletStore);
 
   protected readonly money = formatMoney;
 
   protected readonly config = computed(() => SCREENS[this.area()] ?? SCREENS['VISION']);
+
+  /**
+   * Dental books the consultation and nothing else — see `consultationService`.
+   * Vision is unaffected: its services genuinely are the things being bought.
+   */
+  protected readonly bookable = computed(() => {
+    const services = this.store.services();
+    if (this.area() !== 'DENTAL') return services;
+    const consultation = consultationService(services);
+    return consultation ? [consultation] : [];
+  });
+
+  protected readonly isVision = computed(() => this.area() === 'VISION');
+  protected readonly isDental = computed(() => this.area() === 'DENTAL');
+
+  /**
+   * This screen's own category balance — sheet step 2's "eligible amount and
+   * frequency".
+   *
+   * Read from the wallet rather than fetched again: the shell already loads it
+   * for the balance in the header, and a second request for numbers already in
+   * memory would show the member two figures that can disagree while one is in
+   * flight.
+   */
+  protected readonly cover = computed(
+    () =>
+      this.wallet
+        .wallet()
+        ?.categories.find((category) => category.code === this.config().categoryId) ?? null,
+  );
 
   constructor() {
     effect(() => this.store.select(this.config().categoryId));

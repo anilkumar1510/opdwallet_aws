@@ -1,4 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,12 +10,15 @@ import {
 } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 import { InClinicFlowStore } from '../../core/appointments/inclinic-flow.store';
 import { Booking, BookingKind } from '../../core/bookings/booking.model';
 import { formatBookingWhen } from '../../core/bookings/booking-when';
 import { BookingsStore } from '../../core/bookings/bookings.store';
 import { formatMoney } from '../../core/domain/money';
+import { isAppError } from '../../core/http/app-error';
+import { VACCINATION_API } from '../../core/vaccination/vaccination';
 import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { BackLink } from '../../shared/ui/back-link';
@@ -218,6 +222,135 @@ const FILTERS: readonly { key: BookingKind | 'ALL'; label: string }[] = [
           </a>
         }
 
+        <!--
+          Dental's tail — flow 4 steps 10 to 15, in the place the member comes
+          back to. The sheet's own notification (step 9, WhatsApp and push) does
+          not exist, so this list is where they will find out the clinic said
+          yes, exactly as the in-clinic block above assumes.
+
+          Two of these are placeholders and say so on the page they open:
+          nothing issues a receipt (step 12), and no route anywhere generates a
+          cashless letter (step 13).
+        -->
+        <!--
+          The way into a video consultation.
+          
+          The Join call button lived only on /member/online-consult, and
+          NOTHING linked to that screen — the home card, the benefit detail and
+          the pharmacy cross-link all point at online-consult/specialties,
+          which starts a NEW booking. So a member with a confirmed call had no
+          navigable route to it; every call had to be reached by typing a URL.
+
+          The rule is the hub's own (consult-hub-page.ts:201), repeated rather
+          than shared because it is three field reads and importing across
+          feature folders for it would couple two screens that have no other
+          reason to know about each other.
+        -->
+        @if (canJoinCall(booking)) {
+          <a
+            [routerLink]="['/member/consultations', booking.id]"
+            class="mt-3 flex min-h-touch w-full items-center justify-center rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white hover:bg-[#034DA2]"
+            >Join call</a
+          >
+        }
+
+        @if (booking.kind === dentalKind) {
+          @if (booking.outstanding; as owed) {
+            <a
+              [routerLink]="['/member/bookings']"
+              [queryParams]="{ tab: 'dental' }"
+              class="mt-3 flex min-h-touch w-full items-center justify-center rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white"
+              >Your cart is ready — {{ money(owed) }} still to pay</a
+            >
+          }
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a
+              [routerLink]="['/member/bookings', booking.reference, 'cashless-letter']"
+              class="min-h-touch flex-1 rounded-xl border border-surface-border px-3 text-center text-sm font-semibold leading-[44px] text-ink-900 hover:bg-surface-sunk"
+              >Cashless letter</a
+            >
+            @if (!booking.isUpcoming) {
+              <a
+                [routerLink]="['/member/dental/visit', booking.reference, 'close']"
+                class="min-h-touch flex-1 rounded-xl border border-[#0F5FDC] px-3 text-center text-sm font-semibold leading-[44px] text-[#0F5FDC] hover:bg-blue-50"
+                >After your visit</a
+              >
+            }
+          </div>
+        }
+
+        <!--
+          Vaccination's tail, flow 6 steps 9 to 16, in the place the member
+          comes back to. Step 9's WhatsApp and push do not exist, so this list
+          is where they find out the vendor agreed the slot.
+
+          There is no "after your dose" here on purpose: step 15 gives that
+          report to the VENDOR, not the member. The demo control below stands
+          in for them, and says so.
+        -->
+        @if (booking.kind === vaccinationKind) {
+          @if (booking.outstanding; as owed) {
+            <a
+              [routerLink]="['/member/bookings']"
+              [queryParams]="{ tab: 'vaccination' }"
+              class="mt-3 flex min-h-touch w-full items-center justify-center rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white"
+              >Your cart is ready — {{ money(owed) }} still to pay</a
+            >
+          }
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a
+              [routerLink]="['/member/vaccination/booking', booking.reference, 'receipt']"
+              class="min-h-touch flex-1 rounded-xl border border-surface-border px-3 text-center text-sm font-semibold leading-[44px] text-ink-900 hover:bg-surface-sunk"
+              >Receipt</a
+            >
+            <a
+              [routerLink]="['/member/vaccination/booking', booking.reference, 'cashless-letter']"
+              class="min-h-touch flex-1 rounded-xl border border-surface-border px-3 text-center text-sm font-semibold leading-[44px] text-ink-900 hover:bg-surface-sunk"
+              >Cashless letter</a
+            >
+            <a
+              [routerLink]="['/member/vaccination/booking', booking.reference, 'outcome']"
+              class="min-h-touch flex-1 rounded-xl border border-[#0F5FDC] px-3 text-center text-sm font-semibold leading-[44px] text-[#0F5FDC] hover:bg-blue-50"
+              >After your appointment</a
+            >
+          </div>
+
+          <!--
+            Demonstration only. Operations confirm with the vendor and the
+            vendor reports the outcome; neither has a member route, so without
+            this the vaccination tail cannot be reached at all. The API refuses
+            it outside development.
+          -->
+          <div class="mt-3 border-t border-surface-border pt-3">
+            <p class="text-xs text-ink-500">
+              For demonstrations: stand in for our team and the vendor.
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="min-h-touch flex-1 rounded-xl border border-dashed border-surface-border px-3 text-sm font-semibold text-ink-700 hover:bg-surface-sunk disabled:opacity-60"
+                [disabled]="advancing() === booking.reference"
+                (click)="advance(booking.reference)"
+              >
+                Confirm, then dose given (demo)
+              </button>
+              <button
+                type="button"
+                class="min-h-touch flex-1 rounded-xl border border-dashed border-surface-border px-3 text-sm font-semibold text-ink-700 hover:bg-surface-sunk disabled:opacity-60"
+                [disabled]="advancing() === booking.reference"
+                (click)="advance(booking.reference, 'no-show')"
+              >
+                Report as missed (demo)
+              </button>
+            </div>
+            @if (advanceError(); as problem) {
+              <p class="mt-2 text-sm text-danger-700" role="alert">{{ problem }}</p>
+            }
+          </div>
+        }
+
         <!-- Only from PENDING_CONFIRMATION or CONFIRMED, and only while the
              booking is still ahead — the same rule web-member applies. -->
         @if (booking.isCancellable) {
@@ -258,10 +391,55 @@ const FILTERS: readonly { key: BookingKind | 'ALL'; label: string }[] = [
   `,
 })
 export class BookingsPage {
+  /** Compared in the template, so the enum does not have to be reachable there. */
+  protected readonly dentalKind = BookingKind.Dental;
+
+  /**
+   * Whether this booking is a video consultation the member can walk into now.
+   *
+   * Confirmed and online, and no prescription yet — a prescription means the
+   * doctor has finished, so the room is closed. Same three conditions the
+   * consultation hub applies.
+   */
+  protected canJoinCall(booking: Booking): boolean {
+    return (
+      booking.consultMode === 'ONLINE' &&
+      booking.statusCode === 'CONFIRMED' &&
+      !booking.hasPrescription
+    );
+  }
+  protected readonly vaccinationKind = BookingKind.Vaccination;
+
+  protected readonly advancing = signal<string | null>(null);
+  protected readonly advanceError = signal<string | null>(null);
+
+  /**
+   * See the demo control's comment — development only, refused elsewhere. The
+   * API decides which step is next from the booking's own state, so one button
+   * carries a booking from pending confirmation through to the dose given.
+   */
+  protected async advance(reference: string, outcome?: 'no-show'): Promise<void> {
+    this.advancing.set(reference);
+    this.advanceError.set(null);
+    try {
+      await firstValueFrom(
+        this.http.post(VACCINATION_API.demoAdvance(reference), outcome ? { outcome } : {}),
+      );
+      this.store.retry();
+    } catch (error: unknown) {
+      this.advanceError.set(
+        isAppError(error) ? error.message : 'We could not move that booking on.',
+      );
+    } finally {
+      this.advancing.set(null);
+    }
+  }
+
   /** Bound from ?tab= via withComponentInputBinding(), e.g. from the lab screen. */
   readonly tab = input<string | undefined>(undefined);
 
   protected readonly store = inject(BookingsStore);
+  private readonly http = inject(HttpClient);
   private readonly inClinic = inject(InClinicFlowStore);
   protected readonly money = formatMoney;
   protected readonly filters = FILTERS;

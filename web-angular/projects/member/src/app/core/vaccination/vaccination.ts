@@ -15,6 +15,12 @@ export const VACCINATION_API = {
   byId: (bookingId: string) => `member/vaccination/bookings/${bookingId}`,
   cancel: (bookingId: string) => `member/vaccination/bookings/${bookingId}/cancel`,
   invoice: (bookingId: string) => `member/vaccination/bookings/${bookingId}/invoice`,
+  /**
+   * Steps 7-8 and 15 done by the member — development only, refused elsewhere.
+   * Operations confirm with the vendor, and the vendor reports the outcome;
+   * neither has a member route, so without this the tail cannot be reached.
+   */
+  demoAdvance: (bookingId: string) => `member/vaccination/bookings/${bookingId}/demo-advance`,
 } as const;
 
 export interface VaccineServiceDto {

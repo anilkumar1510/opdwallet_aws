@@ -1,4 +1,15 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { VideoConsultationService } from './video-consultation.service';
 import { StartConsultationDto } from './dto/start-consultation.dto';
 import { EndConsultationDto } from './dto/end-consultation.dto';
@@ -11,7 +22,33 @@ import { UserRole } from '@/common/constants/roles.enum';
 @Controller('video-consultations')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class VideoConsultationController {
-  constructor(private readonly videoConsultationService: VideoConsultationService) {}
+  constructor(
+    private readonly videoConsultationService: VideoConsultationService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  /**
+   * POST /api/video-consultations/demo-start
+   *
+   * Starts the call from the member's side, for demonstrations only.
+   *
+   * A consultation is started by the DOCTOR — correctly, since they decide when
+   * they are ready — so `join` answers "no active consultation" until one has.
+   * On a demo database nobody is sitting in the doctor portal, which leaves the
+   * whole video journey, and the Agora token path with it, impossible to show.
+   *
+   * Calls the very same service method the doctor's route calls, passing the
+   * appointment's own doctorId so nothing is bypassed but the question of WHO
+   * pressed start. Refused outside development.
+   */
+  @Post('demo-start')
+  @Roles(UserRole.MEMBER)
+  async demoStart(@Body() body: { appointmentId: string }, @Request() req: any) {
+    if (this.configService.get<string>('nodeEnv') !== 'development') {
+      throw new ForbiddenException('Your doctor starts the call');
+    }
+    return this.videoConsultationService.demoStartAsMember(body.appointmentId, req.user.userId);
+  }
 
   @Post('start')
   @Roles(UserRole.DOCTOR)

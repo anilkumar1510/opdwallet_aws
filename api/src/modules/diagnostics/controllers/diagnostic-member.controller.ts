@@ -248,6 +248,32 @@ export class DiagnosticMemberController {
     };
   }
 
+  /**
+   * GET /api/member/diagnostics/vendors/available?pincode=...
+   * GET /api/member/diagnostics/vendors/:vendorId/pricing
+   *
+   * Flow 7 step 4 — "member picks the diagnostics partner", with the price the
+   * partner charges.
+   *
+   * The lab side has had both of these all along; radiology only exposed
+   * vendors and pricing THROUGH A CART, which a member cannot have until a
+   * prescription has been digitised. That made the sheet's test-first journey
+   * impossible on this half: no way to list partners, no way to price a scan.
+   * Both read methods already existed on the service — only the member-facing
+   * routes were missing.
+   */
+  @Get('vendors/available')
+  async getAvailableVendors(@Query('pincode') pincode: string) {
+    const vendors = await this.vendorService.getVendorsByPincode(pincode);
+    return { success: true, data: vendors };
+  }
+
+  @Get('vendors/:vendorId/pricing')
+  async getVendorPricing(@Param('vendorId') vendorId: string) {
+    const pricing = await this.vendorService.getVendorPricing(vendorId);
+    return { success: true, data: pricing };
+  }
+
   @Get('vendors/:vendorId/slots')
   async getVendorSlots(
     @Param('vendorId') vendorId: string,

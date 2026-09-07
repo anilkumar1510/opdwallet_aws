@@ -119,6 +119,51 @@ const DATETIME = new Intl.DateTimeFormat('en-IN', {
           </section>
 
           <!--
+            The rest of flow 7 — steps 8, 12, 16 and 17 — set out where the
+            member comes back to.
+
+            None of the four is a screen they can act on: adjudication and the
+            provider confirmation are ours, and the three documents are not
+            produced by anything. Written here rather than each behind its own
+            placeholder page, because a list of four one-line gaps reads better
+            in one place than as four dead ends to walk into.
+          -->
+          <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+            <h2 class="text-base font-semibold text-[#0E51A2] lg:text-lg">
+              What happens with this order
+            </h2>
+            <ol class="mt-3 space-y-2.5">
+              <li class="text-sm text-ink-500">
+                We check what your plan covers — which tests stay, which come off, and any price
+                change. Nothing is charged while that is happening.
+              </li>
+              <li class="text-sm text-ink-500">
+                Your order is placed with {{ detail.vendorName }}, who collect the sample or see you
+                at the centre.
+              </li>
+              <li class="text-sm text-ink-500">
+                Your report arrives here and in your health records.
+              </li>
+            </ol>
+
+            <div class="mt-4 space-y-2 border-t border-surface-border pt-4">
+              <p class="text-sm text-ink-500">
+                <span class="font-medium text-ink-700">Receipt.</span> We do not issue one yet. Your
+                payment is recorded against this order and on your wallet.
+              </p>
+              <p class="text-sm text-ink-500">
+                <span class="font-medium text-ink-700">Invoice.</span> Raised once the report is
+                delivered and the order closes — not when you pay. Nothing produces it yet.
+              </p>
+              <p class="text-sm text-ink-500">
+                <span class="font-medium text-ink-700">If the order fails after payment.</span> Your
+                cover is credited back. Refunding the part you paid yourself has to be done by hand
+                today — tell us and we will sort it.
+              </p>
+            </div>
+          </section>
+
+          <!--
             Sheet flow 7, step 15 - "Report delivered ... stored in health
             records". Reports are listed and openable on both kinds now; the
             API gained a download route that loads the order, checks ownership

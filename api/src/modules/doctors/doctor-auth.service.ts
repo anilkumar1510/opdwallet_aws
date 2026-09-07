@@ -85,7 +85,21 @@ export class DoctorAuthService {
     };
     console.log('[DoctorAuthService] JWT payload:', payload);
 
-    const jwtSecret = this.configService.get('DOCTOR_JWT_SECRET') || this.configService.get('JWT_SECRET');
+    /*
+     * Signed with the SAME key `JwtStrategy` verifies with.
+     *
+     * This read `DOCTOR_JWT_SECRET || JWT_SECRET` — raw env keys — while the
+     * strategy verifies with the namespaced `jwt.secret` from
+     * config/configuration.ts. The two agree only while DOCTOR_JWT_SECRET is
+     * unset: setting it, which is exactly what its name invites, would have
+     * signed every doctor token with a key nothing verifies and turned every
+     * doctor request into a 401. A separate doctor key is a real design
+     * choice, but it needs the strategy to accept it, and it does not.
+     *
+     * `jwt.secret` falls back the same way the strategy's does, so a missing
+     * JWT_SECRET behaves identically on both sides rather than diverging.
+     */
+    const jwtSecret = this.configService.get<string>('jwt.secret') || 'dev_jwt_secret';
     const jwtExpiry = this.configService.get('DOCTOR_JWT_EXPIRY') || '8h';
     console.log('[DoctorAuthService] JWT secret exists:', !!jwtSecret);
     console.log('[DoctorAuthService] JWT expiry:', jwtExpiry);

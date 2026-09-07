@@ -6,7 +6,10 @@ export async function POST(request: NextRequest) {
   console.log('=== PRESCRIPTION UPLOAD PROXY START ===');
   console.log('[Upload Proxy] Handling prescription upload');
 
-  const url = `${API_URL}/api/doctor/prescriptions/upload`;
+  // API_URL already ends in /api — appending another gave
+  // http://localhost:4000/api/api/doctor/prescriptions/upload, so every
+  // prescription upload 404'd. The catch-all proxy next door gets this right.
+  const url = `${API_URL}/doctor/prescriptions/upload`;
   console.log('[Upload Proxy] Target URL:', url);
 
   // Get cookies from request
@@ -20,6 +23,13 @@ export async function POST(request: NextRequest) {
 
     // Prepare headers - DO NOT set Content-Type for FormData (fetch will set it with boundary)
     const headers: Record<string, string> = {};
+
+    // Same reason as the catch-all proxy: the bearer token is what separates a
+    // doctor session from a member one on a shared host.
+    const authorization = request.headers.get('authorization');
+    if (authorization) {
+      headers['Authorization'] = authorization;
+    }
 
     if (cookies) {
       headers['Cookie'] = cookies;
