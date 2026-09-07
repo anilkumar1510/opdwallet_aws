@@ -57,12 +57,24 @@ and shown as "(test — not on plan)". The balance gate is skipped for these.
 
 ## 4. Claim cost estimate (Review step money rules)
 
-The 3-step form's Review step shows a full payment breakdown. **Per-claim limit**
-comes from `available-categories` and is real. **Co-payment %** and
-**per-transaction limit** have no endpoint, so they come from a PLACEHOLDER table
-(`core/claims/claim-rules.ts`, labelled "placeholder" on screen) and drive the
-live calculation: bill → per-claim cap → per-transaction cap → co-payment →
-reimbursable → wallet debit (bounded by balance) → out-of-pocket.
+The 3-step form's Review step shows a full payment breakdown, computed live:
+bill → per-claim cap → per-transaction cap → co-payment → reimbursable → wallet
+debit (bounded by balance) → out-of-pocket.
+
+**Now REAL (Option A wired):** `available-categories` was extended
+(`memberclaims.service.ts`) to also return `copay { mode, value }` (wallet-level,
+e.g. 20%) and `serviceTransactionLimits` per category. The form uses the real
+co-payment and, for the per-transaction cap, the **smallest** per-service limit
+(the claim names no service, so the most restrictive applies).
+
+**Still PLACEHOLDER as a fallback** (`core/claims/claim-rules.ts`): only used
+when the API omits copay / transaction limits for a category (e.g. a category
+with no `serviceTransactionLimits`, or the test/placeholder categories). Those
+rows are labelled "· placeholder" on screen.
+
+**Note for the Habit backend:** whatever serves `member/claims/available-categories`
+there must include `copay` and `serviceTransactionLimits` too, or the breakdown
+silently falls back to placeholder values.
 
 - **POST `member/claims/estimate`** (or a claims cover-check) →
   `{ eligibleAmount, perClaimLimit, perTransactionLimit, copayPercent, copayAmount, walletDeduction, outOfPocket, deductible }`

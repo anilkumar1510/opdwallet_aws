@@ -282,7 +282,9 @@ const STEPS = [
                   <div class="flex justify-between gap-3">
                     <dt class="text-ink-700">
                       Per-transaction limit
-                      <span class="text-[11px] text-warning-700">· placeholder</span>
+                      @if (!est.txnReal) {
+                        <span class="text-[11px] text-warning-700">· placeholder</span>
+                      }
                     </dt>
                     <dd class="font-medium text-ink-900">{{ est.perTxn !== null ? amount(est.perTxn) : 'No limit' }}</dd>
                   </div>
@@ -292,8 +294,10 @@ const STEPS = [
                   </div>
                   <div class="flex justify-between gap-3">
                     <dt class="text-ink-700">
-                      Co-payment ({{ est.copayPercent }}%)
-                      <span class="text-[11px] text-warning-700">· placeholder</span>
+                      Co-payment{{ est.copayMode === 'PERCENT' ? ' (' + est.copayValue + '%)' : '' }}
+                      @if (!est.copayReal) {
+                        <span class="text-[11px] text-warning-700">· placeholder</span>
+                      }
                     </dt>
                     <dd class="font-medium text-danger-700">− {{ amount(est.copayAmount) }}</dd>
                   </div>
@@ -311,9 +315,13 @@ const STEPS = [
                   </div>
                 </dl>
                 <p class="mt-3 text-xs text-ink-500">
-                  Estimates. Per-transaction limit and co-payment shown here are
-                  <span class="text-warning-700">placeholder policy values</span>; the final
-                  co-payment, capping and deductible are confirmed when the claim is adjudicated.
+                  Estimates.
+                  @if (!est.copayReal || !est.txnReal) {
+                    Rows marked <span class="text-warning-700">placeholder</span> are not from this
+                    policy yet.
+                  }
+                  The final co-payment, capping and deductible are confirmed when the claim is
+                  adjudicated.
                 </p>
                 @if (!est.balanceKnown) {
                   <p class="mt-1 text-xs text-warning-700">
@@ -455,10 +463,24 @@ export class NewClaimPage {
     const perClaim = chosen && chosen.perClaimLimit > 0 ? chosen.perClaimLimit : null;
     const afterClaim = perClaim !== null ? Math.min(bill, perClaim) : bill;
 
-    const perTxn = rules.perTransactionLimit > 0 ? rules.perTransactionLimit : null;
+    // Per-transaction limit: real from the plan config when the API sent it,
+    // otherwise the placeholder rule.
+    const txnReal = !!chosen && chosen.perTransactionLimit !== null;
+    const perTxn = txnReal
+      ? chosen!.perTransactionLimit
+      : rules.perTransactionLimit > 0
+        ? rules.perTransactionLimit
+        : null;
     const eligible = perTxn !== null ? Math.min(afterClaim, perTxn) : afterClaim;
 
-    const copayAmount = Math.round((eligible * rules.copayPercent) / 100);
+    // Co-payment: real from the wallet config when present, otherwise placeholder.
+    const copayReal = !!chosen && chosen.copayValue !== null;
+    const copayMode: 'PERCENT' | 'FLAT' = copayReal ? chosen!.copayMode! : 'PERCENT';
+    const copayValue = copayReal ? chosen!.copayValue! : rules.copayPercent;
+    const copayAmount =
+      copayMode === 'PERCENT'
+        ? Math.round((eligible * copayValue) / 100)
+        : Math.min(copayValue, eligible);
     const reimbursable = Math.max(0, eligible - copayAmount);
 
     const balance = this.categoryBalance();
@@ -473,9 +495,12 @@ export class NewClaimPage {
       afterClaim,
       capped: perClaim !== null && bill > perClaim,
       perTxn,
+      txnReal,
       txnCapped: perTxn !== null && afterClaim > perTxn,
       eligible,
-      copayPercent: rules.copayPercent,
+      copayReal,
+      copayMode,
+      copayValue,
       copayAmount,
       reimbursable,
       walletDeduction,
