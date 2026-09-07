@@ -109,18 +109,27 @@ const CATEGORY_BY_CODE: ReadonlyMap<string, BenefitCategory> = new Map([
   ['CAT003', BenefitCategory.Radiology],
   ['RADIOLOGY', BenefitCategory.Radiology],
   ['DIAGNOSTICS', BenefitCategory.Radiology],
+  // The claims API (memberclaims REVERSE_CATEGORY_MAP) labels CAT003
+  // DIAGNOSTIC_SERVICES and CAT004 LABORATORY_SERVICES; without these two the
+  // real categories resolve to Unknown, so their document/location rules fall
+  // back to the default and the category dropdown shows a duplicate placeholder.
+  ['DIAGNOSTIC_SERVICES', BenefitCategory.Radiology],
   ['CAT004', BenefitCategory.Pathology],
   ['PATHOLOGY', BenefitCategory.Pathology],
   ['LAB', BenefitCategory.Pathology],
+  ['LABORATORY_SERVICES', BenefitCategory.Pathology],
   ['CAT005', BenefitCategory.OnlineConsultation],
   ['ONLINE_CONSULTATION', BenefitCategory.OnlineConsultation],
   ['CAT006', BenefitCategory.Dental],
   ['DENTAL', BenefitCategory.Dental],
+  ['DENTAL_SERVICES', BenefitCategory.Dental],
   ['CAT007', BenefitCategory.Vision],
   ['VISION', BenefitCategory.Vision],
+  ['VISION_CARE', BenefitCategory.Vision],
   ['CAT008', BenefitCategory.HealthPackages],
   ['HEALTH_PACKAGES', BenefitCategory.HealthPackages],
   ['WELLNESS', BenefitCategory.HealthPackages],
+  ['WELLNESS_PROGRAMS', BenefitCategory.HealthPackages],
   ['CAT009', BenefitCategory.Vaccination],
   ['VACCINATION', BenefitCategory.Vaccination],
 ]);
