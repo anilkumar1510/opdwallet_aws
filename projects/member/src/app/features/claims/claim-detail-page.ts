@@ -1,22 +1,64 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, input, resource, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, resource, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import {
+  ClaimTimelineEntry,
   RESUBMIT_DOCUMENT_TYPES,
   RESUBMIT_MAX_FILES,
   ResubmitDocumentType,
+  TpaNote,
   validateResubmitFile,
 } from '../../core/claims/claim.mapper';
+import { Claim, ClaimStatus, StatusTone } from '../../core/claims/claim.model';
 import { ClaimDocument } from '../../core/claims/claim.model';
 import { ClaimsStore } from '../../core/claims/claims.store';
 import { BankDetailsStore } from '../../core/member/bank-details.store';
-import { formatMoney } from '../../core/domain/money';
+import { formatMoney, money } from '../../core/domain/money';
 import { EmptyView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// ── Test-scenario tables (frontend-only placeholders) ──────────────────────
+type ScenarioKey =
+  | 'live'
+  | 'review'
+  | 'docs'
+  | 'approved'
+  | 'partial'
+  | 'rejected'
+  | 'processing'
+  | 'paid'
+  | 'closed';
+
+const SCENARIO_STATUS: Record<
+  Exclude<ScenarioKey, 'live'>,
+  { code: string; label: string; tone: StatusTone; isFinal: boolean; cancellable: boolean }
+> = {
+  review: { code: 'UNDER_REVIEW', label: 'Under review', tone: 'progress', isFinal: false, cancellable: true },
+  docs: { code: 'DOCUMENTS_REQUIRED', label: 'Documents needed', tone: 'negative', isFinal: false, cancellable: true },
+  approved: { code: 'APPROVED', label: 'Approved', tone: 'positive', isFinal: false, cancellable: false },
+  partial: { code: 'PARTIALLY_APPROVED', label: 'Partially approved', tone: 'positive', isFinal: false, cancellable: false },
+  rejected: { code: 'REJECTED', label: 'Rejected', tone: 'negative', isFinal: true, cancellable: false },
+  processing: { code: 'PAYMENT_PROCESSING', label: 'Payment processing', tone: 'progress', isFinal: false, cancellable: false },
+  paid: { code: 'PAYMENT_COMPLETED', label: 'Paid', tone: 'positive', isFinal: true, cancellable: false },
+  closed: { code: 'CLOSED', label: 'Closed', tone: 'neutral', isFinal: true, cancellable: false },
+};
+
+/** Fraction of the bill shown as approved per scenario; null = leave unchanged. */
+const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
+  live: null,
+  review: null,
+  docs: null,
+  approved: 1,
+  partial: 0.6,
+  rejected: null,
+  processing: 1,
+  paid: 1,
+  closed: null,
+};
 
 /** One claim, its documents and assessment. */
 @Component({
@@ -46,9 +88,34 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
       </header>
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
+        <!-- TEST-ONLY scenario switcher. Overrides the loaded claim's status,
+             amounts, timeline and assessor notes entirely on the client so every
+             backend outcome can be previewed without the TPA moving the claim.
+             PLACEHOLDER — remove before production. -->
+        <div class="mb-5 rounded-2xl border-2 border-dashed border-warning-400 bg-warning-50 p-4">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-warning-700">
+            🧪 Test scenario (frontend only — not real data)
+          </label>
+          <select
+            class="mt-2 min-h-touch w-full rounded-xl border border-warning-400 bg-white px-3 text-sm text-ink-900 outline-none"
+            [value]="scenarioKey()"
+            (change)="scenarioKey.set($any($event.target).value)"
+          >
+            @for (s of scenarios; track s.key) {
+              <option [value]="s.key">{{ s.label }}</option>
+            }
+          </select>
+          @if (scenarioKey() !== 'live') {
+            <p class="mt-2 text-xs text-warning-700">
+              Showing a simulated “{{ currentScenarioLabel() }}” outcome. Actions here still call the
+              real API and may fail — this is for previewing the UI only.
+            </p>
+          }
+        </div>
+
         @if (claim.isLoading()) {
           <opd-loading label="Loading claim" />
-        } @else if (claim.value(); as detail) {
+        } @else if (displayClaim(); as detail) {
           <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
@@ -176,7 +243,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
             </section>
           }
 
-          @if (history.value(); as extra) {
+          @if (displayHistory(); as extra) {
             @if (extra.timeline.length) {
               <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
                 <h2 class="mb-4 text-base font-semibold text-[#0E51A2] lg:text-lg">Progress</h2>
@@ -474,6 +541,93 @@ export class ClaimDetailPage {
     params: () => this.claim.value()?.reference ?? '',
     loader: ({ params }) =>
       params ? this.store.history(params) : Promise.resolve({ timeline: [], notes: [] }),
+  });
+
+  // ── TEST SCENARIO SWITCHER (frontend-only, placeholder) ─────────────────
+  //
+  // Overrides the loaded claim so every backend outcome can be previewed. All
+  // data below is invented; nothing is persisted. Remove before production.
+
+  protected readonly scenarioKey = signal<ScenarioKey>('live');
+  protected readonly scenarios: ReadonlyArray<{ key: ScenarioKey; label: string }> = [
+    { key: 'live', label: 'Live (real data)' },
+    { key: 'review', label: 'Under review' },
+    { key: 'docs', label: 'Documents required' },
+    { key: 'approved', label: 'Approved (full)' },
+    { key: 'partial', label: 'Partially approved' },
+    { key: 'rejected', label: 'Rejected' },
+    { key: 'processing', label: 'Payment processing' },
+    { key: 'paid', label: 'Paid' },
+    { key: 'closed', label: 'Closed' },
+  ];
+
+  protected currentScenarioLabel(): string {
+    return this.scenarios.find((s) => s.key === this.scenarioKey())?.label ?? '';
+  }
+
+  /** The claim shown on screen — real, or patched into the chosen scenario. */
+  protected readonly displayClaim = computed<Claim | null>(() => {
+    const base = this.claim.value();
+    const key = this.scenarioKey();
+    if (!base || key === 'live') return base ?? null;
+
+    const s = SCENARIO_STATUS[key];
+    const factor = APPROVED_FACTOR[key];
+    return {
+      ...base,
+      statusCode: s.code,
+      status: { label: s.label, tone: s.tone, isFinal: s.isFinal },
+      approvedAmount: factor !== null ? money(Math.round(base.billAmount.amount * factor)) : base.approvedAmount,
+      isCancellable: s.cancellable,
+    };
+  });
+
+  /** Timeline + assessor notes for the chosen scenario, or the real ones. */
+  protected readonly displayHistory = computed<{
+    timeline: readonly ClaimTimelineEntry[];
+    notes: readonly TpaNote[];
+  } | null>(() => {
+    const key = this.scenarioKey();
+    if (key === 'live') return this.history.value() ?? null;
+    const now = new Date();
+    const step = (label: string, tone: StatusTone, reason: string | null = null): ClaimTimelineEntry => ({
+      status: { label, tone, isFinal: false },
+      changedAt: now,
+      changedBy: 'TPA · Assessor',
+      reason,
+    });
+    const note = (typeLabel: string, message: string): TpaNote => ({ typeLabel, message, at: now });
+
+    const base: ClaimTimelineEntry[] = [step('Submitted', 'progress'), step('Under review', 'progress')];
+    switch (key) {
+      case 'review':
+        return { timeline: [step('Submitted', 'progress'), step('With assessor', 'progress'), step('Under review', 'progress')], notes: [] };
+      case 'docs':
+        return {
+          timeline: [...base, step('Documents needed', 'negative')],
+          notes: [note('Documents requested', 'Please upload a clearer, itemised invoice showing the provider details and the total.')],
+        };
+      case 'approved':
+        return { timeline: [...base, step('Approved', 'positive')], notes: [note('Approved', 'Approved in full. The amount will be credited to your bank account.')] };
+      case 'partial':
+        return {
+          timeline: [...base, step('Partially approved', 'positive')],
+          notes: [note('Partial approval', 'Amount exceeds the per-claim limit; the limit has been approved. The rest is not payable.')],
+        };
+      case 'rejected':
+        return {
+          timeline: [...base, step('Rejected', 'negative')],
+          notes: [note('Rejected', 'Claim submission window has lapsed — the claim was submitted more than 45 days after the treatment date.')],
+        };
+      case 'processing':
+        return { timeline: [...base, step('Approved', 'positive'), step('Payment processing', 'progress')], notes: [note('Payment', 'Your reimbursement is being paid to your bank account.')] };
+      case 'paid':
+        return { timeline: [...base, step('Approved', 'positive'), step('Paid', 'positive')], notes: [note('Payment', 'Your reimbursement has been credited to your bank account.')] };
+      case 'closed':
+        return { timeline: [...base, step('Closed', 'neutral')], notes: [] };
+      default:
+        return { timeline: [], notes: [] };
+    }
   });
 
   /**
