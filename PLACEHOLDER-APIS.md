@@ -83,7 +83,23 @@ silently falls back to placeholder values.
     response already returns capping (`wasCapped`, `cappedAmount`,
     `perClaimLimitApplied`); this is the same computation, moved before submit.
 
-## 5. File size
+## 5. Claim payment / credit details
+
+The full claim status lifecycle is now mapped (`claim.mapper.ts` STATUSES —
+draft → submitted → unassigned → assigned → under review → documents
+required/received → approved / partially approved → payment
+pending/processing/completed → closed / rejected / cancelled). For payout-stage
+statuses the claim detail page shows a **Payment** section.
+
+- The claim payload carries **no payment fields** yet. The section shows the
+  approved amount and the payout account, but **payment reference** and
+  **credited-on** date read "Awaiting payout details" (placeholder).
+- The claim record already defines these server-side (patient-flows claim record
+  table): `paymentStatus, paymentId, transactionId, paymentDate,
+  paymentReferenceNumber, paymentMode`. Return them on `member/claims/:id` and
+  drop them into the Payment section to make it real.
+
+## 6. File size
 
 Max upload size is now **5 MB** across claim submission and document resubmission
 (`new-claim-page.ts` `MAX_BYTES`, `claim.mapper.ts` `RESUBMIT_MAX_BYTES`). The

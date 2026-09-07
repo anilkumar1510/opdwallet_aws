@@ -278,16 +278,28 @@ export function toClaimFormData(input: CreateClaimInput): FormData {
  * tone-tagged value here so no screen inspects raw status text.
  */
 const STATUSES: Readonly<Record<string, ClaimStatus>> = {
+  // The full TPA lifecycle (adjudication flow step 15), phrased for the member.
+  // Every status a claim can carry is mapped here so none falls to the neutral
+  // fallback with the wrong tone or finality.
   DRAFT: { label: 'Draft', tone: 'neutral', isFinal: false },
   SUBMITTED: { label: 'Submitted', tone: 'progress', isFinal: false },
+  // TPA-internal "unassigned"; the member simply sees it as awaiting review.
+  UNASSIGNED: { label: 'Awaiting review', tone: 'progress', isFinal: false },
   ASSIGNED: { label: 'With assessor', tone: 'progress', isFinal: false },
   UNDER_REVIEW: { label: 'Under review', tone: 'progress', isFinal: false },
   PENDING: { label: 'Pending', tone: 'progress', isFinal: false },
   PROCESSING: { label: 'Processing', tone: 'progress', isFinal: false },
   DOCUMENTS_REQUIRED: { label: 'Documents needed', tone: 'negative', isFinal: false },
-  APPROVED: { label: 'Approved', tone: 'positive', isFinal: true },
+  DOCUMENTS_RECEIVED: { label: 'Documents received', tone: 'progress', isFinal: false },
+  // Approved but not yet paid — positive, still in motion until the credit lands.
+  APPROVED: { label: 'Approved', tone: 'positive', isFinal: false },
+  PARTIALLY_APPROVED: { label: 'Partially approved', tone: 'positive', isFinal: false },
+  PAYMENT_PENDING: { label: 'Payment pending', tone: 'progress', isFinal: false },
+  PAYMENT_PROCESSING: { label: 'Payment processing', tone: 'progress', isFinal: false },
+  PAYMENT_COMPLETED: { label: 'Paid', tone: 'positive', isFinal: true },
   PAID: { label: 'Paid', tone: 'positive', isFinal: true },
   REJECTED: { label: 'Rejected', tone: 'negative', isFinal: true },
+  CLOSED: { label: 'Closed', tone: 'neutral', isFinal: true },
   CANCELLED: { label: 'Cancelled', tone: 'neutral', isFinal: true },
 };
 
@@ -306,14 +318,21 @@ function toStatus(value: string | undefined): ClaimStatus {
   return { label: humanise(value, 'Unknown'), tone: 'neutral' as StatusTone, isFinal: false };
 }
 
-/** Statuses web-member refuses to cancel from. */
+/**
+ * Statuses a claim can no longer be withdrawn from — anything at or past a
+ * decision, and every payment/terminal state. Withdrawing after the assessor
+ * has approved or the payout has started would strand money mid-flight.
+ */
 const NON_CANCELLABLE: readonly string[] = [
   'APPROVED',
   'PARTIALLY_APPROVED',
   'REJECTED',
   'CANCELLED',
-  'PAYMENT_COMPLETED',
+  'CLOSED',
+  'PAYMENT_PENDING',
   'PAYMENT_PROCESSING',
+  'PAYMENT_COMPLETED',
+  'PAID',
 ];
 
 export function toClaim(dto: ClaimDto): Claim {
