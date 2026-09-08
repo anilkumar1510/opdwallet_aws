@@ -761,6 +761,29 @@ export const routes: Routes = [
         loadComponent: () => import('./features/misc/pharmacy-page').then((m) => m.PharmacyPage),
       },
       {
+        // Flow 5 step 11 — the partner picking, packing and delivering. There
+        // is no partner and no tracking feed, so the step is walkable but says
+        // so. Clickable because a flow you cannot step through cannot be shown.
+        path: 'pharmacy/orders/:orderId/delivery',
+        data: { title: 'The pharmacy delivers your order', reason: 'no-api' },
+        loadComponent: () =>
+          import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
+      },
+      {
+        // Flow 5 step 15. Half of this is real — the cover is credited back by
+        // `cancel()` — but the member's own share has no payout to go to.
+        path: 'pharmacy/orders/:orderId/refund',
+        data: { title: 'Refund if the order fails', reason: 'no-api' },
+        loadComponent: () =>
+          import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage),
+      },
+      {
+        // Flow 5 step 12 — the receipt, built from the order's own figures.
+        path: 'pharmacy/orders/:orderId/receipt',
+        loadComponent: () =>
+          import('./features/misc/pharmacy-receipt-page').then((m) => m.PharmacyReceiptPage),
+      },
+      {
         path: 'pharmacy/orders/:orderId',
         loadComponent: () =>
           import('./features/misc/pharmacy-order-page').then((m) => m.PharmacyOrderPage),

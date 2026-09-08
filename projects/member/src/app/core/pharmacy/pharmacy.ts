@@ -6,8 +6,24 @@ import { Money, money } from '../domain/money';
  * vendor/slot concept: the sheet names one implicit partner, not a choice.
  */
 export const PHARMACY_API = {
-  medicines: 'member/pharmacy/medicines',
+  /*
+   * The member's catalogue search is gone — flow 5 is prescription led and the
+   * adjudicator chooses the medicines. Kept here only so the ops screen has a
+   * name for the same endpoint on its own prefix.
+   */
+  prescriptions: 'member/pharmacy/prescriptions',
+  prescriptionUpload: 'member/pharmacy/prescriptions/upload',
+  /**
+   * Step 4 done by the member — development only, refused elsewhere. Nobody is
+   * sitting in the adjudication queue on a demo machine, so without this a
+   * prescription is uploaded and the journey stops.
+   */
+  demoBuildCart: (prescriptionId: string) =>
+    `member/pharmacy/prescriptions/${prescriptionId}/demo-build-cart`,
   carts: 'member/pharmacy/carts',
+  /** Read-only: the cart already built for this patient, if any. */
+  openCart: (patientId: string) =>
+    `member/pharmacy/carts/open?patientId=${encodeURIComponent(patientId)}`,
   cartById: (cartId: string) => `member/pharmacy/carts/${cartId}`,
   cartItems: (cartId: string) => `member/pharmacy/carts/${cartId}/items`,
   cartItem: (cartId: string, medicineId: string) => `member/pharmacy/carts/${cartId}/items/${medicineId}`,
@@ -17,6 +33,17 @@ export const PHARMACY_API = {
   cancel: (orderId: string) => `member/pharmacy/orders/${orderId}/cancel`,
   invoice: (orderId: string) => `member/pharmacy/orders/${orderId}/invoice`,
 } as const;
+
+/** A prescription the member has sent, and where it has got to — steps 2-4. */
+export interface PharmacyPrescriptionDto {
+  prescriptionId?: string;
+  patientName?: string;
+  status?: string;
+  source?: string;
+  originalName?: string;
+  cartId?: string;
+  createdAt?: string;
+}
 
 export interface MedicineDto {
   medicineId?: string;
