@@ -19,6 +19,7 @@ import { AppointmentsService } from '../appointments/appointments.service';
 import { DentalBookingsService } from '../dental-bookings/dental-bookings.service';
 import { DentalProceduresService } from '../dental-procedures/dental-procedures.service';
 import { VisionBookingsService } from '../vision-bookings/vision-bookings.service';
+import { PharmacyOrderService } from '../pharmacy/services/pharmacy-order.service';
 import { VaccinationBookingService } from '../vaccination/services/vaccination-booking.service';
 
 @Injectable()
@@ -37,6 +38,8 @@ export class PaymentService {
     private readonly visionBookingsService: VisionBookingsService,
     @Inject(forwardRef(() => VaccinationBookingService))
     private readonly vaccinationBookingService: VaccinationBookingService,
+    @Inject(forwardRef(() => PharmacyOrderService))
+    private readonly pharmacyOrderService: PharmacyOrderService,
   ) {}
 
   /**
@@ -200,6 +203,18 @@ export class PaymentService {
         console.error('❌ [PAYMENT SERVICE] Failed to confirm vaccination booking:', error);
         // Don't throw error - payment is already marked as paid
         // Log the error and continue
+      }
+    }
+
+    // If this is a pharmacy order payment, mark the order paid
+    if (payment.serviceType === ServiceType.PHARMACY && payment.paymentId) {
+      console.log('💊 [PAYMENT SERVICE] Triggering pharmacy order completion for:', payment.paymentId);
+      try {
+        await this.pharmacyOrderService.handlePaymentComplete(payment.paymentId);
+        console.log('✅ [PAYMENT SERVICE] Pharmacy order marked paid');
+      } catch (error) {
+        console.error('❌ [PAYMENT SERVICE] Failed to complete pharmacy order:', error);
+        // Don't throw error - payment is already marked as paid
       }
     }
 

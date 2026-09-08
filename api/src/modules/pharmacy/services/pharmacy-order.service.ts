@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -18,6 +24,7 @@ import { PaymentService } from '../../payments/payment.service';
 import { PaymentType, ServiceType as PaymentServiceType } from '../../payments/schemas/payment.schema';
 import { CopayResolver } from '../../plan-config/utils/copay-resolver';
 import { CopayCalculator } from '../../plan-config/utils/copay-calculator';
+import { ServiceTransactionLimitCalculator } from '../../plan-config/utils/service-transaction-limit-calculator';
 import { TransactionSummaryService } from '../../transactions/transaction-summary.service';
 import { TransactionServiceType, PaymentMethod, TransactionStatus } from '../../transactions/schemas/transaction-summary.schema';
 import { NotificationsService } from '../../notifications/notifications.service';
@@ -34,6 +41,9 @@ export class PharmacyOrderService {
     private assignmentsService: AssignmentsService,
     private planConfigService: PlanConfigService,
     private walletService: WalletService,
+    // Circular now that PaymentService calls back into this one when a
+    // pharmacy payment completes.
+    @Inject(forwardRef(() => PaymentService))
     private paymentService: PaymentService,
     private transactionSummaryService: TransactionSummaryService,
     private notificationsService: NotificationsService,
@@ -77,6 +87,8 @@ export class PharmacyOrderService {
     let copayAmount = 0;
     let walletDebitAmount = 0;
     let excessAmount = 0;
+    /** What the plan would have covered but the member no longer has. */
+    let balanceShortfall = 0;
 
     if (billAmount > 0) {
       const assignments = await this.assignmentsService.getUserAssignments(userId);
@@ -96,11 +108,36 @@ export class PharmacyOrderService {
       const categoryBalance =
         wallet?.categoryBalances?.find((c: any) => c.categoryCode === CATEGORY_CODE)?.current ?? 0;
 
-      walletDebitAmount = Math.min(copayCalc.walletDebitAmount, categoryBalance);
-      excessAmount = Math.max(0, copayCalc.walletDebitAmount - categoryBalance);
+      /*
+       * Step 6 — the per-transaction limit, which pharmacy was not applying.
+       *
+       * Appointments, dental bookings, dental procedures and diagnostics all
+       * run the bill through `ServiceTransactionLimitCalculator` after copay.
+       * Pharmacy skipped it, so a plan's per-claim cap simply did not bind
+       * here: whatever copay left over was paid from the wallet up to the
+       * category balance, and `excessAmount` meant "the wallet ran out", not
+       * "the plan does not cover this much".
+       *
+       * Both are real and they are different, so both are kept: `excessAmount`
+       * is now the limit excess the sheet means, and the shortfall when a
+       * member simply has too little left is tracked beside it.
+       */
+      const limit =
+        (planConfig?.benefits as any)?.[CATEGORY_CODE]?.perClaimLimit ??
+        (planConfig?.wallet as any)?.perClaimLimit ??
+        null;
+      const limited = ServiceTransactionLimitCalculator.calculate(
+        billAmount,
+        copayCalc.copayAmount,
+        limit && limit > 0 ? limit : null,
+      );
+
+      walletDebitAmount = Math.min(limited.insurancePayment, categoryBalance);
+      excessAmount = limited.excessAmount;
+      balanceShortfall = Math.max(0, limited.insurancePayment - categoryBalance);
     }
 
-    const totalMemberPayment = copayAmount + excessAmount;
+    const totalMemberPayment = copayAmount + excessAmount + balanceShortfall;
 
     const order = await this.orderModel.create({
       orderId: `PHORD-${Date.now()}`,
@@ -221,6 +258,42 @@ export class PharmacyOrderService {
     });
     order.transactionId = transaction._id as Types.ObjectId;
     return order.save();
+  }
+
+  /**
+   * The other half of step 8 — the member's own share actually clearing.
+   *
+   * `pay()` debits the wallet and raises a payment request, but leaves
+   * `paymentStatus` PENDING because the member has not paid their share yet.
+   * Nothing moved it afterwards, so every pharmacy order sat CONFIRMED and
+   * unpaid forever. PaymentService calls this when the payment completes.
+   *
+   * Matched on the business id (`PAY-…`), which is what `pay()` writes to
+   * `order.paymentId` — matching the payment's `_id` here finds nothing.
+   */
+  async handlePaymentComplete(paymentId: string): Promise<PharmacyOrderDocument | null> {
+    const order = await this.orderModel.findOne({ paymentId });
+    if (!order) return null;
+
+    order.paymentStatus = PharmacyPaymentStatus.COMPLETED;
+    await order.save();
+
+    // The transaction was written PENDING_PAYMENT alongside the order. It is
+    // found by service rather than by `order.transactionId`, because that
+    // field holds the Mongo _id while updateTransactionStatus matches on the
+    // business `transactionId` string.
+    const transaction = await this.transactionSummaryService.getTransactionByService(
+      TransactionServiceType.PHARMACY,
+      (order._id as Types.ObjectId).toString(),
+    );
+    if (transaction) {
+      await this.transactionSummaryService.updateTransactionStatus(
+        transaction.transactionId,
+        TransactionStatus.COMPLETED,
+      );
+    }
+
+    return order;
   }
 
   /** Step 13: refund if the order fails after payment. */

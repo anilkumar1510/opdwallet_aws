@@ -1,11 +1,16 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PharmacyMedicine, PharmacyMedicineSchema } from './schemas/pharmacy-medicine.schema';
 import { PharmacyCart, PharmacyCartSchema } from './schemas/pharmacy-cart.schema';
 import { PharmacyOrder, PharmacyOrderSchema } from './schemas/pharmacy-order.schema';
+import {
+  PharmacyPrescription,
+  PharmacyPrescriptionSchema,
+} from './schemas/pharmacy-prescription.schema';
 import { PharmacyCatalogueService } from './services/pharmacy-catalogue.service';
 import { PharmacyCartService } from './services/pharmacy-cart.service';
 import { PharmacyOrderService } from './services/pharmacy-order.service';
+import { PharmacyPrescriptionService } from './services/pharmacy-prescription.service';
 import { PharmacyInvoiceService } from './services/pharmacy-invoice.service';
 import { PharmacyMemberController } from './controllers/pharmacy-member.controller';
 import { PharmacyOpsController } from './controllers/pharmacy-ops.controller';
@@ -22,15 +27,23 @@ import { PaymentModule } from '../payments/payment.module';
       { name: PharmacyMedicine.name, schema: PharmacyMedicineSchema },
       { name: PharmacyCart.name, schema: PharmacyCartSchema },
       { name: PharmacyOrder.name, schema: PharmacyOrderSchema },
+      { name: PharmacyPrescription.name, schema: PharmacyPrescriptionSchema },
     ]),
     AssignmentsModule,
     PlanConfigModule,
     WalletModule,
     TransactionSummaryModule,
     NotificationsModule,
-    PaymentModule,
+    forwardRef(() => PaymentModule),
   ],
   controllers: [PharmacyMemberController, PharmacyOpsController],
-  providers: [PharmacyCatalogueService, PharmacyCartService, PharmacyOrderService, PharmacyInvoiceService],
+  providers: [
+    PharmacyCatalogueService,
+    PharmacyCartService,
+    PharmacyOrderService,
+    PharmacyInvoiceService,
+    PharmacyPrescriptionService,
+  ],
+  exports: [PharmacyOrderService],
 })
 export class PharmacyModule {}

@@ -129,6 +129,97 @@ import { LoadingView } from '../../shared/ui/state-views';
             </section>
           }
 
+          <!--
+            Flow 5 steps 12 to 15 — what happens to this order after payment.
+            
+            Three of the four are not produced by anything, and the fourth is
+            produced by a partner that does not exist as an integration. Set out
+            here, on the screen the member returns to, rather than left as
+            silence: someone who has paid wants to know what they will get and
+            when their money comes back if it goes wrong.
+          -->
+          <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+            <h2 class="text-base font-semibold text-[#0E51A2] lg:text-lg">
+              What happens with this order
+            </h2>
+
+            <div class="mt-3 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <p class="text-sm text-ink-700">
+                  <span class="font-medium text-ink-900">Receipt.</span> Issued as soon as you pay,
+                  confirming the payment only — it is not the tax invoice.
+                </p>
+                <a
+                  [routerLink]="['/member/pharmacy/orders', order.id, 'receipt']"
+                  class="mt-0.5 shrink-0 rounded-md border border-surface-border px-2 py-0.5 text-xs font-semibold text-ink-900 hover:bg-surface-sunk"
+                  >View</a
+                >
+              </div>
+
+              <div class="flex items-start justify-between gap-3 border-t border-surface-border pt-3">
+                <p class="text-sm text-ink-700">
+                  <span class="font-medium text-ink-900">The pharmacy picks, packs and delivers.</span>
+                  Progress comes from them, not from us.
+                </p>
+                <a
+                  [routerLink]="['/member/pharmacy/orders', order.id, 'delivery']"
+                  class="mt-0.5 shrink-0 rounded-md bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700 hover:bg-warning-100"
+                  >Placeholder</a
+                >
+              </div>
+              <p class="text-xs text-ink-500">
+                There is no delivery partner wired up, so this order moves only when our own team
+                marks it delivered. You will not see tracking.
+              </p>
+
+              <div class="flex items-start justify-between gap-3 border-t border-surface-border pt-3">
+                <p class="text-sm text-ink-700">
+                  <span class="font-medium text-ink-900">Invoice.</span> Raised once the medicines
+                  are delivered — it follows delivery, not payment.
+                </p>
+                @if (order.status === 'DELIVERED') {
+                  <span
+                    class="mt-0.5 shrink-0 rounded-md bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700"
+                    >Issued</span
+                  >
+                }
+              </div>
+              @if (order.status !== 'DELIVERED') {
+                <p class="text-xs text-ink-500">
+                  Nothing to download until it has been delivered.
+                </p>
+              }
+
+              <div class="flex items-start justify-between gap-3 border-t border-surface-border pt-3">
+                <p class="text-sm text-ink-700">
+                  <span class="font-medium text-ink-900">If the order fails after payment.</span>
+                  Cancellation, a failed delivery or a return.
+                </p>
+                <a
+                  [routerLink]="['/member/pharmacy/orders', order.id, 'refund']"
+                  class="mt-0.5 shrink-0 rounded-md bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700 hover:bg-warning-100"
+                  >Placeholder</a
+                >
+              </div>
+              <p class="text-xs text-ink-500">
+                What came from your cover is credited straight back. The part you paid yourself has
+                to be refunded by hand today — tell us and we will sort it.
+              </p>
+            </div>
+
+            <!--
+              Step 7 the sheet asks for, and the one thing here that is not a
+              missing screen but a missing capability: the wallet has no held
+              balance, only a debit. So the cover leaves at payment rather than
+              being blocked and converted on delivery.
+            -->
+            <p class="mt-4 rounded-xl bg-surface-sunk px-4 py-3 text-sm text-ink-500">
+              Your cover is taken when you pay, not held until delivery. That is a difference from
+              how this is meant to work — the money moves earlier than it should, and comes back if
+              the order is cancelled.
+            </p>
+          </section>
+
           @if (order.status === 'ADJUDICATED' || order.status === 'CONFIRMED') {
             <button
               type="button"

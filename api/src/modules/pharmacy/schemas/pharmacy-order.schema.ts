@@ -24,6 +24,8 @@ export enum PharmacyCancelledBy {
   SYSTEM = 'SYSTEM',
 }
 
+/** A real sub-schema for the same reason as the cart's — see that comment. */
+@Schema({ _id: false })
 export class PharmacyOrderItem {
   @Prop({ required: true })
   medicineId: string;
@@ -48,6 +50,8 @@ export class PharmacyOrderItem {
   @Prop()
   removedReason?: string;
 }
+
+export const PharmacyOrderItemSchema = SchemaFactory.createForClass(PharmacyOrderItem);
 
 export class PharmacyDeliveryAddress {
   @Prop({ required: true })
@@ -91,7 +95,7 @@ export class PharmacyOrder {
   @Prop({ required: true })
   patientName: string;
 
-  @Prop({ type: [PharmacyOrderItem], required: true })
+  @Prop({ type: [PharmacyOrderItemSchema], required: true })
   items: PharmacyOrderItem[];
 
   @Prop({ type: PharmacyDeliveryAddress, required: true })

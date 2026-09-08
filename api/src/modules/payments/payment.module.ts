@@ -9,6 +9,7 @@ import { DentalBookingsModule } from '../dental-bookings/dental-bookings.module'
 import { DentalProceduresModule } from '../dental-procedures/dental-procedures.module';
 import { VisionBookingsModule } from '../vision-bookings/vision-bookings.module';
 import { VaccinationModule } from '../vaccination/vaccination.module';
+import { PharmacyModule } from '../pharmacy/pharmacy.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { VaccinationModule } from '../vaccination/vaccination.module';
     forwardRef(() => DentalProceduresModule),
     forwardRef(() => VisionBookingsModule),
     forwardRef(() => VaccinationModule),
+    forwardRef(() => PharmacyModule),
   ],
   controllers: [PaymentController],
   providers: [PaymentService],
