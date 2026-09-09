@@ -1,5 +1,4 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,15 +9,12 @@ import {
 } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 
 import { InClinicFlowStore } from '../../core/appointments/inclinic-flow.store';
 import { Booking, BookingKind } from '../../core/bookings/booking.model';
 import { formatBookingWhen } from '../../core/bookings/booking-when';
 import { BookingsStore } from '../../core/bookings/bookings.store';
 import { formatMoney } from '../../core/domain/money';
-import { isAppError } from '../../core/http/app-error';
-import { VACCINATION_API } from '../../core/vaccination/vaccination';
 import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { BackLink } from '../../shared/ui/back-link';
@@ -418,28 +414,15 @@ export class BookingsPage {
    * API decides which step is next from the booking's own state, so one button
    * carries a booking from pending confirmation through to the dose given.
    */
-  protected async advance(reference: string, outcome?: 'no-show'): Promise<void> {
-    this.advancing.set(reference);
-    this.advanceError.set(null);
-    try {
-      await firstValueFrom(
-        this.http.post(VACCINATION_API.demoAdvance(reference), outcome ? { outcome } : {}),
-      );
-      this.store.retry();
-    } catch (error: unknown) {
-      this.advanceError.set(
-        isAppError(error) ? error.message : 'We could not move that booking on.',
-      );
-    } finally {
-      this.advancing.set(null);
-    }
+  protected async advance(_reference: string, _outcome?: 'no-show'): Promise<void> {
+    // DUMMY — no backend. The demo control is not shown for the static bookings
+    // (there is no vaccination row), so this is never reached; kept inert only.
   }
 
   /** Bound from ?tab= via withComponentInputBinding(), e.g. from the lab screen. */
   readonly tab = input<string | undefined>(undefined);
 
   protected readonly store = inject(BookingsStore);
-  private readonly http = inject(HttpClient);
   private readonly inClinic = inject(InClinicFlowStore);
   protected readonly money = formatMoney;
   protected readonly filters = FILTERS;
