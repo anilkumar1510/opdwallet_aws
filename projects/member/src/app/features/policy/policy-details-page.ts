@@ -139,10 +139,15 @@ export class PolicyDetailsPage {
     label: string;
     value: string;
   }[] {
-    return [
+    const rows: { icon: IconName; label: string; value: string }[] = [
       { icon: 'claims', label: 'Policy Number', value: detail.policyNumber },
       { icon: 'records', label: 'Corporate Name', value: detail.corporateName },
       { icon: 'bookings', label: 'Valid Till', value: detail.validTill },
     ];
+    if (detail.membersCovered) rows.push({ icon: 'records', label: 'Members Covered', value: detail.membersCovered });
+    if (detail.sumInsured) rows.push({ icon: 'wallet', label: 'Sum Insured', value: detail.sumInsured });
+    if (detail.copay) rows.push({ icon: 'claims', label: 'Co-payment', value: detail.copay });
+    if (detail.claimWindow) rows.push({ icon: 'bookings', label: 'Claim Window', value: detail.claimWindow });
+    return rows;
   }
 }

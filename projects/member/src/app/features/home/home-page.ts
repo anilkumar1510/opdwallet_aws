@@ -14,8 +14,11 @@ import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
 import { CartStore } from '../../core/lab/cart.store';
 import { NotificationsStore } from '../../core/notifications/notifications.store';
-import { WalletStore } from '../../core/wallet/wallet.store';
-import { ErrorView, LoadingView } from '../../shared/ui/state-views';
+import {
+  STATIC_BENEFITS,
+  STATIC_POLICIES,
+  STATIC_WALLET_TOTAL,
+} from '../../core/member/static-policy.data';
 import { ProfileMenu } from '../shell/profile-menu';
 import {
   BenefitCard,
@@ -159,8 +162,6 @@ function benefitLink(categoryCode: string): string {
   imports: [
     RouterLink,
     ProfileMenu,
-    LoadingView,
-    ErrorView,
     PolicyCard,
     QuickLinks,
     WalletBalanceCard,
@@ -279,7 +280,7 @@ function benefitLink(categoryCode: string): string {
                   class="scrollbar-hide -mr-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pr-5 lg:mr-0 lg:w-[411px] lg:gap-5 lg:pr-0"
                   (scroll)="onPolicyScroll()"
                 >
-                  @for (policy of policies(); track policy.id; let i = $index) {
+                  @for (policy of policies(); track policy.holderId; let i = $index) {
                     <!-- The card being read is full size, the rest sit back at
                          0.85. Each shrinks toward the edge that faces the active
                          card, so the gap between them stays at the flex gap
@@ -296,7 +297,7 @@ function benefitLink(categoryCode: string): string {
 
                 @if (policies().length > 1) {
                   <div class="mt-4 hidden justify-center gap-1.5 lg:mt-1 lg:flex">
-                    @for (policy of policies(); track policy.id; let i = $index) {
+                    @for (policy of policies(); track policy.holderId; let i = $index) {
                       <button
                         type="button"
                         class="h-1 rounded-full transition-all duration-200"
@@ -320,33 +321,23 @@ function benefitLink(categoryCode: string): string {
             <!-- The balance sits under the policy in the sidebar on desktop now,
                  as the blue card rather than the white one. -->
             <div class="hidden lg:block">
-              @if (wallet.loading()) {
-                <opd-loading label="Loading your wallet" />
-              } @else if (wallet.error(); as error) {
-                <opd-error [error]="error" (retry)="wallet.retry()" />
-              } @else if (wallet.wallet(); as balance) {
-                <opd-wallet-balance-card
-                  [available]="balance.totals.available"
-                  [allocated]="balance.totals.allocated"
-                  [preferBlue]="true"
-                />
-              }
+              <!-- DUMMY / STATIC — ₹40,000 benefit wallet, no wallet API. -->
+              <opd-wallet-balance-card
+                [available]="walletTotal.available"
+                [allocated]="walletTotal.allocated"
+                [preferBlue]="true"
+              />
             </div>
           </div>
 
           <!-- RIGHT: wallet + benefits + more services -->
           <div class="lg:flex lg:flex-col lg:gap-[46px]">
             <div class="px-5 pt-6 lg:hidden">
-              @if (wallet.loading()) {
-                <opd-loading label="Loading your wallet" />
-              } @else if (wallet.error(); as error) {
-                <opd-error [error]="error" (retry)="wallet.retry()" />
-              } @else if (wallet.wallet(); as balance) {
-                <opd-wallet-balance-card
-                  [available]="balance.totals.available"
-                  [allocated]="balance.totals.allocated"
-                />
-              }
+              <!-- DUMMY / STATIC — ₹40,000 benefit wallet, no wallet API. -->
+              <opd-wallet-balance-card
+                [available]="walletTotal.available"
+                [allocated]="walletTotal.allocated"
+              />
             </div>
 
             @if (categories().length) {
@@ -388,7 +379,8 @@ function benefitLink(categoryCode: string): string {
 export class HomePage {
 
   protected readonly family = inject(FamilyStore);
-  protected readonly wallet = inject(WalletStore);
+  // DUMMY / STATIC — the home wallet total no longer reads wallet/balance.
+  protected readonly walletTotal = STATIC_WALLET_TOTAL;
   protected readonly notifications = inject(NotificationsStore);
   protected readonly carts = inject(CartStore);
 
@@ -439,15 +431,16 @@ export class HomePage {
   }
 
   protected readonly greetingName = computed(() => this.family.activeMember()?.fullName ?? 'there');
-  protected readonly policies = computed(() => this.family.policies());
+  // DUMMY / STATIC — the policy card no longer derives from member/profile
+  // assignments; it is served from static-policy.data.ts. See REMOVED-APIS.md.
+  protected readonly policies = computed(() => STATIC_POLICIES);
   protected readonly quickLinks = computed(() => quickLinksFor(this.policies()[0]?.id ?? null));
 
   /** Highest balance first, matching the reference dashboard's ordering. */
-  protected readonly categories = computed(() =>
-    [...(this.wallet.wallet()?.categories ?? [])].sort(
-      (a, b) => b.available.amount - a.available.amount,
-    ),
-  );
+  // DUMMY / STATIC — the Health Benefits cards no longer read wallet/balance
+  // categories; they are served from STATIC_BENEFITS in the requested order.
+  // See REMOVED-APIS.md.
+  protected readonly categories = computed(() => STATIC_BENEFITS);
 
   protected linkFor(categoryCode: string): string {
     return categoryCode ? benefitLink(categoryCode) : '/member/benefits';
