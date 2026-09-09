@@ -410,10 +410,16 @@ export const routes: Routes = [
             (m) => m.ProcedureDetailPage,
           ),
       },
-      // Appointments and Online consult share specialties -> doctors -> confirm.
-      // Online skips clinic and slot, matching web-member.
-      ...(['appointments', 'online-consult'] as const).flatMap((base) => {
-        const mode = base === 'online-consult' ? 'ONLINE' : 'IN_CLINIC';
+      // Online consultation is a self-contained STATIC journey (no backend) —
+      // see features/online-consult/online-consult-page.ts and REMOVED-APIS.md.
+      {
+        path: 'online-consult',
+        loadComponent: () =>
+          import('./features/online-consult/online-consult-page').then((m) => m.OnlineConsultPage),
+      },
+      // In-clinic appointments still use the shared specialties -> doctors -> confirm flow.
+      ...(['appointments'] as const).flatMap((base) => {
+        const mode = 'IN_CLINIC';
         return [
           {
             path: base,
