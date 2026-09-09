@@ -1,16 +1,20 @@
-﻿import { HttpClient } from '@angular/common/http';
 import { Injectable, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 
-import { AppError, appError, isAppError } from '../http/app-error';
+import { AppError } from '../http/app-error';
 import { SessionStore } from '../session/session.store';
-import { MEMBER_API } from './member.mapper';
-import { PolicyDetail, PolicyDetailDto, toPolicyDetail } from './policy-detail';
+import { PolicyDetail } from './policy-detail';
+import { STATIC_POLICY_DETAIL } from './static-policy.data';
 
-/** The full detail of one policy, keyed by id. */
+/**
+ * The full detail of one policy.
+ *
+ * DUMMY / STATIC — no backend. This used to call `GET policies/:id/current`;
+ * that endpoint has been removed from the flow and the detail is now served from
+ * `static-policy.data.ts`. The public shape (detail/loading/error/select/retry)
+ * is unchanged so the page did not need reworking. See REMOVED-APIS.md.
+ */
 @Injectable({ providedIn: 'root' })
 export class PolicyStore {
-  private readonly http = inject(HttpClient);
   private readonly session = inject(SessionStore);
 
   private readonly _detail = signal<PolicyDetail | null>(null);
@@ -29,34 +33,17 @@ export class PolicyStore {
     });
   }
 
-  /** Idempotent: navigating back to the same policy does not refetch. */
+  /** Idempotent: the policy id is ignored — one static policy is served. */
   select(policyId: string): void {
     if (!policyId || policyId === this.loadedId) return;
     this.loadedId = policyId;
-    void this.load(policyId);
+    this._error.set(null);
+    this._loading.set(false);
+    this._detail.set(STATIC_POLICY_DETAIL);
   }
 
   retry(): void {
-    if (this.loadedId) void this.load(this.loadedId);
-  }
-
-  private async load(policyId: string): Promise<void> {
-    this._loading.set(true);
-    this._error.set(null);
-    try {
-      const dto = await firstValueFrom(
-        this.http.get<PolicyDetailDto>(MEMBER_API.policyCurrent(policyId)),
-      );
-      // Discard a slow response for a policy the member has navigated away from.
-      if (this.loadedId !== policyId) return;
-      this._detail.set(toPolicyDetail(dto));
-    } catch (error: unknown) {
-      if (this.loadedId !== policyId) return;
-      this._detail.set(null);
-      this._error.set(isAppError(error) ? error : appError('server'));
-    } finally {
-      if (this.loadedId === policyId) this._loading.set(false);
-    }
+    if (this.loadedId) this._detail.set(STATIC_POLICY_DETAIL);
   }
 
   private reset(): void {

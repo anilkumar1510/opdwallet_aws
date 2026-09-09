@@ -36,6 +36,11 @@ export interface PolicyDetail {
   readonly policyName: string;
   readonly corporateName: string;
   readonly validTill: string;
+  /** Optional enrichment shown as extra summary rows (static/dummy today). */
+  readonly sumInsured?: string;
+  readonly copay?: string;
+  readonly membersCovered?: string;
+  readonly claimWindow?: string;
   readonly inclusions: readonly PolicyClause[];
   readonly exclusions: readonly PolicyClause[];
 }
