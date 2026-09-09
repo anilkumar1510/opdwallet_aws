@@ -417,39 +417,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/online-consult/online-consult-page').then((m) => m.OnlineConsultPage),
       },
-      // In-clinic appointments still use the shared specialties -> doctors -> confirm flow.
-      ...(['appointments'] as const).flatMap((base) => {
-        const mode = 'IN_CLINIC';
-        return [
-          {
-            path: base,
-            pathMatch: 'full' as const,
-            data: { mode },
-            loadComponent: () =>
-              import('./features/appointments/consult-hub-page').then((m) => m.ConsultHubPage),
-          },
-          {
-            path: `${base}/specialties`,
-            data: { mode },
-            loadComponent: () =>
-              import('./features/appointments/specialties-page').then((m) => m.SpecialtiesPage),
-          },
-          {
-            path: `${base}/doctors`,
-            data: { mode },
-            loadComponent: () =>
-              import('./features/appointments/doctors-page').then((m) => m.DoctorsPage),
-          },
-          {
-            path: `${base}/confirm`,
-            data: { mode },
-            loadComponent: () =>
-              import('./features/appointments/appointment-confirm-page').then(
-                (m) => m.AppointmentConfirmPage,
-              ),
-          },
-        ];
-      }),
+      // In-clinic consultation is now a self-contained STATIC journey (no backend).
+      // See features/appointments/inclinic-page.ts and REMOVED-APIS.md.
+      {
+        path: 'appointments',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/appointments/inclinic-page').then((m) => m.InClinicPage),
+      },
+      {
+        // The benefit card historically deep-linked to /specialties; keep it working.
+        path: 'appointments/specialties',
+        loadComponent: () =>
+          import('./features/appointments/inclinic-page').then((m) => m.InClinicPage),
+      },
       {
         path: 'appointments/select-patient',
         loadComponent: () =>
