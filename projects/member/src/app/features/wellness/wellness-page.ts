@@ -45,6 +45,38 @@ function formatAddress(a: SavedAddress): string {
     .join(', ');
 }
 
+interface OrderStep {
+  label: string;
+  note: string;
+}
+
+/** Post-booking lifecycle (spec steps 13–15), per leg. */
+const CONFIRMED_STEP: OrderStep = {
+  label: 'Order confirmed with the provider',
+  note: 'Integrated partners confirm in real time; others are confirmed by operations.',
+};
+const REPORT_STEP: OrderStep = {
+  label: 'Report delivered to Health Records',
+  note: 'Pushed by integrated partners, uploaded by operations for the rest.',
+};
+const ORDER_STEPS: Record<Leg, OrderStep[]> = {
+  pathology: [
+    CONFIRMED_STEP,
+    { label: 'Sample collected', note: 'Home collection or a visit to the centre by the partner field team.' },
+    REPORT_STEP,
+  ],
+  radiology: [
+    CONFIRMED_STEP,
+    { label: 'Scan completed', note: 'Performed at the selected centre.' },
+    REPORT_STEP,
+  ],
+  package: [
+    CONFIRMED_STEP,
+    { label: 'Collection & scan completed', note: 'Both legs done — pathology collection and the radiology scan.' },
+    { label: 'Reports delivered to Health Records', note: 'Both reports are stored together.' },
+  ],
+};
+
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -161,6 +193,48 @@ function formatAddress(a: SavedAddress): string {
               </span>
             </button>
           </div>
+
+          <!-- Post-booking lifecycle (spec steps 13–15): order confirmed with the
+               provider → sample collection / scan → report delivered to Health
+               Records. Demo-advances through the states, static. -->
+          @for (order of bookedOrders(); track order.key) {
+            <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
+              <p class="mb-3 text-sm font-semibold text-[#034DA2]">{{ order.title }} — order status</p>
+              <ol class="space-y-3">
+                @for (s of order.steps; track s.label; let i = $index) {
+                  <li class="flex gap-3">
+                    <span
+                      class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                      [class.bg-success-600]="i < order.stage"
+                      [class.text-white]="i <= order.stage"
+                      [class.bg-[#0F5FDC]]="i === order.stage"
+                      [class.bg-surface-border]="i > order.stage"
+                      [class.text-ink-400]="i > order.stage"
+                    >{{ i < order.stage ? '✓' : (i + 1) }}</span>
+                    <span class="min-w-0">
+                      <span class="block text-sm" [class.font-semibold]="i === order.stage" [class.text-ink-900]="i <= order.stage" [class.text-ink-400]="i > order.stage">{{ s.label }}</span>
+                      @if (i === order.stage) {
+                        <span class="mt-0.5 block text-xs text-ink-500">{{ s.note }}</span>
+                      }
+                    </span>
+                  </li>
+                }
+              </ol>
+              @if (order.stage < order.steps.length - 1) {
+                <button
+                  type="button"
+                  class="mt-3 min-h-touch w-full rounded-xl border border-dashed border-surface-border px-4 text-sm font-semibold text-ink-700 hover:bg-surface-sunk"
+                  (click)="advanceStage(order.key)"
+                >
+                  Advance status (demo)
+                </button>
+              } @else {
+                <p class="mt-3 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm font-medium text-success-700">
+                  ✓ Report available in your Health Records.
+                </p>
+              }
+            </section>
+          }
 
           @if (pathologyBooked() && !radiologyBooked() && !packageBooked()) {
             <p class="mt-4 rounded-xl bg-warning-50 px-3 py-2 text-sm text-warning-700">
@@ -432,6 +506,11 @@ export class WellnessPage {
   protected readonly radiologyBooked = signal(false);
   protected readonly confirmation = signal<string | null>(null);
 
+  // Post-booking order stage per leg (0 confirmed, 1 collection/scan, 2 report).
+  protected readonly pathologyStage = signal(0);
+  protected readonly radiologyStage = signal(0);
+  protected readonly packageStage = signal(0);
+
   protected readonly activeLeg = signal<Leg | null>(null);
   protected readonly step = signal(0);
   protected readonly stepError = signal<string | null>(null);
@@ -466,6 +545,21 @@ export class WellnessPage {
   protected readonly fullyUsed = computed(
     () => this.packageBooked() || (this.pathologyBooked() && this.radiologyBooked()),
   );
+
+  /** Booked legs with their post-booking lifecycle state. */
+  protected readonly bookedOrders = computed(() => {
+    const out: { key: Leg; title: string; stage: number; steps: OrderStep[] }[] = [];
+    if (this.pathologyBooked()) out.push({ key: 'pathology', title: 'Pathology', stage: this.pathologyStage(), steps: ORDER_STEPS.pathology });
+    if (this.radiologyBooked()) out.push({ key: 'radiology', title: 'Radiology', stage: this.radiologyStage(), steps: ORDER_STEPS.radiology });
+    if (this.packageBooked()) out.push({ key: 'package', title: 'Health Check Package', stage: this.packageStage(), steps: ORDER_STEPS.package });
+    return out;
+  });
+
+  protected advanceStage(key: Leg): void {
+    const sig = key === 'pathology' ? this.pathologyStage : key === 'radiology' ? this.radiologyStage : this.packageStage;
+    const max = ORDER_STEPS[key].length - 1;
+    sig.set(Math.min(max, sig() + 1));
+  }
 
   protected readonly providers = computed(() =>
     this.activeLeg() === 'pathology' ? PATHOLOGY_PROVIDERS : RADIOLOGY_PROVIDERS,
@@ -633,6 +727,9 @@ export class WellnessPage {
     this.packageBooked.set(false);
     this.pathologyBooked.set(false);
     this.radiologyBooked.set(false);
+    this.pathologyStage.set(0);
+    this.radiologyStage.set(0);
+    this.packageStage.set(0);
     this.confirmation.set(null);
     this.activeLeg.set(null);
     this.step.set(0);
