@@ -19,6 +19,8 @@ words, the screen it powered, and what replaced it.
 
 | 7 | Vision APIs: coverage/eligibility, partner (Lenskart) list, prescription upload, order create + coupon issue, order/cart status | The member's half of the vision journey. | Vision (`/member/vision`) | New self-contained static wizard `features/vision/vision-page.ts` (no API, no wallet block): policy coverage → Start New Order → pick partner + mode (online/in-store) → upload prescription → submit → coupon code + partner link → (partner pushes the cart back) cart with selected items → payment breakdown (wallet-covered vs out-of-pocket, Razorpay) → paid & settled. No wallet block at booking — charged only after the partner reports the cart. `/member/vision` no longer uses `BenefitServicesPage`. |
 
+| 8 | Pharmacy APIs: prescription upload / existing list, digitisation queue, adjudicator cart build (Tata 1mg), cart push, wallet block/recalc, checkout payment (wallet + Razorpay), order create, receipt, delivery, invoice, refund | The whole prescription-led pharmacy journey. | Pharmacy (`/member/pharmacy`) | New self-contained static wizard `features/pharmacy/pharmacy-page.ts` (no API): upload / pick prescription → queued for digitisation → simulate adjudicator building & pushing the cart → cart the member can only reduce (delete / decrement, never add; substitutes marked with original brand; wallet block recalculates) → checkout breakdown (wallet + copay + Razorpay) → order placed → receipt (delivery + invoice-after-delivery noted). Old `features/misc/pharmacy-page` orphaned. |
+
 ## Notes
 
 - **Policy card (home "Your Policies")** — no dedicated API of its own; it was
