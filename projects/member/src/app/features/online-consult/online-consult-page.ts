@@ -57,12 +57,9 @@ const PER_TXN_LIMIT = 300;
 const COPAY_PCT = 20;
 
 type Step =
-  | 'speciality'
-  | 'doctors'
+  | 'find'
   | 'schedule'
-  | 'patient'
-  | 'mode'
-  | 'slot'
+  | 'details'
   | 'payment'
   | 'confirmed'
   | 'consultation'
@@ -113,15 +110,15 @@ type Step =
 
           <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
             @switch (currentStep()) {
-              @case ('speciality') {
-                <p class="mb-3 text-sm font-medium text-ink-700">Select speciality</p>
+              @case ('find') {
+                <p class="mb-2 text-sm font-medium text-ink-700">Select speciality</p>
                 <div class="grid grid-cols-2 gap-2">
                   @for (s of specialities; track s) {
                     <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="speciality() === s" [class.bg-blue-50]="speciality() === s" [class.border-surface-border]="speciality() !== s" (click)="pickSpeciality(s)">{{ s }}</button>
                   }
                 </div>
-              }
-              @case ('doctors') {
+                @if (speciality()) {
+                  <div class="mt-5 border-t border-surface-border pt-4">
                 @if (empanelment()) {
                   <p class="mb-1 text-sm font-medium text-ink-700">Request a doctor for empanelment</p>
                   <p class="mb-3 text-xs text-ink-500">Can't find your preferred doctor? Submit them for consideration.</p>
@@ -169,6 +166,8 @@ type Step =
                   </div>
                   <button type="button" class="mt-3 w-full rounded-xl border border-dashed border-surface-border px-4 py-2 text-sm font-medium text-ink-700" (click)="openEmpanelment()">Can't find your doctor? Request empanelment</button>
                 }
+                  </div>
+                }
               }
               @case ('schedule') {
                 <p class="mb-1 text-sm font-medium text-ink-700">How would you like to consult?</p>
@@ -206,8 +205,23 @@ type Step =
                     @if (consultNow() === false) { <span class="text-brand-700">✓</span> }
                   </button>
                 </div>
+                @if (consultNow() === false) {
+                  <div class="mt-5 border-t border-surface-border pt-4">
+                    <p class="mb-2 text-sm font-medium text-ink-700">Select date and time</p>
+                    <div class="scrollbar-hide mb-3 flex gap-2 overflow-x-auto">
+                      @for (d of slotDates; track d) {
+                        <button type="button" class="min-h-touch shrink-0 rounded-full border px-4 text-sm" [class.border-brand-500]="slotDate() === d" [class.bg-blue-50]="slotDate() === d" [class.border-surface-border]="slotDate() !== d" (click)="slotDate.set(d)">{{ d }}</button>
+                      }
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      @for (t of slotTimes; track t) {
+                        <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slotTime() === t" [class.bg-blue-50]="slotTime() === t" [class.border-surface-border]="slotTime() !== t" (click)="slotTime.set(t)">{{ t }}</button>
+                      }
+                    </div>
+                  </div>
+                }
               }
-              @case ('patient') {
+              @case ('details') {
                 <p class="mb-3 text-sm font-medium text-ink-700">Who is this consultation for?</p>
                 <div class="space-y-2">
                   @for (p of patients; track p.id) {
@@ -217,25 +231,10 @@ type Step =
                     </button>
                   }
                 </div>
-              }
-              @case ('mode') {
-                <p class="mb-3 text-sm font-medium text-ink-700">Consultation type</p>
+                <p class="mb-3 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Consultation type</p>
                 <div class="grid gap-3 sm:grid-cols-2">
                   @for (m of ['Video','Audio']; track m) {
                     <button type="button" class="min-h-touch rounded-xl border px-4 text-sm font-medium" [class.border-brand-500]="mode() === m" [class.bg-blue-50]="mode() === m" [class.text-brand-700]="mode() === m" [class.border-surface-border]="mode() !== m" (click)="mode.set(m)">{{ m }}</button>
-                  }
-                </div>
-              }
-              @case ('slot') {
-                <p class="mb-2 text-sm font-medium text-ink-700">Select date and time</p>
-                <div class="scrollbar-hide mb-3 flex gap-2 overflow-x-auto">
-                  @for (d of slotDates; track d) {
-                    <button type="button" class="min-h-touch shrink-0 rounded-full border px-4 text-sm" [class.border-brand-500]="slotDate() === d" [class.bg-blue-50]="slotDate() === d" [class.border-surface-border]="slotDate() !== d" (click)="slotDate.set(d)">{{ d }}</button>
-                  }
-                </div>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  @for (t of slotTimes; track t) {
-                    <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slotTime() === t" [class.bg-blue-50]="slotTime() === t" [class.border-surface-border]="slotTime() !== t" (click)="slotTime.set(t)">{{ t }}</button>
                   }
                 </div>
               }
@@ -337,13 +336,10 @@ export class OnlineConsultPage {
   protected readonly empClinic = signal('');
   protected readonly empSpec = signal('');
 
-  protected readonly steps = computed<Step[]>(() => {
-    const s: Step[] = ['speciality', 'doctors', 'schedule', 'patient', 'mode'];
-    if (this.consultNow() === false) s.push('slot');
-    s.push('payment', 'confirmed', 'consultation', 'prescription');
-    return s;
-  });
-  protected readonly currentStep = computed<Step>(() => this.steps()[this.step()] ?? 'speciality');
+  protected readonly steps = computed<Step[]>(() => [
+    'find', 'schedule', 'details', 'payment', 'confirmed', 'consultation', 'prescription',
+  ]);
+  protected readonly currentStep = computed<Step>(() => this.steps()[this.step()] ?? 'find');
 
   protected readonly doctorAvailableNow = computed(() => this.doctor()?.nextIn === 'Available now');
 
@@ -422,19 +418,23 @@ export class OnlineConsultPage {
 
   private validate(): string | null {
     switch (this.currentStep()) {
-      case 'speciality': return this.speciality() ? null : 'Select a speciality.';
-      case 'doctors': return this.doctor() ? null : 'Select a doctor.';
-      case 'patient': return this.patient() ? null : 'Select who this is for.';
-      case 'schedule': return this.consultNow() !== null ? null : 'Choose Consult Now or Schedule.';
-      case 'mode': return this.mode() ? null : 'Choose Video or Audio.';
-      case 'slot': return this.slotDate() && this.slotTime() ? null : 'Pick a date and time.';
+      case 'find':
+        if (!this.speciality()) return 'Select a speciality.';
+        return this.doctor() ? null : 'Select a doctor.';
+      case 'schedule':
+        if (this.consultNow() === null) return 'Choose Consult Now or Schedule.';
+        if (this.consultNow() === false && !(this.slotDate() && this.slotTime())) return 'Pick a date and time.';
+        return null;
+      case 'details':
+        if (!this.patient()) return 'Select who this is for.';
+        return this.mode() ? null : 'Choose Video or Audio.';
       default: return null;
     }
   }
 
   protected next(): void {
     // Empanelment sub-view swallows the primary button while open.
-    if (this.currentStep() === 'doctors' && this.empanelment()) { this.empanelment.set(false); return; }
+    if (this.currentStep() === 'find' && this.empanelment()) { this.empanelment.set(false); return; }
     const err = this.validate();
     if (err) { this.stepError.set(err); return; }
     this.stepError.set(null);

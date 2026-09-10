@@ -52,10 +52,8 @@ const COPAY_PCT = 20;
 
 type Step =
   | 'speciality'
-  | 'location'
-  | 'doctors'
-  | 'patient'
-  | 'slot'
+  | 'find'
+  | 'when'
   | 'pending'
   | 'cart'
   | 'receipt'
@@ -108,7 +106,7 @@ type Step =
                   }
                 </div>
               }
-              @case ('location') {
+              @case ('find') {
                 <p class="mb-1 text-sm font-medium text-ink-700">Set your location</p>
                 <p class="mb-3 text-xs text-ink-500">Doctors are sorted by distance from here.</p>
                 <button type="button" class="mb-3 flex min-h-touch w-full items-center justify-center gap-2 rounded-xl border border-[#0F5FDC] bg-blue-50 px-4 text-sm font-semibold text-[#0F5FDC]" (click)="detectLocation()">📍 Auto-detect my location</button>
@@ -122,8 +120,7 @@ type Step =
                     <button type="button" class="block w-full rounded-lg px-2 py-1.5 text-left text-xs text-ink-700 hover:bg-surface-sunk" (click)="pickSuggestion(sug)">{{ sug }}</button>
                   }
                 </div>
-              }
-              @case ('doctors') {
+                <div class="mt-5 border-t border-surface-border pt-4">
                 @if (empanelment()) {
                   <p class="mb-1 text-sm font-medium text-ink-700">Request a doctor for empanelment</p>
                   <p class="mb-3 text-xs text-ink-500">Can't find your preferred doctor? Submit them for consideration.</p>
@@ -167,8 +164,9 @@ type Step =
                   </div>
                   <button type="button" class="mt-3 w-full rounded-xl border border-dashed border-surface-border px-4 py-2 text-sm font-medium text-ink-700" (click)="openEmpanelment()">Can't find your doctor? Request empanelment</button>
                 }
+                </div>
               }
-              @case ('patient') {
+              @case ('when') {
                 <p class="mb-3 text-sm font-medium text-ink-700">Who is this visit for?</p>
                 <div class="space-y-2">
                   @for (p of patients; track p.id) {
@@ -178,9 +176,7 @@ type Step =
                     </button>
                   }
                 </div>
-              }
-              @case ('slot') {
-                <p class="mb-1 text-sm font-medium text-ink-700">Select date and time</p>
+                <p class="mb-1 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Select date and time</p>
                 <p class="mb-3 text-xs text-ink-500">Slots within the next 36 hours.</p>
                 <div class="mb-3 flex gap-2">
                   @for (d of slotDates; track d) {
@@ -332,7 +328,7 @@ export class InClinicPage {
   protected readonly empSpec = signal('');
 
   protected readonly steps: Step[] = [
-    'speciality', 'location', 'doctors', 'patient', 'slot',
+    'speciality', 'find', 'when',
     'pending', 'cart', 'receipt', 'visit', 'completed',
   ];
   protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'speciality');
@@ -417,10 +413,12 @@ export class InClinicPage {
   private validate(): string | null {
     switch (this.currentStep()) {
       case 'speciality': return this.speciality() ? null : 'Select a speciality.';
-      case 'location': return this.postalCode().trim() || this.detected() ? null : 'Detect or enter your location.';
-      case 'doctors': return this.doctor() ? null : 'Select a doctor.';
-      case 'patient': return this.patient() ? null : 'Select who this is for.';
-      case 'slot': return this.slotDate() && this.slotTime() ? null : 'Pick a date and time.';
+      case 'find':
+        if (!(this.postalCode().trim() || this.detected())) return 'Detect or enter your location.';
+        return this.doctor() ? null : 'Select a doctor.';
+      case 'when':
+        if (!this.patient()) return 'Select who this is for.';
+        return this.slotDate() && this.slotTime() ? null : 'Pick a date and time.';
       case 'receipt':
         if (this.cancelled()) return null;
         return this.cashlessGenerated()
@@ -440,7 +438,7 @@ export class InClinicPage {
   }
 
   protected next(): void {
-    if (this.currentStep() === 'doctors' && this.empanelment()) { this.empanelment.set(false); return; }
+    if (this.currentStep() === 'find' && this.empanelment()) { this.empanelment.set(false); return; }
     // A cancelled appointment ends the journey.
     if (this.currentStep() === 'receipt' && this.cancelled()) { this.finish(); return; }
     const err = this.validate();
