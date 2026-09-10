@@ -125,12 +125,13 @@ export const routes: Routes = [
         path: 'bookings',
         loadComponent: () => import('./features/bookings/bookings-page').then((m) => m.BookingsPage),
       },
-      // Pathology and Radiology are one screen; `kind` binds from route data
-      // via withComponentInputBinding().
+      // Pathology (lab-tests) and Radiology & Cardiology (diagnostics) share one
+      // self-contained STATIC journey; `kind` binds from route data. See
+      // features/diagnostics/diagnostics-page.ts and REMOVED-APIS.md.
       {
         path: 'lab-tests',
-        data: { kind: 'LAB' },
-        loadComponent: () => import('./features/lab/lab-tests-page').then((m) => m.LabTestsPage),
+        data: { kind: 'PATHOLOGY' },
+        loadComponent: () => import('./features/diagnostics/diagnostics-page').then((m) => m.DiagnosticsPage),
       },
 
       /*
@@ -296,11 +297,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/lab/lab-order-detail-page').then((m) => m.LabOrderDetailPage),
       },
-      // Diagnostics has its own layout in the reference, not the lab hero.
+      // Radiology & Cardiology — same static journey as lab-tests, kind=RADIOLOGY.
       {
         path: 'diagnostics',
+        data: { kind: 'RADIOLOGY' },
         loadComponent: () =>
-          import('./features/lab/diagnostics-page').then((m) => m.DiagnosticsPage),
+          import('./features/diagnostics/diagnostics-page').then((m) => m.DiagnosticsPage),
       },
       // Vision is a self-contained STATIC coupon journey (no backend, no wallet
       // block). See features/vision/vision-page.ts and REMOVED-APIS.md.
@@ -508,11 +510,11 @@ export const routes: Routes = [
       // An extra step versus vision/dental, since the vaccine itself is chosen
       // before the vendor rather than being a fixed category.
       {
+        // Vaccination is a self-contained STATIC journey (no backend).
+        // See features/vaccination/vaccination-page.ts and REMOVED-APIS.md.
         path: 'vaccination',
         loadComponent: () =>
-          import('./features/vaccination/vaccination-services-page').then(
-            (m) => m.VaccinationServicesPage,
-          ),
+          import('./features/vaccination/vaccination-page').then((m) => m.VaccinationPage),
       },
       {
         /*
