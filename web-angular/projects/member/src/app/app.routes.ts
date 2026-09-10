@@ -302,12 +302,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/lab/diagnostics-page').then((m) => m.DiagnosticsPage),
       },
-      // Vision and Dental are one screen; `area` binds from route data.
+      // Vision is a self-contained STATIC coupon journey (no backend, no wallet
+      // block). See features/vision/vision-page.ts and REMOVED-APIS.md.
       {
         path: 'vision',
-        data: { area: 'VISION' },
         loadComponent: () =>
-          import('./features/services/benefit-services-page').then((m) => m.BenefitServicesPage),
+          import('./features/vision/vision-page').then((m) => m.VisionPage),
       },
       {
         path: 'dental',
