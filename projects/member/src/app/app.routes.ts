@@ -744,8 +744,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/misc/helpline-page').then((m) => m.HelplinePage),
       },
       {
+        // Pharmacy is a self-contained STATIC prescription-led journey (no
+        // backend). See features/pharmacy/pharmacy-page.ts and REMOVED-APIS.md.
         path: 'pharmacy',
-        loadComponent: () => import('./features/misc/pharmacy-page').then((m) => m.PharmacyPage),
+        loadComponent: () => import('./features/pharmacy/pharmacy-page').then((m) => m.PharmacyPage),
       },
       {
         // Flow 5 step 11 — the partner picking, packing and delivering. There
