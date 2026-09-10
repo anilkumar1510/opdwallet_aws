@@ -310,10 +310,11 @@ export const routes: Routes = [
           import('./features/vision/vision-page').then((m) => m.VisionPage),
       },
       {
+        // Dental is a self-contained STATIC journey (no backend): consultation
+        // + optional procedure route. See features/dental/dental-page.ts.
         path: 'dental',
-        data: { area: 'DENTAL' },
         loadComponent: () =>
-          import('./features/services/benefit-services-page').then((m) => m.BenefitServicesPage),
+          import('./features/dental/dental-page').then((m) => m.DentalPage),
       },
       {
         /*
