@@ -21,7 +21,6 @@ import {
 } from '../../core/member/bank-details.store';
 import { FamilyStore } from '../../core/family/family.store';
 import { Member } from '../../core/member/member.model';
-import { WalletStore } from '../../core/wallet/wallet.store';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -362,7 +361,6 @@ export class NewClaimPage {
   protected readonly store = inject(ClaimsStore);
   protected readonly family = inject(FamilyStore);
   protected readonly bank = inject(BankDetailsStore);
-  private readonly wallet = inject(WalletStore);
   private readonly router = inject(Router);
 
   protected readonly steps = STEPS;
@@ -433,12 +431,9 @@ export class NewClaimPage {
 
   protected readonly categoryBalance = computed(() => {
     const chosen = this.selectedCategory();
-    const wallet = this.wallet.wallet();
-    if (!chosen || chosen.isPlaceholder || !wallet) return null;
-    const match = wallet.categories.find(
-      (row) => row.code === this.category() || row.code === chosen.id,
-    );
-    return match && !match.isUnlimited ? match.available : null;
+    if (!chosen || chosen.isPlaceholder) return null;
+    // DUMMY — static per-category balance (₹5,000), no wallet API.
+    return money(5000);
   });
 
   protected readonly overBalance = computed(() => {

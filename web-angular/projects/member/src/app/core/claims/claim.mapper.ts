@@ -311,7 +311,7 @@ function humanise(value: string | undefined, fallback: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-function toStatus(value: string | undefined): ClaimStatus {
+export function toStatus(value: string | undefined): ClaimStatus {
   const key = value?.trim().toUpperCase().replace(/[\s-]+/g, '_');
   if (key && STATUSES[key]) return STATUSES[key];
   // Unknown status still renders, as a neutral label rather than a raw code.

@@ -77,33 +77,10 @@ export class CartStore {
     );
   });
 
-  constructor() {
-    effect(() => {
-      if (!this.session.isAuthenticated()) {
-        this.reset();
-        return;
-      }
-      void this.refreshBadge();
-    });
-  }
-
-  /**
-   * Counts open lab and diagnostic carts. Silent on failure — a stale count is
-   * better than an error, and the badge is never the reason to fail a screen.
-   */
+  // DUMMY / STATIC — the cart badge no longer polls `carts`; it stays at 0.
+  // (Lab/diagnostic carts are handled by the static diagnostics journey.)
   async refreshBadge(): Promise<void> {
-    const responses = await Promise.all(
-      [LabKind.Lab, LabKind.Diagnostic].map((kind) =>
-        firstValueFrom(this.http.get<LabEnvelopeDto<CartDto[]>>(LAB_API[kind].carts)).catch(
-          () => null,
-        ),
-      ),
-    );
-    this._openCount.set(
-      responses
-        .flatMap((response) => (response?.success === false ? [] : (response?.data ?? [])))
-        .filter((cart) => CartStore.OPEN.has((cart.status ?? '').trim().toUpperCase())).length,
-    );
+    this._openCount.set(0);
   }
 
   /** `cartId` is the business id (CART-…), taken straight from the route. */

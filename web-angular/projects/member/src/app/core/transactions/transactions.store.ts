@@ -1,192 +1,91 @@
-﻿import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, computed, signal } from '@angular/core';
 
-import { FamilyStore } from '../family/family.store';
-import { AppError, appError, isAppError } from '../http/app-error';
-import { SessionStore } from '../session/session.store';
-import {
-  PaymentDto,
-  ServiceTransactionsResponseDto,
-  TransactionDetailDto,
-  TransactionsSummaryDto,
-} from './transaction.dto';
-import {
-  PAYMENTS_API,
-  Payment,
-  TRANSACTIONS_API,
-  toPayment,
-  toServiceTransaction,
-  toTransactionPayment,
-  toTransactionsSummary,
-} from './transaction.mapper';
+import { money } from '../domain/money';
+import { toStatus } from '../claims/claim.mapper';
+import { AppError } from '../http/app-error';
+import { Payment } from './transaction.mapper';
 import { ServiceTransaction, TransactionsSummary } from './transaction.model';
 
-const PAGE_SIZE = 20;
+/**
+ * Wallet transactions — DUMMY / STATIC, zero backend.
+ *
+ * Replaces the transactions / payments endpoints. Held in memory. Public surface
+ * unchanged. See REMOVED-APIS.md.
+ */
 
-/** Service-level spend history for whichever family member is active. */
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+function txn(o: {
+  ref: string; code: string; label: string; name: string; days: number;
+  total: number; wallet: number; self: number; copay: number; method: string; status: string;
+}): ServiceTransaction {
+  return {
+    id: o.ref, reference: o.ref,
+    serviceTypeCode: o.code, serviceLabel: o.label, serviceName: o.name,
+    occurredAt: daysAgo(o.days),
+    total: money(o.total), fromWallet: money(o.wallet), selfPaid: money(o.self), copay: money(o.copay),
+    paymentMethodLabel: o.method, status: toStatus(o.status),
+  };
+}
+
+const SEED: ServiceTransaction[] = [
+  txn({ ref: 'TXN-2026-0031', code: 'CONSULT', label: 'Consultation', name: 'Online consultation · Dr. A. Sharma', days: 1, total: 500, wallet: 240, self: 260, copay: 60, method: 'Wallet + Razorpay', status: 'PAID' }),
+  txn({ ref: 'TXN-2026-0028', code: 'PHARMACY', label: 'Pharmacy', name: 'Medicines · Apollo Pharmacy', days: 4, total: 310, wallet: 248, self: 62, copay: 62, method: 'Wallet + Razorpay', status: 'PAID' }),
+  txn({ ref: 'TXN-2026-0021', code: 'LAB', label: 'Pathology', name: 'Diabetes Panel · Metropolis', days: 9, total: 550, wallet: 400, self: 150, copay: 80, method: 'Wallet + Razorpay', status: 'PAID' }),
+  txn({ ref: 'TXN-2026-0015', code: 'DENTAL', label: 'Dental', name: 'Consultation · SmileCare', days: 15, total: 600, wallet: 320, self: 280, copay: 80, method: 'Wallet + Razorpay', status: 'PAID' }),
+];
+
 @Injectable({ providedIn: 'root' })
 export class TransactionsStore {
-  private readonly http = inject(HttpClient);
-  private readonly family = inject(FamilyStore);
-  private readonly session = inject(SessionStore);
-
-  private readonly _transactions = signal<readonly ServiceTransaction[]>([]);
-  private readonly _summary = signal<TransactionsSummary | null>(null);
-  private readonly _loading = signal(false);
-  private readonly _paying = signal(false);
-  private readonly _payError = signal<string | null>(null);
-  private readonly _loadingMore = signal(false);
-  private readonly _error = signal<AppError | null>(null);
-  private readonly _hasMore = signal(false);
-
-  private loadedFor: string | null = null;
+  private readonly _transactions = signal<readonly ServiceTransaction[]>([...SEED]);
 
   readonly transactions = this._transactions.asReadonly();
-  readonly summary = this._summary.asReadonly();
-  readonly loading = this._loading.asReadonly();
-  readonly paying = this._paying.asReadonly();
-  readonly payError = this._payError.asReadonly();
-  readonly loadingMore = this._loadingMore.asReadonly();
-  readonly error = this._error.asReadonly();
-  readonly hasMore = this._hasMore.asReadonly();
+  readonly loading = signal(false).asReadonly();
+  readonly paying = signal(false).asReadonly();
+  readonly payError = signal<string | null>(null).asReadonly();
+  readonly loadingMore = signal(false).asReadonly();
+  readonly error = signal<AppError | null>(null).asReadonly();
+  readonly hasMore = signal(false).asReadonly();
 
-  constructor() {
-    effect(() => {
-      const activeId = this.family.activeMember()?.id ?? null;
-      if (!this.session.isAuthenticated()) {
-        this.reset();
-        return;
-      }
-      if (!activeId || activeId === this.loadedFor) return;
-      this.loadedFor = activeId;
-      void this.load(activeId);
-    });
-  }
+  readonly summary = computed<TransactionsSummary>(() => {
+    const all = this._transactions();
+    const byService = new Map<string, { count: number; amount: number }>();
+    for (const t of all) {
+      const e = byService.get(t.serviceLabel) ?? { count: 0, amount: 0 };
+      e.count += 1; e.amount += t.total.amount;
+      byService.set(t.serviceLabel, e);
+    }
+    return {
+      count: all.length,
+      totalSpent: money(all.reduce((s, t) => s + t.total.amount, 0)),
+      fromWallet: money(all.reduce((s, t) => s + t.fromWallet.amount, 0)),
+      selfPaid: money(all.reduce((s, t) => s + t.selfPaid.amount, 0)),
+      byService: [...byService].map(([serviceLabel, v]) => ({ serviceLabel, count: v.count, amount: money(v.amount) })),
+    };
+  });
 
   retry(): void {
-    const activeId = this.family.activeMember()?.id;
-    if (activeId) void this.load(activeId);
+    /* static — nothing to refetch */
   }
 
-  /** One transaction plus its populated payment, for the detail screen. */
-  async transactionById(
-    transactionId: string,
-  ): Promise<{ transaction: ServiceTransaction; payment: Payment | null } | null> {
-    try {
-      const dto = await firstValueFrom(
-        this.http.get<TransactionDetailDto>(TRANSACTIONS_API.byId(transactionId)),
-      );
-      if (!dto) return null;
-      return { transaction: toServiceTransaction(dto), payment: toTransactionPayment(dto) };
-    } catch {
-      return null;
-    }
+  async transactionById(id: string): Promise<{ transaction: ServiceTransaction; payment: Payment | null } | null> {
+    const t = this._transactions().find((x) => x.id === id || x.reference === id);
+    return t ? { transaction: t, payment: null } : null;
   }
 
-  async paymentById(paymentId: string): Promise<Payment | null> {
-    try {
-      const dto = await firstValueFrom(this.http.get<PaymentDto>(PAYMENTS_API.byId(paymentId)));
-      return dto ? toPayment(dto) : null;
-    } catch {
-      return null;
-    }
+  async paymentById(_paymentId: string): Promise<Payment | null> {
+    return null;
   }
 
-  /**
-   * Completes a gateway payment for a copay or excess.
-   *
-   * Only the mark-paid step: web-member's payment screen also *creates* the
-   * underlying booking here, because those journeys defer creation until after
-   * payment. Every journey in this app creates its booking at the confirm step,
-   * so by the time a payment exists the booking already does. Registered in
-   * tools/parity-divergences.md.
-   */
-  async markPaid(paymentId: string): Promise<boolean> {
-    if (!paymentId) return false;
-    this._paying.set(true);
-    this._payError.set(null);
-    try {
-      await firstValueFrom(this.http.post(PAYMENTS_API.markPaid(paymentId), {}));
-      return true;
-    } catch (error: unknown) {
-      this._payError.set(
-        isAppError(error) ? error.message : 'We could not complete that payment.',
-      );
-      return false;
-    } finally {
-      this._paying.set(false);
-    }
+  async markPaid(_paymentId: string): Promise<boolean> {
+    return true;
   }
 
-  private async load(userId: string): Promise<void> {
-    this._loading.set(true);
-    this._error.set(null);
-    const params = new HttpParams().set('userId', userId);
-
-    try {
-      const [page, summary] = await Promise.all([
-        firstValueFrom(
-          this.http.get<ServiceTransactionsResponseDto>(TRANSACTIONS_API.list, {
-            params: params.set('limit', PAGE_SIZE).set('skip', 0),
-          }),
-        ),
-        // A failing summary must not cost the member their history.
-        firstValueFrom(
-          this.http.get<TransactionsSummaryDto>(TRANSACTIONS_API.summary, { params }),
-        ).catch(() => null),
-      ]);
-      if (this.loadedFor !== userId) return;
-
-      const rows = (page.transactions ?? []).map(toServiceTransaction);
-      this._transactions.set(rows);
-      this._summary.set(summary ? toTransactionsSummary(summary) : null);
-      this._hasMore.set(rows.length >= PAGE_SIZE);
-    } catch (error: unknown) {
-      if (this.loadedFor !== userId) return;
-      this._transactions.set([]);
-      this._summary.set(null);
-      this._error.set(isAppError(error) ? error : appError('server'));
-    } finally {
-      if (this.loadedFor === userId) this._loading.set(false);
-    }
-  }
-
-  /** This endpoint takes a real `skip`, so pages append rather than replace. */
   async loadMore(): Promise<void> {
-    const userId = this.family.activeMember()?.id;
-    if (!userId || this._loading() || this._loadingMore() || !this._hasMore()) return;
-
-    const skip = this._transactions().length;
-    this._loadingMore.set(true);
-    try {
-      const page = await firstValueFrom(
-        this.http.get<ServiceTransactionsResponseDto>(TRANSACTIONS_API.list, {
-          params: new HttpParams()
-            .set('userId', userId)
-            .set('limit', PAGE_SIZE)
-            .set('skip', skip),
-        }),
-      );
-      if (this.loadedFor !== userId) return;
-
-      const rows = (page.transactions ?? []).map(toServiceTransaction);
-      // Guard against an overlapping page repeating rows already on screen.
-      const seen = new Set(this._transactions().map((t) => t.id));
-      this._transactions.set([...this._transactions(), ...rows.filter((r) => !seen.has(r.id))]);
-      this._hasMore.set(rows.length >= PAGE_SIZE);
-    } catch {
-      // Keep what is already shown; the member can try again.
-    } finally {
-      this._loadingMore.set(false);
-    }
-  }
-
-  private reset(): void {
-    this.loadedFor = null;
-    this._transactions.set([]);
-    this._summary.set(null);
-    this._error.set(null);
-    this._hasMore.set(false);
+    /* static — the full list is already loaded */
   }
 }

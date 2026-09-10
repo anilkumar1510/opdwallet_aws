@@ -1,132 +1,49 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { DestroyRef, Injectable, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, computed, signal } from '@angular/core';
 
-import { SessionStore } from '../session/session.store';
-import {
-  NOTIFICATIONS_API,
-  NOTIFICATION_PAGE_SIZE,
-  Notification,
-  NotificationsResponseDto,
-  UnreadCountDto,
-  toNotification,
-} from './notification';
-
-/** web-member re-checks the badge on this cadence. */
-const POLL_MS = 30_000;
+import { Notification } from './notification';
 
 /**
- * The shell's notification bell.
+ * Notifications — DUMMY / STATIC, zero backend.
  *
- * Session-scoped, with no userId parameter — unlike the wallet, notifications
- * do not follow the active family member.
- *
- * The badge polls; the list is fetched only when the dropdown opens, which is
- * what web-member does and keeps the idle cost to one small request a minute.
+ * Replaces `notifications`, `notifications/unread-count` and the mark-read
+ * endpoints (this also feeds the header bell badge). Held in memory. Public
+ * surface unchanged. See REMOVED-APIS.md.
  */
+
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+const SEED: Notification[] = [
+  { id: 'n1', title: 'Your cart is ready', message: 'Your pharmacy cart has been built and is ready for payment.', isRead: false, actionUrl: '/member/pharmacy', createdAt: daysAgo(0), priorityClass: 'text-[#0F5FDC]' },
+  { id: 'n2', title: 'Claim approved', message: 'Claim CLM-2026-0004 was approved. ₹400 is being credited to your bank account.', isRead: false, actionUrl: '/member/claims', createdAt: daysAgo(1), priorityClass: 'text-warning-700' },
+  { id: 'n3', title: 'Documents needed', message: 'Claim CLM-2026-0006 needs a clearer invoice to continue.', isRead: true, actionUrl: '/member/claims', createdAt: daysAgo(4), priorityClass: 'text-ink-700' },
+  { id: 'n4', title: 'Appointment confirmed', message: 'Your in-clinic appointment is confirmed. Your cart is ready.', isRead: true, actionUrl: '/member/bookings', createdAt: daysAgo(6), priorityClass: 'text-ink-700' },
+];
+
 @Injectable({ providedIn: 'root' })
 export class NotificationsStore {
-  private readonly http = inject(HttpClient);
-  private readonly session = inject(SessionStore);
-
-  private readonly _notifications = signal<readonly Notification[]>([]);
-  private readonly _unread = signal(0);
-  private readonly _loading = signal(false);
+  private readonly _notifications = signal<readonly Notification[]>([...SEED]);
 
   readonly notifications = this._notifications.asReadonly();
-  readonly unread = this._unread.asReadonly();
-  readonly loading = this._loading.asReadonly();
+  readonly unread = computed(() => this._notifications().filter((n) => !n.isRead).length);
+  readonly loading = signal(false).asReadonly();
 
-  constructor() {
-    let timer: ReturnType<typeof setInterval> | null = null;
-
-    effect(() => {
-      if (!this.session.isAuthenticated()) {
-        this.reset();
-        if (timer) {
-          clearInterval(timer);
-          timer = null;
-        }
-        return;
-      }
-      void this.refreshBadge();
-      timer ??= setInterval(() => void this.refreshBadge(), POLL_MS);
-    });
-
-    // Without this the interval outlives the app in tests and on teardown.
-    inject(DestroyRef).onDestroy(() => {
-      if (timer) clearInterval(timer);
-    });
-  }
-
-  /** Badge only. Silent on failure — a stale count is better than an error. */
   async refreshBadge(): Promise<void> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<UnreadCountDto>(NOTIFICATIONS_API.unreadCount),
-      );
-      this._unread.set(response?.unreadCount ?? 0);
-    } catch {
-      /* keep the previous count */
-    }
+    /* static — the badge derives from the in-memory list */
   }
 
-  /** The dropdown's list. The response also refreshes the badge. */
   async load(): Promise<void> {
-    this._loading.set(true);
-    try {
-      const response = await firstValueFrom(
-        this.http.get<NotificationsResponseDto>(NOTIFICATIONS_API.list, {
-          params: new HttpParams().set('limit', NOTIFICATION_PAGE_SIZE),
-        }),
-      );
-      this._notifications.set((response?.notifications ?? []).map(toNotification));
-      if (typeof response?.unreadCount === 'number') this._unread.set(response.unreadCount);
-    } catch {
-      this._notifications.set([]);
-    } finally {
-      this._loading.set(false);
-    }
+    /* static — already seeded */
   }
 
-  /**
-   * Marks one as read, updating the row and the badge immediately so the
-   * dropdown does not have to close and reopen to look right.
-   */
   async markRead(id: string): Promise<void> {
-    const row = this._notifications().find((candidate) => candidate.id === id);
-    if (!row || row.isRead) return;
-
-    this._notifications.update((rows) =>
-      rows.map((candidate) => (candidate.id === id ? { ...candidate, isRead: true } : candidate)),
-    );
-    this._unread.update((count) => Math.max(0, count - 1));
-
-    try {
-      await firstValueFrom(this.http.patch(NOTIFICATIONS_API.markRead(id), {}));
-    } catch {
-      // Put it back rather than showing it read when the server disagrees.
-      this._notifications.update((rows) =>
-        rows.map((candidate) =>
-          candidate.id === id ? { ...candidate, isRead: false } : candidate,
-        ),
-      );
-      this._unread.update((count) => count + 1);
-    }
+    this._notifications.set(this._notifications().map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   }
 
   async markAllRead(): Promise<void> {
-    try {
-      await firstValueFrom(this.http.patch(NOTIFICATIONS_API.markAllRead, {}));
-      this._notifications.update((rows) => rows.map((row) => ({ ...row, isRead: true })));
-      this._unread.set(0);
-    } catch {
-      /* leave them unread */
-    }
-  }
-
-  private reset(): void {
-    this._notifications.set([]);
-    this._unread.set(0);
+    this._notifications.set(this._notifications().map((n) => ({ ...n, isRead: true })));
   }
 }
