@@ -1,21 +1,16 @@
 import { Routes } from '@angular/router';
 
-import { anonymousGuard, authGuard } from './core/session/auth.guard';
-
 /**
  * One route tree for every viewport width. There is no mobile-only route and
  * no device-based redirect: a URL identifies a screen, not a screen-and-device.
+ *
+ * DUMMY / STATIC — the login page is removed and the session is always
+ * authenticated, so the app opens straight into /member. See REMOVED-APIS.md.
  */
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'member' },
   {
-    path: 'login',
-    canActivate: [anonymousGuard],
-    loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage),
-  },
-  {
     path: 'member',
-    canActivate: [authGuard],
     loadComponent: () => import('./features/shell/member-shell').then((m) => m.MemberShell),
     children: [
       {

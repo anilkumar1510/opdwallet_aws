@@ -1,190 +1,92 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 
-import { formatMoney } from '../../core/domain/money';
-import { FamilyStore } from '../../core/family/family.store';
-import { WalletStore } from '../../core/wallet/wallet.store';
-import { TransactionDirection, WalletTransaction } from '../../core/wallet/wallet.model';
+import { formatMoney, money } from '../../core/domain/money';
+import { STATIC_WALLET_TOTAL } from '../../core/member/static-policy.data';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageHeader } from '../../shared/ui/page-header';
-import { WalletLedger } from './wallet-ledger';
-import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 
+/**
+ * Wallet — DUMMY / STATIC, redesigned, zero backend.
+ *
+ * Replaces the WalletStore / FamilyStore / transactions-ledger version. The hero
+ * pool and the per-benefit limits are served from static-policy.data.ts. See
+ * REMOVED-APIS.md.
+ */
 @Component({
   selector: 'opd-wallet-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LoadingView, ErrorView, EmptyView, BackLink, WalletLedger, PageHeader],
+  imports: [BackLink, PageHeader],
   template: `
-    <opd-page-header title="Wallet" [subtitle]="store.memberName()" />
+    <opd-page-header title="Wallet" subtitle="Shivam Jha" />
 
-    <div class="mx-auto w-full max-w-3xl px-4 pb-5 pt-6">
-      <!-- The wallet is reached from the balance card on the home screen, and
-           had no way back but the browser control. The reference's history screen
-           carries one (transactions/page.tsx:521). -->
-      <div class="hidden lg:block">
-        <div class="flex items-center gap-3">
-          <opd-back-link />
-          <div>
-            <h1 class="text-lg font-semibold text-ink-900">Wallet</h1>
-            <p class="mt-0.5 text-sm text-ink-500">{{ store.memberName() }}</p>
+    <div class="mx-auto w-full max-w-[720px] px-5 pb-8 pt-6 lg:px-8">
+      <div class="mb-4 hidden lg:block">
+        <opd-back-link />
+        <h1 class="text-2xl font-bold text-black lg:text-3xl">Wallet</h1>
+        <p class="mt-0.5 text-sm text-ink-500">Shivam Jha · Cover until 30 Jun 2027</p>
+      </div>
+
+      <!-- ── Hero balance ────────────────────────────────────────────────── -->
+      <section
+        class="relative overflow-hidden rounded-3xl p-6 text-white shadow-sm"
+        style="background: linear-gradient(135deg,#1F77E0 0%,#0E51A2 60%,#08356E 100%)"
+      >
+        <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10"></div>
+        <div class="absolute -bottom-14 -left-6 h-40 w-40 rounded-full bg-white/5"></div>
+
+        <div class="relative">
+          <p class="text-xs font-medium uppercase tracking-wide text-white/70">Available balance</p>
+          <p class="mt-1 text-4xl font-bold leading-none">{{ amount(total.available) }}</p>
+          <p class="mt-1 text-xs text-white/70">of {{ amount(total.allocated) }} allocated this year</p>
+
+          <div class="mt-5 h-2.5 overflow-hidden rounded-full bg-white/20">
+            <div class="h-full rounded-full bg-[#7EE3B8]" [style.width.%]="usedPercent()"></div>
           </div>
+          <div class="mt-2 flex justify-between text-xs text-white/80">
+            <span>{{ usedPercent() }}% used</span>
+            <span>{{ amount(total.available) }} left</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Stat tiles ──────────────────────────────────────────────────── -->
+      <div class="mt-4 grid grid-cols-3 gap-3">
+        <div class="rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)">
+          <p class="text-xs text-ink-500">Allocated</p>
+          <p class="mt-1 text-lg font-semibold text-[#034DA2]">{{ amount(total.allocated) }}</p>
+        </div>
+        <div class="rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)">
+          <p class="text-xs text-ink-500">Used</p>
+          <p class="mt-1 text-lg font-semibold text-[#303030]">{{ amount(used()) }}</p>
+        </div>
+        <div class="rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)">
+          <p class="text-xs text-ink-500">Left</p>
+          <p class="mt-1 text-lg font-semibold text-success-700">{{ amount(total.available) }}</p>
         </div>
       </div>
 
-      @if (store.loading()) {
-        <opd-loading label="Loading wallet" />
-      } @else if (store.error(); as error) {
-        <opd-error [error]="error" (retry)="store.retry()" />
-      } @else if (store.wallet(); as wallet) {
-        @if (!wallet.exists) {
-          <opd-empty
-            title="No wallet for this member"
-            detail="There is no active benefit wallet for the current policy period."
-          />
-        } @else {
-          <!-- Totals -->
-          <section class="mt-4 rounded-2xl bg-brand-600 p-5 text-white shadow-soft">
-            <p class="text-xs uppercase tracking-wide text-brand-100">Available balance</p>
-            <p class="mt-1 text-3xl font-semibold">{{ amount(wallet.totals.available) }}</p>
-            <!-- /wallet/balance carries no policy period, so it comes from the
-                 profile assignment held in FamilyStore. -->
-            @if (coveragePeriod(); as period) {
-              <p class="mt-1 text-xs text-brand-100">{{ period }}</p>
-            }
-            <div class="mt-4 h-2 overflow-hidden rounded-full bg-brand-700">
-              <div
-                class="h-full rounded-full bg-accent"
-                [style.width.%]="wallet.totals.consumedPercent"
-              ></div>
-            </div>
-            <dl class="mt-3 flex justify-between text-xs text-brand-100">
-              <div><dt class="inline">Allocated </dt><dd class="inline font-medium text-white">{{ amount(wallet.totals.allocated) }}</dd></div>
-              <div><dt class="inline">Used </dt><dd class="inline font-medium text-white">{{ amount(wallet.totals.consumed) }}</dd></div>
-            </dl>
-            @if (wallet.isShared) {
-              <p class="mt-3 rounded-lg bg-brand-700 px-2 py-1 text-xs">
-                Shared across your family
-              </p>
-            }
-          </section>
-
-          <!-- Per-family-member consumption, shared wallets only -->
-          @if (wallet.isShared && wallet.familyConsumption.length) {
-            <section class="mt-5">
-              <h2 class="text-sm font-semibold text-ink-900">Used by each member</h2>
-              <ul class="mt-2 divide-y divide-surface-border rounded-2xl bg-surface">
-                @for (entry of wallet.familyConsumption; track entry.memberId) {
-                  <li class="flex items-center justify-between px-4 py-3 text-sm">
-                    <span class="text-ink-700">{{ nameFor(entry.memberId) }}</span>
-                    <span class="font-medium text-ink-900">{{ amount(entry.consumed) }}</span>
-                  </li>
-                }
-              </ul>
-            </section>
-          }
-
-          <!-- Categories -->
-          @if (wallet.categories.length) {
-            <section class="mt-5">
-              <h2 class="text-sm font-semibold text-ink-900">Benefits</h2>
-              <ul class="mt-2 grid gap-3 sm:grid-cols-2">
-                @for (category of wallet.categories; track category.category + category.label) {
-                  <li class="rounded-2xl bg-surface p-4 shadow-soft">
-                    <p class="text-sm font-medium text-ink-900">{{ category.label }}</p>
-                    @if (category.isUnlimited) {
-                      <p class="mt-1 text-lg font-semibold text-success-700">Unlimited</p>
-                    } @else {
-                      <p
-                        class="mt-1 text-lg font-semibold"
-                        [class.text-ink-900]="!category.isExhausted"
-                        [class.text-ink-500]="category.isExhausted"
-                      >
-                        {{ amount(category.available) }}
-                      </p>
-                      @if (category.isExhausted) {
-                        <p class="mt-0.5 text-xs font-medium text-danger-700">Fully used</p>
-                      } @else {
-                        <p class="mt-0.5 text-xs text-ink-500">
-                          of {{ amount(category.allocated) }}
-                        </p>
-                      }
-                    }
-                  </li>
-                }
-              </ul>
-
-              <!--
-                Every benefit above is this member's own. The plan can be set to
-                FLOATER, which shares one pot across the family, but that is a
-                plan-wide switch with no per-benefit form — so rather than a
-                badge on a card that could never be true for one benefit alone,
-                the whole list carries one honest line.
-              -->
-              <a
-                routerLink="/member/wallet/shared-cover"
-                class="mt-3 block text-sm text-ink-500 underline hover:text-ink-700"
-                >Is any of this shared with my family?</a
-              >
-            </section>
-          }
-
-          <opd-wallet-ledger />
-        }
-      }
+      <!-- ── Recent activity ─────────────────────────────────────────────── -->
+      <section class="mt-6">
+        <h2 class="mb-3 text-[17px] font-semibold text-[#1c1c1c]">Recent activity</h2>
+        <div class="rounded-2xl border border-dashed border-[#E5E7EB] bg-white p-8 text-center">
+          <p class="text-2xl">🧾</p>
+          <p class="mt-2 text-sm font-medium text-ink-900">No transactions yet</p>
+          <p class="mt-0.5 text-xs text-ink-500">Wallet debits and credits from your bookings and claims will appear here.</p>
+        </div>
+      </section>
     </div>
   `,
 })
 export class WalletPage {
-  protected readonly store = inject(WalletStore);
+  protected readonly amount = formatMoney;
+  protected readonly total = STATIC_WALLET_TOTAL;
 
-  /** Net change is rendered with its own sign, so the figure itself is unsigned. */
-  protected absolute(value: { amount: number; currency: 'INR' }): { amount: number; currency: 'INR' } {
-    return value.amount < 0 ? { ...value, amount: -value.amount } : value;
-  }
-  private readonly family = inject(FamilyStore);
-
-  private readonly namesById = computed(
-    () => new Map(this.family.family().map((member) => [member.id, member.fullName])),
+  protected readonly used = computed(() =>
+    money(Math.max(0, this.total.allocated.amount - this.total.available.amount)),
   );
 
-  private readonly periodFormat = new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  protected readonly usedPercent = computed(() => {
+    const a = this.total.allocated.amount;
+    return a ? Math.round(((a - this.total.available.amount) / a) * 100) : 0;
   });
-
-  /**
-   * The policy period the wallet applies to. Sourced from the active member's
-   * assignment, because GET /wallet/balance does not return it.
-   */
-  protected readonly coveragePeriod = computed(() => {
-    const activeId = this.family.activeMember()?.id;
-    const policy = this.family.policies().find((candidate) => candidate.holderId === activeId);
-    if (!policy?.validTill) return null;
-
-    const till = this.periodFormat.format(policy.validTill);
-    return policy.validFrom
-      ? `Cover ${this.periodFormat.format(policy.validFrom)} – ${till}`
-      : `Cover until ${till}`;
-  });
-
-  protected readonly amount = formatMoney;
-
-  private readonly dateFormat = new Intl.DateTimeFormat('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  protected occurredAt(transaction: WalletTransaction): string {
-    return transaction.occurredAt ? this.dateFormat.format(transaction.occurredAt) : 'Date unknown';
-  }
-
-  protected isCredit(transaction: WalletTransaction): boolean {
-    return transaction.direction === TransactionDirection.Credit;
-  }
-
-  protected nameFor(memberId: string): string {
-    return this.namesById().get(memberId) ?? 'Family member';
-  }
 }

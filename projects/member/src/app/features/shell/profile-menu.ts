@@ -11,7 +11,6 @@ import { RouterLink } from '@angular/router';
 import { relationshipLabel } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
 import { Member } from '../../core/member/member.model';
-import { SessionStore } from '../../core/session/session.store';
 import { Icon } from '../../shared/ui/icon';
 
 /**
@@ -131,14 +130,6 @@ import { Icon } from '../../shared/ui/icon';
               (click)="open.set(false)"
               >Settings</a
             >
-            <button
-              type="button"
-              role="menuitem"
-              class="w-full px-4 py-3 text-left text-sm text-[#EF4444] transition-colors hover:bg-red-50"
-              (click)="signOut()"
-            >
-              Log Out
-            </button>
           </div>
         </div>
       }
@@ -146,8 +137,6 @@ import { Icon } from '../../shared/ui/icon';
   `,
 })
 export class ProfileMenu {
-  private readonly session = inject(SessionStore);
-
   /** Home header variant: avatar plus "Hi <first name>!" and the greeting. */
   readonly showName = input(false);
 
@@ -165,12 +154,5 @@ export class ProfileMenu {
   protected choose(member: Member): void {
     this.family.setActiveMember(member);
     this.open.set(false);
-  }
-
-  protected async signOut(): Promise<void> {
-    this.open.set(false);
-    // No navigate here: SessionStore.terminate() owns it, so sign-out and a
-    // rejected session end identically.
-    await this.session.logout();
   }
 }

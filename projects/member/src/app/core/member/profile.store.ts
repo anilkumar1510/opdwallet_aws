@@ -1,129 +1,64 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, computed, signal } from '@angular/core';
 
-import { AppError, appError, isAppError } from '../http/app-error';
-import { SessionStore } from '../session/session.store';
-import { Address, AddressDto, AddressInput, AddressesResponseDto, toAddress } from './address';
-import { MEMBER_API } from './member.mapper';
-
-interface SaveAddressResponseDto {
-  success?: boolean;
-  data?: AddressDto;
-}
+import { AppError } from '../http/app-error';
+import { Address, AddressInput } from './address';
 
 /**
- * Saved addresses for the signed-in member.
+ * Saved addresses — DUMMY / STATIC, zero backend.
  *
- * Addresses are scoped to the session - GET /member/addresses takes no userId
- * so this does not follow the active family member the way the other stores
- * do.
+ * Replaces the `member/addresses` GET/POST. Held in memory; save() adds or
+ * updates. Public surface unchanged. See REMOVED-APIS.md.
  */
+
+function toAddress(id: string, input: AddressInput): Address {
+  const type = input.addressType.trim().toUpperCase();
+  return {
+    id,
+    typeLabel: type.charAt(0) + type.slice(1).toLowerCase(),
+    lines: [input.addressLine1, input.addressLine2 ?? ''].filter((l) => l && l.trim()),
+    pincode: input.pincode || null,
+    city: input.city || null,
+    state: input.state || null,
+    isDefault: input.isDefault === true,
+    input,
+  };
+}
+
+const SEED: Address[] = [
+  toAddress('a1', { addressType: 'HOME', addressLine1: 'B-402, Green Avenue', addressLine2: 'Sector 45', city: 'Gurugram', state: 'Haryana', pincode: '122003', isDefault: true }),
+  toAddress('a2', { addressType: 'WORK', addressLine1: 'DLF Cyber City, Tower B', addressLine2: 'Phase 2', city: 'Gurugram', state: 'Haryana', pincode: '122002' }),
+];
+
 @Injectable({ providedIn: 'root' })
 export class ProfileStore {
-  private readonly http = inject(HttpClient);
-  private readonly session = inject(SessionStore);
-
-  private readonly _addresses = signal<readonly Address[]>([]);
-  private readonly _loading = signal(false);
-  private readonly _error = signal<AppError | null>(null);
-  private readonly _saving = signal(false);
-  private readonly _saveError = signal<AppError | null>(null);
-
-  private loaded = false;
-  private inFlight: Promise<void> | null = null;
+  private readonly _addresses = signal<readonly Address[]>([...SEED]);
+  private seq = 2;
 
   readonly addresses = this._addresses.asReadonly();
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
-  readonly saving = this._saving.asReadonly();
-  readonly saveError = this._saveError.asReadonly();
+  readonly loading = signal(false).asReadonly();
+  readonly error = signal<AppError | null>(null).asReadonly();
+  readonly saving = signal(false).asReadonly();
+  readonly saveError = signal<AppError | null>(null).asReadonly();
 
-  /** Default address first — lab uploads need a pincode to route the sample. */
   readonly pincode = computed(() => {
-    const all = this._addresses();
-    const preferred = all.find((address) => address.isDefault) ?? all[0];
-    return preferred?.pincode ?? null;
+    const list = this._addresses();
+    return (list.find((a) => a.isDefault) ?? list[0])?.pincode ?? null;
   });
 
-  constructor() {
-    effect(() => {
-      if (this.session.isAuthenticated()) {
-        void this.load();
-      } else {
-        this.reset();
-      }
-    });
-  }
-
-  load(): Promise<void> {
-    if (this.loaded) return Promise.resolve();
-    this.inFlight ??= this.run().finally(() => {
-      this.inFlight = null;
-    });
-    return this.inFlight;
-  }
-
   retry(): void {
-    this.loaded = false;
-    void this.load();
+    /* static — nothing to refetch */
   }
 
-  /**
-   * Create (no id) or replace (id) one address, then refresh the list so every
-   * page reading this store sees the change. Returns the saved address so the
-   * caller can select what the member just typed.
-   */
+  async load(): Promise<void> {
+    /* static — already seeded */
+  }
+
   async save(input: AddressInput, id?: string): Promise<Address | null> {
-    this._saving.set(true);
-    this._saveError.set(null);
-    try {
-      const url = id ? `${MEMBER_API.addresses}/${id}` : MEMBER_API.addresses;
-      const response = await firstValueFrom(
-        id
-          ? this.http.put<SaveAddressResponseDto>(url, input)
-          : this.http.post<SaveAddressResponseDto>(url, input),
-      );
-      if (response.success === false) throw appError('server');
-
-      this.loaded = false;
-      await this.load();
-      const saved = response.data ? toAddress(response.data) : null;
-      // The list is the source of truth — match the refreshed copy by id so the
-      // caller selects an address that is actually in `addresses()`.
-      return this._addresses().find((a) => a.id === saved?.id) ?? saved;
-    } catch (error: unknown) {
-      this._saveError.set(isAppError(error) ? error : appError('server'));
-      return null;
-    } finally {
-      this._saving.set(false);
-    }
-  }
-
-  private async run(): Promise<void> {
-    this._loading.set(true);
-    this._error.set(null);
-    try {
-      const response = await firstValueFrom(
-        this.http.get<AddressesResponseDto>(MEMBER_API.addresses),
-      );
-      // This route reports failure in the body with a 200 status, so success
-      // is checked here rather than left to the error interceptor.
-      if (response.success === false) throw appError('server');
-
-      this._addresses.set((response.data ?? []).map(toAddress));
-      this.loaded = true;
-    } catch (error: unknown) {
-      this._addresses.set([]);
-      this._error.set(isAppError(error) ? error : appError('server'));
-    } finally {
-      this._loading.set(false);
-    }
-  }
-
-  private reset(): void {
-    this.loaded = false;
-    this._addresses.set([]);
-    this._error.set(null);
+    const addr = toAddress(id ?? 'a' + ++this.seq, input);
+    const list = this._addresses();
+    // A new default clears the flag on the others.
+    const cleared = addr.isDefault ? list.map((a) => ({ ...a, isDefault: false })) : list;
+    this._addresses.set(id ? cleared.map((a) => (a.id === id ? addr : a)) : [...cleared, addr]);
+    return addr;
   }
 }
