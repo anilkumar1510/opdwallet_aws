@@ -17,16 +17,15 @@ import { Claim } from './claim.model';
 
 /** Claimable categories with real-ish limits + co-payment (matches the dummy policy). */
 export const STATIC_CLAIM_CATEGORIES: readonly ClaimCategory[] = [
-  cat('CAT005', 'Online Consultation'),
-  cat('CAT001', 'In-Clinic Consultation'),
-  cat('CAT007', 'Vision'),
-  cat('CAT006', 'Dental'),
-  cat('CAT002', 'Pharmacy'),
-  cat('CAT009', 'Vaccination'),
-  cat('CAT004', 'Pathology'),
-  cat('CAT003', 'Radiology & Cardiology'),
+  cat('ONLINE_CONSULTATION', 'Online Consultation'),
+  cat('IN_CLINIC', 'In-Clinic Consultation'),
+  cat('VISION', 'Vision'),
+  cat('DENTAL', 'Dental'),
+  cat('PHARMACY', 'Pharmacy'),
+  cat('VACCINATION', 'Vaccination'),
+  cat('AHC', 'Pathology'),
+  cat('LABS', 'Radiology & Cardiology'),
 ];
-
 function cat(code: string, name: string): ClaimCategory {
   return {
     id: code,

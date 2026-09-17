@@ -1,0 +1,419 @@
+@if (theme !== 'attachPin') {
+  <div
+    class=""
+    id="default"
+    [ngClass]="compType && compType == 'upload_presc' ? 'multi-upload' : ''"
+    >
+    <!-- Drag n Drop theme Starts -->
+    @if (theme == 'dragNDrop') {
+      <div
+        id="dragNDrop"
+        [ngClass]="hideSelectBtn && hideResetBtn ? null : 'dragNDropBtmPad'"
+        class="dragNDrop"
+        >
+        <div style="position: relative">
+          <div
+            id="div1"
+            class="div1 afu-dragndrop-box"
+            (drop)="drop($event)"
+            (dragover)="allowDrop($event)"
+            >
+            <p class="afu-dragndrop-text">Drag N Drop</p>
+          </div>
+          <!-- <span class='label label-info' id="upload-file-info{{id}}">{{selectedFiles[0]?.name}}</span> -->
+        </div>
+      </div>
+    }
+    <!-- Drag n Drop theme Ends -->
+    <!-- @if (crop_image && !croppedImage && cropedImage != undefined && cropedImage != '') {
+      <button
+        class="primary-btn"
+        type="button"
+        (click)="crop()"
+        >
+        Upload Image
+      </button>
+    } -->
+    <!-- //for delete -->
+    @if (crop_image && !croppedImage && cropedImage != undefined && cropedImage != '') {
+      <button
+        class="secondary-btn"
+    (click)="
+      croppedImage = true;
+      cropedImage = '';
+      selectedFiles = [];
+      hideSelectImageButton = true;
+      hideSelectBtn = false;
+      clearInput('sel' + id)
+    "
+        >
+        <i aria-hidden="true" class="fa fa-trash"></i>
+      </button>
+    }
+    <!--Selected file list-->
+    @if (selectedFiles && selectedFiles.length > 0) {
+      <span
+        [ngClass]="!showmultipleImage ? 'border border-dark' : ''"
+        class="upload-document-align"
+        >
+        @for (sf of selectedFiles; track sf; let i = $index) {
+          <div class="row afu-valid-file float-left mr-1">
+            <div class="col-12">
+              <!-- Display icon with text -->
+              @if (icon_with_text) {
+                <div style="position: relative">
+                  <!-- @if (showImage(sf) && !multipleImageUpload) {
+                    <div (click)="viewImage(i, sf)">
+                      <i class="fa fa-paperclip" aria-hidden="true" style="margin-right: 10px"></i>
+                      <span class="label label-info" id="upload-file-info{{ id }}">{{ sf.file.name }}</span>
+                    </div>
+                  } -->
+                  <!-- @if (sf.file.type == 'application/pdf' && !multipleImageUpload) {
+                    <div
+                      (click)="openPdf(sf)"
+                      >
+                      <i class="fa fa-paperclip" aria-hidden="true" style="margin-right: 10px"></i>
+                      <span class="label label-info" id="upload-file-info{{ id }}">{{ sf.file.name }}</span>
+                    </div>
+                  } -->
+                </div>
+              }
+              <!-- Display icon with text -->
+              @if (!icon_with_text) {
+                @if (hideViewlink) {
+                  @if (showImage(sf) && !multipleImageUpload) {
+                    <img
+                      id="output"
+                      class="uploaded-img float-left"
+                      [src]="sf.imageSrc"
+                      />
+                  }
+                }
+                <!-- @if (!hideViewlink) {
+                  @if (showImage(sf) && !multipleImageUpload) {
+                    <img
+                      id="output"
+                      class="uploaded-img float-left"
+                      [src]="sf.imageSrc"
+                      (click)="viewImage(i, sf)"
+                      />
+                  }
+                } -->
+                <!-- @if (sf.file.type == 'application/pdf' && !multipleImageUpload) {
+                  <img
+                    id="output"
+                    class="uploaded-img pdf_image"
+                    src="../../../../assets/images/icon-pdf.svg"
+                    (click)="openPdf(sf)"
+                    />
+                } -->
+                @if (sf.file.type == 'application/dicom' && !multipleImageUpload) {
+                  <img
+                    id="output"
+                    class="uploaded-img float-left dicom"
+                    src="../../../../assets/images/icon-dcm.svg"
+                    />
+                }
+                @if (
+                  sf.file.type == 'application/vnd.oasis.opendocument.text' && !multipleImageUpload
+                  ) {
+                  <!-- <img
+                    id="output"
+                    class="uploaded-img float-left opendocument"
+                    src="../../../../assets/images/odt.png"
+                    /> -->
+                }
+                @if (sf.file.type == 'application/msword' && !multipleImageUpload) {
+                  <!-- <img
+                    id="output"
+                    class="uploaded-img float-left msword"
+                    src="../../../../assets/images/doc.png"
+                    /> -->
+                }
+                <!-- <a class="pdf-img" href="javascript:void(0)"
+                *ngIf="(sf.file.type=='application/pdf' || sf.file.type=='text/plain') && !multipleImageUpload"
+              (click)="openPdf(sf);">{{sf.file.name}}</a> -->
+              @if (
+                (sf.file.type == 'application/dicom' || sf.file.type == 'text/csv') &&
+                !multipleImageUpload
+                ) {
+                <span
+                  class="pdf-img"
+                  href="javascript:void(0)"
+                  >{{ sf.file.name }}</span
+                  >
+                }
+                @if (showImage(sf) && multipleImageUpload) {
+                  <img
+                    id="output"
+                    class="uploaded-img float-left"
+                    [src]="sf.imageSrc"
+                    />
+                }
+              }
+              @if (uploadClick && !hideSelectBtn && !multipleImageUpload) {
+                <a
+                  class="img-close-btn"
+                  role="button"
+                  (click)="removeFile(i, 'sf')"
+                  >
+                  <!-- <i class="fa fa-trash"></i> -->
+                  <!-- <img src="/assets/images/platform icons_button-delete.svg" /> -->
+                </a>
+              }
+              @if (uploadClick && !hideSelectBtn && multipleImageUpload && showmultipleImage) {
+                <a
+                  class="img-close-btn"
+                  role="button"
+                  (click)="removeuploadedFile(i, 'sf')"
+                  >
+                  <!-- <i class="fa fa-trash"></i> -->
+                  <!-- <img src="/assets/images/platform icons_button-delete.svg" /> -->
+                </a>
+              }
+            </div>
+            @if (uploadClick && !hideSelectBtn && multipleImageUpload && !showmultipleImage) {
+              <a
+                class="img-close-btn"
+                role="button"
+                (click)="removeFile(i, 'sf')"
+                >
+                <!-- <i class="fa fa-trash"></i> -->
+                <!-- <img src="/assets/images/platform icons_button-delete.svg" /> -->
+              </a>
+            }
+          </div>
+        }
+      </span>
+    }
+    <!--Invalid file list-->
+    @for (na of notAllowedList; track na; let j = $index) {
+      <div
+        class="row ml-1 text-danger afu-invalid-file"
+        >
+        <!-- <p class="col-xs-3 textOverflow"><span>{{na['fileName']}}</span></p> -->
+        <!-- <p class="col-xs-3 padMarg sizeC">
+          <strong>({{ na["fileSize"] }})</strong>
+        </p>
+        <p class="col-xs-3 ml-2">{{ na["errorMsg"] }}</p> -->
+        @if (uploadClick) {
+          <a
+            class="col-xs-1 ml-2 delFileIcon"
+            role="button"
+            (click)="removeFile(j, 'na')"
+            >&nbsp;<i class="fa fa-times"></i
+          ></a>
+        }
+      </div>
+    }
+    @if (uploadMsg) {
+      <p class="{{ uploadMsgClass }} + afu-upload-status">{{ uploadMsgText }}</p>
+    }
+    @if (!singleFile && progressBarShow && !hideProgressBar) {
+      <div>
+        <div class="progress col-xs-4 padMarg afu-progress-bar">
+          <span
+            class="progress-bar progress-bar-success"
+            role="progressbar"
+            [ngStyle]="{ 'width': percentComplete + '%' }"
+            >{{ percentComplete }}%</span
+            >
+          </div>
+          <br />
+          <br />
+        </div>
+      }
+      <!--For single file upload-->
+      @if (
+        !multipleImageUpload &&
+        this.config['fileuploadertextMobile'] == undefined &&
+        this.config['fileuploaderurl'] == undefined
+        ) {
+        <div
+          class="upload-btn-container"
+          >
+          @if (!hideSelectBtn) {
+            <div
+              class=""
+              [ngClass]="showCaptureImage && capture_image ? 'with-camera' : ''"
+              >
+              @if (
+                !hideSelectBtn &&
+                hideSelectImageButton &&
+                !(crop_image && !croppedImage && cropedImage != undefined && cropedImage != '')
+                ) {
+                <label
+                  for="sel{{ id }}"
+                  class="kx-upload-btn afu-select-btn btn btn-primary"
+                  [style]="selectedFiles.length == maxSize ? { 'cursor': 'not-allowed' } : ''"
+                  >
+                  <i class="upload-icon fa fa-upload kx-grey-txt-80" aria-hidden="true"></i>
+                  {{
+                  this.config != undefined &&
+                  this.config["fileuploadertext"] != undefined &&
+                  this.config["fileuploadertext"]
+                  ? this.config["fileuploadertext"]
+                  : "Select Image / Documents"
+                  }}
+                </label>
+              }
+              @if (!hideSelectBtn) {
+                <input
+                  type="file"
+                  id="sel{{ id }}"
+                  style="display: none"
+                  (change)="onChange($event)"
+                  title="Select file"
+                  name="files[]"
+                  [accept]="formatsAllowed"
+                  [disabled]="selectedFiles.length == maxSize"
+                  [attr.multiple]="multiple ? '' : null"
+                  />
+              }
+              <ng-template #infoTemplate
+                >({{ formatsAllowed }}) {{ "field.label.size_limit" }}-
+                {{ maxSize }} MB</ng-template
+                >
+                
+              </div>
+            }
+            <!-- <p *ngIf="!hideSelectBtn && hideSelectImageButton && !(crop_image && !croppedImage && cropedImage != undefined && cropedImage != '')" class="mt-2 kx-font-sm constraints-info afu-constraints-info">({{formatsAllowed}}) Size limit- {{(convertSize(maxSize *1024000))}}</p> -->
+            <!-- @if (crop_image && !croppedImage) {
+              <image-cropper
+                [ngClass]="imageChangedEvent == '' ? 'd-none' : ''"
+                class="my-2"
+                [imageChangedEvent]="imageChangedEvent"
+                [maintainAspectRatio]="false"
+                [aspectRatio]="4 / 3"
+                [format]="currentMimeType"
+                (imageCropped)="imageCropped($event)"
+                (imageLoaded)="imageLoaded()"
+                (cropperReady)="cropperReady()"
+                (loadImageFailed)="loadImageFailed()"
+                >
+              </image-cropper>
+            } -->
+          </div>
+        }
+        @if (multipleImageUpload) {
+          <div class="upload-btn-container">
+            @if (!hideSelectBtn) {
+              <label
+                for="sel{{ id }}"
+                class="kx-upload-btn afu-select-btn"
+                [style]="!showUploadButton ? { 'cursor': 'not-allowed' } : ''"
+                ><i class="upload-icon fa fa-upload kx-grey-txt-80" aria-hidden="true"></i> Select Images to
+                Upload</label
+                >
+            }
+              @if (!hideSelectBtn) {
+                <p class="mt-2 kx-font-sm constraints-info afu-constraints-info">
+                  ({{ formatsAllowed }}) {{ "field.label.size_limit" }}-
+                  {{ convertSize(maxSize * 1024000) }}
+                </p>
+              }
+              @if (!hideSelectBtn) {
+                <input
+                  type="file"
+                  id="sel{{ id }}"
+                  style="display: none"
+                  (change)="onChange($event)"
+                  title="Select file"
+                  name="files[]"
+                  [accept]="formatsAllowed"
+                  [disabled]="!showUploadButton"
+                  [attr.multiple]="multipleImageUpload ? '' : null"
+                  />
+              }
+              <!-- <image-cropper *ngIf="crop_image  && !croppedImage" class="my-2" [imageChangedEvent]="imageChangedEvent"
+              [maintainAspectRatio]="false" [aspectRatio]="4 / 3" format="png" (imageCropped)="imageCropped($event)"
+              (imageLoaded)="imageLoaded()" (cropperReady)="cropperReady()" (loadImageFailed)="loadImageFailed()">
+            </image-cropper> -->
+          </div>
+        }
+        <!--file upload new design-->
+        <!-- <div class="image-upload-container">
+        <label>Upload documents</label>
+        <div class="image-upload-content">
+          <img src="">
+        </div>
+      </div> -->
+      <!-- <button class="primary-btn" type="button" *ngIf="showUploadButton" (click)="createPdf(selectedFiles)">Upload
+    Image</button> -->
+    <!-- <button class="btn btn-info resetBtn afu-reset-btn mr-1" (click)="resetFileUpload()" *ngIf="!hideResetBtn">Reset</button> -->
+    <!-- <br *ngIf="!hideSelectBtn"> -->
+    <!-- <button class="btn btn-success afu-upload-btn" type="button" (click)="uploadFiles()" [disabled]=!uploadBtn>{{uploadBtnText}}</button> -->
+    <!-- <br> -->
+  </div>
+}
+
+<!--/////////////////////////// ATTACH PIN THEME  //////////////////////////////////////////////////////////-->
+@if (theme == 'attachPin') {
+  <div id="attachPin">
+    <div style="position: relative; padding-left: 6px">
+      <a class="btn up_btn afu-attach-pin" (click)="attachpinOnclick()">
+        {{ attachPinText }}
+        <i class="fa fa-paperclip" aria-hidden="true"></i>
+        <!-- <p style="margin-top:10px">({{formatsAllowed}}) Size limit- {{(convertSize(maxSize * 1024000))}}</p> -->
+        <input
+          type="file"
+          id="sel{{ id }}"
+          (change)="onChange($event)"
+          style="display: none"
+          title="Select file"
+          name="files[]"
+          [accept]="formatsAllowed"
+          [attr.multiple]="multiple ? '' : null"
+          />
+          <br />
+        </a>
+        &nbsp;
+        <span class="label label-info" id="upload-file-info{{ id }}">{{ selectedFiles[0]?.name }}</span>
+      </div>
+    </div>
+  }
+
+  <!--/////////////////////////// DRAG N DROP THEME  //////////////////////////////////////////////////////////-->
+  <!-- <div *ngIf="theme == 'dragNDrop'" id="dragNDrop">
+  <div style="position:relative;padding-left:6px">
+    <div id="div1" (drop)="drop($event)" (dragover)="allowDrop($event)">
+      <p>Drag N Drop</p>
+    </div>
+    <span class='label label-info' id="upload-file-info{{id}}">{{selectedFiles[0]?.name}}</span>
+  </div>
+</div> -->
+
+<!--//////////////////////////consent form mobile view/////////////////////////////////-->
+@if (
+  this.config != undefined &&
+  this.config['fileuploadertextMobile'] != undefined &&
+  this.config['fileuploadertextMobile']
+  ) {
+  <div
+    >
+    @if (selectedFiles.length == 0) {
+      <div class="benefit_modal_btn">
+        <label
+          for="sel{{ id }}"
+          [style]="selectedFiles.length == maxSize ? { 'cursor': 'not-allowed' } : ''"
+          >
+          <i class="upload-icon fa fa-upload kx-grey-txt-80" aria-hidden="true"></i>
+          {{ this.config["fileuploadertextMobile"] }}
+        </label>
+        @if (!hideSelectBtn) {
+          <input
+            type="file"
+            id="sel{{ id }}"
+            style="display: none"
+            (change)="onChange($event)"
+            title="Select file"
+            name="files[]"
+            [accept]="formatsAllowed"
+            [disabled]="selectedFiles.length == maxSize"
+            [attr.multiple]="multiple ? '' : null"
+            />
+        }
+      </div>
+    }
+  </div>
+}

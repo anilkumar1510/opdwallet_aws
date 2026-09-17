@@ -1,8 +1,36 @@
 {
-  "/api": {
-    "target": "http://localhost:4000",
-    "secure": false,
-    "changeOrigin": false,
-    "logLevel": "warn"
-  }
+  
+  "/habit-opd/api/**": {
+        "target": "https://api.healthcare.in/",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true,
+        "headers": {
+            "host": "api.healthcare.in",
+            "referer": "https://healthcare.in",
+            "origin": "https://healthcare.in"
+        }
+    },
+    "/account-management/api/**": {
+        "target": "https://api.wellnessdevhh.hclhealthcare.in/",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true,
+        "headers": {
+            "host": "api.wellnessdevhh.hclhealthcare.in",
+            "referer": "https://wellnessdevhh.hclhealthcare.in",
+            "origin": "https://wellnessdevhh.hclhealthcare.in"
+        }
+    },
+    "/dms/api/**": {
+        "target": "https://api.wellnessdevhh.hclhealthcare.in/",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true,
+        "headers": {
+            "host": "api.wellnessdevhh.hclhealthcare.in",
+            "referer": "https://wellnessdevhh.hclhealthcare.in",
+            "origin": "https://wellnessdevhh.hclhealthcare.in"
+        }
+    }
 }

@@ -21,7 +21,12 @@ import {
 } from '../../core/member/bank-details.store';
 import { FamilyStore } from '../../core/family/family.store';
 import { Member } from '../../core/member/member.model';
-
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../environments/environment.production';
+import { AppService } from '../../core/http/api.service';
+import { appConfig } from '../../app.config';
+import { DomSanitizer } from '@angular/platform-browser';
+import { FileUploader } from './../../shared/file-uploader/file-uploader';
 const MAX_BYTES = 5 * 1024 * 1024;
 
 const STEPS = [
@@ -34,7 +39,7 @@ const STEPS = [
 @Component({
   selector: 'opd-new-claim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, FileUploader],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -177,7 +182,19 @@ const STEPS = [
 
               @for (slot of docSlots(); track slot.key) {
                 <div class="mb-4">
-                  <input type="file" class="sr-only" multiple accept="image/*,.pdf" [id]="'doc-' + slot.key" (change)="onFilesChosen(slot.key, $event)" />
+                  <input type="file" class="sr-only" accept=".jpg,.gif,.png,.pdf,.doc,.jpeg,.heic,.heif" [name]="'files_'+ slot.key" [id]="'doc-' + slot.key" (change)="onFilesChosen(slot.key, $event)" />
+                  <!-- <opd-file-uploader
+                  [crop_image]="true"
+                  [multiple]="true"
+                  [formatsAllowed]="'.jpg,.gif,.png,.pdf,.doc,.jpeg,.heic,.heif'"
+                  [maxSize]="5"
+                  [resource]="'emrImage'"
+                  [value]="container.documentId"
+                  (focus_out)="valueChange($event)"
+                  (delete)="delete($event)"
+                  [showinMobile]="true"
+                  > 
+                </opd-file-uploader>-->
                   <label [attr.for]="'doc-' + slot.key" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-6 text-center transition-colors hover:border-[#0F5FDC]">
                     <span class="block font-medium text-[#0B2C63]">{{ slot.label }}</span>
                     <span class="mt-1 block text-xs" [class.text-danger-700]="slot.requirement === 'required'" [class.text-ink-500]="slot.requirement !== 'required'">{{ slot.requirement === 'required' ? 'Required' : 'Optional' }} — PDF or photos, up to 5 MB each</span>
@@ -399,10 +416,11 @@ export class NewClaimPage {
 
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly amount = (value: number) => formatMoney(money(value));
-
-  constructor() {
+  data: any = {};
+  eventData: any = [];
+  container: any = {};
+  constructor(private _http: HttpClient, private appService: AppService, private sanitizer: DomSanitizer) {
     void this.store.categories().then((rows) => this.categories.set(rows));
-
     let patientPrefilled = false;
     effect(() => {
       const active = this.family.activeMember();
@@ -411,8 +429,19 @@ export class NewClaimPage {
         this.patientId.set(active.id);
       }
     });
+    this.testGetAPI();
   }
-
+  testGetAPI(){
+    let url = "/account-management/api/v1/user_relationship_mapping?queryId=GET_FAMILY_LIST&args=&application=account-management"
+    return this._http.get(url, {
+            headers: new HttpHeaders().set('X-XSRF-TOKEN', 'DXsKC+i+lqKY97O0b8aofyGR+eVwfc0IWMrIPhNf5rCFDoQQxOQJT4ldfBEtZgP0').set('timezone', this.appService.getUserTimezone()).set('current_time', this.appService.getCurrentTime()).set('current_url', this.router.url)
+                .set('host_name', window.location.host),
+            responseType: 'json',
+            observe: 'response' as 'response'
+        }).subscribe((res : any )=> {
+          console.log('----->',res)
+        })
+  }
   protected readonly selectedCategory = computed(() =>
     this.categories().find((option) => option.claimCategory === this.category()),
   );
@@ -626,16 +655,155 @@ export class NewClaimPage {
       other: this.otherFiles,
     })[kind].set(next);
   }
-
-  protected onFilesChosen(kind: DocSlotKey, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const chosen = Array.from(input.files ?? []);
-    input.value = '';
-    const tooBig = chosen.find((file) => file.size > MAX_BYTES);
-    this.fileError.set(tooBig ? `${tooBig.name} is larger than 5 MB.` : null);
-    this.setFiles(kind, [...this.filesFor(kind), ...chosen.filter((file) => file.size <= MAX_BYTES)]);
+ valueChange(event: any) {
+    if (event.errCode == 0) {
+      this.data = {
+        "documentId": event.documentId,
+        "documentName": event.documentName,
+      };
+      this.eventData.push(this.data);
+    }
   }
+  delete(e: Event) {
+    if (e.type == "delete") this.container.documentId = "";
+    if (this.eventData.length > 0) {
+      let index = this.eventData.findIndex((obj: any) => obj.documentId == (e as any).id);
+      this.eventData.splice(index, 1);
+    }
+  }
+  protected onFilesChosen(kind: DocSlotKey, event: Event): void {
+    const input = event.target as HTMLInputElement ;
+    const chosen = Array.from(input.files ?? []);
+    // input.value = '';
+    // const tooBig = chosen.find((file) => file.size > MAX_BYTES);
+    // this.fileError.set(tooBig ? `${tooBig.name} is larger than 5 MB.` : null);
+    // this.uploadOPDDocument(chosen[0],chosen[0].name, 'add')
+    var toRead: any = input && input.files ? input.files[0] : null;
+    // this.setFiles(kind, [...this.filesFor(kind), ...chosen.filter((file) => file.size <= MAX_BYTES)]);
+    const reader = new FileReader();
+    let that = this;
+    toRead = new Blob([toRead], { type: "application/dicom" });
+    toRead.name = chosen[0].name;
+    if (input?.files &&
+      input.files[0] &&
+      input.files[0].type &&
+      (input.files[0].type.endsWith("heic") || input.files[0].type.endsWith("heif"))
+    ) {
+      const file = input.files[0];
+      const reader = new FileReader();
 
+      reader.onload = async () => {
+        try {
+          const heic2any = await this.getHeic2any();
+          if (!heic2any) {
+            console.warn(
+              "HEIC/HEIF conversion skipped: heic2any is not available in this environment"
+            );
+            return;
+          }
+
+          const arrayBuffer = reader.result as ArrayBuffer;
+
+          const output = await heic2any({
+            blob: new Blob([arrayBuffer], { type: file.type }),
+            toType: "image/jpeg",
+            quality: 0.9,
+          });
+
+          const jpegBlob = Array.isArray(output) ? output[0] : output;
+          const jpegFile = new File([jpegBlob], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
+            type: "image/jpeg",
+            lastModified: new Date().getTime(),
+          });
+
+          const fileVal = {
+            file: jpegFile,
+            imageSrc: that.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(jpegBlob)),
+          };
+          that.selectedFiles.push(fileVal);
+          this.uploadOPDDocument(jpegFile, jpegFile.name, 'add', jpegFile, kind, chosen)
+        } catch (error) {
+          console.error("Conversion error:", error);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      this.uploadOPDDocument(toRead, toRead.name, 'add', reader.result, kind, chosen)
+    } else if (input?.files &&
+        input.files[0] &&
+        input.files[0].type){
+      const file = input.files[0];
+      reader.onload = ((file) => {
+        return function (evt) {
+          console.log("event is :: ", evt, "width is :: ");
+          if (evt.target) {
+            that.fileData = evt.target.result;
+          }
+          console.log("evt.target : ", that.fileData);
+          const fileVal = {
+            file: file,
+            imageSrc: that.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(file)),
+          };
+          if (
+            that.fileData.split(";")[0].split("/")[1] == "dcm" ||
+            that.fileData.split(";")[0].split("/")[1] == "dicom" ||
+            that.fileData.split(";")[0].split("/")[1] == "pdf"
+          ) {
+            that.selectedFiles.push(fileVal);
+          } else {
+            that.selectedFiles.push(fileVal);
+          }
+        };
+      })(toRead);
+      reader.readAsArrayBuffer(file);
+      reader.onloadend = (res) => {
+        console.log('res', res);
+        this.uploadOPDDocument(file, file.name, 'add', res?.target?.result, kind, chosen)
+      }
+    }
+  }
+  afterUploadSelectedDocumentDetails: Array<any> = [];
+  selectedFiles: Array<any> = [];
+  fileData: any;
+  uploadOPDDocument(file: any, fileName: any, action: any, fileContent: any, kind: any, chosen: any){
+    const url = "/dms/api/v1/emrImage";
+    const formData = new FormData();
+    const reader = new FileReader();
+    formData.append("file", file);
+    formData.append("fileName", fileName);
+    formData.append("action", action);
+    var encrypted = this.appService.getXsrfToken(fileContent, true);
+    const fileDetails = file;
+    return this._http.post(url, formData, {
+            headers: new HttpHeaders().set('X-XSRF-TOKEN', encrypted).set('timezone', this.appService.getUserTimezone()).set('current_time', this.appService.getCurrentTime()).set('current_url', this.router.url)
+                .set('host_name', window.location.host),
+            responseType: 'json',
+            observe: 'response' as 'response'
+        }).subscribe((res : any )=> {
+          if(res?.body?.errCode == 0){
+            const response = res?.body?.resource[0];
+            this.afterUploadSelectedDocumentDetails.push(
+              {
+              "name": response?.file_name,
+              "document_id": response?.document_id,
+              "document_type":  kind === 'bill' ? "INVOICE" : kind === 'prescription' ? 'PRESCRIPTION' : kind === 'report' ? 'REPORT' : kind === 'other' ? 'OTHER' : 'OTHER',
+              "originalname": response?.file_name,
+              "verification_status": "PENDING",
+              "filetype": fileDetails?.type,
+              "filesize": fileDetails?.size,
+          });
+          this.setFiles(kind, [...this.filesFor(kind), ...chosen.filter((file: any) => file.size <= MAX_BYTES)]);
+          }
+        })
+  }
+  private async getHeic2any(): Promise<any | null> {
+    try {
+      const mod: any = await import("heic2any");
+      return mod.default ?? mod;
+    } catch (err) {
+      console.error("Failed to dynamically load heic2any in browser:", err);
+      return null;
+    }
+  }
   protected remove(kind: DocSlotKey, file: File): void {
     this.setFiles(kind, this.filesFor(kind).filter((candidate) => candidate !== file));
   }
@@ -703,11 +871,74 @@ export class NewClaimPage {
       treatmentDescription: this.description().trim(),
       documents,
     });
+     
 
-    if (createdId === null) return;
-    await this.router.navigate(['/member/claims', createdId]);
+    const payload = {
+      "resourceType": "Claim",
+      "user_id": patient.id,
+      
+      "patient_name": this.family.activeMember()?.fullName,
+
+      "member_id": patient.memberId,
+      "member_name": patient.fullName,
+      "relation_to_member": "SELF",
+      // "relation_to_member": patient.relationship,
+      
+      "policy_id": "8ca9f31c-e1ad-478b-9b24-9f56e18a9165",
+      "customer_id": "CUS-HH-000731",
+
+      "category": this.category(),
+      "claim_type": this.claimType(),
+      "benefit_category": this.category(),
+      "provider": this.providerName().trim(),
+      "bill_number": this.billNumber().trim(),
+      "currency_code": "INR",
+      "original_bill_amount": this.billAmount() ?? 0,
+      "treatment_date": new Date(this.treatmentDate()).getTime(),
+      "treatment_description": this.description().trim(),
+      "claim_status": "DRAFT",
+      "name": "CLM-"+new Date().getFullYear()+"-"+this.family.activeMember()?.firstName+"-"+new Date().getHours()+new Date().getMinutes(),
+      "claim_id": "CLM-"+new Date().getFullYear()+"-"+this.family.activeMember()?.firstName+"-"+new Date().getHours()+new Date().getMinutes(),
+      "documents": this.afterUploadSelectedDocumentDetails
+      // [
+      //     {
+      //         "name": "testDocs",
+      //         "document_id": "doc_12345",
+      //         "document_type": "INVOICE",
+      //         "originalname": "invoice_original.pdf",
+      //         "verification_status": "PENDING",
+      //         "filetype": "application/pdf",
+      //         "filesize": "1048576",
+      //         "filepath": "/uploads/claims/invoice_original.pdf"
+      //     }
+      // ]
+    }
+ 
+    this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'add')
+    // if (createdId === null) return;
+    // await this.router.navigate(['/member/claims', createdId]);
+  }
+  
+  createNewClaimsSubmit(payload: any, resource: string, application: string, action: string):any{
+    const url = "https://api.habithealth.com/"+application+"/api/v1/"+resource;
+    var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    var params = "resource=" + encodedResourceData;
+    params += "&application=" + application + "&action=" + action;
+    encodedResourceData += "&action=" + action
+    var options = this.appService.addXsrfToken(encodedResourceData, true);
+    // var encrypted = this.appService.getXsrfToken(payload, true);
+    return  this._http.post(url, params, options).subscribe(async()=>{
+      await this.router.navigate(['/member/claims']);
+    })
+
+  }
+
+  addXsrfToken(data: any, login_required: any) {
+    return 
   }
 }
+
+ 
 
 function slotNoun(kind: DocSlotKey): string {
   switch (kind) {
@@ -721,3 +952,7 @@ function slotNoun(kind: DocSlotKey): string {
       return 'supporting document';
   }
 }
+function createNewClaimsSubmit(payload: any, any: any, resource: any, string: any, application: any, string1: any, action: any, string2: any) {
+  throw new Error('Function not implemented.');
+}
+
