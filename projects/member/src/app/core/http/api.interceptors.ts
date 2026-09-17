@@ -10,7 +10,46 @@ import { toAppError } from './app-error';
  * session cookie. Absolute URLs pass through untouched.
  */
 export const apiUrlInterceptor: HttpInterceptorFn = (request, next) => {
+  
   const isAbsolute = /^https?:\/\//i.test(request.url);
+  const BASE_URL = environment.apiBaseUrl;
+  let updatedUrl = request.url;
+  const base = (BASE_URL ?? "").replace(/\/+$/, "");
+  const apiOrigin = (() => {
+    try {
+      return new URL(base).origin;
+    } catch {
+      return "";
+    }
+  })();
+  const isLocalProxyMode = (() => {
+  const { hostname, port } = window.location;
+  
+  const isLocalHostName =
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
+    return isLocalHostName && String(port) === "4590";
+  })();
+  if (!isAbsolute) {
+    if (!isLocalProxyMode) {
+      const path = updatedUrl.replace(/^\/+/, "");
+      updatedUrl = `${base}/${path}`;
+    }
+  }
+  if (isLocalProxyMode && isAbsolute) {
+    try {
+      const reqUrl = new URL(updatedUrl);
+      if (apiOrigin && reqUrl.origin === apiOrigin) {
+        updatedUrl = `${reqUrl.pathname}${reqUrl.search}${reqUrl.hash}`;
+        console.log(
+          "Rewriting API absolute URL to relative (localhost:4590 proxy mode):",
+          updatedUrl
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   return next(
     request.clone({
       url: isAbsolute ? request.url : `${environment.apiBaseUrl}/${request.url.replace(/^\/+/, '')}`,
@@ -18,7 +57,18 @@ export const apiUrlInterceptor: HttpInterceptorFn = (request, next) => {
     }),
   );
 };
-
+export const apiRequestInterceptor: HttpInterceptorFn = (request, next) => {
+    
+    const token = localStorage.getItem('token');
+    return next(request.clone({
+      setHeaders: {
+        'Content-Type': 'application/json',
+        // 'Accept': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      }
+    }))
+}
+  
 /**
  * Ends the session exactly once when the API says it is no longer valid, no
  * matter which screen issued the request.

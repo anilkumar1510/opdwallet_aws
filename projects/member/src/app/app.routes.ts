@@ -796,3 +796,5 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: 'member' },
 ];
+const memberRoute = routes.find((route)=>route.path === 'member');
+export const federatedRoutes: Routes = memberRoute ? [{...memberRoute , path: ''}] : [];

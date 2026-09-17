@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 
-import { apiInterceptors } from './core/http/api.interceptors';
+import { apiInterceptors } from './core/http/api.interceptor';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {

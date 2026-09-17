@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "946446ce-36e7-44ee-bf3e-d60c743fe546"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -85,10 +86,14 @@
       "prefix": "opd",
       "architect": {
         "build": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
-              "allowedCommonJsDependencies": ["agora-rtc-sdk-ng"],
-            "browser": "projects/member/src/main.ts",
+            "allowedCommonJsDependencies": ["agora-rtc-sdk-ng"],
+            "main": "projects/member/src/main.ts",
+            "outputPath": "dist/member",
+            "customWebpackConfig": {
+              "path": "projects/member/webpack.config.js"
+            },
             "index": "projects/member/src/index.html",
             "tsConfig": "projects/member/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
@@ -131,10 +136,11 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
+          "builder": "@angular-builders/custom-webpack:dev-server",
           "options": {
-            "port": 4300,
-            "proxyConfig": "projects/member/proxy.conf.json"
+            "port": 4590,
+            "host": "0.0.0.0",
+            "proxyConfig": "proxy.conf.json"
           },
           "configurations": {
             "production": {
@@ -151,7 +157,24 @@
           "options": {
             "buildTarget": "member:build:development"
           }
-        }
+        },
+        "serve-original": {
+					"builder": "@angular-devkit/build-angular:dev-server",
+					"options": {
+						"buildTarget": "member:build:development",
+						"host": "0.0.0.0",
+						"proxyConfig": "proxy.conf.json",
+						"port": 4590
+					},
+					"configurations": {
+						"development": {
+							"buildTarget": "core-ui:esbuild:development1"
+						},
+						"production": {
+							"buildTarget": "core-ui:esbuild:production"
+						}
+					}
+				}
       }
     }
   }

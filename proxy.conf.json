@@ -1,0 +1,35 @@
+{
+  "/habit-opd/api": {
+    "target": "https://api.healthcare.in",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "headers": {
+        "host": "api.healthcare.in",
+        "referer": "https://healthcare.in",
+        "origin": "https://healthcare.in"
+    }
+  },
+  "/account-management/api": {
+    "target": "https://api.healthcare.in",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "headers": {
+        "host": "api.healthcare.in",
+        "referer": "https://healthcare.in",
+        "origin": "https://healthcare.in"
+    }
+  },
+  "/dms/api": {
+    "target": "https://api.healthcare.in",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "headers": {
+        "host": "api.healthcare.in",
+        "referer": "https://healthcare.in",
+        "origin": "https://healthcare.in"
+    }
+  }
+}
