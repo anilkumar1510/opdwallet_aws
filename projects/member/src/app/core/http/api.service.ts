@@ -10,7 +10,7 @@ import * as CryptoJS from 'crypto-js';
 //We are using localstorage here, not storage service.
 export class AppService {
     _currentSessionData : any = {};
-    constructor(public http: HttpClient, public Router: Router,){
+    constructor(public _http: HttpClient, public Router: Router,){
         this._currentSessionData.encryptKey = this.getCookie('encryptKey');
     }
 
@@ -83,5 +83,17 @@ export class AppService {
             }
         }
         return null; // Return null if the cookie doesn't exist
+    }
+
+
+    getcall(resorceName: string, applicationname: string, callback: any, arg?: any ,){
+        let url = applicationname+"/api/v1/"+resorceName;
+        if(arg){
+            url += '?'+arg
+        }
+        const options = this.addXsrfToken(url, true);
+        this._http.get(url, options).subscribe(res => {
+            callback(res);
+        })
     }
 }

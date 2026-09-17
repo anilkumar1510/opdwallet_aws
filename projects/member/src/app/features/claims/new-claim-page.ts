@@ -27,6 +27,7 @@ import { AppService } from '../../core/http/api.service';
 import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
+import { Observable } from 'rxjs';
 const MAX_BYTES = 5 * 1024 * 1024;
 
 const STEPS = [
@@ -432,15 +433,14 @@ export class NewClaimPage {
     this.testGetAPI();
   }
   testGetAPI(){
-    let url = "/account-management/api/v1/user_relationship_mapping?queryId=GET_FAMILY_LIST&args=&application=account-management"
-    return this._http.get(url, {
-            headers: new HttpHeaders().set('X-XSRF-TOKEN', 'DXsKC+i+lqKY97O0b8aofyGR+eVwfc0IWMrIPhNf5rCFDoQQxOQJT4ldfBEtZgP0').set('timezone', this.appService.getUserTimezone()).set('current_time', this.appService.getCurrentTime()).set('current_url', this.router.url)
-                .set('host_name', window.location.host),
-            responseType: 'json',
-            observe: 'response' as 'response'
-        }).subscribe((res : any )=> {
-          console.log('----->',res)
-        })
+    // let url = "/account-management/api/v1/user_relationship_mapping
+   const arg = "queryId=GET_FAMILY_LIST&args=&application=account-management"
+    // return this._http.get(url, ).subscribe((res : any )=> {
+    //       console.log('----->',res)
+    //     })
+    this.appService.getcall('user_relationship_mapping','account-management', arg, (response: any) => {
+      console.log('---', response)
+    })
   }
   protected readonly selectedCategory = computed(() =>
     this.categories().find((option) => option.claimCategory === this.category()),
@@ -914,7 +914,7 @@ export class NewClaimPage {
       // ]
     }
  
-    this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'add')
+    this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'submit')
     // if (createdId === null) return;
     // await this.router.navigate(['/member/claims', createdId]);
   }
