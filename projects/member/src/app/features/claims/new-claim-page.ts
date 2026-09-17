@@ -871,19 +871,19 @@ export class NewClaimPage {
       treatmentDescription: this.description().trim(),
       documents,
     });
-     
+
 
     const payload = {
       "resourceType": "Claim",
       "user_id": patient.id,
-      
+
       "patient_name": this.family.activeMember()?.fullName,
 
       "member_id": patient.memberId,
       "member_name": patient.fullName,
       "relation_to_member": "SELF",
       // "relation_to_member": patient.relationship,
-      
+
       "policy_id": "8ca9f31c-e1ad-478b-9b24-9f56e18a9165",
       "customer_id": "CUS-HH-000731",
 
@@ -897,8 +897,8 @@ export class NewClaimPage {
       "treatment_date": new Date(this.treatmentDate()).getTime(),
       "treatment_description": this.description().trim(),
       "claim_status": "DRAFT",
-      "name": "CLM-"+new Date().getFullYear()+"-"+this.family.activeMember()?.firstName+"-"+new Date().getHours()+new Date().getMinutes(),
-      "claim_id": "CLM-"+new Date().getFullYear()+"-"+this.family.activeMember()?.firstName+"-"+new Date().getHours()+new Date().getMinutes(),
+      // "name": "CLM-"+new Date().getFullYear()+"-"+this.family.activeMember()?.firstName+"-"+new Date().getHours()+new Date().getMinutes(),
+      // "claim_id": "CLM-"+new Date().getFullYear()+"-"+this.family.activeMember()?.firstName+"-"+new Date().getHours()+new Date().getMinutes(),
       "documents": this.afterUploadSelectedDocumentDetails
       // [
       //     {
@@ -913,12 +913,12 @@ export class NewClaimPage {
       //     }
       // ]
     }
- 
+
     this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'submit')
     // if (createdId === null) return;
     // await this.router.navigate(['/member/claims', createdId]);
   }
-  
+
   createNewClaimsSubmit(payload: any, resource: string, application: string, action: string):any{
     const url = "https://api.habithealth.com/"+application+"/api/v1/"+resource;
     var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
@@ -934,11 +934,11 @@ export class NewClaimPage {
   }
 
   addXsrfToken(data: any, login_required: any) {
-    return 
+    return
   }
 }
 
- 
+
 
 function slotNoun(kind: DocSlotKey): string {
   switch (kind) {
