@@ -73,6 +73,7 @@ export class AppService {
         return encryptedData.toString();
     }
 
+
     getCookie(name: string) {
         const cookies = document.cookie.split(';'); // Split into individual pairs
         for (let cookie of cookies) {

@@ -5,7 +5,7 @@ export const environment = {
   // That avoids CORS entirely — the API's dev allowlist in api/src/main.ts
   // does not include this app's port, and api/ is not ours to change — and it
   // keeps the session cookie same-origin.
-  apiBaseUrl: "https://api.healthcare.in",
+  apiBaseUrl: "https://api.habithealth.com",
 
   /**
    * Agora Web SDK app id. EMPTY BY DEFAULT AND DELIBERATELY SO.
@@ -20,5 +20,5 @@ export const environment = {
    * spinning on a connection that cannot succeed.
    */
   agoraAppId: '',
-  applicationURL: 'healthcare.in'
+  applicationURL: 'habithealth.com'
 } as const;

@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: "https://api.healthcare.in",
+  apiBaseUrl: "https://api.habithealth.com",
 
   /**
    * Agora Web SDK app id. EMPTY BY DEFAULT AND DELIBERATELY SO.
@@ -15,5 +15,5 @@ export const environment = {
    * spinning on a connection that cannot succeed.
    */
   agoraAppId: '',
-  applicationURL: 'healthcare.in'
+  applicationURL: 'habithealth.com'
 } as const;
