@@ -1,35 +1,35 @@
 {
   "/habit-opd/api": {
-    "target": "https://api.healthcare.in",
+    "target": "https://api.habithealth.com",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",
     "headers": {
-        "host": "api.healthcare.in",
-        "referer": "https://healthcare.in",
-        "origin": "https://healthcare.in"
+        "host": "api.habithealth.com",
+        "referer": "https://habithealth.com",
+        "origin": "https://habithealth.com"
     }
   },
   "/account-management/api": {
-    "target": "https://api.healthcare.in",
+    "target": "https://api.habithealth.com",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",
     "headers": {
-        "host": "api.healthcare.in",
-        "referer": "https://healthcare.in",
-        "origin": "https://healthcare.in"
+        "host": "api.habithealth.com",
+        "referer": "https://habithealth.com",
+        "origin": "https://habithealth.com"
     }
   },
   "/dms/api": {
-    "target": "https://api.healthcare.in",
+    "target": "https://api.habithealth.com",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",
     "headers": {
-        "host": "api.healthcare.in",
-        "referer": "https://healthcare.in",
-        "origin": "https://healthcare.in"
+        "host": "api.habithealth.com",
+        "referer": "https://habithealth.com",
+        "origin": "https://habithealth.com"
     }
   }
 }
