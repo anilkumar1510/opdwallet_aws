@@ -2,6 +2,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Router } from "@angular/router";
 import * as CryptoJS from 'crypto-js';
+import { map } from "rxjs";
 
 
 @Injectable({
@@ -86,14 +87,14 @@ export class AppService {
     }
 
 
-    getcall(resorceName: string, applicationname: string, callback: any, arg?: any ,){
+    getcall(resorceName: string, applicationname: string, arg?: any){
         let url = applicationname+"/api/v1/"+resorceName;
         if(arg){
             url += '?'+arg
         }
         const options = this.addXsrfToken(url, true);
-        this._http.get(url, options).subscribe(res => {
-            callback(res);
-        })
+        return this._http.get(url, options).pipe(
+            map((response: any) => response.body ?? response)
+        );
     }
 }
