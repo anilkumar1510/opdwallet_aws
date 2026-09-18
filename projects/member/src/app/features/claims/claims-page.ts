@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Claim } from '../../core/claims/claim.model';
@@ -128,6 +128,13 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 export class ClaimsPage {
   protected readonly store = inject(ClaimsStore);
   protected readonly money = formatMoney;
+
+  constructor() {
+    // Load dashboard aggregate on component init
+    effect(() => {
+      this.store.loadDashboard();
+    });
+  }
 
   protected patientName(): string {
     return this.store.claims()[0]?.patientName ?? 'this member';
