@@ -8,6 +8,7 @@ import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageHeader } from '../../shared/ui/page-header';
+import { AppService } from '../../core/http/api.service';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -18,7 +19,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
   template: `
     <opd-page-header
       title="Claims"
-      [subtitle]="'Reimbursements for ' + (store.claims().length ? patientName() : 'this member')"
+      [subtitle]="'Reimbursements for ' + (store.claims.length ? patientName() : 'this member')"
     >
       <a
         routerLink="/member/claims/new"
@@ -34,7 +35,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
           <opd-back-link />
           <h1 class="text-2xl font-bold text-black lg:text-3xl">Claims</h1>
           <p class="mt-0.5 text-sm text-ink-500">
-            Reimbursements for {{ store.claims().length ? patientName() : 'this member' }}
+            Reimbursements for {{ store.claims.length ? patientName() : 'this member' }}
           </p>
         </div>
         <a
@@ -81,7 +82,49 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
           </p>
         }
 
-        @if (store.claims().length) {
+        @if (store.clailListData().length) {
+          <ul class="mt-6 space-y-3">
+            @for (claim of store.clailListData(); track claim.id) {
+              <li
+                class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
+                style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
+              >
+                <a
+                  [routerLink]="['/member/claims', claim.claim_id]"
+                  class="flex items-start justify-between gap-3"
+                >
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-base font-semibold text-[#034DA2]">
+                      {{ claim?.category }}
+                    </p>
+                    <p class="mt-0.5 truncate text-sm text-ink-700">{{ claim?.provider }}</p>
+                    <p class="mt-1 text-xs text-ink-500">
+                      {{ claim?.claim_id }} · {{ date(claim?.treatment_date) }}
+                      @if (claim?.documents && claim?.documents?.length) {
+                        · {{ claim?.documents.length }} document{{ claim?.documents.length === 1 ? '' : 's' }}
+                      }
+                    </p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <opd-status-badge [status]="claim.claim_status" />
+                    <p class="mt-2 text-lg font-semibold text-[#303030]">
+                      {{ money({ amount: claim?.original_bill_amount, currency: 'INR'})}}
+                    </p>
+                    @if (claim?.approvedAmount; as approved) {
+                      <p class="text-xs text-success-700">{{ money(approved) }} approved</p>
+                    }
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <opd-empty
+            title="No claims yet"
+            detail="Reimbursement claims you submit will appear here."
+          />
+        }
+        <!-- @if (store.claims().length) {
           <ul class="mt-6 space-y-3">
             @for (claim of store.claims(); track claim.id) {
               <li
@@ -122,7 +165,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
             title="No claims yet"
             detail="Reimbursement claims you submit will appear here."
           />
-        }
+        } -->
       }
     </div>
   `,
@@ -130,15 +173,21 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 export class ClaimsPage {
   protected readonly store = inject(ClaimsStore);
   protected readonly money = formatMoney;
-
-  constructor() {
-    effect(() => {
+  pageNo: number = 0;
+  pageSize: number = 20
+  public claimList: any;
+  constructor(private appService : AppService, private claimsStore : ClaimsStore){
+    // this.getClimListData()
+     effect(() => {
       this.store.loadDashboard();
+      this.store.getClimListData();
+
     });
   }
-
+  
   protected patientName(): string {
-    return this.store.claims()[0]?.patientName ?? 'this member';
+    return 'this member'
+    // this.store.claims[0]?.patientName ?? 'this member';
   }
 
   protected date(value: Date | null): string {

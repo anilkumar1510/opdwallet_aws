@@ -1,6 +1,6 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { Injector, inject, PLATFORM_ID } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, map, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { toAppError } from './app-error';
@@ -163,8 +163,25 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(modifiedReq);
 };
+
+export const apiResponseInterceptor: HttpInterceptorFn = (request, next) => {
+  return next(request).pipe(
+    map(event => {
+      if (
+          event instanceof HttpResponse &&
+          event.status === 200 &&
+          event.body
+        ) {
+          return event.clone({
+            body: event.body
+          });
+        }
+      return event;
+    })
+  );
+}
 /**
  * Order matters. sessionInterceptor must see the raw HttpErrorResponse before
  * errorInterceptor wraps it.
  */
-export const apiInterceptors = [apiInterceptor, errorInterceptor, sessionInterceptor];
+export const apiInterceptors = [apiInterceptor, apiResponseInterceptor, errorInterceptor, sessionInterceptor];

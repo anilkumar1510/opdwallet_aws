@@ -61,11 +61,12 @@ const SUPPORT_EMAIL = 'support@opdwallet.com';
           @if (claims.loading()) {
             <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
             <p class="mt-2 text-sm text-ink-500">Checking your claims&hellip;</p>
-          } @else if (needHelp().length) {
+          } 
+          <!-- @else if (needHelp().length) { -->
             <!-- Open by default: this is the actionable list, and something is in
                  it. A collapsed section hiding work the member has to do would be
                  the wrong default. -->
-            <opd-disclosure
+            <!-- <opd-disclosure
               title="Claims that need your help"
               [count]="needHelp().length"
               tone="#0E51A2"
@@ -114,7 +115,8 @@ const SUPPORT_EMAIL = 'support@opdwallet.com';
               }
             </ul>
             </opd-disclosure>
-          } @else {
+          } -->
+           @else {
             <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
             <p class="mt-2 text-sm text-ink-600">
               Nothing needs your attention. Claims still being assessed are with our team, not

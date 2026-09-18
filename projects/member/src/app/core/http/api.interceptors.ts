@@ -1,6 +1,6 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { Injector, inject } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { toAppError } from './app-error';
@@ -101,6 +101,8 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) =>
       throwError(() => (error instanceof HttpErrorResponse ? toAppError(error) : error)),
     ),
   );
+
+
 
 /**
  * Order matters. sessionInterceptor must see the raw HttpErrorResponse, so it

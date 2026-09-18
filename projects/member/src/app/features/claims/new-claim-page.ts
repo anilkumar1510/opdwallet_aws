@@ -433,13 +433,10 @@ export class NewClaimPage {
     this.testGetAPI();
   }
   testGetAPI(){
-    // let url = "/account-management/api/v1/user_relationship_mapping
-   const arg = "queryId=GET_FAMILY_LIST&args=&application=account-management"
-    // return this._http.get(url, ).subscribe((res : any )=> {
-    //       console.log('----->',res)
-    //     })
-    this.appService.getcall('user_relationship_mapping','account-management', arg, (response: any) => {
-      console.log('---', response)
+    const arg = "queryId=GET_FAMILY_LIST&args=&application=account-management"
+    this.appService.getcall('user_relationship_mapping','account-management', arg).subscribe(res =>{
+      console.log('res:',JSON.parse(res));
+      
     })
   }
   protected readonly selectedCategory = computed(() =>
