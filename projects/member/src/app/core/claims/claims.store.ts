@@ -136,8 +136,9 @@ export class ClaimsStore {
   async loadDashboard(): Promise<void> {
     this._dashboardLoading.set(true);
     try {
-      const response = await this.http.get<DashboardAggregateDto>(CLAIMS_API.dashboard).toPromise();
-      this._dashboard.set(response ?? null);
+      const response = await this.http.get<{ errCode: number; message: string; count: number; resource: DashboardAggregateDto[] }>(CLAIMS_API.dashboard).toPromise();
+      const data = response?.resource?.[0] ?? null;
+      this._dashboard.set(data);
     } catch (error) {
       console.error('Failed to load dashboard aggregate:', error);
       // Fallback to static data
