@@ -82,35 +82,35 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
           </p>
         }
 
-        @if (claimList.length) {
+        @if (store.clailListData().length) {
           <ul class="mt-6 space-y-3">
-            @for (claim of claimList; track claim.id) {
+            @for (claim of store.clailListData(); track claim.id) {
               <li
                 class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
                 style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
               >
                 <a
-                  [routerLink]="['/member/claims', claim.id]"
+                  [routerLink]="['/member/claims', claim.claim_id]"
                   class="flex items-start justify-between gap-3"
                 >
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-base font-semibold text-[#034DA2]">
-                      {{ claim.category }}
+                      {{ claim?.category }}
                     </p>
-                    <p class="mt-0.5 truncate text-sm text-ink-700">{{ claim.provider }}</p>
+                    <p class="mt-0.5 truncate text-sm text-ink-700">{{ claim?.provider }}</p>
                     <p class="mt-1 text-xs text-ink-500">
-                      {{ claim.claim_id }} · {{ date(claim.treatment_date) }}
-                      @if (claim.documents.length) {
-                        · {{ claim.documents.length }} document{{ claim.documents.length === 1 ? '' : 's' }}
+                      {{ claim?.claim_id }} · {{ date(claim?.treatment_date) }}
+                      @if (claim?.documents && claim?.documents?.length) {
+                        · {{ claim?.documents.length }} document{{ claim?.documents.length === 1 ? '' : 's' }}
                       }
                     </p>
                   </div>
                   <div class="shrink-0 text-right">
                     <opd-status-badge [status]="claim.claim_status" />
                     <p class="mt-2 text-lg font-semibold text-[#303030]">
-                      {{ money({ amount: claim.original_bill_amount, currency: 'INR'})}}
+                      {{ money({ amount: claim?.original_bill_amount, currency: 'INR'})}}
                     </p>
-                    @if (claim.approvedAmount; as approved) {
+                    @if (claim?.approvedAmount; as approved) {
                       <p class="text-xs text-success-700">{{ money(approved) }} approved</p>
                     }
                   </div>
@@ -177,21 +177,14 @@ export class ClaimsPage {
   pageSize: number = 20
   public claimList: any;
   constructor(private appService : AppService, private claimsStore : ClaimsStore){
-    this.getClimListData()
+    // this.getClimListData()
      effect(() => {
       this.store.loadDashboard();
+      this.store.getClimListData();
+
     });
   }
-  getClimListData(){
-    const arg = "queryId=GET_CLAIMS_BY_USER&page_no="+this.pageNo+"&page_size="+this.pageSize
-    this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
-      const response = JSON.parse(res)
-      if(response?.resource.length > 0){
-       this.claimList = response?.resource;
-       console.log('this.claimList :',this.claimList)
-      }
-    })
-  }
+  
   protected patientName(): string {
     return 'this member'
     // this.store.claims[0]?.patientName ?? 'this member';

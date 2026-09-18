@@ -15,6 +15,7 @@ import {
 import { Claim, ClaimsSummary } from './claim.model';
 import { STATIC_CLAIMS, STATIC_CLAIM_CATEGORIES, buildClaim, staticHistory } from './static-claims.data';
 import { DashboardAggregateDto } from './claim.dto';
+import { AppService } from '../../core/http/api.service';
 
 /**
  * Claims — DUMMY / STATIC, zero backend.
@@ -43,9 +44,14 @@ export class ClaimsStore {
   // New: Dashboard aggregate from GET_DASHBOARD_AGGREGATE endpoint
   private readonly _dashboard = signal<DashboardAggregateDto | null>(null);
   private readonly _dashboardLoading = signal(false);
+  private readonly _claimList = signal<any | null>(null);
+  private readonly _getClimListData = signal(false);
 
   readonly dashboardLoading = this._dashboardLoading.asReadonly();
 
+  constructor(private appService: AppService){
+
+  }
   readonly summary = computed<ClaimsSummary>(() => {
     const all = this._claims();
     const by = (code: string) => all.filter((c) => c.statusCode === code).length;
@@ -74,6 +80,11 @@ export class ClaimsStore {
       claimedAmount: money(d.claimed_amount ?? 0),
       approvedAmount: money(d.approved_amount ?? 0),
     };
+  });
+  readonly clailListData = computed<any>(() => {
+    const d = this._claimList();
+    if (!d) return null;
+    return d;
   });
 
   retry(): void {
@@ -157,5 +168,24 @@ export class ClaimsStore {
 
   private _patch(reference: string, patch: Partial<Claim>): void {
     this._claims.set(this._claims().map((c) => (c.reference === reference ? { ...c, ...patch } : c)));
+  }
+  async getClimListData():Promise<void> {
+    this._getClimListData.set(true);
+    const pageNo: any = 0;
+    const pageSize = 20;
+    const arg = "queryId=GET_CLAIMS_BY_USER&page_no="+pageNo+"&page_size="+pageSize;
+    try{
+      this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
+        const response = JSON.parse(res)
+        if(response?.resource.length > 0){
+          this._claimList.set(response?.resource);
+        }
+      })
+    } catch(error){
+      console.error('Failed to load dashboard aggregate:', error);
+    }finally{
+      this._getClimListData.set(false);
+    }
+    
   }
 }
