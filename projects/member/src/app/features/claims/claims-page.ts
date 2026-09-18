@@ -49,7 +49,28 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
       } @else if (store.error(); as error) {
         <opd-error [error]="error" (retry)="store.retry()" />
       } @else {
-        @if (store.summary(); as summary) {
+        @if (store.dashboardLoading()) {
+          <opd-loading label="Loading dashboard" />
+        } @else if (store.dashboardSummary(); as dashboard) {
+          <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)">
+              <p class="text-xs text-ink-500">Total claims</p>
+              <p class="mt-1 text-2xl font-semibold text-[#034DA2]">{{ dashboard.total }}</p>
+            </div>
+            <div class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)">
+              <p class="text-xs text-ink-500">In progress</p>
+              <p class="mt-1 text-2xl font-semibold text-[#303030]">{{ dashboard.inProgress }}</p>
+            </div>
+            <div class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)">
+              <p class="text-xs text-ink-500">Claimed</p>
+              <p class="mt-1 text-2xl font-semibold text-[#303030]">{{ dashboard.claimedAmount }}</p>
+            </div>
+            <div class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)">
+              <p class="text-xs text-ink-500">Approved</p>
+              <p class="mt-1 text-2xl font-semibold text-success-700">{{ dashboard.approvedAmount }}</p>
+            </div>
+          </div>
+        } @else if (store.summary(); as summary) {
           <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)">
               <p class="text-xs text-ink-500">Total claims</p>
