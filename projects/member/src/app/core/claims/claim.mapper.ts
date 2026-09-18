@@ -29,7 +29,7 @@ export const CLAIMS_API = {
   submit: (reference: string) => `member/claims/${reference}/submit`,
   summary: 'member/claims/summary',
   /** Dashboard aggregation: total, in-progress, claimed amount, approved amount. */
-  dashboard: 'member/claims?queryId=GET_DASHBOARD_AGGREGATE',
+  dashboard: 'habit-opd/api/v1/claim?queryId=GET_DASHBOARD_AGGREGATE',
   /** Takes the Mongo `_id` (Claim.id). The business CLM-… id answers 500. */
   byId: (id: string) => `member/claims/${id}`,
   /** Takes the business CLM-… id (Claim.reference). The Mongo `_id` answers 404. */
