@@ -10,11 +10,11 @@ import {
   ResubmitDocumentType,
   TpaNote,
   toStatus,
+  CLAIMS_API,
 } from './claim.mapper';
 import { Claim, ClaimsSummary } from './claim.model';
 import { STATIC_CLAIMS, STATIC_CLAIM_CATEGORIES, buildClaim, staticHistory } from './static-claims.data';
 import { DashboardAggregateDto } from './claim.dto';
-import { CLAIMS_API } from './claim.mapper';
 
 /**
  * Claims — DUMMY / STATIC, zero backend.
