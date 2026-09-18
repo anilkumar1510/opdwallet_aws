@@ -52,3 +52,15 @@ export interface ClaimsSummaryDto {
     totalPaidAmount?: number;
   };
 }
+
+/**
+ * Response from GET_DASHBOARD_AGGREGATE endpoint.
+ * Returns four aggregated data points for the claims dashboard.
+ */
+export interface DashboardAggregateDto {
+  message?: string;
+  total_claims?: number;
+  in_progress?: number;
+  claimed_amount?: number;
+  approved_amount?: number;
+}

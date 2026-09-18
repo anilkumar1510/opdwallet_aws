@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 
 import { formatMoney, money } from '../domain/money';
 import { AppError } from '../http/app-error';
@@ -9,9 +10,11 @@ import {
   ResubmitDocumentType,
   TpaNote,
   toStatus,
+  CLAIMS_API,
 } from './claim.mapper';
 import { Claim, ClaimsSummary } from './claim.model';
 import { STATIC_CLAIMS, STATIC_CLAIM_CATEGORIES, buildClaim, staticHistory } from './static-claims.data';
+import { DashboardAggregateDto } from './claim.dto';
 
 /**
  * Claims — DUMMY / STATIC, zero backend.
@@ -23,6 +26,7 @@ import { STATIC_CLAIMS, STATIC_CLAIM_CATEGORIES, buildClaim, staticHistory } fro
  */
 @Injectable({ providedIn: 'root' })
 export class ClaimsStore {
+  private readonly http = inject(HttpClient);
   private readonly _claims = signal<readonly Claim[]>([...STATIC_CLAIMS]);
   private readonly _submitting = signal(false);
   private readonly _submitError = signal<string | null>(null);
@@ -36,6 +40,12 @@ export class ClaimsStore {
   readonly submitError = this._submitError.asReadonly();
   readonly capNotice = this._capNotice.asReadonly();
 
+  // New: Dashboard aggregate from GET_DASHBOARD_AGGREGATE endpoint
+  private readonly _dashboard = signal<DashboardAggregateDto | null>(null);
+  private readonly _dashboardLoading = signal(false);
+
+  readonly dashboardLoading = this._dashboardLoading.asReadonly();
+
   readonly summary = computed<ClaimsSummary>(() => {
     const all = this._claims();
     const by = (code: string) => all.filter((c) => c.statusCode === code).length;
@@ -46,6 +56,23 @@ export class ClaimsStore {
       rejected: by('REJECTED'),
       claimedAmount: money(all.reduce((s, c) => s + c.billAmount.amount, 0)),
       approvedAmount: money(all.reduce((s, c) => s + (c.approvedAmount?.amount ?? 0), 0)),
+    };
+  });
+
+  /** Dashboard aggregate from the new GET_DASHBOARD_AGGREGATE endpoint */
+  readonly dashboardSummary = computed<{
+    total: number;
+    inProgress: number;
+    claimedAmount: ReturnType<typeof money>;
+    approvedAmount: ReturnType<typeof money>;
+  } | null>(() => {
+    const d = this._dashboard();
+    if (!d) return null;
+    return {
+      total: d.total_claims ?? 0,
+      inProgress: d.in_progress ?? 0,
+      claimedAmount: money(d.claimed_amount ?? 0),
+      approvedAmount: money(d.approved_amount ?? 0),
     };
   });
 
@@ -102,6 +129,29 @@ export class ClaimsStore {
       return created.id;
     } finally {
       this._submitting.set(false);
+    }
+  }
+
+  /** Load dashboard aggregate from GET_DASHBOARD_AGGREGATE endpoint */
+  async loadDashboard(): Promise<void> {
+    this._dashboardLoading.set(true);
+    try {
+      const response = await this.http.get<{ errCode: number; message: string; count: number; resource: DashboardAggregateDto[] }>(CLAIMS_API.dashboard).toPromise();
+      const data = response?.resource?.[0] ?? null;
+      this._dashboard.set(data);
+    } catch (error) {
+      console.error('Failed to load dashboard aggregate:', error);
+      // Fallback to static data
+      const all = this._claims();
+      const by = (code: string) => all.filter((c) => c.statusCode === code).length;
+      this._dashboard.set({
+        total_claims: this._claims().length,
+        in_progress: by('SUBMITTED') + by('UNDER_REVIEW') + by('DRAFT') + by('DOCUMENTS_REQUIRED'),
+        claimed_amount: all.reduce((s, c) => s + c.billAmount.amount, 0),
+        approved_amount: all.reduce((s, c) => s + (c.approvedAmount?.amount ?? 0), 0),
+      });
+    } finally {
+      this._dashboardLoading.set(false);
     }
   }
 
