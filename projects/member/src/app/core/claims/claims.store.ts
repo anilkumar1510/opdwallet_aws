@@ -194,11 +194,15 @@ export class ClaimsStore {
           this.categories().then((cats) => {
             const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
             this._claimList.set(
-              response.resource.map((row: any) =>
-                row?.category && byCode.has(row.category)
-                  ? { ...row, category: byCode.get(row.category) }
-                  : row,
-              ),
+              response.resource.map((row: any) => ({
+                ...row,
+                category:
+                  row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
+                // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
+                provider: row?.provider ?? row?.providerName ?? '',
+                // The badge needs a ClaimStatus object, not the raw status string.
+                status: toStatus(row?.claim_status ?? row?.status),
+              })),
             );
           });
         }

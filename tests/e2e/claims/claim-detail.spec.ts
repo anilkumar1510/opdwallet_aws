@@ -21,7 +21,7 @@ test.describe('Claim detail', () => {
     const select = page.locator('select');
     await select.selectOption('approved');
 
-    await expect(page.locator('text=Approved (full)')).toBeVisible();
+    await expect(page.locator('p', { hasText: 'Approved (full)' })).toBeVisible();
   });
 
   test('cancel flow withdraws a cancellable claim', async ({ page }) => {
