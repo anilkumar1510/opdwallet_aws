@@ -191,7 +191,16 @@ export class ClaimsStore {
       this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
         const response = JSON.parse(res)
         if(response?.resource.length > 0){
-          this._claimList.set(response?.resource);
+          this.categories().then((cats) => {
+            const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
+            this._claimList.set(
+              response.resource.map((row: any) =>
+                row?.category && byCode.has(row.category)
+                  ? { ...row, category: byCode.get(row.category) }
+                  : row,
+              ),
+            );
+          });
         }
       })
     } catch(error){
