@@ -106,7 +106,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
                     </p>
                   </div>
                   <div class="shrink-0 text-right">
-                    <opd-status-badge [status]="claim.claim_status" />
+                    <opd-status-badge [status]="claim.status" />
                     <p class="mt-2 text-lg font-semibold text-[#303030]">
                       {{ money({ amount: claim?.original_bill_amount, currency: 'INR'})}}
                     </p>
