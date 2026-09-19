@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, EventEmitter, forwardRef, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, forwardRef, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormControl, NG_VALIDATORS, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { AppService } from './../../core/http/api.service';
@@ -78,6 +78,7 @@ export class FileUploader implements OnInit, OnChanges, OnDestroy{
   uploadMsgText: string = ""
   uploadMsgClass: string = ""
   percentComplete: number = 0;
+  uploading = false;
   imageSrc: any;
   imageMimeType: Array<string> = [
     "apng",
@@ -140,7 +141,8 @@ export class FileUploader implements OnInit, OnChanges, OnDestroy{
     // private utilService: UtilService
     private _http: HttpClient,
     private appService: AppService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     // this.isBrowser = isPlatformBrowser(platformId);
   }
@@ -887,7 +889,8 @@ export class FileUploader implements OnInit, OnChanges, OnDestroy{
   }
 uploadOPDDocument(formData: any, fileContent: any){
     const url = "/dms/api/v1/emrImage";
-    
+    this.uploading = true;
+    this.cdr.markForCheck();
     var encrypted = this.appService.getXsrfToken(fileContent, true);
     return this._http.post(url, formData, {
             headers: new HttpHeaders().set('X-XSRF-TOKEN', encrypted).set('timezone', this.appService.getUserTimezone()).set('current_time', this.appService.getCurrentTime()).set('current_url', this.router.url)
@@ -895,6 +898,8 @@ uploadOPDDocument(formData: any, fileContent: any){
             responseType: 'json',
             observe: 'response' as 'response'
         }).subscribe((res : any )=> {
+          this.uploading = false;
+          this.cdr.markForCheck();
           if(res?.errCode != 0){
           //   this.afterUploadSelectedDocumentDetails.push(
           //     {
@@ -908,6 +913,9 @@ uploadOPDDocument(formData: any, fileContent: any){
           // });
           // this.setFiles(kind, [...this.filesFor(kind), ...chosen.filter((file: any) => file.size <= MAX_BYTES)]);
           }
+        }, (error: any) => {
+          this.uploading = false;
+          this.cdr.markForCheck();
         })
   }
   getfileData() {

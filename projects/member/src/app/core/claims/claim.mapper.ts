@@ -187,6 +187,29 @@ export function toClaimCategory(dto: ClaimCategoryDto, index: number): ClaimCate
   };
 }
 
+export interface ValuesetEntryDto {
+  code?: string;
+  display?: string;
+  meta?: string;
+}
+
+export const CLAIM_CATEGORY_VALUESET_ARG =
+  'queryId=get_valueset_by_id_flat&args=resourceId:claim_category,system:karexpert,noCount:0&application=system-management';
+
+export function toClaimCategoryFromValueset(entry: ValuesetEntryDto): ClaimCategory {
+  const code = entry.code?.trim() ?? '';
+  return {
+    id: code,
+    name: entry.display?.trim() || code || 'Category',
+    claimCategory: code,
+    perClaimLimit: 0,
+    copayMode: null,
+    copayValue: null,
+    perTransactionLimit: null,
+    isPlaceholder: false,
+  };
+}
+
 /**
  * Every claim category in the patient-flows matrix, used to fill in the ones a
  * member's plan has not configured so the flow is testable end to end. Keyed to

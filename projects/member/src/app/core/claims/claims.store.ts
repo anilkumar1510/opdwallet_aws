@@ -11,6 +11,9 @@ import {
   TpaNote,
   toStatus,
   CLAIMS_API,
+  CLAIM_CATEGORY_VALUESET_ARG,
+  toClaimCategoryFromValueset,
+  ValuesetEntryDto,
 } from './claim.mapper';
 import { Claim, ClaimsSummary } from './claim.model';
 import { STATIC_CLAIMS, STATIC_CLAIM_CATEGORIES, buildClaim, staticHistory } from './static-claims.data';
@@ -92,7 +95,17 @@ export class ClaimsStore {
   }
 
   async categories(): Promise<readonly ClaimCategory[]> {
-    return STATIC_CLAIM_CATEGORIES;
+    try {
+      const res = await this.appService
+        .getcall('valueset', 'system-management', CLAIM_CATEGORY_VALUESET_ARG)
+        .toPromise();
+      const rows: ValuesetEntryDto[] = JSON.parse(res)?.resource ?? [];
+      if (!rows.length) return STATIC_CLAIM_CATEGORIES;
+      return rows.map((entry) => toClaimCategoryFromValueset(entry));
+    } catch (error) {
+      console.error('Failed to load claim categories:', error);
+      return STATIC_CLAIM_CATEGORIES;
+    }
   }
 
   async claimById(claimId: string): Promise<Claim | null> {
