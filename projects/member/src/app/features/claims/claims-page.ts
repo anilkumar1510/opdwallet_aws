@@ -82,7 +82,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
           </p>
         }
 
-        @if (store.clailListData().length) {
+        @if (store.clailListData() && store.clailListData().length) {
           <ul class="mt-6 space-y-3">
             @for (claim of store.clailListData(); track claim.id) {
               <li

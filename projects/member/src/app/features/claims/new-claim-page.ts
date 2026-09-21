@@ -762,7 +762,7 @@ export class NewClaimPage {
   selectedFiles: Array<any> = [];
   fileData: any;
   uploadOPDDocument(file: any, fileName: any, action: any, fileContent: any, kind: any, chosen: any){
-    const url = "/dms/api/v1/emrImage";
+    const url = "/dms/api/v1/opd-document";
     const formData = new FormData();
     const reader = new FileReader();
     formData.append("file", file);
