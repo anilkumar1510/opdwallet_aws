@@ -95,7 +95,10 @@ const STEPS = [
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label for="patient" class="mb-1 block text-sm font-medium text-ink-700">Patient</label>
-                  <select id="patient" name="patient" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="patientId()" (ngModelChange)="patientId.set($event)">
+                  <select id="patient" name="patient" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [disabled]="family.loading()" [ngModel]="patientId()" (ngModelChange)="patientId.set($event)">
+                    @if (family.loading()) {
+                      <option value="" disabled>Loading…</option>
+                    }
                     @for (member of family.family(); track member.id) {
                       <option [value]="member.id">{{ member.fullName }} ({{ relationship(member) }})</option>
                     }
@@ -104,8 +107,11 @@ const STEPS = [
 
                 <div>
                   <label for="category" class="mb-1 block text-sm font-medium text-ink-700">Category</label>
-                  <select id="category" name="category" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="category()" (ngModelChange)="category.set($event)">
+                  <select id="category" name="category" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [disabled]="categoriesLoading()" [ngModel]="category()" (ngModelChange)="category.set($event)">
                     <option value="">Select a category</option>
+                    @if (categoriesLoading()) {
+                      <option value="" disabled>Loading…</option>
+                    }
                     @for (option of categories(); track option.id) {
                       <option [value]="option.claimCategory">{{ option.name }}{{ option.isPlaceholder ? ' (test — not on plan)' : '' }}</option>
                     }
@@ -135,7 +141,6 @@ const STEPS = [
                   <label for="claimType" class="mb-1 block text-sm font-medium text-ink-700">Claim type</label>
                   <select id="claimType" name="claimType" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="claimType()" (ngModelChange)="claimType.set($event)">
                     <option value="REIMBURSEMENT">Reimbursement</option>
-                    <option value="CASHLESS_PREAUTH">Cashless pre-authorisation</option>
                   </select>
                 </div>
 
@@ -197,8 +202,15 @@ const STEPS = [
                   > 
                 </opd-file-uploader>-->
                   <label [attr.for]="'doc-' + slot.key" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-6 text-center transition-colors hover:border-[#0F5FDC]">
-                    <span class="block font-medium text-[#0B2C63]">{{ slot.label }}</span>
-                    <span class="mt-1 block text-xs" [class.text-danger-700]="slot.requirement === 'required'" [class.text-ink-500]="slot.requirement !== 'required'">{{ slot.requirement === 'required' ? 'Required' : 'Optional' }} — PDF or photos, up to 5 MB each</span>
+                    @if (documentUploading()[slot.key]) {
+                      <span class="flex items-center justify-center gap-2">
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-[#0F5FDC] border-t-transparent"></span>
+                        <span class="text-sm font-medium text-[#0B2C63]">Uploading…</span>
+                      </span>
+                    } @else {
+                      <span class="block font-medium text-[#0B2C63]">{{ slot.label }}</span>
+                      <span class="mt-1 block text-xs" [class.text-danger-700]="slot.requirement === 'required'" [class.text-ink-500]="slot.requirement !== 'required'">{{ slot.requirement === 'required' ? 'Required' : 'Optional' }} — PDF or photos, up to 5 MB each</span>
+                    }
                   </label>
                   @if (filesFor(slot.key).length) {
                     <ul class="mt-3 space-y-2">
@@ -386,6 +398,7 @@ export class NewClaimPage {
   protected readonly problem = signal<string | null>(null);
 
   protected readonly categories = signal<readonly ClaimCategory[]>([]);
+  protected readonly categoriesLoading = signal(false);
   protected readonly patientId = signal('');
   protected readonly category = signal('');
   protected readonly dentalSubType = signal<DentalSubType>('consultation');
@@ -407,6 +420,7 @@ export class NewClaimPage {
   protected readonly reportFiles = signal<readonly File[]>([]);
   protected readonly otherFiles = signal<readonly File[]>([]);
   protected readonly fileError = signal<string | null>(null);
+  protected readonly documentUploading = signal<Partial<Record<DocSlotKey, boolean>>>({});
 
   protected readonly bankHolder = signal('');
   protected readonly bankAccount = signal('');
@@ -421,23 +435,18 @@ export class NewClaimPage {
   eventData: any = [];
   container: any = {};
   constructor(private _http: HttpClient, private appService: AppService, private sanitizer: DomSanitizer) {
-    void this.store.categories().then((rows) => this.categories.set(rows));
+    this.categoriesLoading.set(true);
+    void this.store.categories().then((rows) => this.categories.set(rows)).finally(() => this.categoriesLoading.set(false));
     let patientPrefilled = false;
     effect(() => {
-      const active = this.family.activeMember();
-      if (active && !patientPrefilled && !this.patientId()) {
+      // Default to Self (the primary) even if a dependant was last active.
+      const self = this.family.family().find((m) => m.isPrimary) ?? this.family.activeMember();
+      if (self && !patientPrefilled && !this.patientId()) {
         patientPrefilled = true;
-        this.patientId.set(active.id);
+        this.patientId.set(self.id);
       }
     });
-    this.testGetAPI();
-  }
-  testGetAPI(){
-    const arg = "queryId=GET_FAMILY_LIST&args=&application=account-management"
-    this.appService.getcall('user_relationship_mapping','account-management', arg).subscribe(res =>{
-      console.log('res:',JSON.parse(res));
-      
-    })
+    void this.family.load();
   }
   protected readonly selectedCategory = computed(() =>
     this.categories().find((option) => option.claimCategory === this.category()),
@@ -671,6 +680,7 @@ export class NewClaimPage {
   protected onFilesChosen(kind: DocSlotKey, event: Event): void {
     const input = event.target as HTMLInputElement ;
     const chosen = Array.from(input.files ?? []);
+    this.documentUploading.update((m) => ({ ...m, [kind]: true }));
     // input.value = '';
     // const tooBig = chosen.find((file) => file.size > MAX_BYTES);
     // this.fileError.set(tooBig ? `${tooBig.name} is larger than 5 MB.` : null);
@@ -790,6 +800,9 @@ export class NewClaimPage {
           });
           this.setFiles(kind, [...this.filesFor(kind), ...chosen.filter((file: any) => file.size <= MAX_BYTES)]);
           }
+          this.documentUploading.update((m) => ({ ...m, [kind]: false }));
+        }, () => {
+          this.documentUploading.update((m) => ({ ...m, [kind]: false }));
         })
   }
   private async getHeic2any(): Promise<any | null> {
@@ -878,8 +891,7 @@ export class NewClaimPage {
 
       "member_id": patient.memberId,
       "member_name": patient.fullName,
-      "relation_to_member": "SELF",
-      // "relation_to_member": patient.relationship,
+      "relation_to_member": patient.relationship,
 
       "policy_id": "8ca9f31c-e1ad-478b-9b24-9f56e18a9165",
       "customer_id": "CUS-HH-000731",

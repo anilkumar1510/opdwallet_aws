@@ -33,12 +33,12 @@ words, the screen it powered, and what replaced it.
 
 | 14 | `member/addresses` (GET/POST), `notifications` + `notifications/unread-count` + mark-read, digital-prescriptions / prescriptions, `transactions` + `payments` | Profile addresses, the notifications list + header bell badge, Health Records (prescriptions), and the Transactions history + detail. | Profile, Notifications, Health Records, Transactions | The four stores (`profile.store`, `notifications.store`, `records.store`, `transactions.store`) rewritten static (seeded in-memory data; save/markRead/setFilter mutate locally). The header bell badge now derives from the static notifications. No `member/addresses`, `notifications*`, `prescriptions`, or `transactions`/`payments` calls remain. |
 
-| 15 | `auth/login`, `auth/me`, `auth/logout`, `member/profile` (family) | Login + session + the member/family identity that loaded on every startup. | Login page (removed) + app-wide session/family | Login route deleted; `SessionStore` and `FamilyStore` rewritten static (`core/member/static-member.data.ts`): the app opens straight into `/member` as Shivam Jha (primary) with Sayani Kumari (spouse). The member switcher works in memory. `logout` is a no-op. **No API calls remain anywhere in the member portal.** Old `features/login/login-page` orphaned. |
+| 15 | `auth/login`, `auth/me`, `auth/logout`, `member/profile` (family) | Login + session + the member/family identity that loaded on every startup. | Login page (removed) + app-wide session/family | Login route deleted; `SessionStore` static (`core/member/static-member.data.ts` → `STATIC_SELF` only): the app opens straight into `/member` as Shivam Jha. `logout` is a no-op. Old `features/login/login-page` orphaned. Family is now **live**: `FamilyStore.load()` calls `user_relationship_mapping` (GET_FAMILY_LIST) and maps each record via `core/member/family-mapper.ts` (`relationship_code` REL001–REL010 → `Relationship`; the signed-in member's own record has no `relationship_code` / `mapped_id` = user id → SELF/primary). Active member persisted in `sessionStorage` (`opd.activeMemberId`); the member switcher works on the live family. `testGetAPI()` removed from new-claim; claim creation sends the live `patient.relationship` as `relation_to_member` (was hardcoded `"SELF"`). |
 
 ## Notes
 
 - **Policy card (home "Your Policies")** — no dedicated API of its own; it was
   derived from the `member/profile` assignments. It is now served from
-  `STATIC_POLICIES` in `static-policy.data.ts`. `member/profile` itself is still
-  called (it powers family / wallet), so it is **not** listed as removed — only
-  the policy card's dependence on it was cut.
+  `STATIC_POLICIES` in `static-policy.data.ts`. `member/profile` itself is no
+  longer called: family comes from `user_relationship_mapping` (GET_FAMILY_LIST,
+  see row 15) and the wallet from `STATIC_WALLET_TOTAL`.

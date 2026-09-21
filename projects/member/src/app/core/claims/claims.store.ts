@@ -11,6 +11,9 @@ import {
   TpaNote,
   toStatus,
   CLAIMS_API,
+  CLAIM_CATEGORY_VALUESET_ARG,
+  toClaimCategoryFromValueset,
+  ValuesetEntryDto,
 } from './claim.mapper';
 import { Claim, ClaimsSummary } from './claim.model';
 import { STATIC_CLAIMS, STATIC_CLAIM_CATEGORIES, buildClaim, staticHistory } from './static-claims.data';
@@ -101,7 +104,17 @@ export class ClaimsStore {
   }
 
   async categories(): Promise<readonly ClaimCategory[]> {
-    return STATIC_CLAIM_CATEGORIES;
+    try {
+      const res = await this.appService
+        .getcall('valueset', 'system-management', CLAIM_CATEGORY_VALUESET_ARG)
+        .toPromise();
+      const rows: ValuesetEntryDto[] = JSON.parse(res)?.resource ?? [];
+      if (!rows.length) return STATIC_CLAIM_CATEGORIES;
+      return rows.map((entry) => toClaimCategoryFromValueset(entry));
+    } catch (error) {
+      console.error('Failed to load claim categories:', error);
+      return STATIC_CLAIM_CATEGORIES;
+    }
   }
 
   async claimById(claimId: string): Promise<Claim | null> {
@@ -187,7 +200,20 @@ export class ClaimsStore {
       this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
         const response = JSON.parse(res)
         if(response?.resource.length > 0){
-          this._claimList.set(response?.resource);
+          this.categories().then((cats) => {
+            const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
+            this._claimList.set(
+              response.resource.map((row: any) => ({
+                ...row,
+                category:
+                  row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
+                // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
+                provider: row?.provider ?? row?.providerName ?? '',
+                // The badge needs a ClaimStatus object, not the raw status string.
+                status: toStatus(row?.claim_status ?? row?.status),
+              })),
+            );
+          });
         }
       })
     } catch(error){

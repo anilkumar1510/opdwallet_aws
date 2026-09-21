@@ -7,6 +7,7 @@
     "build": "ng build member",
     "watch": "ng build member --watch --configuration development",
     "test": "ng test member",
+    "test:e2e": "npx playwright test",
     "lint": "ng lint",
     "pack:member": "ng build member && node tools/pack-member.mjs",
     "publish:member": "npm run pack:member && npm publish ./dist/member/browser"
@@ -31,6 +32,7 @@
     "@angular/build": "~21.2.19",
     "@angular/cli": "~21.2.19",
     "@angular/compiler-cli": "~21.2.19",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/crypto-js": "^4.2.2",
     "playwright": "^1.62.1",
