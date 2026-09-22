@@ -52,6 +52,11 @@ export const routes: Routes = [
           import('./features/claims/claim-detail-page').then((m) => m.ClaimDetailPage),
       },
       {
+        path: 'claims/test/:claimId',
+        loadComponent: () =>
+          import('./features/claims/claim-detail-page-test').then((m) => m.ClaimDetailPageTest),
+      },
+      {
         /*
          * The cashless letter — sheet flow 2 step 15, flow 4 steps 13 and 30,
          * flow 6 step 13: "Letter is available in the application and is

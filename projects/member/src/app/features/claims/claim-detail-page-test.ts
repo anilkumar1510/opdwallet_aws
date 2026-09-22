@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, resource, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, resource, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -18,7 +18,6 @@ import { BankDetailsStore } from '../../core/member/bank-details.store';
 import { formatMoney, money } from '../../core/domain/money';
 import { EmptyView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
-import { AppService } from '../../core/http/api.service';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -116,32 +115,32 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
 
         @if (claim.isLoading()) {
           <opd-loading label="Loading claim" />
-        } @else if (store.clailDetails(); as detail) {
+        } @else if (displayClaim(); as detail) {
           <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="truncate text-lg font-bold text-[#0B2C63]">{{ detail.category }}</h2>
-                <p class="mt-0.5 text-sm text-ink-700">{{ detail.provider }}</p>
+                <h2 class="truncate text-lg font-bold text-[#0B2C63]">{{ detail.categoryLabel }}</h2>
+                <p class="mt-0.5 text-sm text-ink-700">{{ detail.providerName }}</p>
               </div>
-              <opd-status-badge [status]="detail.claim_status" />
+              <opd-status-badge [status]="detail.status" />
             </div>
 
             <dl class="mt-5 space-y-3 border-t border-surface-border pt-4 text-sm">
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Patient</dt>
-                <dd class="font-medium text-ink-900">{{ decryptText(detail.patient_name) }}</dd>
+                <dd class="font-medium text-ink-900">{{ detail.patientName }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Claim type</dt>
-                <dd class="font-medium text-ink-900">{{ detail.claim_type }}</dd>
+                <dd class="font-medium text-ink-900">{{ detail.typeLabel }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Treatment date</dt>
-                <dd class="font-medium text-ink-900">{{ date(detail.treatment_date) }}</dd>
+                <dd class="font-medium text-ink-900">{{ date(detail.treatmentDate) }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Submitted</dt>
-                <dd class="font-medium text-ink-900">{{ date(detail.submitted_at) }}</dd>
+                <dd class="font-medium text-ink-900">{{ date(detail.submittedAt) }}</dd>
               </div>
             </dl>
           </section>
@@ -151,12 +150,12 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
             <dl class="space-y-2 text-sm">
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Claimed</dt>
-                <dd class="font-medium text-ink-900">{{ money({ amount: detail.original_bill_amount, currency: 'INR'}) }}</dd>
+                <dd class="font-medium text-ink-900">{{ money(detail.billAmount) }}</dd>
               </div>
-              @if (detail.approved_amount; as approved) {
+              @if (detail.approvedAmount; as approved) {
                 <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
                   <dt class="font-semibold text-ink-900">Approved</dt>
-                  <dd class="text-lg font-bold text-success-700">{{ money({ amount: approved, currency: 'INR'}) }}</dd>
+                  <dd class="text-lg font-bold text-success-700">{{ money(approved) }}</dd>
                 </div>
               } @else {
                 <p class="border-t border-surface-border pt-2 text-xs text-ink-500">
@@ -178,10 +177,10 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
                   <dt class="text-ink-700">Status</dt>
                   <dd class="font-medium text-ink-900">{{ detail.status.label }}</dd>
                 </div>
-                @if (detail.approved_amount; as approved) {
+                @if (detail.approvedAmount; as approved) {
                   <div class="flex justify-between gap-3">
                     <dt class="text-ink-700">Amount credited</dt>
-                    <dd class="font-medium text-success-700">{{ money({ amount: approved, currency: 'INR'}) }}</dd>
+                    <dd class="font-medium text-success-700">{{ money(approved) }}</dd>
                   </div>
                 }
                 <div class="flex justify-between gap-3">
@@ -205,13 +204,13 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
             </section>
           }
 
-          @if (detail?.documents && detail?.documents?.length) {
+          @if (detail.documentCount) {
             <!-- This used to be the COUNT and nothing else: "3 documents submitted
                  with this claim", beside no way to open any of them. The reference
                  lists them and links each one (claims/[id]/page.tsx:495-515). -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">
-                {{ detail?.documents?.length }} document{{ detail?.documents?.length === 1 ? '' : 's' }}
+                {{ detail.documentCount }} document{{ detail.documentCount === 1 ? '' : 's' }}
                 submitted with this claim
               </h2>
               @if (downloadError(); as error) {
@@ -220,13 +219,13 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
                 </p>
               }
               <ul class="space-y-2">
-                @for (doc of detail.documents; track doc.originalname) {
+                @for (doc of detail.documents; track doc.fileName) {
                   <li
                     class="flex items-center justify-between gap-3 rounded-xl border border-surface-border px-3 py-2"
                   >
                     <span class="min-w-0">
-                      <span class="block text-sm font-medium text-ink-900">{{ doc.document_type }}</span>
-                      <span class="block truncate text-xs text-ink-500">{{ doc.originalname }}</span>
+                      <span class="block text-sm font-medium text-ink-900">{{ doc.label }}</span>
+                      <span class="block truncate text-xs text-ink-500">{{ doc.fileName }}</span>
                     </span>
                     @if (doc.downloadPath) {
                       <button
@@ -421,23 +420,15 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
     </div>
   `,
 })
-export class ClaimDetailPage {
+export class ClaimDetailPageTest {
   readonly claimId = input<string>('');
 
   protected readonly store = inject(ClaimsStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
-  private readonly appService = inject(AppService);
   protected readonly money = formatMoney;
 
-  constructor(){
-    effect(() => {
-      console.log(this.router)
-      this.store.getClimDetails('CLM-2026-00018')
-
-    });
-  }
   /** Payout-stage statuses that surface the (placeholder) Payment section. */
   private static readonly PAYMENT_STAGES = new Set([
     'PAYMENT_PENDING',
@@ -446,7 +437,7 @@ export class ClaimDetailPage {
     'PAID',
   ]);
   protected isPaymentStage(statusCode: string): boolean {
-    return ClaimDetailPage.PAYMENT_STAGES.has(statusCode);
+    return ClaimDetailPageTest.PAYMENT_STAGES.has(statusCode);
   }
 
   protected readonly confirming = signal(false);
@@ -653,8 +644,4 @@ export class ClaimDetailPage {
   protected date(value: Date | null): string {
     return value ? DATE.format(value) : 'Not recorded';
   }
-  decryptText(encText: string){
-   return this.appService.decryptText(encText);
-  }
 }
-
