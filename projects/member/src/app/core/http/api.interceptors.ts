@@ -27,7 +27,7 @@ export const apiUrlInterceptor: HttpInterceptorFn = (request, next) => {
   
   const isLocalHostName =
     hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
-    return isLocalHostName && String(port) === "4500";
+    return isLocalHostName && String(port) === "4590";
   })();
   if (!isAbsolute) {
     if (!isLocalProxyMode) {
@@ -41,7 +41,7 @@ export const apiUrlInterceptor: HttpInterceptorFn = (request, next) => {
       if (apiOrigin && reqUrl.origin === apiOrigin) {
         updatedUrl = `${reqUrl.pathname}${reqUrl.search}${reqUrl.hash}`;
         console.log(
-          "Rewriting API absolute URL to relative (localhost:4500 proxy mode):",
+          "Rewriting API absolute URL to relative (localhost:4590 proxy mode):",
           updatedUrl
         );
       }
