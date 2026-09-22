@@ -116,7 +116,7 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
 
         @if (claim.isLoading()) {
           <opd-loading label="Loading claim" />
-        } @else if (store.clailDetails(); as detail) {
+        } @else if (displayClaim(); as detail) {
           <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
@@ -170,13 +170,13 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
                PLACEHOLDER — the claim payload carries no payment fields yet
                (paymentStatus/paymentId/transactionId/paymentDate/
                paymentReferenceNumber/paymentMode). See PLACEHOLDER-APIS.md. -->
-          @if (isPaymentStage(detail.statusCode)) {
+          @if (isPaymentStage(detail.claim_status)) {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">Payment</h2>
               <dl class="space-y-2 text-sm">
                 <div class="flex justify-between gap-3">
                   <dt class="text-ink-700">Status</dt>
-                  <dd class="font-medium text-ink-900">{{ detail.status.label }}</dd>
+                  <dd class="font-medium text-ink-900">{{ detail.claim_status }}</dd>
                 </div>
                 @if (detail.approved_amount; as approved) {
                   <div class="flex justify-between gap-3">
@@ -290,7 +290,7 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
             }
           }
 
-          @if (detail.statusCode === 'DOCUMENTS_REQUIRED') {
+          @if (detail.claim_status === 'DOCUMENTS_REQUIRED') {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
               <h2 class="text-sm font-semibold text-ink-900">Send the documents requested</h2>
               <p class="mt-1 text-sm text-ink-700">
@@ -433,9 +433,7 @@ export class ClaimDetailPage {
 
   constructor(){
     effect(() => {
-      console.log(this.router)
       this.store.getClimDetails('CLM-2026-00018')
-
     });
   }
   /** Payout-stage statuses that surface the (placeholder) Payment section. */
@@ -575,8 +573,9 @@ export class ClaimDetailPage {
   }
 
   /** The claim shown on screen — real, or patched into the chosen scenario. */
-  protected readonly displayClaim = computed<Claim | null>(() => {
-    const base = this.claim.value();
+  protected readonly displayClaim = computed<any | null>(() => {
+    // const base = this.claim.value();
+    const base = this.store.claimDetails()
     const key = this.scenarioKey();
     if (!base || key === 'live') return base ?? null;
 
@@ -584,7 +583,7 @@ export class ClaimDetailPage {
     const factor = APPROVED_FACTOR[key];
     return {
       ...base,
-      statusCode: s.code,
+      claim_status: s.code,
       status: { label: s.label, tone: s.tone, isFinal: s.isFinal },
       approvedAmount: factor !== null ? money(Math.round(base.billAmount.amount * factor)) : base.approvedAmount,
       isCancellable: s.cancellable,

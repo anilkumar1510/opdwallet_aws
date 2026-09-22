@@ -93,7 +93,7 @@ export class ClaimsStore {
     if (!d) return null;
     return d;
   });
-  readonly clailDetails = computed<any>(() => {
+  readonly claimDetails = computed<any>(() => {
     const d = this._claimDetails();
     if (!d) return null;
     return d;
