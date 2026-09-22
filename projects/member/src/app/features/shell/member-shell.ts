@@ -8,6 +8,7 @@ import { NotificationsStore } from '../../core/notifications/notifications.store
 import { SessionStore } from '../../core/session/session.store';
 import { DESTINATIONS, SECONDARY_DESTINATIONS } from './destinations';
 import { ProfileMenu } from './profile-menu';
+import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
 
 /**
  * One layout for every viewport width, matching web-member: a navy top bar at
@@ -19,7 +20,7 @@ import { ProfileMenu } from './profile-menu';
 @Component({
   selector: 'opd-member-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ProfileMenu],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ProfileMenu, RemoteAssetPipe],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <a
@@ -54,7 +55,7 @@ import { ProfileMenu } from './profile-menu';
                 "
               >
                 <img
-                  src="images/icons/notification-bell.svg"
+                  [src]="'images/icons/notification-bell.svg' | remoteAsset"
                   alt=""
                   width="16"
                   height="18"
@@ -73,7 +74,7 @@ import { ProfileMenu } from './profile-menu';
                 aria-label="Wallet"
               >
                 <img
-                  src="images/icons/wallet-icon.svg"
+                  [src]="'images/icons/wallet-icon.svg' | remoteAsset"
                   alt=""
                   width="19"
                   height="16"
@@ -86,7 +87,7 @@ import { ProfileMenu } from './profile-menu';
                 [attr.aria-label]="carts.openCount() ? 'Cart, ' + carts.openCount() + ' open' : 'Cart'"
               >
                 <img
-                  src="images/icons/cart-icon.svg"
+                  [src]="'images/icons/cart-icon.svg' | remoteAsset"
                   alt=""
                   width="18"
                   height="18"
@@ -154,7 +155,7 @@ import { ProfileMenu } from './profile-menu';
           >
             <!-- The source art is already white, so no filter here. -->
             <img
-              src="images/icons/home-icon.png"
+              [src]="'images/icons/home-icon.png' | remoteAsset"
               alt=""
               width="18"
               height="18"
@@ -174,7 +175,7 @@ import { ProfileMenu } from './profile-menu';
                 class="flex flex-col items-center gap-[3px] rounded-full px-3 py-1 text-[#034da2] no-underline transition-all"
               >
                 <img
-                  [src]="destination.iconSrc"
+                  [src]="destination.iconSrc | remoteAsset"
                   alt=""
                   width="18"
                   height="18"
