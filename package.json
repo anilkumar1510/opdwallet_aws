@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "OPD_WALLET_PUBLIC_PATH=http://localhost:4590 ng serve member --proxy-config proxy.conf.json",
+    "start": "OPD_WALLET_PUBLIC_PATH=http://localhost:4500 ng serve member --proxy-config proxy.conf.json",
     "build": "ng build member",
     "watch": "ng build member --watch --configuration development",
     "test": "ng test member",

@@ -929,7 +929,7 @@ export class NewClaimPage {
   }
 
   createNewClaimsSubmit(payload: any, resource: string, application: string, action: string):any{
-    const url = "https://api.habithealth.com/"+application+"/api/v1/"+resource;
+    const url = "/"+application+"/api/v1/"+resource;
     var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     var params = "resource=" + encodedResourceData;
     params += "&application=" + application + "&action=" + action;
