@@ -20,7 +20,6 @@ import {
   STATIC_WALLET_TOTAL,
 } from '../../core/member/static-policy.data';
 import { ProfileMenu } from '../shell/profile-menu';
-import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
 import {
   BenefitCard,
   LinkTile,
@@ -168,7 +167,6 @@ function benefitLink(categoryCode: string): string {
     WalletBalanceCard,
     BenefitCard,
     MoreServices,
-    RemoteAssetPipe,
   ],
   template: `
     <div class="relative min-h-screen bg-[#f7f7fc]">
@@ -200,7 +198,7 @@ function benefitLink(categoryCode: string): string {
               "
             >
               <img
-                [src]="'images/icons/notification-bell.svg' | remoteAsset"
+                src="images/icons/notification-bell.svg"
                 alt=""
                 width="14"
                 height="16"
@@ -219,7 +217,7 @@ function benefitLink(categoryCode: string): string {
               aria-label="Wallet"
             >
               <img
-                [src]="'images/icons/wallet-icon.svg' | remoteAsset"
+                src="images/icons/wallet-icon.svg"
                 alt=""
                 width="17"
                 height="14"
@@ -234,7 +232,7 @@ function benefitLink(categoryCode: string): string {
               "
             >
               <img
-                [src]="'images/icons/cart-icon.svg' | remoteAsset"
+                src="images/icons/cart-icon.svg"
                 alt=""
                 width="16"
                 height="16"
