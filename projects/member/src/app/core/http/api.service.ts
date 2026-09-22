@@ -97,4 +97,24 @@ export class AppService {
             map((response: any) => response.body ?? response)
         );
     }
+
+    decryptText(encryptedCipherText: string) {
+       const key = this._currentSessionData.encryptKey ? this._currentSessionData.encryptKey : '';
+        if (key == '' || encryptedCipherText == '' || !encryptedCipherText || !key) {
+            return encryptedCipherText;
+        }
+        try {
+            var ivString = key.substring(0, 16);
+            var parsedBase64Key = CryptoJS.enc.Utf8.parse(key);
+            var decryptedData = CryptoJS.AES.decrypt(encryptedCipherText, parsedBase64Key, {
+                iv: CryptoJS.enc.Utf8.parse(ivString),
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            return decryptedData.toString(CryptoJS.enc.Utf8);
+        } catch (e) {
+            console.error(e);
+            return encryptedCipherText;
+        }
+    }
 }

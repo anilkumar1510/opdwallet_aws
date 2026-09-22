@@ -47,8 +47,12 @@ export class ClaimsStore {
   // New: Dashboard aggregate from GET_DASHBOARD_AGGREGATE endpoint
   private readonly _dashboard = signal<DashboardAggregateDto | null>(null);
   private readonly _dashboardLoading = signal(false);
+
   private readonly _claimList = signal<any | null>(null);
   private readonly _getClimListData = signal(false);
+  
+  private readonly _claimDetails = signal<any | null>(null);
+  private readonly _getClimDetails = signal(false);
 
   readonly dashboardLoading = this._dashboardLoading.asReadonly();
 
@@ -86,6 +90,11 @@ export class ClaimsStore {
   });
   readonly clailListData = computed<any>(() => {
     const d = this._claimList();
+    if (!d) return null;
+    return d;
+  });
+  readonly claimDetails = computed<any>(() => {
+    const d = this._claimDetails();
     if (!d) return null;
     return d;
   });
@@ -212,6 +221,21 @@ export class ClaimsStore {
     }finally{
       this._getClimListData.set(false);
     }
-    
+  }
+  async getClimDetails(climId: string):Promise<void> {
+    this._getClimDetails.set(true);
+    const arg = "queryId=GET_PAGE&filter=name:"+climId;
+    try{
+      this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
+        const response = JSON.parse(res)
+        if(response?.resource.length > 0){
+          this._claimDetails.set(response?.resource[0]);
+        }
+      })
+    } catch(error){
+      console.error('Failed to load dashboard aggregate:', error);
+    }finally{
+      this._getClimDetails.set(false);
+    }
   }
 }
