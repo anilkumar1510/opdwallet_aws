@@ -21,6 +21,50 @@ import { DashboardAggregateDto } from './claim.dto';
 import { AppService } from '../../core/http/api.service';
 
 /**
+ * Candidate names for the last-updated column on a GET_CLAIMS_BY_USER row,
+ * most specific first.
+ *
+ * `g_modify_time` is the real one — confirmed against the live payload, which
+ * carries no `updated_at` of any spelling. It is the platform's own audit
+ * column and is the only field that moves when a claim changes after filing
+ * (documents resent, status advanced by the TPA); `submitted_at` is fixed at
+ * creation, so sorting on that would leave a just-updated claim buried.
+ *
+ * The rest are kept as fallbacks because the list payload is untyped and other
+ * environments have been seen to name this differently. Creation stamps come
+ * last so a row with no update stamp still sorts by something meaningful.
+ */
+const CLAIM_UPDATED_AT_KEYS = [
+  'g_modify_time',
+  'updated_at',
+  'updatedAt',
+  'updated_on',
+  'last_updated',
+  'last_updated_date',
+  'modified_at',
+  'g_creation_time',
+  'created_at',
+  'createdAt',
+  'submitted_at',
+] as const;
+
+/**
+ * Epoch millis for a claim row's last update, or 0 when it carries no usable
+ * stamp. Dates arrive as epoch millis for columns the API owns (see how
+ * `treatment_date` is posted) but as ISO strings elsewhere, so both are handled.
+ */
+function updatedAtMillis(row: any): number {
+  for (const key of CLAIM_UPDATED_AT_KEYS) {
+    const raw = row?.[key];
+    if (raw === null || raw === undefined || raw === '') continue;
+    const numeric = Number(raw);
+    const ms = Number.isNaN(numeric) ? Date.parse(String(raw)) : numeric;
+    if (!Number.isNaN(ms)) return ms;
+  }
+  return 0;
+}
+
+/**
  * Claims — DUMMY / STATIC, zero backend.
  *
  * This used to call every `member/claims/*` endpoint (list, summary, categories,
@@ -55,6 +99,8 @@ export class ClaimsStore {
   private readonly _getClimDetails = signal(false);
 
   readonly dashboardLoading = this._dashboardLoading.asReadonly();
+  /** True while GET_PAGE for a single claim is in flight. */
+  readonly claimDetailsLoading = this._getClimDetails.asReadonly();
 
   constructor(private appService: AppService){
 
@@ -199,19 +245,25 @@ export class ClaimsStore {
     try{
       this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
         const response = JSON.parse(res)
-        if(response?.resource.length > 0){
+        // Error bodies (`{errCode:-1, message:'Invalid Session'}`) carry no
+        // `resource` at all, so this has to be optional or the list throws.
+        if(response?.resource?.length > 0){
           this.categories().then((cats) => {
             const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
             this._claimList.set(
-              response.resource.map((row: any) => ({
-                ...row,
-                category:
-                  row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
-                // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
-                provider: row?.provider ?? row?.providerName ?? '',
-                // The badge needs a ClaimStatus object, not the raw status string.
-                status: toStatus(row?.claim_status ?? row?.status),
-              })),
+              response.resource
+                .map((row: any) => ({
+                  ...row,
+                  category:
+                    row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
+                  // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
+                  provider: row?.provider ?? row?.providerName ?? '',
+                  // The badge needs a ClaimStatus object, not the raw status string.
+                  status: toStatus(row?.claim_status ?? row?.status),
+                }))
+                // Most recently updated first; the API returns rows in its own
+                // order, so a claim that just changed would otherwise be buried.
+                .sort((a: any, b: any) => updatedAtMillis(b) - updatedAtMillis(a)),
             );
           });
         }
@@ -222,20 +274,39 @@ export class ClaimsStore {
       this._getClimListData.set(false);
     }
   }
-  async getClimDetails(climId: string):Promise<void> {
+  /**
+   * Loads one claim by its business reference (CLM-…) into `claimDetails`.
+   * Resolves once the request settles so a caller that has just changed the
+   * claim — resending documents, say — can await the refreshed record.
+   */
+  getClimDetails(climId: string): Promise<void> {
     this._getClimDetails.set(true);
     const arg = "queryId=GET_PAGE&filter=name:"+climId;
-    try{
-      this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
-        const response = JSON.parse(res)
-        if(response?.resource.length > 0){
-          this._claimDetails.set(response?.resource[0]);
-        }
+    return new Promise<void>((resolve) => {
+      this.appService.getcall('claim','habit-opd', arg).subscribe({
+        next: (res) => {
+          try {
+            const response = JSON.parse(res)
+            // Error bodies (`{errCode:-1, message:'Invalid Session'}`) carry no
+            // `resource` at all, so this has to be optional or the page throws.
+            if(response?.resource?.length > 0){
+              this._claimDetails.set(response.resource[0]);
+            }
+          } catch (error) {
+            console.error('Failed to parse claim details:', error);
+          } finally {
+            this._getClimDetails.set(false);
+            resolve();
+          }
+        },
+        error: (error) => {
+          // The old `try/catch` could never see this — the failure arrives on
+          // the stream, not as a throw — so the page span loading for ever.
+          console.error('Failed to load claim details:', error);
+          this._getClimDetails.set(false);
+          resolve();
+        },
       })
-    } catch(error){
-      console.error('Failed to load dashboard aggregate:', error);
-    }finally{
-      this._getClimDetails.set(false);
-    }
+    });
   }
 }
