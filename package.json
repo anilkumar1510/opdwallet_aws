@@ -10,7 +10,12 @@
     "test:e2e": "npx playwright test",
     "lint": "ng lint",
     "pack:member": "ng build member && node tools/pack-member.mjs",
-    "publish:member": "npm run pack:member && npm publish ./dist/member/browser"
+    "publish:member": "npm run pack:member && npm publish ./dist/member/browser",
+    "demo": "playwright test --config playwright.demo.config.ts --project submit --project detail",
+    "demo:dry": "DEMO_SLOTS=1 playwright test --config playwright.demo.config.ts --project submit -g \"asks for\"",
+    "demo:submit": "playwright test --config playwright.demo.config.ts --project submit",
+    "demo:detail": "playwright test --config playwright.demo.config.ts --project detail",
+    "demo:status": "playwright test --config playwright.demo.config.ts --project status"
   },
   "dependencies": {
     "@angular-architects/module-federation": "^21.2.2",

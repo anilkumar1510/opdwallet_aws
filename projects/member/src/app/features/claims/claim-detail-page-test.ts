@@ -1,5 +1,5 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, resource, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, computed, inject, input, resource, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -9,7 +9,6 @@ import {
   RESUBMIT_MAX_FILES,
   ResubmitDocumentType,
   TpaNote,
-  toStatus,
   validateResubmitFile,
 } from '../../core/claims/claim.mapper';
 import { Claim, ClaimStatus, StatusTone } from '../../core/claims/claim.model';
@@ -19,7 +18,6 @@ import { BankDetailsStore } from '../../core/member/bank-details.store';
 import { formatMoney, money } from '../../core/domain/money';
 import { EmptyView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
-import { AppService } from '../../core/http/api.service';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -49,13 +47,6 @@ const SCENARIO_STATUS: Record<
   closed: { code: 'CLOSED', label: 'Closed', tone: 'neutral', isFinal: true, cancellable: false },
 };
 
-/**
- * Statuses a member may still withdraw from. The GET_PAGE payload carries no
- * `isCancellable` flag, so on live data it is derived from the status code —
- * only the scenario switcher supplies one of its own.
- */
-const CANCELLABLE_STATUSES = new Set(['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_REQUIRED']);
-
 /** Fraction of the bill shown as approved per scenario; null = leave unchanged. */
 const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
   live: null,
@@ -68,13 +59,6 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
   paid: 1,
   closed: null,
 };
-
-/** `PARTIALLY_VERIFIED` → `Partially verified`, for codes with no label table. */
-function humaniseCode(value: string | undefined): string {
-  if (!value) return '';
-  const spaced = value.replace(/[_-]+/g, ' ').trim().toLowerCase();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
 
 /** One claim, its documents and assessment. */
 @Component({
@@ -95,26 +79,19 @@ function humaniseCode(value: string | undefined): string {
           >
           <div class="min-w-0">
             <h1 class="text-[18px] font-medium leading-[1.2] text-white lg:text-2xl lg:font-bold lg:text-[#034DA2]">Claim Details</h1>
-            <!-- The member's reference (CLM-…). Read from the loaded payload,
-                 not the static claim resource, which is keyed by a different
-                 id and so left this line blank for every real claim. -->
-            <p class="truncate text-[12px] leading-[1.2] text-white/80 lg:text-sm lg:text-ink-500">{{ displayClaim()?.claim_id ?? claimId() }}</p>
+            <!-- The member's reference (CLM-…), never the route's Mongo _id.
+                 The route is addressed by _id because that is what the detail
+                 endpoint takes; showing it would leak a storage key. -->
+            <p class="truncate text-[12px] leading-[1.2] text-white/80 lg:text-sm lg:text-ink-500">{{ claim.value()?.reference }}</p>
           </div>
         </div>
       </header>
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
-        <!-- TEST-ONLY scenario switcher — COMMENTED OUT.
-             It overrode the loaded claim's status, amounts, timeline and notes
-             entirely on the client so any outcome could be previewed without the
-             TPA moving a real claim. The page now always shows the live record.
-             The statuses it used to fake are covered by tests/demo/claim-detail.spec.ts,
-             which drives them through the claim payload instead.
-
-              TEST-ONLY scenario switcher. Overrides the loaded claim's status,
+        <!-- TEST-ONLY scenario switcher. Overrides the loaded claim's status,
              amounts, timeline and assessor notes entirely on the client so every
              backend outcome can be previewed without the TPA moving the claim.
-             PLACEHOLDER — remove before production.     
+             PLACEHOLDER — remove before production. -->
         <div class="mb-5 rounded-2xl border-2 border-dashed border-warning-400 bg-warning-50 p-4">
           <label class="block text-xs font-semibold uppercase tracking-wide text-warning-700">
             🧪 Test scenario (frontend only — not real data)
@@ -135,36 +112,35 @@ function humaniseCode(value: string | undefined): string {
             </p>
           }
         </div>
-        -->
 
-        @if (store.claimDetailsLoading() && !displayClaim()) {
+        @if (claim.isLoading()) {
           <opd-loading label="Loading claim" />
         } @else if (displayClaim(); as detail) {
           <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="truncate text-lg font-bold text-[#0B2C63]">{{ detail.category }}</h2>
-                <p class="mt-0.5 text-sm text-ink-700">{{ detail.provider }}</p>
+                <h2 class="truncate text-lg font-bold text-[#0B2C63]">{{ detail.categoryLabel }}</h2>
+                <p class="mt-0.5 text-sm text-ink-700">{{ detail.providerName }}</p>
               </div>
-              <opd-status-badge [status]="status(detail.claim_status)" />
+              <opd-status-badge [status]="detail.status" />
             </div>
 
             <dl class="mt-5 space-y-3 border-t border-surface-border pt-4 text-sm">
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Patient</dt>
-                <dd class="font-medium text-ink-900">{{ decryptText(detail.patient_name) }}</dd>
+                <dd class="font-medium text-ink-900">{{ detail.patientName }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Claim type</dt>
-                <dd class="font-medium text-ink-900">{{ detail.claim_type }}</dd>
+                <dd class="font-medium text-ink-900">{{ detail.typeLabel }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Treatment date</dt>
-                <dd class="font-medium text-ink-900">{{ date(detail.treatment_date) }}</dd>
+                <dd class="font-medium text-ink-900">{{ date(detail.treatmentDate) }}</dd>
               </div>
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Submitted</dt>
-                <dd class="font-medium text-ink-900">{{ date(detail.submitted_at) }}</dd>
+                <dd class="font-medium text-ink-900">{{ date(detail.submittedAt) }}</dd>
               </div>
             </dl>
           </section>
@@ -174,15 +150,12 @@ function humaniseCode(value: string | undefined): string {
             <dl class="space-y-2 text-sm">
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Claimed</dt>
-                <dd class="font-medium text-ink-900">{{ money({ amount: detail.original_bill_amount, currency: 'INR'}) }}</dd>
+                <dd class="font-medium text-ink-900">{{ money(detail.billAmount) }}</dd>
               </div>
-              <!-- Presence, not truthiness: an assessed claim may well be
-                   approved for 0, and reading that as "not assessed" hid the
-                   outcome on every such claim. -->
-              @if (hasApprovedAmount(detail)) {
+              @if (detail.approvedAmount; as approved) {
                 <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
                   <dt class="font-semibold text-ink-900">Approved</dt>
-                  <dd class="text-lg font-bold text-success-700">{{ money({ amount: detail.approved_amount, currency: 'INR'}) }}</dd>
+                  <dd class="text-lg font-bold text-success-700">{{ money(approved) }}</dd>
                 </div>
               } @else {
                 <p class="border-t border-surface-border pt-2 text-xs text-ink-500">
@@ -196,18 +169,18 @@ function humaniseCode(value: string | undefined): string {
                PLACEHOLDER — the claim payload carries no payment fields yet
                (paymentStatus/paymentId/transactionId/paymentDate/
                paymentReferenceNumber/paymentMode). See PLACEHOLDER-APIS.md. -->
-          @if (isPaymentStage(detail.claim_status)) {
+          @if (isPaymentStage(detail.statusCode)) {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">Payment</h2>
               <dl class="space-y-2 text-sm">
                 <div class="flex justify-between gap-3">
                   <dt class="text-ink-700">Status</dt>
-                  <dd class="font-medium text-ink-900">{{ status(detail.claim_status).label }}</dd>
+                  <dd class="font-medium text-ink-900">{{ detail.status.label }}</dd>
                 </div>
-                @if (hasApprovedAmount(detail)) {
+                @if (detail.approvedAmount; as approved) {
                   <div class="flex justify-between gap-3">
                     <dt class="text-ink-700">Amount credited</dt>
-                    <dd class="font-medium text-success-700">{{ money({ amount: detail.approved_amount, currency: 'INR'}) }}</dd>
+                    <dd class="font-medium text-success-700">{{ money(approved) }}</dd>
                   </div>
                 }
                 <div class="flex justify-between gap-3">
@@ -231,13 +204,13 @@ function humaniseCode(value: string | undefined): string {
             </section>
           }
 
-          @if (detail?.documents && detail?.documents?.length) {
+          @if (detail.documentCount) {
             <!-- This used to be the COUNT and nothing else: "3 documents submitted
                  with this claim", beside no way to open any of them. The reference
                  lists them and links each one (claims/[id]/page.tsx:495-515). -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">
-                {{ detail?.documents?.length }} document{{ detail?.documents?.length === 1 ? '' : 's' }}
+                {{ detail.documentCount }} document{{ detail.documentCount === 1 ? '' : 's' }}
                 submitted with this claim
               </h2>
               @if (downloadError(); as error) {
@@ -246,42 +219,24 @@ function humaniseCode(value: string | undefined): string {
                 </p>
               }
               <ul class="space-y-2">
-                @for (doc of detail.documents; track docKey(doc)) {
+                @for (doc of detail.documents; track doc.fileName) {
                   <li
                     class="flex items-center justify-between gap-3 rounded-xl border border-surface-border px-3 py-2"
                   >
                     <span class="min-w-0">
-                      <span class="block text-sm font-medium text-ink-900">{{ documentTypeLabel(doc.document_type) }}</span>
-                      <span class="block truncate text-xs text-ink-500">
-                        {{ doc.originalname }}
-                        @if (fileSize(doc.filesize); as size) {
-                          &middot; {{ size }}
-                        }
-                      </span>
+                      <span class="block text-sm font-medium text-ink-900">{{ doc.label }}</span>
+                      <span class="block truncate text-xs text-ink-500">{{ doc.fileName }}</span>
                     </span>
-                    <span class="flex shrink-0 items-center gap-3">
-                      <!-- Document verification status — COMMENTED OUT.
-                           Every document comes back PENDING from the store, so the
-                           badge told the member nothing and read as though their
-                           paperwork was stuck.
-
-                      @if (doc.verification_status) {
-                        <span class="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">
-                          {{ documentStatusLabel(doc.verification_status) }}
-                        </span>
-                      }
-                      -->
-                      @if (doc.downloadPath) {
-                        <button
-                          type="button"
-                          class="text-xs font-medium text-primary-700 underline underline-offset-2 disabled:opacity-60"
-                          [disabled]="downloading() === doc.fileName"
-                          (click)="download(doc)"
-                        >
-                          {{ downloading() === doc.fileName ? 'Opening…' : 'Download' }}
-                        </button>
-                      }
-                    </span>
+                    @if (doc.downloadPath) {
+                      <button
+                        type="button"
+                        class="flex-shrink-0 text-xs font-medium text-primary-700 underline underline-offset-2 disabled:opacity-60"
+                        [disabled]="downloading() === doc.fileName"
+                        (click)="download(doc)"
+                      >
+                        {{ downloading() === doc.fileName ? 'Opening…' : 'Download' }}
+                      </button>
+                    }
                   </li>
                 }
               </ul>
@@ -334,7 +289,7 @@ function humaniseCode(value: string | undefined): string {
             }
           }
 
-          @if (detail.claim_status === 'DOCUMENTS_REQUIRED') {
+          @if (detail.statusCode === 'DOCUMENTS_REQUIRED') {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
               <h2 class="text-sm font-semibold text-ink-900">Send the documents requested</h2>
               <p class="mt-1 text-sm text-ink-700">
@@ -351,53 +306,7 @@ function humaniseCode(value: string | undefined): string {
                 </p>
               }
 
-              <!-- What is already on the claim. Sending documents replaces the
-                   whole documents array, so anything crossed off here is left
-                   out of that array and comes off the claim. -->
-              @if (detail?.documents?.length) {
-                <div class="mt-4">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                    Already on this claim
-                  </p>
-                  <ul class="mt-2 space-y-2">
-                    @for (doc of detail.documents; track docKey(doc)) {
-                      <li
-                        class="flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
-                        [class]="isRemoved(doc) ? 'border-dashed border-surface-border opacity-60' : 'border-surface-border'"
-                      >
-                        <span class="min-w-0">
-                          <span
-                            class="block text-sm font-medium text-ink-900"
-                            [class.line-through]="isRemoved(doc)"
-                            >{{ documentTypeLabel(doc.document_type) }}</span
-                          >
-                          <span class="block truncate text-xs text-ink-500">{{ doc.originalname }}</span>
-                        </span>
-                        @if (isRemoved(doc)) {
-                          <button
-                            type="button"
-                            class="shrink-0 text-xs font-medium text-primary-700 underline underline-offset-2"
-                            (click)="restoreDocument(doc)"
-                          >
-                            Undo
-                          </button>
-                        } @else {
-                          <button
-                            type="button"
-                            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg leading-none text-ink-500 hover:bg-danger-50 hover:text-danger-700"
-                            [attr.aria-label]="'Remove ' + doc.originalname"
-                            (click)="removeDocument(doc)"
-                          >
-                            &times;
-                          </button>
-                        }
-                      </li>
-                    }
-                  </ul>
-                </div>
-              }
-
-              <label class="mt-4 block">
+              <label class="mt-3 block">
                 <span class="text-sm text-ink-700">What are you sending?</span>
                 <select
                   [value]="documentType()"
@@ -416,69 +325,37 @@ function humaniseCode(value: string | undefined): string {
                   type="file"
                   multiple
                   accept="application/pdf,image/jpeg,image/png,image/webp"
-                  [disabled]="uploading() || sendingDocuments()"
                   (change)="pickFiles($event)"
                   class="mt-1 block w-full text-sm text-ink-700 file:mr-3 file:min-h-touch file:rounded-xl file:border file:border-surface-border file:bg-white file:px-4 file:text-sm file:font-semibold file:text-ink-900"
                 />
               </label>
 
-              @if (uploading()) {
-                <p class="mt-2 flex items-center gap-2 text-sm text-ink-700" role="status">
-                  <span
-                    class="h-4 w-4 animate-spin rounded-full border-2 border-brand-600 border-t-transparent"
-                    aria-hidden="true"
-                  ></span>
-                  Uploading…
-                </p>
+              @if (chosen().length > 0) {
+                <ul class="mt-2 flex flex-col gap-1">
+                  @for (file of chosen(); track file.name) {
+                    <li class="text-sm text-ink-700">{{ file.name }}</li>
+                  }
+                </ul>
               }
 
-              <!-- Uploaded to the document store but not yet attached to the
-                   claim; crossing one off here simply drops it from the array. -->
-              @if (pendingDocuments().length) {
-                <div class="mt-3">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                    Ready to send
-                  </p>
-                  <ul class="mt-2 space-y-2">
-                    @for (doc of pendingDocuments(); track doc.document_id) {
-                      <li
-                        class="flex items-center justify-between gap-3 rounded-xl border border-[#0F5FDC]/40 bg-[#F5F8FF] px-3 py-2"
-                      >
-                        <span class="min-w-0">
-                          <span class="block text-sm font-medium text-ink-900">{{ documentTypeLabel(doc.document_type) }}</span>
-                          <span class="block truncate text-xs text-ink-500">
-                            {{ doc.originalname }}
-                            @if (fileSize(doc.filesize); as size) {
-                              &middot; {{ size }}
-                            }
-                          </span>
-                        </span>
-                        <button
-                          type="button"
-                          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg leading-none text-ink-500 hover:bg-danger-50 hover:text-danger-700"
-                          [attr.aria-label]="'Remove ' + doc.originalname"
-                          (click)="removePendingDocument(doc)"
-                        >
-                          &times;
-                        </button>
-                      </li>
-                    }
-                  </ul>
-                </div>
-              }
+              <label class="mt-3 block">
+                <span class="text-sm text-ink-700">Note for the assessor (optional)</span>
+                <input
+                  type="text"
+                  [value]="resubmitNote()"
+                  (input)="resubmitNote.set($any($event.target).value)"
+                  class="mt-1 min-h-touch w-full rounded-xl border border-surface-border px-3 text-sm text-ink-900 outline-none focus:border-[#0F5FDC]"
+                />
+              </label>
 
               <button
                 type="button"
                 class="mt-4 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-60"
-                [disabled]="!canSendDocuments()"
-                (click)="sendDocuments()"
+                [disabled]="chosen().length === 0 || store.submitting()"
+                (click)="sendDocuments(detail.reference)"
               >
-                {{ sendingDocuments() ? 'Sending…' : 'Send documents' }}
+                {{ store.submitting() ? 'Sending…' : 'Send documents' }}
               </button>
-              <p class="mt-2 text-center text-xs text-ink-500">
-                {{ documentsToSend().length }} document{{ documentsToSend().length === 1 ? '' : 's' }}
-                will be on this claim after sending.
-              </p>
             </section>
           }
 
@@ -543,24 +420,15 @@ function humaniseCode(value: string | undefined): string {
     </div>
   `,
 })
-export class ClaimDetailPage {
+export class ClaimDetailPageTest {
   readonly claimId = input<string>('');
 
   protected readonly store = inject(ClaimsStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
-  private readonly appService = inject(AppService);
   protected readonly money = formatMoney;
 
-  constructor(){
-    effect(() => {
-      // Was pinned to a single hardcoded reference, so every claim in the list
-      // opened the same record. The route param is the CLM-… GET_PAGE wants.
-      const reference = this.claimId();
-      if (reference) void this.store.getClimDetails(reference);
-    });
-  }
   /** Payout-stage statuses that surface the (placeholder) Payment section. */
   private static readonly PAYMENT_STAGES = new Set([
     'PAYMENT_PENDING',
@@ -569,15 +437,17 @@ export class ClaimDetailPage {
     'PAID',
   ]);
   protected isPaymentStage(statusCode: string): boolean {
-    return ClaimDetailPage.PAYMENT_STAGES.has(statusCode);
+    return ClaimDetailPageTest.PAYMENT_STAGES.has(statusCode);
   }
 
   protected readonly confirming = signal(false);
   protected readonly downloading = signal<string | null>(null);
   protected readonly downloadError = signal<string | null>(null);
 
+  protected readonly chosen = signal<readonly File[]>([]);
   protected readonly documentTypes = RESUBMIT_DOCUMENT_TYPES;
   protected readonly documentType = signal<ResubmitDocumentType>('INVOICE');
+  protected readonly resubmitNote = signal('');
   /**
    * Kept apart from `store.submitError()`, which the withdraw block already
    * renders — one shared signal would show a resubmission failure inside the
@@ -585,201 +455,45 @@ export class ClaimDetailPage {
    */
   protected readonly resubmitError = signal<string | null>(null);
 
-  /** Uploaded to the document store, not yet written onto the claim. */
-  protected readonly pendingDocuments = signal<readonly any[]>([]);
-  /** Existing claim documents the member has crossed off. */
-  protected readonly removedDocumentKeys = signal<ReadonlySet<string>>(new Set<string>());
-  protected readonly uploading = signal(false);
-  protected readonly sendingDocuments = signal(false);
-
-  /**
-   * Identity for a document row. `document_id` is what the claim payload refers
-   * to, but the sample data shows rows that carry only a filename, so fall back
-   * rather than key every such row on `undefined` and treat them as one.
-   */
-  protected docKey(doc: any): string {
-    return String(doc?.document_id ?? doc?.id ?? doc?.originalname ?? doc?.name ?? '');
-  }
-
-  protected isRemoved(doc: any): boolean {
-    return this.removedDocumentKeys().has(this.docKey(doc));
-  }
-
-  protected removeDocument(doc: any): void {
-    const next = new Set(this.removedDocumentKeys());
-    next.add(this.docKey(doc));
-    this.removedDocumentKeys.set(next);
-  }
-
-  protected restoreDocument(doc: any): void {
-    const next = new Set(this.removedDocumentKeys());
-    next.delete(this.docKey(doc));
-    this.removedDocumentKeys.set(next);
-  }
-
-  protected removePendingDocument(doc: any): void {
-    const key = this.docKey(doc);
-    this.pendingDocuments.update((list) => list.filter((d) => this.docKey(d) !== key));
-  }
-
-  /** What the claim's `documents` array becomes: kept originals, then new uploads. */
-  protected readonly documentsToSend = computed<readonly any[]>(() => {
-    const existing: readonly any[] = this.store.claimDetails()?.documents ?? [];
-    const removed = this.removedDocumentKeys();
-    return [...existing.filter((doc) => !removed.has(this.docKey(doc))), ...this.pendingDocuments()];
-  });
-
-  /**
-   * Sending is worth doing when something has actually changed — a new upload,
-   * or an existing document crossed off — and nothing else is in flight.
-   */
-  protected readonly canSendDocuments = computed(
-    () =>
-      !this.uploading() &&
-      !this.sendingDocuments() &&
-      (this.pendingDocuments().length > 0 || this.removedDocumentKeys().size > 0),
-  );
-
-  protected documentTypeLabel(value: string | undefined): string {
-    return RESUBMIT_DOCUMENT_TYPES.find((t) => t.value === value)?.label ?? humaniseCode(value);
-  }
-
-  protected documentStatusLabel(value: string | undefined): string {
-    return humaniseCode(value);
-  }
-
-  /** `filesize` arrives as a string of bytes, and sometimes as an empty one. */
-  protected fileSize(value: string | number | undefined): string | null {
-    const bytes = Number(value);
-    if (!value || Number.isNaN(bytes) || bytes <= 0) return null;
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
   /**
    * The API caps the upload at 10 files and rejects anything that is not a PDF
    * or an image, with a message about file types that does not name the file.
    * Both are checked here so the member is told which file to change.
    */
-  /**
-   * Picks files, validates them, and uploads each one to the document store
-   * straight away. The claim itself is only updated when the member presses
-   * Send, so an upload that is then crossed off never reaches the claim.
-   */
-  protected async pickFiles(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const picked = Array.from(input.files ?? []);
-    // Let the same file be chosen again after it has been removed.
-    input.value = '';
+  protected pickFiles(event: Event): void {
+    const picked = Array.from((event.target as HTMLInputElement).files ?? []);
     this.resubmitError.set(null);
-    if (!picked.length) return;
-
-    if (picked.length + this.pendingDocuments().length > RESUBMIT_MAX_FILES) {
+    if (picked.length > RESUBMIT_MAX_FILES) {
       this.resubmitError.set(`Send up to ${RESUBMIT_MAX_FILES} files at a time.`);
+      this.chosen.set([]);
       return;
     }
     for (const file of picked) {
       const problem = validateResubmitFile(file);
       if (problem) {
         this.resubmitError.set(`${file.name}: ${problem}`);
+        this.chosen.set([]);
         return;
       }
     }
-
-    this.uploading.set(true);
-    try {
-      for (const file of picked) await this.uploadDocument(file);
-    } catch (error) {
-      console.error('Failed to upload claim document:', error);
-      this.resubmitError.set('We could not upload that file. Please try again.');
-    } finally {
-      this.uploading.set(false);
-    }
+    this.chosen.set(picked);
   }
 
-  /**
-   * Same call the new-claim form makes: multipart to the document store, which
-   * answers with the `document_id` the claim payload refers to. The XSRF token
-   * is signed over the file's bytes there, so it is read the same way here.
-   */
-  private async uploadDocument(file: File): Promise<void> {
-    const content = await new Promise<unknown>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsArrayBuffer(file);
-    });
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('fileName', file.name);
-    formData.append('action', 'add');
-
-    const encrypted = this.appService.getXsrfToken(content, true);
-    const res: any = await firstValueFrom(
-      this.http.post('/dms/api/v1/emrImage', formData, {
-        headers: new HttpHeaders()
-          .set('X-XSRF-TOKEN', String(encrypted))
-          .set('timezone', this.appService.getUserTimezone())
-          .set('current_time', this.appService.getCurrentTime())
-          .set('current_url', this.router.url)
-          .set('host_name', window.location.host),
-        responseType: 'json',
-        observe: 'response' as 'response',
-      }),
-    );
-
-    if (res?.body?.errCode !== 0) {
-      throw new Error(res?.body?.message ?? 'Upload rejected');
-    }
-    const uploaded = res.body.resource?.[0];
-    this.pendingDocuments.update((list) => [
-      ...list,
-      {
-        name: uploaded?.file_name,
-        document_id: uploaded?.document_id,
-        document_type: this.documentType(),
-        originalname: uploaded?.file_name ?? file.name,
-        verification_status: 'PENDING',
-        filetype: file.type,
-        filesize: file.size,
-      },
-    ]);
-  }
-
-  /**
-   * Writes the claim back with its new `documents` array. The API replaces the
-   * array wholesale, so it is sent as "documents kept" + "documents uploaded" —
-   * which is also what makes crossing an existing one off actually remove it.
-   */
-  protected async sendDocuments(): Promise<void> {
-    const base = this.store.claimDetails();
-    if (!base || !this.canSendDocuments()) return;
-
+  /** Business CLM-… reference, like withdraw — not the route's `_id`. */
+  protected async sendDocuments(reference: string): Promise<void> {
     this.resubmitError.set(null);
-    this.sendingDocuments.set(true);
-
-    const payload = { ...base, documents: this.documentsToSend() };
-    let encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    let params = 'resource=' + encodedResourceData;
-    params += '&application=habit-opd&action=uploadDocument';
-    // Signed over the body plus the action, exactly as the new-claim submit does.
-    encodedResourceData += '&action=uploadDocument';
-    const options = this.appService.addXsrfToken(encodedResourceData, true);
-
-    try {
-      // Relative so the dev proxy can reach the API; the new-claim form still
-      // posts an absolute URL, which only works where CORS allows it.
-      await firstValueFrom(this.http.post('habit-opd/api/v1/claim', params, options));
-      this.pendingDocuments.set([]);
-      this.removedDocumentKeys.set(new Set());
-      await this.store.getClimDetails(this.claimId());
-    } catch (error) {
-      console.error('Failed to send claim documents:', error);
-      this.resubmitError.set('We could not send those documents. Please try again.');
-    } finally {
-      this.sendingDocuments.set(false);
+    const sent = await this.store.resubmitDocuments(
+      reference,
+      this.chosen(),
+      this.documentType(),
+      this.resubmitNote(),
+    );
+    if (sent) {
+      this.chosen.set([]);
+      this.resubmitNote.set('');
+      this.claim.reload();
+    } else {
+      this.resubmitError.set(this.store.submitError());
     }
   }
 
@@ -851,31 +565,19 @@ export class ClaimDetailPage {
     return this.scenarios.find((s) => s.key === this.scenarioKey())?.label ?? '';
   }
 
-  /**
-   * The claim shown on screen — real, or patched into the chosen scenario.
-   *
-   * Every field here is the API's own snake_case. The override used to write
-   * `approvedAmount` while the template reads `approved_amount`, so the
-   * simulated figure never appeared, and it derived that figure from
-   * `base.billAmount.amount` — a shape the GET_PAGE payload does not have, so
-   * picking any approving scenario threw before it could render.
-   */
-  protected readonly displayClaim = computed<any | null>(() => {
-    const base = this.store.claimDetails()
-    if (!base) return null;
-
+  /** The claim shown on screen — real, or patched into the chosen scenario. */
+  protected readonly displayClaim = computed<Claim | null>(() => {
+    const base = this.claim.value();
     const key = this.scenarioKey();
-    if (key === 'live') {
-      return { ...base, isCancellable: CANCELLABLE_STATUSES.has(base.claim_status) };
-    }
+    if (!base || key === 'live') return base ?? null;
 
     const s = SCENARIO_STATUS[key];
     const factor = APPROVED_FACTOR[key];
-    const billed = Number(base.original_bill_amount ?? 0);
     return {
       ...base,
-      claim_status: s.code,
-      approved_amount: factor !== null ? Math.round(billed * factor) : base.approved_amount,
+      statusCode: s.code,
+      status: { label: s.label, tone: s.tone, isFinal: s.isFinal },
+      approvedAmount: factor !== null ? money(Math.round(base.billAmount.amount * factor)) : base.approvedAmount,
       isCancellable: s.cancellable,
     };
   });
@@ -939,38 +641,7 @@ export class ClaimDetailPage {
     }
   }
 
-  /**
-   * `treatment_date` and `submitted_at` arrive from GET_PAGE as epoch millis,
-   * while the timeline entries are still `Date`s — both reach this one helper,
-   * so an unusable value has to read as "Not recorded" rather than as a number.
-   */
-  protected date(value: Date | number | string | null | undefined): string {
-    if (value === null || value === undefined || value === '') return 'Not recorded';
-    const numeric = Number(value);
-    const parsed =
-      value instanceof Date ? value : new Date(Number.isNaN(numeric) ? String(value) : numeric);
-    return Number.isNaN(parsed.getTime()) ? 'Not recorded' : DATE.format(parsed);
-  }
-
-  /**
-   * Whether the claim carries an assessed amount at all.
-   *
-   * A nil check on purpose. `approved_amount` is 0 on most assessed claims in
-   * this account, and a truthiness test sent every one of them down the "Not
-   * assessed yet." branch — including claims the TPA had already approved.
-   */
-  protected hasApprovedAmount(claim: any): boolean {
-    const value = claim?.approved_amount;
-    return value !== null && value !== undefined && value !== '';
-  }
-
-  /** StatusBadge takes a ClaimStatus; the payload only carries the raw code. */
-  protected status(code: string): ClaimStatus {
-    return toStatus(code);
-  }
-
-  decryptText(encText: string){
-   return this.appService.decryptText(encText);
+  protected date(value: Date | null): string {
+    return value ? DATE.format(value) : 'Not recorded';
   }
 }
-
