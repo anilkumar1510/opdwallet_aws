@@ -10,6 +10,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4590',
     trace: 'on-first-retry',
+    headless: false,
   },
   projects: [
     {
@@ -22,6 +23,5 @@ export default defineConfig({
     url: 'http://localhost:4590',
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
-    reuseExistingServer: true,
   },
 });
