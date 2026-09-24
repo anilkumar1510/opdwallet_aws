@@ -10,7 +10,8 @@ module.exports = {
     // exactly this — just wasn't wired through before.
     publicPath: process.env.OPD_WALLET_PUBLIC_PATH
       ? `${process.env.OPD_WALLET_PUBLIC_PATH}/`
-      : "auto",
+      : "https://opd-wallet.habithealth.com",
+      // : "auto",
   },
   optimization: {
     runtimeChunk: false,
