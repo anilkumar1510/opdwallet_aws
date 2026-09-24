@@ -12,7 +12,9 @@ import {
   toStatus,
   CLAIMS_API,
   CLAIM_CATEGORY_VALUESET_ARG,
+  CLAIM_ACTION_REASON_VALUESET_ARG,
   toClaimCategoryFromValueset,
+  toClaimActionReason,
   ValuesetEntryDto,
 } from './claim.mapper';
 import { Claim, ClaimsSummary } from './claim.model';
@@ -98,9 +100,13 @@ export class ClaimsStore {
   private readonly _claimDetails = signal<any | null>(null);
   private readonly _getClimDetails = signal(false);
 
+  private readonly _actionReasons = signal<ReadonlyMap<string, string>>(new Map());
+  private readonly _actionReasonsLoading = signal(false);
+
   readonly dashboardLoading = this._dashboardLoading.asReadonly();
   /** True while GET_PAGE for a single claim is in flight. */
   readonly claimDetailsLoading = this._getClimDetails.asReadonly();
+  readonly actionReasonsLoading = this._actionReasonsLoading.asReadonly();
 
   constructor(private appService: AppService){
 
@@ -161,6 +167,37 @@ export class ClaimsStore {
       console.error('Failed to load claim categories:', error);
       return STATIC_CLAIM_CATEGORIES;
     }
+  }
+
+  /**
+   * Fetch the claim-action-reason valueset once and cache the code→display map.
+   * Safe to call repeatedly — the second call resolves immediately.
+   */
+  async loadActionReasons(): Promise<void> {
+    if (this._actionReasons().size > 0 || this._actionReasonsLoading()) return;
+    this._actionReasonsLoading.set(true);
+    try {
+      const res = await this.appService
+        .getcall('valueset', 'system-management', CLAIM_ACTION_REASON_VALUESET_ARG)
+        .toPromise();
+      const rows: ValuesetEntryDto[] = JSON.parse(res)?.resource ?? [];
+      const map = new Map<string, string>();
+      for (const entry of rows) {
+        const mapped = toClaimActionReason(entry);
+        if (mapped.code) map.set(mapped.code, mapped.display);
+      }
+      this._actionReasons.set(map);
+    } catch (error) {
+      console.error('Failed to load claim action reasons:', error);
+    } finally {
+      this._actionReasonsLoading.set(false);
+    }
+  }
+
+  /** Resolve a reason code to its display name, falling back to the raw code. */
+  getActionReasonDisplay(code: string | undefined): string {
+    if (!code) return '';
+    return this._actionReasons().get(code) ?? code;
   }
 
   async claimById(claimId: string): Promise<Claim | null> {

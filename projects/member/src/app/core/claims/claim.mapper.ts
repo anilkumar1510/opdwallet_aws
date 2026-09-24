@@ -196,6 +196,9 @@ export interface ValuesetEntryDto {
 export const CLAIM_CATEGORY_VALUESET_ARG =
   'queryId=get_valueset_by_id_flat&args=resourceId:claim_category,system:karexpert,noCount:0&application=system-management';
 
+export const CLAIM_ACTION_REASON_VALUESET_ARG =
+  'queryId=get_valueset_by_id_flat&args=resourceId:claim_action_reason,system:karexpert,noCount:0&application=system-management';
+
 export function toClaimCategoryFromValueset(entry: ValuesetEntryDto): ClaimCategory {
   const code = entry.code?.trim() ?? '';
   return {
@@ -207,6 +210,19 @@ export function toClaimCategoryFromValueset(entry: ValuesetEntryDto): ClaimCateg
     copayValue: null,
     perTransactionLimit: null,
     isPlaceholder: false,
+  };
+}
+
+export interface ClaimActionReason {
+  readonly code: string;
+  readonly display: string;
+}
+
+export function toClaimActionReason(entry: ValuesetEntryDto): ClaimActionReason {
+  const code = entry.code?.trim() ?? '';
+  return {
+    code,
+    display: entry.display?.trim() || humanise(code, code),
   };
 }
 

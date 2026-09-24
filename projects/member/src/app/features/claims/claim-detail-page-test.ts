@@ -292,10 +292,14 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
           @if (detail.statusCode === 'DOCUMENTS_REQUIRED') {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
               <h2 class="text-sm font-semibold text-ink-900">Send the documents requested</h2>
-              <p class="mt-1 text-sm text-ink-700">
-                The assessor needs more before this claim can be settled. Attach what they asked
-                for and it goes back for assessment.
-              </p>
+              @if (actionReason(detail); as reason) {
+                <p class="mt-1 text-sm text-ink-700">{{ reason }}</p>
+              } @else {
+                <p class="mt-1 text-sm text-ink-700">
+                  The assessor needs more before this claim can be settled. Attach what they asked
+                  for and it goes back for assessment.
+                </p>
+              }
 
               @if (resubmitError(); as error) {
                 <p
@@ -573,12 +577,18 @@ export class ClaimDetailPageTest {
 
     const s = SCENARIO_STATUS[key];
     const factor = APPROVED_FACTOR[key];
+    const reason = key === 'docs'
+      ? 'AMOUNT_ABOVE_THE_NETWORK_TARIFF'
+      : key === 'rejected'
+        ? 'AMOUNT_ABOVE_THE_NETWORK_TARIFF'
+        : undefined;
     return {
       ...base,
       statusCode: s.code,
       status: { label: s.label, tone: s.tone, isFinal: s.isFinal },
       approvedAmount: factor !== null ? money(Math.round(base.billAmount.amount * factor)) : base.approvedAmount,
       isCancellable: s.cancellable,
+      claim_action_reason: reason,
     };
   });
 
@@ -643,5 +653,13 @@ export class ClaimDetailPageTest {
 
   protected date(value: Date | null): string {
     return value ? DATE.format(value) : 'Not recorded';
+  }
+
+  protected actionReason(claim: any): string {
+    const status = claim?.statusCode;
+    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return '';
+    const reason = claim?.claim_action_reason;
+    if (typeof reason !== 'string') return '';
+    return this.store.getActionReasonDisplay(reason.trim());
   }
 }

@@ -104,17 +104,6 @@ function humaniseCode(value: string | undefined): string {
       </header>
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
-        <!-- TEST-ONLY scenario switcher — COMMENTED OUT.
-             It overrode the loaded claim's status, amounts, timeline and notes
-             entirely on the client so any outcome could be previewed without the
-             TPA moving a real claim. The page now always shows the live record.
-             The statuses it used to fake are covered by tests/demo/claim-detail.spec.ts,
-             which drives them through the claim payload instead.
-
-              TEST-ONLY scenario switcher. Overrides the loaded claim's status,
-             amounts, timeline and assessor notes entirely on the client so every
-             backend outcome can be previewed without the TPA moving the claim.
-             PLACEHOLDER — remove before production.     
         <div class="mb-5 rounded-2xl border-2 border-dashed border-warning-400 bg-warning-50 p-4">
           <label class="block text-xs font-semibold uppercase tracking-wide text-warning-700">
             🧪 Test scenario (frontend only — not real data)
@@ -135,7 +124,6 @@ function humaniseCode(value: string | undefined): string {
             </p>
           }
         </div>
-        -->
 
         @if (store.claimDetailsLoading() && !displayClaim()) {
           <opd-loading label="Loading claim" />
@@ -169,16 +157,17 @@ function humaniseCode(value: string | undefined): string {
             </dl>
           </section>
 
-          <!-- Why a rejected claim was rejected. Placed directly under the
+          <!-- Why the claim needs attention. Placed directly under the
                summary because it is the first thing a member wants when they
-               see Rejected, not something to hunt for below the amounts. -->
-          @if (rejectionReason(detail); as reason) {
+               see Rejected or Documents required, not something to hunt for
+               below the amounts. -->
+          @if (actionReason(detail); as reason) {
             <section
               class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
               role="alert"
             >
               <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
-                Why this claim was rejected
+                {{ actionReasonHeading(detail) }}
               </h2>
               <p class="text-sm text-ink-900">{{ reason }}</p>
             </section>
@@ -349,13 +338,17 @@ function humaniseCode(value: string | undefined): string {
             }
           }
 
-          @if (detail.claim_status === 'DOCUMENTS_REQUIRED') {
-            <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
-              <h2 class="text-sm font-semibold text-ink-900">Send the documents requested</h2>
-              <p class="mt-1 text-sm text-ink-700">
-                The assessor needs more before this claim can be settled. Attach what they asked
-                for and it goes back for assessment.
-              </p>
+           @if (detail.claim_status === 'DOCUMENTS_REQUIRED') {
+             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
+               <h2 class="text-sm font-semibold text-ink-900">Send the documents requested</h2>
+               @if (actionReason(detail); as reason) {
+                 <p class="mt-1 text-sm text-ink-700">{{ reason }}</p>
+               } @else {
+                 <p class="mt-1 text-sm text-ink-700">
+                   The assessor needs more before this claim can be settled. Attach what they asked
+                   for and it goes back for assessment.
+                 </p>
+               }
 
               @if (resubmitError(); as error) {
                 <p
@@ -573,7 +566,10 @@ export class ClaimDetailPage {
       // Was pinned to a single hardcoded reference, so every claim in the list
       // opened the same record. The route param is the CLM-… GET_PAGE wants.
       const reference = this.claimId();
-      if (reference) void this.store.getClimDetails(reference);
+      if (reference) {
+        void this.store.getClimDetails(reference);
+        void this.store.loadActionReasons();
+      }
     });
   }
   /** Payout-stage statuses that surface the (placeholder) Payment section. */
@@ -981,17 +977,23 @@ export class ClaimDetailPage {
   }
 
   /**
-   * The assessor's reason for rejecting, from `claim_action_reason`.
+   * The assessor's reason for the current status, from `claim_action_reason`.
    *
    * Returns '' for anything that is not a rejected claim with a reason on it,
    * so the block stays away rather than showing an empty red panel. The field
    * is absent from the payload today — the section appears the moment the API
    * starts sending it, and nothing changes here.
    */
-  protected rejectionReason(claim: any): string {
-    if (claim?.claim_status !== 'REJECTED') return '';
+  protected actionReason(claim: any): string {
+    const status = claim?.claim_status;
+    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return '';
     const reason = claim?.claim_action_reason;
-    return typeof reason === 'string' ? reason.trim() : '';
+    if (typeof reason !== 'string') return '';
+    return this.store.getActionReasonDisplay(reason.trim());
+  }
+
+  protected actionReasonHeading(claim: any): string {
+    return claim?.claim_status === 'REJECTED' ? 'Why this claim was rejected' : 'Documents needed';
   }
 
   /** StatusBadge takes a ClaimStatus; the payload only carries the raw code. */
