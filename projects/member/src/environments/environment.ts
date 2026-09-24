@@ -21,5 +21,5 @@ export const environment = {
    */
   agoraAppId: '',
   applicationURL: 'habithealth.com',
-  OPD_WALLET_PUBLIC_PATH: 'https://xyz-opd-wallet.habithealth.com'
+  OPD_WALLET_PUBLIC_PATH: 'https://opd-wallet.habithealth.com'
 } as const;
