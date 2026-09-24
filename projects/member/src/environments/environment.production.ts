@@ -15,5 +15,6 @@ export const environment = {
    * spinning on a connection that cannot succeed.
    */
   agoraAppId: '',
-  applicationURL: 'habithealth.com'
+  applicationURL: 'habithealth.com',
+  OPD_WALLET_PUBLIC_PATH: 'https://opd-wallet.habithealth.com'
 } as const;
