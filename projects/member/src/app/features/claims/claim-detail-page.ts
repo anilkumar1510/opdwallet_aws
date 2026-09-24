@@ -169,6 +169,21 @@ function humaniseCode(value: string | undefined): string {
             </dl>
           </section>
 
+          <!-- Why a rejected claim was rejected. Placed directly under the
+               summary because it is the first thing a member wants when they
+               see Rejected, not something to hunt for below the amounts. -->
+          @if (rejectionReason(detail); as reason) {
+            <section
+              class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
+              role="alert"
+            >
+              <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
+                Why this claim was rejected
+              </h2>
+              <p class="text-sm text-ink-900">{{ reason }}</p>
+            </section>
+          }
+
           <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">Amount</h2>
             <dl class="space-y-2 text-sm">
@@ -963,6 +978,20 @@ export class ClaimDetailPage {
   protected hasApprovedAmount(claim: any): boolean {
     const value = claim?.approved_amount;
     return value !== null && value !== undefined && value !== '';
+  }
+
+  /**
+   * The assessor's reason for rejecting, from `claim_action_reason`.
+   *
+   * Returns '' for anything that is not a rejected claim with a reason on it,
+   * so the block stays away rather than showing an empty red panel. The field
+   * is absent from the payload today — the section appears the moment the API
+   * starts sending it, and nothing changes here.
+   */
+  protected rejectionReason(claim: any): string {
+    if (claim?.claim_status !== 'REJECTED') return '';
+    const reason = claim?.claim_action_reason;
+    return typeof reason === 'string' ? reason.trim() : '';
   }
 
   /** StatusBadge takes a ClaimStatus; the payload only carries the raw code. */
