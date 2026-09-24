@@ -12,7 +12,9 @@ module.exports = {
     // isn't. Both branches are normalized to end in exactly one "/", since
     // webpack's chunk loader concatenates this directly with the chunk
     // filename with no separator of its own.
-    publicPath: `${(process.env.OPD_WALLET_PUBLIC_PATH || "https://opd-wallet.habithealth.com").replace(/\/+$/, "")}/`,
+    publicPath: process.env.OPD_WALLET_PUBLIC_PATH
+      ? `${process.env.OPD_WALLET_PUBLIC_PATH}/`
+      : "auto",
   },
   optimization: {
     runtimeChunk: false,
