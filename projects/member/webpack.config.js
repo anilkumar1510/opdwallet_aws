@@ -6,12 +6,13 @@ module.exports = {
     // "auto" makes webpack emit a runtime that resolves the public path from
     // `import.meta.url`, which is a syntax error when remoteEntry.js is
     // loaded via a plain <script> tag (as the host does) instead of as an ES
-    // module. OPD_WALLET_PUBLIC_PATH is already set by `npm start` for
-    // exactly this — just wasn't wired through before.
-    publicPath: process.env.OPD_WALLET_PUBLIC_PATH
-      ? `${process.env.OPD_WALLET_PUBLIC_PATH}/`
-      : "https://opd-wallet.habithealth.com",
-      // : "auto",
+    // module, so it can't be used here. OPD_WALLET_PUBLIC_PATH is set by
+    // `npm start` for local dev and should be set by CI/CD for deployed
+    // builds; the literal below is only a safety net for builds where it
+    // isn't. Both branches are normalized to end in exactly one "/", since
+    // webpack's chunk loader concatenates this directly with the chunk
+    // filename with no separator of its own.
+    publicPath: `${(process.env.OPD_WALLET_PUBLIC_PATH || "https://opd-wallet.habithealth.com").replace(/\/+$/, "")}/`,
   },
   optimization: {
     runtimeChunk: false,
