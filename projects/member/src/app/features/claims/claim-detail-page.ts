@@ -566,6 +566,7 @@ export class ClaimDetailPage {
     'PAYMENT_PENDING',
     'PAYMENT_PROCESSING',
     'PAYMENT_COMPLETED',
+    'PAYMENT_DONE',
     'PAID',
   ]);
   protected isPaymentStage(statusCode: string): boolean {

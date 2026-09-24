@@ -53,6 +53,20 @@ export async function createSessionManager(
   return manager;
 }
 
+export async function injectSessionCookie(page: Page): Promise<void> {
+  const sessionId = process.env.SESSION_ID;
+  if (sessionId) {
+    await page.context().addCookies([{
+      name: 'session_id',
+      value: sessionId,
+      domain: 'localhost',
+      path: '/',
+      httpOnly: true,
+      secure: false
+    }]);
+  }
+}
+
 export async function loginWithCredentials(
   page: Page,
   email: string,

@@ -322,6 +322,7 @@ const STATUSES: Readonly<Record<string, ClaimStatus>> = {
   PAYMENT_PENDING: { label: 'Payment pending', tone: 'progress', isFinal: false },
   PAYMENT_PROCESSING: { label: 'Payment processing', tone: 'progress', isFinal: false },
   PAYMENT_COMPLETED: { label: 'Paid', tone: 'positive', isFinal: true },
+  PAYMENT_DONE: { label: 'Payment done', tone: 'positive', isFinal: true },
   PAID: { label: 'Paid', tone: 'positive', isFinal: true },
   REJECTED: { label: 'Rejected', tone: 'negative', isFinal: true },
   CLOSED: { label: 'Closed', tone: 'neutral', isFinal: true },
@@ -357,6 +358,7 @@ const NON_CANCELLABLE: readonly string[] = [
   'PAYMENT_PENDING',
   'PAYMENT_PROCESSING',
   'PAYMENT_COMPLETED',
+  'PAYMENT_DONE',
   'PAID',
 ];
 

@@ -110,7 +110,7 @@ export class ClaimsStore {
     const by = (code: string) => all.filter((c) => c.statusCode === code).length;
     return {
       total: all.length,
-      approved: by('APPROVED') + by('PARTIALLY_APPROVED') + by('PAID'),
+      approved: by('APPROVED') + by('PARTIALLY_APPROVED') + by('PAID') + by('PAYMENT_DONE'),
       inProgress: by('SUBMITTED') + by('UNDER_REVIEW') + by('DRAFT') + by('DOCUMENTS_REQUIRED'),
       rejected: by('REJECTED'),
       claimedAmount: money(all.reduce((s, c) => s + c.billAmount.amount, 0)),
