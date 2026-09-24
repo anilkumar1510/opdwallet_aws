@@ -47,6 +47,7 @@ export interface Claim {
    * cancellable, so a new status does not silently trap a claim.
    */
   readonly isCancellable: boolean;
+  readonly claim_action_reason?: string;
 }
 
 export interface ClaimsSummary {
