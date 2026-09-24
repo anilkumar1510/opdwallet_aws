@@ -76,7 +76,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
     updatedUrl.startsWith('/assets/');
 
   // Proxy mode must ONLY be enabled for:
-  // http://localhost:4500
+  // http://localhost:4590
   //
   // Any other host/port uses environment.apiBaseUrl.
   const isLocalProxyMode = (() => {
@@ -91,12 +91,12 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
       hostname === '127.0.0.1' ||
       hostname === '0.0.0.0';
 
-    return isLocalHostName && String(port) === '4500';
+    return isLocalHostName && String(port) === '4590';
   })();
 
   // 1) Relative URLs
   //
-  // localhost:4500:
+  // localhost:4590:
   //   Keep relative → dev/SSR proxy handles it.
   //
   // Other environments:
@@ -116,14 +116,14 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
     } else {
       if (isBrowser) {
         console.log(
-          'Keeping relative URL (localhost:4500 proxy mode):',
+          'Keeping relative URL (localhost:4590 proxy mode):',
           updatedUrl
         );
       }
     }
   }
 
-  // 2) Absolute API URLs on localhost:4500
+  // 2) Absolute API URLs on localhost:4590
   //
   // Rewrite them to relative URLs so they go through
   // the local proxy.
@@ -136,7 +136,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
           `${reqUrl.pathname}${reqUrl.search}${reqUrl.hash}`;
 
         console.log(
-          'Rewriting API absolute URL to relative (localhost:4500 proxy mode):',
+          'Rewriting API absolute URL to relative (localhost:4590 proxy mode):',
           updatedUrl
         );
       }

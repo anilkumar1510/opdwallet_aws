@@ -138,7 +138,7 @@
         "serve": {
           "builder": "@angular-builders/custom-webpack:dev-server",
           "options": {
-            "port": 4500,
+            "port": 4590,
             "host": "0.0.0.0",
             "proxyConfig": "proxy.conf.json"
           },
@@ -164,7 +164,7 @@
 						"buildTarget": "member:build:development",
 						"host": "0.0.0.0",
 						"proxyConfig": "proxy.conf.json",
-						"port": 4500
+						"port": 4590
 					},
 					"configurations": {
 						"development": {

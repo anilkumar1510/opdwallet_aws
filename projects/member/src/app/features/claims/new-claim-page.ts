@@ -376,7 +376,7 @@ const STEPS = [
               <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A]" (click)="back()">Back</button>
             }
             <button type="submit" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit()">
-              {{ step() < 3 ? 'Continue' : (store.submitting() ? 'Submitting…' : 'Submit claim') }}
+              {{ step() < 3 ? 'Continue' : (submitting() ? 'Submitting…' : 'Submit claim') }}
             </button>
             @if (step() === 1) {
               <a routerLink="/member/claims" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A]">Cancel</a>
@@ -385,6 +385,23 @@ const STEPS = [
         </form>
       </div>
     </div>
+
+    <!-- Blocks the form for the whole submit round trip, so the member cannot
+         edit or re-submit a claim that is already on its way to the API. -->
+    @if (submitting()) {
+      <div
+        class="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-white/85 backdrop-blur-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <div
+          class="h-10 w-10 animate-spin rounded-full border-4 border-brand-600 border-t-transparent"
+          aria-hidden="true"
+        ></div>
+        <p class="text-sm font-medium text-ink-700">Submitting your claim…</p>
+        <p class="text-xs text-ink-500">Please don't close this page.</p>
+      </div>
+    }
   `,
 })
 export class NewClaimPage {
@@ -396,6 +413,14 @@ export class NewClaimPage {
   protected readonly steps = STEPS;
   protected readonly step = signal<1 | 2 | 3>(1);
   protected readonly problem = signal<string | null>(null);
+
+  /**
+   * Covers the whole submit round trip — the POST to `claim` and the navigation
+   * that follows it. `store.submitting()` only spans the in-memory record and is
+   * already back to false while the network call is still in flight, which left
+   * the member on a still, unchanged form with no sign anything was happening.
+   */
+  protected readonly submitting = signal(false);
 
   protected readonly categories = signal<readonly ClaimCategory[]>([]);
   protected readonly categoriesLoading = signal(false);
@@ -566,7 +591,7 @@ export class NewClaimPage {
   });
 
   /** In-flight guard only; step completeness is checked on Continue / Submit. */
-  protected readonly canSubmit = computed(() => !this.store.submitting());
+  protected readonly canSubmit = computed(() => !this.store.submitting() && !this.submitting());
 
   // ── Step validation ────────────────────────────────────────────────────
 
@@ -849,6 +874,10 @@ export class NewClaimPage {
     const patient = this.family.family().find((member) => member.id === this.patientId());
     if (!patient) return;
 
+    // From here on the claim is genuinely on its way out, so show the loader
+    // until either the navigation happens or the POST reports a failure.
+    this.submitting.set(true);
+
     if (!this.bank.hasDetails()) {
       const cheque = this.chequeFile();
       // TODO(API): the cheque FILE must be uploaded — only its name is kept.
@@ -924,21 +953,40 @@ export class NewClaimPage {
       // ]
     }
 
-    this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'submit')
+    try {
+      this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'submit')
+    } catch (err) {
+      // A throw before the request is even issued would otherwise strand the
+      // overlay, since only the subscribe callbacks clear it.
+      console.error('Failed to submit claim:', err);
+      this.submitting.set(false);
+      this.problem.set('We could not submit your claim. Please check your details and try again.');
+    }
     // if (createdId === null) return;
     // await this.router.navigate(['/member/claims', createdId]);
   }
 
   createNewClaimsSubmit(payload: any, resource: string, application: string, action: string):any{
-    const url = "/"+application+"/api/v1/"+resource;
+    const url = "https://api.habithealth.com/"+application+"/api/v1/"+resource;
     var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     var params = "resource=" + encodedResourceData;
     params += "&application=" + application + "&action=" + action;
     encodedResourceData += "&action=" + action
     var options = this.appService.addXsrfToken(encodedResourceData, true);
     // var encrypted = this.appService.getXsrfToken(payload, true);
-    return  this._http.post(url, params, options).subscribe(async()=>{
-      await this.router.navigate(['/member/claims']);
+    return  this._http.post(url, params, options).subscribe({
+      next: async () => {
+        // The loader stays up across the navigation so the form is never shown
+        // again in a submitted state; the destroyed component drops it with the view.
+        await this.router.navigate(['/member/claims']);
+        this.submitting.set(false);
+      },
+      // Without this the overlay would block the page forever on a failed POST.
+      error: (err) => {
+        console.error('Failed to submit claim:', err);
+        this.submitting.set(false);
+        this.problem.set('We could not submit your claim. Please check your details and try again.');
+      },
     })
 
   }

@@ -8,8 +8,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? 'html' : 'list',
   use: {
-    baseURL: 'http://localhost:4500',
+    baseURL: 'http://localhost:4590',
     trace: 'on-first-retry',
+    headless: false,
   },
   projects: [
     {
@@ -19,9 +20,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run start',
-    url: 'http://localhost:4500',
+    url: 'http://localhost:4590',
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
-    reuseExistingServer: true,
   },
 });

@@ -1,6 +1,4 @@
-@config './tailwind.config.js';
 @import 'tailwindcss';
-
 
 /* Design tokens copied from web-member/tailwind.config.ts.
    Copied, not imported: web-member is read-only reference and must not become

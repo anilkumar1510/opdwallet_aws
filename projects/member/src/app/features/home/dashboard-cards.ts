@@ -5,7 +5,6 @@ import { Money, formatCompact, formatMoney } from '../../core/domain/money';
 import { Policy } from '../../core/member/policy';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { Icon } from '../../shared/ui/icon';
-import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
 
 /** Plain grouped digits, no symbol — the reference prints ₹ separately. */
 const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
@@ -74,7 +73,7 @@ export class PolicyCard {
 @Component({
   selector: 'opd-wallet-balance-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RemoteAssetPipe],
+  imports: [RouterLink],
   template: `
     <div>
       <!-- No heading above the card. The supplied design goes straight from the
@@ -152,7 +151,7 @@ export class PolicyCard {
           aria-hidden="true"
         >
           <img
-            [src]="'images/icons/wallet-illustration.svg' | remoteAsset"
+            src="images/icons/wallet-illustration.svg"
             alt=""
             width="95"
             height="54"
@@ -161,7 +160,7 @@ export class PolicyCard {
             [style.width.px]="preferBlue() ? 185 : null"
           />
           <img
-            [src]="'images/icons/sparkle-1.svg' | remoteAsset"
+            src="images/icons/sparkle-1.svg"
             alt=""
             class="absolute left-0 top-0 h-3 w-3"
             [style.left.px]="preferBlue() ? 0 : null"
@@ -170,7 +169,7 @@ export class PolicyCard {
             [style.width.px]="preferBlue() ? 22 : null"
           />
           <img
-            [src]="'images/icons/sparkle-2.svg' | remoteAsset"
+            src="images/icons/sparkle-2.svg"
             alt=""
             class="absolute left-[17px] top-[3px] h-[7px] w-[7px]"
             [style.left.px]="preferBlue() ? 34 : null"
@@ -179,7 +178,7 @@ export class PolicyCard {
             [style.width.px]="preferBlue() ? 13 : null"
           />
           <img
-            [src]="'images/icons/sparkle-3.svg' | remoteAsset"
+            src="images/icons/sparkle-3.svg"
             alt=""
             class="absolute left-[5px] top-[18px] h-[11px] w-[11px]"
             [style.left.px]="preferBlue() ? 9 : null"
@@ -325,7 +324,7 @@ export interface LinkTile {
 @Component({
   selector: 'opd-quick-links',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RemoteAssetPipe],
+  imports: [RouterLink],
   template: `
     <section>
       <h2 class="mb-4 text-[18px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-3 lg:text-xl">
@@ -348,7 +347,7 @@ export interface LinkTile {
             @if (link.artSrc) {
               <!-- The illustration draws its own disc, so no circle behind it. -->
               <img
-                [src]="link.artSrc | remoteAsset"
+                [src]="link.artSrc"
                 alt=""
                 width="56"
                 height="56"
@@ -360,7 +359,7 @@ export interface LinkTile {
                 style="background: linear-gradient(180deg,#CDDDFE 0%,#E4EBFE 100%); border: 1px solid #A4BFFE7A"
               >
                 <img
-                  [src]="link.iconSrc | remoteAsset"
+                  [src]="link.iconSrc"
                   alt=""
                   width="28"
                   height="28"
@@ -384,7 +383,7 @@ export class QuickLinks {
 @Component({
   selector: 'opd-more-services',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RemoteAssetPipe],
+  imports: [RouterLink],
   template: `
     <section>
       <h2 class="mb-4 text-[18px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-3 lg:text-xl">
@@ -400,7 +399,7 @@ export class QuickLinks {
             class="flex h-[52px] shrink-0 items-center gap-3.5 rounded-2xl bg-white px-3.5 transition-all duration-200 lg:h-[60px] lg:flex-1 lg:justify-center lg:gap-3 lg:rounded-full lg:border-[1.5px] lg:border-[#E5E7EB] lg:px-5 lg:shadow-sm lg:hover:border-[#0F5FDC]"
           >
             <img
-              [src]="service.iconSrc | remoteAsset"
+              [src]="service.iconSrc"
               alt=""
               width="24"
               height="24"
@@ -410,7 +409,7 @@ export class QuickLinks {
               class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full lg:flex"
               style="background: linear-gradient(180deg,#CDDDFE 0%,#E4EBFE 100%); border: 1px solid #A4BFFE7A"
             >
-              <img [src]="service.iconSrc | remoteAsset" alt="" width="24" height="24" class="object-contain" />
+              <img [src]="service.iconSrc" alt="" width="24" height="24" class="object-contain" />
             </span>
             <span
               class="whitespace-nowrap text-[16px] text-[#1c1c1c] lg:text-base lg:font-medium lg:text-[#1c1c1c]"
