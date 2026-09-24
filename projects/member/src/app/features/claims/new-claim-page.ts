@@ -797,6 +797,7 @@ export class NewClaimPage {
   selectedFiles: Array<any> = [];
   fileData: any;
   uploadOPDDocument(file: any, fileName: any, action: any, fileContent: any, kind: any, chosen: any){
+    // const url = "/dms/api/v1/opd_document";
     const url = "/dms/api/v1/emrImage";
     const formData = new FormData();
     const reader = new FileReader();
@@ -966,7 +967,7 @@ export class NewClaimPage {
   }
 
   createNewClaimsSubmit(payload: any, resource: string, application: string, action: string):any{
-    const url = "https://api.habithealth.com/"+application+"/api/v1/"+resource;
+    const url = "/"+application+"/api/v1/"+resource;
     var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     var params = "resource=" + encodedResourceData;
     params += "&application=" + application + "&action=" + action;

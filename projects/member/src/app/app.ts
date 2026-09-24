@@ -5,6 +5,6 @@ import { RouterOutlet } from '@angular/router';
   selector: 'opd-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet],
-  template: '<router-outlet />',
+  template: '<div id="opd-wallet-root"><router-outlet /></div>',
 })
 export class App {}
