@@ -107,3 +107,8 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+#opd-wallet-root header{
+    height: auto !important;
+    background-color: none !important;
+    display: block !important;
+}
