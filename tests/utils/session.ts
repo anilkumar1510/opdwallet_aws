@@ -30,7 +30,7 @@ export class SessionManager {
   }
 
   async hasValidSession(): Promise<boolean> {
-    const cookies = this.context.cookies();
+    const cookies = await this.context.cookies();
     return cookies.some(c => c.name === 'session_id');
   }
 
