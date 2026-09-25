@@ -14,6 +14,9 @@ test.describe('New claim', () => {
       }]);
     }
     
+    // Clear persisted payout-bank placeholder so each test starts clean.
+    await page.evaluate(() => localStorage.removeItem('opd.bankDetails.placeholder'));
+
     await page.goto('/member/claims/new');
     await page.getByRole('heading', { name: 'New Claim' }).waitFor({ timeout: 10000 });
     

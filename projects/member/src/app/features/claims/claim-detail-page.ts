@@ -104,34 +104,13 @@ function humaniseCode(value: string | undefined): string {
       </header>
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
-        <div class="mb-5 rounded-2xl border-2 border-dashed border-warning-400 bg-warning-50 p-4">
-          <label class="block text-xs font-semibold uppercase tracking-wide text-warning-700">
-            🧪 Test scenario (frontend only — not real data)
-          </label>
-          <select
-            class="mt-2 min-h-touch w-full rounded-xl border border-warning-400 bg-white px-3 text-sm text-ink-900 outline-none"
-            [value]="scenarioKey()"
-            (change)="scenarioKey.set($any($event.target).value)"
-          >
-            @for (s of scenarios; track s.key) {
-              <option [value]="s.key">{{ s.label }}</option>
-            }
-          </select>
-          @if (scenarioKey() !== 'live') {
-            <p class="mt-2 text-xs text-warning-700">
-              Showing a simulated “{{ currentScenarioLabel() }}” outcome. Actions here still call the
-              real API and may fail — this is for previewing the UI only.
-            </p>
-          }
-        </div>
-
         @if (store.claimDetailsLoading() && !displayClaim()) {
           <opd-loading label="Loading claim" />
         } @else if (displayClaim(); as detail) {
           <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="truncate text-lg font-bold text-[#0B2C63]">{{ detail.category }}</h2>
+                <h2 class="truncate text-lg font-bold text-[#0B2C63]">{{ store.getCategoryDisplay(detail.category) }}</h2>
                 <p class="mt-0.5 text-sm text-ink-700">{{ detail.provider }}</p>
               </div>
               <opd-status-badge [status]="status(detail.claim_status)" />
@@ -569,6 +548,7 @@ export class ClaimDetailPage {
       if (reference) {
         void this.store.getClimDetails(reference);
         void this.store.loadActionReasons();
+        void this.store.loadCategoryLabels();
       }
     });
   }

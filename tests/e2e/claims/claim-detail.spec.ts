@@ -27,6 +27,7 @@ test.describe('Claim detail', () => {
   test('cancel flow withdraws a cancellable claim', async ({ page }) => {
     await page.goto('/member/claims/CLM-2026-0009');
     await page.getByRole('heading', { name: 'Claim Details' }).waitFor();
+    await page.getByRole('status', { name: 'Loading claim' }).waitFor({ state: 'detached' });
 
     await page.getByRole('button', { name: 'Cancel this claim' }).click();
     await page.getByRole('button', { name: 'Yes, withdraw it' }).click();
