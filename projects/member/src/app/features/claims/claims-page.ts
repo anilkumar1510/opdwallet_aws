@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Claim } from '../../core/claims/claim.model';
@@ -11,6 +11,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { AppService } from '../../core/http/api.service';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const CLAIMS_PAGE_SIZE = 5;
 
 @Component({
   selector: 'opd-claims-page',
@@ -84,7 +85,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 
         @if (store.clailListData() && store.clailListData().length) {
           <ul class="mt-6 space-y-3">
-            @for (claim of store.clailListData(); track claim.id) {
+            @for (claim of visibleClaims(); track claim.id) {
               <li
                 class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
                 style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
@@ -118,6 +119,16 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
               </li>
             }
           </ul>
+
+          @if (hasMore()) {
+            <button
+              type="button"
+              class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700"
+              (click)="loadMore()"
+            >
+              Load more
+            </button>
+          }
         } @else {
           <opd-empty
             title="No claims yet"
@@ -176,6 +187,20 @@ export class ClaimsPage {
   pageNo: number = 0;
   pageSize: number = 20
   public claimList: any;
+
+  /** Claims are revealed CLAIMS_PAGE_SIZE at a time; "Load more" shows the next batch. */
+  private readonly visibleCount = signal(CLAIMS_PAGE_SIZE);
+  protected readonly visibleClaims = computed(() =>
+    (this.store.clailListData() ?? []).slice(0, this.visibleCount()),
+  );
+  protected readonly hasMore = computed(
+    () => (this.store.clailListData()?.length ?? 0) > this.visibleCount(),
+  );
+
+  protected loadMore(): void {
+    this.visibleCount.update((n) => n + CLAIMS_PAGE_SIZE);
+  }
+
   constructor(private appService : AppService, private claimsStore : ClaimsStore){
     // this.getClimListData()
      effect(() => {
