@@ -46,7 +46,7 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "bundles"
             },
             "development": {
               "optimization": false,
@@ -119,7 +119,7 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all",
+              "outputHashing": "bundles",
               "fileReplacements": [
                 {
                   "replace": "projects/member/src/environments/environment.ts",
