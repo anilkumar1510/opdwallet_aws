@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 
+import { ClaimStatus } from '../../core/claims/claim.model';
+import { StatusBadge } from '../../shared/ui/status-badge';
+
 /**
  * Pharmacy — DUMMY / STATIC journey, zero backend.
  *
@@ -33,6 +36,39 @@ const EXISTING_PRESCRIPTIONS = [
   { id: 'RX-2026-0008', label: 'Dr. N. Gupta · 20 Aug 2026' },
 ];
 
+interface PastOrder {
+  id: string;
+  prescriptionId: string;
+  date: string;
+  itemCount: number;
+  amount: number;
+  status: ClaimStatus;
+}
+
+const DELIVERED: ClaimStatus = { label: 'Delivered', tone: 'positive', isFinal: true };
+const OUT_FOR_DELIVERY: ClaimStatus = { label: 'Out for delivery', tone: 'progress', isFinal: false };
+const CART_READY: ClaimStatus = { label: 'Cart ready', tone: 'progress', isFinal: false };
+const QUEUED: ClaimStatus = { label: 'Prescription queued', tone: 'neutral', isFinal: false };
+const CANCELLED: ClaimStatus = { label: 'Cancelled', tone: 'negative', isFinal: true };
+
+const PAST_ORDERS: PastOrder[] = [
+  { id: 'PH-2026-0024', prescriptionId: 'RX-2026-0030', date: '28 Sept 2026', itemCount: 2, amount: 0, status: QUEUED },
+  { id: 'PH-2026-0023', prescriptionId: 'RX-2026-0029', date: '26 Sept 2026', itemCount: 3, amount: 265, status: CART_READY },
+  { id: 'PH-2026-0021', prescriptionId: 'RX-2026-0027', date: '24 Sept 2026', itemCount: 4, amount: 310, status: OUT_FOR_DELIVERY },
+  { id: 'PH-2026-0019', prescriptionId: 'RX-2026-0012', date: '18 Sept 2026', itemCount: 4, amount: 310, status: DELIVERED },
+  { id: 'PH-2026-0017', prescriptionId: 'RX-2026-0025', date: '11 Sept 2026', itemCount: 2, amount: 150, status: DELIVERED },
+  { id: 'PH-2026-0015', prescriptionId: 'RX-2026-0022', date: '3 Sept 2026', itemCount: 1, amount: 85, status: CANCELLED },
+  { id: 'PH-2026-0013', prescriptionId: 'RX-2026-0008', date: '24 Aug 2026', itemCount: 3, amount: 420, status: DELIVERED },
+  { id: 'PH-2026-0011', prescriptionId: 'RX-2026-0018', date: '12 Aug 2026', itemCount: 2, amount: 175, status: DELIVERED },
+  { id: 'PH-2026-0009', prescriptionId: 'RX-2026-0015', date: '30 Jul 2026', itemCount: 5, amount: 495, status: DELIVERED },
+  { id: 'PH-2026-0007', prescriptionId: 'RX-2026-0011', date: '15 Jul 2026', itemCount: 1, amount: 60, status: DELIVERED },
+  { id: 'PH-2026-0005', prescriptionId: 'RX-2026-0007', date: '28 Jun 2026', itemCount: 2, amount: 230, status: CANCELLED },
+  { id: 'PH-2026-0003', prescriptionId: 'RX-2026-0004', date: '9 Jun 2026', itemCount: 3, amount: 340, status: DELIVERED },
+];
+
+/** Past orders are revealed ORDERS_PAGE_SIZE at a time; "Load more" shows the next batch. */
+const ORDERS_PAGE_SIZE = 5;
+
 const PER_TXN_LIMIT = 500;
 const COPAY_PCT = 20;
 
@@ -41,7 +77,7 @@ type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [StatusBadge],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -66,6 +102,42 @@ type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
             <p class="mt-1 text-xs text-ink-500">{{ copayPct }}% co-payment · you submit a prescription, our team builds the cart for you.</p>
           </div>
           <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
+
+          <h2 class="mt-8 text-lg font-bold text-[#034DA2]">Past orders</h2>
+          <ul class="mt-3 space-y-3">
+            @for (order of visibleOrders(); track order.id) {
+              <li
+                class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
+                style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-base font-semibold text-[#034DA2]">Medicine order</p>
+                    <p class="mt-0.5 truncate text-sm text-ink-700">Prescription {{ order.prescriptionId }}</p>
+                    <p class="mt-1 text-xs text-ink-500">
+                      {{ order.id }} · {{ order.date }} · {{ order.itemCount }} item{{ order.itemCount === 1 ? '' : 's' }}
+                    </p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <opd-status-badge [status]="order.status" />
+                    <p class="mt-2 text-lg font-semibold text-[#303030]">
+                      {{ order.amount ? '₹' + order.amount : '—' }}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+
+          @if (hasMoreOrders()) {
+            <button
+              type="button"
+              class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700"
+              (click)="loadMoreOrders()"
+            >
+              Load more
+            </button>
+          }
         }
 
         @else {
@@ -184,6 +256,14 @@ export class PharmacyPage {
   protected readonly existingPrescriptions = EXISTING_PRESCRIPTIONS;
   protected readonly perTxn = PER_TXN_LIMIT;
   protected readonly copayPct = COPAY_PCT;
+
+  private readonly visibleOrderCount = signal(ORDERS_PAGE_SIZE);
+  protected readonly visibleOrders = computed(() => PAST_ORDERS.slice(0, this.visibleOrderCount()));
+  protected readonly hasMoreOrders = computed(() => PAST_ORDERS.length > this.visibleOrderCount());
+
+  protected loadMoreOrders(): void {
+    this.visibleOrderCount.update((n) => n + ORDERS_PAGE_SIZE);
+  }
 
   protected readonly started = signal(false);
   protected readonly step = signal(0);

@@ -1,25 +1,25 @@
 import { test, expect } from '@playwright/test';
+import { injectSessionCookie } from '../../utils/session';
 
 test.describe('Claims list', () => {
   test.beforeEach(async ({ page }) => {
+    await injectSessionCookie(page);
     await page.goto('/member/claims');
     await page.waitForLoadState('domcontentloaded');
-    // Wait for Angular to stabilize
-    await page.waitForTimeout(500);
   });
 
   test('dashboard summary cards are visible', async ({ page }) => {
-    // The dashboard loads async; wait for cards to appear
-    await expect(page.locator('text=Total claims')).toBeVisible({ timeout: 30000 });
-    await expect(page.locator('text=In progress')).toBeVisible();
-    await expect(page.locator('text=Claimed')).toBeVisible();
-    await expect(page.locator('text=Approved')).toBeVisible();
+    await expect(page.getByText('Total claims', { exact: true })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText('In progress', { exact: true })).toBeVisible();
+    await expect(page.getByText('Claimed', { exact: true })).toBeVisible();
+    await expect(page.getByText('Approved', { exact: true }).first()).toBeVisible();
   });
 
   test('each claim row links to its detail page', async ({ page }) => {
-    // Wait for claim list to render (uses clailListData from API)
-    await page.waitForSelector('a[routerLink^="/member/claims/"]', { timeout: 30000 });
-    const rows = page.locator('a[routerLink^="/member/claims/"]');
+    // Wait for claim list to render (uses claimListData from API)
+    // Exclude the "New Claim" link at /member/claims/new
+    await page.waitForSelector('a[href^="/member/claims/"]:not([href="/member/claims/new"])', { timeout: 30000 });
+    const rows = page.locator('a[href^="/member/claims/"]:not([href="/member/claims/new"])');
     const count = await rows.count();
     expect(count).toBeGreaterThan(0);
   });

@@ -103,10 +103,14 @@ export class ClaimsStore {
   private readonly _actionReasons = signal<ReadonlyMap<string, string>>(new Map());
   private readonly _actionReasonsLoading = signal(false);
 
+  private readonly _categoryLabels = signal<ReadonlyMap<string, string>>(new Map());
+  private readonly _categoryLabelsLoading = signal(false);
+
   readonly dashboardLoading = this._dashboardLoading.asReadonly();
   /** True while GET_PAGE for a single claim is in flight. */
   readonly claimDetailsLoading = this._getClimDetails.asReadonly();
   readonly actionReasonsLoading = this._actionReasonsLoading.asReadonly();
+  readonly categoryLabelsLoading = this._categoryLabelsLoading.asReadonly();
 
   constructor(private appService: AppService){
 
@@ -162,7 +166,13 @@ export class ClaimsStore {
         .toPromise();
       const rows: ValuesetEntryDto[] = JSON.parse(res)?.resource ?? [];
       if (!rows.length) return STATIC_CLAIM_CATEGORIES;
-      return rows.map((entry) => toClaimCategoryFromValueset(entry));
+      const cats = rows.map((entry) => toClaimCategoryFromValueset(entry));
+      const map = new Map<string, string>();
+      for (const cat of cats) {
+        if (cat.claimCategory) map.set(cat.claimCategory, cat.name);
+      }
+      this._categoryLabels.set(map);
+      return cats;
     } catch (error) {
       console.error('Failed to load claim categories:', error);
       return STATIC_CLAIM_CATEGORIES;
@@ -198,6 +208,28 @@ export class ClaimsStore {
   getActionReasonDisplay(code: string | undefined): string {
     if (!code) return '';
     return this._actionReasons().get(code) ?? code;
+  }
+
+  /**
+   * Ensure category labels are loaded by delegating to the shared categories() boundary.
+   * Safe to call repeatedly — the second call resolves immediately.
+   */
+  async loadCategoryLabels(): Promise<void> {
+    if (this._categoryLabels().size > 0 || this._categoryLabelsLoading()) return;
+    this._categoryLabelsLoading.set(true);
+    try {
+      await this.categories();
+    } catch (error) {
+      console.error('Failed to load claim category labels:', error);
+    } finally {
+      this._categoryLabelsLoading.set(false);
+    }
+  }
+
+  /** Resolve a category code to its display name, falling back to the raw code. */
+  getCategoryDisplay(code: string | undefined): string {
+    if (!code) return '';
+    return this._categoryLabels().get(code) ?? code;
   }
 
   async claimById(claimId: string): Promise<Claim | null> {
