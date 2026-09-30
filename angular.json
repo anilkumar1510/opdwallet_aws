@@ -101,6 +101,11 @@
               {
                 "glob": "**/*",
                 "input": "projects/member/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/member/src/assets",
+                "output": "assets"
               }
             ],
             "styles": ["projects/member/src/styles.css"]
