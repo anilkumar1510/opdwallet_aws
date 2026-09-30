@@ -1,7 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { AppService } from '../../core/http/api.service';
 import { PharmacyAddressInput } from './pharmacy-address.model';
 
 /**
@@ -23,7 +22,7 @@ import { PharmacyAddressInput } from './pharmacy-address.model';
           aria-labelledby="add-address-title"
         >
           <div class="flex items-start justify-between gap-3">
-            <h2 id="add-address-title" class="text-base font-semibold text-[#0E51A2]">Add a delivery address</h2>
+            <h2 id="add-address-title" class="text-base font-semibold text-[#0E51A2]">{{ heading() }}</h2>
             <button
               type="button"
               class="min-h-touch shrink-0 rounded-xl border border-surface-border px-4 text-sm font-semibold text-ink-900"
@@ -109,7 +108,7 @@ import { PharmacyAddressInput } from './pharmacy-address.model';
                 class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50"
                 [disabled]="saving()"
               >
-                {{ saving() ? 'Saving…' : 'Save address' }}
+                {{ saving() ? busyLabel() : submitLabel() }}
               </button>
               <button
                 type="button"
@@ -129,12 +128,17 @@ export class AddAddressModal {
   readonly open = input(false);
   readonly saving = input(false);
   readonly saveError = input<string | null>(null);
+  /** Prefill for edit mode; absent when adding. */
+  readonly initial = input<PharmacyAddressInput | null>(null);
+  readonly heading = input('Add a delivery address');
+
+  protected readonly submitLabel = computed(() => (this.initial() ? 'Update address' : 'Save address'));
+  protected readonly busyLabel = computed(() => (this.initial() ? 'Updating…' : 'Saving…'));
 
   readonly saved = output<PharmacyAddressInput>();
   readonly cancelled = output<void>();
 
   private readonly fb = inject(FormBuilder);
-  private readonly crypto = inject(AppService);
 
   protected readonly form = this.fb.nonNullable.group({
     street1: ['', Validators.required],
@@ -149,6 +153,15 @@ export class AddAddressModal {
   private readonly _fieldError = signal<string | null>(null);
   protected readonly fieldError = this._fieldError.asReadonly();
 
+  constructor() {
+    // Reset on every open, otherwise a previous draft leaks into the next address.
+    effect(() => {
+      if (!this.open()) return;
+      this.form.reset(this.initial() ?? BLANK);
+      this._fieldError.set(null);
+    });
+  }
+
   protected submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -159,3 +172,13 @@ export class AddAddressModal {
     this.saved.emit(this.form.getRawValue());
   }
 }
+
+const BLANK: PharmacyAddressInput = {
+  street1: '',
+  street2: '',
+  street3: '',
+  city: '',
+  state: '',
+  pincode: '',
+  country: '',
+};

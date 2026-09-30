@@ -24,8 +24,12 @@ export interface PharmacyAddressInput {
 export interface PharmacyAddress {
   readonly id: string;
   readonly addressType: string;
+  /** "Home" / "Work" / "Other" — the code alone is meaningless to a member. */
+  readonly typeLabel: string;
   /** Decrypted where possible, raw otherwise — never a blank. */
   readonly lines: readonly string[];
+  /** City, state and pincode joined for display, kept apart from the streets. */
+  readonly locality: string;
   /**
    * The owning patient's uhid as this row carries it. The primary member's record
    * in GET_FAMILY_LIST has a null uhId, so this is the only place the POST's
@@ -54,6 +58,20 @@ export interface BookingAddress {
 /** `address_type` "2" is the only value seen from the pharmacy booking flow. */
 export const HOME_ADDRESS_TYPE = '2';
 
+/**
+ * Codes seen from order_address. Anything unrecognised falls back to "Other"
+ * rather than printing a raw code, which a member cannot act on.
+ */
+const TYPE_LABELS: Readonly<Record<string, string>> = {
+  '1': 'Office',
+  '2': 'Home',
+  '3': 'Other',
+};
+
+function toTypeLabel(addressType: string): string {
+  return TYPE_LABELS[addressType] ?? (addressType ? addressType : 'Address');
+}
+
 const str = (value: unknown): string => (typeof value === 'string' ? value : value == null ? '' : String(value));
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -74,7 +92,7 @@ function titleCase(value: string): string {
  * one place is what keeps the cards, the save payload, and the booking payload from
  * drifting apart.
  */
-export function toPharmacyAddress(dto: unknown, crypto: AppService, index = 0): PharmacyAddress | null {
+export function toPharmacyAddress(dto: unknown, index = 0): PharmacyAddress | null {
   const row = asRecord(dto);
   if (!row) return null;
   const nested = asRecord(row['address']) ?? {};
@@ -109,7 +127,11 @@ export function toPharmacyAddress(dto: unknown, crypto: AppService, index = 0): 
   return {
     id: str(row['id']) || str(row['_id']) || str(row['address_id']) || `address-${index}`,
     addressType,
+    typeLabel: toTypeLabel(addressType),
     lines: [street1, street2, street3].filter((line) => line.trim().length > 0),
+    locality: [booking.cityDisplayName, booking.stateDisplayName, booking.pincode]
+      .filter((part) => part.trim().length > 0)
+      .join(', '),
     uhId: str(row['uhId']),
     booking,
   };
@@ -165,19 +187,84 @@ export function toOrderAddressBody(
 }
 
 /**
- * Card text. `decryptText` returns '' for anything that is not valid ciphertext
- * (the padding check fails), so an empty result means "this was not encrypted" and
- * the raw value is shown instead — otherwise a plaintext address renders blank.
- * Plaintext values pass through unchanged since they're not ciphertext.
+ * Street text, decrypted where possible. `decryptText` returns '' both when there
+ * is no key and when the padding check rejects the input, so an empty result means
+ * "this was not decrypted" and the raw value is shown instead — otherwise a
+ * plaintext address renders blank. `unreadable` reports that case so the card can
+ * say so rather than display ciphertext as if it were an address.
  */
-export function addressDisplayLines(address: PharmacyAddress, crypto: AppService): readonly string[] {
-  const readable = (value: string): string => {
-    if (!value) return '';
-    const decrypted = crypto.decryptText(value);
-    return decrypted && decrypted.trim().length > 0 ? decrypted : value;
+export function addressDisplayLines(
+  address: PharmacyAddress,
+  crypto: AppService,
+): { lines: readonly string[]; unreadable: number } {
+  let unreadable = 0;
+  const lines = address.lines
+    .map((value) => {
+      const { value: decrypted, ok } = crypto.decryptTextResult(value);
+      if (ok) return decrypted;
+      if (isCiphertext(value)) unreadable++;
+      return value;
+    })
+    .filter((line) => line.trim().length > 0);
+  return { lines, unreadable };
+}
+
+/**
+ * Fills the edit form from a stored address. Streets are decrypted first —
+ * prefilling a ciphertext into an input the member is about to edit and save
+ * would persist the ciphertext back to the API.
+ */
+export function toAddressInput(address: PharmacyAddress, crypto: AppService): PharmacyAddressInput {
+  const { lines } = addressDisplayLines(address, crypto);
+  const booking = address.booking;
+  return {
+    street1: lines[0] ?? '',
+    street2: lines[1] ?? '',
+    street3: lines[2] ?? '',
+    city: booking.city || booking.cityDisplayName,
+    state: booking.state || booking.stateDisplayName,
+    country: booking.country || booking.countryDisplayName,
+    pincode: booking.pincode,
   };
-  const cityLine = [address.booking.cityDisplayName, address.booking.stateDisplayName, address.booking.pincode]
-    .filter((part) => part.trim().length > 0)
-    .join(', ');
-  return [...address.lines.map(readable), cityLine].filter((line) => line.trim().length > 0);
+}
+
+/**
+ * Rebuilds an address from edited form values, keeping everything the API owns
+ * (id, uhId, address type) untouched.
+ *
+ * Streets are stored as the form gives them. Re-encrypting here is not possible:
+ * `AppService.encrypt` needs a key the portal does not hold, so an encrypted
+ * rebuild would throw on every save. Display already falls back to the raw value,
+ * so these render as typed.
+ */
+export function applyAddressInput(address: PharmacyAddress, input: PharmacyAddressInput): PharmacyAddress {
+  const type = address.addressType;
+  const updated = toPharmacyAddress(
+    {
+      id: address.id,
+      uhId: address.uhId,
+      address_type: type,
+      address: {
+        address_type: type,
+        addressType: type,
+        street1: input.street1.trim(),
+        street2: input.street2.trim(),
+        street3: input.street3.trim(),
+        city: input.city.trim(),
+        cityDisplayName: titleCase(input.city),
+        state: input.state.trim(),
+        stateDisplayName: titleCase(input.state),
+        country: input.country.trim(),
+        countryDisplayName: titleCase(input.country),
+        pincode: input.pincode.trim(),
+      },
+    },
+  );
+  // toPharmacyAddress only rejects a non-object, which the literal above never is.
+  return updated ?? address;
+}
+
+/** Base64 AES-CBC output: a short first block and a '=' pad tail. */
+function isCiphertext(value: string): boolean {
+  return /^[A-Za-z0-9+/]{16,}={0,2}$/.test(value.trim());
 }

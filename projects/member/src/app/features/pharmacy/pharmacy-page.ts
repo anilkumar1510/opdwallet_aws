@@ -8,7 +8,7 @@ import { AppService } from '../../core/http/api.service';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { AddAddressModal } from './add-address-modal';
 import { PharmacyAddressCards } from './pharmacy-address-cards';
-import { PharmacyAddress, PharmacyAddressInput } from './pharmacy-address.model';
+import { PharmacyAddress, PharmacyAddressInput, applyAddressInput, toAddressInput } from './pharmacy-address.model';
 import { PharmacyAddressService } from './pharmacy-address.service';
 
 /**
@@ -213,10 +213,13 @@ export function readUploadedDocId(body: unknown): string | null {
                   [loadFailed]="addressLoadFailed()"
                   [(selectedId)]="selectedAddressId"
                   (addRequested)="openAddAddress()"
+                  (editRequested)="openEditAddress($event)"
                 />
 
                 <opd-add-address-modal
                   [open]="addAddressOpen()"
+                  [heading]="editingAddress() ? 'Edit delivery address' : 'Add a delivery address'"
+                  [initial]="editingAddress() ? toAddressInput(editingAddress()!) : null"
                   [saving]="addressSaving()"
                   [saveError]="addressSaveError()"
                   (saved)="saveAddress($event)"
@@ -344,6 +347,8 @@ export class PharmacyPage {
   protected readonly selectedAddressId = signal('');
   protected readonly addressLoadFailed = signal(false);
   protected readonly addAddressOpen = signal(false);
+  /** Non-null while editing an existing address; null when adding a new one. */
+  protected readonly editingAddress = signal<PharmacyAddress | null>(null);
   protected readonly addressSaving = signal(false);
   protected readonly addressSaveError = signal<string | null>(null);
   protected readonly submittingBooking = signal(false);
@@ -406,6 +411,7 @@ export class PharmacyPage {
     this.selectedAddressId.set('');
     this.addressLoadFailed.set(false);
     this.addAddressOpen.set(false);
+    this.editingAddress.set(null);
     this.addressSaving.set(false);
     this.addressSaveError.set(null);
   }
@@ -435,16 +441,40 @@ export class PharmacyPage {
 
   protected openAddAddress(): void {
     this.addressSaveError.set(null);
+    this.editingAddress.set(null);
+    this.addAddressOpen.set(true);
+  }
+
+  protected openEditAddress(address: PharmacyAddress): void {
+    this.addressSaveError.set(null);
+    this.editingAddress.set(address);
     this.addAddressOpen.set(true);
   }
 
   protected closeAddAddress(): void {
     if (this.addressSaving()) return;
     this.addAddressOpen.set(false);
+    this.editingAddress.set(null);
     this.addressSaveError.set(null);
   }
 
+  protected toAddressInput(address: PharmacyAddress): PharmacyAddressInput {
+    return toAddressInput(address, this.appService);
+  }
+
   protected async saveAddress(input: PharmacyAddressInput): Promise<void> {
+    const editing = this.editingAddress();
+
+    // Edit is local-only until the update endpoint lands; the POST would create a
+    // second row for the same address rather than change this one.
+    if (editing) {
+      const updated = applyAddressInput(editing, input);
+      this.addresses.update((current) => current.map((a) => (a.id === editing.id ? updated : a)));
+      this.addAddressOpen.set(false);
+      this.editingAddress.set(null);
+      return;
+    }
+
     this.addressSaving.set(true);
     this.addressSaveError.set(null);
     const { patientId, uhId } = await this.patientFilter();

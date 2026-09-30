@@ -43,7 +43,7 @@ export class PharmacyAddressService {
         ? Object.values(resource as Record<string, unknown>)
         : [];
     return rows
-      .map((row, index) => toPharmacyAddress(row, this.appService, index))
+      .map((row, index) => toPharmacyAddress(row, index))
       .filter((address): address is PharmacyAddress => address !== null);
   }
 
@@ -94,7 +94,7 @@ export class PharmacyAddressService {
     const parsed = this.asJson(response);
     const resource = parsed?.['resource'];
     const echoed = Array.isArray(resource) ? resource[0] : resource;
-    const fromApi = toPharmacyAddress(echoed, this.appService, 0);
+    const fromApi = toPharmacyAddress(echoed, 0);
     if (fromApi && fromApi.lines.length > 0) return fromApi;
     return null;
   }
