@@ -13,12 +13,21 @@ import { PharmacyAddress, addressDisplayLines } from './pharmacy-address.model';
   selector: 'opd-pharmacy-address-cards',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex gap-3 overflow-x-auto pb-2" role="list">
+    <div class="flex gap-2 overflow-x-auto pb-2" role="list">
+      <button
+        type="button"
+        class="min-h-touch w-56 shrink-0 rounded-lg border-2 border-dashed border-[#CDDDFE] p-2.5 text-left text-[#0B2C63] hover:bg-[#F7FAFF]"
+        (click)="addRequested.emit()"
+      >
+        <p class="text-sm font-semibold">+ Add address</p>
+        <p class="mt-0.5 text-xs text-ink-500">Deliver to somewhere new</p>
+      </button>
+
       @for (address of addresses(); track address.id) {
         <button
           type="button"
           role="listitem"
-          class="min-h-touch w-60 shrink-0 rounded-xl border p-3 text-left transition-colors"
+          class="min-h-touch w-56 shrink-0 rounded-lg border p-2.5 text-left transition-colors"
           [style.border-color]="address.id === selectedId() ? '#0F5FDC' : '#E5E7EB'"
           [style.background]="address.id === selectedId() ? '#EFF4FF' : '#FFFFFF'"
           [attr.aria-pressed]="address.id === selectedId()"
@@ -28,32 +37,23 @@ import { PharmacyAddress, addressDisplayLines } from './pharmacy-address.model';
             {{ address.addressType === '2' ? 'Home' : address.addressType }}
           </p>
           @for (line of linesFor(address); track line) {
-            <p class="mt-0.5 truncate text-sm text-ink-700">{{ line }}</p>
+            <p class="mt-0.5 truncate text-xs text-ink-700">{{ line }}</p>
           }
           @if (address.id === selectedId()) {
-            <p class="mt-1 text-xs font-medium text-[#0F5FDC]">✓ Delivery address</p>
+            <p class="mt-0.5 text-xs font-medium text-[#0F5FDC]">✓ Delivery address</p>
           }
         </button>
       }
-
-      <button
-        type="button"
-        class="min-h-touch w-60 shrink-0 rounded-xl border-2 border-dashed border-[#CDDDFE] p-3 text-left text-[#0B2C63] hover:bg-[#F7FAFF]"
-        (click)="addRequested.emit()"
-      >
-        <p class="text-sm font-semibold">+ Add address</p>
-        <p class="mt-0.5 text-xs text-ink-500">Deliver to somewhere new</p>
-      </button>
     </div>
 
     @if (!addresses().length) {
-      <p class="mt-2 rounded-xl bg-warning-50 px-3 py-2 text-sm text-warning-700">
+      <p class="mt-1.5 rounded-lg bg-warning-50 px-3 py-1.5 text-xs text-warning-700">
         You have no saved delivery addresses yet — add one to continue.
       </p>
     }
 
     @if (loadFailed()) {
-      <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">
+      <p class="mt-1.5 rounded-lg bg-danger-50 px-3 py-1.5 text-xs text-danger-700" role="alert">
         We could not load your saved addresses. You can still add a new one.
       </p>
     }

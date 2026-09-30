@@ -118,20 +118,15 @@ export function toPharmacyAddress(dto: unknown, crypto: AppService, index = 0): 
 /**
  * Builds the `POST order_address` body from what the member typed.
  *
- * The API accepts the address twice — flat snake_case fields and a nested
- * `address` object — and both are sent because that is the shape known to be
- * accepted. `street1`/`street2`/`street3` are encrypted in the nested block only;
- * the flat fields carry the same plaintext the API itself sent in its own sample.
- * Returns null when no encryption key is available, so the caller can refuse the
- * save rather than transmit an address in the clear.
+ * Street fields (street1/street2/street3) are sent as plaintext — no
+ * encryption step, matching the API's expectation for this endpoint.
+ * The flat fields carry the same plaintext the API itself sent in its own sample.
  */
 export function toOrderAddressBody(
   input: PharmacyAddressInput,
   patientId: string,
   uhId: string,
-  crypto: AppService,
-): Record<string, unknown> | null {
-  if (!crypto.hasEncryptKey()) return null;
+): Record<string, unknown> {
 
   const street1 = input.street1.trim();
   const street2 = input.street2.trim();
@@ -155,9 +150,9 @@ export function toOrderAddressBody(
     address: {
       address_type: HOME_ADDRESS_TYPE,
       addressType: HOME_ADDRESS_TYPE,
-      street1: crypto.encrypt(street1),
-      street2: crypto.encrypt(street2),
-      street3: crypto.encrypt(street3),
+       street1: street1,
+       street2: street2,
+       street3: street3,
       city,
       cityDisplayName: titleCase(city),
       state,
@@ -173,6 +168,7 @@ export function toOrderAddressBody(
  * Card text. `decryptText` returns '' for anything that is not valid ciphertext
  * (the padding check fails), so an empty result means "this was not encrypted" and
  * the raw value is shown instead — otherwise a plaintext address renders blank.
+ * Plaintext values pass through unchanged since they're not ciphertext.
  */
 export function addressDisplayLines(address: PharmacyAddress, crypto: AppService): readonly string[] {
   const readable = (value: string): string => {

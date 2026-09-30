@@ -65,7 +65,7 @@ export class PharmacyAddressService {
    * to habit-opd. Returns null when encryption is unavailable or the save fails.
    */
   async save(input: PharmacyAddressInput, patientId: string, uhId: string): Promise<PharmacyAddress | null> {
-    const body = toOrderAddressBody(input, patientId, uhId, this.appService);
+    const body = toOrderAddressBody(input, patientId, uhId);
     if (!body) return null;
 
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(body))));
