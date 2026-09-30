@@ -155,10 +155,6 @@ export class AddAddressModal {
       this._fieldError.set('Fill in the flat / house, city, state, country, and a 6-digit pincode.');
       return;
     }
-    if (!this.crypto.hasEncryptKey()) {
-      this._fieldError.set('We could not secure this address. Please reload the page and try again.');
-      return;
-    }
     this._fieldError.set(null);
     this.saved.emit(this.form.getRawValue());
   }
