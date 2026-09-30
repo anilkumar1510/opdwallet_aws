@@ -74,6 +74,29 @@ export class AppService {
         return encryptedData.toString();
     }
 
+    /**
+     * Whether an encryption key is available. Callers that must not write
+     * plaintext check this first rather than sending unencrypted and hoping the
+     * server tolerates it.
+     */
+    hasEncryptKey(): boolean {
+        return Boolean(this._currentSessionData.encryptKey);
+    }
+
+    /**
+     * Encrypts text with the session key, mirroring decryptText's key and IV so a
+     * value written here reads back there. Throws when no key is available rather
+     * than passing plaintext through — callers check hasEncryptKey() first, and a
+     * silent fallback here would defeat that check.
+     */
+    encrypt(text: string): string {
+        const key = this._currentSessionData.encryptKey;
+        if (!key) {
+            throw new Error('encrypt called without a session encryption key');
+        }
+        return this.encryptText(key, text);
+    }
+
 
     getCookie(name: string) {
         const cookies = document.cookie.split(';'); // Split into individual pairs

@@ -1,7 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { ClaimStatus } from '../../core/claims/claim.model';
+import { FamilyStore } from '../../core/family/family.store';
+import { AppService } from '../../core/http/api.service';
 import { StatusBadge } from '../../shared/ui/status-badge';
+import { AddAddressModal } from './add-address-modal';
+import { PharmacyAddressCards } from './pharmacy-address-cards';
+import { PharmacyAddress, PharmacyAddressInput } from './pharmacy-address.model';
+import { PharmacyAddressService } from './pharmacy-address.service';
 
 /**
  * Pharmacy — DUMMY / STATIC journey, zero backend.
@@ -74,10 +82,38 @@ const COPAY_PCT = 20;
 
 type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+/**
+ * Pulls the document id out of an `/dms/api/v1/emrImage` response body.
+ *
+ * The claims page reads `resource[0].document_id`, but `emrImage` may answer with a
+ * single object instead of a one-element list, and has been seen using `id` as well.
+ * Both shapes are accepted so a contract change cannot silently leave `doc_id`
+ * undefined. Returns null when nothing usable is present, which the caller treats as
+ * a failed upload rather than a success carrying no id.
+ */
+export function readUploadedDocId(body: unknown): string | null {
+  const envelope = asRecord(body);
+  if (!envelope || envelope['errCode'] !== 0) return null;
+
+  const resource = envelope['resource'];
+  const record = asRecord(Array.isArray(resource) ? resource[0] : resource);
+  if (!record) return null;
+
+  for (const field of ['id', 'document_id'] as const) {
+    const value = record[field];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  return null;
+}
+
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StatusBadge],
+  imports: [StatusBadge, PharmacyAddressCards, AddAddressModal],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -150,14 +186,18 @@ type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
               @case ('prescribe') {
                 <p class="mb-1 text-sm font-medium text-ink-700">Upload a new prescription</p>
                 <p class="mb-2 text-xs text-ink-500">You submit a prescription only — you don't build the cart.</p>
-                <input type="file" class="sr-only" accept="image/*,.pdf" id="rx" (change)="onPrescription($event)" />
-                <label for="rx" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-6 text-center" (click)="existingId.set('')">
-                  <span class="block font-medium text-[#0B2C63]">{{ uploadedFile() ? 'Replace prescription' : 'Upload prescription' }}</span>
+                <input type="file" class="sr-only" accept="image/*,.pdf" id="rx" [disabled]="documentUploading()" (change)="onPrescription($event)" />
+                <label for="rx" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-6 text-center" [class.pointer-events-none]="documentUploading()" [class.opacity-60]="documentUploading()" (click)="existingId.set('')">
+                  <span class="block font-medium text-[#0B2C63]">{{ uploadLabel() }}</span>
                   <span class="mt-1 block text-xs text-ink-500">Photo or PDF</span>
                 </label>
+                @if (documentUploading()) {
+                  <p class="mt-2 text-sm text-ink-500">Uploading your prescription…</p>
+                }
                 @if (uploadedFile(); as f) { <p class="mt-2 truncate text-sm text-ink-900">{{ f }}</p> }
+                @if (uploadError(); as err) { <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p> }
 
-                <p class="mb-2 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Or use an existing prescription</p>
+                <p class="mb-1 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Or use an existing prescription</p>
                 <div class="space-y-2">
                   @for (rx of existingPrescriptions; track rx.id) {
                     <button type="button" class="flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm" [class.border-brand-500]="existingId() === rx.id" [class.bg-blue-50]="existingId() === rx.id" [class.border-surface-border]="existingId() !== rx.id" (click)="pickExisting(rx.id)">
@@ -166,6 +206,22 @@ type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
                     </button>
                   }
                 </div>
+
+                <p class="mb-2 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Delivery address</p>
+                <opd-pharmacy-address-cards
+                  [addresses]="addresses()"
+                  [loadFailed]="addressLoadFailed()"
+                  [(selectedId)]="selectedAddressId"
+                  (addRequested)="openAddAddress()"
+                />
+
+                <opd-add-address-modal
+                  [open]="addAddressOpen()"
+                  [saving]="addressSaving()"
+                  [saveError]="addressSaveError()"
+                  (saved)="saveAddress($event)"
+                  (cancelled)="closeAddAddress()"
+                />
               }
               @case ('queued') {
                 <div class="text-center">
@@ -245,7 +301,7 @@ type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
             @if (currentStep() !== 'placed') {
               <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A]" (click)="back()">Back</button>
             }
-            <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="next()">{{ primaryLabel() }}</button>
+            <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="submittingBooking()" (click)="next()">{{ primaryLabel() }}</button>
           </div>
         }
       </div>
@@ -253,6 +309,12 @@ type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
   `,
 })
 export class PharmacyPage {
+  private readonly http = inject(HttpClient);
+  private readonly appService = inject(AppService);
+  private readonly router = inject(Router);
+  private readonly family = inject(FamilyStore);
+  private readonly addressService = inject(PharmacyAddressService);
+
   protected readonly existingPrescriptions = EXISTING_PRESCRIPTIONS;
   protected readonly perTxn = PER_TXN_LIMIT;
   protected readonly copayPct = COPAY_PCT;
@@ -270,9 +332,21 @@ export class PharmacyPage {
   protected readonly stepError = signal<string | null>(null);
 
   protected readonly uploadedFile = signal<string | null>(null);
+  protected readonly uploadedDocId = signal<string | null>(null);
+  protected readonly documentUploading = signal(false);
+  protected readonly uploadError = signal<string | null>(null);
   protected readonly existingId = signal('');
   protected readonly cartPushed = signal(false);
   protected readonly cart = signal<CartItem[]>([]);
+
+  protected readonly addresses = signal<readonly PharmacyAddress[]>([]);
+  protected readonly addressUhId = signal('');
+  protected readonly selectedAddressId = signal('');
+  protected readonly addressLoadFailed = signal(false);
+  protected readonly addAddressOpen = signal(false);
+  protected readonly addressSaving = signal(false);
+  protected readonly addressSaveError = signal<string | null>(null);
+  protected readonly submittingBooking = signal(false);
 
   protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
   protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
@@ -291,7 +365,13 @@ export class PharmacyPage {
     return { cartValue, covered, copay, walletBlock, excess, selfPay: copay + excess };
   });
 
+  protected uploadLabel(): string {
+    if (this.documentUploading()) return 'Uploading…';
+    return this.uploadedDocId() ? 'Replace prescription' : 'Upload prescription';
+  }
+
   protected primaryLabel(): string {
+    if (this.submittingBooking()) return 'Submitting…';
     switch (this.currentStep()) {
       case 'prescribe': return 'Submit prescription';
       case 'queued': return 'Continue to cart';
@@ -306,21 +386,153 @@ export class PharmacyPage {
     this.started.set(true);
     this.step.set(0);
     this.stepError.set(null);
-    this.uploadedFile.set(null);
-    this.existingId.set('');
+    this.resetPrescription();
     this.cartPushed.set(false);
     this.cart.set([]);
+    void this.loadAddresses();
+  }
+
+  private resetPrescription(): void {
+    this.uploadedFile.set(null);
+    this.uploadedDocId.set(null);
+    this.uploadError.set(null);
+    this.documentUploading.set(false);
+    this.existingId.set('');
+  }
+
+  private resetAddresses(): void {
+    this.addresses.set([]);
+    this.addressUhId.set('');
+    this.selectedAddressId.set('');
+    this.addressLoadFailed.set(false);
+    this.addAddressOpen.set(false);
+    this.addressSaving.set(false);
+    this.addressSaveError.set(null);
+  }
+
+  /**
+   * `patient_id` is the family member's `mapped_id`, confirmed against GET_FAMILY_LIST.
+   * Neither id exists until the family has loaded, so this must await load() —
+   * reading the store directly yields an empty id.
+   */
+  private async patientFilter(): Promise<{ patientId: string; uhId: string }> {
+    if (!this.family.family().length) await this.family.load();
+    const member = this.family.activeMember();
+    return { patientId: member?.memberId ?? member?.id ?? '', uhId: member?.uhid ?? '' };
+  }
+
+  private async loadAddresses(): Promise<void> {
+    this.addressLoadFailed.set(false);
+    const { patientId, uhId } = await this.patientFilter();
+    if (!patientId) {
+      this.addressLoadFailed.set(true);
+      return;
+    }
+    const loaded = await this.addressService.list(patientId, uhId);
+    this.addresses.set(loaded);
+    this.addressUhId.set(loaded.find((address) => address.uhId)?.uhId ?? uhId);
+  }
+
+  protected openAddAddress(): void {
+    this.addressSaveError.set(null);
+    this.addAddressOpen.set(true);
+  }
+
+  protected closeAddAddress(): void {
+    if (this.addressSaving()) return;
+    this.addAddressOpen.set(false);
+    this.addressSaveError.set(null);
+  }
+
+  protected async saveAddress(input: PharmacyAddressInput): Promise<void> {
+    this.addressSaving.set(true);
+    this.addressSaveError.set(null);
+    const { patientId, uhId } = await this.patientFilter();
+    // Address rows carry the uhid even when the family record does not; the POST
+    // answers "Required field missing : uhId" without it.
+    const saved = await this.addressService.save(input, patientId, this.addressUhId() || uhId);
+    this.addressSaving.set(false);
+    if (!saved) {
+      this.addressSaveError.set('We could not save this address. Please try again.');
+      return;
+    }
+    this.addresses.update((current) => [saved, ...current]);
+    this.selectedAddressId.set(saved.id);
+    this.addAddressOpen.set(false);
   }
 
   protected onPrescription(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    (event.target as HTMLInputElement).value = '';
-    if (file) { this.uploadedFile.set(file.name); this.existingId.set(''); }
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) this.uploadPrescription(file);
+  }
+
+  /**
+   * The X-XSRF-TOKEN is computed over the file's own bytes, so the read has to
+   * finish before the request is issued — posting the FormData directly breaks it.
+   */
+  private uploadPrescription(file: File): void {
+    this.existingId.set('');
+    this.uploadedFile.set(null);
+    this.uploadedDocId.set(null);
+    this.uploadError.set(null);
+    this.stepError.set(null);
+    this.documentUploading.set(true);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.http
+        .post('/dms/api/v1/emrImage', this.prescriptionFormData(file), {
+          headers: new HttpHeaders()
+            .set('X-XSRF-TOKEN', this.appService.getXsrfToken(reader.result, true))
+            .set('timezone', this.appService.getUserTimezone())
+            .set('current_time', this.appService.getCurrentTime())
+            .set('current_url', this.router.url)
+            .set('host_name', window.location.host),
+          responseType: 'json',
+          observe: 'response' as 'response',
+        })
+        .subscribe({
+          next: (response) => this.onPrescriptionUploaded(file, response.body),
+          error: () => this.failUpload(),
+        });
+    };
+    reader.onerror = () => this.failUpload();
+    reader.readAsArrayBuffer(file);
+  }
+
+  private prescriptionFormData(file: File): FormData {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fileName', file.name);
+    formData.append('action', 'add');
+    return formData;
+  }
+
+  private onPrescriptionUploaded(file: File, body: unknown): void {
+    this.documentUploading.set(false);
+    const docId = readUploadedDocId(body);
+    if (!docId) {
+      this.failUpload();
+      return;
+    }
+    this.uploadedDocId.set(docId);
+    this.uploadedFile.set(file.name);
+  }
+
+  private failUpload(): void {
+    this.documentUploading.set(false);
+    this.uploadedDocId.set(null);
+    this.uploadedFile.set(null);
+    this.uploadError.set('We could not upload your prescription. Try again.');
   }
 
   protected pickExisting(id: string): void {
     this.existingId.set(id);
     this.uploadedFile.set(null);
+    this.uploadedDocId.set(null);
+    this.uploadError.set(null);
   }
 
   protected pushCart(): void {
@@ -340,10 +552,21 @@ export class PharmacyPage {
     this.cart.set(this.cart().filter((i) => i.id !== id));
   }
 
+  private selectedAddress(): PharmacyAddress | null {
+    return this.addresses().find((address) => address.id === this.selectedAddressId()) ?? null;
+  }
+
   private validate(): string | null {
     switch (this.currentStep()) {
       case 'prescribe':
-        return this.uploadedFile() || this.existingId() ? null : 'Upload a prescription or pick an existing one.';
+        if (this.documentUploading()) return 'Your prescription is still uploading.';
+        if (this.uploadError()) return this.uploadError();
+        if (!this.uploadedDocId() && !this.existingId()) {
+          return 'Upload a prescription or pick an existing one.';
+        }
+        if (!this.selectedAddressId()) return 'Choose a delivery address for your medicines.';
+        if (!this.activePolicyId()) return 'No policy is active for this member, so we cannot submit.';
+        return null;
       case 'queued':
         return this.cartPushed() ? null : 'Waiting on the adjudicator — use the button above to build the cart.';
       case 'cart':
@@ -352,12 +575,80 @@ export class PharmacyPage {
     }
   }
 
+  /**
+   * The active member's own policy, so a dependant is not booked on the primary's.
+   *
+   * The holderId match is currently dead: `FamilyStore.policies` is backed by
+   * STATIC_POLICIES whose holderIds are names ('shivam'/'sayani'), never a live
+   * member id. The fallback keeps submit reachable and looks redundant — it is not.
+   */
+  private activePolicyId(): string {
+    const member = this.family.activeMember();
+    if (member) {
+      const own = this.family.policies().find((policy) => policy.holderId === member.id);
+      if (own?.id) return own.id;
+    }
+    return this.family.policies().find((policy) => Boolean(policy.id))?.id ?? '';
+  }
+
   protected next(): void {
     const err = this.validate();
     if (err) { this.stepError.set(err); return; }
     this.stepError.set(null);
     if (this.currentStep() === 'placed') { this.finish(); return; }
+    if (this.currentStep() === 'prescribe') { void this.submitPrescription(); return; }
     this.step.set(this.step() + 1);
+  }
+
+  private async submitPrescription(): Promise<void> {
+    const docId = this.uploadedDocId();
+    const address = this.selectedAddress();
+    if (!docId || !address) {
+      this.stepError.set('Upload a prescription and choose a delivery address first.');
+      return;
+    }
+    this.submittingBooking.set(true);
+    try {
+      const sent = await this.postBooking(docId, address);
+      if (!sent) {
+        this.stepError.set('We could not submit your prescription. Please try again.');
+        return;
+      }
+      this.step.set(this.step() + 1);
+    } finally {
+      this.submittingBooking.set(false);
+    }
+  }
+
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<boolean> {
+    const payload = {
+      doc_id: docId,
+      policy_id: this.activePolicyId(),
+      address: address.booking,
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const params = `resource=${encoded}&application=habit-opd&action=OPD_PHARMACY_BOOKING`;
+    try {
+      const response = await this.http
+        .post('/habit-opd/api/v1/opd_pharmacy_booking', params, this.appService.addXsrfToken(encoded, true))
+        .toPromise();
+      return this.bookingAccepted(response);
+    } catch {
+      return false;
+    }
+  }
+
+  /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
+  private bookingAccepted(response: unknown): boolean {
+    if (typeof response !== 'string') return true;
+    try {
+      const parsed: unknown = JSON.parse(response);
+      if (typeof parsed !== 'object' || parsed === null) return true;
+      const errCode = (parsed as Record<string, unknown>)['errCode'];
+      return errCode === undefined || errCode === 0;
+    } catch {
+      return true;
+    }
   }
 
   protected back(): void {
@@ -374,8 +665,8 @@ export class PharmacyPage {
   private finish(): void {
     this.started.set(false);
     this.step.set(0);
-    this.uploadedFile.set(null);
-    this.existingId.set('');
+    this.resetPrescription();
+    this.resetAddresses();
     this.cartPushed.set(false);
     this.cart.set([]);
   }
