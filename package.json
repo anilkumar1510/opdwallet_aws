@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "NODE_OPTIONS=--disable-warning=DEP0060 OPD_WALLET_PUBLIC_PATH=http://localhost:4500 ng serve member --proxy-config proxy.conf.json",
-    "build": "ng build member",
+    "build": "ng build member && node copy-css.js",
     "watch": "ng build member --watch --configuration development",
     "test": "ng test member",
     "test:e2e": "npx playwright test",
