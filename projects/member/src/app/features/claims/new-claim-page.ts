@@ -927,6 +927,7 @@ export class NewClaimPage {
       "customer_id": "CUS-HH-000731",
 
       "category": this.category(),
+      ...(this.isDental() ? { "dental_claim_type": this.dentalSubType() } : {}),
       "claim_type": this.claimType(),
       "benefit_category": this.category(),
       "provider": this.providerName().trim(),

@@ -249,8 +249,26 @@ test.describe('New claim', () => {
         await page.getByRole('button', { name: 'Continue' }).click();
         await expect(page.getByRole('heading', { name: 'Review your claim' })).toBeVisible({ timeout: 10000 });
 
+        const submitPromise = page.waitForRequest(
+          (req) => req.url().includes('habit-opd/api/v1/claim') && req.method() === 'POST',
+        );
+
         // Submit claim and wait for navigation to Claims page
         await page.getByRole('button', { name: 'Submit claim' }).click();
+        const request = await submitPromise;
+        const postData = request.postData() ?? '';
+        const params = new URLSearchParams(postData);
+        const resourceBase64 = params.get('resource') ?? '';
+        if (resourceBase64) {
+          const rawJson = Buffer.from(resourceBase64, 'base64').toString('utf8');
+          const payload = JSON.parse(rawJson);
+          if (isDental) {
+            expect(payload.dental_claim_type).toBe(subType);
+          } else {
+            expect(payload.dental_claim_type).toBeUndefined();
+          }
+        }
+
         await page.waitForURL('**/member/claims');
         await expect(page.getByRole('heading', { name: 'Claims' })).toBeVisible({ timeout: 10000 });
       }
