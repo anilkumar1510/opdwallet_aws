@@ -26,6 +26,11 @@ export interface PharmacyOrderPage {
   readonly orders: readonly PharmacyOrder[];
   /** Total rows matching the query, used to decide whether another page exists. */
   readonly count: number;
+  /**
+   * Whether the API actually sent `count`. False means the total is unknown and
+   * `count` is only this page's row count, so page navigation cannot be offered.
+   */
+  readonly hasTotal: boolean;
 }
 
 interface Row {

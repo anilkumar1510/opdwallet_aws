@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { FamilyStore } from '../../core/family/family.store';
@@ -45,8 +45,8 @@ const EXISTING_PRESCRIPTIONS = [
   { id: 'RX-2026-0008', label: 'Dr. N. Gupta · 20 Aug 2026' },
 ];
 
-/** Matches the page size the backend is called with; `count` decides when to stop. */
-const ORDERS_PAGE_SIZE = 20;
+/** Orders per page; the pager derives its page count from the API's `count`. */
+const ORDERS_PAGE_SIZE = 5;
 
 const PER_TXN_LIMIT = 500;
 const COPAY_PCT = 20;
@@ -113,7 +113,7 @@ export function readUploadedDocId(body: unknown): string | null {
           </div>
           <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
 
-          <h2 class="mt-8 text-lg font-bold text-[#034DA2]">Past orders</h2>
+          <h2 #ordersHeading class="mt-8 text-lg font-bold text-[#034DA2]">Past orders</h2>
 
           @if (ordersLoading()) {
             <p class="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-ink-500">Loading your orders…</p>
@@ -127,17 +127,29 @@ export function readUploadedDocId(body: unknown): string | null {
             </p>
           } @else {
             <opd-pharmacy-past-orders [orders]="pastOrders()" />
-          }
-
-          @if (hasMoreOrders()) {
-            <button
-              type="button"
-              class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700 disabled:opacity-50"
-              [disabled]="ordersLoading()"
-              (click)="loadMoreOrders()"
-            >
-              {{ ordersLoading() ? 'Loading…' : 'Load more' }}
-            </button>
+            <nav class="mt-3 flex items-center justify-between gap-3" aria-label="Past orders pages">
+              <button
+                type="button"
+                class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 disabled:opacity-40"
+                [disabled]="!hasPrevPage() || ordersLoading()"
+                (click)="goToOrdersPage(ordersPage() - 1)"
+              >
+                &larr; Previous
+              </button>
+              @if (ordersHaveTotal()) {
+                <p class="text-sm text-ink-500">Page {{ ordersPage() + 1 }} of {{ pageCount() }}</p>
+              } @else {
+                <p class="text-sm text-ink-500">Page {{ ordersPage() + 1 }}</p>
+              }
+              <button
+                type="button"
+                class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 disabled:opacity-40"
+                [disabled]="!hasNextPage() || ordersLoading()"
+                (click)="goToOrdersPage(ordersPage() + 1)"
+              >
+                Next &rarr;
+              </button>
+            </nav>
           }
         }
 
@@ -289,29 +301,36 @@ export class PharmacyPage {
 
   protected readonly pastOrders = signal<readonly PharmacyOrder[]>([]);
   protected readonly ordersTotal = signal(0);
+  protected readonly ordersPage = signal(0);
   protected readonly ordersLoading = signal(false);
   protected readonly ordersError = signal<string | null>(null);
-  protected readonly hasMoreOrders = computed(() => this.pastOrders().length < this.ordersTotal());
+  /**
+   * Whether the API reports a total. Until it does, `ordersTotal` is only this
+   * page's row count and there is no honest "of M" to show, so navigation is
+   * offered but inert rather than hidden.
+   */
+  protected readonly ordersHaveTotal = signal(false);
+  protected readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.ordersTotal() / ORDERS_PAGE_SIZE)),
+  );
+  protected readonly hasPrevPage = computed(() => this.ordersHaveTotal() && this.ordersPage() > 0);
+  protected readonly hasNextPage = computed(
+    () => this.ordersHaveTotal() && this.ordersPage() + 1 < this.pageCount(),
+  );
   private ordersRequested = false;
+  /** Anchor for the scroll-back on a page change; absent while the list is hidden. */
+  private readonly ordersHeading = viewChild<ElementRef<HTMLHeadingElement>>('ordersHeading');
 
-  constructor() {
-    // The past-orders list is the landing view, so it loads on page entry rather
-    // than waiting for "Order medicines" — which would leave the section showing
-    // an empty state the member never asked for.
-    this.loadOrdersOnce();
-  }
-
-  /** Paging is server-side: `page_no` advances and rows accumulate. */
-  protected async loadMoreOrders(): Promise<void> {
+  private async loadOrdersPage(page: number): Promise<void> {
     if (this.ordersLoading()) return;
     this.ordersLoading.set(true);
     this.ordersError.set(null);
     try {
-      const page = await this.orderService.list(this.pastOrders().length, ORDERS_PAGE_SIZE);
-      if (page.orders.length) {
-        this.pastOrders.update((current) => [...current, ...page.orders]);
-      }
-      this.ordersTotal.set(page.count);
+      const result = await this.orderService.list(page, ORDERS_PAGE_SIZE);
+ this.pastOrders.set(result.orders);
+      this.ordersTotal.set(result.count);
+      this.ordersHaveTotal.set(result.hasTotal);
+      this.ordersPage.set(page);
     } catch {
       // A failed load must not read as "no past orders" — the member would be
       // told they have no history when the request simply did not complete.
@@ -321,10 +340,24 @@ export class PharmacyPage {
     }
   }
 
+  protected async goToOrdersPage(page: number): Promise<void> {
+    if (!this.ordersHaveTotal()) return;
+    if (page < 0 || page >= this.pageCount() || page === this.ordersPage()) return;
+    await this.loadOrdersPage(page);
+    this.ordersHeading()?.nativeElement.scrollIntoView({ block: 'start' });
+  }
+
+  constructor() {
+    // The past-orders list is the landing view, so it loads on page entry rather
+    // than waiting for "Order medicines" — which would leave the section showing
+    // an empty state the member never asked for.
+    this.loadOrdersOnce();
+  }
+
   private loadOrdersOnce(): void {
     if (this.ordersRequested) return;
     this.ordersRequested = true;
-    void this.loadMoreOrders();
+    void this.loadOrdersPage(0);
   }
 
   protected readonly started = signal(false);

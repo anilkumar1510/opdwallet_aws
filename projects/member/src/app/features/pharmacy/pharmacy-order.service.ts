@@ -34,10 +34,11 @@ export class PharmacyOrderService {
     // must not assume the key exists.
     const resource = parsed?.['resource'];
     const rows: unknown[] = Array.isArray(resource) ? resource : [];
-    const count = num(parsed?.['count']) ?? rows.length;
+    const total = num(parsed?.['count']);
     return {
       orders: rows.map(toPharmacyOrder).filter((order): order is NonNullable<typeof order> => order !== null),
-      count,
+      count: total ?? rows.length,
+      hasTotal: total !== null,
     };
   }
 
