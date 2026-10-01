@@ -11,17 +11,22 @@
 
 - [x] 2.1 Add `master-management` entries to both `proxy.conf.json` and `projects/member/proxy.conf.json` mirroring the existing proxy blocks, and verify an address GET reaches the backend in local dev instead of 404ing
 - [x] 2.2 Confirm from a real request whether `patient_id` is the family member's `id` and `uhId` is their `uhid`, and pin the mapping with a test
-- [x] 2.3 Expose `encryptText` as a public method on `AppService` using the same key and IV derivation as `decryptText`, and verify an `encryptText` → `decryptText` round-trip returns the original string
+- [x] 2.3 ~~Expose `encryptText` as a public method on `AppService` using the same key and IV derivation as `decryptText`, and verify an `encryptText` → `decryptText` round-trip returns the original string~~ — **withdrawn.** No key is available in this app and the API accepts plaintext streets, so the write-side `encrypt`/`hasEncryptKey` helpers were added and then removed as dead code. See design decision 4
 - [x] 2.4 Create the pharmacy-scoped address model and mapper that produces the display model, the `POST order_address` body (flat fields plus the nested `address` block, with the nested pincode key spelled `pincode`), and the booking `address` object, and verify tests cover the street1/house_flat_no, street2/street, street3/street2, and DisplayName mappings
 - [x] 2.5 Implement `GET order_address` via `AppService.getcall()` with the patient filter, and verify the mapper renders readable street text by attempting decryption and falling back to the raw value when decryption is unavailable
+- [ ] 2.6 Fetch `api_encryption_key` from `GET_MY_CONFIG` (`account-management/api/v1/application_master`) and store it as the session key, and decrypt `street1`/`street2` with two passes — one pass yields ciphertext rather than the street, which is why this silently failed. Blocked: the endpoint needs a session the browser does not yet hold
 
 ## 3. Address Cards and Add-Address Modal
 
 - [x] 3.1 Create the horizontal scrolling address card strip with a selected state, an explicit empty state when no addresses exist, and an always-present add-address card; verify the selected card is marked, selection is exclusive, and the empty state invites adding one
 - [x] 3.2 Create the add-address modal with a reactive form exposing `street1`, `street2`, `street3`, `city`, `state`, `pincode`, and `country`, and verify each field is bound and the modal opens and dismisses without side effects
 - [x] 3.3 Add client-side validation requiring the mandatory fields and a valid pincode, and verify an invalid form shows a field-level message and sends no request
-- [x] 3.4 Submit the new address through `POST order_address` with the encrypted street fields, prepend the returned address to the cards, and verify the modal closes and the new address is selectable
+- [x] 3.4 Submit the new address through `POST order_address` with the street fields as plaintext (encryption was removed — see decision 4), prepend the returned address to the cards, and verify the modal closes and the new address is selectable
 - [x] 3.5 Surface address-load and address-save failures — a failed load leaves the add-address path usable, and a failed save keeps the modal open with input preserved — and verify both behaviours
+- [x] 3.6 Identify each card by address type: resolve `address_type` to a readable label with a matching icon, fall back to `Other` for unrecognised codes, and give the add-address card the same flex skeleton so heights and the selection baseline align
+- [x] 3.7 Send a `uhId` within the 128-character API limit, preferring the family record's plaintext value over the encrypted one carried on address rows, and truncate as a last-resort guard
+- [x] 3.8 Surface the API's refusal message when a save is rejected, including a rejection delivered with a success status and an error code in the body
+- [ ] 3.9 Wire the edit affordance to the update endpoint once it exists. The card output, prefill mapper and modal inputs are in place but the button is hidden; `POST order_address` only creates rows, so submitting an edit through it would add a duplicate address
 
 ## 4. Booking Submission
 

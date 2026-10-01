@@ -126,6 +126,8 @@ When the member activates "Submit prescription" with a prescription document and
 - **AND** no booking request is sent with an empty or fabricated policy identifier
 
 ### Requirement: Encrypted address fields are readable on the address cards
+**Status: NOT MET.** The requirement below is the target state and is not satisfied today. `street1` and `street2` arrive double-encrypted and the portal holds no key for them, so the cards render `street3` only. This stays open until `api_encryption_key` is fetched from `GET_MY_CONFIG` and two decrypt passes are applied — see design decision 4.
+
 When the address service returns `street1` or `street2` as encrypted values, the system SHALL render them in readable form on the address cards, and SHALL fall back to the value as received when it cannot be decrypted.
 
 #### Scenario: Encrypted street values are displayed readably
@@ -135,3 +137,47 @@ When the address service returns `street1` or `street2` as encrypted values, the
 #### Scenario: Undecryptable value falls back to the raw value
 - **WHEN** a street field cannot be decrypted, for example because no encryption key is available
 - **THEN** the card displays the value as received rather than an empty or error state
+
+#### Scenario: Interim behaviour while the requirement is unmet
+- **WHEN** `street1` or `street2` is unreadable because no encryption key is held
+- **THEN** the card displays `street3` in place of the unreadable street lines
+- **AND** the card does not present base64 ciphertext as if it were an address
+
+### Requirement: Address cards identify the address by type
+An address card SHALL present a human-readable address type and SHALL separate the street text from the locality so that two similar addresses can be told apart.
+
+#### Scenario: Address type is shown as a label
+- **WHEN** an address card renders
+- **THEN** `address_type` is presented as a readable label such as Home, Office or Other
+- **AND** an unrecognised code is presented as a fallback label rather than the raw code
+
+#### Scenario: Street and locality are visually distinct
+- **WHEN** an address card renders
+- **THEN** the street text and the city, state and pincode are presented as separate blocks
+
+#### Scenario: Cards align across the strip
+- **WHEN** several address cards and the add-address card are shown together
+- **THEN** they share a common height and their selection controls share a baseline
+
+### Requirement: `uhId` respects the API length limit
+The system SHALL send a `uhId` no longer than 128 characters, preferring a plaintext value over an encrypted one.
+
+#### Scenario: Over-long encrypted `uhId` is not sent
+- **WHEN** the address rows carry an encrypted `uhId` longer than 128 characters
+- **THEN** the system sends the plaintext `uhId` from the family record instead
+- **AND** the request is not rejected with a `uhId` length error
+
+#### Scenario: An over-long value cannot reach the API
+- **WHEN** a `uhId` longer than 128 characters reaches the request body
+- **THEN** the system truncates it before sending
+
+### Requirement: Save failures report the API's reason
+The system SHALL present the API's own refusal message when an address save is rejected, including when the rejection arrives with a success status.
+
+#### Scenario: Rejection message is surfaced
+- **WHEN** the address API responds with a refusal carrying a message
+- **THEN** the modal displays that message rather than a generic failure notice
+
+#### Scenario: A success status carrying an error is treated as a failure
+- **WHEN** the address API responds with a success status and an error code in the body
+- **THEN** the system treats the save as failed and reports the reason

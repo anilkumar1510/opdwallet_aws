@@ -11,10 +11,13 @@ The Pharmacy page's "Upload a new prescription" step is a static simulation: sel
 - Load the member's saved delivery addresses from `GET master-management/api/v1/order_address`, filtered by the active patient, and render them as horizontally scrolling cards.
 - Add an "Add address" card to that strip which opens a modal containing a reactive form for `street1`, `street2`, `street3`, `city`, `state`, `pincode`, and `country`.
 - Submit the new address to `POST master-management/api/v1/order_address` and prepend the returned address to the horizontal cards so it is immediately selectable.
+- Identify each card by a readable address type with a matching icon, and separate the street text from city, state and pincode so similar addresses are distinguishable.
+- Send a `uhId` within the API's 128-character limit, preferring the family record's plaintext value over the encrypted one carried on address rows.
+- Surface the API's own refusal message when an address save is rejected, including rejections delivered with a success status.
+- ~~Add `street1`/`street2` decryption for display~~ — **not delivered.** The values are double-encrypted and the portal holds no key, so the cards render `street3` only. Tracked as task 2.6.
 - Require a selected delivery address alongside an uploaded prescription before "Submit prescription" is allowed to proceed.
 - Send `POST habit-opd/api/v1/opd_pharmacy_booking` on submit, carrying `doc_id`, `policy_id`, and the selected address object.
 - Add the `master-management` API path to the Angular dev-server proxy configuration so the address endpoints resolve in local development.
-- Add `street1`/`street2` decryption for display when the API returns those fields as AES ciphertext rather than plaintext.
 
 **Behavioural boundary:** only the Pharmacy page's prescription step gains real backend calls. The subsequent simulated steps (adjudicator queue, cart build, checkout) remain unchanged in this change.
 
