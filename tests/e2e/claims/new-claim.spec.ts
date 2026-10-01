@@ -164,4 +164,114 @@ test.describe('New claim', () => {
 
     await expect(page.locator('text=was capped to')).toBeVisible({ timeout: 10000 });
   });
+
+  /** Data-driven test: submits every live claim category, including both Dental variants. */
+  test('all claim categories — submit claim', async ({ page }) => {
+    test.setTimeout(300_000);
+
+    // Read all live category options from the DOM (wait for attached, not visible)
+    await expect(page.locator('#category option[value]:not([value=""])').first()).toBeAttached({ timeout: 15000 });
+
+    const categories = await page.locator('#category option[value]:not([value=""])').evaluateAll((opts) =>
+      opts.map((o) => ({ value: o.getAttribute('value')!, label: o.textContent!.trim() }))
+    );
+
+    expect(categories.length).toBeGreaterThan(0);
+
+    for (const cat of categories) {
+      // For DENTAL, test both Consultation and Procedure on separate fresh navigations
+      const isDental = cat.value === 'DENTAL' || cat.label.toLowerCase().includes('dental');
+      const dentalSubTypes = isDental ? ['consultation', 'procedure'] : [null];
+
+      for (const subType of dentalSubTypes) {
+        // Fresh navigation for each category/sub-type
+        await page.goto('/member/claims/new');
+        await page.getByRole('heading', { name: 'New Claim' }).waitFor({ timeout: 10000 });
+        await expect(page.locator('#patient option:not([disabled])').first()).toBeAttached({ timeout: 15000 });
+        await expect(page.locator('#category option[value]:not([value=""])').first()).toBeAttached({ timeout: 15000 });
+
+        // Step 1: select category by actual value
+        await page.locator('#category').selectOption(cat.value);
+
+        if (subType) {
+          await page.locator(`button:has-text("${subType === 'consultation' ? 'Consultation' : 'Procedure'}")`).click();
+        }
+
+        // Fill location fields only when attached/present
+        const providerName = page.locator('#providerName');
+        if (await providerName.count() > 0) {
+          await expect(providerName).toBeAttached({ timeout: 5000 });
+          await providerName.fill('Test Clinic');
+        }
+        const purchaseLocation = page.locator('#purchaseLocation');
+        if (await purchaseLocation.count() > 0) {
+          await expect(purchaseLocation).toBeAttached({ timeout: 5000 });
+          await purchaseLocation.fill('Test Location');
+        }
+
+        await page.locator('#treatmentDate').fill('2026-09-01');
+        await page.locator('#billAmount').fill('100');
+        await page.getByRole('button', { name: 'Continue' }).click();
+
+        // Step 2: Documents — wait for Documents heading
+        await expect(page.getByRole('heading', { name: 'Documents' })).toBeVisible({ timeout: 10000 });
+
+        // Discover every rendered document input and upload a unique PDF to each
+        const docInputs = await page.locator('input[type="file"][id^="doc-"]').all();
+        for (const input of docInputs) {
+          const id = await input.getAttribute('id');
+          const slotKey = id?.replace('doc-', '') ?? 'doc';
+          const file = createTempPdf(`${slotKey}-${cat.value}-${subType ?? 'consult'}.pdf`);
+          await input.setInputFiles(file);
+          await expect(page.locator(`li:has-text("${path.basename(file)}")`)).toBeVisible({ timeout: 20000 });
+        }
+
+        // Upload cancelled cheque when present
+        const chequeInput = page.locator('#cheque');
+        if (await chequeInput.count() > 0) {
+          await expect(chequeInput).toBeAttached({ timeout: 5000 });
+          const chequeFile = createTempPdf(`cheque-${cat.value}-${subType ?? 'consult'}.pdf`);
+          await chequeInput.setInputFiles(chequeFile);
+          await expect(page.locator(`text=${path.basename(chequeFile)}`)).toBeVisible({ timeout: 20000 });
+        }
+
+        // Fill bank fields when present
+        const bankHolder = page.locator('#bankHolder');
+        if (await bankHolder.count() > 0) {
+          await expect(bankHolder).toBeAttached({ timeout: 5000 });
+          await bankHolder.fill('Test User');
+          await page.locator('#bankAccount').fill('123456789012');
+          await page.locator('#bankIfsc').fill('HDFC0001234');
+          await page.locator('#bankName').fill('HDFC Bank');
+        }
+
+        // Step 3: Review
+        await page.getByRole('button', { name: 'Continue' }).click();
+        await expect(page.getByRole('heading', { name: 'Review your claim' })).toBeVisible({ timeout: 10000 });
+
+        const submitPromise = page.waitForRequest(
+          (req) => req.url().includes('habit-opd/api/v1/claim') && req.method() === 'POST',
+        );
+
+        // Submit claim and wait for navigation to Claims page
+        await page.getByRole('button', { name: 'Submit claim' }).click();
+        const request = await submitPromise;
+        const postData = request.postData() ?? '';
+        const params = new URLSearchParams(postData);
+        const resourceBase64 = params.get('resource') ?? '';
+        if (resourceBase64) {
+          const rawJson = Buffer.from(resourceBase64, 'base64').toString('utf8');
+          const payload = JSON.parse(rawJson);
+          if (isDental) {
+            expect(payload.dental_claim_type).toBe(subType);
+          } else {
+            expect(payload.dental_claim_type).toBeUndefined();
+          }
+        }
+
+        await page.waitForURL('**/member/claims');
+        await expect(page.getByRole('heading', { name: 'Claims' })).toBeVisible({ timeout: 10000 });
+      }
+    }
+  });
 });

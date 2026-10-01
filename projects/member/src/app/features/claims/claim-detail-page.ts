@@ -125,6 +125,12 @@ function humaniseCode(value: string | undefined): string {
                 <dt class="text-ink-700">Claim type</dt>
                 <dd class="font-medium text-ink-900">{{ detail.claim_type }}</dd>
               </div>
+              @if (detail.dental_claim_type) {
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Dental claim type</dt>
+                  <dd class="font-medium text-ink-900">{{ dentalClaimTypeLabel(detail.dental_claim_type) }}</dd>
+                </div>
+              }
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Treatment date</dt>
                 <dd class="font-medium text-ink-900">{{ date(detail.treatment_date) }}</dd>
@@ -634,6 +640,10 @@ export class ClaimDetailPage {
 
   protected documentTypeLabel(value: string | undefined): string {
     return RESUBMIT_DOCUMENT_TYPES.find((t) => t.value === value)?.label ?? humaniseCode(value);
+  }
+
+  protected dentalClaimTypeLabel(value: string | undefined): string {
+    return humaniseCode(value);
   }
 
   protected documentStatusLabel(value: string | undefined): string {
