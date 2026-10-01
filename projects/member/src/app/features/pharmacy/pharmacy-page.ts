@@ -80,6 +80,9 @@ const ORDERS_PAGE_SIZE = 5;
 const PER_TXN_LIMIT = 500;
 const COPAY_PCT = 20;
 
+/** The API rejects a longer uhId outright: "Length for uhId should not be greater than 128". */
+const MAX_UHID_LENGTH = 128;
+
 type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -213,7 +216,6 @@ export function readUploadedDocId(body: unknown): string | null {
                   [loadFailed]="addressLoadFailed()"
                   [(selectedId)]="selectedAddressId"
                   (addRequested)="openAddAddress()"
-                  (editRequested)="openEditAddress($event)"
                 />
 
                 <opd-add-address-modal
@@ -436,7 +438,21 @@ export class PharmacyPage {
     }
     const loaded = await this.addressService.list(patientId, uhId);
     this.addresses.set(loaded);
-    this.addressUhId.set(loaded.find((address) => address.uhId)?.uhId ?? uhId);
+    this.addressUhId.set(this.usableUhid(uhId, loaded));
+  }
+
+  /**
+   * The uhid to POST back, preferring the family record's plaintext value.
+   *
+   * order_address rows carry the uhid encrypted, which runs to 152 characters and
+   * the API rejects with "Length for uhId should not be greater than 128".
+   * Decrypting it is not an option — one pass still yields ciphertext, not a
+   * uhid — so the address row is only used when it fits the limit, and the
+   * family record (a plain "HH-371683") wins whenever it is present.
+   */
+  private usableUhid(fromFamily: string, loaded: readonly PharmacyAddress[]): string {
+    if (fromFamily && fromFamily.length <= MAX_UHID_LENGTH) return fromFamily;
+    return loaded.find((address) => address.uhId && address.uhId.length <= MAX_UHID_LENGTH)?.uhId ?? '';
   }
 
   protected openAddAddress(): void {
@@ -483,7 +499,7 @@ export class PharmacyPage {
     const saved = await this.addressService.save(input, patientId, this.addressUhId() || uhId);
     this.addressSaving.set(false);
     if (!saved) {
-      this.addressSaveError.set('We could not save this address. Please try again.');
+      this.addressSaveError.set(this.addressService.lastError ?? 'We could not save this address. Please try again.');
       return;
     }
     this.addresses.update((current) => [saved, ...current]);

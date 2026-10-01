@@ -15,8 +15,21 @@ const GET_QUERY = 'queryId=GET_PAGE&args=';
  */
 @Injectable({ providedIn: 'root' })
 export class PharmacyAddressService {
+  /** Why the last save failed, for the host to show. Cleared by each save call. */
+  lastError: string | null = null;
+
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
+
+  /** Reads `message` from a refusal body, or an HttpErrorResponse's error. */
+  private errorMessage(raw: unknown): string | null {
+    const record = raw as Record<string, unknown> | null;
+    if (typeof record?.['error'] === 'object' && record['error'] !== null) {
+      return this.errorMessage(record['error']);
+    }
+    const message = record?.['message'];
+    return typeof message === 'string' && message.trim() ? message : null;
+  }
 
   /**
    * Returns the patient's saved addresses, or an empty list on any failure —
@@ -65,6 +78,7 @@ export class PharmacyAddressService {
    * to habit-opd. Returns null when encryption is unavailable or the save fails.
    */
   async save(input: PharmacyAddressInput, patientId: string, uhId: string): Promise<PharmacyAddress | null> {
+    this.lastError = null;
     const body = toOrderAddressBody(input, patientId, uhId);
     if (!body) return null;
 
@@ -74,8 +88,14 @@ export class PharmacyAddressService {
       const envelope = await this.http
         .post(`/${APPLICATION}/api/v1/${RESOURCE}`, params, this.appService.addXsrfToken(encoded, true))
         .toPromise();
-      return this.parseSaved(this.unwrapBody(envelope));
-    } catch {
+      const parsed = this.parseSaved(this.unwrapBody(envelope));
+      if (parsed) return parsed;
+      // HTTP 200 with errCode -1: the API refuses the payload and says why in
+      // `message`. Surfacing it beats a generic failure the member cannot act on.
+      this.lastError = this.errorMessage(this.unwrapBody(envelope)) ?? this.lastError;
+      return null;
+    } catch (e) {
+      this.lastError = this.errorMessage(e) ?? this.lastError;
       return null;
     }
   }

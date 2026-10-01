@@ -58,6 +58,9 @@ export interface BookingAddress {
 /** `address_type` "2" is the only value seen from the pharmacy booking flow. */
 export const HOME_ADDRESS_TYPE = '2';
 
+/** The API rejects a longer uhId: "Length for uhId should not be greater than 128". */
+const MAX_UHID_LENGTH = 128;
+
 /**
  * Codes seen from order_address. Anything unrecognised falls back to "Other"
  * rather than printing a raw code, which a member cannot act on.
@@ -149,7 +152,6 @@ export function toOrderAddressBody(
   patientId: string,
   uhId: string,
 ): Record<string, unknown> {
-
   const street1 = input.street1.trim();
   const street2 = input.street2.trim();
   const street3 = input.street3.trim();
@@ -160,7 +162,7 @@ export function toOrderAddressBody(
 
   return {
     patient_id: patientId,
-    uhId,
+    uhId: uhId.slice(0, MAX_UHID_LENGTH),
     house_flat_no: street1,
     street: street2,
     street2: street3,

@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, input, model, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, model, output } from '@angular/core';
 
-import { AppService } from '../../core/http/api.service';
 import { Icon, IconName } from '../../shared/ui/icon';
-import { PharmacyAddress, addressDisplayLines } from './pharmacy-address.model';
+import { PharmacyAddress } from './pharmacy-address.model';
 
 /**
  * The saved delivery addresses as a horizontally scrolling strip, with an
@@ -40,26 +39,10 @@ import { PharmacyAddress, addressDisplayLines } from './pharmacy-address.model';
           <div class="flex items-center gap-1.5">
             <opd-icon [name]="iconFor(address)" [size]="14" class="text-[#0E51A2]" />
             <p class="flex-1 truncate text-xs font-semibold text-[#0E51A2]">{{ address.typeLabel }}</p>
-            <button
-              type="button"
-              class="shrink-0 rounded-md px-1 py-0.5 text-[11px] font-medium text-[#0F5FDC] hover:bg-[#DCE7FF]"
-              [attr.aria-label]="'Edit ' + address.typeLabel + ' address'"
-              (click)="editRequested.emit(address)"
-            >
-              Edit
-            </button>
           </div>
 
-          @let shown = linesFor(address);
           <div class="mt-1 flex-1">
-            @for (line of shown.lines; track line) {
-              <p class="break-words text-xs leading-snug text-ink-900">{{ line }}</p>
-            }
-            @if (shown.unreadable > 0) {
-              <p class="mt-1 text-[11px] leading-snug text-warning-700">
-                Some street details could not be decrypted.
-              </p>
-            }
+            <p class="break-words text-xs leading-snug text-ink-900">{{ streetFor(address) }}</p>
 
             <p class="mt-1.5 border-t border-[#E5E7EB] pt-1.5 text-xs leading-snug text-ink-500">
               {{ address.locality }}
@@ -101,14 +84,6 @@ export class PharmacyAddressCards {
   /** Two-way: the address the booking payload will carry. */
   readonly selectedId = model('');
   readonly addRequested = output<void>();
-  /** Emitted with the address to edit; the host opens the edit modal from here. */
-  readonly editRequested = output<PharmacyAddress>();
-
-  private readonly crypto = inject(AppService);
-
-  protected linesFor(address: PharmacyAddress) {
-    return addressDisplayLines(address, this.crypto);
-  }
 
   protected iconFor(address: PharmacyAddress): IconName {
     switch (address.typeLabel) {
@@ -119,5 +94,14 @@ export class PharmacyAddressCards {
       default:
         return 'userCircle';
     }
+  }
+
+  /**
+   * street3 only. street1/street2 arrive double-encrypted and the portal holds no
+   * key for them, so they would render as base64; street3 is plaintext and is
+   * the only street line a member can actually read.
+   */
+  protected streetFor(address: PharmacyAddress): string {
+    return address.booking.street3;
   }
 }
