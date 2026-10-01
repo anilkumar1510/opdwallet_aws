@@ -181,3 +181,37 @@ The system SHALL present the API's own refusal message when an address save is r
 #### Scenario: A success status carrying an error is treated as a failure
 - **WHEN** the address API responds with a success status and an error code in the body
 - **THEN** the system treats the save as failed and reports the reason
+
+### Requirement: Past bookings are loaded from the API
+The system SHALL load the member's past pharmacy bookings from `habit-opd/api/v1/opd_pharmacy_booking` with `queryId=GET_PHARMACY_BY_USER` when the page loads, and SHALL page through the results server-side.
+
+#### Scenario: Past orders load on page entry
+- **WHEN** the pharmacy page is opened
+- **THEN** the past bookings request is issued without waiting for any other interaction
+- **AND** the member is not shown an empty state while the request is still in flight
+
+#### Scenario: Further pages are requested on demand
+- **WHEN** the loaded rows are fewer than the total the API reports in `count`
+- **THEN** the system offers to load more
+- **AND** activating it requests the next page using the accumulated row count as `page_no`
+
+#### Scenario: A failed load is not reported as an empty history
+- **WHEN** the past bookings request fails
+- **THEN** the system surfaces a failure state
+- **AND** the system does not state that the member has no past orders
+
+### Requirement: Past booking cards render the fields the payload carries
+A past booking card SHALL render the booking reference, creation date and delivery locality, and SHALL omit any field the API does not return rather than showing a placeholder value.
+
+#### Scenario: Card shows the fields present in the payload
+- **WHEN** a past booking card renders
+- **THEN** it shows the booking name, the formatted creation date and the city, state and pincode from the row's address
+
+#### Scenario: Absent fields are omitted
+- **WHEN** the payload does not include item count, total amount or status
+- **THEN** the card omits those regions entirely
+- **AND** no zero, dash or invented status is displayed
+
+#### Scenario: Street lines are not shown as ciphertext
+- **WHEN** a row's street fields are encrypted under a key the portal does not hold
+- **THEN** the card does not render those values

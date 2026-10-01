@@ -145,6 +145,25 @@ The address service discarded the refusal body and always reported "We could not
 
 Both proxy files are referenced by `angular.json` (`serve` and `serve-original` both point at the root `proxy.conf.json`). The entry mirrors the existing blocks exactly — same target, same injected `host`/`referer`/`origin` headers — with the `/master-management/api` prefix. Without this, address calls 404 in local dev while working in deployed environments, which is the worst failure mode to debug.
 
+### 13. Past orders get their own model, service and component
+
+The past-orders list was a hardcoded `PAST_ORDERS` array of twelve invented rows. It is now read from `habit-opd/api/v1/opd_pharmacy_booking?queryId=GET_PHARMACY_BY_USER`, which is the same shape `claims.store.ts` already uses against `GET_CLAIMS_BY_USER` on the same microservice: `page_no` and `page_size` as top-level parameters, no `args=` envelope.
+
+The model, service and card list are kept in three files separate from the address ones. `PharmacyAddress` models the `master-management` `order_address` contract and names its fields `street1`/`house_flat_no`; these rows carry their own `address` block whose streets are ciphertext under a different key. Merging them would collide on field names and silently mix two contracts.
+
+**Fields the payload does not carry.** There is no item count, no amount and no status, so `totalItems`, `totalAmount` and `status` are typed `number | null` / `string | null`. The card omits those regions entirely instead of rendering `0`, `—` or a guessed badge, and the nullable types mean the card fills in with no code change once the fields ship. `num()` coalesces a non-numeric value to `null` rather than letting `NaN` reach the template.
+
+**`name` is shown as the prescription line.** The row carries a `doc_id` UUID but no `RX-…` reference, and `name` (`OPD-2026-00027`) is the identifier a member recognises, so it occupies that line.
+
+### 14. A failed past-orders load must not read as an empty history
+
+The service originally caught every error and returned `{ orders: [], count: 0 }`. That made a rejected request indistinguishable from a genuinely empty list: `hasMoreOrders` is `rows < count`, so `0 < 0` is false and the load-more control stayed hidden, while the template rendered "You have no past orders yet." — a factual claim about the member's history that was never verified. The catch is removed so the failure reaches the page, which shows a failure state instead.
+
+Paging uses the accumulated row count as `page_no` rather than a separate counter, so the second request asks for page 3 when the first returned 3 rows — not page 5. This only holds while every fetched row is appended exactly once; a client-side filter would desynchronise the cursor and require a dedicated `ordersLoaded` counter.
+
+- **[Risk] Past booking rows carry a different encryption key than `order_address`.** Every street value in the sample payload returns unchanged through `decryptText`, so the cards cannot show street text and show locality only. → **Mitigation:** omit rather than render ciphertext; tracked as task 6.7.
+- **[Risk] `pastOrders().length` does double duty as render list and paging cursor.** A client-side filter would shift the cursor and silently re-fetch a page. → **Mitigation:** documented on the decision; add a dedicated counter before any filtering is introduced.
+
 ## Risks / Trade-offs
 
 - **[Risk] The upload succeeds but the response shape differs from the claims page's `resource[0]`, leaving `doc_id` empty.** → **Mitigation:** read `resource` defensively as either an array or a single object, and surface a visible error when no identifier is found rather than submitting `undefined` as `doc_id`. Task 1.2 pins this with a captured sample response.

@@ -17,6 +17,7 @@ The Pharmacy page's "Upload a new prescription" step is a static simulation: sel
 - ~~Add `street1`/`street2` decryption for display~~ — **not delivered.** The values are double-encrypted and the portal holds no key, so the cards render `street3` only. Tracked as task 2.6.
 - Require a selected delivery address alongside an uploaded prescription before "Submit prescription" is allowed to proceed.
 - Send `POST habit-opd/api/v1/opd_pharmacy_booking` on submit, carrying `doc_id`, `policy_id`, and the selected address object.
+- Replace the hardcoded past-orders array with a real read from `habit-opd/api/v1/opd_pharmacy_booking?queryId=GET_PHARMACY_BY_USER`, paged server-side and rendered by a dedicated component, showing only the fields the payload carries.
 - Add the `master-management` API path to the Angular dev-server proxy configuration so the address endpoints resolve in local development.
 
 **Behavioural boundary:** only the Pharmacy page's prescription step gains real backend calls. The subsequent simulated steps (adjudicator queue, cart build, checkout) remain unchanged in this change.

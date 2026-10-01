@@ -41,3 +41,14 @@
 - [x] 5.1 Run diagnostics on all changed TypeScript files and confirm no new errors are introduced
 - [ ] 5.2 Exercise the flow end to end on `localhost:4500` — upload, address load, address add, select, submit — and confirm each request reaches its backend and the wizard advances only on success
 - [x] 5.3 Validate the OpenSpec change and review the final diff to confirm no unrelated files changed, in particular that `shared/ui/address-picker.ts`, `core/member/address.ts`, and the claims upload flow are untouched
+
+## 6. Past Orders
+
+- [x] 6.1 Create a `pharmacy-order.model.ts` that maps a `GET_PHARMACY_BY_USER` row to a display model, exposing `totalItems`, `totalAmount` and `status` as nullable because the payload omits them, and coalescing a non-numeric value to null rather than `NaN`
+- [x] 6.2 Implement the paged read via `AppService.getcall('opd_pharmacy_booking', 'habit-opd', 'queryId=GET_PHARMACY_BY_USER&page_no=…&page_size=…')`, treating a missing `resource` as an empty page rather than throwing, since a refusal arrives as a success status with `errCode: -1`
+- [x] 6.3 Load the first page when the page loads rather than on the "Order medicines" click, since the past-orders list is the landing view and would otherwise show an empty state the member never asked for
+- [x] 6.4 Derive `page_no` from the accumulated row count and decide "load more" by comparing loaded rows against the API's `count`, so paging stays correct when the API returns fewer rows than the requested page size
+- [x] 6.5 Surface a load failure instead of reporting it as an empty history. The service previously caught every error and returned an empty page, which made `0 < 0` hide the load-more control and rendered "you have no past orders" for a request that never completed
+- [x] 6.6 Create `pharmacy-past-orders.ts` rendering the booking name, formatted creation date and locality, omitting item count, amount and status while the payload omits them
+- [ ] 6.7 Render the street lines on past booking cards once the encryption key for this endpoint is available. Every street value in the sample payload is ciphertext that `decryptText` cannot open with the known key, so the card shows locality only
+- [ ] 6.8 Confirm the request against the live backend. The load-more control only appears once a page has loaded, so a rejected request presents as a failure banner with no rows
