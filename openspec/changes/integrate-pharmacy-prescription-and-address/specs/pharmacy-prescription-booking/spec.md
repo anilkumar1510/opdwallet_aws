@@ -215,3 +215,43 @@ A past booking card SHALL render the booking reference, creation date and delive
 #### Scenario: Street lines are not shown as ciphertext
 - **WHEN** a row's street fields are encrypted under a key the portal does not hold
 - **THEN** the card does not render those values
+
+### Requirement: Past bookings are paged, not appended
+The system SHALL present past bookings in discrete pages of five, replacing the displayed rows on each page change rather than accumulating them.
+
+#### Scenario: Five orders are shown initially
+- **WHEN** the past bookings are first loaded
+- **THEN** at most five orders are displayed
+
+#### Scenario: The member moves to the next page
+- **WHEN** the member activates the next-page control and further pages exist
+- **THEN** the following page of orders is requested using the current page number as `page_no`
+- **AND** the displayed orders are replaced rather than added to
+
+#### Scenario: The member returns to a previous page
+- **WHEN** the member activates the previous-page control
+- **THEN** the page number decreases by one
+- **AND** the earlier page of orders is requested again rather than inferred from how many rows are displayed
+
+#### Scenario: Page bounds are disabled
+- **WHEN** the member is on the first page
+- **THEN** the previous-page control is disabled
+- **AND** **WHEN** the member is on the last page
+- **THEN** the next-page control is disabled
+- **AND** the current page and the total page count are both shown
+
+#### Scenario: Changing page returns the list to view
+- **WHEN** a page change is requested
+- **THEN** the past bookings heading is scrolled back into view
+
+#### Scenario: The pager is shown but inert while the total is unknown
+- **WHEN** the API does not report a total count
+- **THEN** the page navigation controls remain visible
+- **AND** both controls are disabled
+- **AND** the counter shows the current page without a total, rather than a fabricated one
+- **AND** no further page is requested
+
+#### Scenario: Navigation activates once a total is reported
+- **WHEN** the API reports a total count
+- **THEN** the counter includes the total page count
+- **AND** the next-page control is enabled where another page exists

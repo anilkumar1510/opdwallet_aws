@@ -164,6 +164,20 @@ Paging uses the accumulated row count as `page_no` rather than a separate counte
 - **[Risk] Past booking rows carry a different encryption key than `order_address`.** Every street value in the sample payload returns unchanged through `decryptText`, so the cards cannot show street text and show locality only. → **Mitigation:** omit rather than render ciphertext; tracked as task 6.7.
 - **[Risk] `pastOrders().length` does double duty as render list and paging cursor.** A client-side filter would shift the cursor and silently re-fetch a page. → **Mitigation:** documented on the decision; add a dedicated counter before any filtering is introduced.
 
+### 15. A page-number pager, not an accumulating "load more"
+
+The past-orders list pages with an explicit `ordersPage` signal and replaces the rows on each request, rather than appending to them. `page_size` is 5 and the control is a Prev/Next pager with a "Page N of M" counter, because `count` is already returned and the member is moving between discrete pages rather than extending an endless list.
+
+Appending and paging cannot share state. With append, `page_no` was derived from `pastOrders().length`, which happens to work only while rows accumulate monotonically. A pager navigates backwards, so after moving to page 2 and back to page 1 the array is still 5 rows long and the derived cursor would re-request page 5. An explicit page signal is the only correct cursor.
+
+**This is the first true pager in the codebase.** Every other list either reveals a client-side slice (`claims-page.ts`) or refetches a longer window and replaces the list (`wallet.store.ts`). Server-side `page_no` is available on this endpoint, so the app-wide convention is followed in spirit — paginate rather than truncate — while the control itself is new.
+
+Changing page scrolls the list heading back into view. Without it, activating Next on a long page leaves the member looking at the same cards with only the counter changed, which reads as a broken control.
+
+The pager derives its bounds from `count`: `pageCount = ceil(count / page_size)`, Next disabled at the last page and Previous on the first.
+
+**The controls are always present, and inert when the total is unknown.** `GET_PHARMACY_BY_USER` does not return `count` today, so there is no honest "of M" to show. Hiding the pager entirely would tell the member nothing about whether more history exists; showing it greyed out says the feature exists and is simply unavailable. It therefore renders unconditionally, both buttons carry `disabled`, and the counter degrades from "Page 1 of 4" to "Page 1". The page also carries `ordersHaveTotal`, set from a `hasTotal` flag on the read result, because the fallback value for `count` is this page's row count — indistinguishable from a genuine total of the same number. Without the flag a real five-row total and an unknown total are the same value, and the pager would silently promise pages that do not exist.
+
 ## Risks / Trade-offs
 
 - **[Risk] The upload succeeds but the response shape differs from the claims page's `resource[0]`, leaving `doc_id` empty.** → **Mitigation:** read `resource` defensively as either an array or a single object, and surface a visible error when no identifier is found rather than submitting `undefined` as `doc_id`. Task 1.2 pins this with a captured sample response.
