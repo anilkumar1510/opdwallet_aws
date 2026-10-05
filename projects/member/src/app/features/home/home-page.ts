@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 
 import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
+import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { CartStore } from '../../core/lab/cart.store';
 import { NotificationsStore } from '../../core/notifications/notifications.store';
 import {
@@ -22,98 +23,74 @@ import {
 import { ProfileMenu } from '../shell/profile-menu';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
 import {
+  BalanceSummary,
   BenefitCard,
   LinkTile,
-  MoreServices,
   PolicyCard,
   QuickLinks,
-  WalletBalanceCard,
 } from './dashboard-cards';
 
 /**
- * Icon files are web-member's own, copied into this app's public folder.
- *
- * The Policy tile opens the member's own policy, so the list is built per
- * render rather than declared as a constant. My Family is not here — the
- * design's row is four tiles and it stays reachable from All Services.
+ * The design's own glyphs, from the Habit Health UI handoff
+ * (public/images/icons/home). The Policy pill opens the member's own policy,
+ * so the list is built per render rather than declared as a constant.
  */
 function quickLinksFor(policyId: string | null): readonly LinkTile[] {
   return [
     {
-      id: 'bookings',
-      label: 'Bookings',
-      iconSrc: 'images/icons/quicklink-my-bookings.svg',
-      artSrc: 'images/icons/quicklink-my-bookings.png',
-      path: '/member/bookings',
+      id: 'health-records',
+      lead: 'Health',
+      accent: 'Records',
+      iconSrc: 'images/icons/home/action-health-records.svg',
+      path: '/member/health-records',
     },
     {
       id: 'claims',
-      label: 'Claims',
-      iconSrc: 'images/icons/quicklink-claims.svg',
-      artSrc: 'images/icons/quicklink-claims.png',
+      accent: 'Claims',
+      iconSrc: 'images/icons/home/action-claims.svg',
       path: '/member/claims',
     },
     {
       id: 'policy',
-      label: 'Policy',
-      iconSrc: 'images/icons/quicklink-download-policy.svg',
-      artSrc: 'images/icons/quicklink-download-policy.png',
+      lead: 'Download',
+      accent: 'Policy',
+      iconSrc: 'images/icons/home/action-download-policy.svg',
       path: policyId ? `/member/policy-details/${policyId}` : '/member/profile',
     },
     {
-      id: 'health-records',
-      label: 'Records',
-      iconSrc: 'images/icons/quicklink-health-records.svg',
-      artSrc: 'images/icons/quicklink-health-records.png',
-      path: '/member/health-records',
-    },
-    {
       id: 'transactions',
-      label: 'Transactions',
-      iconSrc: 'images/icons/quicklink-transaction-history.svg',
-      artSrc: 'images/icons/quicklink-transaction-history.png',
-      width: 200,
+      lead: 'Transaction',
+      accent: 'History',
+      iconSrc: 'images/icons/home/action-transaction-history.svg',
       path: '/member/transactions',
     },
     {
-      id: 'support',
-      label: 'Support',
-      iconSrc: 'images/icons/helpline-icon.png',
-      artSrc: 'images/icons/quicklink-support.png',
+      // Also the design's "Help and Support" pill: same screen, and the
+      // handoff ships no separate glyph for it.
+      id: 'helpline',
+      accent: '24/7',
+      trail: 'Helpline',
+      iconSrc: 'images/icons/home/action-helpline.svg',
       path: '/member/helpline',
     },
   ];
 }
 
-const MORE_SERVICES: readonly LinkTile[] = [
-  {
-    id: 'helpline',
-    accent: '24/7',
-    label: 'Helpline',
-    iconSrc: 'images/icons/helpline-icon.png',
-    path: '/member/helpline',
-  },
-  {
-    id: 'claims',
-    label: 'Claims',
-    iconSrc: 'images/icons/claims-service.png',
-    path: '/member/claims',
-  },
-  {
-    id: 'health-records',
-    accent: 'Health',
-    label: 'Records',
-    iconSrc: 'images/icons/health-records-service.png',
-    path: '/member/health-records',
-  },
-  {
-    id: 'transactions',
-    accent: 'Transaction History',
-    label: '',
-    iconSrc: 'images/icons/transaction-history.svg',
-    path: '/member/transactions',
-  },
-];
+/**
+ * The design's artwork and wording per benefit card. Vaccination has no
+ * artwork in the handoff, so its card keeps an empty icon slot.
+ */
+const BENEFIT_ART: Readonly<Partial<Record<BenefitCategory, { icon: string; label: string }>>> = {
+  [BenefitCategory.OnlineConsultation]: { icon: 'images/icons/home/benefit-online-consult.svg', label: 'Online Consult' },
+  [BenefitCategory.InClinicConsultation]: { icon: 'images/icons/home/benefit-in-clinic.svg', label: 'In-Clinic Consultation' },
+  [BenefitCategory.Pharmacy]: { icon: 'images/icons/home/benefit-pharmacy.svg', label: 'Pharmacy' },
+  [BenefitCategory.Radiology]: { icon: 'images/icons/home/benefit-radiology.svg', label: 'Radiology/Cardiology' },
+  [BenefitCategory.Pathology]: { icon: 'images/icons/home/benefit-pathology.svg', label: 'Pathology (Lab)' },
+  [BenefitCategory.Dental]: { icon: 'images/icons/home/benefit-dental.svg', label: 'Dental Services' },
+  [BenefitCategory.Vision]: { icon: 'images/icons/home/benefit-vision.png', label: 'Vision Care' },
+  // The design's "Wellness Programs" art; the card is the health check package.
+  [BenefitCategory.HealthPackages]: { icon: 'images/icons/home/benefit-wellness.png', label: 'Annual Health Check' },
+};
 
 /**
  * Benefit cards open the per-category detail screen, keyed by the API's own
@@ -160,39 +137,20 @@ function benefitLink(categoryCode: string): string {
 @Component({
   selector: 'opd-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    ProfileMenu,
-    PolicyCard,
-    QuickLinks,
-    WalletBalanceCard,
-    BenefitCard,
-    MoreServices,
-    RemoteAssetPipe,
-  ],
+  imports: [RouterLink, ProfileMenu, PolicyCard, QuickLinks, BalanceSummary, BenefitCard, RemoteAssetPipe],
   template: `
     <div class="relative min-h-screen bg-[#f7f7fc]">
-      <!-- Phone: the blue field the greeting sits on, which the policy cards
-           overlap by about half. Desktop keeps the plain page background. -->
-      <div
-        class="absolute inset-x-0 top-0 h-[194px] lg:hidden"
-        style="background: linear-gradient(180deg,#1F77E0 0%,#0E51A2 100%)"
-        aria-hidden="true"
-      ></div>
-
-      <!-- Greeting -->
-      <section
-        class="relative mx-auto max-w-[480px] px-5 pt-3 lg:max-w-[1240px] lg:px-8 lg:pb-4 lg:pt-6"
-      >
-        <div class="flex items-center justify-between gap-4 lg:hidden">
+      <!-- Greeting — phone only; the shell carries it on the web. -->
+      <section class="relative mx-auto max-w-[480px] px-5 pt-3 lg:hidden">
+        <div class="flex items-center justify-between gap-4">
           <opd-profile-menu [showName]="true" />
 
           <!-- The design's own glyphs. brightness-0 paints the blue source
-               files black, the same trick the shell uses to paint them white. -->
-          <div class="flex items-center gap-3">
+               files black. -->
+          <div class="flex items-center gap-2.5">
             <a
               routerLink="/member/notifications"
-              class="relative flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm lg:h-10 lg:w-10"
+              class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
               [attr.aria-label]="
                 notifications.unread()
                   ? 'Notifications, ' + notifications.unread() + ' unread'
@@ -202,9 +160,9 @@ function benefitLink(categoryCode: string): string {
               <img
                 [src]="'images/icons/notification-bell.svg' | remoteAsset"
                 alt=""
-                width="14"
-                height="16"
-                class="h-4 w-[14px] object-contain brightness-0"
+                width="16"
+                height="18"
+                class="h-[18px] w-4 object-contain brightness-0"
               />
               @if (notifications.unread(); as unread) {
                 <span
@@ -215,20 +173,20 @@ function benefitLink(categoryCode: string): string {
             </a>
             <a
               routerLink="/member/wallet"
-              class="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm lg:h-10 lg:w-10"
+              class="flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
               aria-label="Wallet"
             >
               <img
                 [src]="'images/icons/wallet-icon.svg' | remoteAsset"
                 alt=""
-                width="17"
-                height="14"
-                class="h-[14px] w-[17px] object-contain brightness-0"
+                width="19"
+                height="16"
+                class="h-4 w-[19px] object-contain brightness-0"
               />
             </a>
             <a
               routerLink="/member/lab-tests"
-              class="relative flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm lg:h-10 lg:w-10"
+              class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
               [attr.aria-label]="
                 carts.openCount() ? 'Cart, ' + carts.openCount() + ' open' : 'Cart'
               "
@@ -236,9 +194,9 @@ function benefitLink(categoryCode: string): string {
               <img
                 [src]="'images/icons/cart-icon.svg' | remoteAsset"
                 alt=""
-                width="16"
-                height="16"
-                class="h-4 w-4 object-contain brightness-0"
+                width="18"
+                height="18"
+                class="h-[18px] w-[18px] object-contain brightness-0"
               />
               @if (carts.openCount(); as open) {
                 <span
@@ -249,61 +207,51 @@ function benefitLink(categoryCode: string): string {
             </a>
           </div>
         </div>
-
       </section>
 
-      <div class="relative mx-auto max-w-[480px] lg:max-w-[1240px] lg:px-8 lg:pt-1">
-        <!-- Quick Actions spans the full width above the two columns. It used to
-             sit in the left column as a vertical stack; the sidebar now carries
-             the policy and the balance instead. -->
-        <div class="hidden lg:mb-[46px] lg:block">
-          <opd-quick-links [links]="quickLinks()" />
-        </div>
+      <div class="relative mx-auto max-w-[480px] lg:max-w-[1240px] lg:px-8 lg:pt-6">
+        <!-- Web: balance and policy on the left, Health Benefits on the right
+             behind a hairline. Phone: one column, in the design's order. -->
+        <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <!-- LEFT: balance + policy -->
+          <div class="flex flex-col items-center px-5 pt-10 lg:px-0 lg:pt-3">
+            <!-- DUMMY / STATIC — benefit wallet total, no wallet API. -->
+            <opd-balance-summary
+              [available]="walletTotal.available"
+              [allocated]="walletTotal.allocated"
+            />
 
-        <!-- The sidebar is the width of the balance card, 411px to spec. 411 + 28 gap
-             + 727 of benefit cards = 1166, inside the 1176 of content width. -->
-        <div class="lg:grid lg:grid-cols-[411px_minmax(0,1fr)] lg:items-start lg:gap-7">
-          <!-- LEFT: policy + quick links -->
-          <div class="lg:flex lg:flex-col lg:gap-[46px]">
-            <section class="px-5 pt-6 lg:px-0 lg:pt-0">
-              <h2
-                class="mb-4 text-[18px] font-medium leading-[1.2] text-white lg:mb-3 lg:text-xl lg:text-[#1c1c1c]"
-              >
-                Your Policies
-              </h2>
-
-              @if (policies().length) {
+            @if (policies().length) {
+              <div class="mt-8 w-full lg:mt-[52px] lg:w-[500px]">
                 <!-- Bleeds off the right edge on a phone: the next card is meant
                      to be clipped by the screen, not by a gutter. On the web the
                      track is exactly one card wide, so only the open policy shows
                      and the dots below page between them. -->
                 <div
                   #policyScroller
-                  class="scrollbar-hide -mr-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pr-5 lg:mr-0 lg:w-[411px] lg:gap-5 lg:pr-0"
+                  class="scrollbar-hide -mr-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-6 pr-5 lg:mr-0 lg:gap-5 lg:pr-0"
                   (scroll)="onPolicyScroll()"
                 >
                   @for (policy of policies(); track policy.holderId; let i = $index) {
                     <!-- The card being read is full size, the rest sit back at
-                         0.85. Each shrinks toward the edge that faces the active
-                         card, so the gap between them stays at the flex gap
-                         whichever side you came from. A transform, not a width,
-                         so the scroll offsets never move. -->
+                         0.85, shrinking toward the edge that faces the active one
+                         so the gap stays at the flex gap. A transform, not a
+                         width, so the scroll offsets never move. -->
                     <opd-policy-card
-                      class="w-[75%] shrink-0 snap-start transition-transform duration-300 lg:w-[411px]"
+                      class="w-[90%] shrink-0 snap-start transition-transform duration-300 lg:w-[500px]"
                       [policy]="policy"
                       [style.transform]="i === activeIndex() ? null : 'scale(0.85)'"
                       [style.transform-origin]="i < activeIndex() ? 'right center' : 'left center'"
                     />
                   }
                 </div>
-
                 @if (policies().length > 1) {
-                  <div class="mt-4 hidden justify-center gap-1.5 lg:mt-1 lg:flex">
+                  <div class="hidden items-center justify-center gap-1.5 lg:flex">
                     @for (policy of policies(); track policy.holderId; let i = $index) {
                       <button
                         type="button"
-                        class="h-1 rounded-full transition-all duration-200"
-                        [class]="i === activeIndex() ? 'w-[14px] bg-[#1E3A8C]' : 'w-1 bg-[#cbd5e1]'"
+                        class="rounded-full transition-all duration-200"
+                        [class]="i === activeIndex() ? 'h-2 w-2 bg-[#034DA2]' : 'h-1.5 w-1.5 bg-[#7FA6DD]'"
                         [attr.aria-label]="'Go to policy ' + (i + 1)"
                         [attr.aria-current]="i === activeIndex() ? 'true' : null"
                         (click)="scrollToPolicy(i)"
@@ -311,71 +259,53 @@ function benefitLink(categoryCode: string): string {
                     }
                   </div>
                 }
-              } @else {
-                <p class="text-sm text-white lg:text-ink-500">No policy assigned yet.</p>
-              }
-            </section>
-
-            <div class="px-5 pt-6 lg:hidden">
-              <opd-quick-links [links]="quickLinks()" />
-            </div>
-
-            <!-- The balance sits under the policy in the sidebar on desktop now,
-                 as the blue card rather than the white one. -->
-            <div class="hidden lg:block">
-              <!-- DUMMY / STATIC — ₹40,000 benefit wallet, no wallet API. -->
-              <opd-wallet-balance-card
-                [available]="walletTotal.available"
-                [allocated]="walletTotal.allocated"
-                [preferBlue]="true"
-              />
-            </div>
+              </div>
+            } @else {
+              <p class="mt-8 text-sm text-ink-500">No policy assigned yet.</p>
+            }
           </div>
 
-          <!-- RIGHT: wallet + benefits + more services -->
-          <div class="lg:flex lg:flex-col lg:gap-[46px]">
-            <div class="px-5 pt-6 lg:hidden">
-              <!-- DUMMY / STATIC — ₹40,000 benefit wallet, no wallet API. -->
-              <opd-wallet-balance-card
-                [available]="walletTotal.available"
-                [allocated]="walletTotal.allocated"
-              />
-            </div>
+          <!-- Phone: Quick Links sit between the policy and the benefits. -->
+          <div class="px-5 pt-4 lg:hidden">
+            <opd-quick-links [links]="quickLinks()" />
+          </div>
 
-            @if (categories().length) {
-              <!-- No lg:flex-1: the left column is the taller of the two, and
-                   stretching this one parked all the slack between the benefit
-                   cards and More Services. It belongs below the column. -->
-              <section class="px-5 pt-6 lg:px-0 lg:pt-0">
-                <h2 class="mb-4 text-[18px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-3 lg:text-xl">
-                  Health Benefits
-                </h2>
-                <!-- Fixed 305.5 x 99 cards on desktop (355.5 less the 50 asked for). The
-                     columns are sized rather than fractional so the cards do not
-                     stretch to fill the column, which is what made them 418 wide. -->
-                <div
-                  class="grid grid-cols-2 gap-x-1.5 gap-y-4 lg:grid-cols-[305.5px_305.5px] lg:gap-3 lg:auto-rows-[99px]"
-                >
+          <!-- RIGHT: Health Benefits -->
+          @if (categories().length) {
+            <section
+              class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[510px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
+            >
+              <h2 class="mb-4 text-[15px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-[26px] lg:text-[22px]">
+                Health Benefits
+              </h2>
+              <!-- Web: a fixed-height panel that scrolls, as in the design;
+                   two 223px columns. -->
+              <div class="benefits-scroll lg:max-h-[380px] lg:overflow-y-auto lg:pr-4">
+                <div class="grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-[223px_223px] lg:gap-x-6 lg:gap-y-4 lg:pb-2">
                   @for (category of categories(); track category.label) {
-                    <opd-benefit-card [category]="category" [href]="linkFor(category.code)" />
+                    <opd-benefit-card
+                      [category]="category"
+                      [href]="linkFor(category.code)"
+                      [iconSrc]="artFor(category)?.icon ?? null"
+                      [label]="artFor(category)?.label ?? null"
+                    />
                   }
                 </div>
-              </section>
-            }
-
-            <div class="px-5 pb-4 pt-6 lg:hidden">
-              <opd-more-services [services]="moreServices" />
-            </div>
-          </div>
+              </div>
+            </section>
+          }
         </div>
 
-        <div class="hidden lg:mt-[46px] lg:block">
-          <opd-more-services [services]="moreServices" />
+        <!-- Web: Quick Actions across the full width, below both columns. -->
+        <div class="hidden pb-10 lg:mt-7 lg:block">
+          <opd-quick-links [links]="quickLinks()" />
         </div>
-
-        <div class="h-2 lg:hidden" aria-hidden="true"></div>
       </div>
     </div>
+  `,
+  styles: `
+    /* The design's thin always-visible track on the benefits panel. */
+    .benefits-scroll { scrollbar-width: thin; scrollbar-color: #b8b8b8 rgba(217, 217, 217, 0.54); }
   `,
 })
 export class HomePage {
@@ -386,7 +316,6 @@ export class HomePage {
   protected readonly notifications = inject(NotificationsStore);
   protected readonly carts = inject(CartStore);
 
-  protected readonly moreServices = MORE_SERVICES;
   protected readonly activeIndex = signal(0);
 
   private readonly policyScroller = viewChild<ElementRef<HTMLElement>>('policyScroller');
@@ -443,6 +372,10 @@ export class HomePage {
   // categories; they are served from STATIC_BENEFITS in the requested order.
   // See REMOVED-APIS.md.
   protected readonly categories = computed(() => STATIC_BENEFITS);
+
+  protected artFor(category: WalletCategoryBalance): { icon: string; label: string } | null {
+    return BENEFIT_ART[category.category] ?? null;
+  }
 
   protected linkFor(categoryCode: string): string {
     return categoryCode ? benefitLink(categoryCode) : '/member/benefits';
