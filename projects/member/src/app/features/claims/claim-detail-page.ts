@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, resource, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import {
@@ -539,12 +539,14 @@ export class ClaimDetailPage {
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
   protected readonly money = formatMoney;
+  private readonly route = inject(ActivatedRoute);
 
-  constructor(){
-    effect(() => {
-      // Was pinned to a single hardcoded reference, so every claim in the list
-      // opened the same record. The route param is the CLM-… GET_PAGE wants.
-      const reference = this.claimId();
+  constructor() {
+    this.route.paramMap.subscribe(params => {
+      const reference = params.get('claimId');
+
+      console.log('Claim Reference:', reference);
+
       if (reference) {
         void this.store.getClimDetails(reference);
         void this.store.loadActionReasons();

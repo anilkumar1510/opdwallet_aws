@@ -112,3 +112,7 @@ body {
     background-color: none !important;
     display: block !important;
 }
+
+#opd-wallet-root ul, ol{
+ padding-left: 0px !important; 
+}
