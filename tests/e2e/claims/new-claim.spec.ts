@@ -267,6 +267,14 @@ test.describe('New claim', () => {
           } else {
             expect(payload.dental_claim_type).toBeUndefined();
           }
+          const isPharmacy = cat.value === 'PHARMACY' || cat.label.toLowerCase().includes('pharmacy');
+          if (isPharmacy) {
+            expect(payload.pharmacy).toBe('Test Location');
+          }
+          const isVision = cat.value === 'VISION' || cat.label.toLowerCase().includes('vision');
+          if (isVision) {
+            expect(payload.optician).toBe('Test Location');
+          }
         }
 
         await page.waitForURL('**/member/claims');

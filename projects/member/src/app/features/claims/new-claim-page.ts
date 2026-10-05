@@ -12,7 +12,7 @@ import {
   isDentalCategory,
   locationFieldsFor,
 } from '../../core/claims/document-requirements';
-import { relationshipLabel } from '../../core/domain/codes';
+import { BenefitCategory, relationshipLabel, toBenefitCategory } from '../../core/domain/codes';
 import { formatMoney, money } from '../../core/domain/money';
 import {
   BankDetailsStore,
@@ -928,6 +928,12 @@ export class NewClaimPage {
 
       "category": this.category(),
       ...(this.isDental() ? { "dental_claim_type": this.dentalSubType() } : {}),
+      ...(toBenefitCategory(this.category()) === BenefitCategory.Pharmacy && this.purchaseLocation().trim()
+        ? { "pharmacy": this.purchaseLocation().trim() }
+        : {}),
+      ...(toBenefitCategory(this.category()) === BenefitCategory.Vision && this.purchaseLocation().trim()
+        ? { "optician": this.purchaseLocation().trim() }
+        : {}),
       "claim_type": this.claimType(),
       "benefit_category": this.category(),
       "provider": this.providerName().trim(),

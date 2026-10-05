@@ -131,6 +131,18 @@ function humaniseCode(value: string | undefined): string {
                   <dd class="font-medium text-ink-900">{{ dentalClaimTypeLabel(detail.dental_claim_type) }}</dd>
                 </div>
               }
+              @if (detail.pharmacy) {
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Pharmacy</dt>
+                  <dd class="font-medium text-ink-900">{{ detail.pharmacy }}</dd>
+                </div>
+              }
+              @if (detail.optician) {
+                <div class="flex justify-between gap-3">
+                  <dt class="text-ink-700">Optician</dt>
+                  <dd class="font-medium text-ink-900">{{ detail.optician }}</dd>
+                </div>
+              }
               <div class="flex justify-between gap-3">
                 <dt class="text-ink-700">Treatment date</dt>
                 <dd class="font-medium text-ink-900">{{ date(detail.treatment_date) }}</dd>
