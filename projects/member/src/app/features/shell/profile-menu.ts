@@ -24,7 +24,8 @@ import { Icon } from '../../shared/ui/icon';
   template: `
     <div class="relative">
       @if (showName()) {
-        <!-- Home header on a phone: avatar, greeting and the same menu. -->
+        <!-- Home header on a phone, and the shell's on the web: avatar, greeting
+             and the same menu. Dark on the page background at both sizes. -->
         <button
           type="button"
           class="flex items-center gap-[9px] text-left"
@@ -34,11 +35,12 @@ import { Icon } from '../../shared/ui/icon';
           (click)="open.set(!open())"
         >
           <span
-            class="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-white/25 text-[11px] font-medium text-white lg:h-10 lg:w-10 lg:bg-[#0F5FDC] lg:text-[13px] lg:text-white"
+            class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-[13px] font-medium text-white lg:h-[55px] lg:w-[55px] lg:text-lg"
+            style="background: linear-gradient(180deg,#5B99F9 0%,#1E5BB8 100%)"
             >{{ active()?.initials }}</span
           >
           <span class="flex flex-col gap-[2px]">
-            <span class="flex items-center gap-[5px] text-[16px] font-medium leading-[1.2] text-white lg:text-xl lg:font-medium lg:leading-[1.2] lg:text-[#1c1c1c]">
+            <span class="flex items-center gap-[5px] text-[18px] font-medium leading-[1.2] text-[#1c1c1c] lg:text-xl lg:font-medium lg:leading-[1.2] lg:text-[#1c1c1c]">
               Hi {{ firstName() }}!
               <span
                 class="transition-transform duration-200"
@@ -47,7 +49,7 @@ import { Icon } from '../../shared/ui/icon';
                 ><opd-icon name="chevronRight" [size]="14" [strokeWidth]="1.8"
               /></span>
             </span>
-            <span class="text-[12px] leading-[1.2] text-white/80 lg:text-sm lg:text-[#656565]">welcome to OPD Wallet</span>
+            <span class="text-[13px] leading-[1.2] text-[#656565] lg:text-lg">welcome to OPD Wallet</span>
           </span>
         </button>
       } @else {
