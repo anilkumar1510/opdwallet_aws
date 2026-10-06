@@ -117,4 +117,21 @@ export class AppService {
             return encryptedCipherText;
         }
     }
+
+    /**
+     * Decrypts and reports whether it actually worked.
+     *
+     * `decryptText` answers '' both when there is no key and when the padding
+     * check rejects the input, so callers cannot tell "not encrypted" from
+     * "decrypted to nothing" — which is how an unreadable address ends up
+     * rendered as raw ciphertext with no signal that anything went wrong.
+     * `ok: false` here means the value stayed encrypted.
+     */
+    decryptTextResult(encryptedCipherText: string): { value: string; ok: boolean } {
+        if (!this._currentSessionData.encryptKey || !encryptedCipherText) {
+            return { value: encryptedCipherText, ok: false };
+        }
+        const decrypted = this.decryptText(encryptedCipherText);
+        return { value: decrypted, ok: decrypted.length > 0 };
+    }
 }
