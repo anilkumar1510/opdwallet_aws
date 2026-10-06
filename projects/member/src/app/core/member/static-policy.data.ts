@@ -14,7 +14,7 @@ import { PolicyDetail } from './policy-detail';
  */
 
 /** Both members share one policy; the route id is the real policy id. */
-const POLICY_ID = '6a34ca5c4e45325c5a7c06e7';
+const POLICY_ID = '8ca9f31c-e1ad-478b-9b24-9f56e18a9165';
 
 /**
  * Home "Health Benefits" cards — DUMMY / STATIC, no wallet API.
