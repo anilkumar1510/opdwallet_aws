@@ -77,8 +77,8 @@ function quickLinksFor(policyId: string | null): readonly LinkTile[] {
 }
 
 /**
- * The design's artwork and wording per benefit card. Vaccination has no
- * artwork in the handoff, so its card keeps an empty icon slot.
+ * The design's artwork and wording per benefit card. The handoff has no
+ * Vaccination artwork; its syringe is drawn in-house in the same line style.
  */
 const BENEFIT_ART: Readonly<Partial<Record<BenefitCategory, { icon: string; label: string }>>> = {
   [BenefitCategory.OnlineConsultation]: { icon: 'images/icons/home/benefit-online-consult.svg', label: 'Online Consult' },
@@ -88,6 +88,7 @@ const BENEFIT_ART: Readonly<Partial<Record<BenefitCategory, { icon: string; labe
   [BenefitCategory.Pathology]: { icon: 'images/icons/home/benefit-pathology.svg', label: 'Pathology (Lab)' },
   [BenefitCategory.Dental]: { icon: 'images/icons/home/benefit-dental.svg', label: 'Dental Services' },
   [BenefitCategory.Vision]: { icon: 'images/icons/home/benefit-vision.png', label: 'Vision Care' },
+  [BenefitCategory.Vaccination]: { icon: 'images/icons/home/benefit-vaccination.svg', label: 'Vaccination' },
   // The design's "Wellness Programs" art; the card is the health check package.
   [BenefitCategory.HealthPackages]: { icon: 'images/icons/home/benefit-wellness.png', label: 'Annual Health Check' },
 };
