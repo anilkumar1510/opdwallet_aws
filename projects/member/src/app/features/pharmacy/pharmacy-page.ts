@@ -670,11 +670,11 @@ export class PharmacyPage {
         this.step.set(this.step() + 1);
         return;
       }
-      // Booking accepted: show a brief loader, then skip straight to the cart.
-      this.submittingBooking.set(false);
+      // Booking accepted: advance to queued, show loader for 2s, then go to cart.
+      this.step.set(this.step() + 1);
       await new Promise((r) => setTimeout(r, 2000));
       this.pushCart();
-      this.step.set(this.step() + 2);
+      this.step.set(this.step() + 1);
     } catch {
       this.stepError.set('We could not submit your prescription. Please try again.');
     } finally {
