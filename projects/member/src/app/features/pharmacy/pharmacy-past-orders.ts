@@ -10,7 +10,7 @@ const money = (amount: number): string =>
 
 /**
  * The member's past pharmacy bookings, one card per row from
- * GET_PHARMACY_BY_USER. Cards keep the visual treatment of the previous inline
+ * GET_PHARMACY_CART_BY_USER. Cards keep the visual treatment of the previous inline
  * list but only render fields the payload actually carries.
  */
 @Component({

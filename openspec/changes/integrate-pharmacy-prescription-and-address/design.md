@@ -147,7 +147,7 @@ Both proxy files are referenced by `angular.json` (`serve` and `serve-original` 
 
 ### 13. Past orders get their own model, service and component
 
-The past-orders list was a hardcoded `PAST_ORDERS` array of twelve invented rows. It is now read from `habit-opd/api/v1/opd_pharmacy_booking?queryId=GET_PHARMACY_BY_USER`, which is the same shape `claims.store.ts` already uses against `GET_CLAIMS_BY_USER` on the same microservice: `page_no` and `page_size` as top-level parameters, no `args=` envelope.
+The past-orders list was a hardcoded `PAST_ORDERS` array of twelve invented rows. It is now read from `habit-opd/api/v1/opd_pharmacy_booking?queryId=GET_PHARMACY_CART_BY_USER`, which is the same shape `claims.store.ts` already uses against `GET_CLAIMS_BY_USER` on the same microservice: `page_no` and `page_size` as top-level parameters, no `args=` envelope.
 
 The model, service and card list are kept in three files separate from the address ones. `PharmacyAddress` models the `master-management` `order_address` contract and names its fields `street1`/`house_flat_no`; these rows carry their own `address` block whose streets are ciphertext under a different key. Merging them would collide on field names and silently mix two contracts.
 
@@ -176,7 +176,7 @@ Changing page scrolls the list heading back into view. Without it, activating Ne
 
 The pager derives its bounds from `count`: `pageCount = ceil(count / page_size)`, Next disabled at the last page and Previous on the first.
 
-**The controls are always present, and inert when the total is unknown.** `GET_PHARMACY_BY_USER` does not return `count` today, so there is no honest "of M" to show. Hiding the pager entirely would tell the member nothing about whether more history exists; showing it greyed out says the feature exists and is simply unavailable. It therefore renders unconditionally, both buttons carry `disabled`, and the counter degrades from "Page 1 of 4" to "Page 1". The page also carries `ordersHaveTotal`, set from a `hasTotal` flag on the read result, because the fallback value for `count` is this page's row count — indistinguishable from a genuine total of the same number. Without the flag a real five-row total and an unknown total are the same value, and the pager would silently promise pages that do not exist.
+**The controls are always present, and inert when the total is unknown.** `GET_PHARMACY_CART_BY_USER` does not return `count` today, so there is no honest "of M" to show. Hiding the pager entirely would tell the member nothing about whether more history exists; showing it greyed out says the feature exists and is simply unavailable. It therefore renders unconditionally, both buttons carry `disabled`, and the counter degrades from "Page 1 of 4" to "Page 1". The page also carries `ordersHaveTotal`, set from a `hasTotal` flag on the read result, because the fallback value for `count` is this page's row count — indistinguishable from a genuine total of the same number. Without the flag a real five-row total and an unknown total are the same value, and the pager would silently promise pages that do not exist.
 
 ## Risks / Trade-offs
 

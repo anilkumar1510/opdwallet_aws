@@ -208,10 +208,9 @@ export function readUploadedDocId(body: unknown): string | null {
                   <p class="mt-2 text-base font-bold text-[#034DA2]">Prescription queued</p>
                   <p class="mt-1 text-sm text-ink-700">Saved as <strong>{{ prescriptionId() }}</strong> and queued for digitisation. Our team reads it and builds your cart from the catalogue.</p>
                 </div>
-                <p class="mt-3 rounded-xl bg-warning-50 px-3 py-2 text-xs text-warning-700">You'll get a WhatsApp and push notification once the cart is ready.</p>
-                <button type="button" class="mt-4 min-h-touch w-full rounded-xl border border-dashed border-surface-border px-4 text-sm font-semibold text-ink-700 hover:bg-surface-sunk" (click)="pushCart()">
-                  Simulate: adjudicator builds &amp; pushes the cart
-                </button>
+                @if (stepError()) {
+                  <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ stepError() }}</p>
+                }
               }
               @case ('cart') {
                 <p class="mb-1 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready.</p>
@@ -382,11 +381,15 @@ export class PharmacyPage {
   protected readonly addressSaving = signal(false);
   protected readonly addressSaveError = signal<string | null>(null);
   protected readonly submittingBooking = signal(false);
+  /** The booking response once it has been accepted; null until submit. */
+  protected readonly bookingResponse = signal<{ prescriptionId: string | null } | null>(null);
 
   protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
   protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
 
   protected prescriptionId(): string {
+    const response = this.bookingResponse();
+    if (response?.prescriptionId) return response.prescriptionId;
     return this.existingId() || 'RX-2026-0031';
   }
 
@@ -433,6 +436,7 @@ export class PharmacyPage {
     this.uploadError.set(null);
     this.documentUploading.set(false);
     this.existingId.set('');
+    this.bookingResponse.set(null);
   }
 
   private resetAddresses(): void {
@@ -683,18 +687,25 @@ export class PharmacyPage {
     }
     this.submittingBooking.set(true);
     try {
-      const sent = await this.postBooking(docId, address);
-      if (!sent) {
-        this.stepError.set('We could not submit your prescription. Please try again.');
+      const result = await this.postBooking(docId, address);
+      this.bookingResponse.set(result);
+      if (!result.ok) {
+        // Booking rejected: advance to queued and show the API's reason rather
+        // than staying on the prescription step the member never asked to leave.
+        this.stepError.set(result.message ?? 'We could not submit your prescription. Please try again.');
+        this.step.set(this.step() + 1);
         return;
       }
-      this.step.set(this.step() + 1);
+      // Booking accepted: skip straight to the cart the adjudicator built.
+      // The cart is populated by the adjudicator; in this demo we simulate it.
+      this.pushCart();
+      this.step.set(this.step() + 2);
     } finally {
       this.submittingBooking.set(false);
     }
   }
 
-  private async postBooking(docId: string, address: PharmacyAddress): Promise<boolean> {
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null }> {
     const payload = {
       doc_id: docId,
       policy_id: this.activePolicyId(),
@@ -708,20 +719,27 @@ export class PharmacyPage {
         .toPromise();
       return this.bookingAccepted(response);
     } catch {
-      return false;
+      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null };
     }
   }
 
   /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
-  private bookingAccepted(response: unknown): boolean {
-    if (typeof response !== 'string') return true;
+  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null } {
+    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null };
     try {
       const parsed: unknown = JSON.parse(response);
-      if (typeof parsed !== 'object' || parsed === null) return true;
-      const errCode = (parsed as Record<string, unknown>)['errCode'];
-      return errCode === undefined || errCode === 0;
+      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null };
+      const record = parsed as Record<string, unknown>;
+      const errCode = (record['errCode'] as number) ?? 0;
+      const message = (record['message'] as string) ?? null;
+      // doc_id is inside resource[0] per the API response structure
+      const resource = record['resource'];
+      const firstRow = Array.isArray(resource) && resource.length > 0 ? (resource[0] as Record<string, unknown>) : null;
+      // prescriptionId should be the name field (e.g. "OPD-2026-00220") from the API response
+      const prescriptionId = firstRow ? (firstRow['name'] as string) ?? null : null;
+      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId };
     } catch {
-      return true;
+      return { ok: true, message: null, errCode: null, prescriptionId: null };
     }
   }
 
