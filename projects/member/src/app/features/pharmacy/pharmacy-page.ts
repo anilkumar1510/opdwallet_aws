@@ -40,11 +40,6 @@ const ADJUDICATED_CART: CartItem[] = [
   { id: 'm4', name: 'Pan-D (Pantoprazole)', qty: 1, unitPrice: 85, isSubstitute: false, originalBrand: '' },
 ];
 
-const EXISTING_PRESCRIPTIONS = [
-  { id: 'RX-2026-0012', label: 'Dr. A. Sharma · 2 Sep 2026' },
-  { id: 'RX-2026-0008', label: 'Dr. N. Gupta · 20 Aug 2026' },
-];
-
 /** Orders per page; the pager derives its page count from the API's `count`. */
 const ORDERS_PAGE_SIZE = 5;
 
@@ -164,7 +159,7 @@ export function readUploadedDocId(body: unknown): string | null {
                 <p class="mb-1 text-sm font-medium text-ink-700">Upload a new prescription</p>
                 <p class="mb-2 text-xs text-ink-500">You submit a prescription only — you don't build the cart.</p>
                 <input type="file" class="sr-only" accept="image/*,.pdf" id="rx" [disabled]="documentUploading()" (change)="onPrescription($event)" />
-                <label for="rx" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-6 text-center" [class.pointer-events-none]="documentUploading()" [class.opacity-60]="documentUploading()" (click)="existingId.set('')">
+                <label for="rx" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-6 text-center" [class.pointer-events-none]="documentUploading()" [class.opacity-60]="documentUploading()">
                   <span class="block font-medium text-[#0B2C63]">{{ uploadLabel() }}</span>
                   <span class="mt-1 block text-xs text-ink-500">Photo or PDF</span>
                 </label>
@@ -173,16 +168,6 @@ export function readUploadedDocId(body: unknown): string | null {
                 }
                 @if (uploadedFile(); as f) { <p class="mt-2 truncate text-sm text-ink-900">{{ f }}</p> }
                 @if (uploadError(); as err) { <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p> }
-
-                <p class="mb-1 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Or use an existing prescription</p>
-                <div class="space-y-2">
-                  @for (rx of existingPrescriptions; track rx.id) {
-                    <button type="button" class="flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm" [class.border-brand-500]="existingId() === rx.id" [class.bg-blue-50]="existingId() === rx.id" [class.border-surface-border]="existingId() !== rx.id" (click)="pickExisting(rx.id)">
-                      <span><span class="font-medium text-ink-900">{{ rx.id }}</span> <span class="text-xs text-ink-500">· {{ rx.label }}</span></span>
-                      @if (existingId() === rx.id) { <span class="text-brand-700">✓</span> }
-                    </button>
-                  }
-                </div>
 
                 <p class="mb-2 mt-5 border-t border-surface-border pt-4 text-sm font-medium text-ink-700">Delivery address</p>
                 <opd-pharmacy-address-cards
@@ -206,12 +191,11 @@ export function readUploadedDocId(body: unknown): string | null {
                 <div class="text-center">
                   <p class="text-3xl">⏳</p>
                   <p class="mt-2 text-base font-bold text-[#034DA2]">Prescription queued</p>
-                  <p class="mt-1 text-sm text-ink-700">Saved as <strong>{{ prescriptionId() }}</strong> and queued for digitisation. Our team reads it and builds your cart from the catalogue.</p>
+                  <p class="mt-1 text-sm text-ink-700">Saved as <strong>{{ bookingResponse()?.prescriptionId || prescriptionId() }}</strong> and queued for digitisation. Our team reads it and builds your cart from the catalogue.</p>
                 </div>
-                <p class="mt-3 rounded-xl bg-warning-50 px-3 py-2 text-xs text-warning-700">You'll get a WhatsApp and push notification once the cart is ready.</p>
-                <button type="button" class="mt-4 min-h-touch w-full rounded-xl border border-dashed border-surface-border px-4 text-sm font-semibold text-ink-700 hover:bg-surface-sunk" (click)="pushCart()">
-                  Simulate: adjudicator builds &amp; pushes the cart
-                </button>
+                @if (stepError()) {
+                  <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ stepError() }}</p>
+                }
               }
               @case ('cart') {
                 <p class="mb-1 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready.</p>
@@ -295,7 +279,6 @@ export class PharmacyPage {
   private readonly addressService = inject(PharmacyAddressService);
   private readonly orderService = inject(PharmacyOrderService);
 
-  protected readonly existingPrescriptions = EXISTING_PRESCRIPTIONS;
   protected readonly perTxn = PER_TXN_LIMIT;
   protected readonly copayPct = COPAY_PCT;
 
@@ -368,7 +351,6 @@ export class PharmacyPage {
   protected readonly uploadedDocId = signal<string | null>(null);
   protected readonly documentUploading = signal(false);
   protected readonly uploadError = signal<string | null>(null);
-  protected readonly existingId = signal('');
   protected readonly cartPushed = signal(false);
   protected readonly cart = signal<CartItem[]>([]);
 
@@ -382,12 +364,16 @@ export class PharmacyPage {
   protected readonly addressSaving = signal(false);
   protected readonly addressSaveError = signal<string | null>(null);
   protected readonly submittingBooking = signal(false);
+  /** The booking response once it has been accepted; null until submit. */
+  protected readonly bookingResponse = signal<{ prescriptionId: string | null } | null>(null);
 
   protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
   protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
 
   protected prescriptionId(): string {
-    return this.existingId() || 'RX-2026-0031';
+    const response = this.bookingResponse();
+    if (response?.prescriptionId) return response.prescriptionId;
+    return 'RX-2026-0031';
   }
 
   /** Wallet share + co-payment on the current (reducible) cart. */
@@ -432,7 +418,7 @@ export class PharmacyPage {
     this.uploadedDocId.set(null);
     this.uploadError.set(null);
     this.documentUploading.set(false);
-    this.existingId.set('');
+    this.bookingResponse.set(null);
   }
 
   private resetAddresses(): void {
@@ -547,7 +533,6 @@ export class PharmacyPage {
    * finish before the request is issued — posting the FormData directly breaks it.
    */
   private uploadPrescription(file: File): void {
-    this.existingId.set('');
     this.uploadedFile.set(null);
     this.uploadedDocId.set(null);
     this.uploadError.set(null);
@@ -602,13 +587,6 @@ export class PharmacyPage {
     this.uploadError.set('We could not upload your prescription. Try again.');
   }
 
-  protected pickExisting(id: string): void {
-    this.existingId.set(id);
-    this.uploadedFile.set(null);
-    this.uploadedDocId.set(null);
-    this.uploadError.set(null);
-  }
-
   protected pushCart(): void {
     this.cart.set(ADJUDICATED_CART.map((i) => ({ ...i })));
     this.cartPushed.set(true);
@@ -635,8 +613,8 @@ export class PharmacyPage {
       case 'prescribe':
         if (this.documentUploading()) return 'Your prescription is still uploading.';
         if (this.uploadError()) return this.uploadError();
-        if (!this.uploadedDocId() && !this.existingId()) {
-          return 'Upload a prescription or pick an existing one.';
+        if (!this.uploadedDocId()) {
+          return 'Upload a prescription.';
         }
         if (!this.selectedAddressId()) return 'Choose a delivery address for your medicines.';
         if (!this.activePolicyId()) return 'No policy is active for this member, so we cannot submit.';
@@ -683,18 +661,28 @@ export class PharmacyPage {
     }
     this.submittingBooking.set(true);
     try {
-      const sent = await this.postBooking(docId, address);
-      if (!sent) {
-        this.stepError.set('We could not submit your prescription. Please try again.');
+      const result = await this.postBooking(docId, address);
+      this.bookingResponse.set(result);
+      if (!result.ok) {
+        // Booking rejected: advance to queued and show the API's reason rather
+        // than staying on the prescription step the member never asked to leave.
+        this.stepError.set(result.message ?? 'We could not submit your prescription. Please try again.');
+        this.step.set(this.step() + 1);
         return;
       }
+      // Booking accepted: advance to queued, show loader for 2s, then go to cart.
       this.step.set(this.step() + 1);
+      await new Promise((r) => setTimeout(r, 2000));
+      this.pushCart();
+      this.step.set(this.step() + 1);
+    } catch {
+      this.stepError.set('We could not submit your prescription. Please try again.');
     } finally {
       this.submittingBooking.set(false);
     }
   }
 
-  private async postBooking(docId: string, address: PharmacyAddress): Promise<boolean> {
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null }> {
     const payload = {
       doc_id: docId,
       policy_id: this.activePolicyId(),
@@ -708,20 +696,27 @@ export class PharmacyPage {
         .toPromise();
       return this.bookingAccepted(response);
     } catch {
-      return false;
+      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null };
     }
   }
 
   /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
-  private bookingAccepted(response: unknown): boolean {
-    if (typeof response !== 'string') return true;
+  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null } {
+    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null };
     try {
       const parsed: unknown = JSON.parse(response);
-      if (typeof parsed !== 'object' || parsed === null) return true;
-      const errCode = (parsed as Record<string, unknown>)['errCode'];
-      return errCode === undefined || errCode === 0;
+      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null };
+      const record = parsed as Record<string, unknown>;
+      const errCode = (record['errCode'] as number) ?? 0;
+      const message = (record['message'] as string) ?? null;
+      // doc_id is inside resource[0] per the API response structure
+      const resource = record['resource'];
+      const firstRow = Array.isArray(resource) && resource.length > 0 ? (resource[0] as Record<string, unknown>) : null;
+      // prescriptionId should be the name field (e.g. "OPD-2026-00220") from the API response
+      const prescriptionId = firstRow ? (firstRow['name'] as string) ?? null : null;
+      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId };
     } catch {
-      return true;
+      return { ok: true, message: null, errCode: null, prescriptionId: null };
     }
   }
 

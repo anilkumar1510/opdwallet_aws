@@ -183,7 +183,7 @@ The system SHALL present the API's own refusal message when an address save is r
 - **THEN** the system treats the save as failed and reports the reason
 
 ### Requirement: Past bookings are loaded from the API
-The system SHALL load the member's past pharmacy bookings from `habit-opd/api/v1/opd_pharmacy_booking` with `queryId=GET_PHARMACY_BY_USER` when the page loads, and SHALL page through the results server-side.
+The system SHALL load the member's past pharmacy bookings from `habit-opd/api/v1/opd_pharmacy_booking` with `queryId=GET_PHARMACY_CART_BY_USER` when the page loads, and SHALL page through the results server-side.
 
 #### Scenario: Past orders load on page entry
 - **WHEN** the pharmacy page is opened
