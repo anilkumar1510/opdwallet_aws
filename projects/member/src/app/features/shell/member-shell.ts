@@ -42,7 +42,7 @@ import { UserInfoStore } from './../../core/session/userinfo.store';
         <div class="mx-auto hidden w-full max-w-[1240px] px-8 pt-3 lg:block">
           <!-- The greeting header, on every desktop screen. It is the phone
                header promoted: same profile menu, same three buttons. The page
-               keeps its own on phones, where it sits on the blue hero. -->
+               keeps its own on phones. -->
           <div class="mb-3 flex items-center justify-between gap-4">
             <opd-profile-menu [showName]="true" />
             <div class="flex items-center gap-3">

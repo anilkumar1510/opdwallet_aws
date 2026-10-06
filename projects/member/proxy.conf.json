@@ -43,5 +43,16 @@
             "referer": "https://habithealth.com",
             "origin": "https://habithealth.com"
         }
+    },
+    "/master-management/api/**": {
+        "target": "https://api.habithealth.com/",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true,
+        "headers": {
+            "host": "api.habithealth.com",
+            "referer": "https://habithealth.com",
+            "origin": "https://habithealth.com"
+        }
     }
 }
