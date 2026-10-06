@@ -131,7 +131,7 @@ export class AppService {
         if (!this._currentSessionData.encryptKey || !encryptedCipherText) {
             return { value: encryptedCipherText, ok: false };
         }
-        const decrypted = this.decryptText(encryptedCipherText);
+        const decrypted = this.decryptText(encryptedCipherText, this._currentSessionData.encryptKey);
         return { value: decrypted, ok: decrypted.length > 0 };
     }
 }
