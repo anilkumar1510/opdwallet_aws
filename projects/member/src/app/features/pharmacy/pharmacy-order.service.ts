@@ -5,8 +5,8 @@ import { AppService } from '../../core/http/api.service';
 import { PharmacyOrderPage, toPharmacyOrder } from './pharmacy-order.model';
 
 const APPLICATION = 'habit-opd';
-const RESOURCE = 'opd_pharmacy_booking';
-const QUERY_ID = 'GET_PHARMACY_BY_USER';
+const RESOURCE = 'opd_pharmacy_cart';
+const QUERY_ID = 'GET_PHARMACY_CART_BY_USER';
 
 /**
  * Reads the member's past pharmacy bookings, one page at a time.
