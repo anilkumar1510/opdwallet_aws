@@ -5,7 +5,7 @@ import { AppService } from '../../core/http/api.service';
 import { PharmacyOrderPage, toPharmacyOrder } from './pharmacy-order.model';
 
 const APPLICATION = 'habit-opd';
-const RESOURCE = 'opd_pharmacy_booking';
+const RESOURCE = 'opd_pharmacy_cart';
 const QUERY_ID = 'GET_PHARMACY_CART_BY_USER';
 
 /**
