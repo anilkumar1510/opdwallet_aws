@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { AHCStore } from './ahc.store';
+import { UserInfoStore } from './../../core/session/userinfo.store';
+import { LocationStore } from './../../core/location/location.store';
 
 /**
  * Annual Health Check — DUMMY / STATIC journey, zero backend.
@@ -501,11 +504,15 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
   `,
 })
 export class WellnessPage {
+  protected readonly userStore = inject(UserInfoStore);
+  protected readonly ahcStore = inject(AHCStore);
   protected readonly packageBooked = signal(false);
   protected readonly pathologyBooked = signal(false);
   protected readonly radiologyBooked = signal(false);
   protected readonly confirmation = signal<string | null>(null);
-
+  
+  protected readonly location = inject(LocationStore);
+  
   // Post-booking order stage per leg (0 confirmed, 1 collection/scan, 2 report).
   protected readonly pathologyStage = signal(0);
   protected readonly radiologyStage = signal(0);
@@ -546,6 +553,15 @@ export class WellnessPage {
     () => this.packageBooked() || (this.pathologyBooked() && this.radiologyBooked()),
   );
 
+  constructor() {
+    console.log('----', this.userStore.userInfo(), '----');
+    
+    const userInfo = this.userStore.userInfo();
+    if(userInfo && userInfo[0]?.user_id){
+      this.ahcStore.getAHCList(userInfo[0]?.user_id);
+    }
+    
+  }
   /** Booked legs with their post-booking lifecycle state. */
   protected readonly bookedOrders = computed(() => {
     const out: { key: Leg; title: string; stage: number; steps: OrderStep[] }[] = [];
@@ -615,9 +631,18 @@ export class WellnessPage {
   }
 
   /** Placeholder geolocation — fills a detected postal code, no API. */
-  protected detectLocation(): void {
-    this.postalCode.set('122018');
-    this.detected.set('Gurugram, Haryana 122018');
+  protected async detectLocation(): Promise<void> {
+    // this.postalCode.set('122018');
+    // this.detected.set('Gurugram, Haryana 122018');
+    const place = await this.location.detect();
+
+    if (!place) {
+      // Optional: show location.error() in the template
+      return;
+    }
+
+    this.postalCode.set(place.pincode);
+    this.detected.set(`${place.city}, ${place.state} ${place.pincode}`);
   }
 
   protected startAddAddress(): void {

@@ -9,6 +9,8 @@ import {
   isLocationError,
   toPlace,
 } from './location';
+import { AppService } from './../../core/http/api.service';
+import { UserInfoStore } from './../../core/session/userinfo.store';
 
 /** The API returns `[]` below this and a search is not worth spending. */
 const MIN_QUERY = 2;
@@ -36,12 +38,15 @@ export class LocationStore {
   private readonly _matches = signal<readonly Place[]>([]);
   private readonly _busy = signal(false);
   private readonly _error = signal<string | null>(null);
+  // private readonly _googleMapsKey = signal<string | null>(null);
 
   /** The location currently in force. Null until one is chosen or detected. */
   readonly place = this._place.asReadonly();
   readonly matches = this._matches.asReadonly();
   readonly busy = this._busy.asReadonly();
   readonly error = this._error.asReadonly();
+  // readonly googleMapsKey = this._googleMapsKey.asReadonly();
+  constructor(private appService: AppService, private userInfoStore: UserInfoStore) {}
 
   choose(place: Place | null): void {
     this._place.set(place);
@@ -121,6 +126,10 @@ export class LocationStore {
    * also unavailable on an insecure origin, which is why the absence of
    * `navigator.geolocation` is handled rather than assumed impossible.
    */
+  pincode:any;
+  cityName:any;
+  stateName:any;
+  pincodeCity:any;
   async detect(): Promise<Place | null> {
     if (!navigator.geolocation) {
       this._error.set('This browser cannot detect your location. Enter a postal code instead.');
@@ -136,6 +145,61 @@ export class LocationStore {
           maximumAge: 5 * 60_000,
         });
       });
+      await (await this.getCredentials('google_maps_key')).subscribe((response: any) => {
+        const parsed = JSON.parse(response);
+        const resources: any[] = parsed?.resource ?? [];
+        if(resources.length > 0){
+          const encryptKey = this.userInfoStore.getUserInfo()[0]?.api_encryption_key ?? null;
+          const gkey = this.appService.decryptText(resources[0]?.value, encryptKey);
+          if(gkey){
+            this.getGoogleMapApi(position.coords.latitude, position.coords.longitude, gkey).then((response: any) => {
+              
+              response[0]?.address_components.map((address_details: any, index: any) => {
+                  if (address_details.types == "postal_code") {
+                    this.pincode =
+                      address_details.long_name != ""
+                        ? address_details.long_name
+                        : address_details.short_name;
+                  }
+                  if (
+                    address_details.types.length > 0 &&
+                    address_details.types[0] == "administrative_area_level_1"
+                  ) {
+                    this.stateName = address_details.long_name;
+                  }
+
+                  if (
+                    address_details.types.length > 0 &&
+                    (address_details.types[0] == "locality" ||
+                      address_details.types[0] == "administrative_area_level_3")
+                  ) {
+                    this.cityName = address_details.long_name;
+                  }
+                  if (
+                    this.pincode != "" &&
+                    this.pincode != undefined &&
+                    this.pincode != "undefined"
+                  ) {
+                    sessionStorage.setItem("selectedCity", this.cityName);
+                    sessionStorage.setItem("selectedPincode", this.pincode);
+                    // sessionStorage.setItem("latitude", latitude);
+                    // sessionStorage.setItem("longitude", longitude);
+                    sessionStorage.setItem("selectedState", this.stateName);
+                    // this.analyticsService.loggedInUserUpdate({
+                    //       Lat: latitude,
+                    //       Long: longitude,
+                    //       Location: this.cityName
+                    //     });
+                  }
+                });
+                return response;
+            })
+          }
+          return resources[0]?.value;
+        }
+        return null;
+      });
+        
       const payload = await firstValueFrom(
         this.http.get<PlaceDto | { error?: string }>(LOCATION_API.reverseGeocode, {
           params: new HttpParams()
@@ -166,5 +230,23 @@ export class LocationStore {
     } finally {
       this._busy.set(false);
     }
+  }
+  async getCredentials(credentialType: string){
+    const queryId = 'GET_CREDENTIALS'
+    const arg = '&args=key:'+credentialType+'&application=system-management';
+   return this.appService.getcall('third_party_app_credentials', 'system-management', 'queryId=' + queryId + arg)
+  }
+  // async setGoogleMapsKey(key: any): Promise<boolean> {
+  //       this._googleMapsKey.set(key);
+  //       return true;
+  //   }
+  async getGoogleMapApi(lat: number, lng: number, key: string){
+    https://maps.googleapis.com/maps/api/geocode/json?latlng=12.940361074187892,80.19542905688328&key=AIzaSyAtk4ZtABXgcxUsPXGnsVHSoYAq8SLSxgg
+    // if(this._googleMapsKey() === null){
+      return await this.http.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=' + lat + ',' + lng + '&key=' + key).toPromise().then((response: any) => {
+        const results = response?.results ?? [];
+        return results;
+      })
+    // }
   }
 }

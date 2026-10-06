@@ -9,6 +9,7 @@ import { SessionStore } from '../../core/session/session.store';
 import { DESTINATIONS, SECONDARY_DESTINATIONS } from './destinations';
 import { ProfileMenu } from './profile-menu';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
+import { UserInfoStore } from './../../core/session/userinfo.store';
 
 /**
  * One layout for every viewport width, matching web-member: a navy top bar at
@@ -202,6 +203,9 @@ export class MemberShell {
   protected readonly notifications = inject(NotificationsStore);
   protected readonly ago = timeAgo;
 
+  constructor(private userStore: UserInfoStore) {
+    this.userStore.getApplicationMasterByUaser();
+  }
   /** The list is fetched on open, not polled — only the badge polls. */
   protected toggleNotifications(): void {
     const open = !this.notificationsOpen();

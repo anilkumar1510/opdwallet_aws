@@ -949,6 +949,7 @@ export class ClaimDetailPage {
    * wants CLM-… while the detail endpoint that loaded this claim wants _id.
    */
   protected async cancelClaim(reference: string): Promise<void> {
+    console.log('Cancelling claim', reference, 'with reason', this.reason());
     if (await this.store.cancel(reference, this.reason())) {
       // web-member returns to the list, where the new status is visible.
       void this.router.navigate(['/member/claims']);
@@ -1006,7 +1007,8 @@ export class ClaimDetailPage {
   }
 
   decryptText(encText: string){
-   return this.appService.decryptText(encText);
+    console.log('decryptText called with:', this.appService.getCurrentSessionData('encryptKey'));
+   return this.appService.decryptText(encText, this.appService.getCurrentSessionData('encryptKey'));
   }
 }
 

@@ -10,12 +10,12 @@ import { map } from "rxjs";
 })
 //We are using localstorage here, not storage service.
 export class AppService {
-    _currentSessionData : any = {};
-    constructor(public _http: HttpClient, public Router: Router,){
-        this._currentSessionData.encryptKey = this.getCookie('encryptKey');
+    _currentSessionData : any = {
+        userInfo: [],
+        encryptKey: ''
+    };
+    constructor(public _http: HttpClient, public Router: Router,) {  
     }
-
-    
 
     addXsrfToken(data: any, login_required: boolean) {
         var encrypted = this.getXsrfToken(data, login_required);
@@ -34,7 +34,7 @@ export class AppService {
     }
 
     getXsrfToken(data : any, login_required : boolean) {
-        var key = this._currentSessionData.encryptKey;
+        var key = this.getCurrentSessionData('encryptKey');
         console.log("getXsrfToken Data:::" + data);
         if (key && login_required) {
             console.log("Inside getXsrfToken If Condition:::" + CryptoJS.MD5(data).toString());
@@ -98,8 +98,8 @@ export class AppService {
         );
     }
 
-    decryptText(encryptedCipherText: string) {
-       const key = this._currentSessionData.encryptKey ? this._currentSessionData.encryptKey : '';
+    decryptText(encryptedCipherText: string, key: any) {
+    //    const key = this.getCurrentSessionData('encryptKey');
         if (key == '' || encryptedCipherText == '' || !encryptedCipherText || !key) {
             return encryptedCipherText;
         }
