@@ -20,6 +20,8 @@ export interface PharmacyOrder {
   readonly status: string | null;
   /** City, state and pincode — plaintext in the row, unlike the street fields. */
   readonly locality: string;
+  /** The patient ID associated with this order, used for fetching cart details. */
+  readonly patientId: string | null;
 }
 
 export interface PharmacyOrderPage {
@@ -41,6 +43,7 @@ interface Row {
   readonly totalAmount?: unknown;
   readonly status?: unknown;
   readonly address?: unknown;
+  readonly patient_id?: unknown;
 }
 
 const str = (value: unknown): string =>
@@ -76,5 +79,6 @@ export function toPharmacyOrder(dto: unknown): PharmacyOrder | null {
     totalAmount: num(row.totalAmount),
     status: str(row.status) || null,
     locality: toLocality(row.address),
+    patientId: str(row.patient_id) || null,
   };
 }

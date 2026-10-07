@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { PharmacyOrder } from './pharmacy-order.model';
@@ -16,38 +17,44 @@ const money = (amount: number): string =>
 @Component({
   selector: 'opd-pharmacy-past-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StatusBadge],
+  imports: [StatusBadge, RouterLink],
   template: `
     <ul class="mt-3 space-y-3">
       @for (order of orders(); track order.id) {
-        <li
-          class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
-          style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
+        <a
+          [routerLink]="['/member/pharmacy/orders', order.id, 'cart']"
+          class="block"
         >
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-base font-semibold text-[#034DA2]">Medicine order</p>
-              <p class="mt-0.5 truncate text-sm text-ink-700">Prescription {{ order.name }}</p>
-              @if (order.locality) {
-                <p class="mt-0.5 truncate text-sm text-ink-700">{{ order.locality }}</p>
-              }
-              <p class="mt-1 text-xs text-ink-500">
-                {{ order.id === order.name ? '' : order.id + ' · ' }}{{ dateFor(order) }}
-                @if (order.totalItems !== null) {
-                  · {{ order.totalItems }} item{{ order.totalItems === 1 ? '' : 's' }}
+          <li
+            class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 transition-colors hover:border-[#A4BFFE7A] hover:bg-[#F3F7FF]"
+            style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.24)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-base font-semibold text-[#034DA2]">Medicine order</p>
+                <p class="mt-0.5 truncate text-sm text-ink-700">Prescription {{ order.name }}</p>
+                @if (order.locality) {
+                  <p class="mt-0.5 truncate text-sm text-ink-700">{{ order.locality }}</p>
                 }
-              </p>
+                <p class="mt-1 text-xs text-ink-500">
+                  {{ order.id === order.name ? '' : order.id + ' · ' }}{{ dateFor(order) }}
+                  @if (order.totalItems !== null) {
+                    · {{ order.totalItems }} item{{ order.totalItems === 1 ? '' : 's' }}
+                  }
+                </p>
+                <p class="mt-1 text-xs text-[#034DA2] font-medium">View cart →</p>
+              </div>
+              <div class="shrink-0 text-right">
+                @if (order.status) {
+                  <opd-status-badge [status]="statusFor(order.status)" />
+                }
+                @if (order.totalAmount !== null) {
+                  <p class="mt-2 text-lg font-semibold text-[#303030]">{{ money(order.totalAmount) }}</p>
+                }
+              </div>
             </div>
-            <div class="shrink-0 text-right">
-              @if (order.status) {
-                <opd-status-badge [status]="statusFor(order.status)" />
-              }
-              @if (order.totalAmount !== null) {
-                <p class="mt-2 text-lg font-semibold text-[#303030]">{{ money(order.totalAmount) }}</p>
-              }
-            </div>
-          </div>
-        </li>
+          </li>
+        </a>
       }
     </ul>
   `,
