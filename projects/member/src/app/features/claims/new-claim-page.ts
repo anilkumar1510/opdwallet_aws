@@ -15,6 +15,7 @@ import {
 import { BenefitCategory, relationshipLabel, toBenefitCategory } from '../../core/domain/codes';
 import { formatMoney, money } from '../../core/domain/money';
 import {
+  BANK_REJECTION_REASONS,
   BankDetailsStore,
   isValidAccountNumber,
   isValidIfsc,
@@ -29,14 +30,21 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
 import { Observable } from 'rxjs';
 const MAX_BYTES = 5 * 1024 * 1024;
+const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const STEPS = [
+  { n: 0 as const, label: 'Bank account' },
   { n: 1 as const, label: 'Details' },
   { n: 2 as const, label: 'Documents' },
   { n: 3 as const, label: 'Review' },
 ];
 
-/** Submit a reimbursement claim, in three steps: details, documents, review. */
+/**
+ * Submit a reimbursement claim: details, documents, review — behind a bank
+ * account step. Payouts go to the member's bank account, which an adjudicator
+ * must approve before the first claim can be filed (DUMMY for now; see
+ * bank-details.store).
+ */
 @Component({
   selector: 'opd-new-claim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,7 +79,7 @@ const STEPS = [
                 [class.text-white]="step() >= s.n"
                 [class.bg-surface-border]="step() < s.n"
                 [class.text-ink-500]="step() < s.n"
-                >{{ s.n }}</span
+                >{{ s.n + 1 }}</span
               >
               <span
                 class="text-sm font-medium"
@@ -87,6 +95,114 @@ const STEPS = [
         </ol>
 
         <form (ngSubmit)="onPrimary()">
+          <!-- ── Step 0 · Bank account (verified once, before any claim) ──── -->
+          @if (step() === 0) {
+            @switch (bank.verificationStatus()) {
+              @case ('pending') {
+                <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+                  <div class="text-center">
+                    <p class="text-3xl" aria-hidden="true">⏳</p>
+                    <h2 class="mt-2 text-base font-semibold text-[#0E51A2] lg:text-lg">Bank details under review</h2>
+                    <p class="mt-1 text-sm text-ink-700">
+                      An adjudicator is verifying your bank account. You can submit claims once it's approved —
+                      we'll notify you of the decision.
+                    </p>
+                  </div>
+                  <dl class="mt-5 space-y-2 rounded-xl bg-surface-sunk px-4 py-3 text-sm">
+                    <div class="flex justify-between gap-3"><dt class="text-ink-700">Account holder</dt><dd class="truncate font-medium text-ink-900">{{ bank.details()?.accountHolderName }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-ink-700">Account</dt><dd class="font-medium text-ink-900">{{ bank.maskedAccount() }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-ink-700">IFSC</dt><dd class="font-medium text-ink-900">{{ bank.details()?.ifsc }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-ink-700">Bank</dt><dd class="truncate font-medium text-ink-900">{{ bank.details()?.bankName }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-ink-700">Submitted</dt><dd class="font-medium text-ink-900">{{ when(bank.verification()?.submittedAt) }}</dd></div>
+                  </dl>
+                </section>
+
+                <!-- DUMMY — stands in for the adjudicator until the API exists. -->
+                <section class="mt-5 rounded-2xl border border-dashed border-warning-400 bg-warning-50 p-5">
+                  <p class="text-sm font-semibold text-warning-700">🧪 Demo — adjudicator's decision</p>
+                  <p class="mt-1 text-xs text-warning-700">Pick one or more reasons to reject, or approve.</p>
+                  <ul class="mt-3 space-y-2">
+                    @for (reason of rejectionReasons; track reason) {
+                      <li>
+                        <label class="flex cursor-pointer items-start gap-2 text-sm text-ink-900">
+                          <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0" [checked]="demoReasons().includes(reason)" (change)="toggleDemoReason(reason)" />
+                          <span>{{ reason }}</span>
+                        </label>
+                      </li>
+                    }
+                  </ul>
+                  <div class="mt-4 flex flex-wrap gap-3">
+                    <button type="button" class="min-h-touch flex-1 rounded-xl bg-success-700 px-4 text-sm font-semibold text-white hover:opacity-90" (click)="simulateApprove()">Approve</button>
+                    <button type="button" class="min-h-touch flex-1 rounded-xl bg-danger-700 px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" [disabled]="!demoReasons().length" (click)="simulateReject()">Reject{{ demoReasons().length ? ' (' + demoReasons().length + ')' : '' }}</button>
+                  </div>
+                </section>
+              }
+              @case ('approved') {
+                <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+                  <p class="rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm font-medium text-success-700">✓ Bank account verified</p>
+                  <p class="mt-3 text-sm text-ink-700">
+                    Reimbursements will be credited to <span class="font-medium text-ink-900">{{ bank.maskedAccount() }}</span>
+                    at {{ bank.details()?.bankName }}, not to the wallet.
+                  </p>
+                </section>
+              }
+              @default {
+                <!-- none, unverified, or rejected: the form, prefilled after a rejection. -->
+                @if (bank.verificationStatus() === 'rejected') {
+                  <section class="mb-5 rounded-2xl border border-[#FECACA] bg-danger-50 p-5" role="alert">
+                    <h2 class="text-base font-semibold text-danger-700">Bank details rejected</h2>
+                    <p class="mt-1 text-sm text-danger-700">The adjudicator couldn't verify your account{{ bank.verification()?.reasons?.length === 1 ? ' for this reason' : ' for these reasons' }}:</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-danger-700">
+                      @for (reason of bank.verification()?.reasons ?? []; track reason) {
+                        <li>{{ reason }}</li>
+                      }
+                    </ul>
+                    <p class="mt-3 text-sm text-ink-700">Correct your details below, upload the proof again and resubmit.</p>
+                  </section>
+                }
+                <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
+                  <h2 class="mb-1 text-base font-semibold text-[#0E51A2] lg:text-lg">Bank account for payout</h2>
+                  <p class="mb-4 text-xs text-ink-500">
+                    Approved claims are credited to this account, not to the wallet. An adjudicator verifies it once,
+                    before your first claim.
+                  </p>
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                      <label for="bankHolder" class="mb-1 block text-sm font-medium text-ink-700">Account holder name</label>
+                      <input id="bankHolder" name="bankHolder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankHolder()" (ngModelChange)="bankHolder.set($event)" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                    <div>
+                      <label for="bankAccount" class="mb-1 block text-sm font-medium text-ink-700">Account number</label>
+                      <input id="bankAccount" name="bankAccount" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankAccount()" (ngModelChange)="bankAccount.set($event)" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                    <div>
+                      <label for="bankIfsc" class="mb-1 block text-sm font-medium text-ink-700">IFSC code</label>
+                      <input id="bankIfsc" name="bankIfsc" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm uppercase focus:border-brand-500 focus:outline-none" [ngModel]="bankIfsc()" (ngModelChange)="bankIfsc.set($event)" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label for="bankName" class="mb-1 block text-sm font-medium text-ink-700">Bank name</label>
+                      <input id="bankName" name="bankName" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankName()" (ngModelChange)="bankName.set($event)" [ngModelOptions]="{ standalone: true }" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <span class="mb-1 block text-sm font-medium text-ink-700">Cancelled cheque</span>
+                      <input type="file" class="sr-only" accept="image/*,.pdf" id="cheque" (change)="onChequeChosen($event)" />
+                      <label for="cheque" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-5 text-center transition-colors hover:border-[#0F5FDC]">
+                        <span class="block font-medium text-[#0B2C63]">{{ chequeFile() ? 'Replace cancelled cheque' : 'Upload cancelled cheque' }}</span>
+                        <span class="mt-1 block text-xs text-danger-700">Required — a cancelled cheque or passbook page. PDF or photo, up to 5 MB.</span>
+                      </label>
+                      @if (chequeFile(); as file) {
+                        <p class="mt-2 truncate text-sm text-ink-900">{{ file.name }}</p>
+                      }
+                      @if (chequeError(); as error) {
+                        <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ error }}</p>
+                      }
+                    </div>
+                  </div>
+                </section>
+              }
+            }
+          }
+
           <!-- ── Step 1 · Details ─────────────────────────────────────────── -->
           @if (step() === 1) {
             <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
@@ -180,7 +296,7 @@ const STEPS = [
             </section>
           }
 
-          <!-- ── Step 2 · Documents (+ payout bank account) ───────────────── -->
+          <!-- ── Step 2 · Documents ──────────────────────────────────────────── -->
           @if (step() === 2) {
             <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-1 text-base font-semibold text-[#0E51A2] lg:text-lg">Documents</h2>
@@ -232,46 +348,10 @@ const STEPS = [
               }
             </section>
 
-            <!-- Payout bank account. PLACEHOLDER — held locally, no API yet. -->
+            <!-- Payout account — verified on the bank account step. -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-1 text-base font-semibold text-[#0E51A2] lg:text-lg">Bank account for payout</h2>
-              @if (bank.hasDetails()) {
-                <p class="text-sm text-ink-700">Reimbursement will be paid to <span class="font-medium text-ink-900">{{ bank.maskedAccount() }}</span> at {{ bank.details()?.bankName }}. Manage this in your Profile.</p>
-              } @else {
-                <p class="mb-4 text-xs text-ink-500">Asked once and saved for every future claim. Approved money is credited here, not to the wallet.</p>
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div class="sm:col-span-2">
-                    <label for="bankHolder" class="mb-1 block text-sm font-medium text-ink-700">Account holder name</label>
-                    <input id="bankHolder" name="bankHolder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankHolder()" (ngModelChange)="bankHolder.set($event)" [ngModelOptions]="{ standalone: true }" />
-                  </div>
-                  <div>
-                    <label for="bankAccount" class="mb-1 block text-sm font-medium text-ink-700">Account number</label>
-                    <input id="bankAccount" name="bankAccount" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankAccount()" (ngModelChange)="bankAccount.set($event)" [ngModelOptions]="{ standalone: true }" />
-                  </div>
-                  <div>
-                    <label for="bankIfsc" class="mb-1 block text-sm font-medium text-ink-700">IFSC code</label>
-                    <input id="bankIfsc" name="bankIfsc" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm uppercase focus:border-brand-500 focus:outline-none" [ngModel]="bankIfsc()" (ngModelChange)="bankIfsc.set($event)" [ngModelOptions]="{ standalone: true }" />
-                  </div>
-                  <div class="sm:col-span-2">
-                    <label for="bankName" class="mb-1 block text-sm font-medium text-ink-700">Bank name</label>
-                    <input id="bankName" name="bankName" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankName()" (ngModelChange)="bankName.set($event)" [ngModelOptions]="{ standalone: true }" />
-                  </div>
-                  <div class="sm:col-span-2">
-                    <span class="mb-1 block text-sm font-medium text-ink-700">Cancelled cheque</span>
-                    <input type="file" class="sr-only" accept="image/*,.pdf" id="cheque" (change)="onChequeChosen($event)" />
-                    <label for="cheque" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-5 text-center transition-colors hover:border-[#0F5FDC]">
-                      <span class="block font-medium text-[#0B2C63]">{{ chequeFile() ? 'Replace cancelled cheque' : 'Upload cancelled cheque' }}</span>
-                      <span class="mt-1 block text-xs text-danger-700">Required — a cancelled cheque or passbook page. PDF or photo, up to 5 MB.</span>
-                    </label>
-                    @if (chequeFile(); as file) {
-                      <p class="mt-2 truncate text-sm text-ink-900">{{ file.name }}</p>
-                    }
-                    @if (chequeError(); as error) {
-                      <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ error }}</p>
-                    }
-                  </div>
-                </div>
-              }
+              <p class="text-sm text-ink-700">Reimbursement will be credited to <span class="font-medium text-ink-900">{{ bank.maskedAccount() }}</span> at {{ bank.details()?.bankName }}. Manage this in your Profile.</p>
             </section>
           }
 
@@ -372,13 +452,16 @@ const STEPS = [
           }
 
           <div class="mt-5 flex flex-wrap gap-3">
-            @if (step() > 1) {
+            @if (step() > 0) {
               <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A]" (click)="back()">Back</button>
             }
-            <button type="submit" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit()">
-              {{ step() < 3 ? 'Continue' : (submitting() ? 'Submitting…' : 'Submit claim') }}
-            </button>
-            @if (step() === 1) {
+            <!-- Nothing to do while the adjudicator decides. -->
+            @if (!(step() === 0 && bank.verificationStatus() === 'pending')) {
+              <button type="submit" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit()">
+                {{ primaryLabel() }}
+              </button>
+            }
+            @if (step() <= 1) {
               <a routerLink="/member/claims" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900 hover:border-[#A4BFFE7A]">Cancel</a>
             }
           </div>
@@ -411,7 +494,8 @@ export class NewClaimPage {
   private readonly router = inject(Router);
 
   protected readonly steps = STEPS;
-  protected readonly step = signal<1 | 2 | 3>(1);
+  /** Opens on the bank step until the payout account is approved. */
+  protected readonly step = signal<0 | 1 | 2 | 3>(this.bank.isApproved() ? 1 : 0);
   protected readonly problem = signal<string | null>(null);
 
   /**
@@ -454,12 +538,24 @@ export class NewClaimPage {
   protected readonly chequeFile = signal<File | null>(null);
   protected readonly chequeError = signal<string | null>(null);
 
+  protected readonly rejectionReasons = BANK_REJECTION_REASONS;
+  /** DUMMY — the reasons ticked in the adjudicator stand-in. */
+  protected readonly demoReasons = signal<readonly string[]>([]);
+
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly amount = (value: number) => formatMoney(money(value));
   data: any = {};
   eventData: any = [];
   container: any = {};
   constructor(private _http: HttpClient, private appService: AppService, private sanitizer: DomSanitizer) {
+    // A rejected or never-verified account comes back prefilled to correct.
+    const onRecord = this.bank.details();
+    if (onRecord) {
+      this.bankHolder.set(onRecord.accountHolderName);
+      this.bankAccount.set(onRecord.accountNumber);
+      this.bankIfsc.set(onRecord.ifsc);
+      this.bankName.set(onRecord.bankName);
+    }
     this.categoriesLoading.set(true);
     void this.store.categories().then((rows) => this.categories.set(rows)).finally(() => this.categoriesLoading.set(false));
     let patientPrefilled = false;
@@ -616,11 +712,10 @@ export class NewClaimPage {
         return `Attach the ${slotNoun(slot.key)}.`;
       }
     }
-    return this.missingBankField();
+    return null;
   }
 
   private missingBankField(): string | null {
-    if (this.bank.hasDetails()) return null;
     if (this.bankHolder().trim() === '') return 'Enter the account holder name.';
     if (!isValidAccountNumber(this.bankAccount())) return 'Enter a valid account number (9–18 digits).';
     if (!isValidIfsc(this.bankIfsc())) return 'Enter a valid IFSC code (e.g. HDFC0001234).';
@@ -631,8 +726,23 @@ export class NewClaimPage {
 
   // ── Navigation ─────────────────────────────────────────────────────────
 
-  /** The single submit control: advances a step, or files the claim on step 3. */
+  protected primaryLabel(): string {
+    if (this.step() === 0) {
+      return this.bank.isApproved() ? 'Continue' : 'Submit for verification';
+    }
+    if (this.step() < 3) return 'Continue';
+    return this.submitting() ? 'Submitting…' : 'Submit claim';
+  }
+
+  /**
+   * The single submit control: sends the bank details for verification,
+   * advances a step, or files the claim on step 3.
+   */
   protected onPrimary(): void {
+    if (this.step() === 0) {
+      this.onBankStep();
+      return;
+    }
     if (this.step() === 3) {
       void this.submit();
       return;
@@ -648,7 +758,59 @@ export class NewClaimPage {
 
   protected back(): void {
     this.problem.set(null);
-    if (this.step() > 1) this.step.set((this.step() - 1) as 1 | 2 | 3);
+    if (this.step() > 0) this.step.set((this.step() - 1) as 0 | 1 | 2);
+  }
+
+  // ── Bank account step ──────────────────────────────────────────────────
+
+  private onBankStep(): void {
+    if (this.bank.isApproved()) {
+      this.problem.set(null);
+      this.step.set(1);
+      return;
+    }
+    if (this.bank.verificationStatus() === 'pending') return;
+    const missing = this.missingBankField();
+    if (missing) {
+      this.problem.set(missing);
+      return;
+    }
+    this.problem.set(null);
+    const cheque = this.chequeFile();
+    // TODO(API): the cheque FILE must be uploaded — only its name is kept.
+    if (cheque) console.info('[PLACEHOLDER] cancelled cheque captured, not yet uploaded:', cheque.name);
+    this.bank.submitForVerification({
+      accountHolderName: this.bankHolder(),
+      accountNumber: this.bankAccount(),
+      ifsc: this.bankIfsc(),
+      bankName: this.bankName(),
+      cancelledChequeName: cheque?.name ?? '',
+    });
+    // A resubmission needs fresh proof, so the old file does not carry over.
+    this.chequeFile.set(null);
+    this.demoReasons.set([]);
+  }
+
+  protected toggleDemoReason(reason: string): void {
+    const current = this.demoReasons();
+    this.demoReasons.set(
+      current.includes(reason) ? current.filter((r) => r !== reason) : [...current, reason],
+    );
+  }
+
+  protected simulateApprove(): void {
+    this.bank.simulateDecision('approved');
+    this.demoReasons.set([]);
+  }
+
+  protected simulateReject(): void {
+    if (!this.demoReasons().length) return;
+    this.bank.simulateDecision('rejected', this.demoReasons());
+    this.demoReasons.set([]);
+  }
+
+  protected when(iso: string | null | undefined): string {
+    return iso ? WHEN.format(new Date(iso)) : '—';
   }
 
   // ── Field helpers ──────────────────────────────────────────────────────
@@ -861,6 +1023,12 @@ export class NewClaimPage {
   protected async submit(): Promise<void> {
     if (!this.canSubmit()) return;
 
+    // No claim without an approved payout account.
+    if (!this.bank.isApproved()) {
+      this.step.set(0);
+      return;
+    }
+
     // Guard the whole form, in case a later step was reached and an earlier
     // field was cleared.
     const missing = this.missingStep1() ?? this.missingStep2();
@@ -877,19 +1045,6 @@ export class NewClaimPage {
     // From here on the claim is genuinely on its way out, so show the loader
     // until either the navigation happens or the POST reports a failure.
     this.submitting.set(true);
-
-    if (!this.bank.hasDetails()) {
-      const cheque = this.chequeFile();
-      // TODO(API): the cheque FILE must be uploaded — only its name is kept.
-      if (cheque) console.info('[PLACEHOLDER] cancelled cheque captured, not yet uploaded:', cheque.name);
-      this.bank.save({
-        accountHolderName: this.bankHolder(),
-        accountNumber: this.bankAccount(),
-        ifsc: this.bankIfsc(),
-        bankName: this.bankName(),
-        cancelledChequeName: cheque?.name ?? '',
-      });
-    }
 
     // TODO(API): purchaseLocation (second location) is captured but not sent.
     if (this.purchaseLocation().trim()) {
