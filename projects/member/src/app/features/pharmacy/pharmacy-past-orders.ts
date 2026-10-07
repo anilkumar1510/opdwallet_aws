@@ -23,6 +23,7 @@ const money = (amount: number): string =>
       @for (order of orders(); track order.id) {
         <a
           [routerLink]="['/member/pharmacy/orders', order.id, 'cart']"
+          [queryParams]="{ patientId: order.patientId }"
           class="block"
         >
           <li

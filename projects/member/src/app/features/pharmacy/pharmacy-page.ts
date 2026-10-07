@@ -299,7 +299,7 @@ export class PharmacyPage {
     this.ordersError.set(null);
     try {
       const result = await this.orderService.list(page, ORDERS_PAGE_SIZE);
- this.pastOrders.set(result.orders);
+      this.pastOrders.set(result.orders);
       this.ordersTotal.set(result.count);
       this.ordersHaveTotal.set(result.hasTotal);
       this.ordersPage.set(page);
