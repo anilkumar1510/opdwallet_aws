@@ -777,7 +777,7 @@ export const routes: Routes = [
       },
       {
         // Past order cart view — fetch adjudicated cart using booking_name and patient_id
-        path: 'pharmacy/orders/:orderId/cart',
+        path: 'pharmacy/orders/:bookingName/cart',
         loadComponent: () =>
           import('./features/pharmacy/pharmacy-past-order-cart-page').then((m) => m.PharmacyPastOrderCartPage),
       },

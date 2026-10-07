@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { formatMoney } from '../../core/domain/money';
 import { PharmacyStore } from '../../core/pharmacy/pharmacy.store';
@@ -11,7 +11,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 
 /**
  * Past order cart view — displays the adjudicated cart for a past order.
- * Fetches cart data using the order's booking_name (from route param) and patient_id.
+ * Fetches cart data using the order's booking_name (from route param) and patient_id (from query param).
  */
 @Component({
   selector: 'opd-pharmacy-past-order-cart-page',
@@ -24,14 +24,14 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
       >
         <div class="mx-auto flex max-w-[820px] items-center gap-4 px-5 py-5 lg:px-8">
           <a
-            [routerLink]="['/member/pharmacy/orders', orderId()]"
+            [routerLink]="['/member/pharmacy/orders', bookingName(), 'cart']"
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/10 lg:text-[#034DA2] lg:hover:bg-blue-50"
             aria-label="Back to order"
             >&larr;</a
           >
           <div class="min-w-0">
             <h1 class="text-[18px] font-medium leading-[1.2] text-white lg:text-2xl lg:font-bold lg:text-[#034DA2]">Order Cart</h1>
-            <p class="truncate text-[12px] leading-[1.2] text-white/80 lg:text-sm lg:text-ink-500">Adjudicated medicines for {{ orderId() }}</p>
+            <p class="truncate text-[12px] leading-[1.2] text-white/80 lg:text-sm lg:text-ink-500">Adjudicated medicines for {{ bookingName() }}</p>
           </div>
         </div>
       </header>
@@ -44,7 +44,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
           [editable]="false"
           [emptyMessage]="'The adjudicated cart for this order could not be loaded or is empty.'"
           [retryLabel]="'Retry'"
-          (retryClicked)="loadCart(orderId(), patientId())"
+          (retryClicked)="loadCart(bookingName(), queryPatientId())"
         />
         @if (cartItems().length > 0) {
           <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
@@ -53,10 +53,10 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
 
           <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
             <h2 class="mb-3 text-base font-semibold text-[#0E51A2] lg:text-lg">Order Details</h2>
-            <p class="mb-1 text-sm text-ink-700"><span class="font-medium">Order ID:</span> {{ orderId() }}</p>
-            <p class="mb-1 text-sm text-ink-700"><span class="font-medium">Booking:</span> {{ orderId() }}</p>
-            @if (patientId()) {
-              <p class="mb-1 text-sm text-ink-700"><span class="font-medium">Patient ID:</span> {{ patientId() }}</p>
+            <p class="mb-1 text-sm text-ink-700"><span class="font-medium">Order ID:</span> {{ bookingName() }}</p>
+            <p class="mb-1 text-sm text-ink-700"><span class="font-medium">Booking:</span> {{ bookingName() }}</p>
+            @if (queryPatientId()) {
+              <p class="mb-1 text-sm text-ink-700"><span class="font-medium">Patient ID:</span> {{ queryPatientId() }}</p>
             }
             <p class="text-sm text-ink-700"><span class="font-medium">Status:</span> {{ cartStatus() }}</p>
           </section>
@@ -78,12 +78,15 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
   `,
 })
 export class PharmacyPastOrderCartPage {
-  readonly orderId = input<string>('');
-  readonly patientId = input<string>('');
+  readonly bookingName = input<string>('');
 
   private readonly store = inject(PharmacyStore);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly money = formatMoney;
+
+  // Read patientId from query params
+  protected readonly queryPatientId = computed(() => this.route.snapshot.queryParamMap.get('patientId') || '');
 
   protected readonly cartLoading = signal(false);
   protected readonly cartError = signal<string | null>(null);
@@ -97,9 +100,10 @@ export class PharmacyPastOrderCartPage {
 
   constructor() {
     effect(() => {
-      const id = this.orderId();
+      const id = this.bookingName();
+      const patientId = this.queryPatientId();
       if (id) {
-        void this.loadCart(id, this.patientId());
+        void this.loadCart(id, patientId);
       }
     });
   }
