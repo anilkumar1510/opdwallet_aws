@@ -29,8 +29,8 @@ export interface ClaimDto {
   documents?: ClaimDocumentDto[];
   submittedAt?: string;
   createdAt?: string;
-  /** The action reason code from the API (e.g., AMOUNT_ABOVE_THE_NETWORK_TARIFF). */
-  claim_action_reason?: string;
+  /** The action reason codes from the API (e.g., AMOUNT_ABOVE_THE_NETWORK_TARIFF). */
+  claim_action_reasons?: string[];
 }
 
 export interface ClaimsResponseDto {
