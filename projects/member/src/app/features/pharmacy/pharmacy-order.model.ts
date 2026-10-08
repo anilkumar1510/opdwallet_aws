@@ -20,6 +20,8 @@ export interface PharmacyOrder {
   readonly status: string | null;
   /** City, state and pincode — plaintext in the row, unlike the street fields. */
   readonly locality: string;
+  /** The patient ID associated with this order, used for fetching cart details. */
+  readonly patientId: string | null;
 }
 
 export interface PharmacyOrderPage {
@@ -34,13 +36,17 @@ export interface PharmacyOrderPage {
 }
 
 interface Row {
-  readonly id?: unknown;
-  readonly name?: unknown;
-  readonly g_creation_time?: unknown;
-  readonly totalItems?: unknown;
-  readonly totalAmount?: unknown;
-  readonly status?: unknown;
-  readonly address?: unknown;
+  readonly id?: number|string;
+  readonly booking_name?: string;
+  readonly g_creation_time?: number;
+  readonly totalItems?: number;
+  readonly totalAmount?: number;
+  readonly status?: string;
+  readonly patient_city?: string;
+  readonly patient_state?: string;
+  readonly patient_pincode?: string;
+  readonly patient_id?: string;
+  readonly image_url?:string
 }
 
 const str = (value: unknown): string =>
@@ -66,15 +72,20 @@ export function toPharmacyOrder(dto: unknown): PharmacyOrder | null {
   if (typeof dto !== 'object' || dto === null) return null;
   const row = dto as Row;
 
-  const name = str(row.name);
+  const name = str(row.booking_name);
   return {
-    // `id` keys the list; `name` is what the member recognises, so it is displayed.
-    id: str(row.id) || name,
-    name,
-    createdAt: num(row.g_creation_time) ?? 0,
-    totalItems: num(row.totalItems),
-    totalAmount: num(row.totalAmount),
-    status: str(row.status) || null,
-    locality: toLocality(row.address),
-  };
+  id: str(row.id) || name,
+  name,
+  createdAt: num(row.g_creation_time) ?? 0,
+  totalItems: num(row.totalItems),
+  totalAmount: num(row.totalAmount),
+  status: str(row.status) || null,
+  locality: toLocality({
+    cityDisplayName: row.patient_city,
+    stateDisplayName: row.patient_state,
+    pincode: row.patient_pincode,
+  }),
+  patientId: str(row.patient_id) || null,
+
+};
 }

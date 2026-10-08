@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signa
 import { Router } from '@angular/router';
 
 import { FamilyStore } from '../../core/family/family.store';
+import { PharmacyStore } from '../../core/pharmacy/pharmacy.store';
 import { AppService } from '../../core/http/api.service';
 import { AddAddressModal } from './add-address-modal';
 import { PharmacyAddressCards } from './pharmacy-address-cards';
@@ -11,6 +12,7 @@ import { PharmacyAddressService } from './pharmacy-address.service';
 import { PharmacyOrder } from './pharmacy-order.model';
 import { PharmacyOrderService } from './pharmacy-order.service';
 import { PharmacyPastOrders } from './pharmacy-past-orders';
+import { PharmacyCartComponent } from './pharmacy-cart.component';
 
 /**
  * Pharmacy — DUMMY / STATIC journey, zero backend.
@@ -82,7 +84,7 @@ export function readUploadedDocId(body: unknown): string | null {
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders],
+  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -201,30 +203,16 @@ export function readUploadedDocId(body: unknown): string | null {
                 <p class="mb-1 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready.</p>
                 <p class="mb-3 text-xs text-ink-500">You can remove an item or reduce a quantity — you can't add or increase, since the cart is adjudicated against your prescription.</p>
                 <ul class="space-y-2">
-                  @for (item of cart(); track item.id) {
-                    <li class="rounded-xl border border-surface-border px-3 py-2">
-                      <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                          <p class="text-sm font-medium text-ink-900">{{ item.name }}</p>
-                          @if (item.isSubstitute) {
-                            <p class="text-xs text-warning-700">Substitute for {{ item.originalBrand }}</p>
-                          }
-                          <p class="text-xs text-ink-500">₹{{ item.unitPrice }} each</p>
-                        </div>
-                        <div class="shrink-0 text-right">
-                          <p class="text-sm font-semibold text-ink-900">₹{{ item.qty * item.unitPrice }}</p>
-                          <div class="mt-1 flex items-center justify-end gap-2">
-                            <button type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-ink-700" (click)="decrement(item.id)" aria-label="Reduce quantity">−</button>
-                            <span class="text-sm text-ink-900">{{ item.qty }}</span>
-                          </div>
-                          <button type="button" class="mt-1 text-xs font-medium text-danger-700 underline" (click)="removeItem(item.id)">Remove</button>
-                        </div>
-                      </div>
-                    </li>
-                  }
-                  @if (!cart().length) {
-                    <li class="rounded-xl bg-surface-sunk px-3 py-3 text-sm text-ink-500">You've removed everything. Add nothing back — reduce only. Restore the cart to continue.</li>
-                  }
+                  <opd-pharmacy-cart
+                    [cartItems]="cart()"
+                    [cartLoading]="cartLoading()"
+                    [cartError]="cartError()"
+                    [editable]="true"
+                    [retryLabel]="'Retry'"
+                    (decrementClicked)="decrement($event)"
+                    (removeClicked)="removeItem($event)"
+                    (retryClicked)="pushCart()"
+                  />
                 </ul>
                 <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
                   <div class="flex justify-between"><span class="text-ink-700">Cart value</span><span class="font-medium text-ink-900">₹{{ pay().cartValue }}</span></div>
@@ -276,6 +264,7 @@ export class PharmacyPage {
   private readonly appService = inject(AppService);
   private readonly router = inject(Router);
   private readonly family = inject(FamilyStore);
+  private readonly store = inject(PharmacyStore);
   private readonly addressService = inject(PharmacyAddressService);
   private readonly orderService = inject(PharmacyOrderService);
 
@@ -310,7 +299,7 @@ export class PharmacyPage {
     this.ordersError.set(null);
     try {
       const result = await this.orderService.list(page, ORDERS_PAGE_SIZE);
- this.pastOrders.set(result.orders);
+      this.pastOrders.set(result.orders);
       this.ordersTotal.set(result.count);
       this.ordersHaveTotal.set(result.hasTotal);
       this.ordersPage.set(page);
@@ -351,8 +340,11 @@ export class PharmacyPage {
   protected readonly uploadedDocId = signal<string | null>(null);
   protected readonly documentUploading = signal(false);
   protected readonly uploadError = signal<string | null>(null);
+  protected readonly cartLoading = signal(false);
+  protected readonly cartError = signal<string | null>(null);
   protected readonly cartPushed = signal(false);
   protected readonly cart = signal<CartItem[]>([]);
+  protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
 
   protected readonly addresses = signal<readonly PharmacyAddress[]>([]);
   protected readonly addressUhId = signal('');
@@ -365,10 +357,8 @@ export class PharmacyPage {
   protected readonly addressSaveError = signal<string | null>(null);
   protected readonly submittingBooking = signal(false);
   /** The booking response once it has been accepted; null until submit. */
-  protected readonly bookingResponse = signal<{ prescriptionId: string | null } | null>(null);
-
+  protected readonly bookingResponse = signal<{ prescriptionId: string | null; userId: string | null } | null>(null);
   protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
-  protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
 
   protected prescriptionId(): string {
     const response = this.bookingResponse();
@@ -587,15 +577,35 @@ export class PharmacyPage {
     this.uploadError.set('We could not upload your prescription. Try again.');
   }
 
-  protected pushCart(): void {
-    this.cart.set(ADJUDICATED_CART.map((i) => ({ ...i })));
-    this.cartPushed.set(true);
+  /** After booking is accepted, fetch the cart using the booking_name and user_id from the response */
+  protected async pushCart(): Promise<void> {
+    const bookingName = this.bookingResponse()?.prescriptionId;
+    const userId = this.bookingResponse()?.userId;
+    if (!bookingName || !userId) {
+      this.cartError.set('Cannot load cart: missing booking name or user ID.');
+      return;
+    }
+    this.cartLoading.set(true);
+    this.cartError.set(null);
+    try {
+      const cartItems = await this.store.fetchCart(bookingName, userId);
+      this.cart.set(cartItems);
+      this.cartPushed.set(true);
+    } catch (error: unknown) {
+      this.cartError.set(
+        error instanceof Error ? error.message : 'We could not load the cart. Using demo cart instead.'
+      );
+      // Fallback to static demo cart as per existing requirement
+      this.cart.set(ADJUDICATED_CART.map((i) => ({ ...i })));
+    } finally {
+      this.cartLoading.set(false);
+    }
   }
 
   protected decrement(id: string): void {
     this.cart.set(
       this.cart()
-        .map((i) => (i.id === id ? { ...i, qty: i.qty - 1 } : i))
+        .map((i) => (i.id === id ? { ...i, qty: Math.max(0, i.qty - 1) } : i))
         .filter((i) => i.qty > 0),
     );
   }
@@ -673,7 +683,7 @@ export class PharmacyPage {
       // Booking accepted: advance to queued, show loader for 2s, then go to cart.
       this.step.set(this.step() + 1);
       await new Promise((r) => setTimeout(r, 2000));
-      this.pushCart();
+      await this.pushCart();
       this.step.set(this.step() + 1);
     } catch {
       this.stepError.set('We could not submit your prescription. Please try again.');
@@ -682,7 +692,7 @@ export class PharmacyPage {
     }
   }
 
-  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null }> {
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null }> {
     const payload = {
       doc_id: docId,
       policy_id: this.activePolicyId(),
@@ -691,21 +701,23 @@ export class PharmacyPage {
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     const params = `resource=${encoded}&application=habit-opd&action=OPD_PHARMACY_BOOKING`;
     try {
-      const response = await this.http
-        .post('/habit-opd/api/v1/opd_pharmacy_booking', params, this.appService.addXsrfToken(encoded, true))
+      const httpResponse = await this.http
+        .post('/habit-opd/api/v1/opd_pharmacy_cart', params, this.appService.addXsrfToken(encoded, true))
         .toPromise();
+      // addXsrfToken uses observe: 'response', so the body is at httpResponse.body
+      const response = httpResponse?.body ?? httpResponse;
       return this.bookingAccepted(response);
     } catch {
-      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null };
+      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null, userId: null };
     }
   }
 
   /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
-  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null } {
-    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null };
+  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null } {
+    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
     try {
       const parsed: unknown = JSON.parse(response);
-      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null };
+      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
       const record = parsed as Record<string, unknown>;
       const errCode = (record['errCode'] as number) ?? 0;
       const message = (record['message'] as string) ?? null;
@@ -714,9 +726,11 @@ export class PharmacyPage {
       const firstRow = Array.isArray(resource) && resource.length > 0 ? (resource[0] as Record<string, unknown>) : null;
       // prescriptionId should be the name field (e.g. "OPD-2026-00220") from the API response
       const prescriptionId = firstRow ? (firstRow['name'] as string) ?? null : null;
-      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId };
+      // user_id from the API response for cart API patient_id
+      const userId = firstRow ? (firstRow['user_id'] as string) ?? null : null;
+      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId, userId };
     } catch {
-      return { ok: true, message: null, errCode: null, prescriptionId: null };
+      return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
     }
   }
 
