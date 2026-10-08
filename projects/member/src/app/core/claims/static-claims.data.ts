@@ -64,7 +64,7 @@ function claim(o: {
     documents: [],
     status: toStatus(o.status),
     isCancellable: o.cancellable,
-    claim_action_reason: o.status === 'DOCUMENTS_REQUIRED' ? 'Please upload a clearer, itemised invoice showing the provider and total.' : undefined,
+    claim_action_reasons: o.status === 'DOCUMENTS_REQUIRED' ? ['Please upload a clearer, itemised invoice showing the provider and total.'] : [],
   };
 }
 
