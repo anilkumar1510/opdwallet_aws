@@ -357,7 +357,7 @@ export class PharmacyPage {
   protected readonly addressSaveError = signal<string | null>(null);
   protected readonly submittingBooking = signal(false);
   /** The booking response once it has been accepted; null until submit. */
-  protected readonly bookingResponse = signal<{ prescriptionId: string | null } | null>(null);
+  protected readonly bookingResponse = signal<{ prescriptionId: string | null; userId: string | null } | null>(null);
   protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
 
   protected prescriptionId(): string {
@@ -577,22 +577,18 @@ export class PharmacyPage {
     this.uploadError.set('We could not upload your prescription. Try again.');
   }
 
-  /** After booking is accepted, fetch the cart using the booking_name from the response */
+  /** After booking is accepted, fetch the cart using the booking_name and user_id from the response */
   protected async pushCart(): Promise<void> {
-    // Ensure family is loaded to get active member
-    if (!this.family.family().length) await this.family.load();
-    
     const bookingName = this.bookingResponse()?.prescriptionId;
-    const patient = this.family.activeMember();
-    console.log("AA=>",this.bookingResponse())
-    if (!bookingName || !patient) {
-      this.cartError.set('Cannot load cart: missing booking name or patient.');
+    const userId = this.bookingResponse()?.userId;
+    if (!bookingName || !userId) {
+      this.cartError.set('Cannot load cart: missing booking name or user ID.');
       return;
     }
     this.cartLoading.set(true);
     this.cartError.set(null);
     try {
-      const cartItems = await this.store.fetchCart(bookingName, patient.id);
+      const cartItems = await this.store.fetchCart(bookingName, userId);
       this.cart.set(cartItems);
       this.cartPushed.set(true);
     } catch (error: unknown) {
@@ -696,7 +692,7 @@ export class PharmacyPage {
     }
   }
 
-  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null }> {
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null }> {
     const payload = {
       doc_id: docId,
       policy_id: this.activePolicyId(),
@@ -712,16 +708,16 @@ export class PharmacyPage {
       const response = httpResponse?.body ?? httpResponse;
       return this.bookingAccepted(response);
     } catch {
-      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null };
+      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null, userId: null };
     }
   }
 
   /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
-  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null } {
-    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null };
+  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null } {
+    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
     try {
       const parsed: unknown = JSON.parse(response);
-      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null };
+      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
       const record = parsed as Record<string, unknown>;
       const errCode = (record['errCode'] as number) ?? 0;
       const message = (record['message'] as string) ?? null;
@@ -730,9 +726,11 @@ export class PharmacyPage {
       const firstRow = Array.isArray(resource) && resource.length > 0 ? (resource[0] as Record<string, unknown>) : null;
       // prescriptionId should be the name field (e.g. "OPD-2026-00220") from the API response
       const prescriptionId = firstRow ? (firstRow['name'] as string) ?? null : null;
-      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId };
+      // user_id from the API response for cart API patient_id
+      const userId = firstRow ? (firstRow['user_id'] as string) ?? null : null;
+      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId, userId };
     } catch {
-      return { ok: true, message: null, errCode: null, prescriptionId: null };
+      return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
     }
   }
 
