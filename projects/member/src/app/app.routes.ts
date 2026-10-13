@@ -782,6 +782,12 @@ export const routes: Routes = [
           import('./features/pharmacy/pharmacy-past-order-cart-page').then((m) => m.PharmacyPastOrderCartPage),
       },
       {
+        // Prescription rejection screen — shows rejection reason and next steps
+        path: 'pharmacy/orders/:bookingName/rejection',
+        loadComponent: () =>
+          import('./features/pharmacy/pharmacy-rejection-page').then((m) => m.PharmacyRejectionPage),
+      },
+      {
         path: 'pharmacy/orders/:orderId',
         loadComponent: () =>
           import('./features/misc/pharmacy-order-page').then((m) => m.PharmacyOrderPage),

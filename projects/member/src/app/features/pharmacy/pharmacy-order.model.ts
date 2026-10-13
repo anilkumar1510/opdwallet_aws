@@ -22,6 +22,12 @@ export interface PharmacyOrder {
   readonly locality: string;
   /** The patient ID associated with this order, used for fetching cart details. */
   readonly patientId: string | null;
+  /** Unique Health ID from API response */
+  readonly uhid: string | null;
+  /** Reason for prescription rejection (if status is not APPROVED) */
+  readonly rejectionReason: string | null;
+  /** Additional comments for rejection */
+  readonly rejectionComments: string | null;
 }
 
 export interface PharmacyOrderPage {
@@ -54,6 +60,9 @@ interface Row {
   readonly patient_pincode?: string;
   readonly patient_id?: string;
   readonly vendors?: Vendor[];
+  readonly uhid?: string;
+  readonly rejectionReason?: string;
+  readonly rejectionComments?: string;
 }
 
 const str = (value: unknown): string =>
@@ -94,5 +103,8 @@ export function toPharmacyOrder(dto: unknown): PharmacyOrder | null {
       pincode: row.patient_pincode,
     }),
     patientId: str(row.patient_id) || null,
+    uhid: str(row.uhid) || null,
+    rejectionReason: str(row.rejectionReason) || null,
+    rejectionComments: str(row.rejectionComments) || null,
   };
 }
