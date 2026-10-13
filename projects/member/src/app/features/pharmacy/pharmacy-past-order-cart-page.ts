@@ -24,7 +24,7 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
       >
         <div class="mx-auto flex max-w-[820px] items-center gap-4 px-5 py-5 lg:px-8">
           <a
-            [routerLink]="['/member/pharmacy/orders', bookingName(), 'cart']"
+            [routerLink]="['/member/pharmacy']"
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/10 lg:text-[#034DA2] lg:hover:bg-blue-50"
             aria-label="Back to order"
             >&larr;</a
@@ -37,14 +37,18 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', 
       </header>
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
+        <p class="mb-4 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready.</p>
+        <p class="mb-3 text-xs text-ink-500">You can remove an item or reduce a quantity — you can't add or increase, since the cart is adjudicated against your prescription.</p>
         <opd-pharmacy-cart
           [cartItems]="cartItems()"
           [cartLoading]="cartLoading()"
           [cartError]="cartError()"
-          [editable]="false"
+          [editable]="true"
           [emptyMessage]="'The adjudicated cart for this order could not be loaded or is empty.'"
           [retryLabel]="'Retry'"
           (retryClicked)="loadCart(bookingName(), queryPatientId())"
+          (decrementClicked)="onDecrement($event)"
+          (removeClicked)="onRemove($event)"
         />
         @if (cartItems().length > 0) {
           <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
@@ -121,5 +125,17 @@ export class PharmacyPastOrderCartPage {
     } finally {
       this.cartLoading.set(false);
     }
+  }
+
+  protected onDecrement(itemId: string): void {
+    this.cartItems.update(items =>
+      items
+        .map(item => (item.id === itemId ? { ...item, qty: Math.max(0, item.qty - 1) } : item))
+        .filter(item => item.qty > 0)
+    );
+  }
+
+  protected onRemove(itemId: string): void {
+    this.cartItems.update(items => items.filter(item => item.id !== itemId));
   }
 }

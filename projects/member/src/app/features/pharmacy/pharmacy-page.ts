@@ -680,11 +680,21 @@ export class PharmacyPage {
         this.step.set(this.step() + 1);
         return;
       }
-      // Booking accepted: advance to queued, show loader for 2s, then go to cart.
-      this.step.set(this.step() + 1);
-      await new Promise((r) => setTimeout(r, 2000));
-      await this.pushCart();
-      this.step.set(this.step() + 1);
+      // Check if prescription is already APPROVED
+      if (result.status === 'APPROVED') {
+        // Already approved: advance to queued, show loader for 2s, then go to cart.
+        this.step.set(this.step() + 1);
+        await new Promise((r) => setTimeout(r, 2000));
+        await this.pushCart();
+        this.step.set(this.step() + 1);
+        return;
+      }
+      // Not approved yet (PENDING, etc.): show "Prescription queued" for 2s, then go to past orders
+      this.step.set(this.step() + 1); // Advance to 'queued' step
+      this.stepError.set(null); // Clear any previous errors
+      await new Promise((r) => setTimeout(r, 2000)); // Show queued UI for 2 seconds
+      await this.loadOrdersPage(0); // Refresh past orders list
+      this.started.set(false); // Go back to landing page (past orders visible)
     } catch {
       this.stepError.set('We could not submit your prescription. Please try again.');
     } finally {
@@ -692,7 +702,7 @@ export class PharmacyPage {
     }
   }
 
-  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null }> {
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null; status: string | null }> {
     const payload = {
       doc_id: docId,
       policy_id: this.activePolicyId(),
@@ -708,16 +718,16 @@ export class PharmacyPage {
       const response = httpResponse?.body ?? httpResponse;
       return this.bookingAccepted(response);
     } catch {
-      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null, userId: null };
+      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null, userId: null, status: null };
     }
   }
 
   /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
-  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null } {
-    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
+  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null; status: string | null } {
+    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null, status: null };
     try {
       const parsed: unknown = JSON.parse(response);
-      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
+      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null, status: null };
       const record = parsed as Record<string, unknown>;
       const errCode = (record['errCode'] as number) ?? 0;
       const message = (record['message'] as string) ?? null;
@@ -728,9 +738,11 @@ export class PharmacyPage {
       const prescriptionId = firstRow ? (firstRow['name'] as string) ?? null : null;
       // user_id from the API response for cart API patient_id
       const userId = firstRow ? (firstRow['user_id'] as string) ?? null : null;
-      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId, userId };
+      // status from the API response (e.g., "APPROVED", "PENDING", etc.)
+      const status = firstRow ? (firstRow['status'] as string) ?? null : null;
+      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId, userId, status };
     } catch {
-      return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null };
+      return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null, status: null };
     }
   }
 
