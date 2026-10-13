@@ -67,12 +67,12 @@ export class PharmacyPastOrders {
     return order.createdAt > 0 ? DATE.format(new Date(order.createdAt)) : '';
   }
 
-  /** The API's status vocabulary is not the app's ClaimStatus, so map defensively. */
+/** The API's status vocabulary is not the app's ClaimStatus, so map defensively. */
   protected statusFor(status: string) {
     const normalized = status.trim().toLowerCase();
-    if (normalized.includes('cancel')) return { label: status, tone: 'negative' as const, isFinal: true };
-    if (normalized.includes('deliver')) return { label: status, tone: 'positive' as const, isFinal: false };
-    if (normalized.includes('ready') || normalized.includes('dispatch')) {
+    if (normalized.includes('cancel') || normalized.includes('reject') || normalized.includes('fail')) return { label: status, tone: 'negative' as const, isFinal: true };
+    if (normalized.includes('deliver') || normalized.includes('complete') || normalized.includes('success') || normalized.includes('approve')) return { label: status, tone: 'positive' as const, isFinal: false };
+    if (normalized.includes('ready') || normalized.includes('dispatch') || normalized.includes('pending') || normalized.includes('process')) {
       return { label: status, tone: 'progress' as const, isFinal: false };
     }
     return { label: status, tone: 'neutral' as const, isFinal: false };
