@@ -51,7 +51,10 @@ const COPAY_PCT = 20;
 /** The API rejects a longer uhId outright: "Length for uhId should not be greater than 128". */
 const MAX_UHID_LENGTH = 128;
 
-type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
+type Step = 'prescribe' | 'queued' | 'cart' | 'placed';
+
+/** Once the cart is ready: one page of accordion steps. */
+type CartStep = 'address' | 'cart' | 'payment';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
@@ -200,38 +203,110 @@ export function readUploadedDocId(body: unknown): string | null {
                 }
               }
               @case ('cart') {
-                <p class="mb-1 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready.</p>
-                <p class="mb-3 text-xs text-ink-500">You can remove an item or reduce a quantity — you can't add or increase, since the cart is adjudicated against your prescription.</p>
-                <ul class="space-y-2">
-                  <opd-pharmacy-cart
-                    [cartItems]="cart()"
-                    [cartLoading]="cartLoading()"
-                    [cartError]="cartError()"
-                    [editable]="true"
-                    [retryLabel]="'Retry'"
-                    (decrementClicked)="decrement($event)"
-                    (removeClicked)="removeItem($event)"
-                    (retryClicked)="pushCart()"
-                  />
-                </ul>
-                <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
-                  <div class="flex justify-between"><span class="text-ink-700">Cart value</span><span class="font-medium text-ink-900">₹{{ pay().cartValue }}</span></div>
-                  <div class="flex justify-between"><span class="text-ink-700">Wallet blocked</span><span class="font-medium text-success-700">₹{{ pay().walletBlock }}</span></div>
-                </div>
-              }
-              @case ('payment') {
-                <p class="mb-3 text-sm font-medium text-ink-700">Checkout — payment breakdown</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">Cart value</dt><dd class="font-medium text-ink-900">₹{{ pay().cartValue }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet deducted</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
-                  @if (pay().excess > 0) {
-                    <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
+                <!-- Cart ready: one page of accordion steps, as on the Annual
+                     Health Check — delivery address (locked) → cart → payment. -->
+                <p class="mb-4 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready. Complete the steps below to place your order.</p>
+
+                <div class="space-y-3">
+                  @for (key of cartSteps; track key; let i = $index) {
+                    <div
+                      class="rounded-2xl border bg-white"
+                      [class.border-[#9BDBAE]]="isCartStepDone(key) && cartOpenStep() !== key"
+                      [class.border-[#EDF0F7]]="!isCartStepDone(key) || cartOpenStep() === key"
+                      style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.08)"
+                    >
+                      <button
+                        type="button"
+                        class="flex w-full items-center gap-3 px-4 py-3.5 text-left disabled:cursor-not-allowed"
+                        [disabled]="key === 'address' || isCartStepLocked(key)"
+                        [attr.aria-expanded]="cartOpenStep() === key"
+                        (click)="toggleCartStep(key)"
+                      >
+                        @if (isCartStepDone(key) && cartOpenStep() !== key) {
+                          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#34A853] text-xs font-bold text-white" aria-hidden="true">✓</span>
+                        } @else {
+                          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white" [class.bg-[#0F5FDC]]="cartOpenStep() === key" [class.bg-[#9CA3AF]]="cartOpenStep() !== key">{{ i + 1 }}</span>
+                        }
+                        <span class="min-w-0 flex-1 text-[15px]" [class.text-ink-900]="!isCartStepLocked(key)" [class.text-ink-500]="isCartStepLocked(key)">{{ cartStepTitle(key) }}</span>
+                        @if (key === 'address') {
+                          <span class="shrink-0 rounded-full bg-[#F2F4F8] px-2 py-0.5 text-[11px] text-ink-500">Locked</span>
+                        } @else {
+                          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-surface-border text-ink-700" [class.rotate-180]="cartOpenStep() === key" aria-hidden="true"
+                            ><svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
+                          ></span>
+                        }
+                      </button>
+
+                      <!-- Answer, once done and closed -->
+                      @if (isCartStepDone(key) && cartOpenStep() !== key) {
+                        <div class="px-4 pb-4 lg:pl-[52px]">
+                          <div class="rounded-xl bg-[#F2F4F8] px-4 py-2.5 text-sm text-ink-900">
+                            @switch (key) {
+                              @case ('address') {
+                                @if (deliveryAddress(); as addr) {
+                                  <span class="font-medium">{{ addr.typeLabel }}</span>
+                                  <span class="mt-0.5 block text-ink-700">{{ addr.booking.street3 }}{{ addr.locality ? ', ' + addr.locality : '' }}</span>
+                                }
+                                <span class="mt-0.5 block text-xs text-ink-500">Fixed for this order — chosen with your prescription.</span>
+                              }
+                              @case ('cart') {
+                                {{ cartItemCount() }} item{{ cartItemCount() === 1 ? '' : 's' }} <span class="text-ink-500">· ₹{{ pay().cartValue }}</span>
+                              }
+                            }
+                          </div>
+                        </div>
+                      }
+
+                      <!-- Body, while open -->
+                      @if (cartOpenStep() === key) {
+                        <div class="border-t border-surface-border px-4 pb-5 pt-4 lg:pl-[52px]">
+                          @switch (key) {
+                            @case ('cart') {
+                              <p class="mb-3 text-xs text-ink-500">You can remove an item or reduce a quantity — you can't add or increase, since the cart is adjudicated against your prescription.</p>
+                              <ul class="space-y-2">
+                                <opd-pharmacy-cart
+                                  [cartItems]="cart()"
+                                  [cartLoading]="cartLoading()"
+                                  [cartError]="cartError()"
+                                  [editable]="true"
+                                  [retryLabel]="'Retry'"
+                                  (decrementClicked)="decrement($event)"
+                                  (removeClicked)="removeItem($event)"
+                                  (retryClicked)="pushCart()"
+                                />
+                              </ul>
+                              <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
+                                <div class="flex justify-between"><span class="text-ink-700">Cart value</span><span class="font-medium text-ink-900">₹{{ pay().cartValue }}</span></div>
+                                <div class="flex justify-between"><span class="text-ink-700">Wallet blocked</span><span class="font-medium text-success-700">₹{{ pay().walletBlock }}</span></div>
+                              </div>
+                              <button
+                                type="button"
+                                class="mt-4 min-h-touch w-full rounded-xl border border-[#0F5FDC] bg-white px-4 text-sm font-semibold text-[#0F5FDC] hover:bg-blue-50 disabled:opacity-50"
+                                [disabled]="!cart().length || cartLoading()"
+                                (click)="confirmCart()"
+                              >
+                                Confirm cart
+                              </button>
+                            }
+                            @case ('payment') {
+                              <dl class="space-y-2 text-sm">
+                                <div class="flex justify-between"><dt class="text-ink-700">Cart value</dt><dd class="font-medium text-ink-900">₹{{ pay().cartValue }}</dd></div>
+                                <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
+                                <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
+                                <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet deducted</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
+                                @if (pay().excess > 0) {
+                                  <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
+                                }
+                                <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
+                              </dl>
+                              <p class="mt-3 text-xs text-ink-500">Wallet is deducted and the co-payment goes through Razorpay. The wallet block becomes a debit on delivery.</p>
+                            }
+                          }
+                        </div>
+                      }
+                    </div>
                   }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                </dl>
-                <p class="mt-3 text-xs text-ink-500">Wallet is deducted and the co-payment goes through Razorpay. The wallet block becomes a debit on delivery.</p>
+                </div>
               }
               @case ('placed') {
                 <div class="text-center">
@@ -358,7 +433,56 @@ export class PharmacyPage {
   protected readonly submittingBooking = signal(false);
   /** The booking response once it has been accepted; null until submit. */
   protected readonly bookingResponse = signal<{ prescriptionId: string | null; userId: string | null } | null>(null);
-  protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
+  protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'placed'];
+
+  // Accordion once the cart is ready.
+  protected readonly cartSteps: CartStep[] = ['address', 'cart', 'payment'];
+  protected readonly cartOpenStep = signal<CartStep | null>('cart');
+  protected readonly cartConfirmed = signal(false);
+
+  protected readonly cartItemCount = computed(() => this.cart().reduce((n, item) => n + item.qty, 0));
+
+  protected isCartStepDone(key: CartStep): boolean {
+    switch (key) {
+      case 'address': return this.deliveryAddress() !== null;
+      case 'cart': return this.cartConfirmed() && this.cart().length > 0;
+      case 'payment': return false;
+    }
+  }
+
+  protected isCartStepLocked(key: CartStep): boolean {
+    return this.cartSteps.slice(0, this.cartSteps.indexOf(key)).some((k) => !this.isCartStepDone(k));
+  }
+
+  protected cartStepTitle(key: CartStep): string {
+    switch (key) {
+      case 'address': return 'Delivery address';
+      case 'cart': return 'Review your cart';
+      case 'payment': return 'Payment breakdown';
+    }
+  }
+
+  protected toggleCartStep(key: CartStep): void {
+    if (key === 'address' || this.isCartStepLocked(key)) return;
+    this.cartOpenStep.set(this.cartOpenStep() === key ? null : key);
+  }
+
+  protected confirmCart(): void {
+    if (!this.cart().length) return;
+    this.cartConfirmed.set(true);
+    this.stepError.set(null);
+    this.cartOpenStep.set('payment');
+  }
+
+  /** The address picked with the prescription — fixed once submitted. */
+  protected deliveryAddress(): PharmacyAddress | null {
+    return this.selectedAddress();
+  }
+
+  private resetCartSteps(): void {
+    this.cartConfirmed.set(false);
+    this.cartOpenStep.set('cart');
+  }
 
   protected prescriptionId(): string {
     const response = this.bookingResponse();
@@ -386,8 +510,7 @@ export class PharmacyPage {
     switch (this.currentStep()) {
       case 'prescribe': return 'Submit prescription';
       case 'queued': return 'Continue to cart';
-      case 'cart': return 'Proceed to checkout';
-      case 'payment': return `Pay ₹${this.pay().selfPay} via Razorpay`;
+      case 'cart': return `Pay ₹${this.pay().selfPay} via Razorpay`;
       case 'placed': return 'Done';
       default: return 'Continue';
     }
@@ -396,6 +519,7 @@ export class PharmacyPage {
   protected start(): void {
     this.started.set(true);
     this.step.set(0);
+    this.resetCartSteps();
     this.stepError.set(null);
     this.resetPrescription();
     this.cartPushed.set(false);
@@ -632,7 +756,8 @@ export class PharmacyPage {
       case 'queued':
         return this.cartPushed() ? null : 'Waiting on the adjudicator — use the button above to build the cart.';
       case 'cart':
-        return this.cart().length ? null : 'Your cart is empty — restore an item to continue.';
+        if (!this.cart().length) return 'Your cart is empty — restore an item to continue.';
+        return this.cartConfirmed() ? null : 'Confirm your cart to continue to payment.';
       default: return null;
     }
   }
@@ -764,5 +889,6 @@ export class PharmacyPage {
     this.resetAddresses();
     this.cartPushed.set(false);
     this.cart.set([]);
+    this.resetCartSteps();
   }
 }
