@@ -92,7 +92,7 @@ const BENEFIT_ART: Readonly<Partial<Record<BenefitCategory, { icon: string; labe
   [BenefitCategory.OnlineConsultation]: { icon: 'images/icons/home/benefit-online-consult.svg', label: 'Online Consult' },
   [BenefitCategory.InClinicConsultation]: { icon: 'images/icons/home/benefit-in-clinic.svg', label: 'In-Clinic Consultation' },
   [BenefitCategory.Pharmacy]: { icon: 'images/icons/home/benefit-pharmacy.svg', label: 'Pharmacy' },
-  [BenefitCategory.Radiology]: { icon: 'images/icons/home/benefit-radiology.svg', label: 'Radiology/Cardiology' },
+  [BenefitCategory.Radiology]: { icon: 'images/icons/home/benefit-radiology.svg', label: 'Radiology/\u200BCardiology' },
   [BenefitCategory.Pathology]: { icon: 'images/icons/home/benefit-pathology.svg', label: 'Pathology (Lab)' },
   [BenefitCategory.Dental]: { icon: 'images/icons/home/benefit-dental.svg', label: 'Dental Services' },
   [BenefitCategory.Vision]: { icon: 'images/icons/home/benefit-vision.svg', label: 'Vision Care' },
@@ -228,10 +228,10 @@ function benefitLink(categoryCode: string): string {
               [available]="walletTotal.available"
               [allocated]="walletTotal.allocated"
             />
-            <!-- Web: the pool-level breakdown behind the total. -->
+            <!-- The pool-level breakdown behind the total. -->
             <button
               type="button"
-              class="mt-4 hidden items-center gap-2 rounded-full bg-white py-1 pl-3.5 pr-1.5 text-sm text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.14)] lg:inline-flex"
+              class="mt-4 inline-flex items-center gap-2 rounded-full bg-white py-1 pl-3.5 pr-1.5 text-sm text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.14)]"
               aria-haspopup="dialog"
               (click)="walletInfoOpen.set(true)"
             >
@@ -322,12 +322,13 @@ function benefitLink(categoryCode: string): string {
               class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[549px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
             >
               <h2 class="mb-4 text-[15px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-[26px] lg:text-[22px]">
-                Health Benefits
+                <!-- The phone design calls them cashless benefits. -->
+                <span class="lg:hidden">Cashless Benefits</span><span class="hidden lg:inline">Health Benefits</span>
               </h2>
               <!-- Web: a fixed-height panel that scrolls, as in the design;
                    two 223px columns of name-only cards. -->
               <div class="benefits-panel lg:-mt-1 lg:max-h-[368px] lg:pl-0.5 lg:pr-9 lg:pt-1">
-                <div class="grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-[223px_223px] lg:gap-x-[22px] lg:gap-y-6 lg:pb-2">
+                <div class="grid grid-cols-2 gap-x-3.5 gap-y-3.5 lg:grid-cols-[223px_223px] lg:gap-x-[22px] lg:gap-y-6 lg:pb-2">
                   @for (category of categories(); track category.label) {
                     <opd-benefit-card
                       [category]="category"

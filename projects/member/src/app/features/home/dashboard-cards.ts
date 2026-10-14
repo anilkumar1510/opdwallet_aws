@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { Money, formatMoney } from '../../core/domain/money';
+import { Money } from '../../core/domain/money';
 import { Policy } from '../../core/member/policy';
 import { WalletPool } from '../../core/member/static-policy.data';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
@@ -96,33 +96,24 @@ export class BalanceSummary {
   template: `
     <a
       [routerLink]="href()"
-      class="relative flex h-full min-h-[106px] flex-col rounded-2xl border border-[#D9D9D97A] bg-white p-3.5 transition-all duration-200 hover:-translate-y-px lg:min-h-[104px] lg:rounded-[22px] lg:border-[1.5px] lg:border-[#EEF0F4] lg:px-[17px] lg:py-3.5 lg:hover:border-[#0F5FDC] shadow-[-2px_11px_46px_0_rgba(0,0,0,0.08)] lg:shadow-none"
+      class="relative flex h-full min-h-[92px] flex-col rounded-[18px] border-[1.5px] border-[#EEF0F4] bg-white px-3.5 py-3 transition-all duration-200 hover:-translate-y-px hover:border-[#0F5FDC] lg:min-h-[104px] lg:rounded-[22px] lg:border-[1.5px] lg:border-[#EEF0F4] lg:px-[17px] lg:py-3.5 lg:hover:border-[#0F5FDC] shadow-[-2px_11px_46px_0_rgba(0,0,0,0.08)] lg:shadow-none"
     >
       <!-- The slot keeps its height when a category has no artwork, so the
            label and amount line up across the row. -->
-      <span class="block h-[30px] w-[30px] lg:h-[38px] lg:w-[38px]" aria-hidden="true">
+      <span class="block h-[34px] w-[34px] lg:h-[38px] lg:w-[38px]" aria-hidden="true">
         @if (iconSrc(); as src) {
           <img [src]="src | remoteAsset" alt="" width="30" height="30" class="h-full w-full object-contain" />
         }
       </span>
 
-      <!-- Web: no per-category balance — balances sit at the pool level now,
-           so the card is the icon, its name in brand blue, and the chevron. -->
-      <h3 class="mt-auto pt-3 text-[12px] font-normal leading-tight text-[#545454] lg:pr-9 lg:pt-2 lg:text-[16px] lg:leading-snug lg:text-[#1061C4]">
+      <!-- No per-category balance — balances sit at the pool level now, so
+           the card is the icon, its name in brand blue, and the chevron. -->
+      <h3 class="mt-auto pr-8 pt-2 text-[15px] font-normal leading-snug text-[#1061C4] lg:pr-9 lg:text-[16px]">
         {{ label() || category().label }}
       </h3>
-      <p class="mt-1 pr-8 text-[18px] font-medium leading-none text-[#034DA2] lg:hidden">
-        @if (category().isUnlimited) {
-          Unlimited
-        } @else if (category().isExhausted) {
-          Fully used
-        } @else {
-          {{ money(category().available) }}
-        }
-      </p>
 
       <span
-        class="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#F6F6F6] text-[#545454] lg:bottom-4 lg:right-4 lg:bg-[#F1F3F7] lg:text-[#1c1c1c]"
+        class="absolute bottom-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#F1F3F7] text-[#1c1c1c] lg:bottom-4 lg:right-4"
         aria-hidden="true"
         ><opd-icon name="chevronRight" [size]="12"
       /></span>
@@ -138,7 +129,6 @@ export class BenefitCard {
   /** The design's wording, when it differs from the category's own name. */
   readonly label = input<string | null>(null);
 
-  protected readonly money = formatMoney;
 }
 
 export interface LinkTile {
@@ -248,39 +238,40 @@ export class QuickLinks {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'closed.emit()' },
   template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="closed.emit()">
+    <!-- Above the floating bottom nav (z-60) and the shell's other overlays. -->
+    <div class="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 lg:items-center lg:p-4" (click)="closed.emit()">
       <div
-        class="flex max-h-[min(640px,85vh)] w-full max-w-[600px] flex-col overflow-hidden rounded-[24px] bg-[#F7F7FC] shadow-2xl"
+        class="sheet flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[28px] bg-[#F7F7FC] shadow-2xl lg:max-h-[min(640px,85vh)] lg:max-w-[600px] lg:rounded-[24px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="wallet-balance-title"
         (click)="$event.stopPropagation()"
       >
-        <div class="mx-6 flex items-center justify-between border-b-2 border-[#DADDE3] pb-4 pt-6">
-          <h2 id="wallet-balance-title" class="text-[22px] font-normal text-[#1c1c1c]">Your Wallet Balance</h2>
+        <div class="mx-5 flex items-center justify-between border-b-2 border-[#DADDE3] pb-3 pt-5 lg:mx-6 lg:pb-4 lg:pt-6">
+          <h2 id="wallet-balance-title" class="text-[18px] font-normal text-[#1c1c1c] lg:text-[22px]">Your Wallet Balance</h2>
           <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-[#1c1c1c] hover:bg-white" aria-label="Close" (click)="closed.emit()">
             <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" /></svg>
           </button>
         </div>
 
-        <div class="pools-scroll space-y-5 px-6 pb-6 pr-4 pt-5">
+        <div class="pools-scroll space-y-4 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pr-3 pt-4 lg:space-y-5 lg:px-6 lg:pb-6 lg:pr-4 lg:pt-5">
           <div
-            class="rounded-[20px] px-7 py-5 text-white"
+            class="rounded-[20px] px-5 py-4 text-white lg:px-7 lg:py-5"
             style="background: linear-gradient(180deg,#0A78E8 0%,#0560D2 100%); border: 1.5px solid rgba(91,153,249,.6); box-shadow: 0 8px 24px -8px rgba(5,96,210,.45)"
           >
             <p class="text-[13px] text-white/85">Available Balance</p>
             <p class="mt-2 whitespace-nowrap">
-              <span class="text-[30px] font-medium leading-none">₹{{ plain(available()) }}</span>
+              <span class="text-[26px] font-medium leading-none lg:text-[30px]">₹{{ plain(available()) }}</span>
               <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
             </p>
             <p class="mt-1 text-[13px] text-white/85">Your total usage cannot exceed this amount.</p>
           </div>
 
           @for (pool of pools(); track pool.id) {
-            <div class="rounded-[20px] border border-[#EEF0F4] bg-white px-7 py-5" style="box-shadow: 0 4px 18px 0 rgba(0,0,0,.05)">
+            <div class="rounded-[20px] border border-[#EEF0F4] bg-white px-5 py-4 lg:px-7 lg:py-5" style="box-shadow: 0 4px 18px 0 rgba(0,0,0,.05)">
               <button type="button" class="flex w-full items-start justify-between gap-3 text-left" [attr.aria-expanded]="openPool() === pool.id" (click)="togglePool(pool.id)">
                 <span class="whitespace-nowrap">
-                  <span class="text-[28px] font-normal leading-none text-[#1c1c1c]">₹{{ plain(pool.available) }}</span>
+                  <span class="text-[24px] font-normal leading-none text-[#1c1c1c] lg:text-[28px]">₹{{ plain(pool.available) }}</span>
                   <span class="text-[15px] text-[#7A7A7A]"> / {{ plain(pool.allocated) }}</span>
                 </span>
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E8EEF9] text-[#1c1c1c]" [class.rotate-180]="openPool() === pool.id" aria-hidden="true"
@@ -308,6 +299,11 @@ export class QuickLinks {
     /* Always-visible scrollbar, as in the design. A styled WebKit scrollbar is
        never an overlay, so macOS cannot hide it between scrolls. */
     .pools-scroll { overflow-y: scroll; }
+    /* Phones: a bottom sheet that slides up. */
+    @media (max-width: 1023px) {
+      .sheet { animation: sheet-up 0.22s ease-out; }
+    }
+    @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .pools-scroll::-webkit-scrollbar { width: 7px; }
     .pools-scroll::-webkit-scrollbar-track { background: rgba(217, 217, 217, 0.54); border-radius: 4px; }
     .pools-scroll::-webkit-scrollbar-thumb { background: #b8b8b8; border-radius: 4px; }
