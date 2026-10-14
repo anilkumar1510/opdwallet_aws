@@ -18,6 +18,7 @@ import { NotificationsStore } from '../../core/notifications/notifications.store
 import {
   STATIC_BENEFITS,
   STATIC_POLICIES,
+  STATIC_WALLET_POOLS,
   STATIC_WALLET_TOTAL,
 } from '../../core/member/static-policy.data';
 import { ProfileMenu } from '../shell/profile-menu';
@@ -28,6 +29,7 @@ import {
   LinkTile,
   PolicyCard,
   QuickLinks,
+  WalletBalanceModal,
 } from './dashboard-cards';
 
 /**
@@ -58,6 +60,14 @@ function quickLinksFor(policyId: string | null): readonly LinkTile[] {
       path: policyId ? `/member/policy-details/${policyId}` : '/member/profile',
     },
     {
+      id: 'help-support',
+      lead: 'Help and',
+      accent: 'Support',
+      iconSrc: 'images/icons/home/action-help-support.svg',
+      path: '/member/helpline',
+      webOnly: true,
+    },
+    {
       id: 'transactions',
       lead: 'Transaction',
       accent: 'History',
@@ -65,8 +75,6 @@ function quickLinksFor(policyId: string | null): readonly LinkTile[] {
       path: '/member/transactions',
     },
     {
-      // Also the design's "Help and Support" pill: same screen, and the
-      // handoff ships no separate glyph for it.
       id: 'helpline',
       accent: '24/7',
       trail: 'Helpline',
@@ -77,8 +85,8 @@ function quickLinksFor(policyId: string | null): readonly LinkTile[] {
 }
 
 /**
- * The design's artwork and wording per benefit card. The handoff has no
- * Vaccination artwork; its syringe is drawn in-house in the same line style.
+ * The design's artwork and wording per benefit card, from the handoff ZIP
+ * (images/icons/home).
  */
 const BENEFIT_ART: Readonly<Partial<Record<BenefitCategory, { icon: string; label: string }>>> = {
   [BenefitCategory.OnlineConsultation]: { icon: 'images/icons/home/benefit-online-consult.svg', label: 'Online Consult' },
@@ -87,10 +95,9 @@ const BENEFIT_ART: Readonly<Partial<Record<BenefitCategory, { icon: string; labe
   [BenefitCategory.Radiology]: { icon: 'images/icons/home/benefit-radiology.svg', label: 'Radiology/Cardiology' },
   [BenefitCategory.Pathology]: { icon: 'images/icons/home/benefit-pathology.svg', label: 'Pathology (Lab)' },
   [BenefitCategory.Dental]: { icon: 'images/icons/home/benefit-dental.svg', label: 'Dental Services' },
-  [BenefitCategory.Vision]: { icon: 'images/icons/home/benefit-vision.png', label: 'Vision Care' },
+  [BenefitCategory.Vision]: { icon: 'images/icons/home/benefit-vision.svg', label: 'Vision Care' },
   [BenefitCategory.Vaccination]: { icon: 'images/icons/home/benefit-vaccination.svg', label: 'Vaccination' },
-  // The design's "Wellness Programs" art; the card is the health check package.
-  [BenefitCategory.HealthPackages]: { icon: 'images/icons/home/benefit-wellness.png', label: 'Annual Health Check' },
+  [BenefitCategory.HealthPackages]: { icon: 'images/icons/home/benefit-annual-health-check.svg', label: 'Annual Health Check' },
 };
 
 /**
@@ -138,7 +145,7 @@ function benefitLink(categoryCode: string): string {
 @Component({
   selector: 'opd-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ProfileMenu, PolicyCard, QuickLinks, BalanceSummary, BenefitCard, RemoteAssetPipe],
+  imports: [RouterLink, ProfileMenu, PolicyCard, QuickLinks, BalanceSummary, BenefitCard, WalletBalanceModal, RemoteAssetPipe],
   template: `
     <div class="relative min-h-screen bg-[#f7f7fc]">
       <!-- Greeting — phone only; the shell carries it on the web. -->
@@ -221,9 +228,47 @@ function benefitLink(categoryCode: string): string {
               [available]="walletTotal.available"
               [allocated]="walletTotal.allocated"
             />
+            <!-- Web: the pool-level breakdown behind the total. -->
+            <button
+              type="button"
+              class="mt-4 hidden items-center gap-2 rounded-full bg-white py-1 pl-3.5 pr-1.5 text-sm text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.14)] lg:inline-flex"
+              aria-haspopup="dialog"
+              (click)="walletInfoOpen.set(true)"
+            >
+              More Info
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEF9]" aria-hidden="true"
+                ><svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
+              ></span>
+            </button>
+            @if (walletInfoOpen()) {
+              <!-- DUMMY / STATIC — pool balances, until the pool API exists. -->
+              <opd-wallet-balance-modal
+                [available]="walletTotal.available"
+                [allocated]="walletTotal.allocated"
+                [pools]="walletPools"
+                (closed)="walletInfoOpen.set(false)"
+              />
+            }
 
             @if (policies().length) {
-              <div class="mt-8 w-full lg:mt-[52px] lg:w-[500px]">
+              <div class="relative mt-8 w-full lg:mt-[36px] lg:w-[500px]">
+                <!-- Web: arrows either side of the card page between policies. -->
+                @if (policies().length > 1) {
+                  <button
+                    type="button"
+                    class="absolute -left-14 top-[calc(50%-30px)] hidden lg:flex flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#0F5FDC] bg-white text-lg font-semibold leading-none text-[#0F5FDC] shadow-md hover:bg-[#0F5FDC] hover:text-white disabled:cursor-not-allowed disabled:border-[#CBD5E1] disabled:text-[#94A3B8] disabled:shadow-none disabled:hover:bg-white"
+                    aria-label="Previous policy"
+                    [disabled]="activeIndex() === 0"
+                    (click)="scrollToPolicy(activeIndex() - 1)"
+                  >‹</button>
+                  <button
+                    type="button"
+                    class="absolute -right-14 top-[calc(50%-30px)] hidden lg:flex flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#0F5FDC] bg-white text-lg font-semibold leading-none text-[#0F5FDC] shadow-md hover:bg-[#0F5FDC] hover:text-white disabled:cursor-not-allowed disabled:border-[#CBD5E1] disabled:text-[#94A3B8] disabled:shadow-none disabled:hover:bg-white"
+                    aria-label="Next policy"
+                    [disabled]="activeIndex() === policies().length - 1"
+                    (click)="scrollToPolicy(activeIndex() + 1)"
+                  >›</button>
+                }
                 <!-- Bleeds off the right edge on a phone: the next card is meant
                      to be clipped by the screen, not by a gutter. On the web the
                      track is exactly one card wide, so only the open policy shows
@@ -274,15 +319,15 @@ function benefitLink(categoryCode: string): string {
           <!-- RIGHT: Health Benefits -->
           @if (categories().length) {
             <section
-              class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[510px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
+              class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[549px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
             >
               <h2 class="mb-4 text-[15px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-[26px] lg:text-[22px]">
                 Health Benefits
               </h2>
               <!-- Web: a fixed-height panel that scrolls, as in the design;
-                   two 223px columns. -->
-              <div class="benefits-scroll lg:max-h-[380px] lg:overflow-y-auto lg:pr-4">
-                <div class="grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-[223px_223px] lg:gap-x-6 lg:gap-y-4 lg:pb-2">
+                   two 223px columns of name-only cards. -->
+              <div class="benefits-panel lg:-mt-1 lg:max-h-[368px] lg:pl-0.5 lg:pr-9 lg:pt-1">
+                <div class="grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-[223px_223px] lg:gap-x-[22px] lg:gap-y-6 lg:pb-2">
                   @for (category of categories(); track category.label) {
                     <opd-benefit-card
                       [category]="category"
@@ -305,8 +350,17 @@ function benefitLink(categoryCode: string): string {
     </div>
   `,
   styles: `
-    /* The design's thin always-visible track on the benefits panel. */
-    .benefits-scroll { scrollbar-width: thin; scrollbar-color: #b8b8b8 rgba(217, 217, 217, 0.54); }
+    /* Always-visible scrollbar, as in the design. A styled WebKit scrollbar is
+       never an overlay, so macOS cannot hide it between scrolls. */
+    @media (min-width: 1024px) {
+      .benefits-panel { overflow-y: scroll; }
+      .benefits-panel::-webkit-scrollbar { width: 7px; }
+      .benefits-panel::-webkit-scrollbar-track { background: rgba(217, 217, 217, 0.54); border-radius: 4px; }
+      .benefits-panel::-webkit-scrollbar-thumb { background: #b8b8b8; border-radius: 4px; }
+    }
+    @supports not selector(::-webkit-scrollbar) {
+      .benefits-panel { scrollbar-width: thin; scrollbar-color: #b8b8b8 rgba(217, 217, 217, 0.54); }
+    }
   `,
 })
 export class HomePage {
@@ -318,6 +372,9 @@ export class HomePage {
   protected readonly carts = inject(CartStore);
 
   protected readonly activeIndex = signal(0);
+  // DUMMY / STATIC — pool balances behind More Info, until the pool API exists.
+  protected readonly walletPools = STATIC_WALLET_POOLS;
+  protected readonly walletInfoOpen = signal(false);
 
   private readonly policyScroller = viewChild<ElementRef<HTMLElement>>('policyScroller');
 
@@ -330,7 +387,7 @@ export class HomePage {
   protected scrollToPolicy(index: number): void {
     const track = this.policyScroller()?.nativeElement;
     const cards = this.cards();
-    if (!track || !cards.length) return;
+    if (!track || !cards[index]) return;
     // Set immediately so the dot responds even before the smooth scroll lands.
     this.activeIndex.set(index);
     track.scrollTo({ left: cards[index].offsetLeft - cards[0].offsetLeft, behavior: 'smooth' });

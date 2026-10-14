@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { Money, formatMoney } from '../../core/domain/money';
 import { Policy } from '../../core/member/policy';
+import { WalletPool } from '../../core/member/static-policy.data';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { Icon } from '../../shared/ui/icon';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
@@ -95,21 +96,22 @@ export class BalanceSummary {
   template: `
     <a
       [routerLink]="href()"
-      class="relative flex h-full min-h-[106px] flex-col rounded-2xl border border-[#D9D9D97A] bg-white p-3.5 transition-all duration-200 hover:-translate-y-px lg:min-h-[116px] lg:px-[17px] lg:py-2.5"
-      style="box-shadow: -2px 11px 46px 0 rgba(0,0,0,.08)"
+      class="relative flex h-full min-h-[106px] flex-col rounded-2xl border border-[#D9D9D97A] bg-white p-3.5 transition-all duration-200 hover:-translate-y-px lg:min-h-[104px] lg:rounded-[22px] lg:border-[1.5px] lg:border-[#EEF0F4] lg:px-[17px] lg:py-3.5 lg:hover:border-[#0F5FDC] shadow-[-2px_11px_46px_0_rgba(0,0,0,0.08)] lg:shadow-none"
     >
       <!-- The slot keeps its height when a category has no artwork, so the
            label and amount line up across the row. -->
-      <span class="block h-[30px] w-[30px]" aria-hidden="true">
+      <span class="block h-[30px] w-[30px] lg:h-[38px] lg:w-[38px]" aria-hidden="true">
         @if (iconSrc(); as src) {
-          <img [src]="src | remoteAsset" alt="" width="30" height="30" class="h-[30px] w-[30px] object-contain" />
+          <img [src]="src | remoteAsset" alt="" width="30" height="30" class="h-full w-full object-contain" />
         }
       </span>
 
-      <h3 class="mt-auto pt-3 text-[12px] font-normal leading-tight text-[#545454] lg:text-[15px]">
+      <!-- Web: no per-category balance — balances sit at the pool level now,
+           so the card is the icon, its name in brand blue, and the chevron. -->
+      <h3 class="mt-auto pt-3 text-[12px] font-normal leading-tight text-[#545454] lg:pr-9 lg:pt-2 lg:text-[16px] lg:leading-snug lg:text-[#1061C4]">
         {{ label() || category().label }}
       </h3>
-      <p class="mt-1 pr-8 text-[18px] font-medium leading-none text-[#034DA2] lg:text-[24px]">
+      <p class="mt-1 pr-8 text-[18px] font-medium leading-none text-[#034DA2] lg:hidden">
         @if (category().isUnlimited) {
           Unlimited
         } @else if (category().isExhausted) {
@@ -120,7 +122,7 @@ export class BalanceSummary {
       </p>
 
       <span
-        class="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#F6F6F6] text-[#545454] lg:h-[27px] lg:w-[27px]"
+        class="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#F6F6F6] text-[#545454] lg:bottom-4 lg:right-4 lg:bg-[#F1F3F7] lg:text-[#1c1c1c]"
         aria-hidden="true"
         ><opd-icon name="chevronRight" [size]="12"
       /></span>
@@ -151,6 +153,8 @@ export interface LinkTile {
   readonly trail?: string;
   readonly iconSrc: string;
   readonly path: string;
+  /** Shown on the web row only; the phone design leaves it out. */
+  readonly webOnly?: boolean;
 }
 
 /**
@@ -167,13 +171,26 @@ export interface LinkTile {
         <span class="lg:hidden">Quick Links</span><span class="hidden lg:inline">Quick Actions</span>
       </h2>
 
+      <!-- Web: the row scrolls sideways between two arrow buttons. -->
+      <div class="lg:flex lg:items-start lg:gap-3">
+      <button
+        type="button"
+        class="hidden lg:mt-[10px] lg:flex lg:h-9 lg:w-9 lg:shrink-0 lg:items-center lg:justify-center lg:rounded-full lg:border-[1.5px] lg:border-[#0F5FDC] lg:bg-white lg:text-lg lg:font-semibold lg:leading-none lg:text-[#0F5FDC] lg:shadow-md lg:hover:bg-[#0F5FDC] lg:hover:text-white lg:disabled:cursor-not-allowed lg:disabled:border-[#CBD5E1] lg:disabled:text-[#94A3B8] lg:disabled:shadow-none lg:disabled:hover:bg-white"
+        aria-label="Scroll quick actions left"
+        [disabled]="atStart()"
+        (click)="scrollRow(-1)"
+      >‹</button>
       <div
-        class="scrollbar-hide -mr-5 flex gap-2.5 overflow-x-auto pb-4 pr-5 lg:mr-0 lg:gap-[21px] lg:pb-8 lg:pr-0"
+        #row
+        class="scrollbar-hide -mr-5 flex gap-2.5 overflow-x-auto pb-4 pr-5 lg:mr-0 lg:min-w-0 lg:flex-1 lg:gap-[21px] lg:scroll-smooth lg:pb-8 lg:pr-0"
+        (scroll)="onRowScroll()"
       >
         @for (link of links(); track link.id) {
           <a
             [routerLink]="link.path"
-            class="flex h-9 shrink-0 items-center gap-2 rounded-full border border-[#034DA21C] bg-white pl-2.5 pr-3.5 text-[13px] text-[#1c1c1c] transition-all duration-200 hover:-translate-y-px lg:h-[57px] lg:gap-3 lg:border-transparent lg:pl-7 lg:pr-[30px] lg:text-[20px] lg:hover:border-[#034DA21C]"
+            [class.hidden]="link.webOnly"
+            [class.lg:flex]="link.webOnly"
+            class="flex h-9 shrink-0 items-center gap-2 rounded-full border border-[#034DA21C] bg-white pl-2.5 pr-3.5 text-[13px] text-[#1c1c1c] transition-all duration-200 hover:-translate-y-px lg:h-[57px] lg:gap-3 lg:border-[#034DA21C] lg:pl-7 lg:pr-[30px] lg:text-[20px] lg:hover:border-[#0F5FDC]"
             style="box-shadow: 0 4px 14px 0 rgba(0,0,0,.06)"
           >
             <img
@@ -184,15 +201,134 @@ export interface LinkTile {
               class="h-[18px] w-[18px] shrink-0 object-contain lg:h-[28px] lg:w-[26px]"
             />
             <span class="whitespace-nowrap"
-              >{{ link.lead ? link.lead + ' ' : '' }}<span class="text-[#0F5FDC]">{{ link.accent }}</span
+              >{{ link.lead ? link.lead + ' ' : '' }}<span class="text-[#0F5FDC] lg:font-medium lg:text-[#0E51A2]">{{ link.accent }}</span
               >{{ link.trail ? ' ' + link.trail : '' }}</span
             >
           </a>
         }
+      </div>
+      <button
+        type="button"
+        class="hidden lg:mt-[10px] lg:flex lg:h-9 lg:w-9 lg:shrink-0 lg:items-center lg:justify-center lg:rounded-full lg:border-[1.5px] lg:border-[#0F5FDC] lg:bg-white lg:text-lg lg:font-semibold lg:leading-none lg:text-[#0F5FDC] lg:shadow-md lg:hover:bg-[#0F5FDC] lg:hover:text-white lg:disabled:cursor-not-allowed lg:disabled:border-[#CBD5E1] lg:disabled:text-[#94A3B8] lg:disabled:shadow-none lg:disabled:hover:bg-white"
+        aria-label="Scroll quick actions right"
+        [disabled]="atEnd()"
+        (click)="scrollRow(1)"
+      >›</button>
       </div>
     </section>
   `,
 })
 export class QuickLinks {
   readonly links = input.required<readonly LinkTile[]>();
+
+  private readonly row = viewChild<ElementRef<HTMLElement>>('row');
+  protected readonly atStart = signal(true);
+  protected readonly atEnd = signal(false);
+
+  /** One step is most of the visible row, so a click always reveals new pills. */
+  protected scrollRow(direction: 1 | -1): void {
+    const el = this.row()?.nativeElement;
+    if (el) el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' });
+  }
+
+  protected onRowScroll(): void {
+    const el = this.row()?.nativeElement;
+    if (!el) return;
+    this.atStart.set(el.scrollLeft < 1);
+    this.atEnd.set(el.scrollWidth - el.clientWidth - el.scrollLeft < 1);
+  }
+}
+
+/**
+ * "Your Wallet Balance" — the web pop-up behind More Info. The overall balance,
+ * then each pool with what it pays for; a pool opens to its categories.
+ */
+@Component({
+  selector: 'opd-wallet-balance-modal',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'closed.emit()' },
+  template: `
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="closed.emit()">
+      <div
+        class="flex max-h-[min(640px,85vh)] w-full max-w-[600px] flex-col overflow-hidden rounded-[24px] bg-[#F7F7FC] shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wallet-balance-title"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="mx-6 flex items-center justify-between border-b-2 border-[#DADDE3] pb-4 pt-6">
+          <h2 id="wallet-balance-title" class="text-[22px] font-normal text-[#1c1c1c]">Your Wallet Balance</h2>
+          <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-[#1c1c1c] hover:bg-white" aria-label="Close" (click)="closed.emit()">
+            <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" /></svg>
+          </button>
+        </div>
+
+        <div class="pools-scroll space-y-5 px-6 pb-6 pr-4 pt-5">
+          <div
+            class="rounded-[20px] px-7 py-5 text-white"
+            style="background: linear-gradient(180deg,#0A78E8 0%,#0560D2 100%); border: 1.5px solid rgba(91,153,249,.6); box-shadow: 0 8px 24px -8px rgba(5,96,210,.45)"
+          >
+            <p class="text-[13px] text-white/85">Available Balance</p>
+            <p class="mt-2 whitespace-nowrap">
+              <span class="text-[30px] font-medium leading-none">₹{{ plain(available()) }}</span>
+              <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
+            </p>
+            <p class="mt-1 text-[13px] text-white/85">Your total usage cannot exceed this amount.</p>
+          </div>
+
+          @for (pool of pools(); track pool.id) {
+            <div class="rounded-[20px] border border-[#EEF0F4] bg-white px-7 py-5" style="box-shadow: 0 4px 18px 0 rgba(0,0,0,.05)">
+              <button type="button" class="flex w-full items-start justify-between gap-3 text-left" [attr.aria-expanded]="openPool() === pool.id" (click)="togglePool(pool.id)">
+                <span class="whitespace-nowrap">
+                  <span class="text-[28px] font-normal leading-none text-[#1c1c1c]">₹{{ plain(pool.available) }}</span>
+                  <span class="text-[15px] text-[#7A7A7A]"> / {{ plain(pool.allocated) }}</span>
+                </span>
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E8EEF9] text-[#1c1c1c]" [class.rotate-180]="openPool() === pool.id" aria-hidden="true"
+                  ><svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
+                ></span>
+              </button>
+              <p class="mt-4 text-[13px] leading-snug text-[#7A7A7A]">{{ pool.description }}</p>
+              @if (openPool() === pool.id) {
+                <ul class="mt-4">
+                  @for (c of pool.categories; track c.label) {
+                    <li class="flex items-center justify-between border-b border-[#E5E7EB] py-2.5">
+                      <span class="text-[13px] text-[#1c1c1c]">{{ c.label }}</span>
+                      <span class="text-[15px] font-medium text-[#0E51A2]" [attr.aria-label]="'₹' + plain(c.used) + ' used'">₹{{ plain(c.used) }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  `,
+  styles: `
+    /* Always-visible scrollbar, as in the design. A styled WebKit scrollbar is
+       never an overlay, so macOS cannot hide it between scrolls. */
+    .pools-scroll { overflow-y: scroll; }
+    .pools-scroll::-webkit-scrollbar { width: 7px; }
+    .pools-scroll::-webkit-scrollbar-track { background: rgba(217, 217, 217, 0.54); border-radius: 4px; }
+    .pools-scroll::-webkit-scrollbar-thumb { background: #b8b8b8; border-radius: 4px; }
+    @supports not selector(::-webkit-scrollbar) {
+      .pools-scroll { scrollbar-width: thin; scrollbar-color: #b8b8b8 rgba(217, 217, 217, 0.54); }
+    }
+  `,
+})
+export class WalletBalanceModal {
+  readonly available = input.required<Money>();
+  readonly allocated = input.required<Money>();
+  readonly pools = input.required<readonly WalletPool[]>();
+  readonly closed = output<void>();
+
+  protected readonly openPool = signal<string | null>(null);
+
+  protected togglePool(id: string): void {
+    this.openPool.set(this.openPool() === id ? null : id);
+  }
+
+  protected plain(value: Money): string {
+    return NUMBER.format(value.amount);
+  }
 }
