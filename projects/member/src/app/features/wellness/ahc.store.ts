@@ -1,15 +1,163 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { AppService } from './../../core/http/api.service';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { AppService } from '../../core/http/api.service';
+import { LocationStore } from '../../core/location/location.store';
+
+/** One saved collection address, decrypted and ready to show. */
+export interface CollectionAddress {
+    id: string;
+    /** `address_type` from the API — Home, Work, Other or whatever was saved. */
+    type: string;
+    line1: string;
+    line2: string;
+    landmark: string;
+    city: string;
+    state: string;
+    pincode: string;
+    country: string;
+    latitude: number | null;
+    longitude: number | null;
+}
+
+/**
+ * One bookable leg of the package — an entry of
+ * `data.benefits_package_service_tiles` in the AHC_PACKAGE_DETAIL response.
+ */
+export interface AhcServiceTile {
+    id: string;
+    /** As sent: 'PATHOLOGY' or 'RADIOLOGY'. */
+    serviceType: string;
+    order: number;
+    /** `serviceItemInfo` arrives as an array of arrays; flattened here. */
+    serviceItems: any[];
+    raw: any;
+}
+
+/** What the member picked on the first screen, kept for the later steps. */
+export interface AhcSelectedService {
+    leg: 'pathology' | 'radiology' | 'package';
+    tile: AhcServiceTile | null;
+    /** `data` of the AHC_PACKAGE_DETAIL row the tile came from. */
+    package: any;
+}
+
+/** One row of AHC_PROVIDER_LISTING, with the fields the screens use pulled out. */
+export interface AhcProvider {
+    id: string;
+    name: string;
+    /** `provider_code` — sent to the slot query. */
+    code: string;
+    /** `center_code` — sent to the slot query. */
+    centreCode: string;
+    address: string;
+    /** The row's `data` as sent, for the booking call. */
+    raw: any;
+}
+
+/** One bookable time from AHC_SLOT_SERVICE_TYPE. */
+export interface AhcSlot {
+    id: string;
+    /** What the member reads, e.g. "9:00 AM – 9:30 AM". */
+    label: string;
+    available: boolean;
+    raw: any;
+}
+
+/** One centre row of AHC_DYNAMIC_WELLNESS_SLOTS, for the centre-visit step. */
+export interface AhcCentre {
+    id: string;
+    name: string;
+    /** `primary_address` as street1, street2, street3, city, state, country. */
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+    /** Straight-line distance from the member's location; null when either end has no coordinates. */
+    distanceKm: number | null;
+    /** The row's `data` as sent, for the slot and booking calls. */
+    raw: any;
+}
+
+/** sessionStorage key for the picked provider. */
+const SELECTED_PROVIDER_KEY = 'ahcSelectedProvider';
 
 @Injectable({ providedIn: 'root' })
 
 export class AHCStore {
+    private readonly location = inject(LocationStore);
     private readonly _ahcList = signal<any | null>(null);
-    private readonly _ahcSelectedItem = signal<any | null>(null);
+    private readonly _ahcServiceItemList = signal<any | null>(null);
+    private readonly _ahcSelectedItem = signal<AhcSelectedService | null>(null);
+    /** True from the package listing call until the detail call settles. */
+    private readonly _ahcPackageLoading = signal(false);
+    private readonly _ahcSelectedModeofCollection = signal<any | null>(null);
+    private readonly _ahcCollectionAddress = signal<CollectionAddress[]>([]);
+    private readonly _collectionAddressLoading = signal(false);
+    private readonly _selectedCollectionAddress = signal<CollectionAddress | null>(null);
+    // Providers and slots have their own signals: `_ahcList` holds the selected
+    // package, which getAHCProviders reads back.
+    private readonly _ahcProviders = signal<AhcProvider[]>([]);
+    private readonly _providersLoading = signal(false);
+    private readonly _selectedProvider = signal<AhcProvider | null>(readStoredProvider());
+    private readonly _ahcCentres = signal<AhcCentre[]>([]);
+    private readonly _centresLoading = signal(false);
+    private readonly _selectedCentre = signal<AhcCentre | null>(null);
+    private centreSeq = 0;
+    private readonly _ahcSlots = signal<AhcSlot[]>([]);
+    private readonly _ahcSlotResponse = signal<any>([]);
+    private readonly _ahcSelectedSlot = signal<any>([]);
+    private readonly _slotsLoading = signal(false);
+    private readonly _ahcCartResponse = signal(<any | null>(null));
+    private readonly _ahcCheckoutResponse = signal(<any | null>(null));
+    private readonly _isPathologyServiceStatus = signal(<any | null>(null));
+    private readonly _ahcBookingInfo = signal(<any | null>(null));
+    
+    private slotSeq = 0;
     readonly AHC = this._ahcList.asReadonly();
+    readonly AHCProviders = this._ahcProviders.asReadonly();
+    readonly providersLoading = this._providersLoading.asReadonly();
+    readonly AHCSelectedProvider = this._selectedProvider.asReadonly();
+    readonly AHCCentres = this._ahcCentres.asReadonly();
+    readonly centresLoading = this._centresLoading.asReadonly();
+    readonly AHCSelectedCentre = this._selectedCentre.asReadonly();
+    readonly AHCSlots = this._ahcSlots.asReadonly();
+    readonly AHCSlotResponse = this._ahcSlotResponse.asReadonly();
+    readonly AHCSelectedSlot = this._ahcSelectedSlot.asReadonly();
+    readonly slotsLoading = this._slotsLoading.asReadonly();
+    readonly AHCServiceItemList = this._ahcServiceItemList.asReadonly();
     readonly AHCSelectedItem = this._ahcSelectedItem.asReadonly();
+    readonly packageLoading = this._ahcPackageLoading.asReadonly();
+    readonly selectedCollectionAddress = this._selectedCollectionAddress.asReadonly();
+    readonly AHCCartResponse = this._ahcCartResponse.asReadonly();
+    readonly AHCCheckoutResponse = this._ahcCheckoutResponse.asReadonly();
+    readonly IsPathologyServiceStatus = this._isPathologyServiceStatus.asReadonly();
+    readonly AHCBookingInfo = this._ahcBookingInfo.asReadonly();
+    startDateTimeStamp: any;
+    startDateObj: any;
+    dateAndStartTimeTimestamp:any;
+    dateAndEndTimeTimestamp:any;
+    /** `data` of the first AHC_PACKAGE_DETAIL row — the member's package. */
+    readonly ahcPackage = computed(() => {
+        const rows = this._ahcServiceItemList();
+        return Array.isArray(rows) && rows.length ? (rows[0]?.data ?? null) : null;
+    });
+    /** The package's legs in display order. */
+    readonly serviceTiles = computed<AhcServiceTile[]>(() => {
+        const tiles: any[] = this.ahcPackage()?.benefits_package_service_tiles ?? [];
+        return tiles
+            .map((t, index) => ({
+                id: String(t?.id ?? index),
+                serviceType: String(t?.serviceType ?? '').toUpperCase(),
+                order: Number(t?.order ?? index),
+                serviceItems: (t?.serviceItemInfo ?? []).flat(),
+                raw: t,
+            }))
+            .sort((a, b) => a.order - b.order);
+    });
+    readonly AHCSelectedModeofCollection = this._ahcSelectedModeofCollection.asReadonly();
+    readonly AHCCollectionAddress = this._ahcCollectionAddress.asReadonly();
+    readonly collectionAddressLoading = this._collectionAddressLoading.asReadonly();
     readonly resolved = computed(() => true);
-    constructor(private appService: AppService) {}
+    constructor(private appService: AppService, private localStore: LocationStore) {}
     async setAHCListInfo(ahc: any): Promise<boolean> {
         this._ahcList.set(ahc);
         return true;
@@ -18,20 +166,922 @@ export class AHCStore {
     restore(): Promise<boolean> {
         return Promise.resolve(true);
     }
+    setSelectedCollectionAddress(address: any | null){
+        this._selectedCollectionAddress.set(address);
+        return true;
+    }
+    setSelectedSlot(selectedSlot: any){
+        this._ahcSelectedSlot.set(selectedSlot)
+        return true;
+    }
 
-    getAHCList(userId: string){
-        const queryId = 'GET_MY_BENEFIT_SERVICE_ITEM';
-        const args = 'user_id:' + userId + ',service_type_code:phc';
-        this.appService.getcall('user_benefit_plan_service_item', 'master-management', 'queryId=' + queryId + '&args=' + args+'&application=master-management').subscribe({
+    getAHCList(userId: any){
+        const userInfo = userId;
+        const queryId = 'AHC_PACKAGE_LISTING';
+        const args = 'user_id:' + userInfo?.user_id + ',service_type_code:phc';
+       const applicationName = 'habit-opd';
+       const resourceName = 'opd_ahc_booking';
+        this._ahcPackageLoading.set(true);
+        this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName).subscribe({
             next: (response: any) => {
-                const parsed = JSON.parse(response);
+                const parsed = typeof response === 'string' ? JSON.parse(response) : response;
                 const resources: any[] = parsed?.resource ?? [];
-                this._ahcList.set(resources);
+                const selectedPackage = resources.find(
+                        (item: any) =>
+                            item?.data?.id === "ddb554b0-c21b-11f1-97e2-eadcbe87e341-78"  //"853f03c0-c6d1-11f1-9653-4eb7369f2b18-21"
+                        );
+                this._ahcList.set(selectedPackage ?? null);
+                if (!selectedPackage) {
+                    // No matching package on the plan: nothing to detail.
+                    this._ahcServiceItemList.set([]);
+                    this._ahcPackageLoading.set(false);
+                    return;
+                }
+                this.getAHCServiceItems(userInfo, selectedPackage);
             },
             error: () => {
                 this._ahcList.set(null);
+                this._ahcServiceItemList.set([]);
+                this._ahcPackageLoading.set(false);
             }
         });
     }
+    getAHCServiceItems(userInfo: any, packageList: any){
+        const packageListObj = packageList.data;
+        const resourceName = 'opd_ahc_booking';
+        const queryId = 'AHC_PACKAGE_DETAIL';
+        const applicationName = 'habit-opd';
+        const args = 'user_id:' + userInfo?.user_id +
+                     ',serviceItemCode:' + packageListObj?.service_item_code +
+                     ',facility_id:' + userInfo?.facilities[0]?.org_id +
+                     ',bp_code:' + packageListObj.bp_code +
+                     ',bg_code:' + packageListObj.bg_code +
+                     ',selling_discount_rate:' + packageListObj.total_share +
+                     ',bp_service_item_id:'+ packageListObj.id;
+                    //  ',mode_of_appointment: opd_network';
+        
+        const filter = 'serviceType_code:' + packageListObj?.service_type_code +
+                        'is_searchable:true' +
+                        'package_type_code:health_check' +
+                        'package_sub_type_code:health_check' + packageListObj.package_sub_type_code +
+                        'serviceItemCode:' + packageListObj?.service_item_code ;
+
+
+        this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName + '&filter=' + filter).subscribe({
+            next: (response: any) => {
+                const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+                const resources: any[] = parsed?.resource ?? [];
+                this._ahcServiceItemList.set(resources);
+                this._ahcPackageLoading.set(false);
+                if(resources && resources.length > 0 && resources[0]?.data?.packageServiceItemsStatusInfo.length > 0){
+                    const bookingInfo = resources[0]?.data?.packageServiceItemsStatusInfo[0];
+                    this.setPathologyBookingInfo(bookingInfo);
+                }
+            },
+            error: () => {
+                this._ahcServiceItemList.set([]);
+                this._ahcPackageLoading.set(false);
+            }
+        });
+    }
+    setPathologyBookingInfo(serviceBookingInfo: any){
+        if(serviceBookingInfo?.serviceType_code == 'pathology' && serviceBookingInfo?.stage == 'Booked'){
+            this._isPathologyServiceStatus.set(serviceBookingInfo?.serviceType_code == 'pathology' && serviceBookingInfo?.stage == 'Booked' ? true : false)
+        }
+        this._ahcBookingInfo.set(serviceBookingInfo);
+    }
+
+    /** The leg picked on the first screen, with its tile and package, for the later steps. */
+    setAHCSelctedItem(item: AhcSelectedService | null) {
+        this._ahcSelectedItem.set(item);
+    }
+
+    setAHCSelctedModeofCollection(item: any) {
+        this._ahcSelectedModeofCollection.set(item);
+    }
+    async getAHCProviders(userInfo: any, modeOfCollection: any): Promise<void> {
+        // console.log('_ahcSelectedItem', this.AHCSelectedItem())
+        const selectedItem = this.AHCSelectedItem();
+        const packageListObj =this.AHC();
+        const pincodeAndLocation = this.location.place();
+        const phcServiceTypeCode = 'phc';
+        console.log('---user info', userInfo);
+        console.log('---selectedItem', selectedItem);
+        console.log('---packageListObj', packageListObj);
+        console.log('---location --', this.location.place());
+        const queryId = 'AHC_PROVIDER_LISTING';
+        const applicationName = 'habit-opd';
+        const resourceName = 'opd_ahc_booking';
+        const args = 'user_id:' + userInfo?.user_id +
+                        ',service_item_code:' + selectedItem?.package?.service_item[0]?.service_item_code +
+                        ',pin_code:' + pincodeAndLocation?.pincode + 
+                        ',mode_of_collection:' + (modeOfCollection === 'home' ? 'home_collection' : 'center_visit') +
+                        ',patient_state:'+ pincodeAndLocation?.state +
+                        ',serviceType_code:' + selectedItem?.package?.service_item[0]?.serviceType_code +
+                        ',cug_code:' + userInfo?.cug_code +
+                        ',facility_id:' + userInfo?.facilities[0]?.org_id +
+                        ',bp_code:' + packageListObj?.data?.bg_code +
+                        ',package_type_code:' + packageListObj?.data?.package_type_code +
+                        ',package_sub_type_code:' + packageListObj?.data?.package_sub_type_code +
+                        ',selling_discount_rate:' + packageListObj?.data?.total_share+
+                        ',phc_serviceType_code:' + phcServiceTypeCode + 
+                        ',phc_service_item_code:'+ packageListObj?.data?.service_item_code +
+                        ',latitude:' + pincodeAndLocation?.latitude +
+                        ',longitude:' + pincodeAndLocation?.longitude +
+                        ',radius:60000' +
+                        ',applyRadius:yes' +
+                        ',is_sort_location:true' ;
+
+        this._providersLoading.set(true);
+        this._ahcProviders.set([]);
+        try {
+            const response = await firstValueFrom(
+                this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application=' + applicationName),
+            );
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            this._ahcProviders.set(resources.map(toProvider));
+        } catch {
+            this._ahcProviders.set([]);
+        } finally {
+            this._providersLoading.set(false);
+        }
+    }
+
+    /** Keeps the picked provider in the store and in sessionStorage, so a reload keeps it. */
+    setSelectedProvider(provider: AhcProvider | null): void {
+        this._selectedProvider.set(provider);
+        try {
+            if (provider) sessionStorage.setItem(SELECTED_PROVIDER_KEY, JSON.stringify(provider));
+            else sessionStorage.removeItem(SELECTED_PROVIDER_KEY);
+        } catch {
+            // Storage unavailable (private mode): the signal still holds it.
+        }
+        // Slots belong to a provider; another provider's slots no longer apply.
+        this.slotSeq++;
+        this._ahcSlots.set([]);
+        this._slotsLoading.set(false);
+    }
+
+    async getCentreAddress(userInfo: any, modeOfCollection: any): Promise<void> {
+        const queryId = 'AHC_DYNAMIC_WELLNESS_SLOTS'; //'GET_WELLNESSCENTRE_DETAILS_BY_SORTED_LOCATION_V2'; //'AHC_DYNAMIC_WELLNESS_SLOTS';
+        const applicationName = 'habit-opd'; //'master-management'; //'habit-opd';
+        const resourceName = 'opd_ahc_booking'; //'provider_location_mapping'; //'opd_ahc_booking';
+        const provider = this._selectedProvider();
+        const pincodeAndLocation = this.location.place();
+        const selectedItem: any = this.AHCSelectedItem();
+        const isModeofCollectionHome = (modeOfCollection === 'home' ? true : false)
+        const args = 'provider_code:' + provider?.code  +
+                    ',serviceType_code:'+ selectedItem?.package?.service_item[0]?.serviceType_code +
+                    ',pincode:'+ pincodeAndLocation?.pincode +
+                    ',cug_code:' + userInfo?.cug_code +
+                    ',patient_state:' + pincodeAndLocation?.state +
+                    ',serviceItemCode:' + selectedItem?.package?.service_item[0]?.service_item_code +
+                    ',is_centre_visit:'+ !isModeofCollectionHome +
+                    ',is_home_collection:'+  isModeofCollectionHome+
+                    ',inclnic_code:'+  provider?.raw?.extra_data?.inclinic_code +
+                    ',latitude:' + pincodeAndLocation?.latitude +
+                    ',longitude:' + pincodeAndLocation?.longitude +
+                    ',radius:' + 60000+
+                    ',applyRadius:'+ 'yes'
+
+        // Only the latest call may write: going back and forth between steps can overlap them.
+        const seq = ++this.centreSeq;
+        this._centresLoading.set(true);
+        this._ahcCentres.set([]);
+        this._selectedCentre.set(null);
+        try {
+            const response = await firstValueFrom(
+                this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application=' + applicationName),
+            );
+            if (seq !== this.centreSeq) return;
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            const origin = { latitude: toCoord(pincodeAndLocation?.latitude), longitude: toCoord(pincodeAndLocation?.longitude) };
+            // Nearest first; centres without coordinates go last.
+            const centres = resources
+                .map((item, index) => toCentre(item, index, origin))
+                .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+            this._ahcCentres.set(centres);
+        } catch {
+            if (seq === this.centreSeq) this._ahcCentres.set([]);
+        } finally {
+            if (seq === this.centreSeq) this._centresLoading.set(false);
+        }
+    }
+
+    setSelectedCentre(centre: AhcCentre | null): void {
+        this._selectedCentre.set(centre);
+    }
+    /**
+     * The member's saved collection addresses. Each item carries its details
+     * under `address`; `street1` / `street2` arrive encrypted with the user's
+     * `api_encryption_key` and are decrypted here so the page shows plain text.
+     */
+    async getCollectionAddress(userInfo: any): Promise<void> {
+        const queryId = 'LIST_ORDER_ADDRESS';
+        const applicationName = 'habit-opd';
+        const resourceName = 'opd_ahc_booking';
+        const args = '';
+        const filter = 'patient_id:' + userInfo?.user_id + ',uhId:' + userInfo?.user_roles[0]?.uhid;
+
+        this._collectionAddressLoading.set(true);
+        try {
+            const response = await firstValueFrom(
+                this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application=' + applicationName + '&filter=' + filter),
+            );
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            const key = userInfo?.api_encryption_key ?? null;
+            this._ahcCollectionAddress.set(resources.map((item, index) => this.toCollectionAddress(item.data, index, key)));
+        } catch {
+            this._ahcCollectionAddress.set([]);
+        } finally {
+            this._collectionAddressLoading.set(false);
+        }
+    }
+
+    private toCollectionAddress(item: any, index: number, key: string | null): CollectionAddress {
+        const a = item?.address ?? item ?? {};
+        const text = (value: unknown): string => (value === undefined || value === null ? '' : String(value).trim());
+        const street = (value: unknown): string => this.decryptIfEncrypted(text(value), key);
+        const coord = (value: unknown): number | null => {
+            const n = typeof value === 'number' ? value : parseFloat(text(value));
+            return Number.isFinite(n) ? n : null;
+        };
+        return {
+            id: text(item?.id ?? item?._id ?? item?.order_address_id ?? a?.id) || 'address-' + index,
+            type: text(a.address_type ?? a.label) || 'Other',
+            line1: street(a.street1),
+            line2: street(a.street2),
+            landmark: street(a.street3),
+            city: text(a.cityDisplayName) || text(a.city),
+            state: text(a.stateDisplayName) || text(a.state),
+            pincode: text(a.pincode),
+            country: text(a.country),
+            latitude: coord(a.latitude),
+            longitude: coord(a.longitude),
+        };
+    }
+
+    /**
+     * Some street fields are encrypted and some (`street3`) are not, so only a
+     * value shaped like AES ciphertext — base64, whole 16-byte blocks — is
+     * decrypted, and a failed decrypt falls back to the value as sent.
+     */
+    private decryptIfEncrypted(value: string, key: string | null): string {
+        if (!value || !key) return value;
+        const looksEncrypted = value.length >= 24 && value.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(value);
+        if (!looksEncrypted) return value;
+        return this.appService.decryptText(value, key) || value;
+    }
+
+    /** Saves a new address, then reloads the list. Resolves false when the save fails. */
+    async addNewCollectionAddress(address: any, userInfo: any): Promise<boolean> {
+        // master-management/api/v1/order_address
+        const applicationName = 'habit-opd';
+        const resourceName = 'opd_ahc_booking';
+        const action = 'add_order_address';
+        const payload = {
+            "order_address": {
+                "address":{
+                    "label": address?.type,
+                    "street1": address?.line1,
+                    "street2": address?.line2,
+                    "street3": address?.landmark,
+                    "cityDisplayName": address?.city,
+                    "city": "",
+                    "stateDisplayName": address?.state,
+                    "state":"",
+                    "pincode": address?.pincode,
+                    "country":"India",
+                    "latitude":"",
+                    "longitude":"",
+                    "address_type": address?.type
+                },
+                "uhId": userInfo?.user_roles[0]?.uhid,
+                "patient_id": userInfo?.user_id
+            }
+        }
+        try {
+            await firstValueFrom(this.appService.postCall(resourceName, applicationName, '', payload, action));
+        } catch {
+            return false;
+        }
+        // The POST answers with the saved row, not the list, so read the list again.
+        await this.getCollectionAddress(userInfo);
+        return true;
+    }
+
+    /**
+     * Slots of the selected provider on one day. `date` is that day at local
+     * midnight; the query takes it twice, as epoch ms and as dd/MM/yyyy.
+     * Changing the date quickly fires several of these, so only the latest
+     * may write its result.
+     */
+    /**. IN Clinic  slot query id AHC_SLOT_SERVICE_TYPE **/
+
     
+
+    /**.  Home collection slots **/
+    async getAHCDynamicSlots(userInfo: any, date: Date, modeofCollection: any): Promise<void> {
+        const provider = this._selectedProvider();
+        const selectedItem: any = this.AHCSelectedItem();
+        const selectedCollectionAddress: any = this.selectedCollectionAddress();
+        const selectedCentre = this.AHCSelectedCentre();
+        const seq = ++this.slotSeq;
+         console.log('provider--', provider, 'selectedCollectionAddress --', selectedCollectionAddress)
+        this._ahcSlots.set([]);
+        if (!provider) {
+            this._slotsLoading.set(false);
+            return;
+        }
+        console.log(' modeofCollection.  ', modeofCollection, 'selectedCentre. :', selectedCentre)
+        // const queryId = 'AHC_DYNAMIC_SLOTS';
+        const queryId = modeofCollection === 'home' ? 'AHC_DYNAMIC_SLOTS' : 'AHC_SLOT_SERVICE_TYPE';
+        const applicationName = 'habit-opd';
+        const resourceName = 'opd_ahc_booking';
+        const packageListObj =this.AHC();
+        const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const slotDate = [day.getDate(), day.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('/') + '/' + day.getFullYear();
+        console.log('.day ', day, 'slotDate ', slotDate)
+        this.startDateObj = day;
+        const timestamp = this.startDateObj.getTime();
+        this.startDateTimeStamp = timestamp;
+        let args = "";
+        if(modeofCollection == 'home'){
+            args = 'provider_code:' + provider.code +
+                ',date:' + timestamp +
+                ',facility_id:' + userInfo?.facilities[0]?.org_id +
+                ',patient_gender:Male' + //-------------------------------------------------
+                ',pincode:' + selectedCollectionAddress?.pincode +
+                ',collection_code:'+ provider?.raw?.extra_data?.home_collection_code +
+                ',address.street1:' + selectedCollectionAddress?.line1 +
+                ',address.street2:' + selectedCollectionAddress?.line2 +
+                ',address.pincode:' + selectedCollectionAddress?.pincode +
+                ',address.country:' + selectedCollectionAddress?.country +
+                ',address.cityDisplayName:' + selectedCollectionAddress?.city + 
+                ',address.stateDisplayName:' + selectedCollectionAddress?.state +
+                ",address.address_type:" + selectedCollectionAddress?.type +
+                ',latitude:' + selectedCollectionAddress?.latitude +
+                ',longitude:' + selectedCollectionAddress?.longitude
+        } else{
+            args = 'service_type_code:'+ packageListObj?.data?.service_type_code +
+                ',provider_code:' + provider.code +
+                ',center_code:' + selectedCentre?.raw?.center_code +
+                ',date:'+ timestamp+
+                ',slotDate:'+ slotDate
+        }
+        this._slotsLoading.set(true);
+        try {
+            const response = await firstValueFrom(
+                this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application=' + applicationName),
+            );
+            if (seq !== this.slotSeq) return;
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            this._ahcSlotResponse.set(resources[0]?.data)
+            this._ahcSlots.set(toSlots(resources[0]?.data?.outSourceCenterSlot ?? [], day));
+        } catch {
+            if (seq !== this.slotSeq) return;
+            this._ahcSlots.set([]);
+            this._ahcSlotResponse.set(null)
+        } finally {
+            if (seq === this.slotSeq) this._slotsLoading.set(false);
+        }
+    }
+    
+    async ahcAddToCart(userInfo: any){
+        const applicationName = 'habit-opd';
+        const resourceName = 'opd_ahc_booking';
+        const actionName = 'cart_add';
+        const packageListObj =this.AHC();
+        const selectedItem: any = this.AHCSelectedItem();
+        const provider = this._selectedProvider();
+        const pincodeAndLocation = this.location.place();
+        const selectedSlots = this.AHCSelectedSlot()
+        const slotResponse = this.AHCSlotResponse();
+        const selectedCollectionAddress: any = this.selectedCollectionAddress();
+        const selectedCentre = this.AHCSelectedCentre();
+        console.log(' selectedSlots :', selectedSlots, ' dynamicSlotResponse :', slotResponse, 'this.startDateObj :', this.startDateObj, 'selectedCentre ', selectedCentre)
+        // Home slots carry the time as text ("9:00 AM - 9:30 AM"); centre slots as
+        // epoch event_start_time / event_end_time, whose time of day is what counts.
+        if (selectedSlots?.raw?.slot) {
+            const slotTime = selectedSlots.raw.slot.split(' - ');
+            this.dateAndStartTimeTimestamp = addTimeToDate(new Date(this.startDateObj), slotTime[0]).getTime();
+            this.dateAndEndTimeTimestamp = addTimeToDate(new Date(this.startDateObj), slotTime[1]).getTime();
+        } else {
+            this.dateAndStartTimeTimestamp = atTimeOfDay(this.startDateObj, selectedSlots?.raw?.event_start_time);
+            this.dateAndEndTimeTimestamp = atTimeOfDay(this.startDateObj, selectedSlots?.raw?.event_end_time);
+        }
+        console.log('dateAndStartTimeTimestamp :', this.dateAndStartTimeTimestamp)
+        console.log('dateAndStartTimeTimestamp :', this.dateAndEndTimeTimestamp)
+        let payload: any= {
+            cart_snapshot: {
+                opdcart: {
+                    "facility_id": userInfo?.facilities[0]?.org_id,
+                    "patient_id": userInfo?.user_id,
+                    "serviceType": packageListObj?.data?.service_type, //"OP Package",
+                    "serviceType_code": packageListObj?.data?.service_type_code,
+                    "serviceItemName": packageListObj?.data?.service_item,
+                    "serviceItemCode": packageListObj?.data?.service_item_code,
+                    "service_code": selectedItem?.package?.serviceItemSearch?.service_code,
+                    "provider_name": provider?.raw?.provider_name,
+                    "provider_code": provider?.raw?.provider_code,
+                    "is_home_collection": provider?.raw?.extra_data?.is_home_collection,
+                    "is_centre_visit": provider?.raw?.extra_data?.is_centre_visit,
+                    "home_collection_code": provider?.raw?.extra_data?.home_collection_code,
+                    "inclinic_code": provider?.raw?.extra_data?.inclinic_code,
+                    "wellness_centre_code": "",
+                    "mrp": selectedItem?.package?.serviceItemSearch?.mrp,
+                    "selling_discount_rate": selectedItem?.package?.serviceItemSearch?.selling_discount_rate,
+                    "selling_amount": selectedItem?.package?.serviceItemSearch?.selling_amount,
+                    "popular": selectedItem?.package?.serviceItemSearch?.popular,
+                    "patient_instructions": selectedItem?.package?.serviceItemSearch?.patient_instructions,
+                    "logo_id": selectedItem?.package?.serviceItemSearch?.logo_id,
+                    "add_to_cart": false,
+                    "status": "Pending",
+                    "patient_pincode": pincodeAndLocation?.pincode,
+                    "patient_city": pincodeAndLocation?.city,
+                    "patient_state": pincodeAndLocation?.state,
+                    "department_name": provider?.raw?.extra_data?.department_name,
+                    "department_id": provider?.raw?.extra_data?.department_id,
+                    "subDepartment_name": provider?.raw?.extra_data?.subDepartment_name,
+                    "subDepartment_id": provider?.raw?.extra_data?.subDepartment_id,
+                    "serviceItemId": provider?.raw?.extra_data?.serviceItemId,
+                    "is_cug": provider?.raw?.extra_data?.is_cug,
+                    "cug_code": provider?.raw?.extra_data?.cug_code,
+                    "patient_latitude": pincodeAndLocation?.latitude,
+                    "patient_longitude": pincodeAndLocation?.longitude,
+                    "is_clear_current_cart": null,
+                    "package_sub_type": packageListObj?.data?.package_sub_type,
+                    "package_sub_type_code": packageListObj?.data?.package_sub_type_code,
+                    "package_type": packageListObj?.data?.package_type,
+                    "package_type_code": packageListObj?.data?.package_type_code,
+                    "bg_code": packageListObj?.data?.bg_code,
+                    "bg_name": packageListObj?.data?.bg_name,
+                    "bp_code": packageListObj?.data?.bp_code,
+                    "bp_name": packageListObj?.data?.bp_name,
+                    // "bp_service_item_id": "ddb97360-c21b-11f1-97e2-eadcbe87e341-51",
+                    "bp_service_item_id": packageListObj?.data?.id,
+                    "payer_id": packageListObj?.data?.payer_id,
+                    "payer_name": packageListObj?.data?.payer_name,
+                    "tag_data": [],
+                    "serviceDate": this.startDateTimeStamp,
+                    "serviceStartTime": this.dateAndStartTimeTimestamp,
+                    "serviceEndTime": this.dateAndEndTimeTimestamp,
+                    "slotId": selectedSlots?.raw?.id,
+                    "slotNo": selectedSlots?.raw?.slot_id,
+                    "slot": selectedSlots?.raw?.slot || selectedSlots?.label,
+                    "slot_type": slotResponse?.slot_type,
+                    "mode_of_appointment": "opd_network"
+                }
+            }
+        }
+        if(provider?.raw?.extra_data?.is_centre_visit){
+            payload.cart_snapshot.opdcart.center_name = provider?.name;
+            payload.cart_snapshot.opdcart.center_code = provider?.code;
+            payload.cart_snapshot.opdcart.center_address = {
+                        "street1": selectedCentre?.raw?.primary_address?.street1 ,
+                        "street2": selectedCentre?.raw?.primary_address?.street2 ,
+                        "street3": "",
+                        "city": selectedCentre?.raw?.primary_address?.city ,
+                        "cityDisplayName": selectedCentre?.raw?.primary_address?.cityDisplayName ,
+                        "state": selectedCentre?.raw?.primary_address?.state ,
+                        "stateDisplayName": selectedCentre?.raw?.primary_address?.stateDisplayName ,
+                        "pincode": selectedCentre?.raw?.primary_address?.pincode ,
+                        "pincodeDisplayName": "",
+                        "country": selectedCentre?.raw?.primary_address?.country ,
+                        "countryDisplayName": selectedCentre?.raw?.primary_address?.countryDisplayName ,
+                        "latitude": selectedCentre?.raw?.primary_address?.latitude ,
+                        "longitude": selectedCentre?.raw?.primary_address?.longitude 
+                    }
+        } else {
+            payload.cart_snapshot.opdcart.order_address = {
+                        "id": selectedCollectionAddress?.id,
+                        "label": selectedCollectionAddress?.type,
+                        "isDefault": false,
+                        "fullAddress": (selectedCollectionAddress?.line1+", "+selectedCollectionAddress?.line2,+", "+selectedCollectionAddress?.landmark +", "+selectedCollectionAddress?.city+", "+selectedCollectionAddress?.state+", "+selectedCollectionAddress?.pincode),
+                        "selected": true,
+                        "pincode": selectedCollectionAddress?.pincode,
+                        "latitude": selectedCollectionAddress?.latitude,
+                        "longitude": selectedCollectionAddress?.longitude,
+                        "street1": selectedCollectionAddress?.line1,
+                        "street2": selectedCollectionAddress?.line2,
+                        "city": selectedCollectionAddress?.city,
+                        "city_code": "",
+                        "state": selectedCollectionAddress?.state,
+                        "state_code": "",
+                        "cityDisplayName": selectedCollectionAddress?.city,
+                        "stateDisplayName": selectedCollectionAddress?.state,
+                    }
+        }
+        try {
+            const response = await firstValueFrom( this.appService.postCall(resourceName, applicationName, '', payload, actionName));
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            console.log('resources ', resources)
+            this._ahcCartResponse.set(resources[0])
+            await this.ahcCheckout(userInfo, resources[0], selectedItem)
+            return true;
+        } catch (error) {
+            console.error('AHC cart_add failed:', error);
+            this._ahcCartResponse.set(null)
+            return false;
+        }
+
+    }
+    async ahcCheckout(userInfo: any, cartResponse: any, selectedItem: any){
+        const applicationName = 'habit-opd';
+        const resorceName = 'opd_ahc_booking';
+        const actionName = 'checkout';
+        const provider = this._selectedProvider();
+        const pincodeAndLocation = this.location.place();
+        const packageListObj =this.AHC();
+        const selectedSlots = this.AHCSelectedSlot()
+        const cartRes = cartResponse?.cart_snapshot?.opdcart;
+        const cartId = cartResponse?.id
+        let payload = {
+            policy_id: "786123",
+            checkout_snapshot: {
+                opdCheckout: {
+                    "mode_of_appointment": "opd_network",
+                    "facility_id": cartRes?.facility_id,
+                    "patient_id": cartRes?.patient_id,
+                    "scheme_code": "",
+                    "is_use_wallet": false,
+                    "bg_code": cartRes?.bg_code,
+                    "scheme_discount_applicable": false,
+                    "type": "",
+                    "uhId": userInfo?.user_roles[0]?.uhid,
+                    "is_use_care_coin": false,
+                    "orderedFrom": "Patient Portal",
+                    "ordering_facility_id": cartRes?.facility_id,
+                    "old_serviceRequestId": "",
+                    "provider_name": provider?.raw?.provider_name,
+                    "provider_code": provider?.raw?.provider_code,
+                     "op_services" : [
+                        {
+                            "serviceItemId": provider?.raw?.extra_data?.serviceItemId,
+                            "serviceItemName": provider?.raw?.extra_data?.serviceItemName,
+                            "service_code": provider?.raw?.extra_data?.service_code,
+                            "part_of_package": true, // -----------------
+                            "serviceItemCode": provider?.raw?.extra_data?.serviceItemCode,
+                            "over_booking_status": false,
+                            "order_date_time": new Date().getTime(),  //need to confirm this value
+                            "service_type": provider?.raw?.extra_data.serviceType,
+                            "serviceName": provider?.raw?.extra_data?.serviceItemName,
+                            "appointment_time": cartRes?.serviceEndTime,  //need to confirm this value
+                            "serviceType": provider?.raw?.extra_data?.serviceType,
+                            "serviceType_code": provider?.raw?.extra_data?.serviceType_code,
+                            "slotId": cartRes?.slotId,
+                            "extra_data": {
+                                "edit_price": false
+                            },
+                            "slotNo": cartRes?.slotNo,
+                            "serviceDate": cartRes?.serviceDate,
+                            "serviceStartTime": cartRes?.serviceStartTime,
+                            "serviceEndTime": cartRes?.serviceEndTime,
+                            "department_id": provider?.raw?.extra_data?.department_id, //"fcf91730-6302-11ec-8c2d-6ef3f61dec40-51",
+                            "department_name": provider?.raw?.extra_data?.department_name,//"Health Checkup",
+                            "subDepartment_id": provider?.raw?.extra_data?.subDepartment_id,//"a5c81af1-64ac-11ec-a778-1a3a2074e682-83",
+                            "subDepartment_name": provider?.raw?.extra_data?.subDepartment_name, //"Health Checkup",
+                            "qty": 1,  //need to confirm this value
+                            "cart_id": cartRes?.id , //cartId,  //need to confirm this value
+                            "inclinic_code": cartRes?.inclinic_code,
+                            "is_centre_visit": cartRes?.is_centre_visit,
+                            "is_home_collection": cartRes?.is_home_collection,
+                            "logo_id": provider?.raw?.extra_data?.logo_id,
+                            "doctor_profile_path": "",
+                            "patient_instructions": provider?.raw?.extra_data?.patient_instructions,
+                            "slot_type": cartRes?.slot_type,
+                            "slot": cartRes?.slot,
+                            "center_name": provider?.name,
+                            "center_code": provider?.code,
+                            "home_collection_code": cartRes?.home_collection_code,
+                            "bp_service_item_id": packageListObj?.data?.id,
+                            "patient_pincode": cartRes?.patient_pincode,
+                            "patient_city": pincodeAndLocation?.city,
+                            "patient_state": cartRes?.patient_state,
+                            "package_sub_type": cartRes?.package_sub_type,
+                            "package_sub_type_code": cartRes?.package_sub_type_code,
+                            "package_type": cartRes?.package_type,
+                            "package_type_code": cartRes?.package_type_code,
+                            package_serviceRequestId: selectedItem?.package?.packageServiceItemsStatusInfo && selectedItem?.package?.packageServiceItemsStatusInfo.length > 0 && selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId?.package_serviceRequestId ?  selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId : ""
+
+                        }
+                    ],
+                    "bg_name": cartRes?.bg_name,
+                    "bp_code": cartRes?.bp_code,
+                    "bp_name": cartRes?.bp_name,
+                    "payer_details": {
+                        "payer_id": cartRes?.payer_id
+                    },
+                    // "order_address": {
+                    "center_address": {
+                        "street1": this.appService.decryptText(cartRes?.center_address.street1 || cartRes?.order_address?.street1, userInfo?.api_encryption_key), //decreypt
+                        "street2": this.appService.decryptText(cartRes?.center_address.street2 || cartRes?.order_address?.street2, userInfo?.api_encryption_key), //decreypt
+                        "city": cartRes?.center_address?.city || cartRes?.order_address?.city,
+                        "state": cartRes?.center_address?.state || cartRes?.order_address?.state,
+                        "pincode": cartRes?.center_address?.pincode || cartRes?.order_address?.pincode,
+                        "street3": "",
+                        "pincodeDisplayName": cartRes?.center_address?.pincodeDisplayName || cartRes?.order_address?.pincodeDisplayName,
+                        "country": cartRes?.center_address?.country || cartRes?.order_address?.country,
+                        "countryDisplayName": cartRes?.center_address?.countryDisplayName || cartRes?.order_address?.countryDisplayName,
+                        "latitude": cartRes?.center_address?.latitude || cartRes?.order_address?.latitude,
+                        "longitude": cartRes?.center_address?.longitude || cartRes?.order_address?.longitude,
+                        "cityDisplayName": cartRes?.center_address?.cityDisplayName || cartRes?.order_address?.cityDisplayName,
+                        "stateDisplayName": cartRes?.center_address?.stateDisplayName || cartRes?.order_address?.stateDisplayName
+                    },
+                    "tag_data": []
+                }
+            }
+        }
+        
+        console.log('checkout payload :', payload)
+        try {
+            const response = await firstValueFrom( this.appService.postCall(resorceName, applicationName, '', payload, actionName));
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            console.log('checkout resources ', resources)
+            this._ahcCheckoutResponse.set(resources[0])
+            await this.ahcBookAppointment(userInfo, resources[0])
+            return true;
+        } catch (error) {
+            console.error('AHC checkout failed:', error);
+            this._ahcCheckoutResponse.set(null)
+            return false;
+        }
+
+    }
+    async ahcBookAppointment(userInfo: any, checkoutResponse: any){
+        const applicationName = 'habit-opd';
+        const resorceName = 'opd_ahc_booking';
+        const actionName = 'book_appointment';
+        // const selectedItem: any = this.AHCSelectedItem();
+        const checkoutRes = checkoutResponse?.checkout_snapshot?.opdCheckout;
+        const checkoutCenterAddress = checkoutResponse?.checkout_snapshot?.opdCheckout?.center_address;
+        const checkoutPatientDetails = checkoutResponse?.checkout_snapshot?.opdCheckout?.patient_details;
+        const checkoutOpServiceDetails = checkoutResponse?.checkout_snapshot?.opdCheckout?.op_services;
+        let finalPayableAmount = checkoutRes?.final_payable
+        let homeCollectionCharges = 0.00;
+        if(finalPayableAmount <= 2000){
+            homeCollectionCharges = 0.00;
+            finalPayableAmount = finalPayableAmount + 0;
+            // homeCollectionCharges = 200;
+            // finalPayableAmount = finalPayableAmount + homeCollectionCharges;
+        }
+        let payload: any = {
+                booking_snapshot: {
+                    serviceRequestHandler: {
+                        "patient_details": {
+                            "patient_id": checkoutRes?.patient_id, // "7b6c2950-da45-11f0-86ee-7a0716908f90-64",
+                            "patientType": "OP", //
+                            "uhId": checkoutRes?.uhId,
+                            "payer_info": { ...checkoutRes?.payer_details}
+                        },
+                        // "order_address": { ...checkoutCenterAddress},
+                        // "center_address": { ...checkoutCenterAddress},
+                        "selectedPackageServiceItemIds": [ 
+                            "hyundai-blood-sample-collection-at-home-below-40-female" //service_item_code
+                        ],
+                        "facility_id": checkoutRes?.facility_id,
+                        "scheme_code": "",
+                        "is_use_wallet": checkoutRes?.is_use_wallet,
+                        "bg_code": checkoutRes?.bg_code,
+                        "bp_code": checkoutRes?.bp_code,
+                        "bg_name": checkoutRes?.bg_name,
+                        "bp_name": checkoutRes?.bp_name,
+                        "scheme_discount_applicable": checkoutRes?.scheme_discount_applicable,
+                        "cug_code": checkoutRes?.cug_code,
+                        "doctor_id": "",
+                        "type": "",
+                        "tag_data": [],
+                        "bill_amount": checkoutRes?.bill_amount,
+                        "net_amount": checkoutRes?.net_amount, 
+                        "final_payable": finalPayableAmount, //checkoutRes?.final_payable,
+                        "service_mrp": checkoutRes?.service_mrp,
+                        "service_selling_amount": checkoutRes?.service_selling_amount,
+                        "home_collection_charges": homeCollectionCharges,
+                        "discount": checkoutRes?.discount, //0,
+                        "care_coin_discount": checkoutRes?.care_coin_discount,
+                        "care_coin_discount_amount": checkoutRes?.care_coin_discount_amount,
+                        "tax": checkoutRes?.tax,
+                        "patient_amount": checkoutRes?.patient_amount,
+                        "payer_amount": checkoutRes?.payer_amount,
+                        "cug_amount": checkoutRes?.cug_amount,
+                        "authorized_amount": checkoutRes?.authorized_amount,
+                        "used_wallet_amount": checkoutRes?.used_wallet_amount,
+                        "roundOff": checkoutRes?.roundOff,
+                        "earn_care_coins": checkoutRes?.earn_care_coins,
+                        "is_use_care_coin": checkoutRes?.is_use_care_coin,
+                        "billing_category_id": checkoutRes?.billing_category_id,
+                        "billing_category_name": checkoutRes?.billing_category_name,
+                        "payment_details": [],
+                        "payer_details": {
+                            "payer_id": checkoutRes?.payer_details?.payer_id
+                        },
+                        "payment_type": checkoutPatientDetails?.payment_typeId ,// "E-Payment",
+                        "payment_status": "Pending",
+                        "provider_name": checkoutRes?.provider_name, //"Redcliff Wellness Center",
+                        "provider_code": checkoutRes?.provider_code,
+                        "old_serviceRequestId": "",
+                        "orderedFrom": "Patient Portal",
+                        "is_walkin": false,
+                        "order_device": "WEB",
+                        "order_type": "Patient Portal",
+                        "ordering_facility_id": checkoutRes?.facility_id,
+                        "services": checkoutOpServiceDetails,
+                        "rule_code": "",
+                        // "mode_of_appointment": "opd_network",
+                        "area_id": "",
+                        "branch_id": "",
+                        "city_id": "",
+                        "zone_Id": "",
+                        "slot_id": ""
+                    }
+                }
+            }
+            if(payload && payload?.booking_snapshot && payload?.booking_snapshot?.serviceRequestHandler && checkoutOpServiceDetails[0]?.is_home_collection){
+                payload.booking_snapshot.serviceRequestHandler.order_address = { ...checkoutCenterAddress}
+            } 
+            if(payload && payload?.booking_snapshot && payload?.booking_snapshot?.serviceRequestHandler && checkoutOpServiceDetails[0]?.is_centre_visit){
+                payload.booking_snapshot.serviceRequestHandler.center_address = { ...checkoutCenterAddress}
+            } 
+            // if ( payload && payload.booking_snapshot && payload.booking_snapshot.serviceRequestHandler && payload.booking_snapshot.serviceRequestHandler.services?.length) {
+            //     payload.booking_snapshot.serviceRequestHandler.services[0].part_of_package = true;
+            //     payload.booking_snapshot.serviceRequestHandler.services[0].package_serviceRequestId = selectedItem?.package?.packageServiceItemsStatusInfo[0]?.package_serviceRequestId;
+            // }
+        console.log('booking payload :', payload)
+        try {
+            console.log('AHC book_appointment request starting');
+            const response = await firstValueFrom( this.appService.postCall(resorceName, applicationName, '', payload, actionName));
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const resources: any[] = parsed?.resource ?? [];
+            console.log('Booking response ', resources)
+            this.getAHCList(userInfo);
+            return true;
+        } catch (error) {
+            console.error('AHC book_appointment failed:', error);
+            this._ahcCheckoutResponse.set(null)
+            return false;
+        }
+    }
+}
+
+function readStoredProvider(): AhcProvider | null {
+    try {
+        const stored = sessionStorage.getItem(SELECTED_PROVIDER_KEY);
+        return stored ? (JSON.parse(stored) as AhcProvider) : null;
+    } catch {
+        return null;
+    }
+}
+
+const textOf = (value: unknown): string => (value === undefined || value === null ? '' : String(value).trim());
+/** First non-empty of `keys` on `obj`. */
+const pickText = (obj: any, ...keys: string[]): string => {
+    for (const key of keys) {
+        const value = textOf(obj?.[key]);
+        if (value) return value;
+    }
+    return '';
+};
+
+/**
+ * Field names below are best guesses at AHC_PROVIDER_LISTING's `data` — confirm
+ * against a live row and trim to the real ones.
+ */
+function toProvider(row: any, index: number): AhcProvider {
+    const d = row?.data ?? row ?? {};
+    const addr = d.address;
+    const address = typeof addr === 'string'
+        ? addr.trim()
+        : [addr?.street1, addr?.street2, addr?.cityDisplayName ?? addr?.city, addr?.stateDisplayName ?? addr?.state, addr?.pincode]
+            .map(textOf).filter(Boolean).join(', ') || pickText(d, 'full_address', 'center_address', 'centre_address');
+    return {
+        id: textOf(row?.id) || textOf(d.id) || 'provider-' + index,
+        name: pickText(d, 'provider_name', 'center_name', 'centre_name', 'facility_name', 'org_name', 'name', 'display_name') || 'Provider',
+        code: pickText(d, 'provider_code', 'code'),
+        centreCode: pickText(d, 'center_code', 'centre_code'),
+        address,
+        raw: d,
+    };
+}
+
+const toCoord = (value: unknown): number | null => {
+    const n = typeof value === 'number' ? value : parseFloat(textOf(value));
+    return Number.isFinite(n) ? n : null;
+};
+
+/** Great-circle (haversine) distance in kilometres. */
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const rad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = rad(lat2 - lat1);
+    const dLon = rad(lon2 - lon1);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/**
+ * A centre row of AHC_DYNAMIC_WELLNESS_SLOTS. Coordinates come from
+ * `primary_address`, falling back to the GeoJSON `location_coordinate`
+ * (`[longitude, latitude]`).
+ */
+function toCentre(row: any, index: number, origin: { latitude: number | null; longitude: number | null }): AhcCentre {
+    const d = row?.data ?? row ?? {};
+    const a = d.primary_address ?? {};
+    const parts = [
+        a.street1,
+        a.street2,
+        a.street3,
+        textOf(a.cityDisplayName) || a.city,
+        textOf(a.stateDisplayName) || a.state,
+        textOf(a.countryDisplayName) || a.country,
+    ].map(textOf).filter(Boolean);
+    // street2 often repeats the city ("Noida", "Noida"): show each part once.
+    const address = parts.filter((p, i) => parts.findIndex((q) => q.toLowerCase() === p.toLowerCase()) === i).join(', ');
+
+    const point: unknown[] = Array.isArray(d.location_coordinate?.coordinates) ? d.location_coordinate.coordinates : [];
+    const latitude = toCoord(a.latitude) ?? toCoord(point[1]);
+    const longitude = toCoord(a.longitude) ?? toCoord(point[0]);
+    const distance =
+        latitude !== null && longitude !== null && origin.latitude !== null && origin.longitude !== null
+            ? distanceKm(origin.latitude, origin.longitude, latitude, longitude)
+            : null;
+
+    return {
+        id: textOf(row?.id) || textOf(d.id) || 'centre-' + index,
+        name: pickText(d, 'name', 'center_name', 'centre_name') || 'Centre',
+        address,
+        latitude,
+        longitude,
+        distanceKm: distance,
+        raw: d,
+    };
+}
+
+/**
+ * Slots may come one per row or grouped under a `slots` array; both are
+ * flattened. Field names are best guesses — confirm against a live response.
+ */
+function toSlots(rows: any[], day?: Date): AhcSlot[] {
+    const items: any[] = rows.flatMap((row) => {
+        const d = row?.data ?? row;
+        if (Array.isArray(d)) return d;
+        if (Array.isArray(d?.slots)) return d.slots;
+        return [d];
+    });
+    const weekday = day ? day.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() : '';
+    return items
+        .filter((item) => item && typeof item === 'object')
+        // Centre slots list the weekdays they run on (`days`); drop the ones not on the picked day.
+        .filter((item) => !weekday || !Array.isArray(item.days) || !item.days.length ||
+            item.days.some((d: any) => [d?.id, d?.text, d].some((v) => textOf(typeof v === 'object' ? '' : v).toLowerCase() === weekday)))
+        .map((item, index) => {
+            const start = timeText(item, 'start_time', 'startTime', 'from_time', 'slot_start_time', 'event_start_time', 'slot_time', 'time');
+            const end = timeText(item, 'end_time', 'endTime', 'to_time', 'slot_end_time', 'event_end_time');
+            const status = pickText(item, 'status', 'slot_status').toLowerCase();
+            const available = !(
+                item.is_booked === true || item.available === false || item.is_available === false ||
+                status === 'booked' || status === 'unavailable' || status === 'blocked'
+            );
+            return {
+                // `slot_id` repeats across centre slots (all 1), and `id` is not guaranteed
+                // either, so the index keeps every slot distinct for selection and `track`.
+                id: (pickText(item, 'id', 'slot_id') || 'slot') + '-' + index,
+                label: pickText(item, 'slot_label', 'display_time', 'slot') || [start, end].filter(Boolean).join(' – ') || 'Slot ' + (index + 1),
+                available,
+                raw: item,
+            };
+        });
+}
+
+/** A time field as "9:00 AM": epoch ms is formatted, anything else is shown as sent. */
+function timeText(item: any, ...keys: string[]): string {
+    const value = pickText(item, ...keys);
+    if (/^\d{12,}$/.test(value)) {
+        return new Date(Number(value)).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    return value;
+}
+/** `day` at the local time of day of the epoch `ms`; null when `ms` is not a time. */
+function atTimeOfDay(day: Date, ms: unknown): number | null {
+    const time = new Date(Number(ms));
+    if (!day || !Number.isFinite(time.getTime())) return null;
+    const out = new Date(day);
+    out.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    return out.getTime();
+}
+
+function addTimeToDate(dateObj: any, timeString: any) {
+  const newDate = new Date(dateObj); // Clone original date to avoid mutation
+  let [time, modifier] = timeString.split(" ");
+  let [hours, minutes] = time.split(":").map(Number);
+
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  newDate.setHours(hours, minutes, 0, 0);
+  return newDate;
 }

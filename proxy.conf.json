@@ -53,5 +53,16 @@
         "referer": "https://habithealth.com",
         "origin": "https://habithealth.com"
     }
+  },
+  "/facility-management/api": {
+    "target": "https://api.habithealth.com",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "headers": {
+        "host": "api.habithealth.com",
+        "referer": "https://habithealth.com",
+        "origin": "https://habithealth.com"
+    }
   }
 }

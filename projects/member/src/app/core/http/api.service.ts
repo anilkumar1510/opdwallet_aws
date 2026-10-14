@@ -97,6 +97,19 @@ export class AppService {
             map((response: any) => response.body ?? response)
         );
     }
+    postCall(resorceName: string, applicationName: string, arg?: any, payload?: any, action?: any){
+        let url = applicationName+"/api/v1/"+resorceName;
+        var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        var params = "resource=" + encodedResourceData;
+        params += "&application=" + applicationName 
+        if(action){
+            params += "&action=" + action
+        }
+        var options = this.addXsrfToken(encodedResourceData, true);
+        return this._http.post(url, params, options).pipe(
+            map((response: any) => response.body ?? response)
+        );
+    }
 
     decryptText(encryptedCipherText: string, key: any) {
     //    const key = this.getCurrentSessionData('encryptKey');
@@ -111,7 +124,7 @@ export class AppService {
                 mode: CryptoJS.mode.CBC,
                 padding: CryptoJS.pad.Pkcs7
             });
-            return decryptedData.toString(CryptoJS.enc.Utf8);
+            return decryptedData.toString(CryptoJS.enc.Utf8);   
         } catch (e) {
             console.error(e);
             return encryptedCipherText;
