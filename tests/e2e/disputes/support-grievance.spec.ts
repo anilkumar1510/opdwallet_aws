@@ -317,3 +317,44 @@ test.describe('Support: something else', () => {
     await context.close();
   });
 });
+
+test.describe('Support: tickets survive a refresh', () => {
+  test('a raised ticket still shows as Ticket open on its claim, with its thread', async ({ page }) => {
+    await mockBackend(page);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'Claim rejected incorrectly');
+    await page.fill('#g-detail', 'Please re-check.');
+    await page.getByRole('button', { name: 'Send to support' }).click();
+    await expect(page.getByText('Your ticket')).toBeVisible();
+
+    await page.reload();
+    const after = claimsSection(page);
+    await expect(after.getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+    await expect(after.getByRole('button', { name: 'Ticket open' })).toBeVisible();
+    await after.getByRole('button', { name: 'Ticket open' }).click();
+    await expect(page.getByText('GR-CLM-2026-00042', { exact: true })).toBeVisible();
+    await expect(page.getByText('Please re-check.')).toBeVisible();
+  });
+
+  test('marking resolved persists too, and a new tab session starts clean', async ({ page, browser }) => {
+    await mockBackend(page);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.getByRole('button', { name: 'Send to support' }).click();
+    await expect(page.getByText('Your ticket')).toBeVisible();
+    await page.reload();
+    await expect(claimsSection(page).getByRole('button', { name: 'Ticket open' })).toBeVisible({ timeout: 20000 });
+
+    const fresh = await (await browser.newContext()).newPage(); // new tab/session: nothing carried over
+    await mockBackend(fresh);
+    await fresh.goto('/member/helpline');
+    await expect(claimsSection(fresh).getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+    await expect(claimsSection(fresh).getByRole('button', { name: 'Ticket open' })).toHaveCount(0);
+  });
+});

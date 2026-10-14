@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -414,7 +414,8 @@ export class HelplinePage {
   private readonly claimsFetched = signal(false);
   protected readonly claimsLoading = computed(() => !this.claimsFetched() && this.claimOrders().length === 0);
   private readonly everyOrder = computed(() => [...this.claimOrders(), ...this.orders()]);
-  private readonly tickets = signal<SupportTicket[]>(SEED_TICKETS.map(autoClose));
+  /** Demo tickets, plus the ones raised in this browser tab (see `loadSaved`). */
+  private readonly tickets = signal<SupportTicket[]>([...SEED_TICKETS.map(autoClose), ...loadSaved()]);
 
   protected readonly view = signal<View>('home');
   protected readonly orderId = signal<string | null>(null);
@@ -472,6 +473,8 @@ export class HelplinePage {
   });
 
   constructor() {
+    // Until a ticket-list API exists, tickets raised here survive a refresh.
+    effect(() => saveTickets(this.tickets()));
     // Same call, same first page (20 newest), as the Claims page.
     void this.claimsStore.getClimListData();
     setTimeout(() => this.claimsFetched.set(true), 4000);
@@ -812,4 +815,36 @@ function toClaimOrder(row: any): SupportOrder {
     paidByMember: bill,
     invoiceLines: [],
   };
+}
+
+// ── Ticket persistence (stopgap) ──────────────────────────────────────────
+// There is no API to read tickets back yet, so a refresh would drop a ticket the
+// member has just raised. Until there is, tickets raised in this tab are kept in
+// sessionStorage: it survives a refresh, and is cleared when the tab is closed,
+// so nothing lingers on a shared computer. Replace with the list API.
+
+const TICKETS_KEY = 'opd.support.tickets.v1';
+const SEED_TICKET_IDS = new Set(SEED_TICKETS.map((t) => t.id));
+
+function saveTickets(all: SupportTicket[]): void {
+  try {
+    sessionStorage.setItem(TICKETS_KEY, JSON.stringify(all.filter((t) => !SEED_TICKET_IDS.has(t.id))));
+  } catch {
+    // Storage blocked or full: the page still works, tickets just do not survive a refresh.
+  }
+}
+
+function loadSaved(): SupportTicket[] {
+  try {
+    const raw = sessionStorage.getItem(TICKETS_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as any[]).map((t) => ({
+      ...t,
+      createdAt: new Date(t.createdAt),
+      closedAt: t.closedAt ? new Date(t.closedAt) : undefined,
+      messages: (t.messages ?? []).map((m: any) => ({ ...m, at: new Date(m.at) })),
+    }));
+  } catch {
+    return [];
+  }
 }

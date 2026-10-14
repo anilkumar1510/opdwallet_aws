@@ -135,7 +135,10 @@ the static demo data until the backend and Twenty support them.
 
 **Still placeholder (in memory, lost on reload):** reading tickets and chat
 history back, member reply, mark resolved, and the executive's replies. Their
-APIs have not been shared. Tickets raised in this session are held in the page.
+APIs have not been shared. Until then, tickets raised in a browser tab are kept
+in `sessionStorage` (`opd.support.tickets.v1`) so they survive a refresh; they
+are cleared when the tab closes and are not shared across devices. Replace with
+the ticket-list API.
 
 **To confirm with backend:** signing pattern (`enc&action=submit` assumed);
 `claim_id` format (`OPD-2026-xxxxx`); `benefit_category` values (derived from the
