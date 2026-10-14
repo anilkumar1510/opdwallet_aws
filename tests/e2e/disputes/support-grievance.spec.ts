@@ -38,7 +38,10 @@ interface Mocks {
   uploads: number;
 }
 
-async function mockBackend(page: Page, opts: { disputeReply?: object } = {}): Promise<Mocks> {
+async function mockBackend(
+  page: Page,
+  opts: { disputeReply?: object; claims?: object[]; disputeStatus?: number; uploadReply?: object; disputeDelayMs?: number } = {},
+): Promise<Mocks> {
   const mocks: Mocks = { disputeBodies: [], disputeHeaders: [], uploads: 0 };
   const json = (body: object) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 
@@ -47,15 +50,17 @@ async function mockBackend(page: Page, opts: { disputeReply?: object } = {}): Pr
     if (route.request().method() === 'POST' && url.includes('/habit-opd/api/v1/dispute')) {
       mocks.disputeBodies.push(route.request().postData() ?? '');
       mocks.disputeHeaders.push(route.request().headers());
+      if (opts.disputeDelayMs) await new Promise((r) => setTimeout(r, opts.disputeDelayMs));
+      if (opts.disputeStatus) return route.fulfill({ status: opts.disputeStatus, body: 'boom' });
       return route.fulfill(json(opts.disputeReply ?? { errCode: 0, resource: [{ ticket_id: 'GR-CLM-2026-00042' }] }));
     }
-    if (url.includes('GET_CLAIMS_BY_USER')) return route.fulfill(json({ errCode: 0, resource: CLAIMS }));
+    if (url.includes('GET_CLAIMS_BY_USER')) return route.fulfill(json({ errCode: 0, resource: opts.claims ?? CLAIMS }));
     if (url.includes('valueset')) return route.fulfill(json({ errCode: 0, resource: [] }));
     return route.fulfill(json({ errCode: -1, message: 'not mocked' }));
   });
   await page.route('**/dms/api/v1/emrImage', async (route) => {
     mocks.uploads += 1;
-    await route.fulfill(json({ errCode: 0, resource: [{ document_id: `doc-${mocks.uploads}`, file_name: 'bill.pdf' }] }));
+    await route.fulfill(json(opts.uploadReply ?? { errCode: 0, resource: [{ document_id: `doc-${mocks.uploads}`, file_name: 'bill.pdf' }] }));
   });
   return mocks;
 }
@@ -180,5 +185,98 @@ test.describe('Support: tickets cannot be reopened', () => {
     await expect(page.getByRole('button', { name: /reopen/i })).toHaveCount(0);
     await expect(page.getByText(/reopen/i)).toHaveCount(0);
     await expect(page.getByText('Want to take it further?')).toBeVisible();
+  });
+});
+
+test.describe('Support: edge cases', () => {
+  const open = async (page: Page) => {
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+    return section;
+  };
+
+  test('a claim older than 3 months cannot be raised and points to the phone', async ({ page }) => {
+    await mockBackend(page, { claims: [{ ...claimRow(0, 'REJECTED', 'Rejected', true), treatment_date: Date.now() - 120 * DAY }] });
+    const section = await open(page);
+    await section.getByText('OPD-2026-00354').click();
+    await expect(page.getByText(/window closed on/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Raise a grievance' })).toHaveCount(0);
+  });
+
+  test('a claim with a ticket opens the ticket instead of a second form', async ({ page }) => {
+    const mocks = await mockBackend(page);
+    const section = await open(page);
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.getByRole('button', { name: 'Send to support' }).click();
+    await expect(page.getByText('Your ticket')).toBeVisible();
+    await page.getByRole('button', { name: 'OPD-2026-00354' }).click();
+    await expect(page.getByText('You already have a ticket on this claim')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Raise a grievance' })).toHaveCount(0);
+    expect(mocks.disputeBodies).toHaveLength(1);
+  });
+
+  test('a double click on Send submits once', async ({ page }) => {
+    const mocks = await mockBackend(page, { disputeDelayMs: 600 });
+    const section = await open(page);
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    const send = page.getByRole('button', { name: /Send to support/ });
+    await send.dblclick();
+    await expect(page.getByText('Your ticket')).toBeVisible();
+    expect(mocks.disputeBodies).toHaveLength(1);
+  });
+
+  test('an HTTP 500 from the dispute API shows an error and keeps the form', async ({ page }) => {
+    await mockBackend(page, { disputeStatus: 500 });
+    const section = await open(page);
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.getByRole('button', { name: 'Send to support' }).click();
+    await expect(page.getByRole('alert')).toContainText('could not send');
+    await expect(page.getByRole('heading', { name: 'Raise a grievance' })).toBeVisible();
+    await expect(page.getByText('Your ticket')).toHaveCount(0);
+  });
+
+  test('a failed upload is reported and its id is not sent', async ({ page }) => {
+    const mocks = await mockBackend(page, { uploadReply: { errCode: -1, message: 'Unsupported file' } });
+    const section = await open(page);
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.setInputFiles('#g-docs', { name: 'bill.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF') });
+    await expect(page.getByText('bill.pdf · failed')).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText('Unsupported file');
+    await page.getByRole('button', { name: 'Send to support' }).click();
+    await expect(page.getByText('Your ticket')).toBeVisible();
+    expect(decode(mocks.disputeBodies[0])).not.toHaveProperty('document_ids');
+  });
+
+  test('a file over 5 MB is rejected without calling DMS, and a document can be removed', async ({ page }) => {
+    const mocks = await mockBackend(page);
+    const section = await open(page);
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.setInputFiles('#g-docs', { name: 'huge.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(5 * 1024 * 1024 + 1) });
+    await expect(page.getByRole('alert')).toContainText('larger than 5 MB');
+    expect(mocks.uploads).toBe(0);
+    await page.getByRole('button', { name: 'Remove huge.pdf' }).click();
+    await expect(page.getByRole('button', { name: 'Remove huge.pdf' })).toHaveCount(0);
+  });
+
+  test('back from the form keeps nothing half-sent; a fresh form starts empty', async ({ page }) => {
+    const mocks = await mockBackend(page);
+    const section = await open(page);
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.getByRole('button', { name: 'Back', exact: true }).last().click();
+    await section.getByRole('button', { name: 'Ask for help' }).first().click();
+    await expect(page.locator('#g-reason')).toHaveValue('');
+    expect(mocks.disputeBodies).toHaveLength(0);
+  });
+
+  test('no claims shows the empty state', async ({ page }) => {
+    await mockBackend(page, { claims: [] });
+    await page.goto('/member/helpline');
+    await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
   });
 });
