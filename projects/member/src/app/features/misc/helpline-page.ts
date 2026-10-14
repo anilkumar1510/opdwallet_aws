@@ -6,7 +6,6 @@ import {
   ClosedBy,
   DEMO_EXECUTIVE,
   RAISE_WINDOW_MONTHS,
-  REOPEN_WINDOW_MONTHS,
   SEED_ORDERS,
   SEED_TICKETS,
   SUPPORT_PHONE,
@@ -14,7 +13,6 @@ import {
   SupportOrder,
   SupportTicket,
   TicketMessage,
-  addMonths,
   raiseCutoff,
   reasonsFor,
 } from '../support/grievance.data';
@@ -31,8 +29,8 @@ import {
  * Routes in: claims that need help (fast path straight to a reason), every
  * service used (browse → order detail → raise), and something else (no ticket,
  * contact details). A raise checks the raise window and any open ticket on the
- * order; a ticket can be replied to, marked resolved (final), or reopened inside
- * the reopen window; a closed ticket offers the support phone line.
+ * order; a ticket can be replied to or marked resolved; a closed ticket cannot
+ * be reopened by the member and offers the support phone line instead.
  */
 
 type View = 'home' | 'order' | 'raise' | 'ticket';
@@ -279,19 +277,13 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                       <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim()" (click)="sendReply(t)">Send reply</button>
                       <button type="button" class="min-h-touch flex-1 rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
                     </div>
-                    <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good — it can't be reopened.</p>
+                    <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket.</p>
                   }
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
                       <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
                     } @else {
                       <p class="text-sm text-ink-700">{{ closedText(t.closedBy!) }} on {{ date(t.closedAt!) }}.</p>
-                      @if (canReopen(t)) {
-                        <p class="mt-1 text-xs text-ink-500">Not sorted? You can reopen it until {{ date(reopenUntil(t)) }}.</p>
-                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="reopen(t)">Reopen ticket</button>
-                      } @else {
-                        <p class="mt-1 text-xs text-ink-500">The reopen window ({{ reopenMonths }} month after closing) ended on {{ date(reopenUntil(t)) }}.</p>
-                      }
                       <p class="mt-3 rounded-xl bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
                         Want to take it further? Call support on <a [href]="'tel:' + phone" class="font-semibold underline">{{ phone }}</a> and quote {{ t.id }}.
                       </p>
@@ -369,7 +361,6 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
 export class HelplinePage {
   protected readonly phone = SUPPORT_PHONE;
   protected readonly raiseMonths = RAISE_WINDOW_MONTHS;
-  protected readonly reopenMonths = REOPEN_WINDOW_MONTHS;
 
   private readonly orders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
   private readonly tickets = signal<SupportTicket[]>(SEED_TICKETS.map(autoClose));
@@ -498,15 +489,6 @@ export class HelplinePage {
     return t.messages.some((m) => m.from === 'support');
   }
 
-  protected reopenUntil(t: SupportTicket): Date {
-    return addMonths(t.closedAt ?? new Date(), REOPEN_WINDOW_MONTHS);
-  }
-
-  /** Not after Mark resolved; otherwise within the reopen window of the close. */
-  protected canReopen(t: SupportTicket): boolean {
-    return t.state === 'closed' && t.closedBy !== 'member' && Date.now() <= this.reopenUntil(t).getTime();
-  }
-
   protected closedText(by: ClosedBy): string {
     return by === 'auto'
       ? `Closed automatically, ${RAISE_WINDOW_MONTHS} months from the order date,`
@@ -608,12 +590,6 @@ export class HelplinePage {
     this.notice.set('Thanks — the ticket is closed.');
   }
 
-  protected reopen(t: SupportTicket): void {
-    if (!this.canReopen(t)) return;
-    this.update(t, { state: 'awaiting_support', closedAt: undefined, closedBy: undefined }, { from: 'system', text: 'Reopened by you', at: new Date() });
-    this.notice.set('Ticket reopened. The support team will pick it up again.');
-  }
-
   /** DUMMY — stands in for the executive's Respond. */
   protected simulateRespond(t: SupportTicket): void {
     this.update(t, { state: 'awaiting_member' }, {
@@ -628,7 +604,7 @@ export class HelplinePage {
     const now = new Date();
     this.update(t, { state: 'closed', closedAt: now, closedBy: 'support' }, {
       from: 'support', author: DEMO_EXECUTIVE, at: now,
-      text: "We've sorted this with the provider and adjusted your wallet balance. Closing the ticket — reopen it if anything is still wrong.",
+      text: "We've sorted this with the provider and adjusted your wallet balance. Closing the ticket — call us if anything is still wrong.",
     });
     this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, messages: [...x.messages, { from: 'system', text: 'Resolved and closed by support', at: now }] } : x)));
     this.notice.set('Support resolved and closed the ticket — you were notified in the app, on WhatsApp and by email.');

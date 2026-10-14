@@ -3,8 +3,9 @@
  *
  * Stands in for the grievance APIs (orders the member has used, tickets and
  * their threads) and for the centrally managed Grievance Configuration: the
- * reason list per service line, the raise window and the reopen window. Until
- * those exist, the values below are what the Support page reads.
+ * reason list per service line and the raise window. Until
+ * those exist, the values below are what the Support page reads. Members
+ * cannot reopen a closed ticket; the support phone line is the way back.
  */
 
 export type ServiceLine =
@@ -68,8 +69,6 @@ export interface SupportTicket {
 
 /** How long after the order date a grievance can be raised; also the auto-close cutoff. */
 export const RAISE_WINDOW_MONTHS = 3;
-/** How long after a ticket closes it can still be reopened. Not after Mark resolved. */
-export const REOPEN_WINDOW_MONTHS = 1;
 /** PLACEHOLDER — the real support line is not decided yet. */
 export const SUPPORT_PHONE = '1800-000-0000';
 
@@ -311,7 +310,7 @@ export const SEED_TICKETS: SupportTicket[] = [
       { from: 'support', author: R, text: 'Thanks for flagging this. HbA1c and TSH are uploaded; the lab has re-run the lipid profile. Could you confirm you fasted for 10–12 hours before the sample? The lab needs this to release the report.', at: daysAgo(5, 15, 20) },
     ],
   },
-  // Closed by support — inside the reopen window.
+  // Closed by support — recently.
   {
     id: 'TKT-10355', orderId: 'ORD-23990', reason: 'Cashless letter not accepted at the clinic',
     detail: 'The clinic asked me to pay ₹600 at the counter even though I had the cashless letter.',
@@ -324,7 +323,7 @@ export const SEED_TICKETS: SupportTicket[] = [
       { from: 'system', text: 'Resolved and closed by support', at: daysAgo(4, 17, 45) },
     ],
   },
-  // Closed by support — reopen window has passed.
+  // Closed by support — some weeks ago.
   {
     id: 'TKT-10201', orderId: 'ORD-23910', reason: 'Approved amount incorrect',
     detail: 'Only ₹1,200 was approved for scaling though the policy covers it fully.',
@@ -351,7 +350,7 @@ export const SEED_TICKETS: SupportTicket[] = [
   },
 ];
 
-// Auto-closed — still open when the raise window ran out; reopenable for a month.
+// Auto-closed — still open when the raise window ran out.
 {
   const o = SEED_ORDERS.find((x) => x.id === 'ORD-23620')!;
   SEED_TICKETS.push({
