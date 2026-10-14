@@ -185,3 +185,18 @@ backticks in an inline template, the heredoc newline collapse, and the wrong
 envelope shapes. **The generator is the weak link, not the code being
 generated**, and every one of these presented first as a failing assertion
 against working software.
+
+
+## Part 4 — grievances are real for claims (2026-10-14)
+
+The Support page now saves **claim** grievances: the claims listing feeds
+"Claims that need your help", the raise form takes optional documents (DMS), and
+"Send to support" calls `POST /habit-opd/api/v1/dispute` (`action=submit`). The
+member cannot reopen a closed ticket and claim detail has no payment section.
+
+Still placeholder: reading tickets / chat history, reply, mark resolved and the
+service-line (non-claim) grievances. Tickets raised in a tab are kept in
+`sessionStorage` so a refresh does not drop them.
+
+Spec: `openspec/changes/2026-10-14-dispute-integration/`. API notes:
+`PLACEHOLDER-APIS.md` section 7. Browser tests: `tests/e2e/disputes/`.
