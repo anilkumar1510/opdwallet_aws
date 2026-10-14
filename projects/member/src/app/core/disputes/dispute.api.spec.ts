@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FamilyStore } from '../family/family.store';
 import { AppService } from '../http/api.service';
+import { SessionStore } from '../session/session.store';
 import { DisputeApi, MAX_DOCUMENT_BYTES, benefitCategoryOf, encodeResource } from './dispute.api';
 
 const holder = { fullName: 'Priya Sample', relationship: 'SELF', isPrimary: true };
@@ -17,12 +18,14 @@ const decode = (body: string) => {
 
 describe('DisputeApi', () => {
   let api: DisputeApi;
+  let activeMember: () => unknown;
   let post: ReturnType<typeof vi.fn>;
   let addXsrfToken: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     post = vi.fn();
+    activeMember = () => patient;
     addXsrfToken = vi.fn().mockReturnValue({ headers: {}, responseType: 'text', observe: 'response' });
     TestBed.configureTestingModule({
       providers: [
@@ -32,7 +35,8 @@ describe('DisputeApi', () => {
           provide: AppService,
           useValue: { addXsrfToken, getXsrfToken: () => 'sig', getUserTimezone: () => 'Asia/Kolkata', getCurrentTime: () => '1' },
         },
-        { provide: FamilyStore, useValue: { activeMember: () => patient, family: () => [holder, patient] } },
+        { provide: FamilyStore, useValue: { activeMember: () => activeMember(), family: () => (activeMember() ? [holder, patient] : []) } },
+        { provide: SessionStore, useValue: { member: () => ({ fullName: 'Session Sample', relationship: 'SELF', isPrimary: true }) } },
       ],
     });
     api = TestBed.inject(DisputeApi);
@@ -67,6 +71,13 @@ describe('DisputeApi', () => {
       selected_reason: 'Claim rejected incorrectly',
       dispute_status: 'OPEN',
     });
+  });
+
+  it('falls back to the signed-in member when the family list has not loaded', async () => {
+    activeMember = () => null;
+    post.mockReturnValue(text({ errCode: 0 }));
+    await api.submit(input);
+    expect(decode(post.mock.calls[0][1])).toMatchObject({ member_name: 'Session Sample', patient_name: 'Session Sample', relation_to_member: 'SELF' });
   });
 
   it('adds description and document ids only when present', async () => {

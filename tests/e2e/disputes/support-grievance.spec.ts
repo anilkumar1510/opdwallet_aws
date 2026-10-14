@@ -123,7 +123,7 @@ test.describe('Support: raise a grievance on a claim', () => {
 
     await expect(page.getByText('Your ticket')).toBeVisible();
     await expect(page.getByText('GR-CLM-2026-00042').first()).toBeVisible();
-    await expect(page.getByText('Static demo')).toHaveCount(0); // real claim: data is saved
+    await expect(page.getByText('Static demo')).toHaveCount(0);
     await expect(page.getByText("Demo — support's reply")).toHaveCount(0); // support answers from the CRM, not from here
 
     expect(mocks.uploads).toBe(1);

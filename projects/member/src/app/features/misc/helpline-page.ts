@@ -78,12 +78,6 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
       </header>
 
       <div class="mx-auto max-w-[900px] px-5 pb-32 pt-6 lg:px-8 lg:pb-12">
-        @if (!liveContext()) {
-          <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
-            🧪 Static demo — no data is saved. Support's replies are simulated from the ticket screen.
-          </p>
-        }
-
         @if (notice(); as n) {
           <p class="mb-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-success-700" role="status">{{ n }}</p>
         }
@@ -486,11 +480,6 @@ export class HelplinePage {
     return this.claimOrders().some((c) => c.id === t.orderId);
   }
 
-  /** Hides the static-demo banner where the screen is about a real claim. */
-  protected readonly liveContext = computed(() => {
-    const o = this.order();
-    return this.view() !== 'home' && !!o && this.isLive(o);
-  });
 
   protected heading(): string {
     switch (this.view()) {
@@ -784,7 +773,7 @@ function toClaimOrder(row: any): SupportOrder {
     type: 'Reimbursement',
     provider: String(row?.provider ?? ''),
     placedAt: toDate(row?.treatment_date ?? row?.submitted_at),
-    progress: row?.status?.isFinal ? 'Completed' : 'In Progress',
+    progress: row?.status?.isFinal || /APPROV|PAID|PAYMENT_(DONE|COMPLETED)|REJECT|CLOSED|CANCEL/.test(code) ? 'Completed' : 'In Progress',
     claimFlag: flag,
     gross: bill,
     discount: 0,

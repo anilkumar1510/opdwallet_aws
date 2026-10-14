@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { FamilyStore } from '../family/family.store';
 import { AppService } from '../http/api.service';
+import { SessionStore } from '../session/session.store';
 
 /** habit-opd dispute endpoint; the dev proxy and `apiBaseUrl` decide the host. */
 export const DISPUTE_API = {
@@ -72,10 +73,13 @@ export class DisputeApi {
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
   private readonly family = inject(FamilyStore);
+  private readonly session = inject(SessionStore);
 
   buildPayload(input: DisputeInput): DisputeSubmitPayload {
-    const patient = this.family.activeMember();
-    const holder = this.family.family().find((m) => m.isPrimary) ?? patient;
+    // The family list can fail to load; the signed-in member is the fallback so a
+    // grievance is never sent without a name.
+    const patient = this.family.activeMember() ?? this.session.member();
+    const holder = this.family.family().find((m) => m.isPrimary) ?? this.session.member() ?? patient;
     const description = input.detail.trim();
     return {
       claim_id: input.claimId,
