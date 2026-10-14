@@ -1,324 +1,670 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-import { BookingsStore } from '../../core/bookings/bookings.store';
-import { Booking } from '../../core/bookings/booking.model';
-import { Claim } from '../../core/claims/claim.model';
-import { ClaimsStore } from '../../core/claims/claims.store';
-import { formatMoney } from '../../core/domain/money';
-import { Disclosure } from '../../shared/ui/disclosure';
-import { Icon } from '../../shared/ui/icon';
-import { SupportRequest } from './support-request';
-
-const SUPPORT_EMAIL = 'support@opdwallet.com';
+import {
+  ClosedBy,
+  DEMO_EXECUTIVE,
+  RAISE_WINDOW_MONTHS,
+  REOPEN_WINDOW_MONTHS,
+  SEED_ORDERS,
+  SEED_TICKETS,
+  SUPPORT_PHONE,
+  ServiceLine,
+  SupportOrder,
+  SupportTicket,
+  TicketMessage,
+  addMonths,
+  raiseCutoff,
+  reasonsFor,
+} from '../support/grievance.data';
 
 /**
- * Support, at `/member/helpline` — reached from the Support quick link.
+ * Support, at `/member/helpline` — the grievance redressal journey, member side.
  *
- * It used to be a bare "Coming Soon" panel with an email address. A member with a
- * rejected claim or a service that went wrong had to compose the whole story
- * themselves, from memory, including the reference the support desk would ask for
- * first.
+ * DUMMY / STATIC — there is no support-ticket API yet, so orders, tickets and
+ * the grievance configuration come from features/support/grievance.data.ts and
+ * nothing is saved. Support's side (respond / resolve and close) is simulated
+ * from the ticket screen; the admin queue, assignment and configuration live in
+ * the operations portal.
  *
- * Two lists now sit above the contact block:
- *   - **claims that need help** — the ones the API says are stuck on the member:
- *     DOCUMENTS_REQUIRED, RESUBMISSION_REQUIRED and REJECTED
- *   - **services already used** — completed bookings and orders, most recent first
- *
- * **There is no support-ticket API**, in this codebase or either reference — no
- * controller matches support/ticket/help/grievance. So "Ask for help" is a
- * `mailto:` with the reference, the status and the date already filled in. That
- * is the honest ceiling of what the portal can do today: it cannot open a ticket,
- * but it can stop the member retyping what the desk needs.
- *
- * Both lists come from stores the portal already loads. No new endpoint.
+ * Routes in: claims that need help (fast path straight to a reason), every
+ * service used (browse → order detail → raise), and something else (no ticket,
+ * contact details). A raise checks the raise window and any open ticket on the
+ * order; a ticket can be replied to, marked resolved (final), or reopened inside
+ * the reopen window; a closed ticket offers the support phone line.
  */
+
+type View = 'home' | 'order' | 'raise' | 'ticket';
+type GrievanceStatus = 'none' | 'open' | 'response' | 'closed';
+
+const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const DATE_TIME = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+
+const STATUS_LABEL: Record<GrievanceStatus, string> = {
+  none: 'Ask for help',
+  open: 'Ticket open',
+  response: 'Response received',
+  closed: 'Ticket closed',
+};
+const STATUS_CLASS: Record<GrievanceStatus, string> = {
+  none: 'bg-[#EEF3FF] text-[#0F5FDC]',
+  open: 'bg-warning-50 text-warning-700',
+  response: 'bg-[#F0FDF4] text-success-700',
+  closed: 'bg-[#F2F4F8] text-ink-500',
+};
+
 @Component({
   selector: 'opd-helpline-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, SupportRequest, Disclosure],
+  imports: [RouterLink, NgTemplateOutlet],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
-      <header class="sticky top-0 z-10 border-b border-surface-border bg-white shadow-sm">
-        <div class="mx-auto flex max-w-[1240px] items-center gap-4 px-5 py-4 lg:px-8">
-          <a
-            routerLink="/member"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#0E51A2] hover:bg-gray-100"
-            aria-label="Back to home"
-            >&larr;</a
-          >
+      <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
+        <div class="mx-auto flex max-w-[900px] items-center gap-4 px-5 py-5 lg:px-8">
+          @if (view() === 'home') {
+            <a routerLink="/member" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/10 lg:text-[#034DA2] lg:hover:bg-blue-50" aria-label="Back to home">&larr;</a>
+          } @else {
+            <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/10 lg:text-[#034DA2] lg:hover:bg-blue-50" aria-label="Back" (click)="back()">&larr;</button>
+          }
           <div class="min-w-0">
-            <h1 class="text-lg font-bold text-[#0E51A2] lg:text-xl">Support</h1>
-            <p class="truncate text-xs text-ink-600 lg:text-sm">Get help with a claim or a service</p>
+            <h1 class="text-[18px] font-medium leading-[1.2] text-white lg:text-2xl lg:font-bold lg:text-[#034DA2]">{{ heading() }}</h1>
+            <p class="truncate text-[12px] leading-[1.2] text-white/80 lg:text-sm lg:text-ink-500">{{ subheading() }}</p>
           </div>
         </div>
       </header>
 
-      <div class="mx-auto max-w-[720px] px-5 py-6 lg:px-8 lg:py-10">
-        <!-- Claims the API says are waiting on the MEMBER. Anything under review
-             is waiting on the assessor and is not the member's to chase. -->
-        <section class="rounded-2xl border border-surface-border bg-white p-5 shadow-sm">
-          @if (claims.loading()) {
-            <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
-            <p class="mt-2 text-sm text-ink-500">Checking your claims&hellip;</p>
-          } 
-          <!-- @else if (needHelp().length) { -->
-            <!-- Open by default: this is the actionable list, and something is in
-                 it. A collapsed section hiding work the member has to do would be
-                 the wrong default. -->
-            <!-- <opd-disclosure
-              title="Claims that need your help"
-              [count]="needHelp().length"
-              tone="#0E51A2"
-              [startOpen]="true"
-            >
-            <p class="text-sm text-ink-600">
-              These are waiting on something from you, or were not approved.
-            </p>
-            <ul class="mt-3 space-y-2">
-              @for (claim of needHelp(); track claim.id) {
-                <li class="rounded-xl border border-surface-border p-3">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium text-ink-900">
-                        {{ claim.reference }} · {{ claim.categoryLabel }}
-                      </p>
-                      <p class="mt-0.5 text-xs text-ink-500">
-                        {{ claim.status.label }} · {{ money(claim.billAmount) }}
-                        @if (claim.providerName) {
-                          · {{ claim.providerName }}
-                        }
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      class="shrink-0 rounded-lg bg-[#0F5FDC] px-3 py-1.5 text-xs font-semibold text-white"
-                      (click)="toggle('claim:' + claim.id)"
-                    >
-                      {{ open() === 'claim:' + claim.id ? 'Close' : 'Ask for help' }}
-                    </button>
-                  </div>
-                  <a
-                    class="mt-2 inline-block text-xs font-medium text-[#0F5FDC] underline underline-offset-2"
-                    [routerLink]="['/member/claims', claim.id]"
-                    >View claim</a
-                  >
-                  @if (open() === 'claim:' + claim.id) {
-                    <opd-support-request
-                      [subject]="'Help with claim ' + claim.reference"
-                      [context]="claimContext(claim)"
-                      [topics]="claimTopics(claim)"
-                      (cancelled)="open.set(null)"
-                    />
-                  }
-                </li>
-              }
-            </ul>
-            </opd-disclosure>
-          } -->
-           @else {
-            <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
-            <p class="mt-2 text-sm text-ink-600">
-              Nothing needs your attention. Claims still being assessed are with our team, not
-              waiting on you.
-            </p>
-          }
-        </section>
+      <div class="mx-auto max-w-[900px] px-5 pb-32 pt-6 lg:px-8 lg:pb-12">
+        <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
+          🧪 Static demo — no data is saved. Support's replies are simulated from the ticket screen.
+        </p>
 
-        <!-- Past services, so a member raising an issue can point at the exact
-             one instead of describing it. -->
-        <section class="mt-5 rounded-2xl border border-surface-border bg-white p-5 shadow-sm">
-          @if (bookings.loading()) {
-            <h2 class="text-base font-semibold text-[#0E51A2]">Services you have used</h2>
-            <p class="mt-2 text-sm text-ink-500">Loading your history&hellip;</p>
-          } @else if (availed().length) {
-            <!-- Closed by default: ten rows of history nobody has asked about yet
-                 would push the actionable list off the screen. -->
-            <opd-disclosure
-              title="Services you have used"
-              [count]="availed().length"
-              tone="#0E51A2"
-            >
-            <p class="text-sm text-ink-600">Pick the one you need help with.</p>
-            <ul class="mt-3 space-y-2">
-              @for (booking of availed(); track booking.id) {
-                <li class="rounded-xl border border-surface-border p-3">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium text-ink-900">{{ booking.title }}</p>
-                      <p class="mt-0.5 text-xs text-ink-500">
-                        {{ booking.kindLabel }} · {{ booking.reference }}
-                        @if (when(booking); as date) {
-                          · {{ date }}
-                        }
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      class="shrink-0 rounded-lg bg-[#0F5FDC] px-3 py-1.5 text-xs font-semibold text-white"
-                      (click)="toggle('svc:' + booking.id)"
-                    >
-                      {{ open() === 'svc:' + booking.id ? 'Close' : 'Ask for help' }}
-                    </button>
-                  </div>
-                  @if (open() === 'svc:' + booking.id) {
-                    <opd-support-request
-                      [subject]="'Help with ' + booking.kindLabel + ' ' + booking.reference"
-                      [context]="bookingContext(booking)"
-                      [topics]="SERVICE_TOPICS"
-                      (cancelled)="open.set(null)"
-                    />
-                  }
-                </li>
-              }
-            </ul>
-            </opd-disclosure>
-          } @else {
-            <h2 class="text-base font-semibold text-[#0E51A2]">Services you have used</h2>
-            <p class="mt-2 text-sm text-ink-600">
-              You have not used any services yet. Once you do, they will be listed here so you can
-              raise an issue against one.
-            </p>
-          }
-        </section>
+        @if (notice(); as n) {
+          <p class="mb-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-success-700" role="status">{{ n }}</p>
+        }
 
-        <section
-          class="mt-5 rounded-2xl border-2 border-[#86ACD8] p-6 text-center"
-          style="background: linear-gradient(135deg, rgba(224,233,255,0.48) 0%, rgba(200,216,255,0.48) 100%)"
-        >
-          <span
-            class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-[#0F5FDC]"
-            style="background: linear-gradient(180deg,#CDDDFE 0%,#E4EBFE 100%); border: 1px solid #A4BFFE7A"
-            aria-hidden="true"
-          >
-            <opd-icon name="helpline" [size]="36" />
-          </span>
-          <h2 class="mb-2 text-lg font-bold text-[#0E51A2]">Something else?</h2>
-          <!-- The 24/7 phone line is still not built. Saying so plainly beats a
-               "Coming Soon" banner over the whole screen, which is what this page
-               used to be. -->
-          <p class="mx-auto mb-4 max-w-md text-sm text-ink-700">
-            Our 24/7 helpline is not available yet. Reach us through your corporate HR, or email
-            <a class="font-semibold text-[#0F5FDC] hover:underline" [href]="generalMail()">{{
-              email
-            }}</a
-            >.
-          </p>
-        </section>
+        @switch (view()) {
+          @case ('home') {
+            <!-- ── Support home: three routes in ─────────────────────────────── -->
+            <!-- 1 · Claims that need your help (fast path) -->
+            <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+              <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
+              <p class="mt-0.5 text-xs text-ink-500">Claims waiting on you. Ask for help and go straight to the reason.</p>
+              @if (flaggedClaims().length) {
+                <ul class="mt-3 divide-y divide-[#EDF0F7]">
+                  @for (o of shownClaims(); track o.id) {
+                    <li>
+                      <ng-container *ngTemplateOutlet="row; context: { $implicit: o, fast: true }" />
+                    </li>
+                  }
+                </ul>
+                @if (flaggedClaims().length > claimsShown()) {
+                  <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700" (click)="claimsShown.set(claimsShown() + pageSize)">Load more</button>
+                }
+              } @else {
+                <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-500">No claim needs your attention right now.</p>
+              }
+            </section>
+
+            <!-- 2 · Services you have used (browse path) -->
+            <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+              <h2 class="text-base font-semibold text-[#0E51A2]">Services you have used</h2>
+              <p class="mt-0.5 text-xs text-ink-500">Every consultation, order, procedure and claim — newest first. Pick one to see its detail and raise a grievance.</p>
+              <!-- Service buckets. None picked shows everything; tap again to clear. -->
+              <div class="scrollbar-hide -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1">
+                @for (b of buckets(); track b) {
+                  <button type="button" class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium" [class.border-[#0F5FDC]]="bucket() === b" [class.bg-[#0F5FDC]]="bucket() === b" [class.text-white]="bucket() === b" [class.border-surface-border]="bucket() !== b" [class.bg-white]="bucket() !== b" [class.text-ink-700]="bucket() !== b" [attr.aria-pressed]="bucket() === b" (click)="pickBucket(b)">{{ b }}</button>
+                }
+              </div>
+              <ul class="mt-3 divide-y divide-[#EDF0F7]">
+                @for (o of shownOrders(); track o.id) {
+                  <li>
+                    <ng-container *ngTemplateOutlet="row; context: { $implicit: o, fast: false }" />
+                  </li>
+                }
+              </ul>
+              @if (visibleOrders().length > ordersShown()) {
+                <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700" (click)="ordersShown.set(ordersShown() + pageSize)">Load more</button>
+              }
+            </section>
+
+            <!-- 3 · Something else (no ticket) -->
+            <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 text-center shadow-sm">
+              <h2 class="text-base font-semibold text-[#0E51A2]">Something else?</h2>
+              <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, call or write to us. This doesn't open a ticket.</p>
+              <div class="mt-3 flex flex-wrap justify-center gap-3">
+                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]">📞 {{ phone }}</a>
+                <a href="mailto:support@opdwallet.com" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900">✉ support&#64;opdwallet.com</a>
+              </div>
+            </section>
+          }
+
+          @case ('order') {
+            <!-- ── Order detail ───────────────────────────────────────────────── -->
+            @if (order(); as o) {
+              <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs text-ink-500">Order ID</p>
+                    <p class="text-base font-semibold text-ink-900">{{ o.id }}</p>
+                  </div>
+                  <span class="rounded-full px-2.5 py-1 text-xs font-medium" [class]="statusClass(o)">{{ statusLabel(o) }}</span>
+                </div>
+                <dl class="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                  <div><dt class="text-xs text-ink-500">Service type</dt><dd class="font-medium text-ink-900">{{ o.service }}</dd></div>
+                  <div><dt class="text-xs text-ink-500">Order type</dt><dd class="font-medium text-ink-900">{{ o.type }}</dd></div>
+                  <div><dt class="text-xs text-ink-500">Provider</dt><dd class="font-medium text-ink-900">{{ o.provider }}</dd></div>
+                  <div><dt class="text-xs text-ink-500">Date and time</dt><dd class="font-medium text-ink-900">{{ dateTime(o.placedAt) }}</dd></div>
+                  <div><dt class="text-xs text-ink-500">Status</dt><dd class="font-medium text-ink-900">{{ o.progress }}{{ o.claimFlag ? ' · ' + o.claimFlag : '' }}</dd></div>
+                </dl>
+              </section>
+
+              <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                <div class="mb-3 flex items-center justify-between">
+                  <h2 class="text-sm font-semibold text-ink-900">Amount</h2>
+                  <button type="button" class="text-sm font-medium text-[#0F5FDC] underline" (click)="invoiceOpen.set(true)">View invoice</button>
+                </div>
+                <dl class="space-y-2 text-sm">
+                  <div class="flex justify-between"><dt class="text-ink-700">Gross amount</dt><dd class="text-ink-900">₹{{ n(o.gross) }}</dd></div>
+                  <div class="flex justify-between"><dt class="text-ink-700">Discount</dt><dd class="text-success-700">− ₹{{ n(o.discount) }}</dd></div>
+                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-medium text-ink-900">Net amount</dt><dd class="font-medium text-ink-900">₹{{ n(o.gross - o.discount) }}</dd></div>
+                  <div class="flex justify-between"><dt class="text-ink-700">Paid via wallet</dt><dd class="text-ink-900">₹{{ n(o.paidByWallet) }}</dd></div>
+                  <div class="flex justify-between"><dt class="text-ink-700">Paid by you</dt><dd class="text-ink-900">₹{{ n(o.paidByMember) }}</dd></div>
+                </dl>
+              </section>
+
+              <!-- The browse path rejoins the fast path here. -->
+              <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                @switch (orderAction(o)) {
+                  @case ('raise') {
+                    <p class="text-sm text-ink-700">Something wrong with this {{ o.type === 'Reimbursement' ? 'claim' : 'order' }}? Raise it with our support team.</p>
+                    <p class="mt-1 text-xs text-ink-500">You can raise a grievance until {{ date(cutoff(o)) }} ({{ raiseMonths }} months from the order date).</p>
+                    <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="startRaise(o)">Raise a grievance</button>
+                  }
+                  @case ('view') {
+                    <p class="text-sm text-ink-700">You already have a ticket on this {{ o.type === 'Reimbursement' ? 'claim' : 'order' }} — {{ ticketFor(o)?.id }}.</p>
+                    <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="openTicketFor(o)">View ticket</button>
+                  }
+                  @case ('expired') {
+                    <p class="rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-700" role="status">
+                      A grievance can be raised within {{ raiseMonths }} months of the order date. This order was on {{ date(o.placedAt) }}, so the window closed on {{ date(cutoff(o)) }}.
+                    </p>
+                    <p class="mt-3 text-sm text-ink-700">Still need help? Call support on <a [href]="'tel:' + phone" class="font-semibold text-[#0F5FDC]">{{ phone }}</a>.</p>
+                  }
+                }
+              </section>
+            }
+          }
+
+          @case ('raise') {
+            <!-- ── Raise a grievance ──────────────────────────────────────────── -->
+            @if (order(); as o) {
+              <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                <p class="rounded-xl bg-[#F2F4F8] px-4 py-2.5 text-sm text-ink-900">
+                  {{ o.service }} · {{ o.id }} <span class="text-ink-500">· {{ o.type }} · {{ date(o.placedAt) }}</span>
+                </p>
+
+                <label for="g-reason" class="mb-1 mt-5 block text-sm font-medium text-ink-700">What went wrong? <span class="text-danger-700">*</span></label>
+                <select id="g-reason" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [value]="reason()" (change)="reason.set($any($event.target).value)">
+                  <option value="" disabled>Select a reason</option>
+                  @for (r of reasons(); track r) {
+                    <option [value]="r">{{ r }}</option>
+                  }
+                </select>
+
+                <label for="g-detail" class="mb-1 mt-4 block text-sm font-medium text-ink-700">
+                  Tell us more @if (reason() === 'Other') { <span class="text-danger-700">*</span> } @else { <span class="font-normal text-ink-500">(optional)</span> }
+                </label>
+                <textarea id="g-detail" rows="4" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" [placeholder]="reason() === 'Other' ? 'Describe your issue and what you would like us to do' : 'What happened, and what would you like us to do?'" [value]="detail()" (input)="detail.set($any($event.target).value)"></textarea>
+                <p class="mt-1 text-xs text-ink-500">We'll notify you in the app, on WhatsApp and by email when support replies.</p>
+              </section>
+
+              <div class="mt-5 flex gap-3">
+                <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900" (click)="back()">Back</button>
+                <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit()" (click)="submit(o)">Send to support</button>
+              </div>
+            }
+          }
+
+          @case ('ticket') {
+            <!-- ── Ticket thread ──────────────────────────────────────────────── -->
+            @if (ticket(); as t) {
+              <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs text-ink-500">Ticket ID</p>
+                    <p class="text-base font-semibold text-ink-900">{{ t.id }}</p>
+                  </div>
+                  <span class="rounded-full px-2.5 py-1 text-xs font-medium" [class]="ticketClass(t)">{{ ticketLabel(t) }}</span>
+                </div>
+                <dl class="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                  <div><dt class="text-xs text-ink-500">Linked order</dt><dd><button type="button" class="font-medium text-[#0F5FDC] underline" (click)="openOrderById(t.orderId)">{{ t.orderId }}</button></dd></div>
+                  <div><dt class="text-xs text-ink-500">Raised on</dt><dd class="font-medium text-ink-900">{{ dateTime(t.createdAt) }}</dd></div>
+                  <div class="sm:col-span-2"><dt class="text-xs text-ink-500">Reason</dt><dd class="font-medium text-ink-900">{{ t.reason }}</dd></div>
+                </dl>
+              </section>
+
+              <!-- Thread: member, support and system events, each time-stamped. -->
+              <section class="mt-4 space-y-3">
+                @for (m of t.messages; track $index) {
+                  @if (m.from === 'system') {
+                    <p class="text-center text-[11px] text-ink-500">{{ m.text }} · {{ dateTime(m.at) }}</p>
+                  } @else {
+                    <div class="flex" [class.justify-end]="m.from === 'member'">
+                      <div class="max-w-[85%] rounded-2xl px-4 py-3 text-sm" [class.bg-[#0F5FDC]]="m.from === 'member'" [class.text-white]="m.from === 'member'" [class.bg-white]="m.from === 'support'" [class.border]="m.from === 'support'" [class.border-[#EDF0F7]]="m.from === 'support'" [class.text-ink-900]="m.from === 'support'">
+                        <p class="mb-1 text-[11px] font-medium" [class.text-white/80]="m.from === 'member'" [class.text-[#0F5FDC]]="m.from === 'support'">{{ m.from === 'member' ? 'You' : m.author }}</p>
+                        <p class="whitespace-pre-line">{{ m.text }}</p>
+                        <p class="mt-1 text-[10px]" [class.text-white/70]="m.from === 'member'" [class.text-ink-400]="m.from === 'support'">{{ dateTime(m.at) }}</p>
+                      </div>
+                    </div>
+                  }
+                }
+              </section>
+
+              <!-- Member actions -->
+              <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                @switch (t.state) {
+                  @case ('awaiting_support') {
+                    <p class="text-sm text-ink-700">⏳ Waiting on support. We'll notify you in the app, on WhatsApp and by email when they reply.</p>
+                    @if (hasSupportReply(t)) {
+                      <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
+                    }
+                  }
+                  @case ('awaiting_member') {
+                    <p class="text-sm font-medium text-success-700">💬 Support has replied — over to you.</p>
+                    <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
+                    <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" [value]="reply()" (input)="reply.set($any($event.target).value)"></textarea>
+                    <div class="mt-3 flex flex-wrap gap-3">
+                      <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim()" (click)="sendReply(t)">Send reply</button>
+                      <button type="button" class="min-h-touch flex-1 rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
+                    </div>
+                    <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good — it can't be reopened.</p>
+                  }
+                  @case ('closed') {
+                    @if (t.closedBy === 'member') {
+                      <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
+                    } @else {
+                      <p class="text-sm text-ink-700">{{ closedText(t.closedBy!) }} on {{ date(t.closedAt!) }}.</p>
+                      @if (canReopen(t)) {
+                        <p class="mt-1 text-xs text-ink-500">Not sorted? You can reopen it until {{ date(reopenUntil(t)) }}.</p>
+                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="reopen(t)">Reopen ticket</button>
+                      } @else {
+                        <p class="mt-1 text-xs text-ink-500">The reopen window ({{ reopenMonths }} month after closing) ended on {{ date(reopenUntil(t)) }}.</p>
+                      }
+                      <p class="mt-3 rounded-xl bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
+                        Want to take it further? Call support on <a [href]="'tel:' + phone" class="font-semibold underline">{{ phone }}</a> and quote {{ t.id }}.
+                      </p>
+                    }
+                  }
+                }
+              </section>
+
+              <!-- DUMMY — support's side, until the operations portal is wired. -->
+              @if (t.state === 'awaiting_support') {
+                <section class="mt-4 rounded-2xl border border-dashed border-warning-400 bg-warning-50 p-5">
+                  <p class="text-sm font-semibold text-warning-700">🧪 Demo — support's reply</p>
+                  <div class="mt-3 flex flex-wrap gap-3">
+                    <button type="button" class="min-h-touch flex-1 rounded-xl border border-[#0F5FDC] bg-white px-4 text-sm font-semibold text-[#0F5FDC]" (click)="simulateRespond(t)">Respond (keep open)</button>
+                    <button type="button" class="min-h-touch flex-1 rounded-xl border border-success-700 bg-white px-4 text-sm font-semibold text-success-700" (click)="simulateResolve(t)">Resolve and close</button>
+                  </div>
+                </section>
+              }
+            }
+          }
+        }
       </div>
+
+      <!-- One row layout for both lists: what, when and which, then the
+           grievance status. A flagged claim's status is the fast-path button. -->
+      <ng-template #row let-o let-fast="fast">
+        <div class="flex items-center justify-between gap-3 py-3">
+          <button type="button" class="min-w-0 flex-1 text-left" (click)="openOrder(o)">
+            <p class="text-sm font-medium text-ink-900">{{ o.service }} <span class="font-normal text-ink-500">· {{ o.provider }}</span></p>
+            <p class="mt-0.5 text-xs text-ink-500">{{ date(o.placedAt) }} · {{ o.id }} · {{ o.type }}</p>
+            <p class="mt-0.5 text-[11px]" [class.text-success-700]="o.progress === 'Completed' && !o.claimFlag" [class.text-[#B45309]]="o.progress !== 'Completed' && o.claimFlag !== 'Rejected'" [class.text-danger-700]="o.claimFlag === 'Rejected'">{{ o.claimFlag ?? o.progress }}</p>
+          </button>
+          <span class="flex shrink-0 items-center gap-2">
+            @if (fast && statusOf(o) === 'none') {
+              <button type="button" class="rounded-full bg-[#0F5FDC] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#034DA2]" (click)="fastPath(o)">Ask for help</button>
+            } @else if (statusOf(o) === 'none') {
+              <button type="button" class="rounded-full px-2.5 py-1 text-[11px] font-medium" [class]="statusClass(o)" (click)="openOrder(o)">{{ statusLabel(o) }}</button>
+            } @else {
+              <button type="button" class="rounded-full px-2.5 py-1 text-[11px] font-medium" [class]="statusClass(o)" (click)="openTicketFor(o)">{{ statusLabel(o) }}</button>
+            }
+            <button type="button" class="text-ink-400" [attr.aria-label]="'Open ' + o.id" (click)="openOrder(o)">›</button>
+          </span>
+        </div>
+      </ng-template>
+
+      <!-- Invoice -->
+      @if (invoiceOpen() && order(); as o) {
+        <div class="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 lg:items-center lg:p-4" (click)="invoiceOpen.set(false)">
+          <div class="max-h-[90vh] w-full overflow-y-auto rounded-t-[24px] bg-white p-6 shadow-2xl lg:max-w-[480px] lg:rounded-[24px]" role="dialog" aria-modal="true" aria-label="Invoice" (click)="$event.stopPropagation()">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-lg font-semibold text-ink-900">Invoice</p>
+                <p class="text-xs text-ink-500">INV-{{ o.id.replace('ORD-', '').replace('CLM-', '') }} · {{ dateTime(o.placedAt) }}</p>
+              </div>
+              <button type="button" class="text-2xl leading-none text-ink-700" aria-label="Close" (click)="invoiceOpen.set(false)">×</button>
+            </div>
+            <p class="mt-4 text-sm font-medium text-ink-900">{{ o.provider }}</p>
+            <p class="text-xs text-ink-500">{{ o.service }} · {{ o.type }} · {{ o.id }}</p>
+            <ul class="mt-4 divide-y divide-[#EDF0F7] border-y border-[#EDF0F7] text-sm">
+              @for (l of o.invoiceLines; track l.label) {
+                <li class="flex justify-between py-2"><span class="text-ink-700">{{ l.label }}</span><span class="text-ink-900">₹{{ n(l.amount) }}</span></li>
+              }
+            </ul>
+            <dl class="mt-3 space-y-1 text-sm">
+              <div class="flex justify-between"><dt class="text-ink-700">Discount</dt><dd>− ₹{{ n(o.discount) }}</dd></div>
+              <div class="flex justify-between font-semibold"><dt>Net amount</dt><dd>₹{{ n(o.gross - o.discount) }}</dd></div>
+            </dl>
+            <p class="mt-4 text-[11px] text-ink-400">Sample invoice — static demo.</p>
+          </div>
+        </div>
+      }
     </div>
   `,
 })
 export class HelplinePage {
-  protected readonly claims = inject(ClaimsStore);
-  protected readonly bookings = inject(BookingsStore);
+  protected readonly phone = SUPPORT_PHONE;
+  protected readonly raiseMonths = RAISE_WINDOW_MONTHS;
+  protected readonly reopenMonths = REOPEN_WINDOW_MONTHS;
 
-  protected readonly money = formatMoney;
-  protected readonly email = SUPPORT_EMAIL;
+  private readonly orders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
+  private readonly tickets = signal<SupportTicket[]>(SEED_TICKETS.map(autoClose));
 
-  /**
-   * Waiting on the MEMBER, or refused. `UNDER_REVIEW` and the payment statuses
-   * are deliberately excluded: those are with the assessor, and listing them
-   * under "needs your help" would tell the member to chase something that is
-   * already moving.
-   */
-  private static readonly NEEDS_HELP = new Set([
-    'DOCUMENTS_REQUIRED',
-    'RESUBMISSION_REQUIRED',
-    'REJECTED',
-  ]);
+  protected readonly view = signal<View>('home');
+  protected readonly orderId = signal<string | null>(null);
+  protected readonly ticketId = signal<string | null>(null);
+  /** Where back goes from the raise screen: the order (browse) or home (fast path). */
+  private readonly raiseFrom = signal<'home' | 'order'>('order');
+  private readonly ticketFrom = signal<View>('home');
+  protected readonly notice = signal<string | null>(null);
+  protected readonly invoiceOpen = signal(false);
 
-  protected readonly needHelp = computed(() =>
-    this.claims.claims().filter((claim) => HelplinePage.NEEDS_HELP.has(claim.statusCode)),
-  );
+  /** Empty = every service. */
+  protected readonly bucket = signal('');
+  /** Each list opens on its two most recent; Load more adds five at a time. */
+  private readonly firstPage = 2;
+  protected readonly pageSize = 5;
+  protected readonly claimsShown = signal(2);
+  protected readonly ordersShown = signal(2);
+  protected readonly reason = signal('');
+  protected readonly detail = signal('');
+  protected readonly reply = signal('');
 
-  /** Past services only — an upcoming booking is not something to complain about yet. */
-  protected readonly availed = computed(() =>
-    this.bookings
-      .bookings()
-      .filter((booking) => !booking.isUpcoming)
-      .slice(0, 10),
-  );
+  protected readonly order = computed(() => this.orders().find((o) => o.id === this.orderId()) ?? null);
+  protected readonly ticket = computed(() => this.tickets().find((t) => t.id === this.ticketId()) ?? null);
 
-  protected when(booking: Booking): string {
-    return booking.scheduledFor ? DATE.format(booking.scheduledFor) : '';
+  protected readonly flaggedClaims = computed(() => this.orders().filter((o) => o.claimFlag));
+
+  protected readonly shownClaims = computed(() => this.flaggedClaims().slice(0, this.claimsShown()));
+
+  protected readonly buckets = computed(() => [...new Set(this.orders().map((o) => o.service))]);
+  protected readonly visibleOrders = computed(() => {
+    const b = this.bucket();
+    return b ? this.orders().filter((o) => o.service === (b as ServiceLine)) : this.orders();
+  });
+  /** The two most recent, then five more per Load more. */
+  protected readonly shownOrders = computed(() => this.visibleOrders().slice(0, this.ordersShown()));
+
+  protected pickBucket(b: string): void {
+    this.bucket.set(this.bucket() === b ? '' : b);
+    this.ordersShown.set(this.firstPage);
   }
 
-  /** Which row's form is open. One at a time — two open forms invite the member
-   *  to fill in the wrong one. */
-  protected readonly open = signal<string | null>(null);
+  protected readonly reasons = computed(() => {
+    const o = this.order();
+    return o ? reasonsFor(o) : [];
+  });
 
-  protected toggle(key: string): void {
-    this.open.set(this.open() === key ? null : key);
-  }
+  /** A reason is required; "Other" also needs the member's own words. */
+  protected readonly canSubmit = computed(() => {
+    if (!this.reason()) return false;
+    return this.reason() !== 'Other' || this.detail().trim().length > 0;
+  });
 
-  /**
-   * What the portal already knows, passed to the form as context so it never
-   * asks the member for something printed on the screen behind it.
-   */
-  protected claimContext(claim: Claim): readonly string[] {
-    return [
-      `Claim reference: ${claim.reference}`,
-      `Status: ${claim.status.label}`,
-      `Category: ${claim.categoryLabel}`,
-      `Amount: ${formatMoney(claim.billAmount)}`,
-      `Provider: ${claim.providerName}`,
-    ];
-  }
-
-  protected bookingContext(booking: Booking): readonly string[] {
-    return [
-      `Reference: ${booking.reference}`,
-      `Service: ${booking.title}`,
-      `Type: ${booking.kindLabel}`,
-      `Date: ${this.when(booking) || 'not recorded'}`,
-    ];
-  }
-
-  /**
-   * The options differ by WHY the claim is stuck. A member whose claim was
-   * rejected has different questions from one who owes documents, and one merged
-   * list would make both scroll past options that cannot apply to them.
-   */
-  protected claimTopics(claim: Claim): readonly string[] {
-    if (claim.statusCode === 'REJECTED') {
-      return [
-        'I want to understand why this was rejected',
-        'I think the decision is wrong and want it reviewed',
-        'The amount assessed is not what I expected',
-        'Something else',
-      ];
+  protected heading(): string {
+    switch (this.view()) {
+      case 'order': return 'Order detail';
+      case 'raise': return 'Raise a grievance';
+      case 'ticket': return 'Your ticket';
+      default: return 'Support';
     }
-    return [
-      'I do not know which documents are needed',
-      'I already uploaded these documents',
-      'I need help resubmitting',
-      'Something else',
-    ];
   }
 
-  protected readonly SERVICE_TOPICS: readonly string[] = [
-    'The service was not provided',
-    'I was charged the wrong amount',
-    'My refund has not arrived',
-    'The invoice or report is missing',
-    'The quality of service was poor',
-    'Something else',
-  ];
-
-
-  protected generalMail(): string {
-    return this.mail('Support request', '');
+  protected subheading(): string {
+    switch (this.view()) {
+      case 'order': return this.order()?.service ?? '';
+      case 'raise': return 'Tell us what went wrong';
+      case 'ticket': return this.ticket()?.reason ?? '';
+      default: return 'Get help with a claim or a service';
+    }
   }
 
-  /**
-   * `encodeURIComponent`, not a template literal: a provider name with an
-   * ampersand would otherwise truncate the body at that character.
-   */
-  private mail(subject: string, body: string): string {
-    const query = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    return `mailto:${SUPPORT_EMAIL}?${query}`;
+  // ── Status ─────────────────────────────────────────────────────────────
+
+  protected ticketFor(o: SupportOrder): SupportTicket | undefined {
+    return this.tickets().find((t) => t.orderId === o.id);
+  }
+
+  private status(t: SupportTicket | undefined): GrievanceStatus {
+    if (!t) return 'none';
+    if (t.state === 'closed') return 'closed';
+    return t.state === 'awaiting_member' ? 'response' : 'open';
+  }
+
+  protected statusOf(o: SupportOrder): GrievanceStatus {
+    return this.status(this.ticketFor(o));
+  }
+
+  protected statusLabel(o: SupportOrder): string {
+    const s = this.statusOf(o);
+    // Past the raise window with no ticket: nothing to ask for any more.
+    if (s === 'none' && this.isExpired(o)) return 'Window closed';
+    return STATUS_LABEL[s];
+  }
+
+  protected statusClass(o: SupportOrder): string {
+    const s = this.statusOf(o);
+    if (s === 'none' && this.isExpired(o)) return STATUS_CLASS.closed;
+    return STATUS_CLASS[s];
+  }
+
+  protected ticketLabel(t: SupportTicket): string {
+    return STATUS_LABEL[this.status(t)];
+  }
+
+  protected ticketClass(t: SupportTicket): string {
+    return STATUS_CLASS[this.status(t)];
+  }
+
+  protected cutoff(o: SupportOrder): Date {
+    return raiseCutoff(o);
+  }
+
+  private isExpired(o: SupportOrder): boolean {
+    return Date.now() > raiseCutoff(o).getTime();
+  }
+
+  /** One ticket per order: an existing one is shown rather than a second raised. */
+  protected orderAction(o: SupportOrder): 'raise' | 'view' | 'expired' {
+    if (this.ticketFor(o)) return 'view';
+    return this.isExpired(o) ? 'expired' : 'raise';
+  }
+
+  protected hasSupportReply(t: SupportTicket): boolean {
+    return t.messages.some((m) => m.from === 'support');
+  }
+
+  protected reopenUntil(t: SupportTicket): Date {
+    return addMonths(t.closedAt ?? new Date(), REOPEN_WINDOW_MONTHS);
+  }
+
+  /** Not after Mark resolved; otherwise within the reopen window of the close. */
+  protected canReopen(t: SupportTicket): boolean {
+    return t.state === 'closed' && t.closedBy !== 'member' && Date.now() <= this.reopenUntil(t).getTime();
+  }
+
+  protected closedText(by: ClosedBy): string {
+    return by === 'auto'
+      ? `Closed automatically, ${RAISE_WINDOW_MONTHS} months from the order date,`
+      : 'Resolved and closed by support';
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────────────
+
+  protected openOrder(o: SupportOrder): void {
+    this.notice.set(null);
+    this.orderId.set(o.id);
+    this.view.set('order');
+  }
+
+  protected openOrderById(id: string): void {
+    const o = this.orders().find((x) => x.id === id);
+    if (o) this.openOrder(o);
+  }
+
+  /** Fast path from a flagged claim: straight to the reason. */
+  protected fastPath(o: SupportOrder): void {
+    this.orderId.set(o.id);
+    this.raiseFrom.set('home');
+    this.resetForm();
+    this.notice.set(null);
+    this.view.set('raise');
+  }
+
+  protected startRaise(o: SupportOrder): void {
+    this.orderId.set(o.id);
+    this.raiseFrom.set('order');
+    this.resetForm();
+    this.view.set('raise');
+  }
+
+  protected openTicketFor(o: SupportOrder): void {
+    const t = this.ticketFor(o);
+    if (!t) return;
+    this.ticketFrom.set(this.view());
+    this.orderId.set(o.id);
+    this.ticketId.set(t.id);
+    this.reply.set('');
+    this.notice.set(null);
+    this.view.set('ticket');
+  }
+
+  protected back(): void {
+    this.notice.set(null);
+    switch (this.view()) {
+      case 'raise': this.view.set(this.raiseFrom()); break;
+      case 'ticket': this.view.set(this.ticketFrom() === 'ticket' ? 'home' : this.ticketFrom()); break;
+      default: this.view.set('home');
+    }
+  }
+
+  private resetForm(): void {
+    this.reason.set('');
+    this.detail.set('');
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────────
+
+  protected submit(o: SupportOrder): void {
+    if (!this.canSubmit()) return;
+    // The existing-ticket and raise-window checks, again at the point of submit.
+    if (this.ticketFor(o) || this.isExpired(o)) { this.view.set('order'); return; }
+    const now = new Date();
+    const text = this.detail().trim();
+    const t: SupportTicket = {
+      id: `TKT-${10413 + this.tickets().length}`,
+      orderId: o.id,
+      reason: this.reason(),
+      detail: text,
+      createdAt: now,
+      state: 'awaiting_support',
+      messages: [
+        { from: 'member', text: text ? `${this.reason()}\n\n${text}` : this.reason(), at: now },
+        { from: 'system', text: 'Ticket opened', at: now },
+      ],
+    };
+    this.tickets.set([...this.tickets(), t]);
+    this.ticketFrom.set('home');
+    this.ticketId.set(t.id);
+    this.view.set('ticket');
+    this.notice.set(`Ticket ${t.id} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
+  }
+
+  protected sendReply(t: SupportTicket): void {
+    const text = this.reply().trim();
+    if (!text) return;
+    this.update(t, { state: 'awaiting_support' }, { from: 'member', text, at: new Date() });
+    this.reply.set('');
+    this.notice.set('Reply sent. The ticket is back with the support team.');
+  }
+
+  protected markResolved(t: SupportTicket): void {
+    const now = new Date();
+    this.update(t, { state: 'closed', closedAt: now, closedBy: 'member' }, { from: 'system', text: 'Marked resolved by you', at: now });
+    this.notice.set('Thanks — the ticket is closed.');
+  }
+
+  protected reopen(t: SupportTicket): void {
+    if (!this.canReopen(t)) return;
+    this.update(t, { state: 'awaiting_support', closedAt: undefined, closedBy: undefined }, { from: 'system', text: 'Reopened by you', at: new Date() });
+    this.notice.set('Ticket reopened. The support team will pick it up again.');
+  }
+
+  /** DUMMY — stands in for the executive's Respond. */
+  protected simulateRespond(t: SupportTicket): void {
+    this.update(t, { state: 'awaiting_member' }, {
+      from: 'support', author: DEMO_EXECUTIVE, at: new Date(),
+      text: "Thanks for reaching out. We're looking into this with the provider — could you share any receipt or screenshot that shows the issue?",
+    });
+    this.notice.set('Support replied — you were notified in the app, on WhatsApp and by email.');
+  }
+
+  /** DUMMY — stands in for the executive's Resolve and close. */
+  protected simulateResolve(t: SupportTicket): void {
+    const now = new Date();
+    this.update(t, { state: 'closed', closedAt: now, closedBy: 'support' }, {
+      from: 'support', author: DEMO_EXECUTIVE, at: now,
+      text: "We've sorted this with the provider and adjusted your wallet balance. Closing the ticket — reopen it if anything is still wrong.",
+    });
+    this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, messages: [...x.messages, { from: 'system', text: 'Resolved and closed by support', at: now }] } : x)));
+    this.notice.set('Support resolved and closed the ticket — you were notified in the app, on WhatsApp and by email.');
+  }
+
+  private update(t: SupportTicket, patch: Partial<SupportTicket>, message: TicketMessage): void {
+    this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, ...patch, messages: [...x.messages, message] } : x)));
+  }
+
+  // ── Formatting ─────────────────────────────────────────────────────────
+
+  protected date(d: Date): string {
+    return DATE.format(d);
+  }
+
+  protected dateTime(d: Date): string {
+    return DATE_TIME.format(d);
+  }
+
+  protected n(v: number): string {
+    return NUMBER.format(v);
   }
 }
 
-const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+/** A ticket still open when its order's raise window ran out is closed automatically. */
+function autoClose(t: SupportTicket): SupportTicket {
+  if (t.state === 'closed') return t;
+  const o = SEED_ORDERS.find((x) => x.id === t.orderId);
+  if (!o) return t;
+  const cutoff = raiseCutoff(o);
+  if (Date.now() <= cutoff.getTime()) return t;
+  return {
+    ...t,
+    state: 'closed',
+    closedAt: cutoff,
+    closedBy: 'auto',
+    messages: [...t.messages, { from: 'system', text: `Closed automatically — ${RAISE_WINDOW_MONTHS} months from the order date`, at: cutoff }],
+  };
+}
