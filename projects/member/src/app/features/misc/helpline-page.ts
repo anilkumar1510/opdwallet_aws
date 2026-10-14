@@ -42,6 +42,7 @@ type GrievanceStatus = 'none' | 'open' | 'response' | 'closed';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const DATE_TIME = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const SUPPORT_EMAIL = 'support@opdwallet.com';
 const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 
 const STATUS_LABEL: Record<GrievanceStatus, string> = {
@@ -134,9 +135,12 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               <h2 class="text-base font-semibold text-[#0E51A2]">Something else?</h2>
               <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, call or write to us. This doesn't open a ticket.</p>
               <div class="mt-3 flex flex-wrap justify-center gap-3">
-                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]">📞 {{ phone }}</a>
-                <a href="mailto:support@opdwallet.com" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900">✉ support&#64;opdwallet.com</a>
+                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]" (click)="onCall($event)">📞 {{ phone }}</a>
+                <a [href]="mailHref()" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900" (click)="onMail()">✉ {{ email }}</a>
               </div>
+              @if (contactNote(); as c) {
+                <p class="mt-3 text-xs text-success-700" role="status">{{ c }}</p>
+              }
             </section>
           }
 
@@ -386,6 +390,8 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
 })
 export class HelplinePage {
   protected readonly phone = SUPPORT_PHONE;
+  protected readonly email = SUPPORT_EMAIL;
+  protected readonly contactNote = signal<string | null>(null);
   protected readonly raiseMonths = RAISE_WINDOW_MONTHS;
 
   private readonly claimsStore = inject(ClaimsStore);
@@ -472,6 +478,31 @@ export class HelplinePage {
   }
 
   /** True for a claim from the live listing, whose grievance is really saved. */
+  /** A phone can dial; a desktop cannot, so there the number is copied instead. */
+  protected async onCall(event: Event): Promise<void> {
+    if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) return;
+    event.preventDefault();
+    await this.copy(this.phone, `${this.phone} copied — dial it from your phone.`);
+  }
+
+  protected onMail(): void {
+    this.contactNote.set(`Opening your email app to write to ${this.email}. If nothing opens, write to us at that address.`);
+  }
+
+  protected mailHref(): string {
+    const body = 'Hello,\n\nMy question is not about a specific order or claim:\n\n';
+    return `mailto:${this.email}?subject=${encodeURIComponent('Support request')}&body=${encodeURIComponent(body)}`;
+  }
+
+  private async copy(text: string, done: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.contactNote.set(done);
+    } catch {
+      this.contactNote.set(`Call us on ${text}.`);
+    }
+  }
+
   protected isLive(o: SupportOrder): boolean {
     return this.claimOrders().some((c) => c.id === o.id);
   }

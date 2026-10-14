@@ -280,3 +280,40 @@ test.describe('Support: edge cases', () => {
     await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
   });
 });
+
+test.describe('Support: something else', () => {
+  test('desktop: the call button copies the number instead of a dead tel: link', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await mockBackend(page);
+    await page.goto('/member/helpline');
+    const call = page.getByRole('link', { name: /1800-000-0000/ });
+    await expect(call).toHaveAttribute('href', 'tel:1800-000-0000');
+    await call.click();
+    await expect(page.getByText('1800-000-0000 copied')).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('1800-000-0000');
+  });
+
+  test('the email link is a prefilled mailto and says what is happening', async ({ page }) => {
+    await mockBackend(page);
+    await page.goto('/member/helpline');
+    const mail = page.getByRole('link', { name: /support@opdwallet.com/ });
+    const href = (await mail.getAttribute('href')) ?? '';
+    expect(href).toMatch(/^mailto:support@opdwallet\.com\?subject=Support%20request&body=/);
+    await page.evaluate(() => document.addEventListener('click', (e) => e.preventDefault(), true)); // do not leave the page
+    await mail.click();
+    await expect(page.getByText('Opening your email app')).toBeVisible();
+  });
+
+  test('mobile (touch): the call button is left to dial', async ({ browser }) => {
+    const context = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 800 } });
+    const page = await context.newPage();
+    await mockBackend(page);
+    await page.goto('/member/helpline');
+    await page.evaluate(() => document.addEventListener('click', (e) => { (window as any).__defaultPrevented = e.defaultPrevented; }));
+    const call = page.getByRole('link', { name: /1800-000-0000/ });
+    await call.evaluate((el) => el.addEventListener('click', (e) => e.preventDefault())); // stop the real dialer in the test
+    await call.tap();
+    await expect(page.getByText('copied')).toHaveCount(0);
+    await context.close();
+  });
+});
