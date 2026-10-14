@@ -104,3 +104,41 @@ statuses the claim detail page shows a **Payment** section.
 Max upload size is now **5 MB** across claim submission and document resubmission
 (`new-claim-page.ts` `MAX_BYTES`, `claim.mapper.ts` `RESUBMIT_MAX_BYTES`). The
 server-side multer limit should match.
+
+## 7. Grievance / dispute (Support, `/member/helpline`)
+
+The Support page (static demo by Nitendra, `features/misc/helpline-page.ts` +
+`features/support/grievance.data.ts`) is wired to the real backend for
+**reimbursement claims only**. Services (consultation, pharmacy, lab, …) stay on
+the static demo data until the backend and Twenty support them.
+
+- **Real — claims list:** "Claims that need your help" reads the same paginated
+  listing as the Claims page (`claim` / `GET_CLAIMS_BY_USER`, 20 per page, shown
+  5 at a time with Load more) via `ClaimsStore.getClimListData()`.
+- **Real — submit:** `POST /habit-opd/api/v1/dispute`, `action=submit`.
+  Form-urlencoded `resource` (base64 JSON), `application=habit-opd`, `action=submit`;
+  signed over `resource&action=submit` like `new-claim-page.ts`. Success is
+  `errCode !== -1`. Code: `core/disputes/dispute.api.ts` (`DisputeApi.submit`).
+  Payload: `claim_id, member_name, patient_name, relation_to_member, category
+  (CLAIM), dispute_type (GENERAL), benefit_category, selected_reason,
+  dispute_status (OPEN)` plus optional `description` and `document_ids`.
+- **Real — supporting documents (optional):** each file is uploaded to DMS
+  (`POST /dms/api/v1/emrImage`, same call as the claim form) and its
+  `document_id` goes in `document_ids`. Max 5 MB; PDF/JPG/PNG (no HEIC
+  conversion).
+- **Host:** the dev proxy (`proxy.conf.json`) and `environment.apiBaseUrl`
+  (`https://api.habithealth.com`) already route `/habit-opd/api` and `/dms/api`;
+  nothing is hard-coded to `localhost:8090`.
+- **No reopen:** a closed ticket cannot be reopened by the member (UI removed);
+  closed tickets only show the call-support prompt. Mark resolved is final.
+- **Claim detail:** no Amount / payment section for reimbursement claims.
+
+**Still placeholder (in memory, lost on reload):** reading tickets and chat
+history back, member reply, mark resolved, and the executive's replies. Their
+APIs have not been shared. Tickets raised in this session are held in the page.
+
+**To confirm with backend:** signing pattern (`enc&action=submit` assumed);
+`claim_id` format (`OPD-2026-xxxxx`); `benefit_category` values (derived from the
+claim category label, e.g. `DIAGNOSTICS`); `document_ids` / `description` keys
+(assumed from the Twenty `documentIds` field); the ticket id field in the submit
+response (`ticket_id` / `dispute_id` / `name` are tried, else a local id).

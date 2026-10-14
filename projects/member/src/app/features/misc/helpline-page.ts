@@ -1,12 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
+
+import { ClaimsStore } from '../../core/claims/claims.store';
+import { DisputeApi } from '../../core/disputes/dispute.api';
 
 import {
   ClosedBy,
   DEMO_EXECUTIVE,
   RAISE_WINDOW_MONTHS,
-  REOPEN_WINDOW_MONTHS,
   SEED_ORDERS,
   SEED_TICKETS,
   SUPPORT_PHONE,
@@ -76,9 +78,11 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
       </header>
 
       <div class="mx-auto max-w-[900px] px-5 pb-32 pt-6 lg:px-8 lg:pb-12">
-        <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
-          🧪 Static demo — no data is saved. Support's replies are simulated from the ticket screen.
-        </p>
+        @if (!liveContext()) {
+          <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
+            🧪 Static demo — no data is saved. Support's replies are simulated from the ticket screen.
+          </p>
+        }
 
         @if (notice(); as n) {
           <p class="mb-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-success-700" role="status">{{ n }}</p>
@@ -91,7 +95,9 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
             <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
               <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
               <p class="mt-0.5 text-xs text-ink-500">Claims waiting on you. Ask for help and go straight to the reason.</p>
-              @if (flaggedClaims().length) {
+              @if (claimsLoading()) {
+                <p class="mt-4 text-sm text-ink-500">Loading your claims…</p>
+              } @else if (flaggedClaims().length) {
                 <ul class="mt-3 divide-y divide-[#EDF0F7]">
                   @for (o of shownClaims(); track o.id) {
                     <li>
@@ -160,6 +166,8 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 </dl>
               </section>
 
+              <!-- Claims are reimbursements: the payment breakdown does not apply. -->
+              @if (o.type !== 'Reimbursement') {
               <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
                 <div class="mb-3 flex items-center justify-between">
                   <h2 class="text-sm font-semibold text-ink-900">Amount</h2>
@@ -173,6 +181,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   <div class="flex justify-between"><dt class="text-ink-700">Paid by you</dt><dd class="text-ink-900">₹{{ n(o.paidByMember) }}</dd></div>
                 </dl>
               </section>
+              }
 
               <!-- The browse path rejoins the fast path here. -->
               <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
@@ -218,11 +227,31 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 </label>
                 <textarea id="g-detail" rows="4" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" [placeholder]="reason() === 'Other' ? 'Describe your issue and what you would like us to do' : 'What happened, and what would you like us to do?'" [value]="detail()" (input)="detail.set($any($event.target).value)"></textarea>
                 <p class="mt-1 text-xs text-ink-500">We'll notify you in the app, on WhatsApp and by email when support replies.</p>
+
+                <!-- Supporting documents: optional, claims only (they are saved with the ticket). -->
+                @if (isLive(o)) {
+                  <label for="g-docs" class="mb-1 mt-4 block text-sm font-medium text-ink-700">Upload supporting documents <span class="font-normal text-ink-500">(optional)</span></label>
+                  <input id="g-docs" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-ink-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#EEF3FF] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[#0F5FDC]" [disabled]="submitting()" (change)="onFiles($event)" />
+                  <p class="mt-1 text-xs text-ink-500">PDF, JPG or PNG, up to 5 MB each.</p>
+                  @if (docs().length) {
+                    <ul class="mt-2 space-y-1">
+                      @for (d of docs(); track d.file) {
+                        <li class="flex items-center justify-between rounded-lg bg-[#F2F4F8] px-3 py-1.5 text-xs text-ink-900">
+                          <span class="truncate">{{ d.file.name }} · {{ d.state === 'uploading' ? 'uploading…' : d.state === 'done' ? 'uploaded' : 'failed' }}</span>
+                          <button type="button" class="ml-3 shrink-0 text-ink-500" [attr.aria-label]="'Remove ' + d.file.name" (click)="removeDoc(d.file)">×</button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
+                @if (submitError(); as err) {
+                  <p class="mt-3 text-sm text-danger-700" role="alert">{{ err }}</p>
+                }
               </section>
 
               <div class="mt-5 flex gap-3">
                 <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900" (click)="back()">Back</button>
-                <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit()" (click)="submit(o)">Send to support</button>
+                <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit() || submitting() || uploading()" (click)="submit(o)">{{ submitting() ? 'Sending…' : 'Send to support' }}</button>
               </div>
             }
           }
@@ -286,12 +315,6 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                       <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
                     } @else {
                       <p class="text-sm text-ink-700">{{ closedText(t.closedBy!) }} on {{ date(t.closedAt!) }}.</p>
-                      @if (canReopen(t)) {
-                        <p class="mt-1 text-xs text-ink-500">Not sorted? You can reopen it until {{ date(reopenUntil(t)) }}.</p>
-                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="reopen(t)">Reopen ticket</button>
-                      } @else {
-                        <p class="mt-1 text-xs text-ink-500">The reopen window ({{ reopenMonths }} month after closing) ended on {{ date(reopenUntil(t)) }}.</p>
-                      }
                       <p class="mt-3 rounded-xl bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
                         Want to take it further? Call support on <a [href]="'tel:' + phone" class="font-semibold underline">{{ phone }}</a> and quote {{ t.id }}.
                       </p>
@@ -301,7 +324,8 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               </section>
 
               <!-- DUMMY — support's side, until the operations portal is wired. -->
-              @if (t.state === 'awaiting_support') {
+              <!-- Real claim tickets are answered from the support system, never simulated here. -->
+              @if (t.state === 'awaiting_support' && !isLiveTicket(t)) {
                 <section class="mt-4 rounded-2xl border border-dashed border-warning-400 bg-warning-50 p-5">
                   <p class="text-sm font-semibold text-warning-700">🧪 Demo — support's reply</p>
                   <div class="mt-3 flex flex-wrap gap-3">
@@ -369,9 +393,27 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
 export class HelplinePage {
   protected readonly phone = SUPPORT_PHONE;
   protected readonly raiseMonths = RAISE_WINDOW_MONTHS;
-  protected readonly reopenMonths = REOPEN_WINDOW_MONTHS;
 
-  private readonly orders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
+  private readonly claimsStore = inject(ClaimsStore);
+  private readonly disputeApi = inject(DisputeApi);
+
+  /** Demo orders for every service; the live claims below are kept apart. */
+  private readonly seedOrders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
+  private readonly orders = this.seedOrders;
+
+  /**
+   * Reimbursement claims from the same paginated listing API the Claims page
+   * uses (GET_CLAIMS_BY_USER). These are real: a grievance on one is submitted
+   * to the dispute API.
+   */
+  private readonly claimOrders = computed<SupportOrder[]>(() =>
+    ((this.claimsStore.clailListData() ?? []) as any[])
+      .map(toClaimOrder)
+      .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()),
+  );
+  private readonly claimsFetched = signal(false);
+  protected readonly claimsLoading = computed(() => !this.claimsFetched() && this.claimOrders().length === 0);
+  private readonly everyOrder = computed(() => [...this.claimOrders(), ...this.orders()]);
   private readonly tickets = signal<SupportTicket[]>(SEED_TICKETS.map(autoClose));
 
   protected readonly view = signal<View>('home');
@@ -393,11 +435,15 @@ export class HelplinePage {
   protected readonly reason = signal('');
   protected readonly detail = signal('');
   protected readonly reply = signal('');
+  protected readonly docs = signal<UploadedDoc[]>([]);
+  protected readonly submitting = signal(false);
+  protected readonly submitError = signal<string | null>(null);
+  protected readonly uploading = computed(() => this.docs().some((d) => d.state === 'uploading'));
 
-  protected readonly order = computed(() => this.orders().find((o) => o.id === this.orderId()) ?? null);
+  protected readonly order = computed(() => this.everyOrder().find((o) => o.id === this.orderId()) ?? null);
   protected readonly ticket = computed(() => this.tickets().find((t) => t.id === this.ticketId()) ?? null);
 
-  protected readonly flaggedClaims = computed(() => this.orders().filter((o) => o.claimFlag));
+  protected readonly flaggedClaims = computed(() => this.claimOrders());
 
   protected readonly shownClaims = computed(() => this.flaggedClaims().slice(0, this.claimsShown()));
 
@@ -423,6 +469,27 @@ export class HelplinePage {
   protected readonly canSubmit = computed(() => {
     if (!this.reason()) return false;
     return this.reason() !== 'Other' || this.detail().trim().length > 0;
+  });
+
+  constructor() {
+    // Same call, same first page (20 newest), as the Claims page.
+    void this.claimsStore.getClimListData();
+    setTimeout(() => this.claimsFetched.set(true), 4000);
+  }
+
+  /** True for a claim from the live listing, whose grievance is really saved. */
+  protected isLive(o: SupportOrder): boolean {
+    return this.claimOrders().some((c) => c.id === o.id);
+  }
+
+  protected isLiveTicket(t: SupportTicket): boolean {
+    return this.claimOrders().some((c) => c.id === t.orderId);
+  }
+
+  /** Hides the static-demo banner where the screen is about a real claim. */
+  protected readonly liveContext = computed(() => {
+    const o = this.order();
+    return this.view() !== 'home' && !!o && this.isLive(o);
   });
 
   protected heading(): string {
@@ -498,15 +565,6 @@ export class HelplinePage {
     return t.messages.some((m) => m.from === 'support');
   }
 
-  protected reopenUntil(t: SupportTicket): Date {
-    return addMonths(t.closedAt ?? new Date(), REOPEN_WINDOW_MONTHS);
-  }
-
-  /** Not after Mark resolved; otherwise within the reopen window of the close. */
-  protected canReopen(t: SupportTicket): boolean {
-    return t.state === 'closed' && t.closedBy !== 'member' && Date.now() <= this.reopenUntil(t).getTime();
-  }
-
   protected closedText(by: ClosedBy): string {
     return by === 'auto'
       ? `Closed automatically, ${RAISE_WINDOW_MONTHS} months from the order date,`
@@ -522,7 +580,7 @@ export class HelplinePage {
   }
 
   protected openOrderById(id: string): void {
-    const o = this.orders().find((x) => x.id === id);
+    const o = this.everyOrder().find((x) => x.id === id);
     if (o) this.openOrder(o);
   }
 
@@ -565,18 +623,35 @@ export class HelplinePage {
   private resetForm(): void {
     this.reason.set('');
     this.detail.set('');
+    this.docs.set([]);
+    this.submitError.set(null);
   }
 
   // ── Actions ────────────────────────────────────────────────────────────
 
-  protected submit(o: SupportOrder): void {
-    if (!this.canSubmit()) return;
+  protected async submit(o: SupportOrder): Promise<void> {
+    if (!this.canSubmit() || this.submitting()) return;
     // The existing-ticket and raise-window checks, again at the point of submit.
     if (this.ticketFor(o) || this.isExpired(o)) { this.view.set('order'); return; }
     const now = new Date();
     const text = this.detail().trim();
+    let ticketId = `TKT-${10413 + this.tickets().length}`;
+    if (this.isLive(o)) {
+      this.submitting.set(true);
+      this.submitError.set(null);
+      const result = await this.disputeApi.submit({
+        claimId: o.id,
+        categoryLabel: o.service,
+        reason: this.reason(),
+        detail: text,
+        documentIds: this.docs().filter((d) => d.state === 'done').map((d) => d.documentId!),
+      });
+      this.submitting.set(false);
+      if (!result.ok) { this.submitError.set(result.message); return; }
+      if (result.ticketId) ticketId = result.ticketId;
+    }
     const t: SupportTicket = {
-      id: `TKT-${10413 + this.tickets().length}`,
+      id: ticketId,
       orderId: o.id,
       reason: this.reason(),
       detail: text,
@@ -594,6 +669,25 @@ export class HelplinePage {
     this.notice.set(`Ticket ${t.id} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
   }
 
+  protected async onFiles(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const chosen = Array.from(input.files ?? []);
+    input.value = '';
+    for (const file of chosen) {
+      const entry: UploadedDoc = { file, state: 'uploading' };
+      this.docs.update((list) => [...list, entry]);
+      const result = await this.disputeApi.uploadDocument(file);
+      this.docs.update((list) => list.map((d) => (d.file === file
+        ? (result.ok ? { file, state: 'done', documentId: result.documentId } : { file, state: 'failed' })
+        : d)));
+      if (!result.ok) this.submitError.set(result.message);
+    }
+  }
+
+  protected removeDoc(file: File): void {
+    this.docs.update((list) => list.filter((d) => d.file !== file));
+  }
+
   protected sendReply(t: SupportTicket): void {
     const text = this.reply().trim();
     if (!text) return;
@@ -606,12 +700,6 @@ export class HelplinePage {
     const now = new Date();
     this.update(t, { state: 'closed', closedAt: now, closedBy: 'member' }, { from: 'system', text: 'Marked resolved by you', at: now });
     this.notice.set('Thanks — the ticket is closed.');
-  }
-
-  protected reopen(t: SupportTicket): void {
-    if (!this.canReopen(t)) return;
-    this.update(t, { state: 'awaiting_support', closedAt: undefined, closedBy: undefined }, { from: 'system', text: 'Reopened by you', at: new Date() });
-    this.notice.set('Ticket reopened. The support team will pick it up again.');
   }
 
   /** DUMMY — stands in for the executive's Respond. */
@@ -628,7 +716,7 @@ export class HelplinePage {
     const now = new Date();
     this.update(t, { state: 'closed', closedAt: now, closedBy: 'support' }, {
       from: 'support', author: DEMO_EXECUTIVE, at: now,
-      text: "We've sorted this with the provider and adjusted your wallet balance. Closing the ticket — reopen it if anything is still wrong.",
+      text: "We've sorted this with the provider and adjusted your wallet balance. Closing the ticket.",
     });
     this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, messages: [...x.messages, { from: 'system', text: 'Resolved and closed by support', at: now }] } : x)));
     this.notice.set('Support resolved and closed the ticket — you were notified in the app, on WhatsApp and by email.');
@@ -666,5 +754,42 @@ function autoClose(t: SupportTicket): SupportTicket {
     closedAt: cutoff,
     closedBy: 'auto',
     messages: [...t.messages, { from: 'system', text: `Closed automatically — ${RAISE_WINDOW_MONTHS} months from the order date`, at: cutoff }],
+  };
+}
+
+interface UploadedDoc {
+  readonly file: File;
+  readonly state: 'uploading' | 'done' | 'failed';
+  readonly documentId?: string;
+}
+
+/** Epoch millis or ISO string from the claims list, as a Date. */
+function toDate(raw: unknown): Date {
+  const n = Number(raw);
+  const d = new Date(Number.isNaN(n) ? String(raw) : n);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+/** One row of the claims listing, as the Support page's order shape. */
+function toClaimOrder(row: any): SupportOrder {
+  const code = String(row?.claim_status ?? row?.status?.label ?? '').toUpperCase().replace(/[\s-]+/g, '_');
+  const label: string = row?.status?.label ?? '';
+  const flag: SupportOrder['claimFlag'] = /DOCUMENT|RESUBMISSION/.test(code) || /document/i.test(label)
+    ? 'Documents needed'
+    : /REJECT/.test(code) || /reject/i.test(label) ? 'Rejected' : undefined;
+  const bill = Number(row?.original_bill_amount ?? 0);
+  return {
+    id: String(row?.claim_id ?? ''),
+    service: String(row?.category ?? 'Reimbursement claim') as ServiceLine,
+    type: 'Reimbursement',
+    provider: String(row?.provider ?? ''),
+    placedAt: toDate(row?.treatment_date ?? row?.submitted_at),
+    progress: row?.status?.isFinal ? 'Completed' : 'In Progress',
+    claimFlag: flag,
+    gross: bill,
+    discount: 0,
+    paidByWallet: 0,
+    paidByMember: bill,
+    invoiceLines: [],
   };
 }
