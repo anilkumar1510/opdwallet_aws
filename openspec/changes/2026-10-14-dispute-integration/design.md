@@ -28,8 +28,17 @@ Body `resource=<URL-encoded base64 JSON>&application=habit-opd&action=<action>`,
 ### 4. Work around the backend's `args` format
 `userReply` takes the text in `args=messageText:<text>`, parsed as comma-separated `name:value` pairs: a comma or colon is rejected (quoting silently truncates, escaping does nothing). The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236). The same action twice within 3 s is refused, so Send is disabled for ~3 s after a send, including after the first message that follows a submit. Replies are capped at 2000 characters client-side (8000 verified accepted).
 
-### 5. `submit` stores the reason and the documents, not the description
-Supporting documents are uploaded to DMS first and sent in the submit's `documents` array (`name`, `document_id`, `document_type`, `originalname`, `verification_status`, `filetype`, `filesize`); the backend stores them on the grievance. `description` is dropped, so the member's own words are sent as the first `userReply` right after submit. That message is retried once after the 3 s guard; if it still fails the grievance stays raised and the words go back into the reply box with a notice.
+### 5. `submit` takes the member's words as `final_reason`, and the documents
+Supporting documents are uploaded to DMS first and sent in the submit's `documents` array (`name`, `document_id`, `document_type`, `originalname`, `verification_status`, `filetype`, `filesize`); the backend stores them on the grievance and the ticket lists them with a Download action (DMS `image-response-entity`). The member's own words are sent as `final_reason` (verified stored verbatim; `description` is dropped). Submit creates no thread message, so the same words are also sent as the first `userReply`. That message is retried once after the 3 s guard; if it still fails the grievance stays raised and the words go back into the reply box with a notice.
+
+### 5b. `final_reason` is also support's resolution
+Support's resolution later replaces `final_reason`. On a closed ticket it is shown as support's remark only when it differs from the member's first message, so the member never sees their own words presented as a resolution.
+
+### 5c. Claims beyond the first 20
+`ClaimsStore` loads only page 0. `ClaimPages` reads the next pages of the same listing (`GET_CLAIMS_BY_USER`), mapped like the store, and the page merges them and removes repeats (the real pages overlap). Load more shows five at a time and reads another page only when it runs out of rows; a failed page shows a message and can be retried.
+
+### 5d. Signing
+The dispute calls use `AppService.addXsrfToken` like the claim form, so a logged-in session (encrypted token) behaves the same. The server did not check the token on dispute reads or writes in testing (reported to the backend team).
 
 ### 6. Ticket state from `dispute_status`
 resolved / closed means closed; "awaiting user/member" means support has replied; anything else is with support. Closed shows `final_reason` and the call-support prompt. The member's name in messages is a user id, so own messages read "You".
@@ -41,5 +50,6 @@ The reopen button and logic are removed. On real tickets the demo support button
 
 - `benefit_category` is derived from the claim category label; the member-resolve action name is not known yet.
 - Lookalike characters in replies (`‚`, `∶`) until the backend supports escaping.
+- `final_reason` carries two meanings (member's words, then support's resolution); the display rule above is a heuristic until the backend has a separate field.
 - `helpline-page.ts` is shared with the static demo author; edits may conflict with their changes.
 - The real-API tests create real "[TEST]" grievances and are skipped unless `SESSION_ID` is set.

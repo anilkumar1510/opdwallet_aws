@@ -13,6 +13,9 @@ export const DISPUTE_API = {
   submit: 'submit',
 } as const;
 
+/** DMS endpoint that returns a stored file by id. */
+export const DMS_FETCH_URL = '/dms/api/v1/emrImage/image-response-entity';
+
 /** DMS endpoint the claim flow already uses for uploads. */
 export const DMS_UPLOAD_URL = '/dms/api/v1/emrImage';
 
@@ -29,8 +32,11 @@ export interface DisputeSubmitPayload {
   readonly benefit_category: string;
   readonly selected_reason: string;
   readonly dispute_status: 'OPEN';
-  /** What the member typed in "Tell us more". */
-  readonly description?: string;
+  /**
+   * What the member typed in "Tell us more". The dispute API stores it in
+   * `final_reason` (the executive's resolution later overwrites that field).
+   */
+  readonly final_reason?: string;
   /** The optional supporting documents, as the dispute API stores them. */
   readonly documents?: readonly DisputeDocument[];
 }
@@ -86,6 +92,8 @@ export interface DisputeRecord {
   readonly modifiedAt: Date;
   readonly finalReason: string | null;
   readonly lastMessageSender: string | null;
+  /** Documents the member attached when raising it. */
+  readonly documents: readonly { readonly documentId: string; readonly name: string }[];
 }
 
 export interface DisputeMessage {
@@ -174,7 +182,7 @@ export class DisputeApi {
       benefit_category: benefitCategoryOf(input.categoryLabel),
       selected_reason: input.reason,
       dispute_status: 'OPEN',
-      ...(description ? { description } : {}),
+      ...(description ? { final_reason: description } : {}),
       ...(input.documents.length ? { documents: input.documents } : {}),
     };
   }
@@ -297,6 +305,27 @@ export class DisputeApi {
     }
   }
 
+  /** Downloads a document stored in DMS (the member's session is the credential). */
+  async downloadDocument(documentId: string, fileName: string): Promise<ReplyResult> {
+    try {
+      const blob = await firstValueFrom(
+        this.http.get(`${DMS_FETCH_URL}?args=${encodeURIComponent(`id:${documentId}`)}&application=dms`, { responseType: 'blob' }),
+      );
+      // An error answers with JSON, not the file.
+      if (!blob.size || blob.type.includes('json')) return { ok: false, message: 'We could not open that document. Please try again.' };
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      return { ok: true };
+    } catch (error) {
+      console.error('Failed to download dispute document:', error);
+      return { ok: false, message: 'We could not open that document. Please try again.' };
+    }
+  }
+
   /** Uploads one supporting document to DMS and returns its id. */
   async uploadDocument(file: File): Promise<UploadResult> {
     if (file.size > MAX_DOCUMENT_BYTES) {
@@ -354,6 +383,9 @@ function toRecord(row: Record<string, any>): DisputeRecord | null {
     modifiedAt: toDate(row['g_modify_time'] ?? row['g_creation_time']),
     finalReason: row['final_reason'] ? String(row['final_reason']) : null,
     lastMessageSender: row['last_message_sender'] ? String(row['last_message_sender']) : null,
+    documents: (Array.isArray(row['documents']) ? row['documents'] : [])
+      .filter((d: any) => d?.document_id)
+      .map((d: any) => ({ documentId: String(d.document_id), name: String(d.originalname || d.name || 'Document') })),
   };
 }
 

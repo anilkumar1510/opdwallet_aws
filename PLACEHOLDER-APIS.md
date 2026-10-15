@@ -111,52 +111,78 @@ The Support page (static demo by Nitendra, `features/misc/helpline-page.ts` +
 `features/support/grievance.data.ts`) is wired to the real backend for
 **reimbursement claims**. Services (consultation, pharmacy, lab, …) stay on the
 static demo data until the backend and Twenty support them. All calls go through
-`core/disputes/dispute.api.ts`; host is the dev proxy / `apiBaseUrl`
-(`https://api.habithealth.com`), nothing is hard-coded to `localhost:8090`.
+`core/disputes/dispute.api.ts` (and `claim-pages.ts`); host is the dev proxy /
+`apiBaseUrl` (`https://api.habithealth.com`), nothing is hard-coded to `localhost:8090`.
 
 | What | Call |
 |---|---|
-| Claims that need help | `GET habit-opd/api/v1/claim?queryId=GET_CLAIMS_BY_USER` (same listing as the Claims page, 5 at a time) |
+| Claims that need help | `GET habit-opd/api/v1/claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`, later pages via `ClaimPages`; 5 shown at a time; repeats removed) |
 | Raise a grievance | `POST habit-opd/api/v1/dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
 | My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
 | Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
 | Member reply | `POST habit-opd/api/v1/dispute` `action=userReply`, `resource` = base64 `{resourceType:"Dispute",name,id}`, `args=messageText:<text>` |
-| Supporting document (optional) | `POST /dms/api/v1/emrImage` (same as the claim form), then sent in the submit's `documents` array |
+| Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form), then send in the submit's `documents` array |
+| Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
 
 Requests are form-urlencoded; `resource` is URL-encoded base64, signed over
-`resource&action=<action>` through `AppService.addXsrfToken` (verified against
-the real API with the plain MD5 token). `errCode: -1` is a failure even on HTTP 200.
+`resource&action=<action>` through `AppService.addXsrfToken`. `errCode: -1` is a
+failure even on HTTP 200.
+
+**Submit payload:** `claim_id, member_name, patient_name, relation_to_member,
+category (CLAIM), dispute_type (GENERAL), benefit_category, selected_reason,
+dispute_status (OPEN)`, plus optional `final_reason` (the member's own words;
+this is the backend's field for them) and `documents` (`name, document_id,
+document_type, originalname, verification_status, filetype, filesize`).
+The same words are also sent as the first `userReply` so the thread shows them
+(retried once after the 3 s guard; if it still fails the text goes back in the
+reply box).
 
 **Ticket state** comes from `dispute_status` (display text): contains
 resolved/closed means closed; "awaiting user/member" means support has replied;
-anything else is with support. `final_reason` is shown on a closed ticket.
-Tickets and the open thread refresh every 30 s while the page is open. Nothing
-is stored in the browser.
-
-**Behaviour of the real backend, observed (talk to the backend team):**
-- `userReply` reads `args` as comma-separated `name:value` pairs. A **comma or a
-  colon in the text is rejected** (or, if quoted, silently cuts the text), and no
-  escaping works. The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236).
-  Everything else (₹, quotes, newlines, Hindi, emoji, `&`, up to 8,000
-  characters) goes through. Ask for a body field or escaping.
-- The same action twice within **3 seconds** is refused ("please wait"); the
-  portal disables Send for ~3 s after a send (and after the first message
-  that follows a submit).
-- `submit` stores the reason and a **`documents` array** (verified: stored on the
-  grievance, each `{name, document_id, document_type, originalname,
-  verification_status, filetype, filesize}`), but **`description` is dropped.**
-  The member's own words are therefore sent as the first `userReply` right after
-  submit (retried once if refused by the 3 s guard; if it still fails the text is
-  put back in the reply box).
-- Message `sender_name` for the member is a user id, so the portal shows "You".
-- More than one dispute can exist for one claim; the portal shows the newest and
-  allows one live ticket per claim (PRD).
+anything else is with support. On a closed ticket `final_reason` is shown as
+support's resolution only once it differs from the member's first message (submit
+puts the member's words there; support's resolution later replaces them). Tickets
+and the open thread refresh every 30 s while the page is open. Nothing is stored
+in the browser.
 
 **Not available yet (no API):** Mark resolved by the member (hidden on real
-tickets), service-line (non-claim) grievances, reading orders for services.
-**No reopen:** the member cannot reopen a closed ticket; closed tickets show the
-call-support prompt only.
+tickets; API to be provided), notifications (in-app, WhatsApp, email), service-line
+(non-claim) grievances and their orders, central configuration (reason lists,
+raise window, support phone and email: placeholders `1800-000-0000` /
+`support@opdwallet.com`). **No reopen:** the member cannot reopen a closed ticket.
 
-**To confirm with backend:** `benefit_category` values (derived from the claim
-category label, e.g. `DIAGNOSTICS`), and the member-resolve action name
-(waiting for that API).
+### For the backend team (observed on the real API)
+1. **`userReply` cannot carry a comma or a colon.** `args` is parsed as
+   comma-separated `name:value` pairs: unquoted text is rejected ("args can have
+   only values of format name:value"); quoted text is silently cut at the first
+   comma; backslash and `%2C` escaping do nothing. The portal swaps `,` for `‚`
+   (U+201A) and `:` for `∶` (U+2236). Please support escaping or a body field
+   for the text. Everything else (₹, quotes, newlines, Hindi, emoji, `&`, 8,000
+   characters) works.
+2. **Same action twice within 3 seconds is refused** ("please wait for 3
+   seconds"). The portal disables Send for ~3 s. Consider a per-dispute key or
+   idempotency instead.
+3. **`final_reason` doubles as the member's description.** It is also the
+   resolution remark support writes on close. A separate field (for example
+   `member_description`) would avoid the two meanings, and submit could create the
+   first message itself instead of the portal sending a second call.
+4. **Member "Mark resolved" action:** waiting for the API.
+5. **Duplicates and the raise window are only enforced in the UI.** Several
+   disputes can exist for one claim (the portal shows the newest and allows one
+   live ticket per claim). Please enforce one open ticket per order and the
+   3-month window on the server as well.
+6. **`X-XSRF-TOKEN` is not checked** on the dispute reads or writes (missing or
+   wrong tokens were accepted). Please confirm this is intended.
+7. **Messages:** the member's `sender_name` is a user id (the portal shows "You");
+   replies cannot carry attachments (`userReply` has only `messageText`).
+8. **`dispute_status` is display text** ("Awaiting executive response"); a stable
+   code would be safer than the portal matching words.
+9. **`GET_CLAIMS_BY_USER` pages overlap** (the same claim can be on two pages;
+   39 claims came back as 20 + 19 with repeats). Needs a deterministic sort.
+10. **DMS `image-response-entity` answers HTTP 500** `{"status":500,"message":null}`
+    for an unknown document id (404 would be right).
+11. **Still to agree:** `benefit_category` values (derived from the claim category
+    label, e.g. `DIAGNOSTICS`), `category` / `dispute_type` for non-claim orders,
+    notifications, and a configuration API.
+12. **Test data to clean up** on the test account: DIS-2026-00393, 00395 to 00401
+    and the "[TEST]" messages on 00393.

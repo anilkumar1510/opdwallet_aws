@@ -58,6 +58,8 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   const stored = await page.request.get(`/habit-opd/api/v1/dispute?queryId=GET_PAGE&filter=name:${ticketId}`);
   const record = (await stored.json()).resource?.[0];
   expect(JSON.stringify(record)).toContain(documentId);
+  // The member's description is stored verbatim in `final_reason` (commas and colons are fine there).
+  expect(record.final_reason).toBe('[TEST - please ignore] integration check, with a comma: and a colon. Amount ₹1,500 "quoted" & more.');
   // The member's own words are the first message in the thread (comma and colon swapped for lookalikes).
   await expect(page.getByText(/integration check‚ with a comma∶ and a colon\. Amount ₹1‚500 "quoted" & more\./)).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Ticket opened')).toBeVisible();
@@ -67,6 +69,15 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   await page.getByRole('button', { name: 'Send reply' }).click();
   await expect(page.getByText('Reply sent.')).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('first reply ₹500 😊')).toBeVisible({ timeout: 20000 });
+
+  // The attached document is on the ticket and downloads back from DMS intact.
+  await expect(page.getByText('Documents you attached')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download' }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe('test-doc.pdf');
+  const path = await file.path();
+  expect(require('node:fs').readFileSync(path, 'utf8')).toContain('[TEST] supporting document');
 
   // The 3 second guard: the button stays disabled right after a send.
   await page.fill('#g-reply', '[TEST] too soon');

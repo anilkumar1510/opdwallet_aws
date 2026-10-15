@@ -6,16 +6,16 @@ The Twenty CRM `claim-grievance` app and the habit-opd `dispute` API exist for r
 
 Builds on the static grievance demo (`features/misc/helpline-page.ts`, `features/support/grievance.data.ts`) and changes only what is needed to make **claims** real and dynamic:
 
-- "Claims that need your help" reads the same paginated claims listing API as the Claims page.
+- "Claims that need your help" reads the same paginated claims listing API as the Claims page, every page (older claims through Load more, repeats removed).
 - Claim detail drops the Amount / payment section (claims are reimbursements).
-- The raise form gets an optional supporting-documents upload (DMS) for claims.
-- "Send to support" calls `POST /habit-opd/api/v1/dispute` (`action=submit`); the backend stores the grievance.
+- The raise form gets an optional supporting-documents upload (DMS) for claims; the documents show on the ticket and download from DMS.
+- "Send to support" calls `POST /habit-opd/api/v1/dispute` (`action=submit`); the backend stores the grievance, the member's words in `final_reason` and the documents in `documents`.
 - Tickets and their status come from the API (`GET_PAGE`); threads from `GET_DISPUTE_MESSAGES` (all pages); both refresh every 30 s while the page is open.
 - The member's reply goes out as `action=userReply`; the member's own words after submit are sent as the first message.
 - The member can no longer reopen a closed ticket; "Mark resolved" is hidden on real tickets (no API).
 - The wireframe "Static demo" banner is removed; simulated support buttons are hidden for real claims.
 - "Something else?" call and email buttons work (copy number on desktop, prefilled mailto).
-- New `core/disputes/dispute.api.ts`: submit, list, messages, reply, document upload.
+- New `core/disputes/dispute.api.ts` (submit, list, messages, reply, upload, download) and `claim-pages.ts` (later pages of the claims listing).
 
 ## Capabilities
 

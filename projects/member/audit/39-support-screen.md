@@ -191,16 +191,16 @@ against working software.
 
 The Support page now saves **claim** grievances and reads them back: the claims
 listing feeds "Claims that need your help"; "Send to support" calls
-`POST habit-opd/api/v1/dispute` (`submit`); tickets (`GET_PAGE`) and threads
+`POST habit-opd/api/v1/dispute` (`submit`, the member's words in `final_reason`, documents in `documents`); tickets (`GET_PAGE`) and threads
 (`GET_DISPUTE_MESSAGES`) are fetched from the API and refreshed every 30 s; replies
-go out as `userReply`. The raise form takes optional documents (DMS). The member
+go out as `userReply`. The raise form takes optional documents (DMS), which show on the ticket and download from DMS. "Claims that need your help" reads every page of the claims listing. The member
 cannot reopen a closed ticket and claim detail has no payment section.
 Nothing is kept in the browser, so a refresh shows the same tickets.
 
 Backend quirks the portal works around (commas/colons in `args`, the 3-second
-same-action guard, `description` dropped by `submit`; `documents` are stored) are listed
+same-action guard) and the points for the backend team are listed
 in `PLACEHOLDER-APIS.md` section 7. Still placeholder: Mark resolved by the
-member, and service-line (non-claim) grievances.
+member, notifications, central configuration and service-line (non-claim) grievances. Phone layouts are covered by emulated iPhone 13 / Pixel 7 tests, real devices by hand.
 
 Spec: `openspec/changes/2026-10-14-dispute-integration/`. Browser tests:
 `tests/e2e/disputes/` (a fake of the API, plus `live-api.spec.ts` against the real

@@ -3,7 +3,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { ClaimsStore } from '../../core/claims/claims.store';
-import { DisputeApi, DisputeMessage, DisputeRecord, ticketStateOf, toDisputeDocument } from '../../core/disputes/dispute.api';
+import { CLAIMS_PAGE_SIZE, ClaimPages } from '../../core/disputes/claim-pages';
+import { DisputeApi, DisputeMessage, DisputeRecord, ticketStateOf, toArgSafe, toDisputeDocument } from '../../core/disputes/dispute.api';
 
 import {
   ClosedBy,
@@ -100,8 +101,11 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                     </li>
                   }
                 </ul>
-                @if (flaggedClaims().length > claimsShown()) {
-                  <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700" (click)="claimsShown.set(claimsShown() + pageSize)">Load more</button>
+                @if (claimsPagingError()) {
+                  <p class="mt-3 text-sm text-danger-700" role="alert">We could not load more claims. Please try again.</p>
+                }
+                @if (flaggedClaims().length > claimsShown() || claimsMore()) {
+                  <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700 disabled:opacity-50" [disabled]="claimsPaging()" (click)="loadMoreClaims()">{{ claimsPaging() ? 'Loading…' : 'Load more' }}</button>
                 }
               } @else {
                 <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-500">No claim needs your attention right now.</p>
@@ -272,6 +276,23 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 </dl>
               </section>
 
+              @if (isLiveTicket(t) && ticketDocuments(t).length) {
+                <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                  <h2 class="text-sm font-semibold text-ink-900">Documents you attached</h2>
+                  <ul class="mt-2 divide-y divide-[#EDF0F7]">
+                    @for (d of ticketDocuments(t); track d.documentId) {
+                      <li class="flex items-center justify-between gap-3 py-2 text-sm">
+                        <span class="min-w-0 truncate text-ink-900">{{ d.name }}</span>
+                        <button type="button" class="min-h-touch shrink-0 px-2 text-sm font-medium text-[#0F5FDC] underline disabled:opacity-50" [disabled]="openingDoc() === d.documentId" (click)="downloadDoc(d)">{{ openingDoc() === d.documentId ? 'Opening…' : 'Download' }}</button>
+                      </li>
+                    }
+                  </ul>
+                  @if (docError(); as derr) {
+                    <p class="mt-2 text-sm text-danger-700" role="alert">{{ derr }}</p>
+                  }
+                </section>
+              }
+
               <!-- Thread: member, support and system events, each time-stamped. -->
               @if (isLiveTicket(t) && threadError(); as terr) {
                 <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-700" role="status">{{ terr }}</p>
@@ -415,6 +436,7 @@ export class HelplinePage {
 
   private readonly claimsStore = inject(ClaimsStore);
   private readonly disputeApi = inject(DisputeApi);
+  private readonly claimPages = inject(ClaimPages);
 
   /** Demo orders for every service; the live claims below are kept apart. */
   private readonly seedOrders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
@@ -425,11 +447,23 @@ export class HelplinePage {
    * uses (GET_CLAIMS_BY_USER). These are real: a grievance on one is submitted
    * to the dispute API.
    */
-  private readonly claimOrders = computed<SupportOrder[]>(() =>
-    ((this.claimsStore.clailListData() ?? []) as any[])
-      .map(toClaimOrder)
-      .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()),
+  private readonly moreClaimRows = signal<any[]>([]);
+  private readonly nextClaimPage = signal(1);
+  /** null until a later page has been read; then whether that page was full. */
+  private readonly moreFromServer = signal<boolean | null>(null);
+  protected readonly claimsPaging = signal(false);
+  protected readonly claimsPagingError = signal(false);
+  protected readonly claimsMore = computed(
+    () => this.moreFromServer() ?? ((this.claimsStore.clailListData() ?? []).length >= CLAIMS_PAGE_SIZE),
   );
+  private readonly claimOrders = computed<SupportOrder[]>(() => {
+    // The pages of this listing overlap a little, so a claim can come twice.
+    const seen = new Set<string>();
+    return ([...((this.claimsStore.clailListData() ?? []) as any[]), ...this.moreClaimRows()])
+      .filter((row) => row?.claim_id && !seen.has(row.claim_id) && !!seen.add(row.claim_id))
+      .map(toClaimOrder)
+      .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime());
+  });
   private readonly claimsFetched = signal(false);
   protected readonly claimsLoading = computed(() => !this.claimsFetched() && this.claimOrders().length === 0);
   private readonly everyOrder = computed(() => [...this.claimOrders(), ...this.orders()]);
@@ -440,6 +474,8 @@ export class HelplinePage {
   private readonly liveRecords = signal<DisputeRecord[]>([]);
   private readonly threads = signal<Record<string, DisputeMessage[]>>({});
   protected readonly threadError = signal<string | null>(null);
+  protected readonly openingDoc = signal<string | null>(null);
+  protected readonly docError = signal<string | null>(null);
   protected readonly replying = signal(false);
   protected readonly replyError = signal<string | null>(null);
   /** The backend refuses the same action twice inside 3 seconds. */
@@ -570,6 +606,19 @@ export class HelplinePage {
     return this.claimOrders().some((c) => c.id === o.id);
   }
 
+  protected ticketDocuments(t: SupportTicket): DisputeRecord['documents'] {
+    return this.liveRecords().find((r) => r.name === t.id)?.documents ?? [];
+  }
+
+  protected async downloadDoc(d: { documentId: string; name: string }): Promise<void> {
+    if (this.openingDoc()) return;
+    this.docError.set(null);
+    this.openingDoc.set(d.documentId);
+    const result = await this.disputeApi.downloadDocument(d.documentId, d.name);
+    this.openingDoc.set(null);
+    if (!result.ok) this.docError.set(result.message);
+  }
+
   protected isLiveTicket(t: SupportTicket): boolean {
     return this.liveRecords().some((r) => r.name === t.id);
   }
@@ -692,6 +741,7 @@ export class HelplinePage {
     this.reply.set('');
     this.replyError.set(null);
     this.threadError.set(null);
+    this.docError.set(null);
     this.notice.set(null);
     this.view.set('ticket');
   }
@@ -785,6 +835,26 @@ export class HelplinePage {
     this.notice.set(kept
       ? `Ticket ${record.name} created for ${o.id}, but your details could not be sent. They are in the reply box — please send them again.`
       : `Ticket ${record.name} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
+  }
+
+  /** Shows five more claims, reading the next page of the listing when needed. */
+  protected async loadMoreClaims(): Promise<void> {
+    if (this.claimsPaging()) return;
+    this.claimsShown.set(this.claimsShown() + this.pageSize);
+    this.claimsPagingError.set(false);
+    this.claimsPaging.set(true);
+    try {
+      // A page can be all repeats, so keep reading (bounded) until there is enough to show.
+      for (let i = 0; i < 20 && this.claimsMore() && this.claimOrders().length < this.claimsShown(); i++) {
+        const result = await this.claimPages.page(this.nextClaimPage());
+        if (!result.ok) { this.claimsPagingError.set(true); break; }
+        this.nextClaimPage.update((n) => n + 1);
+        this.moreFromServer.set(result.full);
+        this.moreClaimRows.update((rows) => [...rows, ...result.rows]);
+      }
+    } finally {
+      this.claimsPaging.set(false);
+    }
   }
 
   protected async onFiles(event: Event): Promise<void> {
@@ -946,7 +1016,12 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
       : { from: 'support', author: m.senderName, text: m.text, at: m.at })),
   ];
   if (state === 'closed') {
-    messages.push({ from: 'system', text: r.finalReason ? `Resolved and closed by support — ${r.finalReason}` : 'Resolved and closed by support', at: r.modifiedAt });
+    // `final_reason` starts as the member's own words (submit stores them there)
+    // and becomes the resolution when support closes the ticket: only show it as
+    // support's remark once it is no longer the member's first message.
+    const first = thread.find((m) => m.sender === 'MEMBER')?.text;
+    const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
+    messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });
   }
   return {
     id: r.name,

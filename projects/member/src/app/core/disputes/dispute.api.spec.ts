@@ -20,19 +20,21 @@ describe('DisputeApi', () => {
   let api: DisputeApi;
   let activeMember: () => unknown;
   let post: ReturnType<typeof vi.fn>;
+  let get: ReturnType<typeof vi.fn>;
   let addXsrfToken: ReturnType<typeof vi.fn>;
   let getcall: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     post = vi.fn();
+    get = vi.fn();
     activeMember = () => patient;
     getcall = vi.fn();
     addXsrfToken = vi.fn().mockReturnValue({ headers: {}, responseType: 'text', observe: 'response' });
     TestBed.configureTestingModule({
       providers: [
         DisputeApi,
-        { provide: HttpClient, useValue: { post } },
+        { provide: HttpClient, useValue: { post, get } },
         {
           provide: AppService,
           useValue: { addXsrfToken, getcall, getXsrfToken: () => 'sig', getUserTimezone: () => 'Asia/Kolkata', getCurrentTime: () => '1' },
@@ -82,11 +84,13 @@ describe('DisputeApi', () => {
     expect(decode(post.mock.calls[0][1])).toMatchObject({ member_name: 'Session Sample', patient_name: 'Session Sample', relation_to_member: 'SELF' });
   });
 
-  it('adds description and documents only when present', async () => {
+  it('sends the description as final_reason, and documents, only when present', async () => {
     post.mockReturnValue(text({ errCode: 0 }));
     const doc = toDisputeDocument(new File(['x'], 'bill.pdf', { type: 'application/pdf' }), 'doc-1', 'bill.pdf');
     await api.submit({ ...input, detail: '  Amount is wrong  ', documents: [doc] });
-    expect(decode(post.mock.calls[0][1])).toMatchObject({ description: 'Amount is wrong', documents: [doc] });
+    const sent = decode(post.mock.calls[0][1]);
+    expect(sent).toMatchObject({ final_reason: 'Amount is wrong', documents: [doc] });
+    expect(sent).not.toHaveProperty('description');
     post.mockClear();
     await api.submit(input);
     expect(decode(post.mock.calls[0][1])).not.toHaveProperty('documents');
@@ -166,6 +170,48 @@ describe('DisputeApi', () => {
       expect((await api.list()).ok).toBe(false);
       getcall.mockReturnValue(of('<html>'));
       expect((await api.list()).ok).toBe(false);
+    });
+  });
+
+  describe('documents on a record', () => {
+    it('maps the stored documents, preferring the original file name', async () => {
+      getcall.mockReturnValue(of(JSON.stringify({ errCode: 0, resource: [{ id: 'i', name: 'DIS-1', claim_id: 'C', documents: [
+        { document_id: 'd1', name: 'stored.pdf', originalname: 'bill.pdf' },
+        { document_id: 'd2', name: 'only-name.png' },
+        { name: 'no id, dropped' },
+      ] }] })));
+      const result = await api.list();
+      expect(result.ok && result.items[0].documents).toEqual([
+        { documentId: 'd1', name: 'bill.pdf' },
+        { documentId: 'd2', name: 'only-name.png' },
+      ]);
+    });
+
+    it('a record without documents has an empty list', async () => {
+      getcall.mockReturnValue(of(JSON.stringify({ errCode: 0, resource: [{ id: 'i', name: 'DIS-1', claim_id: 'C' }] })));
+      const result = await api.list();
+      expect(result.ok && result.items[0].documents).toEqual([]);
+    });
+  });
+
+  describe('downloadDocument', () => {
+    it('asks DMS for the file by id and saves it under its name', async () => {
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+      (URL as any).createObjectURL = vi.fn(() => 'blob:x');
+      (URL as any).revokeObjectURL = vi.fn();
+      get.mockReturnValue(of(new Blob(['%PDF'], { type: 'application/pdf' })));
+      expect(await api.downloadDocument('doc-9', 'bill.pdf')).toEqual({ ok: true });
+      expect(get.mock.calls[0][0]).toBe('/dms/api/v1/emrImage/image-response-entity?args=id%3Adoc-9&application=dms');
+      expect(click).toHaveBeenCalledTimes(1);
+      click.mockRestore();
+    });
+
+    it('treats an empty or JSON answer, or a network error, as a failure', async () => {
+      get
+        .mockReturnValueOnce(of(new Blob([], { type: 'application/pdf' })))
+        .mockReturnValueOnce(of(new Blob(['{"status":500}'], { type: 'application/json' })))
+        .mockReturnValueOnce(throwError(() => new Error('offline')));
+      for (let i = 0; i < 3; i++) expect(await api.downloadDocument('x', 'f.pdf')).toMatchObject({ ok: false });
     });
   });
 

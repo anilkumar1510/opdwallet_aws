@@ -1,7 +1,12 @@
 ## ADDED Requirements
 
 ### Requirement: Claims that need help come from the claims listing API
-The Support page SHALL list the member's claims from the same paginated claims listing API as the Claims page, newest first, five at a time with a Load more control.
+The Support page SHALL list the member's claims from the same paginated claims listing API as the Claims page, newest first, five at a time with a Load more control, reading further pages of the listing when the claims already loaded run out.
+
+#### Scenario: More than 20 claims
+- **WHEN** a member has more claims than one page holds
+- **THEN** Load more reaches the older claims, each claim is shown once even if two pages repeat it, and the button goes away after the last page
+- **AND** a page that fails to load shows a message and Load more tries it again
 
 #### Scenario: Claims are listed
 - **WHEN** a member opens the Support page and the listing returns claims
@@ -30,7 +35,7 @@ Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/dispute
 
 #### Scenario: The member's own words
 - **WHEN** the member wrote details
-- **THEN** they are sent as the first reply on the new ticket and appear as the first message in the thread
+- **THEN** they are sent as `final_reason` in the submit, and also as the first reply on the new ticket and appear as the first message in the thread
 - **AND** when no details were written, no message is sent
 - **AND** if that first message is refused it is retried once, and if it still fails the ticket stays raised and the words are put back in the reply box with a notice
 
@@ -71,6 +76,15 @@ Tickets, their status and their threads SHALL be read from the dispute API (`GET
 - **THEN** the claim shows "Response received"
 - **WHEN** it is any other status
 - **THEN** the claim shows "Ticket open"
+
+#### Scenario: Documents on a ticket
+- **WHEN** a ticket has documents attached
+- **THEN** they are listed, and Download fetches the file from DMS and saves it under its name
+- **AND** a document that cannot be fetched shows an error and can be tried again
+
+#### Scenario: The member's own words are not support's resolution
+- **WHEN** a ticket is closed and `final_reason` still equals the member's first message
+- **THEN** it is not shown as support's resolution
 
 #### Scenario: Support replies while the page is open
 - **WHEN** support replies in the support system

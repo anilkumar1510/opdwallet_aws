@@ -1,203 +1,19 @@
 import { expect, Page, test } from '@playwright/test';
 
+import { FakeApi, claimRow, claimRowOf, claimsSection, DAY, mockBackend, openSupport, raise, servicesSection } from './fake-api';
+
+
 /**
  * Support page grievance flow against a FAKE of the real dispute API.
  *
  * The fake behaves like the real backend, as observed: `GET_PAGE` lists the
  * member's disputes, `GET_DISPUTE_MESSAGES` pages a thread (20 a page), `submit`
- * stores only the reason, `userReply` takes its text in `args` (name:value, so a
- * comma or colon is rejected) and refuses the same action twice within 3
- * seconds. No session or backend is needed. Run with the dev server up (4500).
+ * stores the reason, `final_reason` and `documents`, `userReply` takes its text in
+ * `args` (name:value, so a comma or colon is rejected) and refuses the same
+ * action twice within 3 seconds. No session or backend is needed. Run with the dev server up (4500).
  * The real thing is covered by live-api.spec.ts.
  */
 test.use({ headless: true });
-
-const DAY = 24 * 60 * 60 * 1000;
-const GUARD_MS = 3000;
-
-function claimRow(n: number, status: string, label: string, final = false) {
-  return {
-    claim_id: `OPD-2026-${String(354 - n).padStart(5, '0')}`,
-    category: 'Diagnostics',
-    provider: 'Sample Lab',
-    treatment_date: Date.now() - (n + 1) * DAY,
-    original_bill_amount: 1500,
-    claim_status: status,
-    status: { label, tone: 'neutral', isFinal: final },
-  };
-}
-
-const CLAIMS = [
-  claimRow(0, 'REJECTED', 'Rejected', true),
-  claimRow(1, 'DOCUMENTS_REQUIRED', 'Documents needed'),
-  claimRow(2, 'UNDER_REVIEW', 'Under review'),
-  claimRow(3, 'UNDER_REVIEW', 'Under review'),
-  claimRow(4, 'UNDER_REVIEW', 'Under review'),
-  claimRow(5, 'UNDER_REVIEW', 'Under review'),
-];
-
-interface Dispute {
-  id: string;
-  name: string;
-  claim_id: string;
-  selected_reason: string;
-  dispute_status: string;
-  g_creation_time: number;
-  g_modify_time: number;
-  final_reason?: string;
-}
-interface Message {
-  id: string;
-  dispute_id: string;
-  sender_type: 'MEMBER' | 'SUPPORT_EXECUTIVE';
-  sender_name: string;
-  message_text: string;
-  timestamp: number;
-}
-
-class FakeApi {
-  disputes: Dispute[] = [];
-  messages: Message[] = [];
-  submits: Record<string, unknown>[] = [];
-  submitHeaders: Record<string, string>[] = [];
-  replies: { name: string; text: string }[] = [];
-  uploads = 0;
-  claims: object[] = CLAIMS;
-  failSubmit: 'errCode' | 500 | null = null;
-  failReply: string | null = null;
-  failList = false;
-  /** Reject this many replies (with the 3 s guard message) before accepting. */
-  rejectReplies = 0;
-  rejectReplyMessage = 'You have clicked multiple times for the same action, please wait for 3 seconds.';
-  failMessages = false;
-  uploadReply: object | null = null;
-  submitDelayMs = 0;
-  private lastReplyAt = 0;
-  private seq = 0;
-
-  seed(d: Partial<Dispute> & { claim_id: string }, msgs: Array<Pick<Message, 'sender_type' | 'message_text'> & { at?: number }> = []): Dispute {
-    const n = ++this.seq;
-    const dispute: Dispute = {
-      id: `uuid-${n}`,
-      name: `DIS-2026-${String(390 + n).padStart(5, '0')}`,
-      selected_reason: 'Claim rejected incorrectly',
-      dispute_status: 'OPEN',
-      g_creation_time: Date.now() - 3600_000,
-      g_modify_time: Date.now() - 3600_000,
-      ...d,
-    };
-    this.disputes.push(dispute);
-    msgs.forEach((m, i) => this.addMessage(dispute.id, m.sender_type, m.message_text, m.at ?? Date.now() - 3000_000 + i * 1000));
-    return dispute;
-  }
-
-  addMessage(disputeId: string, type: Message['sender_type'], text: string, at = Date.now()): void {
-    this.messages.push({
-      id: `m-${this.messages.length + 1}`,
-      dispute_id: disputeId,
-      sender_type: type,
-      sender_name: type === 'MEMBER' ? 'member-user-id' : 'Support Executive',
-      message_text: text,
-      timestamp: at,
-    });
-  }
-
-  /** Support answers: what the CRM does through the backend. */
-  supportReplies(name: string, text: string, status = 'Awaiting user response'): void {
-    const d = this.disputes.find((x) => x.name === name)!;
-    this.addMessage(d.id, 'SUPPORT_EXECUTIVE', text);
-    d.dispute_status = status;
-  }
-}
-
-const json = (body: object) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
-
-async function mockBackend(page: Page, api = new FakeApi()): Promise<FakeApi> {
-  await page.route(/\/(habit-opd|account-management|system-management|master-management)\/api\//, async (route) => {
-    const req = route.request();
-    const url = new URL(req.url());
-    const q = url.searchParams;
-    const isDispute = url.pathname.endsWith('/habit-opd/api/v1/dispute');
-
-    if (isDispute && req.method() === 'GET') {
-      const pageNo = Number(q.get('page_no') ?? 0);
-      const size = Number(q.get('page_size') ?? 20);
-      const slice = <T>(rows: T[]) => rows.slice(pageNo * size, pageNo * size + size);
-      if (q.get('queryId') === 'GET_PAGE') {
-        if (api.failList) return route.fulfill(json({ errCode: -1, message: 'Invalid Session' }));
-        return route.fulfill(json({ errCode: 0, resource: slice([...api.disputes].reverse()) }));
-      }
-      if (q.get('queryId') === 'GET_DISPUTE_MESSAGES') {
-        if (api.failMessages) return route.fulfill(json({ errCode: -1, message: 'Invalid Query' }));
-        const id = (q.get('args') ?? '').replace('dispute_id:', '');
-        return route.fulfill(json({ errCode: 0, resource: slice(api.messages.filter((m) => m.dispute_id === id)) }));
-      }
-    }
-
-    if (isDispute && req.method() === 'POST') {
-      const form = new URLSearchParams(req.postData() ?? '');
-      const encoded = form.get('resource') ?? '';
-      const payload = JSON.parse(decodeURIComponent(escape(Buffer.from(encoded, 'base64').toString('binary'))));
-      const action = form.get('action');
-
-      if (action === 'submit') {
-        api.submits.push(payload);
-        api.submitHeaders.push(req.headers());
-        if (api.submitDelayMs) await new Promise((r) => setTimeout(r, api.submitDelayMs));
-        if (api.failSubmit === 500) return route.fulfill({ status: 500, body: 'boom' });
-        if (api.failSubmit === 'errCode') return route.fulfill(json({ errCode: -1, message: 'Claim not found' }));
-        const d = api.seed({ claim_id: payload.claim_id, selected_reason: payload.selected_reason, dispute_status: 'OPEN', g_creation_time: Date.now() });
-        return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, name: d.name, ticket_id: d.name }] }));
-      }
-
-      if (action === 'userReply') {
-        const args = form.get('args') ?? '';
-        const value = args.replace(/^messageText:/, '');
-        if (/[,:]/.test(value)) return route.fulfill(json({ errCode: -1, message: 'args can  have only values of format name:value' }));
-        if (Date.now() - api['lastReplyAt'] < GUARD_MS) {
-          return route.fulfill(json({ errCode: -1, message: 'You have clicked multiple times for the same action, please wait for 3 seconds.' }));
-        }
-        if (api.rejectReplies > 0) { api.rejectReplies -= 1; return route.fulfill(json({ errCode: -1, message: api.rejectReplyMessage })); }
-        if (api.failReply) return route.fulfill(json({ errCode: -1, message: api.failReply }));
-        api['lastReplyAt'] = Date.now();
-        const d = api.disputes.find((x) => x.id === payload.id)!;
-        api.replies.push({ name: payload.name, text: value });
-        api.addMessage(d.id, 'MEMBER', value);
-        d.dispute_status = 'Awaiting executive response';
-        return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
-      }
-    }
-
-    if (q.get('queryId') === 'GET_CLAIMS_BY_USER') return route.fulfill(json({ errCode: 0, resource: api.claims }));
-    if ((q.get('queryId') ?? '').includes('valueset')) return route.fulfill(json({ errCode: 0, resource: [] }));
-    return route.fulfill(json({ errCode: -1, message: 'not mocked' }));
-  });
-
-  await page.route('**/dms/api/v1/emrImage', async (route) => {
-    api.uploads += 1;
-    await route.fulfill(json(api.uploadReply ?? { errCode: 0, resource: [{ document_id: `doc-${api.uploads}`, file_name: 'bill.pdf' }] }));
-  });
-  return api;
-}
-
-const claimsSection = (page: Page) => page.locator('section', { has: page.getByRole('heading', { name: 'Claims that need your help' }) });
-const servicesSection = (page: Page) => page.locator('section', { has: page.getByRole('heading', { name: 'Services you have used' }) });
-const claimRowOf = (page: Page, id: string) => claimsSection(page).locator('li', { hasText: id });
-
-async function openSupport(page: Page, api?: FakeApi): Promise<FakeApi> {
-  const fake = await mockBackend(page, api);
-  await page.goto('/member/helpline');
-  await expect(claimsSection(page).getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
-  return fake;
-}
-
-/** Raise a grievance on the newest claim. */
-async function raise(page: Page, reason = 'Claim rejected incorrectly', detail = '') {
-  await claimsSection(page).getByRole('button', { name: 'Ask for help' }).first().click();
-  await page.selectOption('#g-reason', reason);
-  if (detail) await page.fill('#g-detail', detail);
-  await page.getByRole('button', { name: /Send to support/ }).click();
-}
 
 test.describe('Claims that need your help', () => {
   test('lists the claims from the listing API, newest first, with Load more', async ({ page }) => {
@@ -230,6 +46,89 @@ test.describe('Claims that need your help', () => {
   });
 });
 
+/** n distinct claims, newest first, with the first one repeated at the start of page 2 (the real pages overlap). */
+function manyClaims(n: number, repeatFirstAt = 20): object[] {
+  const rows = Array.from({ length: n }, (_, i) => claimRow(i, 'UNDER_REVIEW', 'Under review'));
+  if (repeatFirstAt < n) rows.splice(repeatFirstAt, 0, rows[0]);
+  return rows;
+}
+
+test.describe('Claims paging (more than 20 claims)', () => {
+  // The button reads "Loading…" while a page is being read, so wait for it to settle.
+  const more = (page: Page) => claimsSection(page).getByRole('button', { name: /^(Load more|Loading…)$/ });
+  const clickMore = async (page: Page) => {
+    await expect(more(page)).toHaveText('Load more', { timeout: 10000 });
+    await more(page).click({ timeout: 3000 }); // short: on the last page the button can vanish before the click
+  };
+  const loadAll = async (page: Page) => {
+    for (let i = 0; i < 30; i++) {
+      if (!(await more(page).count())) return;
+      try { await clickMore(page); } catch { /* it went away between the check and the click */ }
+    }
+  };
+
+  test('older claims on later pages are reached with Load more, repeats are shown once, and the button goes away', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = manyClaims(44); // 44 distinct claims across 3 pages, one repeated
+    await openSupport(page, api);
+    await loadAll(page);
+    await expect(claimsSection(page).locator('li')).toHaveCount(44);
+    await expect(claimsSection(page).getByText('OPD-2026-00311')).toBeVisible(); // the oldest, on the last page
+    await expect(claimsSection(page).getByText('OPD-2026-00354')).toHaveCount(1); // not duplicated
+    await expect(more(page)).toHaveCount(0);
+    expect(api.claimPageRequests.filter((n) => n === 1)).toHaveLength(1);
+  });
+
+  test('with 6 claims there is nothing more to load and no extra request', async ({ page }) => {
+    const api = await openSupport(page);
+    await clickMore(page);
+    await expect(more(page)).toHaveCount(0);
+    await expect(claimsSection(page).locator('li')).toHaveCount(6);
+    expect(api.claimPageRequests).toEqual([0]);
+  });
+
+  test('exactly 20 claims: Load more checks the next page once, finds nothing and goes away', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = manyClaims(20, 99);
+    await openSupport(page, api);
+    await loadAll(page);
+    await expect(claimsSection(page).locator('li')).toHaveCount(20);
+    await expect(more(page)).toHaveCount(0);
+    expect(api.claimPageRequests).toEqual([0, 1]);
+  });
+
+  test('a failed page shows a message, keeps what is shown, and Load more tries again', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = manyClaims(44);
+    api.failClaimsPage = 1;
+    await openSupport(page, api);
+    for (let i = 0; i < 4; i++) await clickMore(page); // 2 + 5 per click: runs past the 20 on page 0
+    await expect(claimsSection(page).getByRole('alert')).toContainText('could not load more claims');
+    await expect(claimsSection(page).locator('li').first()).toBeVisible();
+    await loadAll(page);
+    await expect(claimsSection(page).locator('li')).toHaveCount(44);
+    await expect(claimsSection(page).getByRole('alert')).toHaveCount(0);
+  });
+
+  test('a claim on a later page shows its ticket status', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = manyClaims(44);
+    api.seed({ claim_id: 'OPD-2026-00320', dispute_status: 'Awaiting user response' }, [{ sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Please upload page 2' }]);
+    await openSupport(page, api);
+    await loadAll(page);
+    await expect(claimRowOf(page, 'OPD-2026-00320').getByRole('button', { name: 'Response received' })).toBeVisible();
+  });
+
+  test('rapid clicks on Load more read each page once', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = manyClaims(44);
+    await openSupport(page, api);
+    for (let i = 0; i < 4; i++) await clickMore(page);
+    await loadAll(page);
+    for (const n of [1, 2]) expect(api.claimPageRequests.filter((x) => x === n)).toHaveLength(1);
+  });
+});
+
 test.describe('Raise a grievance (submit)', () => {
   test('submit sends the claim, reason and signature; the ticket opens with the backend ticket id', async ({ page }) => {
     const api = await openSupport(page);
@@ -253,6 +152,30 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('Bill is wrong‚ see note∶ it was ₹1‚500.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
     expect(api.replies[0].text).toBe('Bill is wrong‚ see note∶ it was ₹1‚500.');
+    // The same words are stored on the grievance as final_reason (the backend's field for them).
+    expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.' });
+    expect(api.submits[0]).not.toHaveProperty('description');
+  });
+
+  test('a closed ticket does not show the member own words as the support resolution', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: 'Bill is wrong, see note: x' }, [
+      { sender_type: 'MEMBER', message_text: 'Bill is wrong‚ see note∶ x' },
+    ]);
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText(/Resolved and closed by support — /)).toHaveCount(0);
+  });
+
+  test('a closed ticket shows the support resolution once final_reason has been overwritten', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: 'Re-adjudicated and approved.' }, [
+      { sender_type: 'MEMBER', message_text: 'Bill is wrong' },
+    ]);
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
+    await expect(page.getByText(/Resolved and closed by support — Re-adjudicated and approved\./)).toBeVisible();
   });
 
   test('no details means no first message, only "Ticket opened"', async ({ page }) => {
@@ -483,6 +406,58 @@ test.describe('Tickets come from the API', () => {
     await expect(page.getByText("Demo — support's reply")).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Mark resolved' })).toHaveCount(0);
     await expect(page.getByText(/reopen/i)).toHaveCount(0);
+  });
+});
+
+test.describe('Documents on a ticket', () => {
+  const withDoc = { name: 'bill.pdf', document_id: 'doc-77', document_type: 'OTHER', originalname: 'bill.pdf', verification_status: 'PENDING', filetype: 'application/pdf', filesize: '15' };
+
+  test('a document attached when raising shows on the ticket and downloads from DMS', async ({ page }) => {
+    const api = await openSupport(page);
+    await claimsSection(page).getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.setInputFiles('#g-docs', { name: 'bill.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 sample') });
+    await expect(page.getByText('bill.pdf · uploaded')).toBeVisible();
+    await page.getByRole('button', { name: 'Send to support' }).click();
+    await expect(page.getByText('Documents you attached')).toBeVisible({ timeout: 20000 });
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download' }).click();
+    expect((await download).suggestedFilename()).toBe('bill.pdf');
+    expect(api.dmsFetches).toEqual(['id:doc-1']);
+  });
+
+  test('the documents are listed after a refresh too, one row each', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({ claim_id: 'OPD-2026-00354', documents: [withDoc, { ...withDoc, document_id: 'doc-78', name: 'rx.png', originalname: 'rx.png' }] });
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket open' }).click();
+    await expect(page.getByText('Documents you attached')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(2);
+    await expect(page.getByText('rx.png')).toBeVisible();
+  });
+
+  test('a ticket with no documents has no documents section', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({ claim_id: 'OPD-2026-00354' });
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket open' }).click();
+    await expect(page.getByText('Your ticket')).toBeVisible();
+    await expect(page.getByText('Documents you attached')).toHaveCount(0);
+  });
+
+  test('a document that cannot be fetched shows an error and can be tried again', async ({ page }) => {
+    const api = new FakeApi();
+    api.dmsFetch = 'fail';
+    api.seed({ claim_id: 'OPD-2026-00354', documents: [withDoc] });
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket open' }).click();
+    await page.getByRole('button', { name: 'Download' }).click();
+    await expect(page.getByRole('alert')).toContainText('could not open that document');
+    api.dmsFetch = 'ok';
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download' }).click();
+    expect((await download).suggestedFilename()).toBe('bill.pdf');
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 });
 
