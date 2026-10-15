@@ -313,6 +313,13 @@ describe('ticketStateOf', () => {
     ['ASSIGNED', 'awaiting_support'],
     ['RESOLVED', 'closed'],
     ['awaiting-user-response', 'awaiting_member'],
+    // the backend's own ids and names
+    ['OPEN', 'awaiting_support'],
+    ['Open', 'awaiting_support'],
+    ['Awaiting Executive Response', 'awaiting_support'],
+    ['Awaiting User Response', 'awaiting_member'],
+    ['Resolved', 'closed'],
+    ['Closed', 'closed'],
     ['Resolved', 'closed'],
     ['CLOSED', 'closed'],
     ['', 'awaiting_support'],
