@@ -187,16 +187,21 @@ generated**, and every one of these presented first as a failing assertion
 against working software.
 
 
-## Part 4 — grievances are real for claims (2026-10-14)
+## Part 4 — grievances are real for claims (2026-10-14/15)
 
-The Support page now saves **claim** grievances: the claims listing feeds
-"Claims that need your help", the raise form takes optional documents (DMS), and
-"Send to support" calls `POST /habit-opd/api/v1/dispute` (`action=submit`). The
-member cannot reopen a closed ticket and claim detail has no payment section.
+The Support page now saves **claim** grievances and reads them back: the claims
+listing feeds "Claims that need your help"; "Send to support" calls
+`POST habit-opd/api/v1/dispute` (`submit`); tickets (`GET_PAGE`) and threads
+(`GET_DISPUTE_MESSAGES`) are fetched from the API and refreshed every 30 s; replies
+go out as `userReply`. The raise form takes optional documents (DMS). The member
+cannot reopen a closed ticket and claim detail has no payment section.
+Nothing is kept in the browser, so a refresh shows the same tickets.
 
-Still placeholder: reading tickets / chat history, reply, mark resolved and the
-service-line (non-claim) grievances. Tickets raised in a tab are kept in
-`sessionStorage` so a refresh does not drop them.
+Backend quirks the portal works around (commas/colons in `args`, the 3-second
+same-action guard, `description` / `document_ids` dropped by `submit`) are listed
+in `PLACEHOLDER-APIS.md` section 7. Still placeholder: Mark resolved by the
+member, and service-line (non-claim) grievances.
 
-Spec: `openspec/changes/2026-10-14-dispute-integration/`. API notes:
-`PLACEHOLDER-APIS.md` section 7. Browser tests: `tests/e2e/disputes/`.
+Spec: `openspec/changes/2026-10-14-dispute-integration/`. Browser tests:
+`tests/e2e/disputes/` (a fake of the API, plus `live-api.spec.ts` against the real
+one when `SESSION_ID` is set).

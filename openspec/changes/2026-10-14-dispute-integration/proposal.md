@@ -1,25 +1,26 @@
 ## Why
 
-The Twenty CRM `claim-grievance` app and the habit-opd `dispute` API exist for reimbursement claims, while the member portal's Support page (`/member/helpline`) was a static demo that saved nothing. Members could not raise a grievance that reached the support team.
+The Twenty CRM `claim-grievance` app and the habit-opd `dispute` API exist for reimbursement claims, while the member portal's Support page (`/member/helpline`) was a static demo that saved nothing. Members could not raise a grievance that reached the support team, and could not see or answer what support said.
 
 ## What Changes
 
-Builds on the static grievance demo (`features/misc/helpline-page.ts`, `features/support/grievance.data.ts`) and changes only what is needed to make **claims** real:
+Builds on the static grievance demo (`features/misc/helpline-page.ts`, `features/support/grievance.data.ts`) and changes only what is needed to make **claims** real and dynamic:
 
 - "Claims that need your help" reads the same paginated claims listing API as the Claims page.
 - Claim detail drops the Amount / payment section (claims are reimbursements).
 - The raise form gets an optional supporting-documents upload (DMS) for claims.
-- "Send to support" on a claim calls `POST /habit-opd/api/v1/dispute` (`action=submit`); the backend stores the grievance.
-- The member can no longer reopen a closed ticket; Mark resolved stays final.
+- "Send to support" calls `POST /habit-opd/api/v1/dispute` (`action=submit`); the backend stores the grievance.
+- Tickets and their status come from the API (`GET_PAGE`); threads from `GET_DISPUTE_MESSAGES` (all pages); both refresh every 30 s while the page is open.
+- The member's reply goes out as `action=userReply`; the member's own words after submit are sent as the first message.
+- The member can no longer reopen a closed ticket; "Mark resolved" is hidden on real tickets (no API).
 - The wireframe "Static demo" banner is removed; simulated support buttons are hidden for real claims.
 - "Something else?" call and email buttons work (copy number on desktop, prefilled mailto).
-- Tickets raised in a browser tab survive a refresh (`sessionStorage` stopgap).
-- New `core/disputes/dispute.api.ts`: submit + document upload.
+- New `core/disputes/dispute.api.ts`: submit, list, messages, reply, document upload.
 
 ## Capabilities
 
 ### New Capabilities
-- `claim-grievance-support`: member-side grievance flow for reimbursement claims on the Support page.
+- `claim-grievance-support`: member-side grievance flow for reimbursement claims on the Support page, backed by the dispute API.
 
 ### Modified Capabilities
 None.
@@ -27,5 +28,5 @@ None.
 ## Impact
 
 - `projects/member/src/app/features/misc/helpline-page.ts` (edited), `core/disputes/dispute.api.ts` (new).
-- Calls `GET claim` (`GET_CLAIMS_BY_USER`), `POST /dms/api/v1/emrImage`, `POST /habit-opd/api/v1/dispute`.
-- Not changed: services (non-claim) grievances stay static demo; ticket list, chat history, member reply and mark-resolved have no backend API yet (see `PLACEHOLDER-APIS.md` section 7).
+- Calls: `GET claim` (`GET_CLAIMS_BY_USER`), `GET/POST dispute` (`GET_PAGE`, `GET_DISPUTE_MESSAGES`, `submit`, `userReply`), `POST /dms/api/v1/emrImage`.
+- Not changed: services (non-claim) grievances stay static demo; member Mark resolved has no backend API yet (see `PLACEHOLDER-APIS.md` section 7).

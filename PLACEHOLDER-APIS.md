@@ -109,39 +109,52 @@ server-side multer limit should match.
 
 The Support page (static demo by Nitendra, `features/misc/helpline-page.ts` +
 `features/support/grievance.data.ts`) is wired to the real backend for
-**reimbursement claims only**. Services (consultation, pharmacy, lab, …) stay on
-the static demo data until the backend and Twenty support them.
+**reimbursement claims**. Services (consultation, pharmacy, lab, …) stay on the
+static demo data until the backend and Twenty support them. All calls go through
+`core/disputes/dispute.api.ts`; host is the dev proxy / `apiBaseUrl`
+(`https://api.habithealth.com`), nothing is hard-coded to `localhost:8090`.
 
-- **Real — claims list:** "Claims that need your help" reads the same paginated
-  listing as the Claims page (`claim` / `GET_CLAIMS_BY_USER`, 20 per page, shown
-  5 at a time with Load more) via `ClaimsStore.getClimListData()`.
-- **Real — submit:** `POST /habit-opd/api/v1/dispute`, `action=submit`.
-  Form-urlencoded `resource` (base64 JSON), `application=habit-opd`, `action=submit`;
-  signed over `resource&action=submit` like `new-claim-page.ts`. Success is
-  `errCode !== -1`. Code: `core/disputes/dispute.api.ts` (`DisputeApi.submit`).
-  Payload: `claim_id, member_name, patient_name, relation_to_member, category
-  (CLAIM), dispute_type (GENERAL), benefit_category, selected_reason,
-  dispute_status (OPEN)` plus optional `description` and `document_ids`.
-- **Real — supporting documents (optional):** each file is uploaded to DMS
-  (`POST /dms/api/v1/emrImage`, same call as the claim form) and its
-  `document_id` goes in `document_ids`. Max 5 MB; PDF/JPG/PNG (no HEIC
-  conversion).
-- **Host:** the dev proxy (`proxy.conf.json`) and `environment.apiBaseUrl`
-  (`https://api.habithealth.com`) already route `/habit-opd/api` and `/dms/api`;
-  nothing is hard-coded to `localhost:8090`.
-- **No reopen:** a closed ticket cannot be reopened by the member (UI removed);
-  closed tickets only show the call-support prompt. Mark resolved is final.
-- **Claim detail:** no Amount / payment section for reimbursement claims.
+| What | Call |
+|---|---|
+| Claims that need help | `GET habit-opd/api/v1/claim?queryId=GET_CLAIMS_BY_USER` (same listing as the Claims page, 5 at a time) |
+| Raise a grievance | `POST habit-opd/api/v1/dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
+| My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
+| Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
+| Member reply | `POST habit-opd/api/v1/dispute` `action=userReply`, `resource` = base64 `{resourceType:"Dispute",name,id}`, `args=messageText:<text>` |
+| Supporting document (optional) | `POST /dms/api/v1/emrImage` (same as the claim form) |
 
-**Still placeholder (in memory, lost on reload):** reading tickets and chat
-history back, member reply, mark resolved, and the executive's replies. Their
-APIs have not been shared. Until then, tickets raised in a browser tab are kept
-in `sessionStorage` (`opd.support.tickets.v1`) so they survive a refresh; they
-are cleared when the tab closes and are not shared across devices. Replace with
-the ticket-list API.
+Requests are form-urlencoded; `resource` is URL-encoded base64, signed over
+`resource&action=<action>` through `AppService.addXsrfToken` (verified against
+the real API with the plain MD5 token). `errCode: -1` is a failure even on HTTP 200.
 
-**To confirm with backend:** signing pattern (`enc&action=submit` assumed);
-`claim_id` format (`OPD-2026-xxxxx`); `benefit_category` values (derived from the
-claim category label, e.g. `DIAGNOSTICS`); `document_ids` / `description` keys
-(assumed from the Twenty `documentIds` field); the ticket id field in the submit
-response (`ticket_id` / `dispute_id` / `name` are tried, else a local id).
+**Ticket state** comes from `dispute_status` (display text): contains
+resolved/closed means closed; "awaiting user/member" means support has replied;
+anything else is with support. `final_reason` is shown on a closed ticket.
+Tickets and the open thread refresh every 30 s while the page is open. Nothing
+is stored in the browser.
+
+**Behaviour of the real backend, observed (talk to the backend team):**
+- `userReply` reads `args` as comma-separated `name:value` pairs. A **comma or a
+  colon in the text is rejected** (or, if quoted, silently cuts the text), and no
+  escaping works. The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236).
+  Everything else (₹, quotes, newlines, Hindi, emoji, `&`, up to 8,000
+  characters) goes through. Ask for a body field or escaping.
+- The same action twice within **3 seconds** is refused ("please wait"); the
+  portal disables Send for ~3 s after a send (and after the first message
+  that follows a submit).
+- `submit` stores only the reason: **`description` and `document_ids` are
+  dropped.** The member's own words are therefore sent as the first `userReply`
+  right after submit. Uploaded documents reach DMS but are **not stored on the
+  dispute**; the backend needs a field for them.
+- Message `sender_name` for the member is a user id, so the portal shows "You".
+- More than one dispute can exist for one claim; the portal shows the newest and
+  allows one live ticket per claim (PRD).
+
+**Not available yet (no API):** Mark resolved by the member (hidden on real
+tickets), service-line (non-claim) grievances, reading orders for services.
+**No reopen:** the member cannot reopen a closed ticket; closed tickets show the
+call-support prompt only.
+
+**To confirm with backend:** `benefit_category` values (derived from the claim
+category label, e.g. `DIAGNOSTICS`), the member-resolve action name, and where
+documents should go.

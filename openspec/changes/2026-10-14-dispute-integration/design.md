@@ -1,38 +1,45 @@
 ## Context
 
-The Support page is a single component with a view switch (home / order / raise / ticket) over static seed data. The claims store already exposes the paginated listing, and the claim form already uploads to DMS and signs form-urlencoded `resource` posts. The backend exposes `POST /habit-opd/api/v1/dispute`; the CRM (Twenty) stores the grievance. There is no API yet to read tickets or chat back.
+The Support page is a single component with a view switch (home / order / raise / ticket) over static seed data. The claims store already exposes the paginated listing, and the claim form already uploads to DMS and signs form-urlencoded `resource` posts. The backend exposes the `dispute` resource: `submit`, `userReply`, `GET_PAGE` (the member's disputes with `dispute_status`, `final_reason`, `last_message_sender`) and `GET_DISPUTE_MESSAGES`. The CRM (Twenty) stores the grievance; the browser never calls it.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Make the claim grievance path real: list, optional documents, submit.
+- Make the claim grievance path real and dynamic: list, submit, thread, reply, status.
 - Reuse the existing claims listing, DMS upload and signing recipe.
 - Keep edits inside `helpline-page.ts` and one new service; do not disturb other code.
 
 **Non-Goals:**
-- Services (non-claim) grievances, ticket list / chat history / reply / mark-resolved APIs.
-- Any direct call to Twenty from the browser (the API key must never reach the frontend).
-- Member reopen.
+- Services (non-claim) grievances.
+- Member "Mark resolved" (no API) and member reopen (not allowed).
+- Any direct call to Twenty from the browser.
 
 ## Decisions
 
 ### 1. One new service, thin edits to the page
-`DisputeApi` (`core/disputes/dispute.api.ts`) owns encoding, signing, submit and upload. The page treats a claim as "live" when it came from the listing API; seeded demo orders keep their in-memory behaviour.
+`DisputeApi` (`core/disputes/dispute.api.ts`) owns encoding, signing, submit, list, messages, reply and upload. The page keeps the static demo tickets (services) in their own signal and merges the API tickets in front of them; a ticket is "live" when it came from the API.
 
-### 2. Sign like the claim submit
-Body `resource=<base64 JSON>&application=habit-opd&action=submit`, signed over `resource&action=submit` through `AppService.addXsrfToken`. HTTP 200 with `errCode: -1` is a failure. To be confirmed with the backend.
+### 2. Everything comes from the API, nothing from the browser
+Tickets and threads are read from the API on load, when a ticket is opened, and every 30 s (a list refresh re-runs the thread load). No `sessionStorage` / `localStorage`. A failed list or thread read keeps what is shown and says so.
 
-### 3. Member names fall back to the session member
-If the family list has not loaded, `member_name` / `patient_name` come from `SessionStore.member()` so a grievance is never sent anonymously.
+### 3. Sign like the claim submit; URL-encode the resource
+Body `resource=<URL-encoded base64 JSON>&application=habit-opd&action=<action>`, signed over `resource&action=<action>` through `AppService.addXsrfToken`. Verified against the real API (plain MD5 token accepted). HTTP 200 with `errCode: -1` is a failure.
 
-### 4. Tickets survive a refresh via `sessionStorage`
-No ticket-list API exists, so tickets raised in a tab are kept in `sessionStorage` (cleared when the tab closes, not on a shared computer's disk). Replace with the list API.
+### 4. Work around the backend's `args` format
+`userReply` takes the text in `args=messageText:<text>`, parsed as comma-separated `name:value` pairs: a comma or colon is rejected (quoting silently truncates, escaping does nothing). The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236). The same action twice within 3 s is refused, so Send is disabled for ~3 s after a send, including after the first message that follows a submit. Replies are capped at 2000 characters client-side (8000 verified accepted).
 
-### 5. No reopen
-The reopen button and logic are removed. A closed ticket only shows the call-support prompt.
+### 5. `submit` stores only the reason
+`description` and `document_ids` are dropped by the backend. The member's own words are sent as the first `userReply` right after submit. Documents reach DMS but are not stored on the dispute (backend to add a field).
+
+### 6. Ticket state from `dispute_status`
+resolved / closed means closed; "awaiting user/member" means support has replied; anything else is with support. Closed shows `final_reason` and the call-support prompt. The member's name in messages is a user id, so own messages read "You".
+
+### 7. No reopen, no fake actions
+The reopen button and logic are removed. On real tickets the demo support buttons and "Mark resolved" are hidden.
 
 ## Risks / Trade-offs
 
-- Signing, `benefit_category` (derived from the claim category label), `document_ids` / `description` keys and the ticket id field are assumptions until confirmed with the backend.
+- `benefit_category` is derived from the claim category label; the member-resolve action name and the document field are unknown.
+- Lookalike characters in replies (`‚`, `∶`) until the backend supports escaping.
 - `helpline-page.ts` is shared with the static demo author; edits may conflict with their changes.
-- The `sessionStorage` stopgap is per tab and per device.
+- The real-API tests create real "[TEST]" grievances and are skipped unless `SESSION_ID` is set.

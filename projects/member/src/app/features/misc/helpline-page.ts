@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { ClaimsStore } from '../../core/claims/claims.store';
-import { DisputeApi } from '../../core/disputes/dispute.api';
+import { DisputeApi, DisputeMessage, DisputeRecord, ticketStateOf } from '../../core/disputes/dispute.api';
 
 import {
   ClosedBy,
@@ -273,6 +273,9 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               </section>
 
               <!-- Thread: member, support and system events, each time-stamped. -->
+              @if (isLiveTicket(t) && threadError(); as terr) {
+                <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-700" role="status">{{ terr }}</p>
+              }
               <section class="mt-4 space-y-3">
                 @for (m of t.messages; track $index) {
                   @if (m.from === 'system') {
@@ -294,12 +297,17 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 @switch (t.state) {
                   @case ('awaiting_support') {
                     <p class="text-sm text-ink-700">⏳ Waiting on support. We'll notify you in the app, on WhatsApp and by email when they reply.</p>
-                    @if (hasSupportReply(t)) {
+                    @if (isLiveTicket(t)) {
+                      <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t }" />
+                    } @else if (hasSupportReply(t)) {
                       <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
                     }
                   }
                   @case ('awaiting_member') {
                     <p class="text-sm font-medium text-success-700">💬 Support has replied — over to you.</p>
+                    @if (isLiveTicket(t)) {
+                      <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t }" />
+                    } @else {
                     <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
                     <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" [value]="reply()" (input)="reply.set($any($event.target).value)"></textarea>
                     <div class="mt-3 flex flex-wrap gap-3">
@@ -307,6 +315,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                       <button type="button" class="min-h-touch flex-1 rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
                     </div>
                     <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good — it can't be reopened.</p>
+                    }
                   }
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
@@ -336,6 +345,16 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
           }
         }
       </div>
+
+      <!-- Reply on a real ticket: sent to the support system, shown once it is in the thread. -->
+      <ng-template #liveReply let-t>
+        <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
+        <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" maxlength="2000" [value]="reply()" [disabled]="replying()" (input)="reply.set($any($event.target).value)"></textarea>
+        @if (replyError(); as err) {
+          <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
+        }
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying() || cooling()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
+      </ng-template>
 
       <!-- One row layout for both lists: what, when and which, then the
            grievance status. A flagged claim's status is the fast-path button. -->
@@ -414,8 +433,19 @@ export class HelplinePage {
   private readonly claimsFetched = signal(false);
   protected readonly claimsLoading = computed(() => !this.claimsFetched() && this.claimOrders().length === 0);
   private readonly everyOrder = computed(() => [...this.claimOrders(), ...this.orders()]);
-  /** Demo tickets, plus the ones raised in this browser tab (see `loadSaved`). */
-  private readonly tickets = signal<SupportTicket[]>([...SEED_TICKETS.map(autoClose), ...loadSaved()]);
+  /** Demo tickets (services). Real claim tickets come from the dispute API, below. */
+  private readonly tickets = signal<SupportTicket[]>(SEED_TICKETS.map(autoClose));
+
+  /** Grievances from the API (`GET_PAGE`) and the threads loaded for them. */
+  private readonly liveRecords = signal<DisputeRecord[]>([]);
+  private readonly threads = signal<Record<string, DisputeMessage[]>>({});
+  protected readonly threadError = signal<string | null>(null);
+  protected readonly replying = signal(false);
+  protected readonly replyError = signal<string | null>(null);
+  /** The backend refuses the same action twice inside 3 seconds. */
+  protected readonly cooling = signal(false);
+  private readonly liveTickets = computed(() => this.liveRecords().map((r) => toTicket(r, this.threads()[r.id] ?? [])));
+  private readonly allTickets = computed(() => [...this.liveTickets(), ...this.tickets()]);
 
   protected readonly view = signal<View>('home');
   protected readonly orderId = signal<string | null>(null);
@@ -442,7 +472,7 @@ export class HelplinePage {
   protected readonly uploading = computed(() => this.docs().some((d) => d.state === 'uploading'));
 
   protected readonly order = computed(() => this.everyOrder().find((o) => o.id === this.orderId()) ?? null);
-  protected readonly ticket = computed(() => this.tickets().find((t) => t.id === this.ticketId()) ?? null);
+  protected readonly ticket = computed(() => this.allTickets().find((t) => t.id === this.ticketId()) ?? null);
 
   protected readonly flaggedClaims = computed(() => this.claimOrders());
 
@@ -473,11 +503,41 @@ export class HelplinePage {
   });
 
   constructor() {
-    // Until a ticket-list API exists, tickets raised here survive a refresh.
-    effect(() => saveTickets(this.tickets()));
     // Same call, same first page (20 newest), as the Claims page.
     void this.claimsStore.getClimListData();
     setTimeout(() => this.claimsFetched.set(true), 4000);
+
+    // Tickets and threads come from the dispute API: now, when a ticket is opened,
+    // and every 30 seconds while the page is open (support replies arrive there).
+    void this.refreshDisputes();
+    effect(() => {
+      const t = this.view() === 'ticket' ? this.liveRecords().find((r) => r.name === this.ticketId()) : undefined;
+      if (t) untracked(() => void this.loadThread(t));
+    });
+    // Each refresh replaces the records, which re-runs the effect above and
+    // reloads the open thread, so the interval only has to refresh the list.
+    const timer = setInterval(() => void this.refreshDisputes(), POLL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
+
+  private startCooldown(): void {
+    this.cooling.set(true);
+    setTimeout(() => this.cooling.set(false), COOLDOWN_MS);
+  }
+
+  private async refreshDisputes(): Promise<void> {
+    const result = await this.disputeApi.list();
+    if (result.ok) this.liveRecords.set([...result.items]);
+  }
+
+  private async loadThread(record: DisputeRecord): Promise<void> {
+    const result = await this.disputeApi.messages(record.id);
+    if (result.ok) {
+      this.threads.update((all) => ({ ...all, [record.id]: [...result.items] }));
+      this.threadError.set(null);
+    } else {
+      this.threadError.set('We could not load the latest messages. Showing what we have.');
+    }
   }
 
   /** True for a claim from the live listing, whose grievance is really saved. */
@@ -511,7 +571,7 @@ export class HelplinePage {
   }
 
   protected isLiveTicket(t: SupportTicket): boolean {
-    return this.claimOrders().some((c) => c.id === t.orderId);
+    return this.liveRecords().some((r) => r.name === t.id);
   }
 
 
@@ -536,7 +596,7 @@ export class HelplinePage {
   // ── Status ─────────────────────────────────────────────────────────────
 
   protected ticketFor(o: SupportOrder): SupportTicket | undefined {
-    return this.tickets().find((t) => t.orderId === o.id);
+    return this.allTickets().find((t) => t.orderId === o.id);
   }
 
   private status(t: SupportTicket | undefined): GrievanceStatus {
@@ -630,6 +690,8 @@ export class HelplinePage {
     this.orderId.set(o.id);
     this.ticketId.set(t.id);
     this.reply.set('');
+    this.replyError.set(null);
+    this.threadError.set(null);
     this.notice.set(null);
     this.view.set('ticket');
   }
@@ -658,7 +720,6 @@ export class HelplinePage {
     if (this.ticketFor(o) || this.isExpired(o)) { this.view.set('order'); return; }
     const now = new Date();
     const text = this.detail().trim();
-    let ticketId = `TKT-${10413 + this.tickets().length}`;
     if (this.isLive(o)) {
       this.submitting.set(true);
       this.submitError.set(null);
@@ -669,12 +730,13 @@ export class HelplinePage {
         detail: text,
         documentIds: this.docs().filter((d) => d.state === 'done').map((d) => d.documentId!),
       });
+      if (!result.ok) { this.submitting.set(false); this.submitError.set(result.message); return; }
+      await this.afterLiveSubmit(o, result.ticketId, result.disputeId, text);
       this.submitting.set(false);
-      if (!result.ok) { this.submitError.set(result.message); return; }
-      if (result.ticketId) ticketId = result.ticketId;
+      return;
     }
     const t: SupportTicket = {
-      id: ticketId,
+      id: `TKT-${10413 + this.tickets().length}`,
       orderId: o.id,
       reason: this.reason(),
       detail: text,
@@ -690,6 +752,29 @@ export class HelplinePage {
     this.ticketId.set(t.id);
     this.view.set('ticket');
     this.notice.set(`Ticket ${t.id} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
+  }
+
+  /**
+   * The dispute is stored; the backend keeps only the reason, so the member's own
+   * words go in as the first message. The ticket then shows what the backend has.
+   */
+  private async afterLiveSubmit(o: SupportOrder, name: string | null, id: string | null, detail: string): Promise<void> {
+    if (name && id && detail) {
+      await this.disputeApi.reply({ name, id }, detail);
+      this.startCooldown(); // the next reply would be the same action inside 3 seconds
+    }
+    await this.refreshDisputes();
+    const record = this.liveRecords().find((r) => r.name === name) ?? this.liveRecords().find((r) => r.claimId === o.id);
+    if (!record) {
+      // Stored, but the list has not caught up: say so rather than show nothing.
+      this.view.set('home');
+      this.notice.set('Your grievance was sent. It may take a moment to appear here.');
+      return;
+    }
+    this.ticketFrom.set('home');
+    this.ticketId.set(record.name);
+    this.view.set('ticket');
+    this.notice.set(`Ticket ${record.name} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
   }
 
   protected async onFiles(event: Event): Promise<void> {
@@ -711,9 +796,27 @@ export class HelplinePage {
     this.docs.update((list) => list.filter((d) => d.file !== file));
   }
 
-  protected sendReply(t: SupportTicket): void {
+  protected async sendReply(t: SupportTicket): Promise<void> {
     const text = this.reply().trim();
     if (!text) return;
+    const record = this.liveRecords().find((r) => r.name === t.id);
+    if (record) {
+      if (this.replying() || this.cooling()) return;
+      this.replying.set(true);
+      this.replyError.set(null);
+      const result = await this.disputeApi.reply(record, text);
+      this.replying.set(false);
+      if (!result.ok) {
+        // The text stays in the box so nothing the member wrote is lost.
+        this.replyError.set(/multiple times|wait for/i.test(result.message) ? 'Please wait a few seconds, then send again.' : result.message);
+        return;
+      }
+      this.reply.set('');
+      this.notice.set('Reply sent. The ticket is back with the support team.');
+      this.startCooldown();
+      await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+      return;
+    }
     this.update(t, { state: 'awaiting_support' }, { from: 'member', text, at: new Date() });
     this.reply.set('');
     this.notice.set('Reply sent. The ticket is back with the support team.');
@@ -817,34 +920,32 @@ function toClaimOrder(row: any): SupportOrder {
   };
 }
 
-// ── Ticket persistence (stopgap) ──────────────────────────────────────────
-// There is no API to read tickets back yet, so a refresh would drop a ticket the
-// member has just raised. Until there is, tickets raised in this tab are kept in
-// sessionStorage: it survives a refresh, and is cleared when the tab is closed,
-// so nothing lingers on a shared computer. Replace with the list API.
+/** Ticket and thread refresh while the page is open. */
+const POLL_MS = 30_000;
+/** The backend refuses the same action twice within 3 seconds. */
+const COOLDOWN_MS = 3_200;
 
-const TICKETS_KEY = 'opd.support.tickets.v1';
-const SEED_TICKET_IDS = new Set(SEED_TICKETS.map((t) => t.id));
-
-function saveTickets(all: SupportTicket[]): void {
-  try {
-    sessionStorage.setItem(TICKETS_KEY, JSON.stringify(all.filter((t) => !SEED_TICKET_IDS.has(t.id))));
-  } catch {
-    // Storage blocked or full: the page still works, tickets just do not survive a refresh.
+/** A stored grievance, plus its thread, as the Support page's ticket shape. */
+function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportTicket {
+  const state = ticketStateOf(r.status);
+  const messages: TicketMessage[] = [
+    { from: 'system', text: 'Ticket opened', at: r.createdAt },
+    ...thread.map((m): TicketMessage => (m.sender === 'MEMBER'
+      ? { from: 'member', text: m.text, at: m.at }
+      : { from: 'support', author: m.senderName, text: m.text, at: m.at })),
+  ];
+  if (state === 'closed') {
+    messages.push({ from: 'system', text: r.finalReason ? `Resolved and closed by support — ${r.finalReason}` : 'Resolved and closed by support', at: r.modifiedAt });
   }
-}
-
-function loadSaved(): SupportTicket[] {
-  try {
-    const raw = sessionStorage.getItem(TICKETS_KEY);
-    if (!raw) return [];
-    return (JSON.parse(raw) as any[]).map((t) => ({
-      ...t,
-      createdAt: new Date(t.createdAt),
-      closedAt: t.closedAt ? new Date(t.closedAt) : undefined,
-      messages: (t.messages ?? []).map((m: any) => ({ ...m, at: new Date(m.at) })),
-    }));
-  } catch {
-    return [];
-  }
+  return {
+    id: r.name,
+    orderId: r.claimId,
+    reason: r.reason,
+    detail: '',
+    createdAt: r.createdAt,
+    state,
+    closedAt: state === 'closed' ? r.modifiedAt : undefined,
+    closedBy: state === 'closed' ? 'support' : undefined,
+    messages,
+  };
 }

@@ -45,8 +45,56 @@ export interface DisputeInput {
 }
 
 export type SubmitResult =
-  | { readonly ok: true; readonly ticketId: string | null }
+  | { readonly ok: true; readonly ticketId: string | null; readonly disputeId: string | null }
   | { readonly ok: false; readonly message: string };
+
+/** A grievance as the backend stores it (`GET_PAGE` on the dispute resource). */
+export interface DisputeRecord {
+  /** Business id shown to the member, e.g. DIS-2026-00390. */
+  readonly name: string;
+  /** Record uuid, needed for messages and replies. */
+  readonly id: string;
+  readonly claimId: string;
+  readonly reason: string;
+  /** Display text from the backend, e.g. "Awaiting executive response". */
+  readonly status: string;
+  readonly createdAt: Date;
+  readonly modifiedAt: Date;
+  readonly finalReason: string | null;
+  readonly lastMessageSender: string | null;
+}
+
+export interface DisputeMessage {
+  readonly id: string;
+  readonly sender: 'MEMBER' | 'SUPPORT';
+  /** Shown for support; the member's own messages read "You". */
+  readonly senderName: string;
+  readonly text: string;
+  readonly at: Date;
+}
+
+export type ListResult<T> =
+  | { readonly ok: true; readonly items: readonly T[] }
+  | { readonly ok: false; readonly message: string };
+
+export type ReplyResult = { readonly ok: true } | { readonly ok: false; readonly message: string };
+
+export type TicketState = 'awaiting_support' | 'awaiting_member' | 'closed';
+
+/**
+ * The member-facing state from the backend's status text. Anything resolved or
+ * closed is closed; "awaiting user/member" means support has replied; every
+ * other status (new, assigned, awaiting executive) is still with support.
+ */
+export function ticketStateOf(status: string): TicketState {
+  const s = status.toLowerCase();
+  if (/resolved|closed/.test(s)) return 'closed';
+  if (/awaiting (user|member)/.test(s)) return 'awaiting_member';
+  return 'awaiting_support';
+}
+
+const PAGE_SIZE = 20;
+const MAX_PAGES = 25;
 
 export type UploadResult =
   | { readonly ok: true; readonly documentId: string; readonly name: string }
@@ -55,6 +103,17 @@ export type UploadResult =
 /** Same encoding as `new-claim-page.ts`: UTF-8 safe base64 of the JSON. */
 export function encodeResource(payload: object): string {
   return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+
+/**
+ * The backend reads `args` as comma-separated `name:value` pairs, so a comma or a
+ * colon in a reply is rejected (or silently cuts the text). Until it supports
+ * escaping, the two are swapped for lookalikes: a low-9 quote (U+201A) and the
+ * ratio sign (U+2236). Everything else (rupee, quotes, newlines, Hindi, emoji,
+ * ampersands) goes through unchanged.
+ */
+export function toArgSafe(text: string): string {
+  return text.replace(/,/g, '\u201A').replace(/:/g, '\u2236');
 }
 
 /** "In-Clinic Consultation" becomes IN_CLINIC_CONSULTATION, "Diagnostics" DIAGNOSTICS. */
@@ -105,7 +164,7 @@ export class DisputeApi {
     try {
       const { resource, application, submit } = DISPUTE_API;
       const encoded = encodeResource(this.buildPayload(input));
-      const body = `resource=${encoded}&application=${application}&action=${submit}`;
+      const body = `resource=${encodeURIComponent(encoded)}&application=${application}&action=${submit}`;
       const options = this.appService.addXsrfToken(`${encoded}&action=${submit}`, true);
       const response = await firstValueFrom(
         this.http.post(`/${application}/api/v1/${resource}`, body, options),
@@ -120,11 +179,97 @@ export class DisputeApi {
         return { ok: false, message: parsed.message || 'We could not send your request. Please try again.' };
       }
       const row = parsed.resource?.[0];
-      const id = row?.['ticket_id'] ?? row?.['dispute_id'] ?? row?.['name'];
-      return { ok: true, ticketId: typeof id === 'string' ? id : null };
+      const name = row?.['name'] ?? row?.['ticket_id'];
+      const id = row?.['id'] ?? row?.['dispute_id'];
+      return {
+        ok: true,
+        ticketId: typeof name === 'string' ? name : null,
+        disputeId: typeof id === 'string' ? id : null,
+      };
     } catch (error) {
       console.error('Failed to submit dispute:', error);
       return { ok: false, message: 'We could not send your request. Please try again.' };
+    }
+  }
+
+  /** Every grievance the signed-in member has raised, newest first. */
+  async list(): Promise<ListResult<DisputeRecord>> {
+    const rows = await this.pages('queryId=GET_PAGE');
+    if (!rows.ok) return rows;
+    return {
+      ok: true,
+      items: rows.items
+        .map(toRecord)
+        .filter((r): r is DisputeRecord => r !== null)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+    };
+  }
+
+  /** The whole thread of one grievance, oldest first (all pages). */
+  async messages(disputeId: string): Promise<ListResult<DisputeMessage>> {
+    const rows = await this.pages(`queryId=GET_DISPUTE_MESSAGES&args=${encodeURIComponent(`dispute_id:${disputeId}`)}`);
+    if (!rows.ok) return rows;
+    return {
+      ok: true,
+      items: rows.items
+        .map(toMessage)
+        .filter((m): m is DisputeMessage => m !== null)
+        .sort((a, b) => a.at.getTime() - b.at.getTime()),
+    };
+  }
+
+  /**
+   * The member's reply: `action=userReply` with the text in `args`. The backend
+   * flips the ticket back to support. The text travels in a key:value `args`
+   * string, so it is URL-encoded as a whole.
+   */
+  async reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
+    try {
+      const { resource, application } = DISPUTE_API;
+      const action = 'userReply';
+      const encoded = encodeResource({ resourceType: 'Dispute', name: dispute.name, id: dispute.id });
+      const body =
+        `resource=${encodeURIComponent(encoded)}&application=${application}&action=${action}` +
+        `&args=${encodeURIComponent(`messageText:${toArgSafe(text)}`)}`;
+      const options = this.appService.addXsrfToken(`${encoded}&action=${action}`, true);
+      const response = await firstValueFrom(
+        this.http.post(`/${application}/api/v1/${resource}`, body, options),
+      );
+      let parsed: { errCode?: number; message?: string } = {};
+      try {
+        parsed = JSON.parse(response.body ?? '{}');
+      } catch {
+        // A non-JSON 200 with no error marker counts as accepted.
+      }
+      if (parsed.errCode === -1) {
+        return { ok: false, message: parsed.message || 'We could not send your reply. Please try again.' };
+      }
+      return { ok: true };
+    } catch (error) {
+      console.error('Failed to send dispute reply:', error);
+      return { ok: false, message: 'We could not send your reply. Please try again.' };
+    }
+  }
+
+  /** Reads every page of a dispute query (20 a page) and returns the raw rows. */
+  private async pages(query: string): Promise<ListResult<Record<string, any>>> {
+    const all: Record<string, any>[] = [];
+    try {
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const res = await firstValueFrom(
+          this.appService.getcall(DISPUTE_API.resource, DISPUTE_API.application, `${query}&page_no=${page}&page_size=${PAGE_SIZE}`),
+        );
+        const body = JSON.parse(res);
+        // An invalid session or query answers {errCode:-1} with no `resource`.
+        if (body?.errCode === -1) return { ok: false, message: body.message || 'Could not load your tickets.' };
+        const rows: Record<string, any>[] = body?.resource ?? [];
+        all.push(...rows);
+        if (rows.length < PAGE_SIZE) break;
+      }
+      return { ok: true, items: all };
+    } catch (error) {
+      console.error('Failed to read disputes:', error);
+      return { ok: false, message: 'Could not load your tickets.' };
     }
   }
 
@@ -164,4 +309,39 @@ export class DisputeApi {
       return { ok: false, message: `Could not upload ${file.name}. Please try again.` };
     }
   }
+}
+
+function toDate(raw: unknown): Date {
+  const n = Number(raw);
+  const d = new Date(Number.isNaN(n) ? String(raw) : n);
+  return Number.isNaN(d.getTime()) ? new Date(0) : d;
+}
+
+function toRecord(row: Record<string, any>): DisputeRecord | null {
+  const name = row['name'] ?? row['ticket_id'];
+  if (!name || !row['id']) return null;
+  return {
+    name: String(name),
+    id: String(row['id']),
+    claimId: String(row['claim_id'] ?? ''),
+    reason: String(row['selected_reason'] ?? ''),
+    status: String(row['dispute_status'] ?? ''),
+    createdAt: toDate(row['g_creation_time']),
+    modifiedAt: toDate(row['g_modify_time'] ?? row['g_creation_time']),
+    finalReason: row['final_reason'] ? String(row['final_reason']) : null,
+    lastMessageSender: row['last_message_sender'] ? String(row['last_message_sender']) : null,
+  };
+}
+
+function toMessage(row: Record<string, any>): DisputeMessage | null {
+  const text = row['message_text'];
+  if (typeof text !== 'string' || !text.trim()) return null;
+  const member = String(row['sender_type'] ?? '').toUpperCase() === 'MEMBER';
+  return {
+    id: String(row['id'] ?? `${row['timestamp']}-${text.slice(0, 8)}`),
+    sender: member ? 'MEMBER' : 'SUPPORT',
+    senderName: member ? 'You' : String(row['sender_name'] || 'Support team'),
+    text,
+    at: toDate(row['timestamp'] ?? row['g_creation_time']),
+  };
 }
