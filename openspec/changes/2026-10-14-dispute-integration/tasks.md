@@ -15,13 +15,14 @@
 - [x] 2.6 Reply via `userReply`: disabled while sending and for the 3 s guard, text kept on failure, 2000 character cap.
 - [x] 2.7 No member reopen; hide "Mark resolved" and demo support buttons on real tickets; remove the wireframe banner.
 - [x] 2.8 "Something else?" call (copy on desktop) and email (prefilled mailto) work.
-- [x] 2.9 Show the documents attached to a ticket and download them from DMS; tap-sized targets.
+- [x] 2.9 Real claims use the demo picker's rules (PDF, Word or image, 5 MB each, several at once, same file once) and its look; demo orders keep the demo picker (nothing uploaded).
+- [x] 2.9b Show the documents attached to a ticket and download them from DMS; tap-sized targets.
 - [x] 2.10 Do not present the member's own words (`final_reason`) as support's resolution.
 
 ## 3. Verification
 
 - [x] 3.1 Unit tests for the API service (40): payloads, documents, signing, paging, mapping, errors, state mapping, comma/colon swap.
-- [x] 3.2 Browser tests against a fake of the real API (49; shared fake in `fake-api.ts`), including claim paging, documents and `final_reason`: list, detail, submit, first message, documents, validation, errors, double clicks, window, existing ticket, 45-message thread, support reply arriving, closed ticket, list/thread failures, reply rules, no fake actions.
+- [x] 3.2 Browser tests against a fake of the real API (52; shared fake in `fake-api.ts`), including claim paging, documents and `final_reason`: list, detail, submit, first message, documents, validation, errors, double clicks, window, existing ticket, 45-message thread, support reply arriving, closed ticket, list/thread failures, reply rules, no fake actions.
 - [x] 3.3 Browser tests against the REAL API (3, need `SESSION_ID`): raise with a real document (checked stored, `final_reason` verbatim, downloaded back intact), thread, reply, 3 s guard, refresh, expired session.
 - [x] 3.5 Phone layouts (emulated iPhone 13 and Pixel 7, 12 tests): no sideways scroll with long words and long file names, tap-sized buttons. Real devices by hand.
 - [x] 3.4 Production build with no errors; `openspec validate --strict`.

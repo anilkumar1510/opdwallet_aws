@@ -43,7 +43,8 @@ Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/dispute
 - **WHEN** a member attaches documents
 - **THEN** each is uploaded to DMS and sent in the submit's `documents` array (`name`, `document_id`, `document_type`, `originalname`, `verification_status`, `filetype`, `filesize`)
 - **AND** the backend stores them on the grievance
-- **AND** a failed or oversize (over 5 MB) document is reported and not sent
+- **AND** only PDF, Word or image files up to 5 MB are taken (several at once, the same file once); others are named in a message and skipped, and a failed upload is reported and not sent
+- **AND** demo (non-claim) orders keep their own picker, which uploads nothing
 - **AND** submitting with no documents is allowed
 
 #### Scenario: Reason rules

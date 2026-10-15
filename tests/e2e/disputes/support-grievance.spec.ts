@@ -273,12 +273,51 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('bill.pdf · failed')).toBeVisible();
     await expect(page.getByRole('alert')).toContainText('Unsupported file');
     await page.setInputFiles('#g-docs', { name: 'huge.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(5 * 1024 * 1024 + 1) });
-    await expect(page.getByRole('alert')).toContainText('larger than 5 MB');
+    await expect(page.getByRole('alert')).toContainText('Over 5 MB: huge.pdf');
     expect(api.uploads).toBe(1);
-    await page.getByRole('button', { name: 'Remove huge.pdf' }).click();
+    await expect(page.getByText('huge.pdf ·')).toHaveCount(0); // refused up front, never listed
+    await page.getByRole('button', { name: 'Remove bill.pdf' }).click(); // the failed one can be removed
     await page.getByRole('button', { name: 'Send to support' }).click();
     await expect(page.getByText('Your ticket')).toBeVisible({ timeout: 20000 });
     expect(api.submits[0]).not.toHaveProperty('documents');
+  });
+
+  test('only PDF, Word or image files are taken, as in the demo picker; others are named and skipped', async ({ page }) => {
+    const api = await openSupport(page);
+    await claimsSection(page).getByRole('button', { name: 'Ask for help' }).first().click();
+    await page.selectOption('#g-reason', 'No update for too long');
+    await page.setInputFiles('#g-docs', [
+      { name: 'bill.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF') },
+      { name: 'notes.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: Buffer.from('x') },
+      { name: 'run.exe', mimeType: 'application/x-msdownload', buffer: Buffer.from('x') },
+    ]);
+    await expect(page.getByText('bill.pdf · uploaded')).toBeVisible();
+    await expect(page.getByText('notes.docx · uploaded')).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText('Not a PDF, Word or image file: run.exe');
+    await expect(page.getByText('run.exe ·')).toHaveCount(0);
+    expect(api.uploads).toBe(2);
+  });
+
+  test('the same file picked twice is taken once', async ({ page }) => {
+    const api = await openSupport(page);
+    await claimsSection(page).getByRole('button', { name: 'Ask for help' }).first().click();
+    const file = { name: 'bill.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF') };
+    await page.setInputFiles('#g-docs', file);
+    await expect(page.getByText('bill.pdf · uploaded')).toBeVisible();
+    await page.setInputFiles('#g-docs', file);
+    await expect(page.getByText(/bill\.pdf ·/)).toHaveCount(1);
+    expect(api.uploads).toBe(1);
+  });
+
+  test('demo orders keep the demo picker, which uploads nothing', async ({ page }) => {
+    const api = await openSupport(page);
+    await servicesSection(page).getByText('ORD-24081').click();
+    await page.getByRole('button', { name: 'Raise a grievance' }).click();
+    await expect(page.locator('#g-files')).toHaveCount(1);
+    await expect(page.locator('#g-docs')).toHaveCount(0);
+    await page.setInputFiles('#g-files', { name: 'demo.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF') });
+    await expect(page.getByText('demo.pdf')).toBeVisible();
+    expect(api.uploads).toBe(0);
   });
 
   test('a claim older than 3 months cannot be raised and points to the phone', async ({ page }) => {

@@ -121,7 +121,7 @@ static demo data until the backend and Twenty support them. All calls go through
 | My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
 | Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
 | Member reply | `POST habit-opd/api/v1/dispute` `action=userReply`, `resource` = base64 `{resourceType:"Dispute",name,id}`, `args=messageText:<text>` |
-| Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form), then send in the submit's `documents` array |
+| Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form; PDF, Word or image, 5 MB each, several at once), then send in the submit's `documents` array. Demo orders keep the demo picker (nothing uploaded) |
 | Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
 
 Requests are form-urlencoded; `resource` is URL-encoded base64, signed over

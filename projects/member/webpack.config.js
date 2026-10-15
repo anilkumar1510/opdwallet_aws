@@ -35,6 +35,10 @@ module.exports = {
         type: 'var',
         name: 'opdWalletUser'
       },
+        remotes: {
+            // Point to the running React Consent app's remoteEntry.js
+            consent_remote: "consent_remote@https://consent.habithealth.com/remoteEntry.js",
+        },
       shared: {
         "@angular/common": { singleton: true, strictVersion: false, requiredVersion: false },
         "@angular/common/http": { singleton: true, strictVersion: false, requiredVersion: false },
