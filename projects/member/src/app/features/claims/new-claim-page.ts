@@ -1138,37 +1138,59 @@ export class NewClaimPage {
     encodedResourceData += "&action=" + action;
     var options = this.appService.addXsrfToken(encodedResourceData, true);
 
+    // A missing consent comes back as errCode -1 with the consent URL in the
+    // message, e.g. "Consent not accepted. Please complete consent at:
+    // https://consent.habithealth.com/?token=…". Hand the message straight to
+    // the modal service, which pulls the token out and opens the remote.
+    const tryConsent = (message: string): boolean =>
+      this.consentService.openFromApiMessage(message, {
+        onSuccess: () => {
+          // Consent captured — stay on the page. The user submits the claim again.
+          this.submitting.set(false);
+          this.problem.set(null);
+        },
+        onClose: () => {
+          this.submitting.set(false);
+        },
+      });
+
+    const fail = (message: string) => {
+      if (message && tryConsent(message)) {
+        this.submitting.set(false);
+        return;
+      }
+      console.error('[NewClaimPage] Claim submit failed:', message);
+      this.submitting.set(false);
+      this.problem.set('We could not submit your claim. Please check your details and try again.');
+    };
+
+    // addXsrfToken sets observe:'response' + responseType:'text', so the API
+    // payload is a JSON string (in res.body on 200, in err.error on HTTP error).
+    const parseBody = (raw: any): any => {
+      if (typeof raw !== 'string') return raw;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return raw;
+      }
+    };
+
     return this._http.post(url, params, options).subscribe({
-      next: async () => {
+      next: async (res: any) => {
+        // Failure is a non-zero errCode on an HTTP 200 (same convention as the
+        // rest of the app), not an HTTP error status.
+        const raw = res?.body ?? res;
+        const body = parseBody(raw);
+        if (body && typeof body === 'object' && body.errCode !== undefined && body.errCode !== 0) {
+          fail(body.message ?? '');
+          return;
+        }
         await this.router.navigate(['/member/claims']);
         this.submitting.set(false);
       },
       error: (err) => {
-        // A missing consent comes back as errCode -1 with the consent URL in
-        // the message, e.g. "Consent not accepted. Please complete consent at:
-        // https://consent.habithealth.com/?token=…". Hand the message straight
-        // to the modal service, which pulls the token out and opens the remote.
-        const message: string = err?.error?.message ?? err?.message ?? '';
-        const opened = this.consentService.openFromApiMessage(message, {
-          onSuccess: () => {
-            this.submitting.set(false);
-            this.problem.set(null);
-            // Consent is now captured — resubmit the claim with the same payload.
-            this.createNewClaimsSubmit(payload, resource, application, action);
-          },
-          onClose: () => {
-            this.submitting.set(false);
-          },
-        });
-
-        if (opened) {
-          this.submitting.set(false);
-          return;
-        }
-
-        console.error('Failed to submit claim:', err);
-        this.submitting.set(false);
-        this.problem.set('We could not submit your claim. Please check your details and try again.');
+        const body = parseBody(err?.error ?? err?.message ?? '');
+        fail(typeof body === 'string' ? body : (body?.message ?? ''));
       },
     });
   }
