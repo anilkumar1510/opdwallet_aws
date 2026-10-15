@@ -1145,10 +1145,9 @@ export class NewClaimPage {
     const tryConsent = (message: string): boolean =>
       this.consentService.openFromApiMessage(message, {
         onSuccess: () => {
+          // Consent captured — stay on the page. The user submits the claim again.
           this.submitting.set(false);
           this.problem.set(null);
-          // Consent is now captured — resubmit the claim with the same payload.
-          this.createNewClaimsSubmit(payload, resource, application, action);
         },
         onClose: () => {
           this.submitting.set(false);
