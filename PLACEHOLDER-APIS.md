@@ -159,7 +159,7 @@ Needs a backend change:
 4. **Duplicates and the raise window are only enforced in the UI.** Several disputes can exist for one claim. Please enforce one open ticket per claim and the 3-month window on the server too.
 5. **Agree the values** the portal sends: `benefit_category` (now the claim's own category code: AHC, DENTAL, IN_CLINIC, LABS, ONLINE_CONSULTATION, PHARMACY), `category` / `dispute_type` for non-claim orders, and `final_reason` (the member's words; support also writes the resolution there; submit drops `description` and creates no first message).
 6. **Stable status codes:** `dispute_status` is display text ("Awaiting executive response"); `adjudicate` only accepts "Awaiting user response", "Awaiting executive response", `RESOLVED` and `CLOSED` (mixed case). A documented code list would be safer than the portal matching words.
-7. **Messages:** the member's `sender_name` is a user id (the portal shows "You"); `userReply` has no attachments.
+7. **Messages:** the member's `sender_name` is a user id (the portal shows "You"). Replies are text only by design (`userReply` carries no attachments); documents are attached only when raising the grievance.
 8. **`X-XSRF-TOKEN` is not checked** on dispute reads or writes. Please confirm this is intended.
 9. **DMS `image-response-entity` answers HTTP 500** `{"status":500,"message":null}` for an unknown document id (404 would be right). The portal shows "This document is no longer available".
 10. **Still to build:** notifications, central configuration API (reasons, raise window, support phone and email), non-claim (service-line) grievances in the CRM.
