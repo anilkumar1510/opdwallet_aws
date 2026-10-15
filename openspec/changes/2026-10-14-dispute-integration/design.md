@@ -35,7 +35,7 @@ Supporting documents are uploaded to DMS first and sent in the submit's `documen
 Support's resolution later replaces `final_reason`. On a closed ticket it is shown as support's remark only when it differs from the member's first message, so the member never sees their own words presented as a resolution.
 
 ### 5c. Claims beyond the first 20
-`ClaimsStore` loads only page 0. `ClaimPages` reads the next pages of the same listing (`GET_CLAIMS_BY_USER`), mapped like the store, and the page merges them and removes repeats (the real pages overlap). Load more shows five at a time and reads another page only when it runs out of rows; a failed page shows a message and can be retried.
+`ClaimsStore` loads only page 0. `ClaimPages` reads one large page (100) of the same listing (`GET_CLAIMS_BY_USER`): the real API repeats page 0 for later 20-row pages, so some claims were unreachable. Rows are mapped like the store and repeats removed; a further page is read only when a page is full and brought something new. Load more shows five at a time; a failed read shows a message and can be retried. The claim's own category code is sent as `benefit_category`; a reply refused by the backend's 3-second guard is retried once after 3.2 s; status codes with underscores are understood.
 
 ### 5d. Signing
 The dispute calls use `AppService.addXsrfToken` like the claim form, so a logged-in session (encrypted token) behaves the same. The server did not check the token on dispute reads or writes in testing (reported to the backend team).

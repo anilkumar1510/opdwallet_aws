@@ -46,15 +46,13 @@ test.describe('Claims that need your help', () => {
   });
 });
 
-/** n distinct claims, newest first, with the first one repeated at the start of page 2 (the real pages overlap). */
-function manyClaims(n: number, repeatFirstAt = 20): object[] {
-  const rows = Array.from({ length: n }, (_, i) => claimRow(i, 'UNDER_REVIEW', 'Under review'));
-  if (repeatFirstAt < n) rows.splice(repeatFirstAt, 0, rows[0]);
-  return rows;
+/** n distinct claims, newest first. */
+function manyClaims(n: number): object[] {
+  return Array.from({ length: n }, (_, i) => claimRow(i, 'UNDER_REVIEW', 'Under review'));
 }
 
 test.describe('Claims paging (more than 20 claims)', () => {
-  // The button reads "Loading…" while a page is being read, so wait for it to settle.
+  // The button reads "Loading…" while the rest is being read, so wait for it to settle.
   const more = (page: Page) => claimsSection(page).getByRole('button', { name: /^(Load more|Loading…)$/ });
   const clickMore = async (page: Page) => {
     await expect(more(page)).toHaveText('Load more', { timeout: 10000 });
@@ -67,16 +65,17 @@ test.describe('Claims paging (more than 20 claims)', () => {
     }
   };
 
-  test('older claims on later pages are reached with Load more, repeats are shown once, and the button goes away', async ({ page }) => {
+  test('with the real listing bug (later 20-row pages repeat the first) every claim is still reachable', async ({ page }) => {
     const api = new FakeApi();
-    api.claims = manyClaims(44); // 44 distinct claims across 3 pages, one repeated
+    api.claims = manyClaims(44);
+    api.brokenPaging = true;
     await openSupport(page, api);
     await loadAll(page);
     await expect(claimsSection(page).locator('li')).toHaveCount(44);
-    await expect(claimsSection(page).getByText('OPD-2026-00311')).toBeVisible(); // the oldest, on the last page
+    await expect(claimsSection(page).getByText('OPD-2026-00311')).toBeVisible(); // the oldest
     await expect(claimsSection(page).getByText('OPD-2026-00354')).toHaveCount(1); // not duplicated
     await expect(more(page)).toHaveCount(0);
-    expect(api.claimPageRequests.filter((n) => n === 1)).toHaveLength(1);
+    expect(api.claimPageRequests).toEqual([{ page: 0, size: 20 }, { page: 0, size: 100 }]);
   });
 
   test('with 6 claims there is nothing more to load and no extra request', async ({ page }) => {
@@ -84,25 +83,35 @@ test.describe('Claims paging (more than 20 claims)', () => {
     await clickMore(page);
     await expect(more(page)).toHaveCount(0);
     await expect(claimsSection(page).locator('li')).toHaveCount(6);
-    expect(api.claimPageRequests).toEqual([0]);
+    expect(api.claimPageRequests).toEqual([{ page: 0, size: 20 }]);
   });
 
-  test('exactly 20 claims: Load more checks the next page once, finds nothing and goes away', async ({ page }) => {
+  test('exactly 20 claims: Load more checks once, finds nothing new and goes away', async ({ page }) => {
     const api = new FakeApi();
-    api.claims = manyClaims(20, 99);
+    api.claims = manyClaims(20);
     await openSupport(page, api);
     await loadAll(page);
     await expect(claimsSection(page).locator('li')).toHaveCount(20);
     await expect(more(page)).toHaveCount(0);
-    expect(api.claimPageRequests).toEqual([0, 1]);
+    expect(api.claimPageRequests).toEqual([{ page: 0, size: 20 }, { page: 0, size: 100 }]);
   });
 
-  test('a failed page shows a message, keeps what is shown, and Load more tries again', async ({ page }) => {
+  test('more than 100 claims continue on the next large page', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = manyClaims(120);
+    await openSupport(page, api);
+    await loadAll(page);
+    await expect(claimsSection(page).locator('li')).toHaveCount(120);
+    await expect(more(page)).toHaveCount(0);
+    expect(api.claimPageRequests.map((r) => `${r.page}/${r.size}`)).toEqual(['0/20', '0/100', '1/100']);
+  });
+
+  test('a failed read shows a message, keeps what is shown, and Load more tries again', async ({ page }) => {
     const api = new FakeApi();
     api.claims = manyClaims(44);
-    api.failClaimsPage = 1;
+    api.failClaimsPage = 0;
     await openSupport(page, api);
-    for (let i = 0; i < 4; i++) await clickMore(page); // 2 + 5 per click: runs past the 20 on page 0
+    for (let i = 0; i < 4; i++) await clickMore(page);
     await expect(claimsSection(page).getByRole('alert')).toContainText('could not load more claims');
     await expect(claimsSection(page).locator('li').first()).toBeVisible();
     await loadAll(page);
@@ -110,7 +119,7 @@ test.describe('Claims paging (more than 20 claims)', () => {
     await expect(claimsSection(page).getByRole('alert')).toHaveCount(0);
   });
 
-  test('a claim on a later page shows its ticket status', async ({ page }) => {
+  test('a claim beyond the first 20 shows its ticket status', async ({ page }) => {
     const api = new FakeApi();
     api.claims = manyClaims(44);
     api.seed({ claim_id: 'OPD-2026-00320', dispute_status: 'Awaiting user response' }, [{ sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Please upload page 2' }]);
@@ -119,13 +128,13 @@ test.describe('Claims paging (more than 20 claims)', () => {
     await expect(claimRowOf(page, 'OPD-2026-00320').getByRole('button', { name: 'Response received' })).toBeVisible();
   });
 
-  test('rapid clicks on Load more read each page once', async ({ page }) => {
+  test('rapid clicks on Load more read the rest once', async ({ page }) => {
     const api = new FakeApi();
     api.claims = manyClaims(44);
     await openSupport(page, api);
     for (let i = 0; i < 4; i++) await clickMore(page);
     await loadAll(page);
-    for (const n of [1, 2]) expect(api.claimPageRequests.filter((x) => x === n)).toHaveLength(1);
+    expect(api.claimPageRequests.filter((r) => r.size === 100)).toHaveLength(1);
   });
 });
 
@@ -491,7 +500,7 @@ test.describe('Documents on a ticket', () => {
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket open' }).click();
     await page.getByRole('button', { name: 'Download' }).click();
-    await expect(page.getByRole('alert')).toContainText('could not open that document');
+    await expect(page.getByRole('alert')).toContainText('no longer available');
     api.dmsFetch = 'ok';
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download' }).click();

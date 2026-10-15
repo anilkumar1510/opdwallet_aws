@@ -484,7 +484,7 @@ export class HelplinePage {
    * to the dispute API.
    */
   private readonly moreClaimRows = signal<any[]>([]);
-  private readonly nextClaimPage = signal(1);
+  private readonly nextClaimPage = signal(0);
   /** null until a later page has been read; then whether that page was full. */
   private readonly moreFromServer = signal<boolean | null>(null);
   protected readonly claimsPaging = signal(false);
@@ -842,6 +842,7 @@ export class HelplinePage {
       const result = await this.disputeApi.submit({
         claimId: o.id,
         categoryLabel: o.service,
+        categoryCode: await this.claimPages.categoryCodeOf(o.service),
         reason: this.reason(),
         detail: text,
         documents: this.docs().filter((d) => d.state === 'done').map((d) => toDisputeDocument(d.file, d.documentId!, d.name ?? d.file.name)),
@@ -920,7 +921,10 @@ export class HelplinePage {
         const result = await this.claimPages.page(this.nextClaimPage());
         if (!result.ok) { this.claimsPagingError.set(true); break; }
         this.nextClaimPage.update((n) => n + 1);
-        this.moreFromServer.set(result.full);
+        const known = new Set(this.claimOrders().map((c) => c.id));
+        const fresh = result.rows.filter((r) => r?.claim_id && !known.has(r.claim_id));
+        // A page with nothing new means the listing has repeated itself: there is no more.
+        this.moreFromServer.set(result.full && fresh.length > 0);
         this.moreClaimRows.update((rows) => [...rows, ...result.rows]);
       }
     } finally {

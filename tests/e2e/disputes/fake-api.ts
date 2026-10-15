@@ -70,7 +70,9 @@ export class FakeApi {
   rejectReplyMessage = 'You have clicked multiple times for the same action, please wait for 3 seconds.';
   failMessages = false;
   uploadReply: object | null = null;
-  claimPageRequests: number[] = [];
+  claimPageRequests: { page: number; size: number }[] = [];
+  /** Like the real listing: pages after the first at size 20 repeat the first page. */
+  brokenPaging = false;
   /** Fail the next request for this page of the claims listing (once). */
   failClaimsPage: number | null = null;
   dmsFetch: 'ok' | 'fail' = 'ok';
@@ -175,9 +177,11 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
     if (q.get('queryId') === 'GET_CLAIMS_BY_USER') {
       const pageNo = Number(q.get('page_no') ?? 0);
       const size = Number(q.get('page_size') ?? 20);
-      api.claimPageRequests.push(pageNo);
-      if (api.failClaimsPage === pageNo) { api.failClaimsPage = null; return route.fulfill(json({ errCode: -1, message: 'boom' })); }
-      return route.fulfill(json({ errCode: 0, resource: api.claims.slice(pageNo * size, pageNo * size + size) }));
+      api.claimPageRequests.push({ page: pageNo, size });
+      // Only the pager's own (large) requests are made to fail.
+      if (size > 20 && api.failClaimsPage === pageNo) { api.failClaimsPage = null; return route.fulfill(json({ errCode: -1, message: 'boom' })); }
+      const effective = api.brokenPaging && size === 20 ? 0 : pageNo;
+      return route.fulfill(json({ errCode: 0, resource: api.claims.slice(effective * size, effective * size + size) }));
     }
     if ((q.get('queryId') ?? '').includes('valueset')) return route.fulfill(json({ errCode: 0, resource: [] }));
     return route.fulfill(json({ errCode: -1, message: 'not mocked' }));

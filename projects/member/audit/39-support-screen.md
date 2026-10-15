@@ -205,3 +205,7 @@ member, notifications, central configuration and service-line (non-claim) grieva
 Spec: `openspec/changes/2026-10-14-dispute-integration/`. Browser tests:
 `tests/e2e/disputes/` (a fake of the API, plus `live-api.spec.ts` against the real
 one when `SESSION_ID` is set).
+
+## Update: claims paging and ticket details (2026-10-15)
+
+The real claims listing repeats its first page for later 20-row pages (39 rows, only 20 distinct claims), so the Support page now reads one 100-row page and removes repeats; all claims are reachable and Load more shows five at a time. `benefit_category` is the claim's own category code, a reply refused by the backend's 3-second guard is retried once, and a missing document says "This document is no longer available". Verified: 46 unit, 65 browser (desktop and phone) and 3 live API tests.

@@ -69,6 +69,8 @@ export interface DisputeInput {
   readonly claimId: string;
   /** The claim's category as shown to the member, e.g. "Diagnostics". */
   readonly categoryLabel: string;
+  /** The claim's own category code (AHC, LABS, PHARMACY, …) when known; sent as `benefit_category`. */
+  readonly categoryCode?: string | null;
   readonly reason: string;
   readonly detail: string;
   readonly documents: readonly DisputeDocument[];
@@ -119,11 +121,16 @@ export type TicketState = 'awaiting_support' | 'awaiting_member' | 'closed';
  * other status (new, assigned, awaiting executive) is still with support.
  */
 export function ticketStateOf(status: string): TicketState {
-  const s = status.toLowerCase();
-  if (/resolved|closed/.test(s)) return 'closed';
-  if (/awaiting (user|member)/.test(s)) return 'awaiting_member';
+  // Display text ("Awaiting user response") and codes (AWAITING_USER_RESPONSE,
+  // awaiting-user-response) both reach this: compare on words only.
+  const s = status.toLowerCase().replace(/[^a-z]+/g, ' ').trim();
+  if (/\b(resolved|closed|closure|completed|cancel(l)?ed)\b/.test(s)) return 'closed';
+  if (/\bawaiting (user|member|patient|customer)\b/.test(s)) return 'awaiting_member';
   return 'awaiting_support';
 }
+
+/** Shown when DMS has no such document (it answers 500 or 404 for an unknown id). */
+const GONE = 'This document is no longer available.';
 
 const PAGE_SIZE = 20;
 const MAX_PAGES = 25;
@@ -179,7 +186,7 @@ export class DisputeApi {
       relation_to_member: String(patient?.relationship ?? 'SELF').toUpperCase(),
       category: 'CLAIM',
       dispute_type: 'GENERAL',
-      benefit_category: benefitCategoryOf(input.categoryLabel),
+      benefit_category: input.categoryCode?.trim() || benefitCategoryOf(input.categoryLabel),
       selected_reason: input.reason,
       dispute_status: 'OPEN',
       ...(description ? { final_reason: description } : {}),
@@ -255,7 +262,7 @@ export class DisputeApi {
    * flips the ticket back to support. The text travels in a key:value `args`
    * string, so it is URL-encoded as a whole.
    */
-  async reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
+  async reply(dispute: { name: string; id: string }, text: string, retried = false): Promise<ReplyResult> {
     try {
       const { resource, application } = DISPUTE_API;
       const action = 'userReply';
@@ -274,6 +281,11 @@ export class DisputeApi {
         // A non-JSON 200 with no error marker counts as accepted.
       }
       if (parsed.errCode === -1) {
+        // The backend refuses the same action twice inside 3 seconds: wait it out and send once more.
+        if (!retried && /wait for \d+ second/i.test(parsed.message ?? '')) {
+          await new Promise((resolve) => setTimeout(resolve, 3_200));
+          return this.reply(dispute, text, true);
+        }
         return { ok: false, message: parsed.message || 'We could not send your reply. Please try again.' };
       }
       return { ok: true };
@@ -312,7 +324,7 @@ export class DisputeApi {
         this.http.get(`${DMS_FETCH_URL}?args=${encodeURIComponent(`id:${documentId}`)}&application=dms`, { responseType: 'blob' }),
       );
       // An error answers with JSON, not the file.
-      if (!blob.size || blob.type.includes('json')) return { ok: false, message: 'We could not open that document. Please try again.' };
+      if (!blob.size || blob.type.includes('json')) return { ok: false, message: GONE };
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -322,7 +334,9 @@ export class DisputeApi {
       return { ok: true };
     } catch (error) {
       console.error('Failed to download dispute document:', error);
-      return { ok: false, message: 'We could not open that document. Please try again.' };
+      // The document service answers HTTP 500 (not 404) for an id it does not have.
+      const status = (error as { status?: number })?.status;
+      return { ok: false, message: status === 404 || status === 500 ? GONE : 'We could not open that document. Please try again.' };
     }
   }
 

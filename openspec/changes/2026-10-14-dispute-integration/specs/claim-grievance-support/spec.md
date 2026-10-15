@@ -1,12 +1,12 @@
 ## ADDED Requirements
 
 ### Requirement: Claims that need help come from the claims listing API
-The Support page SHALL list the member's claims from the same paginated claims listing API as the Claims page, newest first, five at a time with a Load more control, reading further pages of the listing when the claims already loaded run out.
+The Support page SHALL list the member's claims from the same paginated claims listing API as the Claims page, newest first, five at a time with a Load more control, reading the rest of the listing in one large page (the listing repeats its first page for later 20-row pages) and a further page only if that page is full.
 
 #### Scenario: More than 20 claims
 - **WHEN** a member has more claims than one page holds
 - **THEN** Load more reaches the older claims, each claim is shown once even if two pages repeat it, and the button goes away after the last page
-- **AND** a page that fails to load shows a message and Load more tries it again
+- **AND** a read that fails shows a message and Load more tries it again
 
 #### Scenario: Claims are listed
 - **WHEN** a member opens the Support page and the listing returns claims
