@@ -29,6 +29,7 @@ import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
 import { Observable } from 'rxjs';
+import { ConsentModalService } from '../../core/consent/consent-modal.service';
 const MAX_BYTES = 5 * 1024 * 1024;
 const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -492,6 +493,7 @@ export class NewClaimPage {
   protected readonly family = inject(FamilyStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
+  private readonly consentService = inject(ConsentModalService);
 
   protected readonly steps = STEPS;
   /** Opens on the bank step until the payout account is approved. */
@@ -1128,29 +1130,47 @@ export class NewClaimPage {
     // await this.router.navigate(['/member/claims', createdId]);
   }
 
-  createNewClaimsSubmit(payload: any, resource: string, application: string, action: string):any{
-    const url = "/"+application+"/api/v1/"+resource;
+  createNewClaimsSubmit(payload: any, resource: string, application: string, action: string): any {
+    const url = "/" + application + "/api/v1/" + resource;
     var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     var params = "resource=" + encodedResourceData;
     params += "&application=" + application + "&action=" + action;
-    encodedResourceData += "&action=" + action
+    encodedResourceData += "&action=" + action;
     var options = this.appService.addXsrfToken(encodedResourceData, true);
-    // var encrypted = this.appService.getXsrfToken(payload, true);
-    return  this._http.post(url, params, options).subscribe({
+
+    return this._http.post(url, params, options).subscribe({
       next: async () => {
-        // The loader stays up across the navigation so the form is never shown
-        // again in a submitted state; the destroyed component drops it with the view.
         await this.router.navigate(['/member/claims']);
         this.submitting.set(false);
       },
-      // Without this the overlay would block the page forever on a failed POST.
       error: (err) => {
+        // A missing consent comes back as errCode -1 with the consent URL in
+        // the message, e.g. "Consent not accepted. Please complete consent at:
+        // https://consent.habithealth.com/?token=…". Hand the message straight
+        // to the modal service, which pulls the token out and opens the remote.
+        const message: string = err?.error?.message ?? err?.message ?? '';
+        const opened = this.consentService.openFromApiMessage(message, {
+          onSuccess: () => {
+            this.submitting.set(false);
+            this.problem.set(null);
+            // Consent is now captured — resubmit the claim with the same payload.
+            this.createNewClaimsSubmit(payload, resource, application, action);
+          },
+          onClose: () => {
+            this.submitting.set(false);
+          },
+        });
+
+        if (opened) {
+          this.submitting.set(false);
+          return;
+        }
+
         console.error('Failed to submit claim:', err);
         this.submitting.set(false);
         this.problem.set('We could not submit your claim. Please check your details and try again.');
       },
-    })
-
+    });
   }
 
   addXsrfToken(data: any, login_required: any) {
