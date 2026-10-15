@@ -209,3 +209,7 @@ one when `SESSION_ID` is set).
 ## Update: claims paging and ticket details (2026-10-15)
 
 The real claims listing repeats its first page for later 20-row pages (39 rows, only 20 distinct claims), so the Support page now reads one 100-row page and removes repeats; all claims are reachable and Load more shows five at a time. `benefit_category` is the claim's own category code, a reply refused by the backend's 3-second guard is retried once, and a missing document says "This document is no longer available". Verified: 46 unit, 65 browser (desktop and phone) and 3 live API tests.
+
+## Update: Mark resolved and backend check (2026-10-15)
+
+The backend (`new_prod`) now has `userResolve`, so "Mark resolved" works on real tickets: it closes the ticket, shows "You marked this resolved", survives a refresh and cannot be undone. The backend also enforces one open ticket per claim and the 3-month window, and added a `description` field. The live claims listing still repeats pages at 20 rows (49 rows, 32 distinct), so the 100-row read stays. Verified: build clean, 52 unit, 72 browser (desktop and phone), 3 live API tests; the new backend paths were read from source and checked against a fake API, not exercised live.

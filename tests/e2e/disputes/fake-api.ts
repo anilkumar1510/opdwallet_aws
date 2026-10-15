@@ -43,6 +43,7 @@ export interface Dispute {
   g_creation_time: number;
   g_modify_time: number;
   final_reason?: string;
+  last_message_sender?: string;
   documents?: object[];
 }
 export interface Message {
@@ -64,6 +65,10 @@ export class FakeApi {
   claims: object[] = CLAIMS;
   failSubmit: 'errCode' | 500 | null = null;
   failReply: string | null = null;
+  /** `userResolve` calls received, and a reason to refuse them. */
+  resolves: string[] = [];
+  failResolve: string | null = null;
+  resolveDelayMs = 0;
   failList = false;
   /** Reject this many replies (with the 3 s guard message) before accepting. */
   rejectReplies = 0;
@@ -154,6 +159,18 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
         if (api.failSubmit === 'errCode') return route.fulfill(json({ errCode: -1, message: 'Claim not found' }));
         const d = api.seed({ claim_id: payload.claim_id, selected_reason: payload.selected_reason, dispute_status: 'OPEN', g_creation_time: Date.now(), final_reason: payload.final_reason, documents: payload.documents });
         return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, name: d.name, ticket_id: d.name }] }));
+      }
+
+      if (action === 'userResolve') {
+        if (api.resolveDelayMs) await new Promise((r) => setTimeout(r, api.resolveDelayMs));
+        api.resolves.push(payload.name);
+        if (api.failResolve) return route.fulfill(json({ errCode: -1, message: api.failResolve }));
+        const d = api.disputes.find((x) => x.id === payload.id)!;
+        // Like the backend: RESOLVED, the member as the last sender, no message.
+        d.dispute_status = 'RESOLVED';
+        d.last_message_sender = 'MEMBER';
+        d.g_modify_time = Date.now();
+        return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
       }
 
       if (action === 'userReply') {

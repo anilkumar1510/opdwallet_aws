@@ -121,6 +121,7 @@ static demo data until the backend and Twenty support them. All calls go through
 | My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
 | Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
 | Member reply | `POST habit-opd/api/v1/dispute` `action=userReply`, `resource` = base64 `{resourceType:"Dispute",name,id}`, `args=messageText:<text>` |
+| Member closes the ticket | `POST habit-opd/api/v1/dispute` `action=userResolve`, `resource` as for a reply, no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
 | Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form; PDF, Word or image, 5 MB each, several at once), then send in the submit's `documents` array. Demo orders keep the demo picker (nothing uploaded) |
 | Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
 
@@ -145,24 +146,30 @@ puts the member's words there; support's resolution later replaces them). Ticket
 and the open thread refresh every 30 s while the page is open. Nothing is stored
 in the browser.
 
-**Not available yet (no API):** Mark resolved by the member (hidden on real
-tickets; API to be provided), notifications (in-app, WhatsApp, email), service-line
+**Not available yet (no API):** notifications (in-app, WhatsApp, email), service-line
 (non-claim) grievances and their orders, central configuration (reason lists,
 raise window, support phone and email: placeholders `1800-000-0000` /
 `support@opdwallet.com`). **No reopen:** the member cannot reopen a closed ticket.
 
-### For the backend team (observed on the real API)
-Needs a backend change:
-1. **`GET_CLAIMS_BY_USER` paging is broken (critical).** With `page_size=20`, walking the pages returned 39 rows but only 20 distinct claims: every page after the first repeated page 0, so 19 claims (including the newest) were unreachable. `page_size=100` page 0 returns all 39. The portal now asks for one page of 100 and removes repeats; please fix the sort/offset so paging is deterministic.
-2. **`userReply` cannot carry a comma or a colon.** `args` is parsed as comma-separated `name:value` pairs: unquoted text is rejected ("args can have only values of format name:value"); quoted text is silently cut at the first comma; backslash and `%2C` escaping do nothing. The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236). Please support escaping or a body field for the text. Everything else (₹, quotes, newlines, Hindi, emoji, `&`, 8,000 characters) works.
-3. **Member "Mark resolved" action:** waiting for the API (the button stays hidden on real tickets).
-4. **Duplicates and the raise window are only enforced in the UI.** Several disputes can exist for one claim. Please enforce one open ticket per claim and the 3-month window on the server too.
-5. **Agree the values** the portal sends: `benefit_category` (now the claim's own category code: AHC, DENTAL, IN_CLINIC, LABS, ONLINE_CONSULTATION, PHARMACY), `category` / `dispute_type` for non-claim orders, and `final_reason` (the member's words; support also writes the resolution there; submit drops `description` and creates no first message).
-6. **Status values (confirmed by the backend):** ids `OPEN`, `AWAITING_EXECUTIVE_RESPONSE`, `AWAITING_USER_RESPONSE`, `RESOLVED`, `CLOSED` with names "Open", "Awaiting Executive Response", "Awaiting User Response", "Resolved", "Closed". The portal understands both the ids and the names. Still to confirm: the API returns names (display text) in `dispute_status`, and `adjudicate` currently accepts only "Awaiting user response", "Awaiting executive response", `RESOLVED` and `CLOSED`, not `OPEN`.
-7. **Messages:** the member's `sender_name` is a user id (the portal shows "You"). Replies are text only by design (`userReply` carries no attachments); documents are attached only when raising the grievance.
-8. **`X-XSRF-TOKEN` is not checked** on dispute reads or writes. Please confirm this is intended.
-9. **DMS `image-response-entity` answers HTTP 500** `{"status":500,"message":null}` for an unknown document id (404 would be right). The portal shows "This document is no longer available".
-10. **Still to build:** notifications, central configuration API (reasons, raise window, support phone and email), non-claim (service-line) grievances in the CRM.
-11. **Test data to clean up** on the test account: DIS-2026-00393, 00395 to 00401 and the "[TEST]" messages (no delete API is documented).
+### For the backend team (checked against `new_prod` source and the live API, 15 Oct 2026)
+Already done by the backend (read from the `new_prod` source; not yet exercised live, see the last item):
+- **Member "Mark resolved"** is `userResolve`; the portal now uses it.
+- **One open ticket per claim** and the **3-month window** (90 days from the claim's `treatment_date`) are enforced in `submit`.
+- **`description`** is a new field on the dispute.
+- Status ids and names are confirmed (`OPEN`, `AWAITING_EXECUTIVE_RESPONSE`, `AWAITING_USER_RESPONSE`, `RESOLVED`, `CLOSED`).
 
-Handled in the portal (no backend change needed): the 3-second same-action refusal (Send is disabled ~3 s and a refused reply is retried once automatically); status words with underscores or capitals are understood; the member's description is sent as `final_reason` and as the first message.
+Still needs a backend change:
+1. **`GET_CLAIMS_BY_USER` paging is still broken on the live API (critical).** At `page_size=20`, four pages returned 49 rows but only 32 distinct claims; `page_size=100` page 0 returns all 49. The portal reads one page of 100 and removes repeats; please fix the sort/offset so paging is deterministic.
+2. **`userReply` cannot carry a comma or a colon.** `args` is parsed as comma-separated `name:value` pairs; quoting and escaping do nothing. The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236). Please support escaping or a body field for the text.
+3. **Status text written by the code differs from the declared values.** The decorator writes "Awaiting executive response" and "Awaiting user response", while the enum ids are `AWAITING_EXECUTIVE_RESPONSE` / `AWAITING_USER_RESPONSE` (names "Awaiting Executive Response" / "Awaiting User Response"). The portal understands every form. `adjudicate` accepts only the two mixed-case strings, `RESOLVED` and `CLOSED`, not `OPEN`.
+4. **`userReply` on a RESOLVED or CLOSED ticket sets it back to "Awaiting executive response"**, i.e. it reopens it. `userResolve` and `agentResolve` check neither the owner nor the current status (`userReply` checks the owner). The portal offers neither reply nor resolve on a closed ticket; please enforce it on the server (members cannot reopen).
+5. **`description` is not yet used by the portal.** Confirm it is deployed and stores the member's words; then the portal can send them there and stop putting them in `final_reason` (which support later overwrites with the resolution).
+6. **Non-claim grievances.** `category` accepts only `CLAIM` and `dispute_type` only `GENERAL`; services need new values and a CRM counterpart. `benefit_category` is free text: the portal sends the claim's own category code (AHC, DENTAL, IN_CLINIC, LABS, ONLINE_CONSULTATION, PHARMACY).
+7. **Member `sender_name` is a user id** (the portal shows "You").
+8. **`X-XSRF-TOKEN` is not checked** on dispute reads or writes. Please confirm this is intended.
+9. **DMS `image-response-entity` answers HTTP 500** for an unknown document id (404 would be right). The portal shows "This document is no longer available".
+10. **Still to build:** notifications (the code has `TODO: Send notification`), a central configuration API (reasons, raise window, support phone and email), and `agentReply` has no role check yet (`TODO`).
+11. **Test data to clean up** on the test account (no delete API for members): DIS-2026-00393 and 00395 to 00407 and the "[TEST]" messages.
+12. **Live check outstanding:** the duplicate, 3-month and `userResolve` paths were read from source, not exercised against the live API (no more test tickets were created on the shared account). Please confirm they are deployed, or allow one more test ticket.
+
+Handled in the portal (no backend change needed): a refusal from the server (duplicate, window, resolve) is shown as the backend's message; the 3-second same-action refusal (Send is disabled ~3 s and a refused reply is retried once automatically); status words with underscores or capitals are understood; the member's description is sent as `final_reason` and as the first message.

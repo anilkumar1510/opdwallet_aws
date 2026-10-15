@@ -262,14 +262,29 @@ export class DisputeApi {
    * flips the ticket back to support. The text travels in a key:value `args`
    * string, so it is URL-encoded as a whole.
    */
-  async reply(dispute: { name: string; id: string }, text: string, retried = false): Promise<ReplyResult> {
+  reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
+    return this.act(dispute, 'userReply', `messageText:${toArgSafe(text)}`, 'We could not send your reply. Please try again.');
+  }
+
+  /** The member closes their own ticket as resolved: `action=userResolve` (no text, no reopen). */
+  resolve(dispute: { name: string; id: string }): Promise<ReplyResult> {
+    return this.act(dispute, 'userResolve', undefined, 'We could not close the ticket. Please try again.');
+  }
+
+  /** One signed `dispute` action on an existing ticket. */
+  private async act(
+    dispute: { name: string; id: string },
+    action: string,
+    args: string | undefined,
+    failure: string,
+    retried = false,
+  ): Promise<ReplyResult> {
     try {
       const { resource, application } = DISPUTE_API;
-      const action = 'userReply';
       const encoded = encodeResource({ resourceType: 'Dispute', name: dispute.name, id: dispute.id });
       const body =
         `resource=${encodeURIComponent(encoded)}&application=${application}&action=${action}` +
-        `&args=${encodeURIComponent(`messageText:${toArgSafe(text)}`)}`;
+        (args === undefined ? '' : `&args=${encodeURIComponent(args)}`);
       const options = this.appService.addXsrfToken(`${encoded}&action=${action}`, true);
       const response = await firstValueFrom(
         this.http.post(`/${application}/api/v1/${resource}`, body, options),
@@ -284,14 +299,14 @@ export class DisputeApi {
         // The backend refuses the same action twice inside 3 seconds: wait it out and send once more.
         if (!retried && /wait for \d+ second/i.test(parsed.message ?? '')) {
           await new Promise((resolve) => setTimeout(resolve, 3_200));
-          return this.reply(dispute, text, true);
+          return this.act(dispute, action, args, failure, true);
         }
-        return { ok: false, message: parsed.message || 'We could not send your reply. Please try again.' };
+        return { ok: false, message: parsed.message || failure };
       }
       return { ok: true };
     } catch (error) {
-      console.error('Failed to send dispute reply:', error);
-      return { ok: false, message: 'We could not send your reply. Please try again.' };
+      console.error(`Failed dispute action ${action}:`, error);
+      return { ok: false, message: failure };
     }
   }
 

@@ -121,11 +121,26 @@ A reply SHALL be sent with `action=userReply` and shown in the thread.
 - **THEN** it cannot be sent; and the box holds at most 2000 characters
 
 ### Requirement: No member reopen, no fake actions
-A member SHALL NOT be able to reopen a closed ticket. Demo support buttons and "Mark resolved" SHALL NOT be shown on real tickets.
+A member SHALL NOT be able to reopen a closed ticket. Demo support buttons SHALL NOT be shown on real tickets. A member MAY close a real ticket with "Mark resolved".
 
 #### Scenario: Closed ticket
 - **WHEN** a member views a closed ticket
 - **THEN** no reopen action is shown, only the call-support prompt
+
+### Requirement: Member can mark a ticket resolved
+A member SHALL be able to close an open real ticket with "Mark resolved", sent as `action=userResolve`; the ticket then reads as closed by the member, with no reopen.
+
+#### Scenario: Mark resolved
+- **WHEN** a member presses "Mark resolved" on an open real ticket
+- **THEN** `userResolve` is sent once (no text), the ticket shows closed ("You marked this resolved"), and it stays closed after a refresh
+
+#### Scenario: Refused
+- **WHEN** the backend refuses the close
+- **THEN** its message is shown, the ticket stays open and the member can try again
+
+#### Scenario: Closed by support
+- **WHEN** a ticket was closed by support (last sender is not the member)
+- **THEN** it is shown as closed by support and offers no Mark resolved
 
 ### Requirement: Something else offers call and email
 The "Something else?" section SHALL let the member call or email support and SHALL NOT open a ticket.

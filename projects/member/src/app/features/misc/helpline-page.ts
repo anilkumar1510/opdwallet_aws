@@ -411,6 +411,8 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
           <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
         }
         <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying() || cooling()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : 'Mark resolved' }}</button>
+        <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good.</p>
       </ng-template>
 
       <!-- One row layout for both lists: what, when and which, then the
@@ -513,6 +515,7 @@ export class HelplinePage {
   protected readonly openingDoc = signal<string | null>(null);
   protected readonly docError = signal<string | null>(null);
   protected readonly replying = signal(false);
+  protected readonly resolving = signal(false);
   protected readonly replyError = signal<string | null>(null);
   /** The backend refuses the same action twice inside 3 seconds. */
   protected readonly cooling = signal(false);
@@ -986,7 +989,22 @@ export class HelplinePage {
     this.notice.set('Reply sent. The ticket is back with the support team.');
   }
 
-  protected markResolved(t: SupportTicket): void {
+  protected async markResolved(t: SupportTicket): Promise<void> {
+    const record = this.liveRecords().find((r) => r.name === t.id);
+    if (record) {
+      if (this.resolving()) return;
+      this.resolving.set(true);
+      this.replyError.set(null);
+      const result = await this.disputeApi.resolve(record);
+      this.resolving.set(false);
+      if (!result.ok) {
+        this.replyError.set(result.message);
+        return;
+      }
+      this.notice.set('Thanks — the ticket is closed.');
+      await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+      return;
+    }
     const now = new Date();
     this.update(t, { state: 'closed', closedAt: now, closedBy: 'member' }, { from: 'system', text: 'Marked resolved by you', at: now });
     this.notice.set('Thanks — the ticket is closed.');
@@ -1099,7 +1117,11 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
       ? { from: 'member', text: m.text, at: m.at }
       : { from: 'support', author: m.senderName, text: m.text, at: m.at })),
   ];
-  if (state === 'closed') {
+  // `userResolve` leaves the member as the last sender; support's close does not.
+  const closedByMember = state === 'closed' && r.lastMessageSender === 'MEMBER';
+  if (closedByMember) {
+    messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
+  } else if (state === 'closed') {
     // `final_reason` starts as the member's own words (submit stores them there)
     // and becomes the resolution when support closes the ticket: only show it as
     // support's remark once it is no longer the member's first message.
@@ -1115,7 +1137,7 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
     createdAt: r.createdAt,
     state,
     closedAt: state === 'closed' ? r.modifiedAt : undefined,
-    closedBy: state === 'closed' ? 'support' : undefined,
+    closedBy: state === 'closed' ? (closedByMember ? 'member' : 'support') : undefined,
     messages,
   };
 }

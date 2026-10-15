@@ -44,7 +44,7 @@ The dispute calls use `AppService.addXsrfToken` like the claim form, so a logged
 resolved / closed means closed; "awaiting user/member" means support has replied; anything else is with support. Closed shows `final_reason` and the call-support prompt. The member's name in messages is a user id, so own messages read "You".
 
 ### 7. No reopen, no fake actions
-The reopen button and logic are removed. On real tickets the demo support buttons and "Mark resolved" are hidden.
+The reopen button and logic are removed. On real tickets the demo support buttons are hidden. "Mark resolved" sends `action=userResolve` (same signed form post as a reply, no `args`); the ticket is then read back from the API, and is shown as closed by the member when the last sender is `MEMBER`. A refusal shows the backend message and leaves the ticket open.
 
 ## Risks / Trade-offs
 
