@@ -20,6 +20,28 @@ const section = (page: Page, name: string) => page.locator('section', { has: pag
 let ticketId = process.env.LIVE_TICKET_ID ?? '';
 let claimId = process.env.LIVE_CLAIM_ID ?? '';
 
+/** A real one-page PDF (valid xref), so a downloaded test document opens in any viewer. */
+function samplePdf(text: string): Buffer {
+  const stream = `BT /F1 18 Tf 72 720 Td (${text}) Tj ET`;
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  let out = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  objects.forEach((body, i) => {
+    offsets.push(out.length);
+    out += `${i + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const xref = out.length;
+  out += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n` + offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('');
+  out += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(out, 'latin1');
+}
+
 test('raise a grievance, see it in the thread, reply, refresh and still see everything', async ({ page }) => {
   await injectSessionCookie(page);
   await page.goto('/member/helpline');
@@ -44,7 +66,7 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
 
   // An optional supporting document: uploaded to DMS first, then sent with the submit.
   const upload = page.waitForResponse((r) => r.url().includes('/dms/api/v1/emrImage') && r.request().method() === 'POST');
-  await page.setInputFiles('#g-docs', { name: 'test-doc.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 [TEST] supporting document') });
+  await page.setInputFiles('#g-docs', { name: 'test-doc.pdf', mimeType: 'application/pdf', buffer: samplePdf('[TEST] supporting document') });
   const documentId = (await (await upload).json()).resource?.[0]?.document_id as string;
   expect(documentId).toBeTruthy();
   await expect(page.getByText('test-doc.pdf · uploaded')).toBeVisible();
