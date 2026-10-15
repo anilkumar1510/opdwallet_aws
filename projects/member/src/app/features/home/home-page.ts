@@ -65,7 +65,6 @@ function quickLinksFor(policyId: string | null): readonly LinkTile[] {
       accent: 'Support',
       iconSrc: 'images/icons/home/action-help-support.svg',
       path: '/member/helpline',
-      webOnly: true,
     },
     {
       id: 'transactions',
@@ -73,13 +72,6 @@ function quickLinksFor(policyId: string | null): readonly LinkTile[] {
       accent: 'History',
       iconSrc: 'images/icons/home/action-transaction-history.svg',
       path: '/member/transactions',
-    },
-    {
-      id: 'helpline',
-      accent: '24/7',
-      trail: 'Helpline',
-      iconSrc: 'images/icons/home/action-helpline.svg',
-      path: '/member/helpline',
     },
   ];
 }
