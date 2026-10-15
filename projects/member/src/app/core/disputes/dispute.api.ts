@@ -31,8 +31,32 @@ export interface DisputeSubmitPayload {
   readonly dispute_status: 'OPEN';
   /** What the member typed in "Tell us more". */
   readonly description?: string;
-  /** DMS ids of the optional supporting documents. */
-  readonly document_ids?: readonly string[];
+  /** The optional supporting documents, as the dispute API stores them. */
+  readonly documents?: readonly DisputeDocument[];
+}
+
+/** One supporting document on a dispute (uploaded to DMS first). */
+export interface DisputeDocument {
+  readonly name: string;
+  readonly document_id: string;
+  readonly document_type: 'INVOICE' | 'PRESCRIPTION' | 'REPORT' | 'OTHER';
+  readonly originalname: string;
+  readonly verification_status: 'PENDING';
+  readonly filetype: string;
+  readonly filesize: string;
+}
+
+/** A DMS upload result and its file, as a dispute document. */
+export function toDisputeDocument(file: File, documentId: string, uploadedName: string): DisputeDocument {
+  return {
+    name: uploadedName || file.name,
+    document_id: documentId,
+    document_type: 'OTHER',
+    originalname: file.name,
+    verification_status: 'PENDING',
+    filetype: file.type,
+    filesize: String(file.size),
+  };
 }
 
 export interface DisputeInput {
@@ -41,7 +65,7 @@ export interface DisputeInput {
   readonly categoryLabel: string;
   readonly reason: string;
   readonly detail: string;
-  readonly documentIds: readonly string[];
+  readonly documents: readonly DisputeDocument[];
 }
 
 export type SubmitResult =
@@ -151,7 +175,7 @@ export class DisputeApi {
       selected_reason: input.reason,
       dispute_status: 'OPEN',
       ...(description ? { description } : {}),
-      ...(input.documentIds.length ? { document_ids: input.documentIds } : {}),
+      ...(input.documents.length ? { documents: input.documents } : {}),
     };
   }
 

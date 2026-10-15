@@ -121,7 +121,7 @@ static demo data until the backend and Twenty support them. All calls go through
 | My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
 | Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
 | Member reply | `POST habit-opd/api/v1/dispute` `action=userReply`, `resource` = base64 `{resourceType:"Dispute",name,id}`, `args=messageText:<text>` |
-| Supporting document (optional) | `POST /dms/api/v1/emrImage` (same as the claim form) |
+| Supporting document (optional) | `POST /dms/api/v1/emrImage` (same as the claim form), then sent in the submit's `documents` array |
 
 Requests are form-urlencoded; `resource` is URL-encoded base64, signed over
 `resource&action=<action>` through `AppService.addXsrfToken` (verified against
@@ -142,10 +142,12 @@ is stored in the browser.
 - The same action twice within **3 seconds** is refused ("please wait"); the
   portal disables Send for ~3 s after a send (and after the first message
   that follows a submit).
-- `submit` stores only the reason: **`description` and `document_ids` are
-  dropped.** The member's own words are therefore sent as the first `userReply`
-  right after submit. Uploaded documents reach DMS but are **not stored on the
-  dispute**; the backend needs a field for them.
+- `submit` stores the reason and a **`documents` array** (verified: stored on the
+  grievance, each `{name, document_id, document_type, originalname,
+  verification_status, filetype, filesize}`), but **`description` is dropped.**
+  The member's own words are therefore sent as the first `userReply` right after
+  submit (retried once if refused by the 3 s guard; if it still fails the text is
+  put back in the reply box).
 - Message `sender_name` for the member is a user id, so the portal shows "You".
 - More than one dispute can exist for one claim; the portal shows the newest and
   allows one live ticket per claim (PRD).
@@ -156,5 +158,5 @@ tickets), service-line (non-claim) grievances, reading orders for services.
 call-support prompt only.
 
 **To confirm with backend:** `benefit_category` values (derived from the claim
-category label, e.g. `DIAGNOSTICS`), the member-resolve action name, and where
-documents should go.
+category label, e.g. `DIAGNOSTICS`), and the member-resolve action name
+(waiting for that API).

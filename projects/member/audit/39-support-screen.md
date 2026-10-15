@@ -198,7 +198,7 @@ cannot reopen a closed ticket and claim detail has no payment section.
 Nothing is kept in the browser, so a refresh shows the same tickets.
 
 Backend quirks the portal works around (commas/colons in `args`, the 3-second
-same-action guard, `description` / `document_ids` dropped by `submit`) are listed
+same-action guard, `description` dropped by `submit`; `documents` are stored) are listed
 in `PLACEHOLDER-APIS.md` section 7. Still placeholder: Mark resolved by the
 member, and service-line (non-claim) grievances.
 

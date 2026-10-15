@@ -66,6 +66,9 @@ class FakeApi {
   failSubmit: 'errCode' | 500 | null = null;
   failReply: string | null = null;
   failList = false;
+  /** Reject this many replies (with the 3 s guard message) before accepting. */
+  rejectReplies = 0;
+  rejectReplyMessage = 'You have clicked multiple times for the same action, please wait for 3 seconds.';
   failMessages = false;
   uploadReply: object | null = null;
   submitDelayMs = 0;
@@ -154,6 +157,7 @@ async function mockBackend(page: Page, api = new FakeApi()): Promise<FakeApi> {
         if (Date.now() - api['lastReplyAt'] < GUARD_MS) {
           return route.fulfill(json({ errCode: -1, message: 'You have clicked multiple times for the same action, please wait for 3 seconds.' }));
         }
+        if (api.rejectReplies > 0) { api.rejectReplies -= 1; return route.fulfill(json({ errCode: -1, message: api.rejectReplyMessage })); }
         if (api.failReply) return route.fulfill(json({ errCode: -1, message: api.failReply }));
         api['lastReplyAt'] = Date.now();
         const d = api.disputes.find((x) => x.id === payload.id)!;
@@ -258,6 +262,28 @@ test.describe('Raise a grievance (submit)', () => {
     expect(api.replies).toHaveLength(0);
   });
 
+  test('if the first message is refused by the 3 second guard it is retried once and not lost', async ({ page }) => {
+    const api = new FakeApi();
+    api.rejectReplies = 1;
+    await openSupport(page, api);
+    await raise(page, 'Other', 'My detailed explanation');
+    await expect(page.getByText('My detailed explanation')).toBeVisible({ timeout: 30000 });
+    expect(api.replies).toHaveLength(1);
+    await expect(page.getByText(/could not be sent/)).toHaveCount(0);
+  });
+
+  test('if the first message still fails the ticket opens and the words go back into the reply box', async ({ page }) => {
+    const api = new FakeApi();
+    api.rejectReplies = 5;
+    api.rejectReplyMessage = 'Dispute is locked';
+    await openSupport(page, api);
+    await raise(page, 'Other', 'Words that must not be lost');
+    await expect(page.getByText('Your ticket')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText(/your details could not be sent/)).toBeVisible();
+    await expect(page.locator('#g-reply')).toHaveValue('Words that must not be lost');
+    expect(api.replies).toHaveLength(0);
+  });
+
   test('uploads optional documents to DMS and sends their ids with the submit', async ({ page }) => {
     const api = await openSupport(page);
     await claimsSection(page).getByRole('button', { name: 'Ask for help' }).first().click();
@@ -267,7 +293,10 @@ test.describe('Raise a grievance (submit)', () => {
     await page.getByRole('button', { name: 'Send to support' }).click();
     await expect(page.getByText('Your ticket')).toBeVisible({ timeout: 20000 });
     expect(api.uploads).toBe(1);
-    expect(api.submits[0]).toMatchObject({ document_ids: ['doc-1'] });
+    expect(api.submits[0]).toMatchObject({
+      documents: [{ name: 'bill.pdf', document_id: 'doc-1', document_type: 'OTHER', originalname: 'bill.pdf', verification_status: 'PENDING', filetype: 'application/pdf', filesize: '15' }],
+    });
+    expect(api.submits[0]).not.toHaveProperty('document_ids');
   });
 
   test('reason is required; "Other" also needs a description', async ({ page }) => {
@@ -326,7 +355,7 @@ test.describe('Raise a grievance (submit)', () => {
     await page.getByRole('button', { name: 'Remove huge.pdf' }).click();
     await page.getByRole('button', { name: 'Send to support' }).click();
     await expect(page.getByText('Your ticket')).toBeVisible({ timeout: 20000 });
-    expect(api.submits[0]).not.toHaveProperty('document_ids');
+    expect(api.submits[0]).not.toHaveProperty('documents');
   });
 
   test('a claim older than 3 months cannot be raised and points to the phone', async ({ page }) => {

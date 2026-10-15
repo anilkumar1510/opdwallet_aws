@@ -41,11 +41,23 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   // "Other" needs a description; commas and colons are in it on purpose.
   await page.selectOption('#g-reason', 'Other');
   await page.fill('#g-detail', '[TEST - please ignore] integration check, with a comma: and a colon. Amount ₹1,500 "quoted" & more.');
+
+  // An optional supporting document: uploaded to DMS first, then sent with the submit.
+  const upload = page.waitForResponse((r) => r.url().includes('/dms/api/v1/emrImage') && r.request().method() === 'POST');
+  await page.setInputFiles('#g-docs', { name: 'test-doc.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 [TEST] supporting document') });
+  const documentId = (await (await upload).json()).resource?.[0]?.document_id as string;
+  expect(documentId).toBeTruthy();
+  await expect(page.getByText('test-doc.pdf · uploaded')).toBeVisible();
   await page.getByRole('button', { name: 'Send to support' }).click();
 
   await expect(page.getByText('Your ticket')).toBeVisible({ timeout: 30000 });
   ticketId = (await page.getByText(/^DIS-\d{4}-\d+$/).first().innerText()).trim();
   expect(ticketId).toMatch(/^DIS-/);
+
+  // The backend stored the document on the grievance (not only in DMS).
+  const stored = await page.request.get(`/habit-opd/api/v1/dispute?queryId=GET_PAGE&filter=name:${ticketId}`);
+  const record = (await stored.json()).resource?.[0];
+  expect(JSON.stringify(record)).toContain(documentId);
   // The member's own words are the first message in the thread (comma and colon swapped for lookalikes).
   await expect(page.getByText(/integration check‚ with a comma∶ and a colon\. Amount ₹1‚500 "quoted" & more\./)).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Ticket opened')).toBeVisible();

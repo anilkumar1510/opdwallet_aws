@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FamilyStore } from '../family/family.store';
 import { AppService } from '../http/api.service';
 import { SessionStore } from '../session/session.store';
-import { DisputeApi, MAX_DOCUMENT_BYTES, benefitCategoryOf, encodeResource, ticketStateOf, toArgSafe } from './dispute.api';
+import { DisputeApi, DisputeDocument, MAX_DOCUMENT_BYTES, benefitCategoryOf, encodeResource, ticketStateOf, toArgSafe, toDisputeDocument } from './dispute.api';
 
 const holder = { fullName: 'Priya Sample', relationship: 'SELF', isPrimary: true };
 const patient = { fullName: 'Aarav Sample', relationship: 'child', isPrimary: false };
@@ -45,7 +45,7 @@ describe('DisputeApi', () => {
   });
 
   const text = (body: object, status = 200) => of(new HttpResponse({ body: JSON.stringify(body), status }));
-  const input = { claimId: 'OPD-2026-00354', categoryLabel: 'Diagnostics', reason: 'Claim rejected incorrectly', detail: '', documentIds: [] as string[] };
+  const input = { claimId: 'OPD-2026-00354', categoryLabel: 'Diagnostics', reason: 'Claim rejected incorrectly', detail: '', documents: [] as DisputeDocument[] };
 
   it('posts to habit-opd/api/v1/dispute with resource, application and action=submit', async () => {
     post.mockReturnValue(text({ errCode: 0, resource: [{ ticket_id: 'GR-CLM-2026-00042' }] }));
@@ -82,10 +82,27 @@ describe('DisputeApi', () => {
     expect(decode(post.mock.calls[0][1])).toMatchObject({ member_name: 'Session Sample', patient_name: 'Session Sample', relation_to_member: 'SELF' });
   });
 
-  it('adds description and document ids only when present', async () => {
+  it('adds description and documents only when present', async () => {
     post.mockReturnValue(text({ errCode: 0 }));
-    await api.submit({ ...input, detail: '  Amount is wrong  ', documentIds: ['d1', 'd2'] });
-    expect(decode(post.mock.calls[0][1])).toMatchObject({ description: 'Amount is wrong', document_ids: ['d1', 'd2'] });
+    const doc = toDisputeDocument(new File(['x'], 'bill.pdf', { type: 'application/pdf' }), 'doc-1', 'bill.pdf');
+    await api.submit({ ...input, detail: '  Amount is wrong  ', documents: [doc] });
+    expect(decode(post.mock.calls[0][1])).toMatchObject({ description: 'Amount is wrong', documents: [doc] });
+    post.mockClear();
+    await api.submit(input);
+    expect(decode(post.mock.calls[0][1])).not.toHaveProperty('documents');
+  });
+
+  it('describes a document the way the dispute API stores it', () => {
+    const file = new File([new Uint8Array(2048)], 'invoice.png', { type: 'image/png' });
+    expect(toDisputeDocument(file, 'fe2e5400-46', 'invoice.png')).toEqual({
+      name: 'invoice.png',
+      document_id: 'fe2e5400-46',
+      document_type: 'OTHER',
+      originalname: 'invoice.png',
+      verification_status: 'PENDING',
+      filetype: 'image/png',
+      filesize: '2048',
+    });
   });
 
   it('treats HTTP 200 with errCode -1 as a failure and surfaces the message', async () => {

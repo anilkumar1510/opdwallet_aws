@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { ClaimsStore } from '../../core/claims/claims.store';
-import { DisputeApi, DisputeMessage, DisputeRecord, ticketStateOf } from '../../core/disputes/dispute.api';
+import { DisputeApi, DisputeMessage, DisputeRecord, ticketStateOf, toDisputeDocument } from '../../core/disputes/dispute.api';
 
 import {
   ClosedBy,
@@ -728,7 +728,7 @@ export class HelplinePage {
         categoryLabel: o.service,
         reason: this.reason(),
         detail: text,
-        documentIds: this.docs().filter((d) => d.state === 'done').map((d) => d.documentId!),
+        documents: this.docs().filter((d) => d.state === 'done').map((d) => toDisputeDocument(d.file, d.documentId!, d.name ?? d.file.name)),
       });
       if (!result.ok) { this.submitting.set(false); this.submitError.set(result.message); return; }
       await this.afterLiveSubmit(o, result.ticketId, result.disputeId, text);
@@ -759,8 +759,15 @@ export class HelplinePage {
    * words go in as the first message. The ticket then shows what the backend has.
    */
   private async afterLiveSubmit(o: SupportOrder, name: string | null, id: string | null, detail: string): Promise<void> {
+    let kept = '';
     if (name && id && detail) {
-      await this.disputeApi.reply({ name, id }, detail);
+      let sent = await this.disputeApi.reply({ name, id }, detail);
+      if (!sent.ok) {
+        // One retry after the backend's 3 second guard; the member's words must not be lost.
+        await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
+        sent = await this.disputeApi.reply({ name, id }, detail);
+      }
+      if (!sent.ok) kept = detail;
       this.startCooldown(); // the next reply would be the same action inside 3 seconds
     }
     await this.refreshDisputes();
@@ -773,8 +780,11 @@ export class HelplinePage {
     }
     this.ticketFrom.set('home');
     this.ticketId.set(record.name);
+    this.reply.set(kept);
     this.view.set('ticket');
-    this.notice.set(`Ticket ${record.name} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
+    this.notice.set(kept
+      ? `Ticket ${record.name} created for ${o.id}, but your details could not be sent. They are in the reply box — please send them again.`
+      : `Ticket ${record.name} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
   }
 
   protected async onFiles(event: Event): Promise<void> {
@@ -786,7 +796,7 @@ export class HelplinePage {
       this.docs.update((list) => [...list, entry]);
       const result = await this.disputeApi.uploadDocument(file);
       this.docs.update((list) => list.map((d) => (d.file === file
-        ? (result.ok ? { file, state: 'done', documentId: result.documentId } : { file, state: 'failed' })
+        ? (result.ok ? { file, state: 'done', documentId: result.documentId, name: result.name } : { file, state: 'failed' })
         : d)));
       if (!result.ok) this.submitError.set(result.message);
     }
@@ -887,6 +897,7 @@ interface UploadedDoc {
   readonly file: File;
   readonly state: 'uploading' | 'done' | 'failed';
   readonly documentId?: string;
+  readonly name?: string;
 }
 
 /** Epoch millis or ISO string from the claims list, as a Date. */

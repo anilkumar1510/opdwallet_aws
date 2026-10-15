@@ -32,10 +32,12 @@ Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/dispute
 - **WHEN** the member wrote details
 - **THEN** they are sent as the first reply on the new ticket and appear as the first message in the thread
 - **AND** when no details were written, no message is sent
+- **AND** if that first message is refused it is retried once, and if it still fails the ticket stays raised and the words are put back in the reply box with a notice
 
 #### Scenario: Optional supporting documents
 - **WHEN** a member attaches documents
-- **THEN** each is uploaded to DMS and its `document_id` is sent in `document_ids`
+- **THEN** each is uploaded to DMS and sent in the submit's `documents` array (`name`, `document_id`, `document_type`, `originalname`, `verification_status`, `filetype`, `filesize`)
+- **AND** the backend stores them on the grievance
 - **AND** a failed or oversize (over 5 MB) document is reported and not sent
 - **AND** submitting with no documents is allowed
 
