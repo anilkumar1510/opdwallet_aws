@@ -213,3 +213,7 @@ The real claims listing repeats its first page for later 20-row pages (39 rows, 
 ## Update: Mark resolved and backend check (2026-10-15)
 
 The backend (`new_prod`) now has `userResolve`, so "Mark resolved" works on real tickets: it closes the ticket, shows "You marked this resolved", survives a refresh and cannot be undone. The backend also enforces one open ticket per claim and the 3-month window, and added a `description` field. The live claims listing still repeats pages at 20 rows (49 rows, 32 distinct), so the 100-row read stays. Verified: build clean, 52 unit, 72 browser (desktop and phone), 3 live API tests; the duplicate, 3-month, `description` and `userResolve` paths were also exercised against the live API, and a member-closed ticket stays closed after a reload.
+
+## Update: replies moved to dispute_chat (2026-10-15 evening)
+
+The backend moved `userReply` to the `dispute_chat` resource (the old `dispute` + `userReply` now answers "Invalid Query"), and refuses replies on resolved or closed tickets. The portal now posts `{resourceType: "DisputeChat", dispute_id, message_text}` plus the swapped `args`, so it works on both backend builds; if support closes a ticket while the member types, the refusal is shown and the ticket refreshes to closed. Verified: build clean, 54 unit, 74 browser (desktop and phone) and 4 live tests (raise, reply, document, resolve, reload). Still open on the backend: claims paging, `description` into Twenty, and Twenty's callback still using the old reply path.

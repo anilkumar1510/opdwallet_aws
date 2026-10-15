@@ -68,6 +68,9 @@ export class FakeApi {
   /** `userResolve` calls received, and a reason to refuse them. */
   resolves: string[] = [];
   resolvePayloads: Record<string, unknown>[] = [];
+  chatPayloads: Record<string, unknown>[] = [];
+  /** The newer backend build: reads the reply from the resource's `message_text` and ignores `args`. */
+  verbatimBackend = false;
   failResolve: string | null = null;
   resolveDelayMs = 0;
   failList = false;
@@ -130,6 +133,7 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
     const url = new URL(req.url());
     const q = url.searchParams;
     const isDispute = url.pathname.endsWith('/habit-opd/api/v1/dispute');
+    const isChat = url.pathname.endsWith('/habit-opd/api/v1/dispute_chat');
 
     if (isDispute && req.method() === 'GET') {
       const pageNo = Number(q.get('page_no') ?? 0);
@@ -144,6 +148,35 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
         const id = (q.get('args') ?? '').replace('dispute_id:', '');
         return route.fulfill(json({ errCode: 0, resource: slice(api.messages.filter((m) => m.dispute_id === id)) }));
       }
+    }
+
+    if (isChat && req.method() === 'POST') {
+      const form = new URLSearchParams(req.postData() ?? '');
+      const payload = JSON.parse(decodeURIComponent(escape(Buffer.from(form.get('resource') ?? '', 'base64').toString('binary'))));
+      if (form.get('action') === 'userReply') {
+        api.chatPayloads.push(payload);
+        const args = form.get('args') ?? '';
+        const argValue = args.replace(/^messageText:/, '');
+        // The current build refuses a comma or colon in args whichever form carries the text.
+        if (/[,:]/.test(argValue)) return route.fulfill(json({ errCode: -1, message: 'args can  have only values of format name:value' }));
+        const value = api.verbatimBackend ? String(payload.message_text ?? '') : argValue;
+        if (Date.now() - api['lastReplyAt'] < GUARD_MS) {
+          return route.fulfill(json({ errCode: -1, message: 'You have clicked multiple times for the same action, please wait for 3 seconds.' }));
+        }
+        if (api.rejectReplies > 0) { api.rejectReplies -= 1; return route.fulfill(json({ errCode: -1, message: api.rejectReplyMessage })); }
+        if (api.failReply) return route.fulfill(json({ errCode: -1, message: api.failReply }));
+        const d = api.disputes.find((x) => x.id === payload.dispute_id);
+        if (!d) return route.fulfill(json({ errCode: -1, message: `no dispute found with id ${payload.dispute_id}` }));
+        // Like the backend: no replies on a resolved or closed ticket, and no reopening.
+        if (/^(resolved|closed)$/i.test(d.dispute_status)) return route.fulfill(json({ errCode: -1, message: 'Cannot reply on a resolved or closed dispute' }));
+        api['lastReplyAt'] = Date.now();
+        api.replies.push({ name: d.name, text: value });
+        api.addMessage(d.id, 'MEMBER', value);
+        d.dispute_status = 'Awaiting executive response';
+        d.last_message_sender = 'MEMBER';
+        return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
+      }
+      return route.fulfill(json({ errCode: -1, message: 'Invalid Query' }));
     }
 
     if (isDispute && req.method() === 'POST') {
@@ -175,7 +208,10 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
         return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
       }
 
-      if (action === 'userReply') {
+      // The dispute resource no longer takes replies (they moved to dispute_chat).
+      if (action === 'userReply') return route.fulfill(json({ errCode: -1, message: 'Invalid Query' }));
+
+      if (action === 'userReplyLegacy') {
         const args = form.get('args') ?? '';
         const value = args.replace(/^messageText:/, '');
         if (/[,:]/.test(value)) return route.fulfill(json({ errCode: -1, message: 'args can  have only values of format name:value' }));

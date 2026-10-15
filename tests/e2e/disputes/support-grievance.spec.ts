@@ -527,6 +527,8 @@ test.describe('Reply (userReply)', () => {
     await expect(page.locator('#g-reply')).toHaveValue('');
     await expect(page.getByText(/Uploaded page 2 ₹500 😊/)).toBeVisible({ timeout: 20000 });
     expect(api.replies).toEqual([{ name: d.name, text: 'Uploaded page 2 ₹500 😊\nsecond line' }]);
+    // The reply goes to the chat resource, naming the ticket by its uuid.
+    expect(api.chatPayloads[0]).toEqual({ resourceType: 'DisputeChat', dispute_id: d.id, message_text: 'Uploaded page 2 ₹500 😊\nsecond line' });
     await expect(page.getByText('Waiting on support')).toBeVisible();
   });
 
@@ -592,6 +594,44 @@ test.describe('Reply (userReply)', () => {
     await page.getByRole('button', { name: 'Send reply' }).click();
     await expect(page.getByText('Reply sent.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
+  });
+});
+
+test.describe('Reply on the newer backend build (text read from the resource)', () => {
+  test('commas and colons arrive verbatim and show as typed', async ({ page }) => {
+    const api = new FakeApi();
+    api.verbatimBackend = true;
+    const d = api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Awaiting user response' }, [
+      { sender_type: 'MEMBER', message_text: 'Please re-check' },
+      { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Please upload page 2' },
+    ]);
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Response received' }).click();
+    await expect(page.getByText('Please upload page 2')).toBeVisible({ timeout: 20000 });
+    await page.fill('#g-reply', 'Note: bill 1, bill 2 ₹1,500');
+    await page.getByRole('button', { name: 'Send reply' }).click();
+    await expect(page.getByText('Reply sent.')).toBeVisible({ timeout: 20000 });
+    expect(api.replies).toEqual([{ name: d.name, text: 'Note: bill 1, bill 2 ₹1,500' }]);
+    await expect(page.getByText('Note: bill 1, bill 2 ₹1,500')).toBeVisible({ timeout: 20000 });
+  });
+});
+
+test.describe('Reply on a ticket that support has just closed', () => {
+  test('the backend refusal is shown and the ticket is refreshed to closed, nothing is sent twice', async ({ page }) => {
+    const api = new FakeApi();
+    const d = api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Awaiting user response' }, [
+      { sender_type: 'MEMBER', message_text: 'Please re-check' },
+      { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Please upload page 2' },
+    ]);
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Response received' }).click();
+    await expect(page.getByText('Please upload page 2')).toBeVisible({ timeout: 20000 });
+    d.dispute_status = 'CLOSED'; // support closes it while the member is typing
+    await page.fill('#g-reply', 'Too late');
+    await page.getByRole('button', { name: 'Send reply' }).click();
+    await expect(page.getByText('Ticket closed').or(page.getByText(/closed on|Resolved and closed/)).first()).toBeVisible({ timeout: 20000 });
+    expect(api.replies).toEqual([]);
+    await expect(page.locator('#g-reply')).toHaveCount(0);
   });
 });
 

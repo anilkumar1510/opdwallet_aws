@@ -11,6 +11,8 @@ export const DISPUTE_API = {
   resource: 'dispute',
   application: 'habit-opd',
   submit: 'submit',
+  /** Replies live on the chat resource (the dispute resource no longer takes `userReply`). */
+  chatResource: 'dispute_chat',
 } as const;
 
 /** DMS endpoint that returns a stored file by id. */
@@ -260,30 +262,45 @@ export class DisputeApi {
   }
 
   /**
-   * The member's reply: `action=userReply` with the text in `args`. The backend
-   * flips the ticket back to support. The text travels in a key:value `args`
-   * string, so it is URL-encoded as a whole.
+   * The member's reply: `action=userReply` on the chat resource. The text is sent
+   * twice so it works on both backend builds: verbatim as `message_text` in the
+   * resource (the newer build reads it there, commas and colons included) and in
+   * the key:value `args` string the current build reads (where commas and colons
+   * are swapped for lookalikes). The backend flips the ticket back to support.
    */
   reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
-    return this.act(dispute, 'userReply', `messageText:${toArgSafe(text)}`, 'We could not send your reply. Please try again.');
+    return this.act(
+      DISPUTE_API.chatResource,
+      { resourceType: 'DisputeChat', dispute_id: dispute.id, message_text: text },
+      'userReply',
+      `messageText:${toArgSafe(text)}`,
+      'We could not send your reply. Please try again.',
+    );
   }
 
   /** The member closes their own ticket as resolved: `action=userResolve`, identified by `name` only (no text, no reopen). */
   resolve(dispute: { name: string }): Promise<ReplyResult> {
-    return this.act({ name: dispute.name }, 'userResolve', undefined, 'We could not close the ticket. Please try again.');
+    return this.act(
+      DISPUTE_API.resource,
+      { resourceType: 'Dispute', name: dispute.name },
+      'userResolve',
+      undefined,
+      'We could not close the ticket. Please try again.',
+    );
   }
 
   /** One signed `dispute` action on an existing ticket. */
   private async act(
-    dispute: { name: string; id?: string },
+    resource: string,
+    payload: Record<string, string>,
     action: string,
     args: string | undefined,
     failure: string,
     retried = false,
   ): Promise<ReplyResult> {
     try {
-      const { resource, application } = DISPUTE_API;
-      const encoded = encodeResource({ resourceType: 'Dispute', name: dispute.name, ...(dispute.id ? { id: dispute.id } : {}) });
+      const { application } = DISPUTE_API;
+      const encoded = encodeResource(payload);
       const body =
         `resource=${encodeURIComponent(encoded)}&application=${application}&action=${action}` +
         (args === undefined ? '' : `&args=${encodeURIComponent(args)}`);
@@ -301,7 +318,7 @@ export class DisputeApi {
         // The backend refuses the same action twice inside 3 seconds: wait it out and send once more.
         if (!retried && /wait for \d+ second/i.test(parsed.message ?? '')) {
           await new Promise((resolve) => setTimeout(resolve, 3_200));
-          return this.act(dispute, action, args, failure, true);
+          return this.act(resource, payload, action, args, failure, true);
         }
         return { ok: false, message: parsed.message || failure };
       }

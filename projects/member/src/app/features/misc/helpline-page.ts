@@ -976,6 +976,8 @@ export class HelplinePage {
       if (!result.ok) {
         // The text stays in the box so nothing the member wrote is lost.
         this.replyError.set(/multiple times|wait for/i.test(result.message) ? 'Please wait a few seconds, then send again.' : result.message);
+        // Support may have closed the ticket meanwhile: show its real state.
+        if (/resolved or closed/i.test(result.message)) await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
         return;
       }
       this.reply.set('');

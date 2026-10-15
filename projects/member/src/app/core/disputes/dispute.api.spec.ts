@@ -246,22 +246,39 @@ describe('DisputeApi', () => {
   describe('reply', () => {
     const dispute = { name: 'DIS-2026-00393', id: 'uuid-1' };
 
-    it('posts action=userReply with the record in resource and the text in args', async () => {
+    it('posts action=userReply to the chat resource, naming the ticket by uuid, with the text in args', async () => {
       post.mockReturnValue(text({ errCode: 0 }));
       expect(await api.reply(dispute, 'Please review ₹500 & more')).toEqual({ ok: true });
       const [url, body] = post.mock.calls[0];
-      expect(url).toBe('/habit-opd/api/v1/dispute');
+      expect(url).toBe('/habit-opd/api/v1/dispute_chat');
       expect(body).toMatch(/&application=habit-opd&action=userReply&args=messageText%3A/);
-      expect(decode(body)).toEqual({ resourceType: 'Dispute', name: 'DIS-2026-00393', id: 'uuid-1' });
+      expect(decode(body)).toEqual({ resourceType: 'DisputeChat', dispute_id: 'uuid-1', message_text: 'Please review ₹500 & more' });
       expect(decodeURIComponent(body.split('&args=')[1])).toBe('messageText:Please review ₹500 & more');
       const encoded = decodeURIComponent(body.split('&')[0].replace('resource=', ''));
       expect(addXsrfToken).toHaveBeenCalledWith(`${encoded}&action=userReply`, true);
     });
 
-    it('swaps commas and colons, which the backend args parser cannot carry', async () => {
+    it('resolve posts action=userResolve to the dispute resource, naming the ticket only', async () => {
+      post.mockReturnValue(text({ errCode: 0 }));
+      expect(await api.resolve(dispute)).toEqual({ ok: true });
+      const [url, body] = post.mock.calls[0];
+      expect(url).toBe('/habit-opd/api/v1/dispute');
+      expect(body).toMatch(/&application=habit-opd&action=userResolve$/);
+      expect(decode(body)).toEqual({ resourceType: 'Dispute', name: 'DIS-2026-00393' });
+    });
+
+    it('resolve reports the backend refusal and a network failure', async () => {
+      post.mockReturnValue(text({ errCode: -1, message: 'no dispute named X' }));
+      expect(await api.resolve(dispute)).toEqual({ ok: false, message: 'no dispute named X' });
+      post.mockReturnValue(throwError(() => new Error('boom')));
+      expect((await api.resolve(dispute)).ok).toBe(false);
+    });
+
+    it('swaps commas and colons in args, which the current backend args parser cannot carry, and sends the text verbatim in the resource', async () => {
       post.mockReturnValue(text({ errCode: 0 }));
       await api.reply(dispute, 'Note: a, b');
       expect(decodeURIComponent(post.mock.calls[0][1].split('&args=')[1])).toBe('messageText:Note\u2236 a\u201A b');
+      expect(decode(post.mock.calls[0][1])).toMatchObject({ message_text: 'Note: a, b' });
     });
 
     it('surfaces the backend message on errCode -1', async () => {
