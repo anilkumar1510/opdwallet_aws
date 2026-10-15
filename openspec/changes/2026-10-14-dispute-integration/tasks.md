@@ -39,3 +39,5 @@
 - [ ] 4.5 Notifications (in-app, WhatsApp, email), central configuration (reasons, windows, support phone and email), real support phone and email values.
 
 - [x] 4.1 Claims paging fixed for the real API bug (all claims reachable); `benefit_category` from claim category code; auto-retry of a reply refused by the 3-second guard; friendlier missing-document message; status codes with underscores.
+
+- [x] 4.9 `dispute_type` is no longer sent on submit (not needed by the backend; verified live).

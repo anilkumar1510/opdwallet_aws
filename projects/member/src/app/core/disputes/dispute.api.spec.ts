@@ -70,7 +70,6 @@ describe('DisputeApi', () => {
       patient_name: 'Aarav Sample',
       relation_to_member: 'CHILD',
       category: 'CLAIM',
-      dispute_type: 'GENERAL',
       benefit_category: 'DIAGNOSTICS',
       selected_reason: 'Claim rejected incorrectly',
       dispute_status: 'OPEN',

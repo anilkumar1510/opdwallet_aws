@@ -30,7 +30,6 @@ export interface DisputeSubmitPayload {
   readonly patient_name: string;
   readonly relation_to_member: string;
   readonly category: 'CLAIM';
-  readonly dispute_type: 'GENERAL';
   readonly benefit_category: string;
   readonly selected_reason: string;
   readonly dispute_status: 'OPEN';
@@ -190,7 +189,6 @@ export class DisputeApi {
       patient_name: patient?.fullName ?? '',
       relation_to_member: String(patient?.relationship ?? 'SELF').toUpperCase(),
       category: 'CLAIM',
-      dispute_type: 'GENERAL',
       benefit_category: input.categoryCode?.trim() || benefitCategoryOf(input.categoryLabel),
       selected_reason: input.reason,
       dispute_status: 'OPEN',

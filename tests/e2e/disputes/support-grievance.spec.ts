@@ -146,9 +146,10 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('DIS-2026-00391', { exact: true })).toBeVisible();
     expect(api.submits).toHaveLength(1);
     expect(api.submits[0]).toMatchObject({
-      claim_id: 'OPD-2026-00354', category: 'CLAIM', dispute_type: 'GENERAL', benefit_category: 'DIAGNOSTICS',
+      claim_id: 'OPD-2026-00354', category: 'CLAIM', benefit_category: 'DIAGNOSTICS',
       selected_reason: 'Claim rejected incorrectly', dispute_status: 'OPEN',
     });
+    expect(api.submits[0]).not.toHaveProperty('dispute_type');
     expect((api.submits[0] as { member_name: string }).member_name).not.toBe('');
     expect(api.submitHeaders[0]['x-xsrf-token']).toBeTruthy();
     await expect(page.getByText('Static demo')).toHaveCount(0);
