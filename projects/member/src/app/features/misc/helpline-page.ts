@@ -1,6 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
+
+import { ClaimsStore } from '../../core/claims/claims.store';
+import { CLAIMS_PAGE_SIZE, ClaimPages } from '../../core/disputes/claim-pages';
+import { DisputeApi, DisputeMessage, DisputeRecord, ticketStateOf, toArgSafe, toDisputeDocument } from '../../core/disputes/dispute.api';
 
 import {
   ATTACHMENT_ACCEPT,
@@ -41,6 +45,7 @@ type GrievanceStatus = 'none' | 'open' | 'response' | 'closed';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const DATE_TIME = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const SUPPORT_EMAIL = 'support@opdwallet.com';
 const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 
 const STATUS_LABEL: Record<GrievanceStatus, string> = {
@@ -77,10 +82,6 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
       </header>
 
       <div class="mx-auto max-w-[900px] px-5 pb-32 pt-6 lg:px-8 lg:pb-12">
-        <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
-          🧪 Static demo — no data is saved. Support's replies are simulated from the ticket screen.
-        </p>
-
         @if (notice(); as n) {
           <p class="mb-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-success-700" role="status">{{ n }}</p>
         }
@@ -92,7 +93,9 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
             <section class="rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
               <h2 class="text-base font-semibold text-[#0E51A2]">Claims that need your help</h2>
               <p class="mt-0.5 text-xs text-ink-500">Claims waiting on you. Ask for help and go straight to the reason.</p>
-              @if (flaggedClaims().length) {
+              @if (claimsLoading()) {
+                <p class="mt-4 text-sm text-ink-500">Loading your claims…</p>
+              } @else if (flaggedClaims().length) {
                 <ul class="mt-3 divide-y divide-[#EDF0F7]">
                   @for (o of shownClaims(); track o.id) {
                     <li>
@@ -100,8 +103,11 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                     </li>
                   }
                 </ul>
-                @if (flaggedClaims().length > claimsShown()) {
-                  <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700" (click)="claimsShown.set(claimsShown() + pageSize)">Load more</button>
+                @if (claimsPagingError()) {
+                  <p class="mt-3 text-sm text-danger-700" role="alert">We could not load more claims. Please try again.</p>
+                }
+                @if (flaggedClaims().length > claimsShown() || claimsMore()) {
+                  <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-surface-border bg-white text-sm font-medium text-brand-700 disabled:opacity-50" [disabled]="claimsPaging()" (click)="loadMoreClaims()">{{ claimsPaging() ? 'Loading…' : 'Load more' }}</button>
                 }
               } @else {
                 <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-500">No claim needs your attention right now.</p>
@@ -135,9 +141,12 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               <h2 class="text-base font-semibold text-[#0E51A2]">Something else?</h2>
               <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, call or write to us. This doesn't open a ticket.</p>
               <div class="mt-3 flex flex-wrap justify-center gap-3">
-                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]">📞 {{ phone }}</a>
-                <a href="mailto:support@opdwallet.com" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900">✉ support&#64;opdwallet.com</a>
+                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]" (click)="onCall($event)">📞 {{ phone }}</a>
+                <a [href]="mailHref()" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900" (click)="onMail()">✉ {{ email }}</a>
               </div>
+              @if (contactNote(); as c) {
+                <p class="mt-3 text-xs text-success-700" role="status">{{ c }}</p>
+              }
             </section>
           }
 
@@ -161,6 +170,8 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 </dl>
               </section>
 
+              <!-- Claims are reimbursements: the payment breakdown does not apply. -->
+              @if (o.type !== 'Reimbursement') {
               <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
                 <div class="mb-3 flex items-center justify-between">
                   <h2 class="text-sm font-semibold text-ink-900">Amount</h2>
@@ -174,6 +185,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   <div class="flex justify-between"><dt class="text-ink-700">Paid by you</dt><dd class="text-ink-900">₹{{ n(o.paidByMember) }}</dd></div>
                 </dl>
               </section>
+              }
 
               <!-- The browse path rejoins the fast path here. -->
               <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
@@ -219,6 +231,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 </label>
                 <textarea id="g-detail" rows="4" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" [placeholder]="reason() === 'Other' ? 'Describe your issue and what you would like us to do' : 'What happened, and what would you like us to do?'" [value]="detail()" (input)="detail.set($any($event.target).value)"></textarea>
 
+                @if (!isLive(o)) {
                 <!-- Optional supporting documents; several in one go. -->
                 <p class="mb-1 mt-4 text-sm font-medium text-ink-700">Attach documents <span class="font-normal text-ink-500">(optional)</span></p>
                 <input type="file" id="g-files" class="sr-only" multiple [accept]="attachmentAccept" (change)="onFiles($event)" />
@@ -239,13 +252,37 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 @if (attachError(); as err) {
                   <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p>
                 }
+                }
+
+                <!-- Real claims: documents are uploaded to DMS and saved with the ticket. -->
+                @if (isLive(o)) {
+                  <p class="mb-1 mt-4 text-sm font-medium text-ink-700">Attach documents <span class="font-normal text-ink-500">(optional)</span></p>
+                  <input type="file" id="g-docs" class="sr-only" multiple [accept]="attachmentAccept" [disabled]="submitting()" (change)="onDocs($event)" />
+                  <label for="g-docs" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-5 text-center transition-colors hover:border-[#0F5FDC]">
+                    <span class="block font-medium text-[#0B2C63]">📎 {{ docs().length ? 'Add more files' : 'Upload documents' }}</span>
+                    <span class="mt-1 block text-xs text-ink-500">PDF, Word or any image · up to 5 MB each · select several at once</span>
+                  </label>
+                  @if (docs().length) {
+                    <ul class="mt-3 space-y-2">
+                      @for (d of docs(); track d.file) {
+                        <li class="flex items-center justify-between gap-3 rounded-xl border border-surface-border px-3 py-2 text-sm">
+                          <span class="min-w-0 truncate text-ink-900">{{ d.file.name }} · {{ d.state === 'uploading' ? 'uploading…' : d.state === 'done' ? 'uploaded' : 'failed' }}</span>
+                          <button type="button" class="min-h-touch shrink-0 px-2 text-xs font-medium text-danger-700 underline" [attr.aria-label]="'Remove ' + d.file.name" (click)="removeDoc(d.file)">Remove</button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
+                @if (submitError(); as err) {
+                  <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p>
+                }
 
                 <p class="mt-4 text-xs text-ink-500">We'll notify you in the app, on WhatsApp and by email when support replies.</p>
               </section>
 
               <div class="mt-5 flex gap-3">
                 <button type="button" class="flex min-h-touch items-center rounded-xl border border-surface-border bg-white px-6 text-sm font-semibold text-ink-900" (click)="back()">Back</button>
-                <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit()" (click)="submit(o)">Send to support</button>
+                <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50" [disabled]="!canSubmit() || submitting() || uploading()" (click)="submit(o)">{{ submitting() ? 'Sending…' : 'Send to support' }}</button>
               </div>
             }
           }
@@ -268,7 +305,27 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 </dl>
               </section>
 
+              @if (isLiveTicket(t) && ticketDocuments(t).length) {
+                <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+                  <h2 class="text-sm font-semibold text-ink-900">Documents you attached</h2>
+                  <ul class="mt-2 divide-y divide-[#EDF0F7]">
+                    @for (d of ticketDocuments(t); track d.documentId) {
+                      <li class="flex items-center justify-between gap-3 py-2 text-sm">
+                        <span class="min-w-0 truncate text-ink-900">{{ d.name }}</span>
+                        <button type="button" class="min-h-touch shrink-0 px-2 text-sm font-medium text-[#0F5FDC] underline disabled:opacity-50" [disabled]="openingDoc() === d.documentId" (click)="downloadDoc(d)">{{ openingDoc() === d.documentId ? 'Opening…' : 'Download' }}</button>
+                      </li>
+                    }
+                  </ul>
+                  @if (docError(); as derr) {
+                    <p class="mt-2 text-sm text-danger-700" role="alert">{{ derr }}</p>
+                  }
+                </section>
+              }
+
               <!-- Thread: member, support and system events, each time-stamped. -->
+              @if (isLiveTicket(t) && threadError(); as terr) {
+                <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-700" role="status">{{ terr }}</p>
+              }
               <section class="mt-4 space-y-3">
                 @for (m of t.messages; track $index) {
                   @if (m.from === 'system') {
@@ -297,12 +354,17 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                 @switch (t.state) {
                   @case ('awaiting_support') {
                     <p class="text-sm text-ink-700">⏳ Waiting on support. We'll notify you in the app, on WhatsApp and by email when they reply.</p>
-                    @if (hasSupportReply(t)) {
+                    @if (isLiveTicket(t)) {
+                      <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t }" />
+                    } @else if (hasSupportReply(t)) {
                       <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
                     }
                   }
                   @case ('awaiting_member') {
                     <p class="text-sm font-medium text-success-700">💬 Support has replied — over to you.</p>
+                    @if (isLiveTicket(t)) {
+                      <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t }" />
+                    } @else {
                     <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
                     <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" [value]="reply()" (input)="reply.set($any($event.target).value)"></textarea>
                     <div class="mt-3 flex flex-wrap gap-3">
@@ -310,6 +372,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                       <button type="button" class="min-h-touch flex-1 rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700" (click)="markResolved(t)">Mark resolved</button>
                     </div>
                     <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket.</p>
+                    }
                   }
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
@@ -325,7 +388,8 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               </section>
 
               <!-- DUMMY — support's side, until the operations portal is wired. -->
-              @if (t.state === 'awaiting_support') {
+              <!-- Real claim tickets are answered from the support system, never simulated here. -->
+              @if (t.state === 'awaiting_support' && !isLiveTicket(t)) {
                 <section class="mt-4 rounded-2xl border border-dashed border-warning-400 bg-warning-50 p-5">
                   <p class="text-sm font-semibold text-warning-700">🧪 Demo — support's reply</p>
                   <div class="mt-3 flex flex-wrap gap-3">
@@ -338,6 +402,18 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
           }
         }
       </div>
+
+      <!-- Reply on a real ticket: sent to the support system, shown once it is in the thread. -->
+      <ng-template #liveReply let-t>
+        <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
+        <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" maxlength="2000" [value]="reply()" [disabled]="replying()" (input)="reply.set($any($event.target).value)"></textarea>
+        @if (replyError(); as err) {
+          <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
+        }
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying() || cooling()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : 'Mark resolved' }}</button>
+        <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good.</p>
+      </ng-template>
 
       <!-- One row layout for both lists: what, when and which, then the
            grievance status. A flagged claim's status is the fast-path button. -->
@@ -392,10 +468,59 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
 })
 export class HelplinePage {
   protected readonly phone = SUPPORT_PHONE;
+  protected readonly email = SUPPORT_EMAIL;
+  protected readonly contactNote = signal<string | null>(null);
   protected readonly raiseMonths = RAISE_WINDOW_MONTHS;
 
-  private readonly orders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
+  private readonly claimsStore = inject(ClaimsStore);
+  private readonly disputeApi = inject(DisputeApi);
+  private readonly claimPages = inject(ClaimPages);
+
+  /** Demo orders for every service; the live claims below are kept apart. */
+  private readonly seedOrders = signal<SupportOrder[]>([...SEED_ORDERS].sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime()));
+  private readonly orders = this.seedOrders;
+
+  /**
+   * Reimbursement claims from the same paginated listing API the Claims page
+   * uses (GET_CLAIMS_BY_USER). These are real: a grievance on one is submitted
+   * to the dispute API.
+   */
+  private readonly moreClaimRows = signal<any[]>([]);
+  private readonly nextClaimPage = signal(0);
+  /** null until a later page has been read; then whether that page was full. */
+  private readonly moreFromServer = signal<boolean | null>(null);
+  protected readonly claimsPaging = signal(false);
+  protected readonly claimsPagingError = signal(false);
+  protected readonly claimsMore = computed(
+    () => this.moreFromServer() ?? ((this.claimsStore.clailListData() ?? []).length >= CLAIMS_PAGE_SIZE),
+  );
+  private readonly claimOrders = computed<SupportOrder[]>(() => {
+    // The pages of this listing overlap a little, so a claim can come twice.
+    const seen = new Set<string>();
+    return ([...((this.claimsStore.clailListData() ?? []) as any[]), ...this.moreClaimRows()])
+      .filter((row) => row?.claim_id && !seen.has(row.claim_id) && !!seen.add(row.claim_id))
+      .map(toClaimOrder)
+      .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime());
+  });
+  private readonly claimsFetched = signal(false);
+  protected readonly claimsLoading = computed(() => !this.claimsFetched() && this.claimOrders().length === 0);
+  private readonly everyOrder = computed(() => [...this.claimOrders(), ...this.orders()]);
+  /** Demo tickets (services). Real claim tickets come from the dispute API, below. */
   private readonly tickets = signal<SupportTicket[]>(SEED_TICKETS.map(autoClose));
+
+  /** Grievances from the API (`GET_PAGE`) and the threads loaded for them. */
+  private readonly liveRecords = signal<DisputeRecord[]>([]);
+  private readonly threads = signal<Record<string, DisputeMessage[]>>({});
+  protected readonly threadError = signal<string | null>(null);
+  protected readonly openingDoc = signal<string | null>(null);
+  protected readonly docError = signal<string | null>(null);
+  protected readonly replying = signal(false);
+  protected readonly resolving = signal(false);
+  protected readonly replyError = signal<string | null>(null);
+  /** The backend refuses the same action twice inside 3 seconds. */
+  protected readonly cooling = signal(false);
+  private readonly liveTickets = computed(() => this.liveRecords().map((r) => toTicket(r, this.threads()[r.id] ?? [])));
+  private readonly allTickets = computed(() => [...this.liveTickets(), ...this.tickets()]);
 
   protected readonly view = signal<View>('home');
   protected readonly orderId = signal<string | null>(null);
@@ -416,15 +541,19 @@ export class HelplinePage {
   protected readonly reason = signal('');
   protected readonly detail = signal('');
   protected readonly reply = signal('');
+  protected readonly docs = signal<UploadedDoc[]>([]);
+  protected readonly submitting = signal(false);
+  protected readonly submitError = signal<string | null>(null);
+  protected readonly uploading = computed(() => this.docs().some((d) => d.state === 'uploading'));
   protected readonly attachmentAccept = ATTACHMENT_ACCEPT;
   /** DUMMY — only the name and size are kept; nothing is uploaded. */
   protected readonly attachments = signal<readonly { name: string; size: number }[]>([]);
   protected readonly attachError = signal<string | null>(null);
 
-  protected readonly order = computed(() => this.orders().find((o) => o.id === this.orderId()) ?? null);
-  protected readonly ticket = computed(() => this.tickets().find((t) => t.id === this.ticketId()) ?? null);
+  protected readonly order = computed(() => this.everyOrder().find((o) => o.id === this.orderId()) ?? null);
+  protected readonly ticket = computed(() => this.allTickets().find((t) => t.id === this.ticketId()) ?? null);
 
-  protected readonly flaggedClaims = computed(() => this.orders().filter((o) => o.claimFlag));
+  protected readonly flaggedClaims = computed(() => this.claimOrders());
 
   protected readonly shownClaims = computed(() => this.flaggedClaims().slice(0, this.claimsShown()));
 
@@ -452,6 +581,92 @@ export class HelplinePage {
     return this.reason() !== 'Other' || this.detail().trim().length > 0;
   });
 
+  constructor() {
+    // Same call, same first page (20 newest), as the Claims page.
+    void this.claimsStore.getClimListData();
+    setTimeout(() => this.claimsFetched.set(true), 4000);
+
+    // Tickets and threads come from the dispute API: now, when a ticket is opened,
+    // and every 30 seconds while the page is open (support replies arrive there).
+    void this.refreshDisputes();
+    effect(() => {
+      const t = this.view() === 'ticket' ? this.liveRecords().find((r) => r.name === this.ticketId()) : undefined;
+      if (t) untracked(() => void this.loadThread(t));
+    });
+    // Each refresh replaces the records, which re-runs the effect above and
+    // reloads the open thread, so the interval only has to refresh the list.
+    const timer = setInterval(() => void this.refreshDisputes(), POLL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
+
+  private startCooldown(): void {
+    this.cooling.set(true);
+    setTimeout(() => this.cooling.set(false), COOLDOWN_MS);
+  }
+
+  private async refreshDisputes(): Promise<void> {
+    const result = await this.disputeApi.list();
+    if (result.ok) this.liveRecords.set([...result.items]);
+  }
+
+  private async loadThread(record: DisputeRecord): Promise<void> {
+    const result = await this.disputeApi.messages(record.id);
+    if (result.ok) {
+      this.threads.update((all) => ({ ...all, [record.id]: [...result.items] }));
+      this.threadError.set(null);
+    } else {
+      this.threadError.set('We could not load the latest messages. Showing what we have.');
+    }
+  }
+
+  /** True for a claim from the live listing, whose grievance is really saved. */
+  /** A phone can dial; a desktop cannot, so there the number is copied instead. */
+  protected async onCall(event: Event): Promise<void> {
+    if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) return;
+    event.preventDefault();
+    await this.copy(this.phone, `${this.phone} copied — dial it from your phone.`);
+  }
+
+  protected onMail(): void {
+    this.contactNote.set(`Opening your email app to write to ${this.email}. If nothing opens, write to us at that address.`);
+  }
+
+  protected mailHref(): string {
+    const body = 'Hello,\n\nMy question is not about a specific order or claim:\n\n';
+    return `mailto:${this.email}?subject=${encodeURIComponent('Support request')}&body=${encodeURIComponent(body)}`;
+  }
+
+  private async copy(text: string, done: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.contactNote.set(done);
+    } catch {
+      this.contactNote.set(`Call us on ${text}.`);
+    }
+  }
+
+  protected isLive(o: SupportOrder): boolean {
+    return this.claimOrders().some((c) => c.id === o.id);
+  }
+
+  protected ticketDocuments(t: SupportTicket): DisputeRecord['documents'] {
+    return this.liveRecords().find((r) => r.name === t.id)?.documents ?? [];
+  }
+
+  protected async downloadDoc(d: { documentId: string; name: string }): Promise<void> {
+    if (this.openingDoc()) return;
+    this.docError.set(null);
+    this.openingDoc.set(d.documentId);
+    const result = await this.disputeApi.downloadDocument(d.documentId, d.name);
+    this.openingDoc.set(null);
+    if (!result.ok) this.docError.set(result.message);
+  }
+
+  protected isLiveTicket(t: SupportTicket): boolean {
+    return this.liveRecords().some((r) => r.name === t.id);
+  }
+
+
   protected heading(): string {
     switch (this.view()) {
       case 'order': return 'Order detail';
@@ -473,7 +688,7 @@ export class HelplinePage {
   // ── Status ─────────────────────────────────────────────────────────────
 
   protected ticketFor(o: SupportOrder): SupportTicket | undefined {
-    return this.tickets().find((t) => t.orderId === o.id);
+    return this.allTickets().find((t) => t.orderId === o.id);
   }
 
   private status(t: SupportTicket | undefined): GrievanceStatus {
@@ -540,7 +755,7 @@ export class HelplinePage {
   }
 
   protected openOrderById(id: string): void {
-    const o = this.orders().find((x) => x.id === id);
+    const o = this.everyOrder().find((x) => x.id === id);
     if (o) this.openOrder(o);
   }
 
@@ -567,6 +782,9 @@ export class HelplinePage {
     this.orderId.set(o.id);
     this.ticketId.set(t.id);
     this.reply.set('');
+    this.replyError.set(null);
+    this.threadError.set(null);
+    this.docError.set(null);
     this.notice.set(null);
     this.view.set('ticket');
   }
@@ -583,6 +801,8 @@ export class HelplinePage {
   private resetForm(): void {
     this.reason.set('');
     this.detail.set('');
+    this.docs.set([]);
+    this.submitError.set(null);
     this.attachments.set([]);
     this.attachError.set(null);
   }
@@ -613,12 +833,28 @@ export class HelplinePage {
 
   // ── Actions ────────────────────────────────────────────────────────────
 
-  protected submit(o: SupportOrder): void {
-    if (!this.canSubmit()) return;
+  protected async submit(o: SupportOrder): Promise<void> {
+    if (!this.canSubmit() || this.submitting()) return;
     // The existing-ticket and raise-window checks, again at the point of submit.
     if (this.ticketFor(o) || this.isExpired(o)) { this.view.set('order'); return; }
     const now = new Date();
     const text = this.detail().trim();
+    if (this.isLive(o)) {
+      this.submitting.set(true);
+      this.submitError.set(null);
+      const result = await this.disputeApi.submit({
+        claimId: o.id,
+        categoryLabel: o.service,
+        categoryCode: await this.claimPages.categoryCodeOf(o.service),
+        reason: this.reason(),
+        detail: text,
+        documents: this.docs().filter((d) => d.state === 'done').map((d) => toDisputeDocument(d.file, d.documentId!, d.name ?? d.file.name)),
+      });
+      if (!result.ok) { this.submitting.set(false); this.submitError.set(result.message); return; }
+      await this.afterLiveSubmit(o, result.ticketId, result.disputeId, text);
+      this.submitting.set(false);
+      return;
+    }
     const t: SupportTicket = {
       id: `TKT-${10413 + this.tickets().length}`,
       orderId: o.id,
@@ -643,15 +879,134 @@ export class HelplinePage {
     this.notice.set(`Ticket ${t.id} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
   }
 
-  protected sendReply(t: SupportTicket): void {
+  /**
+   * The dispute is stored; the backend keeps only the reason, so the member's own
+   * words go in as the first message. The ticket then shows what the backend has.
+   */
+  private async afterLiveSubmit(o: SupportOrder, name: string | null, id: string | null, detail: string): Promise<void> {
+    let kept = '';
+    if (name && id && detail) {
+      let sent = await this.disputeApi.reply({ name, id }, detail);
+      if (!sent.ok) {
+        // One retry after the backend's 3 second guard; the member's words must not be lost.
+        await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
+        sent = await this.disputeApi.reply({ name, id }, detail);
+      }
+      if (!sent.ok) kept = detail;
+      this.startCooldown(); // the next reply would be the same action inside 3 seconds
+    }
+    await this.refreshDisputes();
+    const record = this.liveRecords().find((r) => r.name === name) ?? this.liveRecords().find((r) => r.claimId === o.id);
+    if (!record) {
+      // Stored, but the list has not caught up: say so rather than show nothing.
+      this.view.set('home');
+      this.notice.set('Your grievance was sent. It may take a moment to appear here.');
+      return;
+    }
+    this.ticketFrom.set('home');
+    this.ticketId.set(record.name);
+    this.reply.set(kept);
+    this.view.set('ticket');
+    this.notice.set(kept
+      ? `Ticket ${record.name} created for ${o.id}, but your details could not be sent. They are in the reply box — please send them again.`
+      : `Ticket ${record.name} created for ${o.id}. We'll keep you posted in the app, on WhatsApp and by email.`);
+  }
+
+  /** Shows five more claims, reading the next page of the listing when needed. */
+  protected async loadMoreClaims(): Promise<void> {
+    if (this.claimsPaging()) return;
+    this.claimsShown.set(this.claimsShown() + this.pageSize);
+    this.claimsPagingError.set(false);
+    this.claimsPaging.set(true);
+    try {
+      // A page can be all repeats, so keep reading (bounded) until there is enough to show.
+      for (let i = 0; i < 20 && this.claimsMore() && this.claimOrders().length < this.claimsShown(); i++) {
+        const result = await this.claimPages.page(this.nextClaimPage());
+        if (!result.ok) { this.claimsPagingError.set(true); break; }
+        this.nextClaimPage.update((n) => n + 1);
+        const known = new Set(this.claimOrders().map((c) => c.id));
+        const fresh = result.rows.filter((r) => r?.claim_id && !known.has(r.claim_id));
+        // A page with nothing new means the listing has repeated itself: there is no more.
+        this.moreFromServer.set(result.full && fresh.length > 0);
+        this.moreClaimRows.update((rows) => [...rows, ...result.rows]);
+      }
+    } finally {
+      this.claimsPaging.set(false);
+    }
+  }
+
+  protected async onDocs(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const chosen = Array.from(input.files ?? []);
+    input.value = '';
+    this.submitError.set(null);
+    // Same rules as the demo picker: PDF, Word or an image, 5 MB each.
+    const tooBig = chosen.filter((f) => f.size > MAX_ATTACHMENT_BYTES).map((f) => f.name);
+    const wrongType = chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && !isAllowedAttachment(f)).map((f) => f.name);
+    const problems: string[] = [];
+    if (tooBig.length) problems.push(`Over 5 MB: ${tooBig.join(', ')}`);
+    if (wrongType.length) problems.push(`Not a PDF, Word or image file: ${wrongType.join(', ')}`);
+    const have = new Set(this.docs().map((d) => d.file.name));
+    for (const file of chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && isAllowedAttachment(f) && !have.has(f.name))) {
+      const entry: UploadedDoc = { file, state: 'uploading' };
+      this.docs.update((list) => [...list, entry]);
+      const result = await this.disputeApi.uploadDocument(file);
+      this.docs.update((list) => list.map((d) => (d.file === file
+        ? (result.ok ? { file, state: 'done', documentId: result.documentId, name: result.name } : { file, state: 'failed' })
+        : d)));
+      if (!result.ok) problems.push(result.message);
+    }
+    if (problems.length) this.submitError.set(problems.join('. ').replace(/\.\.+/g, '.') + (problems.join('').endsWith('.') ? '' : '.'));
+  }
+
+  protected removeDoc(file: File): void {
+    this.docs.update((list) => list.filter((d) => d.file !== file));
+  }
+
+  protected async sendReply(t: SupportTicket): Promise<void> {
     const text = this.reply().trim();
     if (!text) return;
+    const record = this.liveRecords().find((r) => r.name === t.id);
+    if (record) {
+      if (this.replying() || this.cooling()) return;
+      this.replying.set(true);
+      this.replyError.set(null);
+      const result = await this.disputeApi.reply(record, text);
+      this.replying.set(false);
+      if (!result.ok) {
+        // The text stays in the box so nothing the member wrote is lost.
+        this.replyError.set(/multiple times|wait for/i.test(result.message) ? 'Please wait a few seconds, then send again.' : result.message);
+        // Support may have closed the ticket meanwhile: show its real state.
+        if (/resolved or closed/i.test(result.message)) await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+        return;
+      }
+      this.reply.set('');
+      this.notice.set('Reply sent. The ticket is back with the support team.');
+      this.startCooldown();
+      await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+      return;
+    }
     this.update(t, { state: 'awaiting_support' }, { from: 'member', text, at: new Date() });
     this.reply.set('');
     this.notice.set('Reply sent. The ticket is back with the support team.');
   }
 
-  protected markResolved(t: SupportTicket): void {
+  protected async markResolved(t: SupportTicket): Promise<void> {
+    const record = this.liveRecords().find((r) => r.name === t.id);
+    if (record) {
+      if (this.resolving()) return;
+      this.resolving.set(true);
+      this.replyError.set(null);
+      const result = await this.disputeApi.resolve(record);
+      this.resolving.set(false);
+      if (!result.ok) {
+        this.replyError.set(result.message);
+        return;
+      }
+      this.notice.set('Thanks — the ticket is closed.');
+      await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+      return;
+    }
     const now = new Date();
     this.update(t, { state: 'closed', closedAt: now, closedBy: 'member' }, { from: 'system', text: 'Marked resolved by you', at: now });
     this.notice.set('Thanks — the ticket is closed.');
@@ -709,5 +1064,82 @@ function autoClose(t: SupportTicket): SupportTicket {
     closedAt: cutoff,
     closedBy: 'auto',
     messages: [...t.messages, { from: 'system', text: `Closed automatically — ${RAISE_WINDOW_MONTHS} months from the order date`, at: cutoff }],
+  };
+}
+
+interface UploadedDoc {
+  readonly file: File;
+  readonly state: 'uploading' | 'done' | 'failed';
+  readonly documentId?: string;
+  readonly name?: string;
+}
+
+/** Epoch millis or ISO string from the claims list, as a Date. */
+function toDate(raw: unknown): Date {
+  const n = Number(raw);
+  const d = new Date(Number.isNaN(n) ? String(raw) : n);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+/** One row of the claims listing, as the Support page's order shape. */
+function toClaimOrder(row: any): SupportOrder {
+  const code = String(row?.claim_status ?? row?.status?.label ?? '').toUpperCase().replace(/[\s-]+/g, '_');
+  const label: string = row?.status?.label ?? '';
+  const flag: SupportOrder['claimFlag'] = /DOCUMENT|RESUBMISSION/.test(code) || /document/i.test(label)
+    ? 'Documents needed'
+    : /REJECT/.test(code) || /reject/i.test(label) ? 'Rejected' : undefined;
+  const bill = Number(row?.original_bill_amount ?? 0);
+  return {
+    id: String(row?.claim_id ?? ''),
+    service: String(row?.category ?? 'Reimbursement claim') as ServiceLine,
+    type: 'Reimbursement',
+    provider: String(row?.provider ?? ''),
+    placedAt: toDate(row?.treatment_date ?? row?.submitted_at),
+    progress: row?.status?.isFinal || /APPROV|PAID|PAYMENT_(DONE|COMPLETED)|REJECT|CLOSED|CANCEL/.test(code) ? 'Completed' : 'In Progress',
+    claimFlag: flag,
+    gross: bill,
+    discount: 0,
+    paidByWallet: 0,
+    paidByMember: bill,
+    invoiceLines: [],
+  };
+}
+
+/** Ticket and thread refresh while the page is open. */
+const POLL_MS = 30_000;
+/** The backend refuses the same action twice within 3 seconds. */
+const COOLDOWN_MS = 3_200;
+
+/** A stored grievance, plus its thread, as the Support page's ticket shape. */
+function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportTicket {
+  const state = ticketStateOf(r.status);
+  const messages: TicketMessage[] = [
+    { from: 'system', text: 'Ticket opened', at: r.createdAt },
+    ...thread.map((m): TicketMessage => (m.sender === 'MEMBER'
+      ? { from: 'member', text: m.text, at: m.at }
+      : { from: 'support', author: m.senderName, text: m.text, at: m.at })),
+  ];
+  // `userResolve` leaves the member as the last sender; support's close does not.
+  const closedByMember = state === 'closed' && r.lastMessageSender === 'MEMBER';
+  if (closedByMember) {
+    messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
+  } else if (state === 'closed') {
+    // `final_reason` starts as the member's own words (submit stores them there)
+    // and becomes the resolution when support closes the ticket: only show it as
+    // support's remark once it is no longer the member's first message.
+    const first = thread.find((m) => m.sender === 'MEMBER')?.text;
+    const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
+    messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });
+  }
+  return {
+    id: r.name,
+    orderId: r.claimId,
+    reason: r.reason,
+    detail: '',
+    createdAt: r.createdAt,
+    state,
+    closedAt: state === 'closed' ? r.modifiedAt : undefined,
+    closedBy: state === 'closed' ? (closedByMember ? 'member' : 'support') : undefined,
+    messages,
   };
 }

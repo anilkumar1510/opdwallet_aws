@@ -185,3 +185,39 @@ backticks in an inline template, the heredoc newline collapse, and the wrong
 envelope shapes. **The generator is the weak link, not the code being
 generated**, and every one of these presented first as a failing assertion
 against working software.
+
+
+## Part 4 — grievances are real for claims (2026-10-14/15)
+
+The Support page now saves **claim** grievances and reads them back: the claims
+listing feeds "Claims that need your help"; "Send to support" calls
+`POST habit-opd/api/v1/dispute` (`submit`, the member's words in `final_reason`, documents in `documents`); tickets (`GET_PAGE`) and threads
+(`GET_DISPUTE_MESSAGES`) are fetched from the API and refreshed every 30 s; replies
+go out as `userReply`. The raise form takes optional documents (DMS), which show on the ticket and download from DMS. "Claims that need your help" reads every page of the claims listing. The member
+cannot reopen a closed ticket and claim detail has no payment section.
+Nothing is kept in the browser, so a refresh shows the same tickets.
+
+Backend quirks the portal works around (commas/colons in `args`, the 3-second
+same-action guard) and the points for the backend team are listed
+in `PLACEHOLDER-APIS.md` section 7. Still placeholder: Mark resolved by the
+member, notifications, central configuration and service-line (non-claim) grievances. Phone layouts are covered by emulated iPhone 13 / Pixel 7 tests, real devices by hand.
+
+Spec: `openspec/changes/2026-10-14-dispute-integration/`. Browser tests:
+`tests/e2e/disputes/` (a fake of the API, plus `live-api.spec.ts` against the real
+one when `SESSION_ID` is set).
+
+## Update: claims paging and ticket details (2026-10-15)
+
+The real claims listing repeats its first page for later 20-row pages (39 rows, only 20 distinct claims), so the Support page now reads one 100-row page and removes repeats; all claims are reachable and Load more shows five at a time. `benefit_category` is the claim's own category code, a reply refused by the backend's 3-second guard is retried once, and a missing document says "This document is no longer available". Verified: 46 unit, 65 browser (desktop and phone) and 3 live API tests.
+
+## Update: Mark resolved and backend check (2026-10-15)
+
+The backend (`new_prod`) now has `userResolve`, so "Mark resolved" works on real tickets: it closes the ticket, shows "You marked this resolved", survives a refresh and cannot be undone. The backend also enforces one open ticket per claim and the 3-month window, and added a `description` field. The live claims listing still repeats pages at 20 rows (49 rows, 32 distinct), so the 100-row read stays. Verified: build clean, 52 unit, 72 browser (desktop and phone), 3 live API tests; the duplicate, 3-month, `description` and `userResolve` paths were also exercised against the live API, and a member-closed ticket stays closed after a reload.
+
+## Update: replies moved to dispute_chat (2026-10-15 evening)
+
+The backend moved `userReply` to the `dispute_chat` resource (the old `dispute` + `userReply` now answers "Invalid Query"), and refuses replies on resolved or closed tickets. The portal now posts `{resourceType: "DisputeChat", dispute_id, message_text}` plus the swapped `args`, so it works on both backend builds; if support closes a ticket while the member types, the refusal is shown and the ticket refreshes to closed. Verified: build clean, 54 unit, 74 browser (desktop and phone) and 4 live tests (raise, reply, document, resolve, reload). Still open on the backend: claims paging, `description` into Twenty, and Twenty's callback still using the old reply path.
+
+## Update: backend recheck, replies verbatim (2026-10-15 night)
+
+The backend now reads the reply from `message_text` (stored verbatim, empty refused, member name instead of id), so the portal sends only `message_text` and the comma and colon lookalike swap is gone for new replies. Verified: build clean, 55 unit, 74 browser and 4 live tests (a first message and a reply with commas, colons, ₹ and an emoji come back exactly as typed). Still open on the backend: claims paging (unstable sort), `description` into Twenty (`daf8d03` not merged), replies into Twenty, and unauthenticated `adjudicate` and `agentReply`.
