@@ -84,16 +84,17 @@ describe('DisputeApi', () => {
     expect(decode(post.mock.calls[0][1])).toMatchObject({ member_name: 'Session Sample', patient_name: 'Session Sample', relation_to_member: 'SELF' });
   });
 
-  it('sends the description as final_reason, and documents, only when present', async () => {
+  it('sends the words as final_reason and description, and documents, only when present', async () => {
     post.mockReturnValue(text({ errCode: 0 }));
     const doc = toDisputeDocument(new File(['x'], 'bill.pdf', { type: 'application/pdf' }), 'doc-1', 'bill.pdf');
     await api.submit({ ...input, detail: '  Amount is wrong  ', documents: [doc] });
     const sent = decode(post.mock.calls[0][1]);
-    expect(sent).toMatchObject({ final_reason: 'Amount is wrong', documents: [doc] });
-    expect(sent).not.toHaveProperty('description');
+    expect(sent).toMatchObject({ final_reason: 'Amount is wrong', description: 'Amount is wrong', documents: [doc] });
     post.mockClear();
     await api.submit(input);
     expect(decode(post.mock.calls[0][1])).not.toHaveProperty('documents');
+    expect(decode(post.mock.calls[0][1])).not.toHaveProperty('description');
+    expect(decode(post.mock.calls[0][1])).not.toHaveProperty('final_reason');
   });
 
   it('describes a document the way the dispute API stores it', () => {

@@ -121,7 +121,7 @@ static demo data until the backend and Twenty support them. All calls go through
 | My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
 | Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
 | Member reply | `POST habit-opd/api/v1/dispute` `action=userReply`, `resource` = base64 `{resourceType:"Dispute",name,id}`, `args=messageText:<text>` |
-| Member closes the ticket | `POST habit-opd/api/v1/dispute` `action=userResolve`, `resource` as for a reply, no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
+| Member closes the ticket | `POST habit-opd/api/v1/dispute` `action=userResolve`, `resource` = base64 `{resourceType:"Dispute",name}` (the name alone is enough, verified live), no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
 | Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form; PDF, Word or image, 5 MB each, several at once), then send in the submit's `documents` array. Demo orders keep the demo picker (nothing uploaded) |
 | Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
 
@@ -152,10 +152,10 @@ raise window, support phone and email: placeholders `1800-000-0000` /
 `support@opdwallet.com`). **No reopen:** the member cannot reopen a closed ticket.
 
 ### For the backend team (checked against `new_prod` source and the live API, 15 Oct 2026)
-Already done by the backend (read from the `new_prod` source; not yet exercised live, see the last item):
-- **Member "Mark resolved"** is `userResolve`; the portal now uses it.
+Already done by the backend (read from `new_prod` and **verified live on 15 Oct 2026**):
+- **Member "Mark resolved"** is `userResolve` (status becomes RESOLVED, last sender MEMBER); the portal uses it. It ignores any `dispute_status` / `final_reason` in the request.
 - **One open ticket per claim** and the **3-month window** (90 days from the claim's `treatment_date`) are enforced in `submit`.
-- **`description`** is a new field on the dispute.
+- **`description`** is a new field and stores the member's words. The portal sends it next to `final_reason`; the backend passes only `final_reason` on to the support system (Twenty), so `final_reason` stays.
 - Status ids and names are confirmed (`OPEN`, `AWAITING_EXECUTIVE_RESPONSE`, `AWAITING_USER_RESPONSE`, `RESOLVED`, `CLOSED`).
 
 Still needs a backend change:
@@ -163,13 +163,13 @@ Still needs a backend change:
 2. **`userReply` cannot carry a comma or a colon.** `args` is parsed as comma-separated `name:value` pairs; quoting and escaping do nothing. The portal swaps `,` for `‚` (U+201A) and `:` for `∶` (U+2236). Please support escaping or a body field for the text.
 3. **Status text written by the code differs from the declared values.** The decorator writes "Awaiting executive response" and "Awaiting user response", while the enum ids are `AWAITING_EXECUTIVE_RESPONSE` / `AWAITING_USER_RESPONSE` (names "Awaiting Executive Response" / "Awaiting User Response"). The portal understands every form. `adjudicate` accepts only the two mixed-case strings, `RESOLVED` and `CLOSED`, not `OPEN`.
 4. **`userReply` on a RESOLVED or CLOSED ticket sets it back to "Awaiting executive response"**, i.e. it reopens it. `userResolve` and `agentResolve` check neither the owner nor the current status (`userReply` checks the owner). The portal offers neither reply nor resolve on a closed ticket; please enforce it on the server (members cannot reopen).
-5. **`description` is not yet used by the portal.** Confirm it is deployed and stores the member's words; then the portal can send them there and stop putting them in `final_reason` (which support later overwrites with the resolution).
+5. **Pass `description` on to the support system** (the Twenty payload has `finalreason` but no description), and say how member replies reach support (the reply action does not call it). Until then the member's words travel in `final_reason`, which support later overwrites with the resolution.
 6. **Non-claim grievances.** `category` accepts only `CLAIM` and `dispute_type` only `GENERAL`; services need new values and a CRM counterpart. `benefit_category` is free text: the portal sends the claim's own category code (AHC, DENTAL, IN_CLINIC, LABS, ONLINE_CONSULTATION, PHARMACY).
 7. **Member `sender_name` is a user id** (the portal shows "You").
 8. **`X-XSRF-TOKEN` is not checked** on dispute reads or writes. Please confirm this is intended.
 9. **DMS `image-response-entity` answers HTTP 500** for an unknown document id (404 would be right). The portal shows "This document is no longer available".
 10. **Still to build:** notifications (the code has `TODO: Send notification`), a central configuration API (reasons, raise window, support phone and email), and `agentReply` has no role check yet (`TODO`).
-11. **Test data to clean up** on the test account (no delete API for members): DIS-2026-00393 and 00395 to 00407 and the "[TEST]" messages.
-12. **Live check outstanding:** the duplicate, 3-month and `userResolve` paths were read from source, not exercised against the live API (no more test tickets were created on the shared account). Please confirm they are deployed, or allow one more test ticket.
+11. **Test data to clean up** on the test account (no delete API for members): DIS-2026-00393 and 00395 to 00409 and the "[TEST]" messages. `agentResolve` also ignores `dispute_status` and `final_reason`, so a resolution note needs `adjudicate`.
+12. Verified live: the duplicate and 3-month refusals, `userResolve`, `description`, and that a reply on a closed ticket reopens it (item 4).
 
 Handled in the portal (no backend change needed): a refusal from the server (duplicate, window, resolve) is shown as the backend's message; the 3-second same-action refusal (Send is disabled ~3 s and a refused reply is retried once automatically); status words with underscores or capitals are understood; the member's description is sent as `final_reason` and as the first message.

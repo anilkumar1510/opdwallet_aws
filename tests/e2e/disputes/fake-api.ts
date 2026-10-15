@@ -67,6 +67,7 @@ export class FakeApi {
   failReply: string | null = null;
   /** `userResolve` calls received, and a reason to refuse them. */
   resolves: string[] = [];
+  resolvePayloads: Record<string, unknown>[] = [];
   failResolve: string | null = null;
   resolveDelayMs = 0;
   failList = false;
@@ -164,8 +165,9 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
       if (action === 'userResolve') {
         if (api.resolveDelayMs) await new Promise((r) => setTimeout(r, api.resolveDelayMs));
         api.resolves.push(payload.name);
+        api.resolvePayloads.push(payload);
         if (api.failResolve) return route.fulfill(json({ errCode: -1, message: api.failResolve }));
-        const d = api.disputes.find((x) => x.id === payload.id)!;
+        const d = api.disputes.find((x) => x.name === payload.name)!;
         // Like the backend: RESOLVED, the member as the last sender, no message.
         d.dispute_status = 'RESOLVED';
         d.last_message_sender = 'MEMBER';

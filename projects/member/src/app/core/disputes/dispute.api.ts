@@ -33,10 +33,12 @@ export interface DisputeSubmitPayload {
   readonly selected_reason: string;
   readonly dispute_status: 'OPEN';
   /**
-   * What the member typed in "Tell us more". The dispute API stores it in
-   * `final_reason` (the executive's resolution later overwrites that field).
+   * What the member typed in "Tell us more". `final_reason` is the only field the
+   * backend passes on to the support system on create (the executive's resolution
+   * later overwrites it); `description` keeps the member's words untouched.
    */
   readonly final_reason?: string;
+  readonly description?: string;
   /** The optional supporting documents, as the dispute API stores them. */
   readonly documents?: readonly DisputeDocument[];
 }
@@ -189,7 +191,7 @@ export class DisputeApi {
       benefit_category: input.categoryCode?.trim() || benefitCategoryOf(input.categoryLabel),
       selected_reason: input.reason,
       dispute_status: 'OPEN',
-      ...(description ? { final_reason: description } : {}),
+      ...(description ? { final_reason: description, description } : {}),
       ...(input.documents.length ? { documents: input.documents } : {}),
     };
   }
@@ -266,14 +268,14 @@ export class DisputeApi {
     return this.act(dispute, 'userReply', `messageText:${toArgSafe(text)}`, 'We could not send your reply. Please try again.');
   }
 
-  /** The member closes their own ticket as resolved: `action=userResolve` (no text, no reopen). */
-  resolve(dispute: { name: string; id: string }): Promise<ReplyResult> {
-    return this.act(dispute, 'userResolve', undefined, 'We could not close the ticket. Please try again.');
+  /** The member closes their own ticket as resolved: `action=userResolve`, identified by `name` only (no text, no reopen). */
+  resolve(dispute: { name: string }): Promise<ReplyResult> {
+    return this.act({ name: dispute.name }, 'userResolve', undefined, 'We could not close the ticket. Please try again.');
   }
 
   /** One signed `dispute` action on an existing ticket. */
   private async act(
-    dispute: { name: string; id: string },
+    dispute: { name: string; id?: string },
     action: string,
     args: string | undefined,
     failure: string,
@@ -281,7 +283,7 @@ export class DisputeApi {
   ): Promise<ReplyResult> {
     try {
       const { resource, application } = DISPUTE_API;
-      const encoded = encodeResource({ resourceType: 'Dispute', name: dispute.name, id: dispute.id });
+      const encoded = encodeResource({ resourceType: 'Dispute', name: dispute.name, ...(dispute.id ? { id: dispute.id } : {}) });
       const body =
         `resource=${encodeURIComponent(encoded)}&application=${application}&action=${action}` +
         (args === undefined ? '' : `&args=${encodeURIComponent(args)}`);

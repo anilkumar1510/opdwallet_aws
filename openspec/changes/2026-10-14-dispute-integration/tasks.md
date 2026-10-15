@@ -29,8 +29,8 @@
 
 ## 4. Pending backend
 
-- [x] 4.1 Member "Mark resolved" (`userResolve`) wired, with tests; backend still to confirm it checks owner and status.
-- [ ] 4.2 Escaping or a body field for reply text (commas, colons); confirm the new `description` field is deployed, then send the member words there.
+- [x] 4.1 Member "Mark resolved" (`userResolve`, ticket named by `name` only) wired and verified live; backend still to add owner and status checks.
+- [ ] 4.2 Escaping or a body field for reply text (commas, colons); `description` is deployed and sent next to `final_reason`; the backend passes only `final_reason` to the support system, so it stays.
 - [ ] 4.3 Service-line (non-claim) grievances once backend and CRM support them.
 - [ ] 4.4 Confirm `benefit_category` values.
 - [ ] 4.5 Notifications (in-app, WhatsApp, email), central configuration (reasons, windows, support phone and email), real support phone and email values.

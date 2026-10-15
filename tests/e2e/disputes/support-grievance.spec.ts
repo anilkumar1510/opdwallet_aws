@@ -161,9 +161,8 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('Bill is wrong‚ see note∶ it was ₹1‚500.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
     expect(api.replies[0].text).toBe('Bill is wrong‚ see note∶ it was ₹1‚500.');
-    // The same words are stored on the grievance as final_reason (the backend's field for them).
-    expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.' });
-    expect(api.submits[0]).not.toHaveProperty('description');
+    // The same words are stored as final_reason (the only field passed on to support) and as description.
+    expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.', description: 'Bill is wrong, see note: it was ₹1,500.' });
   });
 
   test('a closed ticket does not show the member own words as the support resolution', async ({ page }) => {
@@ -613,6 +612,8 @@ test.describe('Mark resolved (userResolve)', () => {
     await page.getByRole('button', { name: 'Mark resolved' }).click();
     await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toEqual([d.name]);
+    // The ticket is identified by its name only.
+    expect(api.resolvePayloads[0]).toEqual({ resourceType: 'Dispute', name: d.name });
     expect(api.replies).toEqual([]);
     await expect(page.getByText('You marked this resolved on')).toBeVisible();
     await expect(page.getByText('Marked resolved by you')).toBeVisible();

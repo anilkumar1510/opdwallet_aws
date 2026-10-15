@@ -60,6 +60,8 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   expect(JSON.stringify(record)).toContain(documentId);
   // The member's description is stored verbatim in `final_reason` (commas and colons are fine there).
   expect(record.final_reason).toBe('[TEST - please ignore] integration check, with a comma: and a colon. Amount ₹1,500 "quoted" & more.');
+  // `description` keeps the same words (the backend added the field; it is not passed on to the support system).
+  expect(record.description).toBe(record.final_reason);
   // The member's own words are the first message in the thread (comma and colon swapped for lookalikes).
   await expect(page.getByText(/integration check‚ with a comma∶ and a colon\. Amount ₹1‚500 "quoted" & more\./)).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Ticket opened')).toBeVisible();
@@ -88,8 +90,8 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
 
   // No fake actions on a real ticket.
   await expect(page.getByText("Demo — support's reply")).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Mark resolved' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /reopen/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Mark resolved' })).toBeVisible();
 });
 
 test('after a refresh the claim shows the ticket and the whole thread comes back from the API', async ({ page }) => {
@@ -111,6 +113,31 @@ test('after a refresh the claim shows the ticket and the whole thread comes back
   await expect(page.getByText(ticketId, { exact: true })).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('first reply ₹500 😊')).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('[TEST] too soon')).toBeVisible();
+
+  // Mark resolved: closes the real ticket through userResolve, and it stays closed after a refresh.
+  await page.getByRole('button', { name: 'Mark resolved' }).click();
+  await expect(page.getByText('You marked this resolved on')).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('#g-reply')).toHaveCount(0);
+  await expect(page.getByText(/reopen/i)).toHaveCount(0);
+});
+
+test('a ticket the member closed stays closed after a refresh', async ({ page }) => {
+  expect(ticketId).toBeTruthy();
+  await injectSessionCookie(page);
+  await page.goto('/member/helpline');
+  const claims = section(page, 'Claims that need your help');
+  await expect(claims.locator('li').first()).toBeVisible({ timeout: 30000 }); // claims have loaded
+  const row = claims.locator('li', { hasText: claimId });
+  for (let i = 0; i < 10 && !(await row.count()); i++) {
+    const more = claims.getByRole('button', { name: 'Load more' });
+    if (!(await more.count())) break;
+    await more.click();
+  }
+  await expect(row.getByRole('button', { name: 'Ticket closed' })).toBeVisible({ timeout: 30000 });
+  await row.getByRole('button', { name: 'Ticket closed' }).click();
+  await expect(page.getByText('You marked this resolved on')).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText('first reply ₹500 😊')).toBeVisible();
+  await expect(page.locator('#g-reply')).toHaveCount(0);
 });
 
 test('an expired session shows no real claims or tickets and no crash', async ({ page }) => {
