@@ -155,6 +155,13 @@ describe('DisputeApi', () => {
       expect(result.ok && result.items).toHaveLength(45);
     });
 
+    it('shows a ticket once even if a page repeats it', async () => {
+      getcall.mockReturnValueOnce(of(JSON.stringify({ errCode: 0, resource: Array.from({ length: 20 }, (_, i) => row(i)) })))
+        .mockReturnValueOnce(of(JSON.stringify({ errCode: 0, resource: [row(0), row(1), row(20)] })));
+      const result = await api.list();
+      expect(result.ok && result.items).toHaveLength(21);
+    });
+
     it('skips rows with no id or name and keeps the rest', async () => {
       getcall.mockReturnValue(of(JSON.stringify({ errCode: 0, resource: [row(1), { name: 'x' }, { id: 'y' }] })));
       const result = await api.list();

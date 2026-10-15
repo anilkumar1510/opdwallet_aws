@@ -29,6 +29,7 @@
 
 ## 4. Pending backend
 
+- [x] 4.0a Tickets shown once even if a page repeats them.
 - [x] 4.0 Replies moved to `dispute_chat` (backend change, 15 Oct): text sent in the resource and in `args`; refusal on a closed ticket shown and the ticket refreshed; verified live.
 - [x] 4.1 Member "Mark resolved" (`userResolve`, ticket named by `name` only) wired and verified live; backend still to add owner and status checks.
 - [ ] 4.2 Escaping or a body field for reply text (commas, colons); `description` is deployed and sent next to `final_reason`; the backend passes only `final_reason` to the support system, so it stays.

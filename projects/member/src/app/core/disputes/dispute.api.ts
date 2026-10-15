@@ -244,6 +244,8 @@ export class DisputeApi {
       items: rows.items
         .map(toRecord)
         .filter((r): r is DisputeRecord => r !== null)
+        // A page can repeat rows if the backend's sort key moves between requests.
+        .filter((r, i, all) => all.findIndex((x) => x.id === r.id) === i)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
     };
   }
