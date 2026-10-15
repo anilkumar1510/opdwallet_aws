@@ -51,6 +51,8 @@ export interface TicketMessage {
   readonly author?: string;
   readonly text: string;
   readonly at: Date;
+  /** File names attached to the message (DUMMY — names only, nothing uploaded). */
+  readonly attachments?: readonly string[];
 }
 
 export interface SupportTicket {
@@ -69,6 +71,17 @@ export interface SupportTicket {
 
 /** How long after the order date a grievance can be raised; also the auto-close cutoff. */
 export const RAISE_WINDOW_MONTHS = 3;
+/** Attachments on a grievance: optional, several at once, each up to 5 MB. */
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+/** Word, PDF and any image format. */
+export const ATTACHMENT_ACCEPT = '.pdf,.doc,.docx,image/*,.heic,.heif';
+
+export function isAllowedAttachment(file: File): boolean {
+  const name = file.name.toLowerCase();
+  if (file.type.startsWith('image/')) return true;
+  return /\.(pdf|doc|docx|jpe?g|png|gif|webp|bmp|tiff?|heic|heif|svg)$/.test(name);
+}
+
 /** PLACEHOLDER — the real support line is not decided yet. */
 export const SUPPORT_PHONE = '1800-000-0000';
 

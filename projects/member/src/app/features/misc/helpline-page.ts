@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import {
+  ATTACHMENT_ACCEPT,
   ClosedBy,
   DEMO_EXECUTIVE,
   RAISE_WINDOW_MONTHS,
@@ -13,6 +14,8 @@ import {
   SupportOrder,
   SupportTicket,
   TicketMessage,
+  isAllowedAttachment,
+  MAX_ATTACHMENT_BYTES,
   raiseCutoff,
   reasonsFor,
 } from '../support/grievance.data';
@@ -215,7 +218,29 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   Tell us more @if (reason() === 'Other') { <span class="text-danger-700">*</span> } @else { <span class="font-normal text-ink-500">(optional)</span> }
                 </label>
                 <textarea id="g-detail" rows="4" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" [placeholder]="reason() === 'Other' ? 'Describe your issue and what you would like us to do' : 'What happened, and what would you like us to do?'" [value]="detail()" (input)="detail.set($any($event.target).value)"></textarea>
-                <p class="mt-1 text-xs text-ink-500">We'll notify you in the app, on WhatsApp and by email when support replies.</p>
+
+                <!-- Optional supporting documents; several in one go. -->
+                <p class="mb-1 mt-4 text-sm font-medium text-ink-700">Attach documents <span class="font-normal text-ink-500">(optional)</span></p>
+                <input type="file" id="g-files" class="sr-only" multiple [accept]="attachmentAccept" (change)="onFiles($event)" />
+                <label for="g-files" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-5 text-center transition-colors hover:border-[#0F5FDC]">
+                  <span class="block font-medium text-[#0B2C63]">📎 {{ attachments().length ? 'Add more files' : 'Upload documents' }}</span>
+                  <span class="mt-1 block text-xs text-ink-500">PDF, Word or any image · up to 5 MB each · select several at once</span>
+                </label>
+                @if (attachments().length) {
+                  <ul class="mt-3 space-y-2">
+                    @for (f of attachments(); track f.name) {
+                      <li class="flex items-center justify-between gap-3 rounded-xl border border-surface-border px-3 py-2 text-sm">
+                        <span class="min-w-0 truncate text-ink-900">{{ f.name }} <span class="text-xs text-ink-500">· {{ size(f.size) }}</span></span>
+                        <button type="button" class="shrink-0 text-xs font-medium text-danger-700 underline" (click)="removeAttachment(f.name)">Remove</button>
+                      </li>
+                    }
+                  </ul>
+                }
+                @if (attachError(); as err) {
+                  <p class="mt-2 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p>
+                }
+
+                <p class="mt-4 text-xs text-ink-500">We'll notify you in the app, on WhatsApp and by email when support replies.</p>
               </section>
 
               <div class="mt-5 flex gap-3">
@@ -253,6 +278,13 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                       <div class="max-w-[85%] rounded-2xl px-4 py-3 text-sm" [class.bg-[#0F5FDC]]="m.from === 'member'" [class.text-white]="m.from === 'member'" [class.bg-white]="m.from === 'support'" [class.border]="m.from === 'support'" [class.border-[#EDF0F7]]="m.from === 'support'" [class.text-ink-900]="m.from === 'support'">
                         <p class="mb-1 text-[11px] font-medium" [class.text-white/80]="m.from === 'member'" [class.text-[#0F5FDC]]="m.from === 'support'">{{ m.from === 'member' ? 'You' : m.author }}</p>
                         <p class="whitespace-pre-line">{{ m.text }}</p>
+                        @if (m.attachments?.length) {
+                          <ul class="mt-2 space-y-1">
+                            @for (a of m.attachments; track a) {
+                              <li class="truncate rounded-lg px-2 py-1 text-xs" [class.bg-white/15]="m.from === 'member'" [class.bg-[#F2F4F8]]="m.from !== 'member'">📎 {{ a }}</li>
+                            }
+                          </ul>
+                        }
                         <p class="mt-1 text-[10px]" [class.text-white/70]="m.from === 'member'" [class.text-ink-400]="m.from === 'support'">{{ dateTime(m.at) }}</p>
                       </div>
                     </div>
@@ -384,6 +416,10 @@ export class HelplinePage {
   protected readonly reason = signal('');
   protected readonly detail = signal('');
   protected readonly reply = signal('');
+  protected readonly attachmentAccept = ATTACHMENT_ACCEPT;
+  /** DUMMY — only the name and size are kept; nothing is uploaded. */
+  protected readonly attachments = signal<readonly { name: string; size: number }[]>([]);
+  protected readonly attachError = signal<string | null>(null);
 
   protected readonly order = computed(() => this.orders().find((o) => o.id === this.orderId()) ?? null);
   protected readonly ticket = computed(() => this.tickets().find((t) => t.id === this.ticketId()) ?? null);
@@ -547,6 +583,32 @@ export class HelplinePage {
   private resetForm(): void {
     this.reason.set('');
     this.detail.set('');
+    this.attachments.set([]);
+    this.attachError.set(null);
+  }
+
+  /** Several files at once; any over 5 MB or of another type are skipped and named. */
+  protected onFiles(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const chosen = Array.from(input.files ?? []);
+    input.value = '';
+    const tooBig = chosen.filter((f) => f.size > MAX_ATTACHMENT_BYTES).map((f) => f.name);
+    const wrongType = chosen.filter((f) => !isAllowedAttachment(f)).map((f) => f.name);
+    const have = new Set(this.attachments().map((a) => a.name));
+    const ok = chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && isAllowedAttachment(f) && !have.has(f.name));
+    this.attachments.set([...this.attachments(), ...ok.map((f) => ({ name: f.name, size: f.size }))]);
+    const problems: string[] = [];
+    if (tooBig.length) problems.push(`Over 5 MB: ${tooBig.join(', ')}`);
+    if (wrongType.length) problems.push(`Not a PDF, Word or image file: ${wrongType.join(', ')}`);
+    this.attachError.set(problems.length ? problems.join('. ') + '.' : null);
+  }
+
+  protected removeAttachment(name: string): void {
+    this.attachments.set(this.attachments().filter((a) => a.name !== name));
+  }
+
+  protected size(bytes: number): string {
+    return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
   }
 
   // ── Actions ────────────────────────────────────────────────────────────
@@ -565,7 +627,12 @@ export class HelplinePage {
       createdAt: now,
       state: 'awaiting_support',
       messages: [
-        { from: 'member', text: text ? `${this.reason()}\n\n${text}` : this.reason(), at: now },
+        {
+          from: 'member',
+          text: text ? `${this.reason()}\n\n${text}` : this.reason(),
+          at: now,
+          attachments: this.attachments().map((a) => a.name),
+        },
         { from: 'system', text: 'Ticket opened', at: now },
       ],
     };
