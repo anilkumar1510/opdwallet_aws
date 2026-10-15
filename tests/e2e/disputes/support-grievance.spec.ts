@@ -155,12 +155,12 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText("Demo — support's reply")).toHaveCount(0);
   });
 
-  test('the optional details become the first message in the thread (comma and colon swapped)', async ({ page }) => {
+  test('the optional details become the first message in the thread (commas and colons as typed)', async ({ page }) => {
     const api = await openSupport(page);
     await raise(page, 'Other', 'Bill is wrong, see note: it was ₹1,500.');
-    await expect(page.getByText('Bill is wrong‚ see note∶ it was ₹1‚500.')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('Bill is wrong, see note: it was ₹1,500.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
-    expect(api.replies[0].text).toBe('Bill is wrong‚ see note∶ it was ₹1‚500.');
+    expect(api.replies[0].text).toBe('Bill is wrong, see note: it was ₹1,500.');
     // The same words are stored as final_reason (the only field passed on to support) and as description.
     expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.', description: 'Bill is wrong, see note: it was ₹1,500.' });
   });
@@ -532,12 +532,12 @@ test.describe('Reply (userReply)', () => {
     await expect(page.getByText('Waiting on support')).toBeVisible();
   });
 
-  test('commas and colons are swapped for lookalikes so the backend accepts them', async ({ page }) => {
+  test('commas and colons are sent as typed', async ({ page }) => {
     const { api } = await openTicket(page);
     await page.fill('#g-reply', 'Hi, note: see bill');
     await page.getByRole('button', { name: 'Send reply' }).click();
-    await expect(page.getByText('Hi‚ note∶ see bill')).toBeVisible({ timeout: 20000 });
-    expect(api.replies[0].text).toBe('Hi‚ note∶ see bill');
+    await expect(page.getByText('Hi, note: see bill')).toBeVisible({ timeout: 20000 });
+    expect(api.replies[0].text).toBe('Hi, note: see bill');
   });
 
   test('an empty or blank reply cannot be sent', async ({ page }) => {
@@ -597,10 +597,9 @@ test.describe('Reply (userReply)', () => {
   });
 });
 
-test.describe('Reply on the newer backend build (text read from the resource)', () => {
-  test('commas and colons arrive verbatim and show as typed', async ({ page }) => {
+test.describe('Reply text', () => {
+  test('commas and colons arrive verbatim and show as typed in a reply', async ({ page }) => {
     const api = new FakeApi();
-    api.verbatimBackend = true;
     const d = api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Awaiting user response' }, [
       { sender_type: 'MEMBER', message_text: 'Please re-check' },
       { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Please upload page 2' },

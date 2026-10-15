@@ -32,7 +32,8 @@
 - [x] 4.0a Tickets shown once even if a page repeats them.
 - [x] 4.0 Replies moved to `dispute_chat` (backend change, 15 Oct): text sent in the resource and in `args`; refusal on a closed ticket shown and the ticket refreshed; verified live.
 - [x] 4.1 Member "Mark resolved" (`userResolve`, ticket named by `name` only) wired and verified live; backend still to add owner and status checks.
-- [ ] 4.2 Escaping or a body field for reply text (commas, colons); `description` is deployed and sent next to `final_reason`; the backend passes only `final_reason` to the support system, so it stays.
+- [x] 4.2 Commas and colons in replies: the backend reads `message_text` verbatim (verified live); the portal sends no `args`.
+- [ ] 4.2b Stop sending `final_reason` once `daf8d03` (`description` into the Twenty payload) is merged and deployed.
 - [ ] 4.3 Service-line (non-claim) grievances once backend and CRM support them.
 - [ ] 4.4 Confirm `benefit_category` values.
 - [ ] 4.5 Notifications (in-app, WhatsApp, email), central configuration (reasons, windows, support phone and email), real support phone and email values.

@@ -217,3 +217,7 @@ The backend (`new_prod`) now has `userResolve`, so "Mark resolved" works on real
 ## Update: replies moved to dispute_chat (2026-10-15 evening)
 
 The backend moved `userReply` to the `dispute_chat` resource (the old `dispute` + `userReply` now answers "Invalid Query"), and refuses replies on resolved or closed tickets. The portal now posts `{resourceType: "DisputeChat", dispute_id, message_text}` plus the swapped `args`, so it works on both backend builds; if support closes a ticket while the member types, the refusal is shown and the ticket refreshes to closed. Verified: build clean, 54 unit, 74 browser (desktop and phone) and 4 live tests (raise, reply, document, resolve, reload). Still open on the backend: claims paging, `description` into Twenty, and Twenty's callback still using the old reply path.
+
+## Update: backend recheck, replies verbatim (2026-10-15 night)
+
+The backend now reads the reply from `message_text` (stored verbatim, empty refused, member name instead of id), so the portal sends only `message_text` and the comma and colon lookalike swap is gone for new replies. Verified: build clean, 55 unit, 74 browser and 4 live tests (a first message and a reply with commas, colons, ₹ and an emoji come back exactly as typed). Still open on the backend: claims paging (unstable sort), `description` into Twenty (`daf8d03` not merged), replies into Twenty, and unauthenticated `adjudicate` and `agentReply`.

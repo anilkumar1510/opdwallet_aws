@@ -69,8 +69,6 @@ export class FakeApi {
   resolves: string[] = [];
   resolvePayloads: Record<string, unknown>[] = [];
   chatPayloads: Record<string, unknown>[] = [];
-  /** The newer backend build: reads the reply from the resource's `message_text` and ignores `args`. */
-  verbatimBackend = false;
   failResolve: string | null = null;
   resolveDelayMs = 0;
   failList = false;
@@ -155,11 +153,9 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
       const payload = JSON.parse(decodeURIComponent(escape(Buffer.from(form.get('resource') ?? '', 'base64').toString('binary'))));
       if (form.get('action') === 'userReply') {
         api.chatPayloads.push(payload);
-        const args = form.get('args') ?? '';
-        const argValue = args.replace(/^messageText:/, '');
-        // The current build refuses a comma or colon in args whichever form carries the text.
-        if (/[,:]/.test(argValue)) return route.fulfill(json({ errCode: -1, message: 'args can  have only values of format name:value' }));
-        const value = api.verbatimBackend ? String(payload.message_text ?? '') : argValue;
+        // The backend reads the reply from the resource's `message_text` and ignores `args`.
+        const value = String(payload.message_text ?? '');
+        if (!value.trim()) return route.fulfill(json({ errCode: -1, message: 'message_text is required' }));
         if (Date.now() - api['lastReplyAt'] < GUARD_MS) {
           return route.fulfill(json({ errCode: -1, message: 'You have clicked multiple times for the same action, please wait for 3 seconds.' }));
         }
@@ -210,23 +206,6 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
 
       // The dispute resource no longer takes replies (they moved to dispute_chat).
       if (action === 'userReply') return route.fulfill(json({ errCode: -1, message: 'Invalid Query' }));
-
-      if (action === 'userReplyLegacy') {
-        const args = form.get('args') ?? '';
-        const value = args.replace(/^messageText:/, '');
-        if (/[,:]/.test(value)) return route.fulfill(json({ errCode: -1, message: 'args can  have only values of format name:value' }));
-        if (Date.now() - api['lastReplyAt'] < GUARD_MS) {
-          return route.fulfill(json({ errCode: -1, message: 'You have clicked multiple times for the same action, please wait for 3 seconds.' }));
-        }
-        if (api.rejectReplies > 0) { api.rejectReplies -= 1; return route.fulfill(json({ errCode: -1, message: api.rejectReplyMessage })); }
-        if (api.failReply) return route.fulfill(json({ errCode: -1, message: api.failReply }));
-        api['lastReplyAt'] = Date.now();
-        const d = api.disputes.find((x) => x.id === payload.id)!;
-        api.replies.push({ name: payload.name, text: value });
-        api.addMessage(d.id, 'MEMBER', value);
-        d.dispute_status = 'Awaiting executive response';
-        return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
-      }
     }
 
     if (q.get('queryId') === 'GET_CLAIMS_BY_USER') {

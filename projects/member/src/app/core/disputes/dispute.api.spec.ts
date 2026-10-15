@@ -258,9 +258,8 @@ describe('DisputeApi', () => {
       expect(await api.reply(dispute, 'Please review ₹500 & more')).toEqual({ ok: true });
       const [url, body] = post.mock.calls[0];
       expect(url).toBe('/habit-opd/api/v1/dispute_chat');
-      expect(body).toMatch(/&application=habit-opd&action=userReply&args=messageText%3A/);
+      expect(body).toMatch(/&application=habit-opd&action=userReply$/);
       expect(decode(body)).toEqual({ resourceType: 'DisputeChat', dispute_id: 'uuid-1', message_text: 'Please review ₹500 & more' });
-      expect(decodeURIComponent(body.split('&args=')[1])).toBe('messageText:Please review ₹500 & more');
       const encoded = decodeURIComponent(body.split('&')[0].replace('resource=', ''));
       expect(addXsrfToken).toHaveBeenCalledWith(`${encoded}&action=userReply`, true);
     });
@@ -281,10 +280,10 @@ describe('DisputeApi', () => {
       expect((await api.resolve(dispute)).ok).toBe(false);
     });
 
-    it('swaps commas and colons in args, which the current backend args parser cannot carry, and sends the text verbatim in the resource', async () => {
+    it('sends commas and colons verbatim in message_text and sends no args', async () => {
       post.mockReturnValue(text({ errCode: 0 }));
       await api.reply(dispute, 'Note: a, b');
-      expect(decodeURIComponent(post.mock.calls[0][1].split('&args=')[1])).toBe('messageText:Note\u2236 a\u201A b');
+      expect(post.mock.calls[0][1]).not.toContain('args=');
       expect(decode(post.mock.calls[0][1])).toMatchObject({ message_text: 'Note: a, b' });
     });
 

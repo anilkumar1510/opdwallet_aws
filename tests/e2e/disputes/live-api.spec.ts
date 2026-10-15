@@ -63,7 +63,7 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   // `description` keeps the same words (the backend added the field; it is not passed on to the support system).
   expect(record.description).toBe(record.final_reason);
   // The member's own words are the first message in the thread (comma and colon swapped for lookalikes).
-  await expect(page.getByText(/integration check[‚,] with a comma[∶:] and a colon\. Amount ₹1[‚,]500 "quoted" & more\./)).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/integration check, with a comma: and a colon\. Amount ₹1,500 "quoted" & more\./)).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Ticket opened')).toBeVisible();
 
   // Reply: shows up in the thread from the API.

@@ -155,6 +155,7 @@ export function encodeResource(payload: object): string {
  * ratio sign (U+2236). Everything else (rupee, quotes, newlines, Hindi, emoji,
  * ampersands) goes through unchanged.
  */
+/** Older replies (before the backend read `message_text`) have lookalikes for commas and colons. */
 export function toArgSafe(text: string): string {
   return text.replace(/,/g, '\u201A').replace(/:/g, '\u2236');
 }
@@ -264,18 +265,16 @@ export class DisputeApi {
   }
 
   /**
-   * The member's reply: `action=userReply` on the chat resource. The text is sent
-   * twice so it works on both backend builds: verbatim as `message_text` in the
-   * resource (the newer build reads it there, commas and colons included) and in
-   * the key:value `args` string the current build reads (where commas and colons
-   * are swapped for lookalikes). The backend flips the ticket back to support.
+   * The member's reply: `action=userReply` on the chat resource, the text verbatim
+   * in the resource's `message_text` (commas and colons included; the backend no
+   * longer reads `args`). The backend flips the ticket back to support.
    */
   reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
     return this.act(
       DISPUTE_API.chatResource,
       { resourceType: 'DisputeChat', dispute_id: dispute.id, message_text: text },
       'userReply',
-      `messageText:${toArgSafe(text)}`,
+      undefined,
       'We could not send your reply. Please try again.',
     );
   }
