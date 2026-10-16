@@ -259,14 +259,7 @@ export class OnlineConsultPage implements OnInit {
   }
 
   protected loadInitialData(): void {
-    this.consultationService.getMyConfig().subscribe({
-      next: (config) => {
-        this.consultationService.getSpecialities(config.cug_code).subscribe(specs => this.specialities.set(specs));
-      },
-      error: (err) => {
-        console.log(err)
-      }
-    });
+    this.consultationService.getSpecialities().subscribe(specs => this.specialities.set(specs));
     this.consultationService.getFamilyList().subscribe(pats => this.patients.set(pats));
   }
 

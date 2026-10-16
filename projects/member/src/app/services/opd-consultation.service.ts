@@ -140,7 +140,17 @@ export class OpdConsultationService {
   readonly loading$ = this._loading.asObservable();
   readonly errors$ = this._errors.asObservable();
 
-  constructor(private http: HttpClient) {}
+  private cugCode: string = 'HCLHC001';
+
+  constructor(private http: HttpClient) {
+    this.fetchInitialConfig();
+  }
+
+  private fetchInitialConfig(): void {
+    this.getMyConfig().subscribe(config => {
+      this.cugCode = config.cug_code;
+    });
+  }
 
   // Helper to manage loading state
   private setLoading(key: string, value: boolean): void {
@@ -210,14 +220,14 @@ export class OpdConsultationService {
       }),
       catchError(error => {
         console.error('Error fetching config:', error);
-        return of({ cug_code: 'HCLHC001', currency: 'INR', time_zone: 'Asia/Kolkata', domain: 'HCLHealthcare' });
+        return error
       })
     );
   }
 
   // Speciality Listing API
-  getSpecialities(cug_code: string): Observable<Speciality[]> {
-    const url = this.buildUrl('TELE_SPECIALITY_LISTING', `cug_code:${cug_code},mode_of_appointment:opd_network`);
+  getSpecialities(): Observable<Speciality[]> {
+    const url = this.buildUrl('TELE_SPECIALITY_LISTING', `cug_code:${this.cugCode},mode_of_appointment:opd_network`);
     return this.executeWithLoading('specialities', this.http.get<{ resource: any[] }>(url))
       .pipe(
         map(response => response.resource || []),
@@ -233,7 +243,7 @@ export class OpdConsultationService {
 
   // Doctor Listing API
   getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
-    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCL-001,mode_of_appointment:opd_network,serviceType_code:op_consultation,doctor_mode:yes,cug_code:HCLHC001`);
+    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCL-001,mode_of_appointment:opd_network,serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
