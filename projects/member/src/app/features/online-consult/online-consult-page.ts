@@ -49,7 +49,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
             (next)="next()"
             [primaryLabel]="primaryLabel()"
           >
-            <ng-container [ngSwitch]="currentStep">
+            <ng-container [ngSwitch]="currentStep()">
               <ng-container *ngSwitchCase="'find'">
                 <div class="space-y-4">
                   @if (isLoading('specialities')) {
@@ -259,8 +259,13 @@ export class OnlineConsultPage implements OnInit {
   }
 
   protected loadInitialData(): void {
-    this.consultationService.getMyConfig().subscribe(config => {
-      this.consultationService.getSpecialities(config.cug_code).subscribe(specs => this.specialities.set(specs));
+    this.consultationService.getMyConfig().subscribe({
+      next: (config) => {
+        this.consultationService.getSpecialities(config.cug_code).subscribe(specs => this.specialities.set(specs));
+      },
+      error: (err) => {
+        console.log(err)
+      }
     });
     this.consultationService.getFamilyList().subscribe(pats => this.patients.set(pats));
   }
