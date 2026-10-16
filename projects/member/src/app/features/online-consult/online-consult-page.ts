@@ -69,7 +69,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                           <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="pickSpeciality(speciality())">Retry</button>
                         </p>
                       }
-                      <opd-doctor-selection [speciality]="speciality()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="search.set($event)" (doctorSelected)="doctor.set($event)" />
+                      <opd-doctor-selection [speciality]="speciality()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="onSearchChange($event)" (doctorSelected)="doctor.set($event)" />
                     </div>
                   }
                 </div>
@@ -205,6 +205,7 @@ export class OnlineConsultPage implements OnInit {
 
   protected readonly speciality = signal('');
   protected readonly search = signal('');
+  protected readonly searchTerm = signal('');
   protected readonly doctor = signal<Doctor | null>(null);
   protected readonly filteredDoctors = signal<Doctor[]>([]);
   protected readonly patient = signal<Patient | null>(null);
@@ -273,7 +274,25 @@ export class OnlineConsultPage implements OnInit {
   protected pickSpeciality(code: string): void {
     this.speciality.set(code);
     this.doctor.set(null);
+    this.search.set('');
+    this.searchTerm.set('');
     this.consultationService.getDoctors(code).subscribe(docs => this.filteredDoctors.set(docs));
+  }
+
+  protected onSearchChange(value: string): void {
+    if (!value.trim()) {
+      this.consultationService.getDoctors(this.speciality()).subscribe(docs => {
+        this.filteredDoctors.set(docs);
+        this.search.set('');
+      });
+      return;
+    }
+    this.search.set(value);
+    this.filteredDoctors.set(
+      this.filteredDoctors().filter(d => 
+        d.name.toLowerCase().includes(value.toLowerCase())
+      )
+    );
   }
 
   protected selectSlotDate(date: string): void {

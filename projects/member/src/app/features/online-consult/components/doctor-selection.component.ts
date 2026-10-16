@@ -24,7 +24,7 @@ import { Doctor } from '../../../services/opd-consultation.service';
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-sm font-bold text-[#034DA2]">{{ initials(d.name) }}</span>
               }
               <div>
-                <p class="text-sm font-semibold text-ink-900">{{ d.name }}</p>
+                <p class="text-sm font-semibold text-ink-900">{{ fullName(d.name) }}</p>
                 <p class="text-xs text-ink-500">{{ d.qualification }} · {{ d.experience }} yrs</p>
                 <p class="text-xs text-ink-500">★ {{ d.rating }} · {{ d.languages }} · {{ d.gender }}</p>
               </div>
@@ -49,6 +49,11 @@ export class DoctorSelectionComponent {
   searchChanged = output<string>();
 
   protected initials(name: string): string {
-    return name.replace('Dr. ', '').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+    const cleanName = name.replace('Dr. ', '');
+    return cleanName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  }
+
+  protected fullName(name: string): string {
+    return name.replace('Dr. ', '');
   }
 }
