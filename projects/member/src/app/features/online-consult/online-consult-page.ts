@@ -75,16 +75,58 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                 </div>
               </ng-container>
 
-              <ng-container *ngSwitchCase="'schedule'">
+<ng-container *ngSwitchCase="'schedule'">
                 <div class="space-y-4">
-                  @if (isLoading('slots')) {
-                    <div class="flex justify-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div></div>
-                  } @else if (getError('slots'); as err) {
-                    <p class="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 flex items-center gap-2" role="alert">
-                      <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="selectSlotDate(slotDate())">Retry</button>
-                    </p>
+                  <p class="mb-1 text-sm font-medium text-ink-700">How would you like to consult?</p>
+                  <p class="mb-3 text-xs text-ink-500">with {{ doctor()?.name }} — {{ doctor()?.nextIn }}</p>
+                  <div class="space-y-3">
+                    <button
+                      type="button"
+                      class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] p-4 text-left disabled:opacity-50"
+                      [class.border-brand-500]="consultNow() === true"
+                      [class.bg-blue-50]="consultNow() === true"
+                      [class.border-surface-border]="consultNow() !== true"
+                      [disabled]="!doctorAvailableNow()"
+                      (click)="consultNow.set(true)"
+                    >
+                      <span>
+                        <span class="block font-semibold text-[#034DA2]">Consult Now</span>
+                        <span class="mt-0.5 block text-xs" [class.text-success-700]="doctorAvailableNow()" [class.text-ink-500]="!doctorAvailableNow()">
+                          {{ doctorAvailableNow() ? 'Connect instantly' : 'Not available immediately — schedule instead' }}
+                        </span>
+                      </span>
+                      @if (consultNow() === true) { <span class="text-brand-700">✓</span> }
+                    </button>
+                    <button
+                      type="button"
+                      class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] p-4 text-left"
+                      [class.border-brand-500]="consultNow() === false"
+                      [class.bg-blue-50]="consultNow() === false"
+                      [class.border-surface-border]="consultNow() !== false"
+                      (click)="consultNow.set(false)"
+                    >
+                      <span>
+                        <span class="block font-semibold text-[#034DA2]">Schedule for Later</span>
+                        <span class="mt-0.5 block text-xs text-ink-500">Pick a date and time slot</span>
+                      </span>
+                      @if (consultNow() === false) { <span class="text-brand-700">✓</span> }
+                    </button>
+                  </div>
+                  @if (consultNow() === false) {
+                    <div class="mt-5 border-t border-surface-border pt-4">
+                      <p class="mb-2 text-sm font-medium text-ink-700">Select date and time</p>
+                      <div class="scrollbar-hide mb-3 flex gap-2 overflow-x-auto">
+                        @for (d of slotDates(); track d) {
+                          <button type="button" class="min-h-touch shrink-0 rounded-full border px-4 text-sm" [class.border-brand-500]="slotDate() === d" [class.bg-blue-50]="slotDate() === d" [class.border-surface-border]="slotDate() !== d" (click)="selectSlotDate(d)">{{ d }}</button>
+                        }
+                      </div>
+                      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        @for (t of slots(); track t.id) {
+                          <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" [class.border-surface-border]="slot()?.id !== t.id" (click)="slot.set(t)">{{ t.slotNo }}</button>
+                        }
+                      </div>
+                    </div>
                   }
-                  <opd-slot-selection [dates]="slotDates()" [slots]="slots()" [selectedDate]="slotDate()" [selectedSlotId]="slot()?.id" (dateSelected)="selectSlotDate($event)" (slotSelected)="slot.set($event)" />
                 </div>
               </ng-container>
 
