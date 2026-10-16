@@ -171,12 +171,8 @@ export class OpdConsultationService {
   }
 
   // Helper to build URL with query parameters
-  private buildUrl(queryId: string, args: Record<string, string>): string {
-    let params = new HttpParams();
-    Object.keys(args).forEach(key => {
-      params = params.set(key, args[key]);
-    });
-    return `${this.baseUrl}?queryId=${queryId}&${params.toString()}`;
+  private buildUrl(queryId: string, args: string, application: string = 'habit-opd'): string {
+    return `${this.baseUrl}?queryId=${queryId}&args=${encodeURIComponent(args)}&application=${application}`;
   }
 
   private executeWithLoading<T>(key: string, observable: Observable<T>): Observable<T> {
@@ -220,11 +216,8 @@ export class OpdConsultationService {
   }
 
   // Speciality Listing API
-  getSpecialities(): Observable<Speciality[]> {
-    const url = this.buildUrl('TELE_SPECIALITY_LISTING', {
-      cug_code: 'HCLHC001',
-      // mode_of_appointment: 'opd_network'
-    });
+  getSpecialities(cug_code: string): Observable<Speciality[]> {
+    const url = this.buildUrl('TELE_SPECIALITY_LISTING', `cug_code:${cug_code},mode_of_appointment:opd_network`);
     return this.executeWithLoading('specialities', this.http.get<{ resource: any[] }>(url))
       .pipe(
         map(response => response.resource || []),
@@ -240,15 +233,7 @@ export class OpdConsultationService {
 
   // Doctor Listing API
   getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
-    const url = this.buildUrl('TELE_DOCTOR_LISTING', {
-      consultation_type: consultationType,
-      speciality_code: specialityCode,
-      provider_code: 'HCL-001',
-      // mode_of_appointment: 'habithealth',
-      serviceType_code: 'op_consultation',
-      doctor_mode: 'yes',
-      cug_code: 'HCLHC001'
-    });
+    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCL-001,mode_of_appointment:opd_network,serviceType_code:op_consultation,doctor_mode:yes,cug_code:HCLHC001`);
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
@@ -273,18 +258,7 @@ export class OpdConsultationService {
 
 // Slot Availability API
   getSlots(practitionerId: string, slotDate: number, slotDays: string = 'FR'): Observable<Slot[]> {
-    const url = this.buildUrl('TELE_SLOT_AVAILABILITY', {
-      practitioner_id: practitionerId,
-      slot_date: slotDate.toString(),
-      slot_days: slotDays,
-      serviceItemCode: 'video',
-      facility_id: '813cdb10-d750-11f0-a474-da069b21f2f6-53',
-      practice_type_code: 'individual',
-      department_id: '910aec10-a63e-11ef-bfa9-6aada5a774bb-30',
-      serviceType_code: 'op_consultation',
-      mode_of_appointment: 'habithealth',
-      uhId: 'HCLW-27028'
-    });
+    const url = this.buildUrl('TELE_SLOT_AVAILABILITY', `practitioner_id:${practitionerId},slot_date:${slotDate},slot_days:${slotDays},serviceItemCode:video,facility_id:813cdb10-d750-11f0-a474-da069b21f2f6-53,practice_type_code:individual,department_id:910aec10-a63e-11ef-bfa9-6aada5a774bb-30,serviceType_code:op_consultation,mode_of_appointment:opd_network,uhId:HCLW-27028`);
 
     return this.executeWithLoading('slots', this.http.get<{ resource: any[] }>(url))
       .pipe(

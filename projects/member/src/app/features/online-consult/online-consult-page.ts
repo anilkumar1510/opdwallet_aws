@@ -259,7 +259,9 @@ export class OnlineConsultPage implements OnInit {
   }
 
   protected loadInitialData(): void {
-    this.consultationService.getSpecialities().subscribe(specs => this.specialities.set(specs));
+    this.consultationService.getMyConfig().subscribe(config => {
+      this.consultationService.getSpecialities(config.cug_code).subscribe(specs => this.specialities.set(specs));
+    });
     this.consultationService.getFamilyList().subscribe(pats => this.patients.set(pats));
   }
 
@@ -411,7 +413,7 @@ export class OnlineConsultPage implements OnInit {
           facility_id: '813cdb10-d750-11f0-a474-da069b21f2f6-53',
           provider_code: 'HCL-001',
           serviceType_code: 'op_consultation',
-          mode_of_appointment: 'habithealth',
+          mode_of_appointment: 'opd_network',
           serviceType: 'OP Consultation',
           serviceItemCode: this.doctor()?.doctor_code
         }
@@ -463,7 +465,7 @@ export class OnlineConsultPage implements OnInit {
             slotId: this.slot()?.id
           }],
           payment_details: [{ payment_type: 'E-Payment', payment_status: 'Pending' }],
-          mode_of_appointment: 'habithealth'
+          mode_of_appointment: 'opd_network'
         }
       }
     };
