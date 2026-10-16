@@ -29,7 +29,8 @@ export interface Doctor {
   nextIn?: string;
   speciality?: string;
   speciality_id?: string;
-  profile_id?: string;
+  facility_id?: string;
+  profile_path?: string;
   doctor_code?: string;
 }
 
@@ -243,26 +244,30 @@ export class OpdConsultationService {
 
   // Doctor Listing API
   getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
-    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCL-001,mode_of_appointment:opd_network,serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
+    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:${this.cugCode},serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
 
-    return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
+return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
-        map(response => response.resource || []),
-        map(items => items.map(item => ({
-          id: item.data?.doctor_id,
-          name: item.data?.doctor_name,
-          qualification: item.data?.extra_data?.qualification,
-          experience: item.data?.doctor_experience,
-          fee: 0, // Fee is not in this response, may come from another endpoint
-          rating: 0, // Rating is not in this response
-          gender: undefined,
-          languages: undefined,
-          nextIn: item.data?.status === 'available' ? 'Available now' : 'in ' + Math.round((item.data?.slot_start_time - Date.now()) / 60000) + ' min',
-          speciality: item.data?.speciality,
-          speciality_id: item.data?.speciality_id,
-          profile_id: item.data?.profile_id,
-          doctor_code: item.data?.doctor_code
-        })) as Doctor[])
+        map((response: any) => response.resource || []),
+        map((items: any[]) => items.map((item: any): Doctor => {
+          const videoFee = item.data?.price_details?.find((p: any) => p.consultation_type === 'video')?.selling_amount || 0;
+          return {
+            id: item.data?.doctor_id,
+            name: item.data?.display_name,
+            qualification: item.data?.qualification?.[0]?.text,
+            experience: parseInt(item.data?.doctor_experience) || 0,
+            fee: videoFee,
+            rating: 0,
+            gender: item.data?.gender_name,
+            languages: item.data?.language?.map((l: any) => l.text).join(', '),
+            nextIn: item.data?.status_code === 'active' ? 'Available now' : 'in ' + Math.round((item.data?.next_slot_date_video - Date.now()) / 60000) + ' min',
+            speciality: item.data?.speciality,
+            speciality_id: item.data?.speciality_id,
+            facility_id: item.data?.facility_id,
+            doctor_code: item.data?.doctor_code,
+            profile_path:item.data?.profile_path
+          };
+        }))
       );
   }
 

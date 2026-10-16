@@ -18,7 +18,11 @@ import { Doctor } from '../../../services/opd-consultation.service';
                 (click)="doctorSelected.emit(d)">
           <div class="flex items-start justify-between gap-3">
             <div class="flex gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-sm font-bold text-[#034DA2]">{{ initials(d.name) }}</span>
+              @if (d.profile_path) {
+                <img [src]="d.profile_path" [alt]="d.name" class="h-10 w-10 shrink-0 rounded-full object-cover" />
+              } @else {
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-sm font-bold text-[#034DA2]">{{ initials(d.name) }}</span>
+              }
               <div>
                 <p class="text-sm font-semibold text-ink-900">{{ d.name }}</p>
                 <p class="text-xs text-ink-500">{{ d.qualification }} · {{ d.experience }} yrs</p>
