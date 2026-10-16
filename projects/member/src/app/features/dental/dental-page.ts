@@ -1,4 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
+
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
 
 /**
  * Dental — DUMMY / STATIC journey, zero backend.
@@ -54,7 +58,7 @@ type Step =
 @Component({
   selector: 'opd-dental-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -76,7 +80,10 @@ type Step =
             <p class="mt-1 text-2xl font-bold text-[#034DA2]">₹5,000 <span class="text-sm font-normal text-ink-500">left this year</span></p>
             <p class="mt-1 text-xs text-ink-500">Up to ₹{{ perTxn }} per transaction from wallet · {{ copayPct }}% co-payment</p>
           </div>
-          <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Compare dentists →</button>
+          @if (claimModes.allowsCashless(BenefitCategory.Dental)) {
+            <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Compare dentists →</button>
+          }
+          <opd-claim-option [category]="BenefitCategory.Dental" [label]="'dental care'" />
         }
 
         @else {
@@ -225,6 +232,8 @@ type Step =
   `,
 })
 export class DentalPage {
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
   protected readonly dentists = DENTISTS;
   protected readonly patients = PATIENTS;
   protected readonly slotDates = SLOT_DATES;
