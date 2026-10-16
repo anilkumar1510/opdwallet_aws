@@ -50,7 +50,7 @@ The reopen button and logic are removed. On real tickets the demo support button
 
 - Support only sees a portal ticket if the backend creates the Twenty record; at the time of writing none of the portal-raised tickets appear in the Twenty workspace (backend step `DISPUTE_CREATE`, see `PLACEHOLDER-APIS.md` section 7).
 - `final_reason` carries two meanings (member's words, then support's resolution); the display rule above is a heuristic until the portal stops sending it and only `description` holds the member's words.
-- The claims listing is read as one 100-row page; more than 100 claims would hit the backend's unstable paging again.
+- The claims listing is read as one 100-row page. The backend's sort is now stable (checked live on 16 Oct: 62 claims, no repeats at 20 a page), so more than 100 claims would also page correctly.
 - `benefit_category` is the claim's own category code; the backend takes any string.
 - `helpline-page.ts` is shared with the static demo author; edits may conflict with their changes.
 - The real-API tests create real "[TEST]" grievances on the production backend and are skipped unless `SESSION_ID` is set.

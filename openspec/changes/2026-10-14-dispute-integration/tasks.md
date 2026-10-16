@@ -34,6 +34,6 @@
 - [x] 4.2 Replies on `dispute_chat` with text verbatim (commas and colons work); `userResolve` wired; tickets de-duplicated; `dispute_type` no longer sent.
 - [ ] 4.3 Stop sending `final_reason` once a new ticket's Description is seen filled in Twenty (`daf8d03` merged in `new_prod`).
 - [ ] 4.4 Backend creates the Twenty record for portal-raised tickets (none appear in the Twenty workspace yet) and sends replies to Twenty.
-- [ ] 4.5 Backend fixes: stable claims sort, `dispute_type` optional, caller checks on `adjudicate`, `agentReply` and `agentResolve` (parked).
+- [ ] 4.5 Backend fixes: `dispute_type` optional (stable claims sort is done and checked live, 16 Oct), caller checks on `adjudicate`, `agentReply` and `agentResolve` (parked).
 - [ ] 4.6 Service-line (non-claim) grievances once backend and CRM support them.
 - [ ] 4.7 Notifications (in-app, WhatsApp, email), central configuration (reasons, windows), real support phone and email values.

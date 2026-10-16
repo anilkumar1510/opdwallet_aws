@@ -159,7 +159,7 @@ Done and verified live:
 - Status ids and names; `description` stored on the dispute.
 
 Still needs a backend change:
-1. **Claims paging (critical, still broken live).** At `page_size=20`, 53 rows but only 33 distinct claims (12 of page 1's rows are also on page 0). `ClaimDecorator.getClaimsByUser` orders by `g_modify_time:desc`, which moves whenever a workflow touches a claim. Order by a stable key (`g_creation_time:desc`, `id` as tiebreaker). Ticket paging is correct. The portal reads one page of 100 and removes repeats.
+1. **Claims paging (fixed 16 Oct 2026).** The backend now orders claims by `g_creation_time DESC, id DESC`. Checked live: at `page_size=20` the pages return 20, 20, 20 and 2 rows, 62 distinct claims, the same set as one 100-row read. The portal still reads one page of 100 and removes repeats, which stays correct if the order ever changes.
 2. **Merge `daf8d03` into `new_prod`** (`description` into the Twenty payload; on `feature/pharmacy-twenty-integration` only). Until it is live the portal keeps sending the member's words as both `final_reason` and `description`.
 3. **Send replies to Twenty.** `userReply` does not call Twenty, so the agent queue and `memberReply` never update.
 4. **Security: `adjudicate` and `agentReply` accept any logged-in member.** `verifyCallbackIdentity` compares a string constant with itself and never checks the caller, and `agentReply` has no role check (`TODO`), so any member session can post as support or resolve or close any ticket. Check the caller (shared secret or support role) on `adjudicate`, `agentReply` and `agentResolve`.

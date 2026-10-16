@@ -221,3 +221,7 @@ The backend moved `userReply` to the `dispute_chat` resource (the old `dispute` 
 ## Update: backend recheck, replies verbatim (2026-10-15 night)
 
 The backend now reads the reply from `message_text` (stored verbatim, empty refused, member name instead of id), so the portal sends only `message_text` and the comma and colon lookalike swap is gone for new replies. Verified: build clean, 55 unit, 74 browser and 4 live tests (a first message and a reply with commas, colons, ₹ and an emoji come back exactly as typed). Still open on the backend: claims paging (unstable sort), `description` into Twenty (`daf8d03` not merged), replies into Twenty, and unauthenticated `adjudicate` and `agentReply`.
+
+## Update: backend paging fixed, Twenty status (2026-10-16)
+
+The backend now orders claims by `g_creation_time DESC, id DESC`: at 20 a page the pages return 20, 20, 20 and 2 rows (62 distinct claims, the same set as one 100-row read). The portal keeps its single 100-row read with repeats removed. Live check of a new ticket on 16 Oct: the Twenty record is created with Ticket ID and Description (verbatim), but the Dispute ID still carries the ticket number, the claim link and reason are not filled, and member replies and closes do not reach Twenty yet; the Twenty reply panel still fails until the app is re-applied. Portal: build clean, 55 unit and 74 browser tests pass.
