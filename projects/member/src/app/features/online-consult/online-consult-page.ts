@@ -9,6 +9,7 @@ import { DoctorSelectionComponent } from './components/doctor-selection.componen
 import { SlotSelectionComponent } from './components/slot-selection.component';
 import { PatientSelectionComponent } from './components/patient-selection.component';
 import { WizardStepComponent } from './components/wizard-step.component';
+import { AppointmentDateSliderComponent } from './components/appointment-date-slider/appointment-date-slider.component';
 import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
 
 type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consultation' | 'prescription';
@@ -16,7 +17,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
 @Component({
   selector: 'opd-online-consult-page',
   standalone: true,
-  imports: [
+imports: [
     CommonModule,
     ConsultHeaderComponent,
     ConsultBannerComponent,
@@ -25,6 +26,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
     SlotSelectionComponent,
     PatientSelectionComponent,
     WizardStepComponent,
+    AppointmentDateSliderComponent,
     AgoraVideoComponent,
     DatePipe,
     CurrencyPipe
@@ -115,14 +117,25 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                   @if (consultNow() === false) {
                     <div class="mt-5 border-t border-surface-border pt-4">
                       <p class="mb-2 text-sm font-medium text-ink-700">Select date and time</p>
-                      <div class="scrollbar-hide mb-3 flex gap-2 overflow-x-auto">
-                        @for (d of slotDates(); track d) {
-                          <button type="button" class="min-h-touch shrink-0 rounded-full border px-4 text-sm" [class.border-brand-500]="slotDate() === d" [class.bg-blue-50]="slotDate() === d" [class.border-surface-border]="slotDate() !== d" (click)="selectSlotDate(d)">{{ d }}</button>
-                        }
-                      </div>
-                      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        @for (t of slots(); track t.id) {
-                          <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" [class.border-surface-border]="slot()?.id !== t.id" (click)="slot.set(t)">{{ t.slotNo }}</button>
+                      <app-appointment-date-slider
+                        [availableDays]="7"
+                        [showPickerButton]="true"
+                        (dateSelected)="selectSlotDate($event)"
+                      />
+                      <div class="mt-4">
+                        <p class="mb-2 text-sm font-medium text-ink-700">Available time slots</p>
+                        @if (isLoading('slots')) {
+                          <div class="flex justify-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div></div>
+                        } @else if (getError('slots'); as err) {
+                          <p class="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 flex items-center gap-2" role="alert">
+                            <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="selectSlotDate(slotDate())">Retry</button>
+                          </p>
+                        } @else {
+                          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            @for (t of slots(); track t.id) {
+                              <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" [class.border-surface-border]="slot()?.id !== t.id" (click)="slot.set(t)">{{ t.slotNo }}</button>
+                            }
+                          </div>
                         }
                       </div>
                     </div>
@@ -238,21 +251,36 @@ export class OnlineConsultPage implements OnInit {
   protected readonly specialities = signal<Speciality[]>([]);
   protected readonly patients = signal<Patient[]>([]);
   protected readonly slots = signal<Slot[]>([]);
-  protected readonly slotDates = signal<string[]>(['Today, 9 Sep', 'Tomorrow, 10 Sep', 'Thu, 11 Sep']);
+  protected readonly slotDates = signal<number[]>([]);
+
+  protected formatDate(timestamp: number): string {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today, ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow, ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+  }
 
   protected readonly started = signal(false);
   protected readonly consultNow = signal<boolean | null>(null);
   protected readonly step = signal(0);
   protected readonly stepError = signal<string | null>(null);
 
-  protected readonly speciality = signal('');
+  protected readonly speciality = signal<string>('');
   protected readonly search = signal('');
   protected readonly searchTerm = signal('');
   protected readonly doctor = signal<Doctor | null>(null);
   protected readonly filteredDoctors = signal<Doctor[]>([]);
   protected readonly patient = signal<Patient | null>(null);
   protected readonly mode = signal('');
-  protected readonly slotDate = signal('');
+  protected readonly slotDate = signal<number>(0);
   protected readonly slot = signal<Slot | null>(null);
   protected readonly inCall = signal(false);
   protected readonly consultationRequestId = signal<string | null>(null);
@@ -337,10 +365,10 @@ export class OnlineConsultPage implements OnInit {
     );
   }
 
-  protected selectSlotDate(date: string): void {
+  protected selectSlotDate(date: number): void {
     this.slotDate.set(date);
     if (this.doctor()) {
-      this.consultationService.getSlots(this.doctor()!.id!, Date.now()).subscribe(s => this.slots.set(s));
+      this.consultationService.getSlots(this.doctor()!.id!, date).subscribe(s => this.slots.set(s));
     }
   }
 
