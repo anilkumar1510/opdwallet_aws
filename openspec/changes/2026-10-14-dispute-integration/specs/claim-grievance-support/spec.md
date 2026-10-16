@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Claims that need help come from the claims listing API
-The Support page SHALL list the member's claims from the same paginated claims listing API as the Claims page, newest first, five at a time with a Load more control, reading the rest of the listing in one large page (the listing repeats its first page for later 20-row pages) and a further page only if that page is full.
+The Support page SHALL list the member's claims from the same paginated claims listing API as the Claims page, newest first, five at a time with a Load more control, reading the rest of the listing in one large page (the listing's later 20-row pages overlap) and a further page only if that page is full.
 
 #### Scenario: More than 20 claims
 - **WHEN** a member has more claims than one page holds
@@ -30,12 +30,12 @@ Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/dispute
 
 #### Scenario: Successful submit
 - **WHEN** a member picks a reason and presses "Send to support"
-- **THEN** the dispute API is called once with `claim_id`, `selected_reason`, `category: CLAIM`, `dispute_status: OPEN` and a signature
+- **THEN** the dispute API is called once with `claim_id`, `selected_reason`, `category: CLAIM`, `benefit_category`, `dispute_status: OPEN` and a signature, and no `dispute_type`
 - **AND** the ticket screen shows the ticket id returned by the backend
 
 #### Scenario: The member's own words
 - **WHEN** the member wrote details
-- **THEN** they are sent as `final_reason` in the submit, and also as the first reply on the new ticket and appear as the first message in the thread
+- **THEN** they are sent as `final_reason` and `description` in the submit, and also as the first reply on the new ticket and appear as the first message in the thread, commas and colons as typed
 - **AND** when no details were written, no message is sent
 - **AND** if that first message is refused it is retried once, and if it still fails the ticket stays raised and the words are put back in the reply box with a notice
 
@@ -70,6 +70,10 @@ Tickets, their status and their threads SHALL be read from the dispute API (`GET
 - **WHEN** a member raises a ticket and refreshes the page
 - **THEN** the claim still shows its ticket status and the full thread is available
 
+#### Scenario: Repeated rows
+- **WHEN** a page of tickets repeats a ticket
+- **THEN** it is shown once
+
 #### Scenario: Status
 - **WHEN** the backend status is resolved or closed
 - **THEN** the ticket shows closed with the final remark and the call-support prompt, and no reply box
@@ -99,22 +103,22 @@ Tickets, their status and their threads SHALL be read from the dispute API (`GET
 - **WHEN** the ticket list or a thread cannot be read
 - **THEN** the page still works with what it has, and a thread read failure says so
 
-### Requirement: Member reply goes to the dispute API
-A reply SHALL be sent with `action=userReply` and shown in the thread.
+### Requirement: Member reply goes to the chat API
+A reply SHALL be sent with `action=userReply` to the `dispute_chat` resource and shown in the thread.
 
 #### Scenario: Reply
 - **WHEN** a member sends a reply
-- **THEN** the text is sent in `args=messageText:<text>`, the box is cleared and the message appears in the thread
-
-#### Scenario: Characters the backend cannot carry
-- **WHEN** the text contains a comma or a colon
-- **THEN** they are replaced by lookalike characters before sending
+- **THEN** the text is sent verbatim as `message_text` with the ticket's `dispute_id` (no `args`), the box is cleared and the message appears in the thread exactly as typed, including commas and colons
 
 #### Scenario: Guard and failures
 - **WHEN** a reply was just sent, or a send is in progress
 - **THEN** Send reply is disabled (the backend refuses the same action within 3 seconds)
 - **WHEN** a reply fails
 - **THEN** the reason is shown and the text stays in the box
+
+#### Scenario: Ticket closed meanwhile
+- **WHEN** support closed the ticket while the member was typing and the backend refuses the reply
+- **THEN** the backend's message is shown, nothing is added to the thread, and the ticket and thread refresh so the ticket reads closed with no reply box
 
 #### Scenario: Blank or long text
 - **WHEN** the reply is empty or only spaces
