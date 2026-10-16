@@ -20,6 +20,14 @@ export interface PharmacyOrder {
   readonly status: string | null;
   /** City, state and pincode — plaintext in the row, unlike the street fields. */
   readonly locality: string;
+  /** The patient ID associated with this order, used for fetching cart details. */
+  readonly patientId: string | null;
+  /** Unique Health ID from API response */
+  readonly uhid: string | null;
+  /** Reason for prescription rejection (if status is not APPROVED) */
+  readonly rejectionReason: string | null;
+  /** Additional comments for rejection */
+  readonly rejectionComments: string | null;
 }
 
 export interface PharmacyOrderPage {
@@ -33,14 +41,28 @@ export interface PharmacyOrderPage {
   readonly hasTotal: boolean;
 }
 
+interface Vendor {
+  readonly vendorKey?: string;
+  readonly vendorName?: string;
+  readonly notes?: string;
+  readonly totalItems?: number;
+  readonly totalAmount?: number;
+  readonly items?: unknown[];
+}
+
 interface Row {
-  readonly id?: unknown;
-  readonly name?: unknown;
-  readonly g_creation_time?: unknown;
-  readonly totalItems?: unknown;
-  readonly totalAmount?: unknown;
-  readonly status?: unknown;
-  readonly address?: unknown;
+  readonly id?: number|string;
+  readonly booking_name?: string;
+  readonly g_creation_time?: number;
+  readonly status?: string;
+  readonly patient_city?: string;
+  readonly patient_state?: string;
+  readonly patient_pincode?: string;
+  readonly patient_id?: string;
+  readonly vendors?: Vendor[];
+  readonly uhid?: string;
+  readonly rejectionReason?: string;
+  readonly rejectionComments?: string;
 }
 
 const str = (value: unknown): string =>
@@ -66,15 +88,23 @@ export function toPharmacyOrder(dto: unknown): PharmacyOrder | null {
   if (typeof dto !== 'object' || dto === null) return null;
   const row = dto as Row;
 
-  const name = str(row.name);
+  const name = str(row.booking_name);
+  const vendor = row.vendors?.[0];
   return {
-    // `id` keys the list; `name` is what the member recognises, so it is displayed.
     id: str(row.id) || name,
     name,
     createdAt: num(row.g_creation_time) ?? 0,
-    totalItems: num(row.totalItems),
-    totalAmount: num(row.totalAmount),
+    totalItems: num(vendor?.totalItems),
+    totalAmount: num(vendor?.totalAmount),
     status: str(row.status) || null,
-    locality: toLocality(row.address),
+    locality: toLocality({
+      cityDisplayName: row.patient_city,
+      stateDisplayName: row.patient_state,
+      pincode: row.patient_pincode,
+    }),
+    patientId: str(row.patient_id) || null,
+    uhid: str(row.uhid) || null,
+    rejectionReason: str(row.rejectionReason) || null,
+    rejectionComments: str(row.rejectionComments) || null,
   };
 }

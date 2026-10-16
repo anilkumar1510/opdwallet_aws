@@ -154,6 +154,7 @@ function humaniseCode(value: string | undefined): string {
             </dl>
           </section>
 
+            
           <!-- Why the claim needs attention. Placed directly under the
                summary because it is the first thing a member wants when they
                see Rejected or Documents required, not something to hunt for

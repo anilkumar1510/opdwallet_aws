@@ -1,8 +1,13 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
 import { Router } from '@angular/router';
 
 import { FamilyStore } from '../../core/family/family.store';
+import { PharmacyStore } from '../../core/pharmacy/pharmacy.store';
 import { AppService } from '../../core/http/api.service';
 import { AddAddressModal } from './add-address-modal';
 import { PharmacyAddressCards } from './pharmacy-address-cards';
@@ -11,6 +16,7 @@ import { PharmacyAddressService } from './pharmacy-address.service';
 import { PharmacyOrder } from './pharmacy-order.model';
 import { PharmacyOrderService } from './pharmacy-order.service';
 import { PharmacyPastOrders } from './pharmacy-past-orders';
+import { PharmacyCartComponent } from './pharmacy-cart.component';
 
 /**
  * Pharmacy — DUMMY / STATIC journey, zero backend.
@@ -49,7 +55,10 @@ const COPAY_PCT = 20;
 /** The API rejects a longer uhId outright: "Length for uhId should not be greater than 128". */
 const MAX_UHID_LENGTH = 128;
 
-type Step = 'prescribe' | 'queued' | 'cart' | 'payment' | 'placed';
+type Step = 'prescribe' | 'queued' | 'cart' | 'placed';
+
+/** Once the cart is ready: one page of accordion steps. */
+type CartStep = 'address' | 'cart' | 'payment';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
@@ -82,7 +91,7 @@ export function readUploadedDocId(body: unknown): string | null {
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders],
+  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent, ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -106,7 +115,10 @@ export function readUploadedDocId(body: unknown): string | null {
             <p class="mt-1 text-2xl font-bold text-[#034DA2]">₹5,000 <span class="text-sm font-normal text-ink-500">left this year</span></p>
             <p class="mt-1 text-xs text-ink-500">{{ copayPct }}% co-payment · you submit a prescription, our team builds the cart for you.</p>
           </div>
-          <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
+          @if (claimModes.allowsCashless(BenefitCategory.Pharmacy)) {
+            <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
+          }
+          <opd-claim-option [category]="BenefitCategory.Pharmacy" [label]="'pharmacy'" />
 
           <h2 #ordersHeading class="mt-8 text-lg font-bold text-[#034DA2]">Past orders</h2>
 
@@ -198,52 +210,110 @@ export function readUploadedDocId(body: unknown): string | null {
                 }
               }
               @case ('cart') {
-                <p class="mb-1 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready.</p>
-                <p class="mb-3 text-xs text-ink-500">You can remove an item or reduce a quantity — you can't add or increase, since the cart is adjudicated against your prescription.</p>
-                <ul class="space-y-2">
-                  @for (item of cart(); track item.id) {
-                    <li class="rounded-xl border border-surface-border px-3 py-2">
-                      <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                          <p class="text-sm font-medium text-ink-900">{{ item.name }}</p>
-                          @if (item.isSubstitute) {
-                            <p class="text-xs text-warning-700">Substitute for {{ item.originalBrand }}</p>
-                          }
-                          <p class="text-xs text-ink-500">₹{{ item.unitPrice }} each</p>
-                        </div>
-                        <div class="shrink-0 text-right">
-                          <p class="text-sm font-semibold text-ink-900">₹{{ item.qty * item.unitPrice }}</p>
-                          <div class="mt-1 flex items-center justify-end gap-2">
-                            <button type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-ink-700" (click)="decrement(item.id)" aria-label="Reduce quantity">−</button>
-                            <span class="text-sm text-ink-900">{{ item.qty }}</span>
+                <!-- Cart ready: one page of accordion steps, as on the Annual
+                     Health Check — delivery address (locked) → cart → payment. -->
+                <p class="mb-4 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Your cart is ready. Complete the steps below to place your order.</p>
+
+                <div class="space-y-3">
+                  @for (key of cartSteps; track key; let i = $index) {
+                    <div
+                      class="rounded-2xl border bg-white"
+                      [class.border-[#9BDBAE]]="isCartStepDone(key) && cartOpenStep() !== key"
+                      [class.border-[#EDF0F7]]="!isCartStepDone(key) || cartOpenStep() === key"
+                      style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.08)"
+                    >
+                      <button
+                        type="button"
+                        class="flex w-full items-center gap-3 px-4 py-3.5 text-left disabled:cursor-not-allowed"
+                        [disabled]="key === 'address' || isCartStepLocked(key)"
+                        [attr.aria-expanded]="cartOpenStep() === key"
+                        (click)="toggleCartStep(key)"
+                      >
+                        @if (isCartStepDone(key) && cartOpenStep() !== key) {
+                          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#34A853] text-xs font-bold text-white" aria-hidden="true">✓</span>
+                        } @else {
+                          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white" [class.bg-[#0F5FDC]]="cartOpenStep() === key" [class.bg-[#9CA3AF]]="cartOpenStep() !== key">{{ i + 1 }}</span>
+                        }
+                        <span class="min-w-0 flex-1 text-[15px]" [class.text-ink-900]="!isCartStepLocked(key)" [class.text-ink-500]="isCartStepLocked(key)">{{ cartStepTitle(key) }}</span>
+                        @if (key === 'address') {
+                          <span class="shrink-0 rounded-full bg-[#F2F4F8] px-2 py-0.5 text-[11px] text-ink-500">Locked</span>
+                        } @else {
+                          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-surface-border text-ink-700" [class.rotate-180]="cartOpenStep() === key" aria-hidden="true"
+                            ><svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
+                          ></span>
+                        }
+                      </button>
+
+                      <!-- Answer, once done and closed -->
+                      @if (isCartStepDone(key) && cartOpenStep() !== key) {
+                        <div class="px-4 pb-4 lg:pl-[52px]">
+                          <div class="rounded-xl bg-[#F2F4F8] px-4 py-2.5 text-sm text-ink-900">
+                            @switch (key) {
+                              @case ('address') {
+                                @if (deliveryAddress(); as addr) {
+                                  <span class="font-medium">{{ addr.typeLabel }}</span>
+                                  <span class="mt-0.5 block text-ink-700">{{ addr.booking.street3 }}{{ addr.locality ? ', ' + addr.locality : '' }}</span>
+                                }
+                                <span class="mt-0.5 block text-xs text-ink-500">Fixed for this order — chosen with your prescription.</span>
+                              }
+                              @case ('cart') {
+                                {{ cartItemCount() }} item{{ cartItemCount() === 1 ? '' : 's' }} <span class="text-ink-500">· ₹{{ pay().cartValue }}</span>
+                              }
+                            }
                           </div>
-                          <button type="button" class="mt-1 text-xs font-medium text-danger-700 underline" (click)="removeItem(item.id)">Remove</button>
                         </div>
-                      </div>
-                    </li>
+                      }
+
+                      <!-- Body, while open -->
+                      @if (cartOpenStep() === key) {
+                        <div class="border-t border-surface-border px-4 pb-5 pt-4 lg:pl-[52px]">
+                          @switch (key) {
+                            @case ('cart') {
+                              <p class="mb-3 text-xs text-ink-500">You can remove an item or reduce a quantity — you can't add or increase, since the cart is adjudicated against your prescription.</p>
+                              <ul class="space-y-2">
+                                <opd-pharmacy-cart
+                                  [cartItems]="cart()"
+                                  [cartLoading]="cartLoading()"
+                                  [cartError]="cartError()"
+                                  [editable]="true"
+                                  [retryLabel]="'Retry'"
+                                  (decrementClicked)="decrement($event)"
+                                  (removeClicked)="removeItem($event)"
+                                  (retryClicked)="pushCart()"
+                                />
+                              </ul>
+                              <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
+                                <div class="flex justify-between"><span class="text-ink-700">Cart value</span><span class="font-medium text-ink-900">₹{{ pay().cartValue }}</span></div>
+                                <div class="flex justify-between"><span class="text-ink-700">Wallet blocked</span><span class="font-medium text-success-700">₹{{ pay().walletBlock }}</span></div>
+                              </div>
+                              <button
+                                type="button"
+                                class="mt-4 min-h-touch w-full rounded-xl border border-[#0F5FDC] bg-white px-4 text-sm font-semibold text-[#0F5FDC] hover:bg-blue-50 disabled:opacity-50"
+                                [disabled]="!cart().length || cartLoading()"
+                                (click)="confirmCart()"
+                              >
+                                Confirm cart
+                              </button>
+                            }
+                            @case ('payment') {
+                              <dl class="space-y-2 text-sm">
+                                <div class="flex justify-between"><dt class="text-ink-700">Cart value</dt><dd class="font-medium text-ink-900">₹{{ pay().cartValue }}</dd></div>
+                                <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
+                                <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
+                                <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet deducted</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
+                                @if (pay().excess > 0) {
+                                  <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
+                                }
+                                <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
+                              </dl>
+                              <p class="mt-3 text-xs text-ink-500">Wallet is deducted and the co-payment goes through Razorpay. The wallet block becomes a debit on delivery.</p>
+                            }
+                          }
+                        </div>
+                      }
+                    </div>
                   }
-                  @if (!cart().length) {
-                    <li class="rounded-xl bg-surface-sunk px-3 py-3 text-sm text-ink-500">You've removed everything. Add nothing back — reduce only. Restore the cart to continue.</li>
-                  }
-                </ul>
-                <div class="mt-3 space-y-1 border-t border-surface-border pt-3 text-sm">
-                  <div class="flex justify-between"><span class="text-ink-700">Cart value</span><span class="font-medium text-ink-900">₹{{ pay().cartValue }}</span></div>
-                  <div class="flex justify-between"><span class="text-ink-700">Wallet blocked</span><span class="font-medium text-success-700">₹{{ pay().walletBlock }}</span></div>
                 </div>
-              }
-              @case ('payment') {
-                <p class="mb-3 text-sm font-medium text-ink-700">Checkout — payment breakdown</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">Cart value</dt><dd class="font-medium text-ink-900">₹{{ pay().cartValue }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet deducted</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
-                  @if (pay().excess > 0) {
-                    <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
-                  }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                </dl>
-                <p class="mt-3 text-xs text-ink-500">Wallet is deducted and the co-payment goes through Razorpay. The wallet block becomes a debit on delivery.</p>
               }
               @case ('placed') {
                 <div class="text-center">
@@ -272,10 +342,13 @@ export function readUploadedDocId(body: unknown): string | null {
   `,
 })
 export class PharmacyPage {
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
   private readonly router = inject(Router);
   private readonly family = inject(FamilyStore);
+  private readonly store = inject(PharmacyStore);
   private readonly addressService = inject(PharmacyAddressService);
   private readonly orderService = inject(PharmacyOrderService);
 
@@ -310,7 +383,7 @@ export class PharmacyPage {
     this.ordersError.set(null);
     try {
       const result = await this.orderService.list(page, ORDERS_PAGE_SIZE);
- this.pastOrders.set(result.orders);
+      this.pastOrders.set(result.orders);
       this.ordersTotal.set(result.count);
       this.ordersHaveTotal.set(result.hasTotal);
       this.ordersPage.set(page);
@@ -351,8 +424,11 @@ export class PharmacyPage {
   protected readonly uploadedDocId = signal<string | null>(null);
   protected readonly documentUploading = signal(false);
   protected readonly uploadError = signal<string | null>(null);
+  protected readonly cartLoading = signal(false);
+  protected readonly cartError = signal<string | null>(null);
   protected readonly cartPushed = signal(false);
   protected readonly cart = signal<CartItem[]>([]);
+  protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
 
   protected readonly addresses = signal<readonly PharmacyAddress[]>([]);
   protected readonly addressUhId = signal('');
@@ -365,10 +441,57 @@ export class PharmacyPage {
   protected readonly addressSaveError = signal<string | null>(null);
   protected readonly submittingBooking = signal(false);
   /** The booking response once it has been accepted; null until submit. */
-  protected readonly bookingResponse = signal<{ prescriptionId: string | null } | null>(null);
+  protected readonly bookingResponse = signal<{ prescriptionId: string | null; userId: string | null } | null>(null);
+  protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'placed'];
 
-  protected readonly steps: Step[] = ['prescribe', 'queued', 'cart', 'payment', 'placed'];
-  protected readonly currentStep = computed<Step>(() => this.steps[this.step()] ?? 'prescribe');
+  // Accordion once the cart is ready.
+  protected readonly cartSteps: CartStep[] = ['address', 'cart', 'payment'];
+  protected readonly cartOpenStep = signal<CartStep | null>('cart');
+  protected readonly cartConfirmed = signal(false);
+
+  protected readonly cartItemCount = computed(() => this.cart().reduce((n, item) => n + item.qty, 0));
+
+  protected isCartStepDone(key: CartStep): boolean {
+    switch (key) {
+      case 'address': return this.deliveryAddress() !== null;
+      case 'cart': return this.cartConfirmed() && this.cart().length > 0;
+      case 'payment': return false;
+    }
+  }
+
+  protected isCartStepLocked(key: CartStep): boolean {
+    return this.cartSteps.slice(0, this.cartSteps.indexOf(key)).some((k) => !this.isCartStepDone(k));
+  }
+
+  protected cartStepTitle(key: CartStep): string {
+    switch (key) {
+      case 'address': return 'Delivery address';
+      case 'cart': return 'Review your cart';
+      case 'payment': return 'Payment breakdown';
+    }
+  }
+
+  protected toggleCartStep(key: CartStep): void {
+    if (key === 'address' || this.isCartStepLocked(key)) return;
+    this.cartOpenStep.set(this.cartOpenStep() === key ? null : key);
+  }
+
+  protected confirmCart(): void {
+    if (!this.cart().length) return;
+    this.cartConfirmed.set(true);
+    this.stepError.set(null);
+    this.cartOpenStep.set('payment');
+  }
+
+  /** The address picked with the prescription — fixed once submitted. */
+  protected deliveryAddress(): PharmacyAddress | null {
+    return this.selectedAddress();
+  }
+
+  private resetCartSteps(): void {
+    this.cartConfirmed.set(false);
+    this.cartOpenStep.set('cart');
+  }
 
   protected prescriptionId(): string {
     const response = this.bookingResponse();
@@ -396,8 +519,7 @@ export class PharmacyPage {
     switch (this.currentStep()) {
       case 'prescribe': return 'Submit prescription';
       case 'queued': return 'Continue to cart';
-      case 'cart': return 'Proceed to checkout';
-      case 'payment': return `Pay ₹${this.pay().selfPay} via Razorpay`;
+      case 'cart': return `Pay ₹${this.pay().selfPay} via Razorpay`;
       case 'placed': return 'Done';
       default: return 'Continue';
     }
@@ -406,6 +528,7 @@ export class PharmacyPage {
   protected start(): void {
     this.started.set(true);
     this.step.set(0);
+    this.resetCartSteps();
     this.stepError.set(null);
     this.resetPrescription();
     this.cartPushed.set(false);
@@ -587,15 +710,35 @@ export class PharmacyPage {
     this.uploadError.set('We could not upload your prescription. Try again.');
   }
 
-  protected pushCart(): void {
-    this.cart.set(ADJUDICATED_CART.map((i) => ({ ...i })));
-    this.cartPushed.set(true);
+  /** After booking is accepted, fetch the cart using the booking_name and user_id from the response */
+  protected async pushCart(): Promise<void> {
+    const bookingName = this.bookingResponse()?.prescriptionId;
+    const userId = this.bookingResponse()?.userId;
+    if (!bookingName || !userId) {
+      this.cartError.set('Cannot load cart: missing booking name or user ID.');
+      return;
+    }
+    this.cartLoading.set(true);
+    this.cartError.set(null);
+    try {
+      const cartItems = await this.store.fetchCart(bookingName, userId);
+      this.cart.set(cartItems);
+      this.cartPushed.set(true);
+    } catch (error: unknown) {
+      this.cartError.set(
+        error instanceof Error ? error.message : 'We could not load the cart. Using demo cart instead.'
+      );
+      // Fallback to static demo cart as per existing requirement
+      this.cart.set(ADJUDICATED_CART.map((i) => ({ ...i })));
+    } finally {
+      this.cartLoading.set(false);
+    }
   }
 
   protected decrement(id: string): void {
     this.cart.set(
       this.cart()
-        .map((i) => (i.id === id ? { ...i, qty: i.qty - 1 } : i))
+        .map((i) => (i.id === id ? { ...i, qty: Math.max(0, i.qty - 1) } : i))
         .filter((i) => i.qty > 0),
     );
   }
@@ -622,7 +765,8 @@ export class PharmacyPage {
       case 'queued':
         return this.cartPushed() ? null : 'Waiting on the adjudicator — use the button above to build the cart.';
       case 'cart':
-        return this.cart().length ? null : 'Your cart is empty — restore an item to continue.';
+        if (!this.cart().length) return 'Your cart is empty — restore an item to continue.';
+        return this.cartConfirmed() ? null : 'Confirm your cart to continue to payment.';
       default: return null;
     }
   }
@@ -670,11 +814,21 @@ export class PharmacyPage {
         this.step.set(this.step() + 1);
         return;
       }
-      // Booking accepted: advance to queued, show loader for 2s, then go to cart.
-      this.step.set(this.step() + 1);
-      await new Promise((r) => setTimeout(r, 2000));
-      this.pushCart();
-      this.step.set(this.step() + 1);
+      // Check if prescription is already APPROVED
+      if (result.status === 'APPROVED') {
+        // Already approved: advance to queued, show loader for 2s, then go to cart.
+        this.step.set(this.step() + 1);
+        await new Promise((r) => setTimeout(r, 2000));
+        await this.pushCart();
+        this.step.set(this.step() + 1);
+        return;
+      }
+      // Not approved yet (PENDING, etc.): show "Prescription queued" for 2s, then go to past orders
+      this.step.set(this.step() + 1); // Advance to 'queued' step
+      this.stepError.set(null); // Clear any previous errors
+      await new Promise((r) => setTimeout(r, 2000)); // Show queued UI for 2 seconds
+      await this.loadOrdersPage(0); // Refresh past orders list
+      this.started.set(false); // Go back to landing page (past orders visible)
     } catch {
       this.stepError.set('We could not submit your prescription. Please try again.');
     } finally {
@@ -682,7 +836,7 @@ export class PharmacyPage {
     }
   }
 
-  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null }> {
+  private async postBooking(docId: string, address: PharmacyAddress): Promise<{ ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null; status: string | null }> {
     const payload = {
       doc_id: docId,
       policy_id: this.activePolicyId(),
@@ -691,21 +845,23 @@ export class PharmacyPage {
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     const params = `resource=${encoded}&application=habit-opd&action=OPD_PHARMACY_BOOKING`;
     try {
-      const response = await this.http
-        .post('/habit-opd/api/v1/opd_pharmacy_booking', params, this.appService.addXsrfToken(encoded, true))
+      const httpResponse = await this.http
+        .post('/habit-opd/api/v1/opd_pharmacy_cart', params, this.appService.addXsrfToken(encoded, true))
         .toPromise();
+      // addXsrfToken uses observe: 'response', so the body is at httpResponse.body
+      const response = httpResponse?.body ?? httpResponse;
       return this.bookingAccepted(response);
     } catch {
-      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null };
+      return { ok: false, message: 'We could not submit your prescription. Please try again.', errCode: null, prescriptionId: null, userId: null, status: null };
     }
   }
 
   /** Failure is signalled by a non-zero errCode in the body, not by the HTTP status. */
-  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null } {
-    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null };
+  private bookingAccepted(response: unknown): { ok: boolean; message: string | null; errCode: number | null; prescriptionId: string | null; userId: string | null; status: string | null } {
+    if (typeof response !== 'string') return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null, status: null };
     try {
       const parsed: unknown = JSON.parse(response);
-      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null };
+      if (typeof parsed !== 'object' || parsed === null) return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null, status: null };
       const record = parsed as Record<string, unknown>;
       const errCode = (record['errCode'] as number) ?? 0;
       const message = (record['message'] as string) ?? null;
@@ -714,9 +870,13 @@ export class PharmacyPage {
       const firstRow = Array.isArray(resource) && resource.length > 0 ? (resource[0] as Record<string, unknown>) : null;
       // prescriptionId should be the name field (e.g. "OPD-2026-00220") from the API response
       const prescriptionId = firstRow ? (firstRow['name'] as string) ?? null : null;
-      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId };
+      // user_id from the API response for cart API patient_id
+      const userId = firstRow ? (firstRow['user_id'] as string) ?? null : null;
+      // status from the API response (e.g., "APPROVED", "PENDING", etc.)
+      const status = firstRow ? (firstRow['status'] as string) ?? null : null;
+      return { ok: errCode === 0, message: errCode === 0 ? null : message, errCode, prescriptionId, userId, status };
     } catch {
-      return { ok: true, message: null, errCode: null, prescriptionId: null };
+      return { ok: true, message: null, errCode: null, prescriptionId: null, userId: null, status: null };
     }
   }
 
@@ -738,5 +898,6 @@ export class PharmacyPage {
     this.resetAddresses();
     this.cartPushed.set(false);
     this.cart.set([]);
+    this.resetCartSteps();
   }
 }
