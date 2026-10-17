@@ -837,7 +837,7 @@ export class PharmacyPage {
     const params = `resource=${encoded}&application=habit-opd&action=OPD_PHARMACY_BOOKING`;
     try {
       const httpResponse = await this.http
-        .post('/habit-opd/api/v1/opd_pharmacy_cart', params, this.appService.addXsrfToken(encoded, true))
+        .post('/habit-opd/api/v1/opd_pharmacy_consumption', params, this.appService.addXsrfToken(encoded, true))
         .toPromise();
       // addXsrfToken uses observe: 'response', so the body is at httpResponse.body
       const response = httpResponse?.body ?? httpResponse;
