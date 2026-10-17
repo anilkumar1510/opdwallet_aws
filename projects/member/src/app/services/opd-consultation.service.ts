@@ -29,9 +29,11 @@ export interface Doctor {
   nextIn?: string;
   speciality?: string;
   speciality_id?: string;
-  facility_id?: string;
+  profile_id?: string;
   profile_path?: string;
   doctor_code?: string;
+  facility_id?: string;
+  department_id?: string;
 }
 
 export interface Slot {
@@ -40,7 +42,7 @@ export interface Slot {
   slot_date?: number;
   slot_start_time?: number;
   slot_end_time?: number;
-  slotNo?: string;
+  slotNo?: number;
   status?: string;
   schedule_id?: string;
   slot_days?: string;
@@ -48,6 +50,8 @@ export interface Slot {
   vip?: boolean;
   total_booked?: number;
   walkIn_over_booking?: boolean;
+  still_available?: number;
+  reason?: string;
 }
 
 export interface Patient {
@@ -264,16 +268,17 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
             speciality: item.data?.speciality,
             speciality_id: item.data?.speciality_id,
             facility_id: item.data?.facility_id,
+            department_id: item.data?.department_id,
             doctor_code: item.data?.doctor_code,
-            profile_path:item.data?.profile_path
+            profile_path: item.data?.profile_path
           };
         }))
       );
   }
 
 // Slot Availability API
-  getSlots(practitionerId: string, slotDate: number, slotDays: string = 'FR'): Observable<Slot[]> {
-    const url = this.buildUrl('TELE_SLOT_AVAILABILITY', `practitioner_id:${practitionerId},slot_date:${slotDate},slot_days:${slotDays},serviceItemCode:video,facility_id:813cdb10-d750-11f0-a474-da069b21f2f6-53,practice_type_code:individual,department_id:910aec10-a63e-11ef-bfa9-6aada5a774bb-30,serviceType_code:op_consultation,mode_of_appointment:opd_network,uhId:HCLW-27028`);
+  getSlots(practitionerId: string, slotDate: number, slotDays: string, facilityId: string, departmentId: string, uhId: string): Observable<Slot[]> {
+    const url = this.buildUrl('TELE_SLOT_AVAILABILITY', `practitioner_id:${practitionerId},slot_date:${slotDate},slot_days:${slotDays},serviceItemCode:video,facility_id:${facilityId},practice_type_code:individual,department_id:${departmentId},serviceType_code:op_consultation,uhId:${uhId}`);
 
     return this.executeWithLoading('slots', this.http.get<{ resource: any[] }>(url))
       .pipe(

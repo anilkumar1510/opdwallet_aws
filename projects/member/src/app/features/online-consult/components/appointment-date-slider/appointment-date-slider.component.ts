@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChildren, QueryList, Input, Output, EventEmitter } from '@angular/core';
-// import { OpdConsultationService } from '../../../services/opd-consultation.service';
 import moment from 'moment';
+import { OpdConsultationService } from '../../../../services/opd-consultation.service';
 
 export interface WeekDateItem {
   alias: string;
@@ -28,10 +28,14 @@ export class AppointmentDateSliderComponent implements OnInit {
 
   @Input() availableDays: number = 7;
   @Input() showPickerButton: boolean = true;
+  @Input() practitionerId: string = '';
+  @Input() uhId: string = '';
+  @Input() facilityId: string = '';
+  @Input() departmentId: string = '';
   @Output() onSlotCountChange = new EventEmitter<{date: number, count: number}>();
   @Output() dateSelected = new EventEmitter<number>();
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private consultationService: OpdConsultationService) {}
 
   ngOnInit(): void {
     this.initializeWeekDates();
@@ -62,43 +66,35 @@ export class AppointmentDateSliderComponent implements OnInit {
     const fetchStart = moment(dateItem.fullDate).startOf('day');
     const fetchEnd = moment(fetchStart).add(1, 'day');
 
-    // Use actual API call to TELE_SLOT_AVAILABILITY
     const slotDate = dateItem.fullDate;
-    const practitionerId = '40d5a4d0-5a2f-11ee-a362-4ad717b56667-71';
-    const facilityId = '813cdb10-d750-11f0-a474-da069b21f2f6-53';
-    const departmentId = '910aec10-a63e-11ef-bfa9-6aada5a774bb-30';
-    const uhId = 'HCLW-27028';
+    const slotDays = moment(dateItem.fullDate).format('dd').toUpperCase();
 
-    // Build the API URL with proper arguments
-    const args = `practitioner_id:${practitionerId},slot_date:${slotDate},slot_days:FR,serviceItemCode:video,facility_id:${facilityId},practice_type_code:individual,department_id:${departmentId},serviceType_code:op_consultation,mode_of_appointment:opd_network,uhId:${uhId}`;
-    const url = `/habit-opd/api/v1/opd_tele_booking?queryId=TELE_SLOT_AVAILABILITY&args=${encodeURIComponent(args)}&application=habit-opd`;
+    this.consultationService.getSlots(
+      this.practitionerId,
+      slotDate,
+      slotDays,
+      this.facilityId,
+      this.departmentId,
+      this.uhId
+    )
+      .subscribe({
+        next: (slots) => {
+          dateItem.slotCount = slots.length;
+          dateItem.status = slots.length > 0 ? 'available' : 'not_available';
 
-    // Make the actual API call
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Referer': 'http://localhost:4500/member/online-consult'
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      const slotCount = data.resource?.length || 0;
-      dateItem.slotCount = slotCount;
-      dateItem.status = slotCount > 0 ? 'available' : 'not_available';
+          if (dateItem.fullDate === this.pickerValue) {
+            this.selectedWeekDate = dateItem;
+          }
 
-      if (dateItem.fullDate === this.pickerValue) {
-        this.selectedWeekDate = dateItem;
-      }
-
-      this.cdr.detectChanges();
-    })
-    .catch(error => {
-      console.error('Error fetching slot count:', error);
-      dateItem.slotCount = 0;
-      dateItem.status = 'not_available';
-      this.cdr.detectChanges();
-    });
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error fetching slot count:', error);
+          dateItem.slotCount = 0;
+          dateItem.status = 'not_available';
+          this.cdr.detectChanges();
+        }
+      });
   }
 
 selectDate(date: WeekDateItem): void {

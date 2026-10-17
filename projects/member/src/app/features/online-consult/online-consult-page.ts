@@ -120,6 +120,10 @@ imports: [
                       <app-appointment-date-slider
                         [availableDays]="7"
                         [showPickerButton]="true"
+                        [practitionerId]="doctor()?.id || ''"
+                        [uhId]="'HCLW-27028'"
+                        [facilityId]="doctor()?.facility_id || ''"
+                        [departmentId]="doctor()?.department_id || ''"
                         (dateSelected)="selectSlotDate($event)"
                       />
                       <div class="mt-4">
@@ -368,7 +372,7 @@ export class OnlineConsultPage implements OnInit {
   protected selectSlotDate(date: number): void {
     this.slotDate.set(date);
     if (this.doctor()) {
-      this.consultationService.getSlots(this.doctor()!.id!, date).subscribe(s => this.slots.set(s));
+      // this.consultationService.getSlots(this.doctor()!.id!, date).subscribe(s => this.slots.set(s));
     }
   }
 
