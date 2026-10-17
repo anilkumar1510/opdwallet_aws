@@ -250,7 +250,7 @@ test.describe('New claim', () => {
         await expect(page.getByRole('heading', { name: 'Review your claim' })).toBeVisible({ timeout: 10000 });
 
         const submitPromise = page.waitForRequest(
-          (req) => req.url().includes('habit-opd/api/v1/claim') && req.method() === 'POST',
+          (req) => req.url().includes('habit-opd/api/v1/opd_claim') && req.method() === 'POST',
         );
 
         // Submit claim and wait for navigation to Claims page
