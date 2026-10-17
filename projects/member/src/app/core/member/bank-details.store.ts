@@ -1,44 +1,33 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+
+import { AppService } from '../http/api.service';
 
 /**
- * The member's payout bank account, captured once and reused on every claim.
- *
- * PLACEHOLDER STORE — there is no API behind this yet. Reimbursement credits go
- * to the member's bank account (patient-flows section 9), and the spec mandates
- * capturing the details once on the first claim and saving them to the profile.
- * Until the endpoints exist this holds the details in memory and mirrors them to
- * localStorage so they survive a reload and the flow is testable end to end.
- *
- * TODO(API) — replace the localStorage read/write with:
- *   GET  member/profile/bank-details            -> BankDetails | null
- *   PUT  member/profile/bank-details {accountHolderName, accountNumber, ifsc, bankName}
- * See web-angular/PLACEHOLDER-APIS.md.
+ * The member's payout bank account, fetched directly from the backend API:
+ * - GET habit-opd/api/v1/opd_profile_details?queryId=GET_PROFILE_DETAILS_BY_USER&page_no=0&page_size=20
+ * - POST habit-opd/api/v1/opd_profile_details (action: upsert)
+ * - POST /dms/api/v1/emrImage (cheque upload)
  */
 
 export interface BankDetails {
+  readonly id?: string;
   readonly accountHolderName: string;
   readonly accountNumber: string;
   readonly ifsc: string;
   readonly bankName: string;
+  readonly patientName?: string;
+  readonly paymentMode?: string;
+  readonly isDefault?: boolean;
   /**
-   * Cancelled-cheque proof. PLACEHOLDER — only the file NAME is kept (a File
-   * cannot be persisted to localStorage). The bytes must go to an upload
-   * endpoint; see PLACEHOLDER-APIS.md. Empty string means none on record.
+   * Cancelled-cheque proof document name or ID.
    */
   readonly cancelledChequeName: string;
+  readonly cancelledChequeDocumentId?: string;
 }
 
-const STORAGE_KEY = 'opd.bankDetails.placeholder';
-const VERIFICATION_KEY = 'opd.bankVerification.placeholder';
-
-/**
- * Bank details are verified by an adjudicator before the first claim can be
- * filed. DUMMY / STATIC — there is no adjudication API yet; the decision is
- * simulated from the claim screen and held in localStorage.
- *
- * TODO(API) — replace with the adjudicator's verdict on the bank-details record:
- *   GET member/profile/bank-details -> { ..., verification: BankVerification }
- */
 export type BankVerificationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface BankVerification {
@@ -68,22 +57,32 @@ export const BANK_REJECTION_REASONS: readonly string[] = [
 
 @Injectable({ providedIn: 'root' })
 export class BankDetailsStore {
-  private readonly _details = signal<BankDetails | null>(readStored());
-  private readonly _verification = signal<BankVerification | null>(readVerification());
+  private readonly http = inject(HttpClient);
+  private readonly appService = inject(AppService);
+  private readonly router = inject(Router, { optional: true });
+
+  private readonly _details = signal<BankDetails | null>(null);
+  private readonly _verification = signal<BankVerification | null>(null);
+  private readonly _loading = signal<boolean>(false);
+  private readonly _saving = signal<boolean>(false);
+  private readonly _error = signal<string | null>(null);
 
   readonly details = this._details.asReadonly();
   readonly hasDetails = computed(() => this._details() !== null);
   readonly verification = this._verification.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly saving = this._saving.asReadonly();
+  readonly error = this._error.asReadonly();
 
   /**
    * Where the payout account stands. 'unverified' is details on record that
-   * were never sent for verification (saved from Profile, or before
-   * verification existed) — they must be submitted before a claim.
+   * were never sent for verification — they must be submitted before a claim.
    */
   readonly verificationStatus = computed<'none' | 'unverified' | BankVerificationStatus>(() => {
     if (!this._details()) return 'none';
     return this._verification()?.status ?? 'unverified';
   });
+
   /** Claims can be filed only against an approved account. */
   readonly isApproved = computed(() => this.verificationStatus() === 'approved');
 
@@ -93,61 +92,178 @@ export class BankDetailsStore {
     return account ? `•••• ${account.slice(-4)}` : '';
   });
 
-  save(details: BankDetails): void {
-    const trimmed: BankDetails = {
-      accountHolderName: details.accountHolderName.trim(),
-      accountNumber: details.accountNumber.trim(),
-      ifsc: details.ifsc.trim().toUpperCase(),
-      bankName: details.bankName.trim(),
-      cancelledChequeName: details.cancelledChequeName.trim(),
-    };
-    this._details.set(trimmed);
-    writeStored(trimmed);
-    // Changed details are no longer the ones that were verified.
-    this.setVerification(null);
+  constructor() {
+    void this.load();
   }
 
-  /** Saves the details and sends them to the adjudicator. */
-  submitForVerification(details: BankDetails): void {
-    this.save(details);
-    this.setVerification({
-      status: 'pending',
-      submittedAt: new Date().toISOString(),
-      decidedAt: null,
-      reasons: [],
-    });
-  }
-
-  /** DUMMY — stands in for the adjudicator's decision. */
-  simulateDecision(status: 'approved' | 'rejected', reasons: readonly string[] = []): void {
-    const current = this._verification();
-    if (!current) return;
-    this.setVerification({
-      ...current,
-      status,
-      decidedAt: new Date().toISOString(),
-      reasons: status === 'rejected' ? [...reasons] : [],
-    });
-  }
-
-  private setVerification(next: BankVerification | null): void {
-    this._verification.set(next);
+  /**
+   * Load profile details exclusively from the backend API (GET_PROFILE_DETAILS_BY_USER).
+   */
+  async load(): Promise<BankDetails | null> {
+    this._loading.set(true);
+    this._error.set(null);
     try {
-      if (next) localStorage.setItem(VERIFICATION_KEY, JSON.stringify(next));
-      else localStorage.removeItem(VERIFICATION_KEY);
-    } catch {
-      // Ignore; the state still holds in memory for this session.
+      const arg = 'queryId=GET_PROFILE_DETAILS_BY_USER&page_no=0&page_size=20';
+      const raw = await firstValueFrom(
+        this.appService.getcall('opd_profile_details', 'habit-opd', arg),
+      );
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      const rows: any[] = parsed?.resource ?? [];
+
+      if (rows && rows.length > 0) {
+        const defaultRow = rows.find((r: any) => r.is_default) ?? rows[0];
+        const details: BankDetails = {
+          id: defaultRow.id,
+          accountHolderName: defaultRow.account_holder_name ?? '',
+          accountNumber: defaultRow.account_number ?? '',
+          ifsc: defaultRow.ifsc_code ?? '',
+          bankName: defaultRow.bank_name ?? '',
+          patientName: defaultRow.patient_name ?? '',
+          paymentMode: defaultRow.payment_mode ?? 'BANK_TRANSFER',
+          isDefault: defaultRow.is_default ?? true,
+          cancelledChequeName: defaultRow.cancelled_cheque_document_id ?? '',
+          cancelledChequeDocumentId: defaultRow.cancelled_cheque_document_id ?? '',
+        };
+
+        this._details.set(details);
+
+        const adjStatus = (defaultRow.adjudicationStatus ?? defaultRow.status ?? '').toUpperCase();
+        let status: BankVerificationStatus = 'pending';
+        if (adjStatus === 'APPROVED' || adjStatus === 'VERIFIED') {
+          status = 'approved';
+        } else if (adjStatus === 'REJECTED') {
+          status = 'rejected';
+        } else {
+          status = 'pending';
+        }
+
+        const verification: BankVerification = {
+          status,
+          submittedAt: defaultRow.g_creation_time
+            ? new Date(Number(defaultRow.g_creation_time)).toISOString()
+            : new Date().toISOString(),
+          decidedAt:
+            (status === 'approved' || status === 'rejected') && defaultRow.g_modify_time
+              ? new Date(Number(defaultRow.g_modify_time)).toISOString()
+              : null,
+          reasons: Array.isArray(defaultRow.rejection_reasons) ? defaultRow.rejection_reasons : [],
+        };
+        this._verification.set(verification);
+        return details;
+      } else {
+        this._details.set(null);
+        this._verification.set(null);
+        return null;
+      }
+    } catch (err: any) {
+      console.error('Failed to load profile details:', err);
+      return this._details();
+    } finally {
+      this._loading.set(false);
     }
+  }
+
+  /**
+   * Upload cancelled cheque file to DMS /dms/api/v1/emrImage.
+   */
+  async uploadCancelledCheque(file: File): Promise<string> {
+    const content = await new Promise<unknown>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fileName', file.name);
+    formData.append('action', 'add');
+
+    const encrypted = this.appService.getXsrfToken(content, true);
+    const res: any = await firstValueFrom(
+      this.http.post('/dms/api/v1/emrImage', formData, {
+        headers: new HttpHeaders()
+          .set('X-XSRF-TOKEN', String(encrypted))
+          .set('timezone', this.appService.getUserTimezone())
+          .set('current_time', this.appService.getCurrentTime())
+          .set('current_url', this.router?.url ?? '')
+          .set('host_name', window.location.host),
+        responseType: 'json',
+        observe: 'response' as 'response',
+      }),
+    );
+
+    if (res?.body?.errCode !== 0 && res?.body?.errCode !== undefined) {
+      throw new Error(res?.body?.message ?? 'Cheque upload rejected');
+    }
+    const uploaded = res?.body?.resource?.[0];
+    return uploaded?.document_id ?? '';
+  }
+
+  /**
+   * Upsert bank details via action: upsert on habit-opd/api/v1/opd_profile_details.
+   * After saving to the server, always reloads directly from the API.
+   */
+  async upsert(details: BankDetails, chequeFile?: File | null): Promise<boolean> {
+    this._saving.set(true);
+    this._error.set(null);
+    try {
+      let chequeDocId = details.cancelledChequeDocumentId ?? '';
+      if (chequeFile) {
+        try {
+          chequeDocId = await this.uploadCancelledCheque(chequeFile);
+        } catch (e) {
+          console.warn('Cheque upload failed, proceeding with upsert:', e);
+        }
+      }
+
+      const payload = {
+        patient_name: details.patientName || details.accountHolderName.trim(),
+        payment_mode: details.paymentMode || 'BANK_TRANSFER',
+        is_default: true,
+        account_holder_name: details.accountHolderName.trim(),
+        account_number: details.accountNumber.trim(),
+        ifsc_code: details.ifsc.trim().toUpperCase(),
+        bank_name: details.bankName.trim(),
+        cancelled_cheque_document_id: chequeDocId || details.cancelledChequeName || '',
+      };
+
+      const url = '/habit-opd/api/v1/opd_profile_details';
+      let encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      let params = 'resource=' + encodedResourceData;
+      params += '&application=habit-opd&action=upsert';
+      encodedResourceData += '&action=upsert';
+      const options = this.appService.addXsrfToken(encodedResourceData, true);
+
+      const res: any = await firstValueFrom(this.http.post(url, params, options));
+      const resBody = typeof res?.body === 'string' ? JSON.parse(res.body) : res?.body;
+      if (resBody?.errCode !== 0 && resBody?.errCode !== undefined) {
+        throw new Error(resBody?.message ?? 'Failed to save bank details');
+      }
+
+      // No local state mutation — fetch fresh profile data directly from the API
+      await this.load();
+      return true;
+    } catch (err: any) {
+      console.error('Failed to upsert bank details:', err);
+      this._error.set(err?.message ?? 'Failed to save bank details');
+      return false;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
+  save(details: BankDetails, chequeFile?: File | null): Promise<boolean> {
+    return this.upsert(details, chequeFile);
+  }
+
+  submitForVerification(details: BankDetails, chequeFile?: File | null): Promise<boolean> {
+    return this.upsert(details, chequeFile);
   }
 
   clear(): void {
     this._details.set(null);
-    this.setVerification(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // Ignore private-browsing / quota failures; in-memory state is cleared.
-    }
+    this._verification.set(null);
   }
 }
 
@@ -159,49 +275,4 @@ export function isValidIfsc(value: string): boolean {
 /** Digits only, 9–18 long — the usual Indian account-number range. */
 export function isValidAccountNumber(value: string): boolean {
   return /^\d{9,18}$/.test(value.trim());
-}
-
-function readStored(): BankDetails | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<BankDetails>;
-    if (!parsed.accountNumber || !parsed.ifsc) return null;
-    return {
-      accountHolderName: parsed.accountHolderName ?? '',
-      accountNumber: parsed.accountNumber,
-      ifsc: parsed.ifsc,
-      bankName: parsed.bankName ?? '',
-      cancelledChequeName: parsed.cancelledChequeName ?? '',
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeStored(details: BankDetails): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(details));
-  } catch {
-    // Ignore; the details still hold in memory for this session.
-  }
-}
-
-function readVerification(): BankVerification | null {
-  try {
-    const raw = localStorage.getItem(VERIFICATION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<BankVerification>;
-    if (parsed.status !== 'pending' && parsed.status !== 'approved' && parsed.status !== 'rejected') {
-      return null;
-    }
-    return {
-      status: parsed.status,
-      submittedAt: parsed.submittedAt ?? '',
-      decidedAt: parsed.decidedAt ?? null,
-      reasons: Array.isArray(parsed.reasons) ? parsed.reasons : [],
-    };
-  } catch {
-    return null;
-  }
 }

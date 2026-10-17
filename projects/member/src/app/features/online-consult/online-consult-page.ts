@@ -1,4 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
+
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
 
 /**
  * Online Consultation — DUMMY / STATIC journey, zero backend.
@@ -68,7 +72,7 @@ type Step =
 @Component({
   selector: 'opd-online-consult-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -96,9 +100,12 @@ type Step =
             <p class="mt-1 text-xs text-ink-500">Up to ₹{{ perTxn }} per consultation from wallet · {{ copayPct }}% co-payment</p>
           </div>
 
-          <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
-            Find a doctor →
-          </button>
+          @if (claimModes.allowsCashless(BenefitCategory.OnlineConsultation)) {
+            <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
+              Find a doctor →
+            </button>
+          }
+          <opd-claim-option [category]="BenefitCategory.OnlineConsultation" [label]="'online consultations'" />
         }
 
         <!-- ── Wizard ──────────────────────────────────────────────────────── -->
@@ -307,6 +314,8 @@ type Step =
   `,
 })
 export class OnlineConsultPage {
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
   protected readonly specialities = SPECIALITIES;
   protected readonly patients = PATIENTS;
   protected readonly slotDates = SLOT_DATES;

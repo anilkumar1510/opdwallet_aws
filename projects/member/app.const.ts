@@ -4,7 +4,8 @@ export const appConst = {
         dms: 'dms'
     },
     apiResource: {
-        claim: 'claim',
-        opdDocument: 'opd_document'
+        claim: 'opd_claim',
+        opdDocument: 'opd_document',
+        opdProfileDetails: 'opd_profile_details'
     }
 }

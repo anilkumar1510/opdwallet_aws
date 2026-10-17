@@ -1,5 +1,9 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
 import { Router } from '@angular/router';
 
 import { FamilyStore } from '../../core/family/family.store';
@@ -87,7 +91,7 @@ export function readUploadedDocId(body: unknown): string | null {
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent],
+  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent, ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -111,7 +115,10 @@ export function readUploadedDocId(body: unknown): string | null {
             <p class="mt-1 text-2xl font-bold text-[#034DA2]">₹5,000 <span class="text-sm font-normal text-ink-500">left this year</span></p>
             <p class="mt-1 text-xs text-ink-500">{{ copayPct }}% co-payment · you submit a prescription, our team builds the cart for you.</p>
           </div>
-          <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
+          @if (claimModes.allowsCashless(BenefitCategory.Pharmacy)) {
+            <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
+          }
+          <opd-claim-option [category]="BenefitCategory.Pharmacy" [label]="'pharmacy'" />
 
           <h2 #ordersHeading class="mt-8 text-lg font-bold text-[#034DA2]">Past orders</h2>
 
@@ -335,6 +342,8 @@ export function readUploadedDocId(body: unknown): string | null {
   `,
 })
 export class PharmacyPage {
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
   private readonly router = inject(Router);

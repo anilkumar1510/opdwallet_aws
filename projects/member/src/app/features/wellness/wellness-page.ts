@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
+
 import { FamilyStore } from '../../core/family/family.store';
 
 /**
@@ -162,7 +166,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -207,7 +211,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                 This benefit can be taken only once a year. Both pathology and radiology are booked.
               </p>
             </div>
-          } @else {
+          } @else if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
             <h2 class="mb-1 text-lg font-bold text-[#034DA2]">Choose how to book</h2>
             <p class="mb-3 text-sm text-ink-700">
               Book pathology and radiology individually, or the entire package in one go. Choosing a
@@ -221,6 +225,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
             }
           }
 
+          @if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
           <div class="space-y-3">
             <!-- Book Pathology -->
             <button
@@ -275,6 +280,11 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
               </span>
             </button>
           </div>
+          }
+          <div class="mt-4">
+            <opd-claim-option [category]="BenefitCategory.HealthPackages" [label]="'the annual health check'" />
+          </div>
+
 
           <!-- Post-booking lifecycle (spec steps 13–15): order confirmed with the
                provider → sample collection / scan → report delivered to Health
@@ -777,6 +787,8 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
   `,
 })
 export class WellnessPage {
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
   private readonly family = inject(FamilyStore);
 
   protected readonly packageBooked = signal(false);

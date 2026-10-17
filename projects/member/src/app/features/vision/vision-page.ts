@@ -1,4 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
+
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
 
 /**
  * Vision — DUMMY / STATIC journey, zero backend.
@@ -26,7 +30,7 @@ type Step = 'partner' | 'prescription' | 'review' | 'coupon' | 'cart' | 'payment
 @Component({
   selector: 'opd-vision-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -59,8 +63,11 @@ type Step = 'partner' | 'prescription' | 'review' | 'coupon' | 'cart' | 'payment
               paid to the partner, and settlement happens after the order is processed.
             </p>
           </div>
-          <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Start New Order →</button>
-          <p class="mt-2 text-center text-xs text-ink-500">One open order at a time.</p>
+          @if (claimModes.allowsCashless(BenefitCategory.Vision)) {
+            <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Start New Order →</button>
+            <p class="mt-2 text-center text-xs text-ink-500">One open order at a time.</p>
+          }
+          <opd-claim-option [category]="BenefitCategory.Vision" [label]="'vision care'" />
         }
 
         <!-- ── Wizard ──────────────────────────────────────────────────────── -->
@@ -195,6 +202,8 @@ type Step = 'partner' | 'prescription' | 'review' | 'coupon' | 'cart' | 'payment
   `,
 })
 export class VisionPage {
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
   protected readonly partners = PARTNERS;
   protected readonly couponCode = 'OPD-VIS-4827';
   protected readonly orderId = 'VIS-2026-0031';
