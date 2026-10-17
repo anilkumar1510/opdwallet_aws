@@ -37,3 +37,4 @@
 - [ ] 4.5 Backend fixes: `dispute_type` optional (stable claims sort is done and checked live, 16 Oct), caller checks on `adjudicate`, `agentReply` and `agentResolve` (parked).
 - [ ] 4.6 Service-line (non-claim) grievances once backend and CRM support them.
 - [ ] 4.7 Notifications (in-app, WhatsApp, email), central configuration (reasons, windows), real support phone and email values.
+- [x] 4.8 Follow the backend's `opd_` resource rename (`opd_claim`, `opd_dispute`, `opd_dispute_chat`) in the portal, tests and docs (17 Oct); live re-check needs a signed-in session.

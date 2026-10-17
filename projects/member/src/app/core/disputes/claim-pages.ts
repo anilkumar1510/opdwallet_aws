@@ -40,7 +40,7 @@ export class ClaimPages {
     try {
       const labels = await this.categoryLabels();
       const res = await firstValueFrom(
-        this.appService.getcall('claim', 'habit-opd', `queryId=GET_CLAIMS_BY_USER&page_no=${pageNo}&page_size=${PAGER_SIZE}`),
+        this.appService.getcall('opd_claim', 'habit-opd', `queryId=GET_CLAIMS_BY_USER&page_no=${pageNo}&page_size=${PAGER_SIZE}`),
       );
       const body = JSON.parse(res);
       if (body?.errCode === -1) return { ok: false };

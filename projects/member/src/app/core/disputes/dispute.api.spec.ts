@@ -49,13 +49,13 @@ describe('DisputeApi', () => {
   const text = (body: object, status = 200) => of(new HttpResponse({ body: JSON.stringify(body), status }));
   const input = { claimId: 'OPD-2026-00354', categoryLabel: 'Diagnostics', reason: 'Claim rejected incorrectly', detail: '', documents: [] as DisputeDocument[] };
 
-  it('posts to habit-opd/api/v1/dispute with resource, application and action=submit', async () => {
+  it('posts to habit-opd/api/v1/opd_dispute with resource, application and action=submit', async () => {
     post.mockReturnValue(text({ errCode: 0, resource: [{ ticket_id: 'GR-CLM-2026-00042' }] }));
     const result = await api.submit(input);
 
     expect(result).toEqual({ ok: true, ticketId: 'GR-CLM-2026-00042', disputeId: null });
     const [url, body] = post.mock.calls[0];
-    expect(url).toBe('/habit-opd/api/v1/dispute');
+    expect(url).toBe('/habit-opd/api/v1/opd_dispute');
     expect(body).toMatch(/^resource=.+&application=habit-opd&action=submit$/);
     const encoded = decodeURIComponent(body.split('&')[0].replace('resource=', ''));
     expect(addXsrfToken).toHaveBeenCalledWith(`${encoded}&action=submit`, true);
@@ -142,7 +142,7 @@ describe('DisputeApi', () => {
     it('reads GET_PAGE on the dispute resource and returns newest first', async () => {
       getcall.mockReturnValue(of(JSON.stringify({ errCode: 0, resource: [row(1), row(3), row(2)] })));
       const result = await api.list();
-      expect(getcall).toHaveBeenCalledWith('dispute', 'habit-opd', 'queryId=GET_PAGE&page_no=0&page_size=20');
+      expect(getcall).toHaveBeenCalledWith('opd_dispute', 'habit-opd', 'queryId=GET_PAGE&page_no=0&page_size=20');
       expect(result.ok && result.items.map((r) => r.name)).toEqual(['DIS-3', 'DIS-2', 'DIS-1']);
     });
 
@@ -228,7 +228,7 @@ describe('DisputeApi', () => {
     it('asks for the dispute by id, encoded, and maps the senders', async () => {
       getcall.mockReturnValue(of(JSON.stringify({ errCode: 0, resource: [msg(2, 'SUPPORT_EXECUTIVE'), msg(1, 'MEMBER')] })));
       const result = await api.messages('abc-1');
-      expect(getcall).toHaveBeenCalledWith('dispute', 'habit-opd', 'queryId=GET_DISPUTE_MESSAGES&args=dispute_id%3Aabc-1&page_no=0&page_size=20');
+      expect(getcall).toHaveBeenCalledWith('opd_dispute', 'habit-opd', 'queryId=GET_DISPUTE_MESSAGES&args=dispute_id%3Aabc-1&page_no=0&page_size=20');
       expect(result.ok && result.items.map((m) => [m.sender, m.senderName, m.text])).toEqual([
         ['MEMBER', 'You', 'm1'], // the member's own name is an id in the API: shown as "You"
         ['SUPPORT', 'Support Executive', 'm2'],
@@ -256,7 +256,7 @@ describe('DisputeApi', () => {
       post.mockReturnValue(text({ errCode: 0 }));
       expect(await api.reply(dispute, 'Please review ₹500 & more')).toEqual({ ok: true });
       const [url, body] = post.mock.calls[0];
-      expect(url).toBe('/habit-opd/api/v1/dispute_chat');
+      expect(url).toBe('/habit-opd/api/v1/opd_dispute_chat');
       expect(body).toMatch(/&application=habit-opd&action=userReply$/);
       expect(decode(body)).toEqual({ resourceType: 'DisputeChat', dispute_id: 'uuid-1', message_text: 'Please review ₹500 & more' });
       const encoded = decodeURIComponent(body.split('&')[0].replace('resource=', ''));
@@ -267,7 +267,7 @@ describe('DisputeApi', () => {
       post.mockReturnValue(text({ errCode: 0 }));
       expect(await api.resolve(dispute)).toEqual({ ok: true });
       const [url, body] = post.mock.calls[0];
-      expect(url).toBe('/habit-opd/api/v1/dispute');
+      expect(url).toBe('/habit-opd/api/v1/opd_dispute');
       expect(body).toMatch(/&application=habit-opd&action=userResolve$/);
       expect(decode(body)).toEqual({ resourceType: 'Dispute', name: 'DIS-2026-00393' });
     });

@@ -1118,7 +1118,7 @@ export class NewClaimPage {
     }
 
     try {
-      this.createNewClaimsSubmit(payload, 'claim','habit-opd', 'submit')
+      this.createNewClaimsSubmit(payload, 'opd_claim','habit-opd', 'submit')
     } catch (err) {
       // A throw before the request is even issued would otherwise strand the
       // overlay, since only the subscribe callbacks clear it.

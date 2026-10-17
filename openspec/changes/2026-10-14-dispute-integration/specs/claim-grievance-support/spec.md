@@ -26,7 +26,7 @@ The order detail screen SHALL NOT show the Amount, invoice or payment breakdown 
 - **AND** cashless orders still show their Amount section
 
 ### Requirement: Raising a grievance calls the dispute API
-Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/dispute` with `action=submit`, with the claim id and reason.
+Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/opd_dispute` with `action=submit`, with the claim id and reason.
 
 #### Scenario: Successful submit
 - **WHEN** a member picks a reason and presses "Send to support"

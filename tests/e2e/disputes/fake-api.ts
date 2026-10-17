@@ -130,8 +130,8 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
     const req = route.request();
     const url = new URL(req.url());
     const q = url.searchParams;
-    const isDispute = url.pathname.endsWith('/habit-opd/api/v1/dispute');
-    const isChat = url.pathname.endsWith('/habit-opd/api/v1/dispute_chat');
+    const isDispute = url.pathname.endsWith('/habit-opd/api/v1/opd_dispute');
+    const isChat = url.pathname.endsWith('/habit-opd/api/v1/opd_dispute_chat');
 
     if (isDispute && req.method() === 'GET') {
       const pageNo = Number(q.get('page_no') ?? 0);

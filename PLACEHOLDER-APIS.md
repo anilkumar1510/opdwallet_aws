@@ -116,12 +116,12 @@ static demo data until the backend and Twenty support them. All calls go through
 
 | What | Call |
 |---|---|
-| Claims that need help | `GET habit-opd/api/v1/claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`; the rest via `ClaimPages`, one `page_size=100` read because the 20-row pages overlap; 5 shown at a time; repeats removed) |
-| Raise a grievance | `POST habit-opd/api/v1/dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
-| My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
-| Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
-| Member reply | `POST habit-opd/api/v1/dispute_chat` `action=userReply`, `resource` = base64 `{resourceType:"DisputeChat",dispute_id:<ticket uuid>,message_text:<text>}`, no `args`. The text is stored verbatim (commas and colons included). The old `dispute` + `userReply` answers "Invalid Query". Refused on a resolved or closed ticket and when `message_text` is empty |
-| Member closes the ticket | `POST habit-opd/api/v1/dispute` `action=userResolve`, `resource` = base64 `{resourceType:"Dispute",name}` (the name alone is enough, verified live), no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
+| Claims that need help | `GET habit-opd/api/v1/opd_claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`; the rest via `ClaimPages`, one `page_size=100` read because the 20-row pages overlap; 5 shown at a time; repeats removed) |
+| Raise a grievance | `POST habit-opd/api/v1/opd_dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
+| My tickets + status | `GET habit-opd/api/v1/opd_dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
+| Thread | `GET habit-opd/api/v1/opd_dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
+| Member reply | `POST habit-opd/api/v1/opd_dispute_chat` `action=userReply`, `resource` = base64 `{resourceType:"DisputeChat",dispute_id:<ticket uuid>,message_text:<text>}`, no `args`. The text is stored verbatim (commas and colons included). The old `dispute` + `userReply` answers "Invalid Query". Refused on a resolved or closed ticket and when `message_text` is empty |
+| Member closes the ticket | `POST habit-opd/api/v1/opd_dispute` `action=userResolve`, `resource` = base64 `{resourceType:"Dispute",name}` (the name alone is enough, verified live), no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
 | Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form; PDF, Word or image, 5 MB each, several at once), then send in the submit's `documents` array. Demo orders keep the demo picker (nothing uploaded) |
 | Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
 
