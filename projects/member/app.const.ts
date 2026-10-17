@@ -5,6 +5,7 @@ export const appConst = {
     },
     apiResource: {
         claim: 'opd_claim',
-        opdDocument: 'opd_document'
+        opdDocument: 'opd_document',
+        opdProfileDetails: 'opd_profile_details'
     }
 }

@@ -15,7 +15,6 @@ import {
 import { BenefitCategory, relationshipLabel, toBenefitCategory } from '../../core/domain/codes';
 import { formatMoney, money } from '../../core/domain/money';
 import {
-  BANK_REJECTION_REASONS,
   BankDetailsStore,
   isValidAccountNumber,
   isValidIfsc,
@@ -116,26 +115,6 @@ const STEPS = [
                     <div class="flex justify-between gap-3"><dt class="text-ink-700">Bank</dt><dd class="truncate font-medium text-ink-900">{{ bank.details()?.bankName }}</dd></div>
                     <div class="flex justify-between gap-3"><dt class="text-ink-700">Submitted</dt><dd class="font-medium text-ink-900">{{ when(bank.verification()?.submittedAt) }}</dd></div>
                   </dl>
-                </section>
-
-                <!-- DUMMY — stands in for the adjudicator until the API exists. -->
-                <section class="mt-5 rounded-2xl border border-dashed border-warning-400 bg-warning-50 p-5">
-                  <p class="text-sm font-semibold text-warning-700">🧪 Demo — adjudicator's decision</p>
-                  <p class="mt-1 text-xs text-warning-700">Pick one or more reasons to reject, or approve.</p>
-                  <ul class="mt-3 space-y-2">
-                    @for (reason of rejectionReasons; track reason) {
-                      <li>
-                        <label class="flex cursor-pointer items-start gap-2 text-sm text-ink-900">
-                          <input type="checkbox" class="mt-0.5 h-4 w-4 shrink-0" [checked]="demoReasons().includes(reason)" (change)="toggleDemoReason(reason)" />
-                          <span>{{ reason }}</span>
-                        </label>
-                      </li>
-                    }
-                  </ul>
-                  <div class="mt-4 flex flex-wrap gap-3">
-                    <button type="button" class="min-h-touch flex-1 rounded-xl bg-success-700 px-4 text-sm font-semibold text-white hover:opacity-90" (click)="simulateApprove()">Approve</button>
-                    <button type="button" class="min-h-touch flex-1 rounded-xl bg-danger-700 px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50" [disabled]="!demoReasons().length" (click)="simulateReject()">Reject{{ demoReasons().length ? ' (' + demoReasons().length + ')' : '' }}</button>
-                  </div>
                 </section>
               }
               @case ('approved') {
@@ -540,9 +519,6 @@ export class NewClaimPage {
   protected readonly chequeFile = signal<File | null>(null);
   protected readonly chequeError = signal<string | null>(null);
 
-  protected readonly rejectionReasons = BANK_REJECTION_REASONS;
-  /** DUMMY — the reasons ticked in the adjudicator stand-in. */
-  protected readonly demoReasons = signal<readonly string[]>([]);
 
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly amount = (value: number) => formatMoney(money(value));
@@ -558,6 +534,21 @@ export class NewClaimPage {
       this.bankIfsc.set(onRecord.ifsc);
       this.bankName.set(onRecord.bankName);
     }
+    void this.bank.load();
+    effect(() => {
+      const details = this.bank.details();
+      if (details && !this.bankAccount()) {
+        this.bankHolder.set(details.accountHolderName);
+        this.bankAccount.set(details.accountNumber);
+        this.bankIfsc.set(details.ifsc);
+        this.bankName.set(details.bankName);
+      }
+    });
+    effect(() => {
+      if (this.bank.isApproved() && this.step() === 0) {
+        this.step.set(1);
+      }
+    });
     this.categoriesLoading.set(true);
     void this.store.categories().then((rows) => this.categories.set(rows)).finally(() => this.categoriesLoading.set(false));
     let patientPrefilled = false;
@@ -689,7 +680,7 @@ export class NewClaimPage {
   });
 
   /** In-flight guard only; step completeness is checked on Continue / Submit. */
-  protected readonly canSubmit = computed(() => !this.store.submitting() && !this.submitting());
+  protected readonly canSubmit = computed(() => !this.store.submitting() && !this.submitting() && !this.bank.saving());
 
   // ── Step validation ────────────────────────────────────────────────────
 
@@ -730,6 +721,7 @@ export class NewClaimPage {
 
   protected primaryLabel(): string {
     if (this.step() === 0) {
+      if (this.bank.saving()) return 'Submitting…';
       return this.bank.isApproved() ? 'Continue' : 'Submit for verification';
     }
     if (this.step() < 3) return 'Continue';
@@ -742,7 +734,7 @@ export class NewClaimPage {
    */
   protected onPrimary(): void {
     if (this.step() === 0) {
-      this.onBankStep();
+      void this.onBankStep();
       return;
     }
     if (this.step() === 3) {
@@ -765,7 +757,7 @@ export class NewClaimPage {
 
   // ── Bank account step ──────────────────────────────────────────────────
 
-  private onBankStep(): void {
+  private async onBankStep(): Promise<void> {
     if (this.bank.isApproved()) {
       this.problem.set(null);
       this.step.set(1);
@@ -779,36 +771,19 @@ export class NewClaimPage {
     }
     this.problem.set(null);
     const cheque = this.chequeFile();
-    // TODO(API): the cheque FILE must be uploaded — only its name is kept.
-    if (cheque) console.info('[PLACEHOLDER] cancelled cheque captured, not yet uploaded:', cheque.name);
-    this.bank.submitForVerification({
+    const ok = await this.bank.submitForVerification({
       accountHolderName: this.bankHolder(),
       accountNumber: this.bankAccount(),
       ifsc: this.bankIfsc(),
       bankName: this.bankName(),
       cancelledChequeName: cheque?.name ?? '',
-    });
-    // A resubmission needs fresh proof, so the old file does not carry over.
-    this.chequeFile.set(null);
-    this.demoReasons.set([]);
-  }
-
-  protected toggleDemoReason(reason: string): void {
-    const current = this.demoReasons();
-    this.demoReasons.set(
-      current.includes(reason) ? current.filter((r) => r !== reason) : [...current, reason],
-    );
-  }
-
-  protected simulateApprove(): void {
-    this.bank.simulateDecision('approved');
-    this.demoReasons.set([]);
-  }
-
-  protected simulateReject(): void {
-    if (!this.demoReasons().length) return;
-    this.bank.simulateDecision('rejected', this.demoReasons());
-    this.demoReasons.set([]);
+    }, cheque);
+    if (ok) {
+      // A resubmission needs fresh proof, so the old file does not carry over.
+      this.chequeFile.set(null);
+    } else {
+      this.problem.set(this.bank.error() || 'Could not submit bank details. Please try again.');
+    }
   }
 
   protected when(iso: string | null | undefined): string {
