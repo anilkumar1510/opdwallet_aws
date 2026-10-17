@@ -8,11 +8,11 @@ import { SessionStore } from '../session/session.store';
 
 /** habit-opd dispute endpoint; the dev proxy and `apiBaseUrl` decide the host. */
 export const DISPUTE_API = {
-  resource: 'dispute',
+  resource: 'opd_dispute',
   application: 'habit-opd',
   submit: 'submit',
   /** Replies live on the chat resource (the dispute resource no longer takes `userReply`). */
-  chatResource: 'dispute_chat',
+  chatResource: 'opd_dispute_chat',
 } as const;
 
 /** DMS endpoint that returns a stored file by id. */

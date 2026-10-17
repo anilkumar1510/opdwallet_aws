@@ -77,7 +77,7 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   expect(ticketId).toMatch(/^DIS-/);
 
   // The backend stored the document on the grievance (not only in DMS).
-  const stored = await page.request.get(`/habit-opd/api/v1/dispute?queryId=GET_PAGE&filter=name:${ticketId}`);
+  const stored = await page.request.get(`/habit-opd/api/v1/opd_dispute?queryId=GET_PAGE&filter=name:${ticketId}`);
   const record = (await stored.json()).resource?.[0];
   expect(JSON.stringify(record)).toContain(documentId);
   // The member's description is stored verbatim in `final_reason` (commas and colons are fine there).

@@ -116,12 +116,12 @@ static demo data until the backend and Twenty support them. All calls go through
 
 | What | Call |
 |---|---|
-| Claims that need help | `GET habit-opd/api/v1/claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`, later pages via `ClaimPages`; 5 shown at a time; repeats removed) |
-| Raise a grievance | `POST habit-opd/api/v1/dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
-| My tickets + status | `GET habit-opd/api/v1/dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
-| Thread | `GET habit-opd/api/v1/dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
-| Member reply | `POST habit-opd/api/v1/dispute_chat` `action=userReply`, `resource` = base64 `{resourceType:"DisputeChat",dispute_id:<ticket uuid>,message_text:<text>}`, no `args`. The text is stored verbatim (commas and colons included). The old `dispute` + `userReply` answers "Invalid Query". Refused on a resolved or closed ticket and when `message_text` is empty |
-| Member closes the ticket | `POST habit-opd/api/v1/dispute` `action=userResolve`, `resource` = base64 `{resourceType:"Dispute",name}` (the name alone is enough, verified live), no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
+| Claims that need help | `GET habit-opd/api/v1/opd_claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`; the rest via `ClaimPages`, one `page_size=100` read because the 20-row pages overlap; 5 shown at a time; repeats removed) |
+| Raise a grievance | `POST habit-opd/api/v1/opd_dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
+| My tickets + status | `GET habit-opd/api/v1/opd_dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
+| Thread | `GET habit-opd/api/v1/opd_dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
+| Member reply | `POST habit-opd/api/v1/opd_dispute_chat` `action=userReply`, `resource` = base64 `{resourceType:"DisputeChat",dispute_id:<ticket uuid>,message_text:<text>}`, no `args`. The text is stored verbatim (commas and colons included). The old `dispute` + `userReply` answers "Invalid Query". Refused on a resolved or closed ticket and when `message_text` is empty |
+| Member closes the ticket | `POST habit-opd/api/v1/opd_dispute` `action=userResolve`, `resource` = base64 `{resourceType:"Dispute",name}` (the name alone is enough, verified live), no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
 | Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form; PDF, Word or image, 5 MB each, several at once), then send in the submit's `documents` array. Demo orders keep the demo picker (nothing uploaded) |
 | Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
 
@@ -131,10 +131,10 @@ failure even on HTTP 200.
 
 **Submit payload:** `claim_id, member_name, patient_name, relation_to_member,
 category (CLAIM), benefit_category, selected_reason,
-dispute_status (OPEN)`, plus optional `final_reason` (the member's own words;
-this is the backend's field for them) and `documents` (`name, document_id,
+dispute_status (OPEN)`, plus optional `final_reason` and `description` (both hold the member's own words:
+`final_reason` is the only one the backend passes to Twenty until its mapper sends `description`, then `final_reason` will be dropped) and `documents` (`name, document_id,
 document_type, originalname, verification_status, filetype, filesize`).
-The same words are also sent as the first `userReply` so the thread shows them
+No `dispute_type` is sent. The same words are also sent as the first reply (`dispute_chat`) so the thread shows them
 (retried once after the 3 s guard; if it still fails the text goes back in the
 reply box).
 
@@ -159,7 +159,7 @@ Done and verified live:
 - Status ids and names; `description` stored on the dispute.
 
 Still needs a backend change:
-1. **Claims paging (critical, still broken live).** At `page_size=20`, 53 rows but only 33 distinct claims (12 of page 1's rows are also on page 0). `ClaimDecorator.getClaimsByUser` orders by `g_modify_time:desc`, which moves whenever a workflow touches a claim. Order by a stable key (`g_creation_time:desc`, `id` as tiebreaker). Ticket paging is correct. The portal reads one page of 100 and removes repeats.
+1. **Claims paging (fixed 16 Oct 2026).** The backend now orders claims by `g_creation_time DESC, id DESC`. Checked live: at `page_size=20` the pages return 20, 20, 20 and 2 rows, 62 distinct claims, the same set as one 100-row read. The portal still reads one page of 100 and removes repeats, which stays correct if the order ever changes.
 2. **Merge `daf8d03` into `new_prod`** (`description` into the Twenty payload; on `feature/pharmacy-twenty-integration` only). Until it is live the portal keeps sending the member's words as both `final_reason` and `description`.
 3. **Send replies to Twenty.** `userReply` does not call Twenty, so the agent queue and `memberReply` never update.
 4. **Security: `adjudicate` and `agentReply` accept any logged-in member.** `verifyCallbackIdentity` compares a string constant with itself and never checks the caller, and `agentReply` has no role check (`TODO`), so any member session can post as support or resolve or close any ticket. Check the caller (shared secret or support role) on `adjudicate`, `agentReply` and `agentResolve`.
@@ -169,4 +169,4 @@ Still needs a backend change:
 8. **Test data to clean up** (no member delete API): DIS-2026-00393 and 00395 to 00414 and their "[TEST]" messages.
 9. **Callers must use `dispute_chat`:** the Twenty callback workflow still posts `agentReply` to `dispute`; it needs `dispute_chat` with `dispute_id` (the `disputeId`), `message_text` and `sender_name`.
 
-Handled in the portal (no backend change needed): a refusal from the server (duplicate, window, resolve) is shown as the backend's message; the 3-second same-action refusal (Send is disabled ~3 s and a refused reply is retried once automatically); status words with underscores or capitals are understood; the member's description is sent as `final_reason` and as the first message.
+Handled in the portal (no backend change needed): a refusal from the server (duplicate, window, resolve, reply on a just-closed ticket) is shown as the backend's message and the ticket refreshes; the 3-second same-action refusal (Send is disabled ~3 s and a refused reply is retried once automatically); status words with underscores or capitals are understood; the member's description is sent as `final_reason`, as `description` and as the first message; a page that repeats a ticket shows it once.

@@ -29,7 +29,7 @@ export const PHARMACY_API = {
   cartItem: (cartId: string, medicineId: string) => `member/pharmacy/carts/${cartId}/items/${medicineId}`,
   /** Dynamic cart — fetched after prescription booking using booking_name + patient_id */
   cart: (bookingName: string, patientId: string) =>
-    `habit-opd/api/v1/opd_pharmacy_cart?queryId=GET_PAGE&filter=booking_name:${bookingName},patient_id:${patientId}`,
+    `habit-opd/api/v1/opd_pharmacy_consumption?queryId=GET_PAGE&filter=booking_name:${bookingName},patient_id:${patientId}`,
   orders: 'member/pharmacy/orders',
   orderById: (orderId: string) => `member/pharmacy/orders/${orderId}`,
   pay: (orderId: string) => `member/pharmacy/orders/${orderId}/pay`,

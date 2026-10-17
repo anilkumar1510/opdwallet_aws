@@ -191,7 +191,7 @@ against working software.
 
 The Support page now saves **claim** grievances and reads them back: the claims
 listing feeds "Claims that need your help"; "Send to support" calls
-`POST habit-opd/api/v1/dispute` (`submit`, the member's words in `final_reason`, documents in `documents`); tickets (`GET_PAGE`) and threads
+`POST habit-opd/api/v1/opd_dispute` (`submit`, the member's words in `final_reason`, documents in `documents`); tickets (`GET_PAGE`) and threads
 (`GET_DISPUTE_MESSAGES`) are fetched from the API and refreshed every 30 s; replies
 go out as `userReply`. The raise form takes optional documents (DMS), which show on the ticket and download from DMS. "Claims that need your help" reads every page of the claims listing. The member
 cannot reopen a closed ticket and claim detail has no payment section.
@@ -221,3 +221,11 @@ The backend moved `userReply` to the `dispute_chat` resource (the old `dispute` 
 ## Update: backend recheck, replies verbatim (2026-10-15 night)
 
 The backend now reads the reply from `message_text` (stored verbatim, empty refused, member name instead of id), so the portal sends only `message_text` and the comma and colon lookalike swap is gone for new replies. Verified: build clean, 55 unit, 74 browser and 4 live tests (a first message and a reply with commas, colons, ₹ and an emoji come back exactly as typed). Still open on the backend: claims paging (unstable sort), `description` into Twenty (`daf8d03` not merged), replies into Twenty, and unauthenticated `adjudicate` and `agentReply`.
+
+## Update: backend paging fixed, Twenty status (2026-10-16)
+
+The backend now orders claims by `g_creation_time DESC, id DESC`: at 20 a page the pages return 20, 20, 20 and 2 rows (62 distinct claims, the same set as one 100-row read). The portal keeps its single 100-row read with repeats removed. Live check of a new ticket on 16 Oct: the Twenty record is created with Ticket ID and Description (verbatim), but the Dispute ID still carries the ticket number, the claim link and reason are not filled, and member replies and closes do not reach Twenty yet; the Twenty reply panel still fails until the app is re-applied. Portal: build clean, 55 unit and 74 browser tests pass.
+
+## Update: backend resources renamed with the `opd_` prefix (2026-10-17)
+
+The backend (`new_prod`, merge of `feature/policy-validator`) renamed the resources: `claim` is now `opd_claim`, `dispute` is `opd_dispute` and `dispute_chat` is `opd_dispute_chat`; the old URLs answer 404. Query and action names (`GET_CLAIMS_BY_USER`, `GET_PAGE`, `GET_DISPUTE_MESSAGES`, `submit`, `userReply`, `userResolve`) are unchanged. The portal now calls the new names everywhere (Support page, claims list, dashboard, new claim, claim detail). Pharmacy followed too: `opd_pharmacy_cart` is now `opd_pharmacy_consumption` (same actions and queries, 10 fields added, none removed); the `opd_cart` controller was removed and the portal does not use it. Verified: build clean, 55 unit and 74 browser tests; live check pending a signed-in session.
