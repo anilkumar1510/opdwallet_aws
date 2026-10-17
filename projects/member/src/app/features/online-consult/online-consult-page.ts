@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject, OnInit } from '@angular/core';
 import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse } from '../../services/opd-consultation.service';
+import moment from 'moment';
 import { AgoraService } from '../../services/agora.service';
 import { AgoraVideoComponent } from './components/agora-video.component';
 import { ConsultHeaderComponent } from './components/consult-header.component';
@@ -128,19 +129,16 @@ imports: [
                       />
                       <div class="mt-4">
                         <p class="mb-2 text-sm font-medium text-ink-700">Available time slots</p>
-                        @if (isLoading('slots')) {
-                          <div class="flex justify-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div></div>
-                        } @else if (getError('slots'); as err) {
-                          <p class="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 flex items-center gap-2" role="alert">
-                            <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="selectSlotDate(slotDate())">Retry</button>
-                          </p>
-                        } @else {
+                       
                           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             @for (t of slots(); track t.id) {
-                              <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" [class.border-surface-border]="slot()?.id !== t.id" (click)="slot.set(t)">{{ t.slotNo }}</button>
+                              <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" (click)="slot.set(t)">
+                                {{ (t.slot_start_time || t.slotStartTime) | date:'hh:mm a' }}
+                                -
+                                {{ (t.slot_end_time || t.slotEndTime) | date:'hh:mm a' }}
+                              </button>
                             }
                           </div>
-                        }
                       </div>
                     </div>
                   }
@@ -369,10 +367,48 @@ export class OnlineConsultPage implements OnInit {
     );
   }
 
+  private getSlotDay(timestamp: number): string {
+  const days = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  return days[new Date(timestamp).getDay()];
+}
+
   protected selectSlotDate(date: number): void {
     this.slotDate.set(date);
     if (this.doctor()) {
-      // this.consultationService.getSlots(this.doctor()!.id!, date).subscribe(s => this.slots.set(s));
+      const slotDays = this.getSlotDay(date);
+      // this.consultationService.getSlots(
+      //   this.doctor()!.id!,
+      //   date,
+      //   slotDays,
+      //   this.doctor()!.facility_id || '',
+      //   this.doctor()!.department_id || '',
+      //   'HCLW-27028'
+      // ).subscribe(s => this.slots.set(s));
+
+      this.consultationService
+        .getSlots(
+          this.doctor()!.id!,
+          date,
+          slotDays,
+          this.doctor()?.facility_id || '',
+          this.doctor()?.department_id || '',
+          'HCLW-27028'
+        )
+        .subscribe({
+          next: (slots) => {
+            console.log('Slots Response:', slots);
+
+            this.slots.set([...slots]);
+
+            if (slots.length) {
+              this.slot.set(slots[0]);
+            }
+          },
+          error: (err) => {
+            console.error('Slot Error', err);
+            this.slots.set([]);
+          }
+        });
     }
   }
 

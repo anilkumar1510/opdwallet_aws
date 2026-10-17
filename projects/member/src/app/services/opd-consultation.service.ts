@@ -52,6 +52,8 @@ export interface Slot {
   walkIn_over_booking?: boolean;
   still_available?: number;
   reason?: string;
+  slotStartTime?: string;
+  slotEndTime?: string;
 }
 
 export interface Patient {
@@ -283,8 +285,22 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
     return this.executeWithLoading('slots', this.http.get<{ resource: any[] }>(url))
       .pipe(
         map(response => response.resource || []),
-        map(items => items.map(item => ({...item.data})) as Slot[])
+        map(items => items.map(item => ({
+          ...item.data,
+          slotStartTime: this.formatTime(item.data?.slot_start_time),
+          slotEndTime: this.formatTime(item.data?.slot_end_time)
+        })) as Slot[])
       );
+  }
+
+  private formatTime(timestamp: number | undefined): string {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-IN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hourCycle: 'h23'
+    });
   }
 
   // Family Members API
