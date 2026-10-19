@@ -38,9 +38,11 @@ export class AppointmentDateSliderComponent implements OnInit {
   constructor(private cdr: ChangeDetectorRef, private consultationService: OpdConsultationService) {}
 
   ngOnInit(): void {
-    this.initializeWeekDates();
-    this.hasActiveDate = this.pickerValue;
-  }
+  this.initializeWeekDates();
+  this.hasActiveDate = this.pickerValue;
+  this.selectedWeekDate = this.weekDates[0];
+  this.dateSelected.emit(this.pickerValue);
+}
 
 initializeWeekDates(): void {
     this.weekDates = [];
