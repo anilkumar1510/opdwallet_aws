@@ -120,8 +120,10 @@ selectDate(date: WeekDateItem): void {
     const dateItem = this.weekDates.find(d => d.fullDate === date);
     if (dateItem) {
       this.selectDate(dateItem);
+      this.showCalendarModal = false;
     } else {
       this.generateWeekDatesAroundDate(date);
+      this.dateSelected.emit(date);
       this.showCalendarModal = false;
     }
   }
