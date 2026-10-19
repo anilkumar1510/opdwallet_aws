@@ -121,7 +121,7 @@ imports: [
                         [availableDays]="7"
                         [showPickerButton]="true"
                         [practitionerId]="doctor()?.id || ''"
-                        [uhId]="'HCLW-27028'"
+                        [uhId]="patient()?.uhId || ''"
                         [facilityId]="doctor()?.facility_id || ''"
                         [departmentId]="doctor()?.department_id || ''"
                         (dateSelected)="selectSlotDate($event)"
@@ -386,7 +386,7 @@ export class OnlineConsultPage implements OnInit {
           slotDays,
           this.doctor()?.facility_id || '',
           this.doctor()?.department_id || '',
-          'HCLW-27028'
+          this.patient()?.uhId||''
         )
         .subscribe({
           next: (slots) => {
@@ -526,13 +526,13 @@ export class OnlineConsultPage implements OnInit {
           serviceItemId: this.doctor()?.id,
           serviceItemName: this.doctor()?.name,
           consultation_type_code: this.mode(),
-          serviceDate: Date.now(),
-          serviceStartTime: Date.now(),
-          serviceEndTime: Date.now() + 900000,
+          serviceDate: this.slot()?.slot_date,
+          serviceStartTime: this.slot()?.slot_start_time,
+          serviceEndTime: this.slot()?.slotEndTime,
           slotId: this.slot()?.id,
           patient_id: this.patient()?.patient_id,
           speciality_id: this.doctor()?.speciality_id,
-          facility_id: '813cdb10-d750-11f0-a474-da069b21f2f6-53',
+          facility_id: this.doctor()?.facility_id,
           provider_code: 'HCL-001',
           serviceType_code: 'op_consultation',
           mode_of_appointment: 'opd_network',
@@ -548,7 +548,7 @@ export class OnlineConsultPage implements OnInit {
       checkout_snapshot: {
         patient_id: this.patient()?.patient_id,
         checkoutsnapshot: {
-          facility_id: '813cdb10-d750-11f0-a474-da069b21f2f6-53',
+          facility_id: this.doctor()?.facility_id,
           doctor_id: this.doctor()?.id,
           speciality_id: this.doctor()?.speciality_id,
           consultation_type: this.mode(),
@@ -574,7 +574,7 @@ export class OnlineConsultPage implements OnInit {
             uhId: this.patient()?.uhId,
             payer_info: { id: 'cash', payer_type: 'cash', payer_name: 'Cash' }
           },
-          facility_id: '813cdb10-d750-11f0-a474-da069b21f2f6-53',
+          facility_id: this.doctor()?.facility_id,
           doctor_id: this.doctor()?.id,
           services: [{
             id: this.doctor()?.id,
