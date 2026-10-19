@@ -130,7 +130,7 @@ imports: [
                         <p class="mb-2 text-sm font-medium text-ink-700">Available time slots</p>
                        
                           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            @for (t of slots(); track t.id) {
+                            @for (t of slots().filter(s => s.status === 'available'); track t.id) {
                               <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" (click)="slot.set(t)">
                                 {{ (t.slot_start_time || t.slotStartTime) | date:'hh:mm a' }}
                                 -
@@ -375,14 +375,6 @@ export class OnlineConsultPage implements OnInit {
     this.slotDate.set(date);
     if (this.doctor()) {
       const slotDays = this.getSlotDay(date);
-      // this.consultationService.getSlots(
-      //   this.doctor()!.id!,
-      //   date,
-      //   slotDays,
-      //   this.doctor()!.facility_id || '',
-      //   this.doctor()!.department_id || '',
-      //   'HCLW-27028'
-      // ).subscribe(s => this.slots.set(s));
 
       this.consultationService
         .getSlots(
@@ -409,6 +401,7 @@ export class OnlineConsultPage implements OnInit {
           }
         });
     }
+    
   }
 
   protected openEmpanelment(): void {

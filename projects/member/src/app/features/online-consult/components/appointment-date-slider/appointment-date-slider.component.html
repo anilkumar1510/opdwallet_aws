@@ -106,7 +106,8 @@
                 [class.other-month]="!day.isCurrentMonth"
                 [class.today]="day.isToday"
                 [class.selected]="day.date === pickerValue"
-                (click)="day.date && selectCalendarDate(day.date)"
+                [class.disabled]="day.disabled"
+                (click)="!day.disabled && day.date && selectCalendarDate(day.date)"
               >
                 {{ day.date ? formatDayNumber(day.date) : '' }}
               </div>

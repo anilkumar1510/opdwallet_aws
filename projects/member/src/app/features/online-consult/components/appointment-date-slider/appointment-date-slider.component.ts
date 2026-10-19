@@ -42,23 +42,26 @@ export class AppointmentDateSliderComponent implements OnInit {
     this.hasActiveDate = this.pickerValue;
   }
 
-  initializeWeekDates(): void {
+initializeWeekDates(): void {
     this.weekDates = [];
     const startDate = moment().startOf('day');
-
+    const today = moment().startOf('day');
+    
     for (let i = 0; i < this.availableDays; i++) {
       const date = moment(startDate).add(i, 'day');
+      const isPast = date.isBefore(today, 'day');
       const dateObj: WeekDateItem = {
         alias: i === 0 ? 'Today' : i === 1 ? 'Tom' : date.format('ddd'),
         day: date.format('DD MMM'),
         fullDate: date.valueOf(),
         slotCount: null,
-        status: 'loading'
+        status: isPast ? 'not_available' : 'loading'
       };
       this.weekDates.push(dateObj);
-
-      // Fetch slot count for each date
-      this.fetchSlotCount(dateObj);
+      
+      if (!isPast) {
+        this.fetchSlotCount(dateObj);
+      }
     }
   }
 
@@ -116,17 +119,30 @@ selectDate(date: WeekDateItem): void {
     if (dateItem) {
       this.selectDate(dateItem);
     } else {
-      const newDateItem: WeekDateItem = {
-        alias: moment(date).format('ddd'),
-        day: moment(date).format('DD MMM'),
-        fullDate: date,
+      this.generateWeekDatesAroundDate(date);
+      this.showCalendarModal = false;
+    }
+  }
+
+  private generateWeekDatesAroundDate(selectedDate: number): void {
+    const startDate = moment(selectedDate).startOf('day');
+    this.weekDates = [];
+    
+    for (let i = 0; i < this.availableDays; i++) {
+      const date = moment(startDate).add(i, 'day');
+      const dateObj: WeekDateItem = {
+        alias: i === 0 ? 'Today' : i === 1 ? 'Tom' : date.format('ddd'),
+        day: date.format('DD MMM'),
+        fullDate: date.valueOf(),
         slotCount: null,
         status: 'loading'
       };
-      this.fetchSlotCount(newDateItem);
-      this.selectDate(newDateItem);
+      this.weekDates.push(dateObj);
+      this.fetchSlotCount(dateObj);
     }
-    this.showCalendarModal = false;
+    this.pickerValue = startDate.valueOf();
+    this.hasActiveDate = this.pickerValue;
+    this.cdr.detectChanges();
   }
   
   showCalendarModal: boolean = false;
@@ -148,17 +164,21 @@ selectDate(date: WeekDateItem): void {
     const monthStart = moment(this.currentMonth).startOf('month');
     const startDay = monthStart.clone().subtract(monthStart.day(), 'days');
     const days: any[] = [];
+    const today = moment().startOf('day');
 
     for (let i = 0; i < 42; i++) {
       const day = startDay.add(1, 'day');
       const date = day.valueOf();
       const isCurrentMonth = day.month() === monthStart.month();
       const isToday = this.isToday(date);
+      const isPast = day.isBefore(today, 'day');
 
       days.push({
         date: isCurrentMonth ? date : null,
         isCurrentMonth,
-        isToday
+        isToday,
+        isPast,
+        disabled: isPast
       });
     }
 
