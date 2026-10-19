@@ -312,7 +312,7 @@ export class ClaimsStore {
     const pageSize = 20;
     const arg = "queryId=GET_CLAIMS_BY_USER&page_no="+pageNo+"&page_size="+pageSize;
     try{
-      this.appService.getcall('claim','habit-opd', arg).subscribe(res =>{
+      this.appService.getcall('opd_claim','habit-opd', arg).subscribe(res =>{
         const response = JSON.parse(res)
         // Error bodies (`{errCode:-1, message:'Invalid Session'}`) carry no
         // `resource` at all, so this has to be optional or the list throws.
@@ -352,7 +352,7 @@ export class ClaimsStore {
     this._getClimDetails.set(true);
     const arg = "queryId=GET_PAGE&filter=name:"+climId;
     return new Promise<void>((resolve) => {
-      this.appService.getcall('claim','habit-opd', arg).subscribe({
+      this.appService.getcall('opd_claim','habit-opd', arg).subscribe({
         next: (res) => {
           try {
             const response = JSON.parse(res)

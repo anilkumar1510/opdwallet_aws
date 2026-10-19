@@ -104,3 +104,69 @@ statuses the claim detail page shows a **Payment** section.
 Max upload size is now **5 MB** across claim submission and document resubmission
 (`new-claim-page.ts` `MAX_BYTES`, `claim.mapper.ts` `RESUBMIT_MAX_BYTES`). The
 server-side multer limit should match.
+
+## 7. Grievance / dispute (Support, `/member/helpline`)
+
+The Support page (static demo by Nitendra, `features/misc/helpline-page.ts` +
+`features/support/grievance.data.ts`) is wired to the real backend for
+**reimbursement claims**. Services (consultation, pharmacy, lab, …) stay on the
+static demo data until the backend and Twenty support them. All calls go through
+`core/disputes/dispute.api.ts` (and `claim-pages.ts`); host is the dev proxy /
+`apiBaseUrl` (`https://api.habithealth.com`), nothing is hard-coded to `localhost:8090`.
+
+| What | Call |
+|---|---|
+| Claims that need help | `GET habit-opd/api/v1/opd_claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`; the rest via `ClaimPages`, one `page_size=100` read because the 20-row pages overlap; 5 shown at a time; repeats removed) |
+| Raise a grievance | `POST habit-opd/api/v1/opd_dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
+| My tickets + status | `GET habit-opd/api/v1/opd_dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |
+| Thread | `GET habit-opd/api/v1/opd_dispute?queryId=GET_DISPUTE_MESSAGES&args=dispute_id:<uuid>&page_no&page_size=20` (all pages) |
+| Member reply | `POST habit-opd/api/v1/opd_dispute_chat` `action=userReply`, `resource` = base64 `{resourceType:"DisputeChat",dispute_id:<ticket uuid>,message_text:<text>}`, no `args`. The text is stored verbatim (commas and colons included). The old `dispute` + `userReply` answers "Invalid Query". Refused on a resolved or closed ticket and when `message_text` is empty |
+| Member closes the ticket | `POST habit-opd/api/v1/opd_dispute` `action=userResolve`, `resource` = base64 `{resourceType:"Dispute",name}` (the name alone is enough, verified live), no `args`. The backend sets the status to RESOLVED and the last sender to MEMBER |
+| Supporting document (optional) | upload `POST /dms/api/v1/emrImage` (same as the claim form; PDF, Word or image, 5 MB each, several at once), then send in the submit's `documents` array. Demo orders keep the demo picker (nothing uploaded) |
+| Open an attached document | `GET /dms/api/v1/emrImage/image-response-entity?args=id:<document_id>&application=dms` (downloaded as a file) |
+
+Requests are form-urlencoded; `resource` is URL-encoded base64, signed over
+`resource&action=<action>` through `AppService.addXsrfToken`. `errCode: -1` is a
+failure even on HTTP 200.
+
+**Submit payload:** `claim_id, member_name, patient_name, relation_to_member,
+category (CLAIM), benefit_category, selected_reason,
+dispute_status (OPEN)`, plus optional `final_reason` and `description` (both hold the member's own words:
+`final_reason` is the only one the backend passes to Twenty until its mapper sends `description`, then `final_reason` will be dropped) and `documents` (`name, document_id,
+document_type, originalname, verification_status, filetype, filesize`).
+No `dispute_type` is sent. The same words are also sent as the first reply (`dispute_chat`) so the thread shows them
+(retried once after the 3 s guard; if it still fails the text goes back in the
+reply box).
+
+**Ticket state** comes from `dispute_status` (display text): contains
+resolved/closed means closed; "awaiting user/member" means support has replied;
+anything else is with support. On a closed ticket `final_reason` is shown as
+support's resolution only once it differs from the member's first message (submit
+puts the member's words there; support's resolution later replaces them). Tickets
+and the open thread refresh every 30 s while the page is open. Nothing is stored
+in the browser.
+
+**Not available yet (no API):** notifications (in-app, WhatsApp, email), service-line
+(non-claim) grievances and their orders, central configuration (reason lists,
+raise window, support phone and email: placeholders `1800-000-0000` /
+`support@opdwallet.com`). **No reopen:** the member cannot reopen a closed ticket.
+
+### For the backend team (rechecked against `new_prod` and the live API, 15 Oct 2026, evening)
+Done and verified live:
+- **Member "Mark resolved"** (`userResolve`): owner and closed-ticket checks added; status RESOLVED, last sender MEMBER.
+- **One open ticket per claim** and the **3-month window** (90 days from `treatment_date`).
+- **Replies on `dispute_chat`** (`7ca265f`, `dd0937b`): `message_text` required and stored verbatim (commas and colons work), refused on a resolved or closed ticket, member `sender_name` is now the patient's name. The `args` form is no longer read.
+- Status ids and names; `description` stored on the dispute.
+
+Still needs a backend change:
+1. **Claims paging (fixed 16 Oct 2026).** The backend now orders claims by `g_creation_time DESC, id DESC`. Checked live: at `page_size=20` the pages return 20, 20, 20 and 2 rows, 62 distinct claims, the same set as one 100-row read. The portal still reads one page of 100 and removes repeats, which stays correct if the order ever changes.
+2. **Merge `daf8d03` into `new_prod`** (`description` into the Twenty payload; on `feature/pharmacy-twenty-integration` only). Until it is live the portal keeps sending the member's words as both `final_reason` and `description`.
+3. **Send replies to Twenty.** `userReply` does not call Twenty, so the agent queue and `memberReply` never update.
+4. **Security: `adjudicate` and `agentReply` accept any logged-in member.** `verifyCallbackIdentity` compares a string constant with itself and never checks the caller, and `agentReply` has no role check (`TODO`), so any member session can post as support or resolve or close any ticket. Check the caller (shared secret or support role) on `adjudicate`, `agentReply` and `agentResolve`.
+5. **Status strings differ from the declared values.** The code writes "Awaiting executive response", while the declared id is `AWAITING_EXECUTIVE_RESPONSE`; `adjudicate` does not accept `OPEN`. The portal understands every form.
+6. **Service grievances:** `category` accepts only `CLAIM` (the portal sends no `dispute_type`; the backend does not need it on `submit`); services need values, an order link (no claim id) and CRM support.
+7. **Smaller:** `X-XSRF-TOKEN` is not checked; DMS answers HTTP 500 for an unknown document id (404 would be right); notifications are a `TODO`; no configuration API yet (reasons, raise window, support phone and email).
+8. **Test data to clean up** (no member delete API): DIS-2026-00393 and 00395 to 00414 and their "[TEST]" messages.
+9. **Callers must use `dispute_chat`:** the Twenty callback workflow still posts `agentReply` to `dispute`; it needs `dispute_chat` with `dispute_id` (the `disputeId`), `message_text` and `sender_name`.
+
+Handled in the portal (no backend change needed): a refusal from the server (duplicate, window, resolve, reply on a just-closed ticket) is shown as the backend's message and the ticket refreshes; the 3-second same-action refusal (Send is disabled ~3 s and a refused reply is retried once automatically); status words with underscores or capitals are understood; the member's description is sent as `final_reason`, as `description` and as the first message; a page that repeats a ticket shows it once.

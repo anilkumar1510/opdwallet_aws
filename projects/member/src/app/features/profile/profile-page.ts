@@ -177,10 +177,11 @@ const DATE = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', 
               <div class="mt-4 flex gap-3">
                 <button
                   type="button"
-                  class="min-h-touch rounded-xl bg-[#0F5FDC] px-5 text-sm font-semibold text-white hover:bg-[#034DA2]"
+                  class="min-h-touch rounded-xl bg-[#0F5FDC] px-5 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50"
+                  [disabled]="bank.saving()"
                   (click)="saveBank()"
                 >
-                  Save bank details
+                  {{ bank.saving() ? 'Saving…' : 'Save bank details' }}
                 </button>
                 @if (bank.hasDetails()) {
                   <button
@@ -219,6 +220,10 @@ export class ProfilePage {
 
   protected readonly member = computed(() => this.family.activeMember());
 
+  constructor() {
+    void this.bank.load();
+  }
+
   /** Load the saved values into the form before editing. */
   protected startEdit(): void {
     const current = this.bank.details();
@@ -245,7 +250,7 @@ export class ProfilePage {
     this.chequeFile.set(file);
   }
 
-  protected saveBank(): void {
+  protected async saveBank(): Promise<void> {
     if (this.bankHolder().trim() === '') return this.bankProblem.set('Enter the account holder name.');
     if (!isValidAccountNumber(this.bankAccount()))
       return this.bankProblem.set('Enter a valid account number (9–18 digits).');
@@ -256,20 +261,21 @@ export class ProfilePage {
     // A new upload wins; otherwise keep whatever cheque was already on record.
     const chequeName = this.chequeFile()?.name || this.existingCheque();
     if (!chequeName) return this.bankProblem.set('Upload a cancelled cheque.');
-    // TODO(API): upload the cheque FILE — only its name is stored. See PLACEHOLDER-APIS.md.
-    if (this.chequeFile()) {
-      console.info('[PLACEHOLDER] cancelled cheque captured, not yet uploaded:', this.chequeFile()!.name);
-    }
 
-    this.bank.save({
+    const ok = await this.bank.save({
       accountHolderName: this.bankHolder(),
       accountNumber: this.bankAccount(),
       ifsc: this.bankIfsc(),
       bankName: this.bankName(),
       cancelledChequeName: chequeName,
-    });
-    this.bankProblem.set(null);
-    this.editingBank.set(false);
+    }, this.chequeFile());
+
+    if (ok) {
+      this.bankProblem.set(null);
+      this.editingBank.set(false);
+    } else {
+      this.bankProblem.set(this.bank.error() || 'Could not save bank details. Please try again.');
+    }
   }
 
   protected readonly relationship = computed(() => {

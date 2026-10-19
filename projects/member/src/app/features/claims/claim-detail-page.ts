@@ -154,6 +154,7 @@ function humaniseCode(value: string | undefined): string {
             </dl>
           </section>
 
+            
           <!-- Why the claim needs attention. Placed directly under the
                summary because it is the first thing a member wants when they
                see Rejected or Documents required, not something to hunt for
@@ -795,7 +796,7 @@ export class ClaimDetailPage {
     try {
       // Relative so the dev proxy can reach the API; the new-claim form still
       // posts an absolute URL, which only works where CORS allows it.
-      await firstValueFrom(this.http.post('habit-opd/api/v1/claim', params, options));
+      await firstValueFrom(this.http.post('habit-opd/api/v1/opd_claim', params, options));
       this.pendingDocuments.set([]);
       this.removedDocumentKeys.set(new Set());
       await this.store.getClimDetails(this.claimId());

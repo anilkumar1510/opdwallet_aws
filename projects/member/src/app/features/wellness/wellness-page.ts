@@ -4,6 +4,12 @@ import { UserInfoStore } from './../../core/session/userinfo.store';
 import { LocationStore } from './../../core/location/location.store';
 import { Place } from './../../core/location/location';
 
+import { BenefitCategory } from '../../core/domain/codes';
+import { ClaimModeStore } from '../../core/member/claim-mode.store';
+import { ClaimOption } from '../../shared/ui/claim-option';
+
+import { FamilyStore } from '../../core/family/family.store';
+
 /**
  * Annual Health Check booking.
  *
@@ -70,7 +76,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -110,7 +116,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                 This benefit can be taken only once a year. Both pathology and radiology are booked.
               </p>
             </div>
-          } @else {
+          } @else if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
             <h2 class="mb-1 text-lg font-bold text-[#034DA2]">Choose how to book</h2>
             <p class="mb-3 text-sm text-ink-700">
               Book pathology and radiology individually, or the entire package in one go. Choosing a
@@ -124,6 +130,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
             }
           }
 
+          @if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
           <div class="space-y-3">
             @if (ahcStore.packageLoading()) {
               <p class="rounded-2xl border border-[#EDF0F7] bg-white p-4 text-sm text-ink-500">Loading your health check package…</p>
@@ -190,6 +197,11 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
               </span>
             </button> -->
           </div>
+          }
+          <div class="mt-4">
+            <opd-claim-option [category]="BenefitCategory.HealthPackages" [label]="'the annual health check'" />
+          </div>
+
 
           <!-- Booked legs (packageServiceItemsStatusInfo rows with stage 'Booked'), with their status. -->
           @for (b of ahcStore.AHCBookings(); track b.id) {
@@ -732,6 +744,9 @@ export class WellnessPage {
   protected readonly userStore = inject(UserInfoStore);
   protected readonly ahcStore = inject(AHCStore);
   protected readonly location = inject(LocationStore);
+  protected readonly claimModes = inject(ClaimModeStore);
+  protected readonly BenefitCategory = BenefitCategory;
+  private readonly family = inject(FamilyStore);
 
   // Booked in this visit, before AHC_PACKAGE_DETAIL is read again and lists it.
   private readonly pathologyBookedNow = signal(false);
