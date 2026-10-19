@@ -97,6 +97,15 @@ export class AppService {
             map((response: any) => response.body ?? response)
         );
     }
+    /** `getcall` for a binary body (a PDF or image), with the same signed headers. */
+    getBlob(resorceName: string, applicationname: string, arg?: any){
+        let url = applicationname+"/api/v1/"+resorceName;
+        if(arg){
+            url += '?'+arg
+        }
+        const { headers } = this.addXsrfToken(url, true);
+        return this._http.get(url, { headers, responseType: 'blob' });
+    }
     postCall(resorceName: string, applicationName: string, arg?: any, payload?: any, action?: any){
         let url = applicationName+"/api/v1/"+resorceName;
         var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));

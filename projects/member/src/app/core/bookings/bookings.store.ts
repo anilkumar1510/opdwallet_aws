@@ -1,26 +1,37 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
-import { AppError } from '../http/app-error';
+import { AppService } from '../http/api.service';
+import { AppError, appError } from '../http/app-error';
 import { SessionStore } from '../session/session.store';
+import { UserInfoStore } from '../session/userinfo.store';
+import { bookedServiceToBooking } from './booking.mapper';
 import { Booking, BookingKind } from './booking.model';
-import { STATIC_BOOKINGS } from './static-bookings.data';
+
+/** LIST_BOOKED_SERVICES is paged; rows are read a page at a time until a short page. */
+const PAGE_SIZE = 10;
+/** Guard against a server that never sends a short page. */
+const MAX_PAGES = 20;
 
 /**
  * The member's bookings.
  *
- * DUMMY / STATIC — no backend. This used to aggregate live data from the
- * appointments, service-booking, lab, AHC and pharmacy endpoints and to cancel /
- * download-invoice / cancel-prescription against them. All of that is removed;
- * the list is served from `static-bookings.data.ts` and the actions are inert
- * (the static rows expose no cancel / invoice / prescription controls). The
- * public shape is unchanged so the page did not need reworking. See
- * REMOVED-APIS.md.
+ * Health check bookings come from `opd_ahc_booking` LIST_BOOKED_SERVICES
+ * (serviceType_code phc). The other kinds — appointments, dental, vision, lab,
+ * pharmacy — are not wired to an API yet, so their tabs stay empty. Cancel,
+ * invoice and prescription actions are inert: the AHC rows expose none of
+ * those controls. See REMOVED-APIS.md.
  */
 @Injectable({ providedIn: 'root' })
 export class BookingsStore {
   private readonly session = inject(SessionStore);
+  private readonly api = inject(AppService);
+  private readonly userStore = inject(UserInfoStore);
 
-  private readonly _bookings = signal<readonly Booking[]>(STATIC_BOOKINGS);
+  private readonly _bookings = signal<readonly Booking[]>([]);
+  /** The patient the list was loaded for, so a reload happens only when it changes. */
+  private loadedFor: string | null = null;
+  private loadSeq = 0;
   private readonly _loading = signal(false);
   private readonly _error = signal<AppError | null>(null);
   private readonly _partial = signal<readonly string[]>([]);
@@ -62,10 +73,78 @@ export class BookingsStore {
   });
 
   constructor() {
-    // Sign-out clears the list; sign-in restores the static set.
+    // Loads once the signed-in member's user info has arrived; sign-out clears the list.
     effect(() => {
-      this._bookings.set(this.session.isAuthenticated() ? STATIC_BOOKINGS : []);
+      const user = this.userStore.userInfo()?.[0];
+      if (!this.session.isAuthenticated() || !user?.user_id) {
+        this.loadedFor = null;
+        this.loadSeq++;
+        this._bookings.set([]);
+        return;
+      }
+      if (this.loadedFor !== user.user_id) void this.load(user);
     });
+  }
+
+  /** Reads the list again, e.g. after a new booking. */
+  refresh(): Promise<void> {
+    const user = this.userStore.userInfo()?.[0];
+    return user?.user_id ? this.load(user) : Promise.resolve();
+  }
+
+  private async load(user: any): Promise<void> {
+    const seq = ++this.loadSeq;
+    this.loadedFor = user.user_id;
+    this._loading.set(true);
+    this._error.set(null);
+    try {
+      const rows: any[] = [];
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const batch = await this.fetchPage(user.user_id, page);
+        if (seq !== this.loadSeq) return;
+        rows.push(...batch);
+        if (batch.length < PAGE_SIZE) break;
+      }
+      const now = new Date();
+      const key = user.api_encryption_key ?? null;
+      const decrypt = (value: string): string => this.api.decryptText(value, key);
+      const bookings = rows
+        .map((row) => bookedServiceToBooking(row, now, decrypt))
+        // Newest appointment first.
+        .sort((a, b) => (b.scheduledFor?.getTime() ?? 0) - (a.scheduledFor?.getTime() ?? 0));
+      this._bookings.set(bookings);
+    } catch {
+      if (seq !== this.loadSeq) return;
+      this.loadedFor = null;
+      this._bookings.set([]);
+      this._error.set(appError('server', 'We could not load your bookings. Please try again.'));
+    } finally {
+      if (seq === this.loadSeq) this._loading.set(false);
+    }
+  }
+
+  private async fetchPage(patientId: string, page: number): Promise<any[]> {
+    const applicationName = 'habit-opd';
+    const resourceName = 'opd_ahc_booking';
+    const queryId = 'LIST_BOOKED_SERVICES';
+    // Booked up to the end of today; FROM 0 means since the beginning.
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    const filter =
+      'serviceType_code:phc,is_visible:true,patient_id:' + patientId +
+      ',FROMTOKEY:g_creation_time,FROM:0,TO:' + endOfToday.getTime();
+    const query =
+      'queryId=' + queryId +
+      '&args=mode_of_appointment:opd_network' +
+      '&search_columns=serviceItemName' +
+      '&search=' +
+      '&page_no=' + page +
+      '&page_size=' + PAGE_SIZE +
+      '&filter=' + filter +
+      '&application=' + applicationName;
+    const response = await firstValueFrom(this.api.getcall(resourceName, applicationName, query));
+    const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+    return Array.isArray(parsed?.resource) ? parsed.resource : [];
   }
 
   setFilter(filter: BookingKind | 'ALL'): void {
@@ -73,8 +152,7 @@ export class BookingsStore {
   }
 
   retry(): void {
-    this._bookings.set(STATIC_BOOKINGS);
-    this._error.set(null);
+    void this.refresh();
   }
 
   // Inert in dummy mode — no backend. The static rows carry `isCancellable:false`

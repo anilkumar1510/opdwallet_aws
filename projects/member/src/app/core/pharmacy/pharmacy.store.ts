@@ -4,20 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { AppError, appError, isAppError } from '../http/app-error';
 import { SessionStore } from '../session/session.store';
-import {
-  Cart,
-  CartDto,
-  DeliveryAddressDto,
-  Medicine,
-  MedicineDto,
-  Order,
-  OrderDto,
-  PHARMACY_API,
-  PharmacyPrescriptionDto,
-  toCart,
-  toMedicine,
-  toOrder,
-} from './pharmacy';
+import { Cart, CartDto, CartItem, DeliveryAddressDto, Medicine, MedicineDto, Order, OrderDto, PHARMACY_API, PharmacyPrescriptionDto, toCart, toMedicine, toOrder } from './pharmacy';
+import { ApiCartItem, ApiCartEnvelope, mapCartItem } from './pharmacy';
 
 @Injectable({ providedIn: 'root' })
 export class PharmacyStore {
@@ -32,6 +20,9 @@ export class PharmacyStore {
   private readonly _cart = signal<Cart | null>(null);
   private readonly _cartLoading = signal(false);
   private readonly _cartActionError = signal<string | null>(null);
+  private readonly _cartItemsLoading = signal(false);
+  private readonly _cartItemsError = signal<string | null>(null);
+  private readonly _cartItems = signal<CartItem[]>([]);
 
   private readonly _order = signal<Order | null>(null);
   private readonly _submitting = signal(false);
@@ -46,6 +37,9 @@ export class PharmacyStore {
   readonly cart = this._cart.asReadonly();
   readonly cartLoading = this._cartLoading.asReadonly();
   readonly cartActionError = this._cartActionError.asReadonly();
+  readonly cartItems = this._cartItems.asReadonly();
+  readonly cartItemsLoading = this._cartItemsLoading.asReadonly();
+  readonly cartItemsError = this._cartItemsError.asReadonly();
 
   readonly order = this._order.asReadonly();
   readonly submitting = this._submitting.asReadonly();
@@ -56,6 +50,18 @@ export class PharmacyStore {
     effect(() => {
       if (!this.session.isAuthenticated()) this.reset();
     });
+  }
+
+  setCart(cart: CartItem[]): void {
+    this._cartItems.set(cart);
+  }
+
+  setCartLoading(loading: boolean): void {
+    this._cartItemsLoading.set(loading);
+  }
+
+  setCartError(error: string | null): void {
+    this._cartItemsError.set(error);
   }
 
   /**
@@ -120,20 +126,6 @@ export class PharmacyStore {
     }
   }
 
-  async openCart(patientId: string, patientName: string, prescriptionFileName?: string): Promise<void> {
-    this._cartLoading.set(true);
-    try {
-      const response = await firstValueFrom(
-        this.http.post<CartDto>(PHARMACY_API.carts, { patientId, patientName, prescriptionFileName }),
-      );
-      this._cart.set(toCart(response));
-    } catch {
-      this._cart.set(null);
-    } finally {
-      this._cartLoading.set(false);
-    }
-  }
-
   /**
    * Step 8 — reduce a quantity. There is no matching "increase": the API
    * refuses it, because everything in this cart was put there by an
@@ -158,7 +150,6 @@ export class PharmacyStore {
     }
   }
 
-  /** See `PHARMACY_API.demoBuildCart` — development only, refused elsewhere. */
   async demoBuildCart(prescriptionId: string): Promise<string | null> {
     this._cartActionError.set(null);
     try {
@@ -193,6 +184,44 @@ export class PharmacyStore {
       this._cart.set(toCart(response));
     } catch {
       // Leave the cart as-is — a failed remove is not worth surfacing.
+    }
+  }
+
+  /**
+   * Fetch cart items from the habit-opd API using booking_name and patient_id.
+   * The API returns an envelope with `resource[0].vendors[0].items`.
+   */
+  async fetchCart(bookingName: string, patientId: string): Promise<CartItem[]> {
+    this._cartItemsLoading.set(true);
+    this._cartItemsError.set(null);
+    try {
+      const response = await firstValueFrom(
+        this.http.get<ApiCartEnvelope | null>(PHARMACY_API.cart(bookingName, patientId)),
+      );
+      if (!response?.resource?.length) {
+        this._cartItemsError.set('No cart items were found for this prescription.');
+        return [];
+      }
+      const items: CartItem[] = [];
+      for (const resource of response.resource) {
+        for (const vendor of resource.vendors ?? []) {
+          for (const apiItem of vendor.items ?? []) {
+            items.push(mapCartItem(apiItem));
+          }
+        }
+      }
+      if (!items.length) {
+        this._cartItemsError.set('No cart items were found for this prescription.');
+        return [];
+      }
+      return items;
+    } catch (error: unknown) {
+      this._cartItemsError.set(
+        isAppError(error) ? error.message : 'We could not load the cart. Please try again.',
+      );
+      return [];
+    } finally {
+      this._cartItemsLoading.set(false);
     }
   }
 

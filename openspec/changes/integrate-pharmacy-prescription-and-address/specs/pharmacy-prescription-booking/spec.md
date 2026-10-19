@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Lets a pharmacy member submit a prescription for digitisation, choose or add a delivery address, and send a pharmacy booking request that carries both the uploaded document and the chosen address.
+Lets a pharmacy member submit a prescription for digitisation, choose or add a delivery address, and send a pharmacy booking request that carries both the uploaded document and the chosen address. After booking acceptance, the system fetches the adjudicated cart from the `habit-opd` API using the booking reference and patient ID, replacing the static demo cart with real adjudicated medicine data.
 
 ## ADDED Requirements
 
@@ -183,7 +183,7 @@ The system SHALL present the API's own refusal message when an address save is r
 - **THEN** the system treats the save as failed and reports the reason
 
 ### Requirement: Past bookings are loaded from the API
-The system SHALL load the member's past pharmacy bookings from `habit-opd/api/v1/opd_pharmacy_booking` with `queryId=GET_PHARMACY_BY_USER` when the page loads, and SHALL page through the results server-side.
+The system SHALL load the member's past pharmacy bookings from `habit-opd/api/v1/opd_pharmacy_booking` with `queryId=GET_PHARMACY_CART_BY_USER` when the page loads, and SHALL page through the results server-side.
 
 #### Scenario: Past orders load on page entry
 - **WHEN** the pharmacy page is opened
@@ -255,3 +255,93 @@ The system SHALL present past bookings in discrete pages of five, replacing the 
 - **WHEN** the API reports a total count
 - **THEN** the counter includes the total page count
 - **AND** the next-page control is enabled where another page exists
+
+### Requirement: Dynamic cart is fetched after prescription booking
+After the pharmacy booking is accepted, the system SHALL fetch the adjudicated cart from the `habit-opd` pharmacy cart API using the booking reference (`booking_name`) and the patient ID (`patient_id`). The cart data SHALL come from `resource[0].vendors[0].items` in the API response.
+
+#### Scenario: Cart is fetched using booking_name and patient_id
+- **WHEN** the pharmacy booking is accepted and returns a booking reference (e.g., "OPD-2026-00252")
+- **THEN** the system extracts the booking reference as `booking_name` and the active patient's ID as `patient_id`
+- **AND** the system sends a GET request to `habit-opd/api/v1/opd_pharmacy_cart?queryId=GET_PAGE&filter=booking_name:{booking_name},patient_id:{patient_id}`
+- **AND** the system waits for the API response before displaying the cart step
+
+#### Scenario: Successful cart response is mapped to CartItem interface
+- **WHEN** the API returns successfully (errCode: 0) with cart data in `resource[0]`
+- **THEN** for each item in `resource[0].vendors[0].items`, the system SHALL map:
+  - `id` ← `serviceItemCode` or `serviceItemId`
+  - `name` ← `serviceItemName`
+  - `unitPrice` ← `item_discounted_price` or `selling_amount`
+  - `qty` ← `quantity`
+  - `isSubstitute` ← `false`
+  - `originalBrand` ← `provider_name`
+  - Additional fields available: `service_mrp`, `image_url`, `label`, `prescription_req`, `med_type`
+
+#### Scenario: Static cart is used as fallback when API fails
+- **WHEN** the cart API request fails or returns errCode !== 0
+- **THEN** the system SHALL fall back to the static `ADJUDICATED_CART` for demonstration purposes
+- **AND** the system SHALL surface a visible warning indicating the cart is using demo data
+
+### Requirement: Cart totals are calculated from API response
+The system SHALL calculate cart totals from the fetched data using the `selling_amount` or `item_discounted_price` values returned by the API.
+
+#### Scenario: Cart value is calculated from API prices
+- **WHEN** items are displayed from the API response
+- **THEN** the cart value SHALL be the sum of `selling_amount` × `quantity` for each item
+- **AND** the wallet block and copay calculations SHALL use this computed value
+
+### Requirement: Cart reduce/decrease is reflected locally first
+When the member reduces a medicine quantity in the cart, the system SHALL immediately update the UI with the new quantity and recalculated values, then attempt to persist to the API if possible.
+
+#### Scenario: Member reduces quantity
+- **WHEN** the member clicks the decrease button for a cart item
+- **THEN** the item quantity SHALL be decremented in the UI immediately
+- **AND** the `pay().cartValue`, `pay().copay`, and `pay().walletBlock` SHALL be recalculated based on new quantities
+- **AND** the cart list SHALL continue to show the updated quantity
+- **AND** if the API endpoint for item updates becomes available, it SHALL be called with the new quantity
+
+### Requirement: Cart remove action updates totals
+When the member removes an item from the cart, the system SHALL remove it from the display and recalculate all totals.
+
+#### Scenario: Member removes item
+- **WHEN** the member clicks the remove button for a cart item
+- **THEN** the item SHALL be removed from the cart display immediately
+- **AND** cart totals SHALL be recalculated excluding that item
+- **AND** the wallet block and copay SHALL reflect the reduced cart value
+
+### Requirement: Loading and error states are displayed in cart step
+The cart step SHALL display appropriate loading and error states while fetching cart data.
+
+#### Scenario: Loading state shown while cart is being fetched
+- **WHEN** the cart step is entered and the API call is in progress
+- **THEN** the system SHALL show "Loading your cart..." message
+
+#### Scenario: Error state with retry option
+- **WHEN** the cart API request fails
+- **THEN** the system SHALL display the error message with a "Retry" button
+- **AND** clicking "Retry" SHALL re-attempt the cart fetch
+
+### Requirement: Past order cart view displays adjudicated cart
+When a member clicks on a past order card, the system SHALL navigate to the cart view for that order and fetch the adjudicated cart using the order's booking reference and patient ID.
+
+#### Scenario: Past order card navigates to cart view
+- **WHEN** a member clicks on a past order card in the past orders list
+- **THEN** the system navigates to `/member/pharmacy/orders/{orderId}/cart`
+- **AND** the cart view displays the adjudicated cart for that order
+
+#### Scenario: Cart view fetches data using booking_name and patient_id
+- **WHEN** the past order cart view loads
+- **THEN** the system extracts the booking reference (order.name) and patient ID (order.patientId)
+- **AND** the system calls the pharmacy cart API with `booking_name:{order.name},patient_id:{order.patientId}`
+- **AND** the system displays the cart items from `resource[0].vendors[0].items`
+
+#### Scenario: Cart view shows adjudicated cart details
+- **WHEN** the cart data is loaded successfully
+- **THEN** the view displays each cart item with name, quantity, unit price, and line total
+- **AND** the view shows the cart total (sum of unitPrice × qty)
+- **AND** the view displays order details: order ID, booking reference, patient ID, and status
+- **AND** a "Back to order" link navigates back to the order detail page
+
+#### Scenario: Error handling in past order cart view
+- **WHEN** the cart API request fails for a past order
+- **THEN** the view displays an error message with a "Retry" button
+- **AND** clicking "Retry" re-attempts the cart fetch with the same parameters

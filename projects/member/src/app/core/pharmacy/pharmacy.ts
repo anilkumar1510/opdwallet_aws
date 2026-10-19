@@ -27,6 +27,9 @@ export const PHARMACY_API = {
   cartById: (cartId: string) => `member/pharmacy/carts/${cartId}`,
   cartItems: (cartId: string) => `member/pharmacy/carts/${cartId}/items`,
   cartItem: (cartId: string, medicineId: string) => `member/pharmacy/carts/${cartId}/items/${medicineId}`,
+  /** Dynamic cart — fetched after prescription booking using booking_name + patient_id */
+  cart: (bookingName: string, patientId: string) =>
+    `habit-opd/api/v1/opd_pharmacy_cart?queryId=GET_PAGE&filter=booking_name:${bookingName},patient_id:${patientId}`,
   orders: 'member/pharmacy/orders',
   orderById: (orderId: string) => `member/pharmacy/orders/${orderId}`,
   pay: (orderId: string) => `member/pharmacy/orders/${orderId}/pay`,
@@ -89,6 +92,17 @@ export interface CartItemDto {
   requiresPrescription?: boolean;
 }
 
+export interface CartItem {
+  readonly id: string;
+  readonly name: string;
+  readonly unitPrice: number;
+  readonly qty: number;
+  readonly isSubstitute: boolean;
+  readonly originalBrand: string;
+  readonly requiresPrescription?: boolean;
+  readonly lineTotal?: Money;
+}
+
 export interface CartDto {
   _id?: string;
   cartId?: string;
@@ -97,15 +111,6 @@ export interface CartDto {
   prescriptionFileName?: string;
   items?: CartItemDto[];
   status?: string;
-}
-
-export interface CartItem {
-  readonly medicineId: string;
-  readonly name: string;
-  readonly price: Money;
-  readonly quantity: number;
-  readonly requiresPrescription: boolean;
-  readonly lineTotal: Money;
 }
 
 export interface Cart {
@@ -119,24 +124,84 @@ export interface Cart {
 
 export function toCart(dto: CartDto): Cart {
   const hasPrescription = !!dto.prescriptionFileName?.trim();
-  const items = (dto.items ?? []).map((item) => {
-    const quantity = item.quantity ?? 1;
-    const price = money(item.price);
-    return {
-      medicineId: item.medicineId ?? '',
-      name: item.name?.trim() || 'Medicine',
-      price,
-      quantity,
-      requiresPrescription: item.requiresPrescription === true,
-      lineTotal: money(price.amount * quantity),
-    };
-  });
+  const items = (dto.items ?? []).map((item) => ({
+    id: item.medicineId ?? '',
+    name: item.name?.trim() || 'Medicine',
+    unitPrice: item.price ?? 0,
+    qty: item.quantity ?? 1,
+    isSubstitute: false,
+    originalBrand: '',
+    requiresPrescription: item.requiresPrescription === true,
+  }));
   return {
     id: dto.cartId ?? '',
     hasPrescription,
     items,
-    total: money(items.reduce((sum, item) => sum + item.lineTotal.amount, 0)),
+    total: money(items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0)),
     hasUnmetPrescriptionRequirement: !hasPrescription && items.some((item) => item.requiresPrescription),
+  };
+}
+
+export interface ApiCartItem {
+  serviceItemCode?: string;
+  serviceItemId?: string;
+  serviceItemName?: string;
+  provider_name?: string;
+  provider_code?: string;
+  selling_amount?: number;
+  item_discounted_price?: number;
+  quantity?: number;
+  prescription_req?: boolean;
+  label?: string;
+  service_mrp?: number;
+  image_url?: string;
+  total_ratings?: string;
+  average_rating?: number;
+  is_home_collection?: boolean;
+  is_centre_visit?: boolean;
+  popular?: boolean;
+  status?: string;
+  patient_pincode?: string;
+  patient_city?: string;
+  is_cug?: boolean;
+  med_type?: string;
+  min_quantity?: number;
+  max_quantity?: number;
+  notes?: string;
+}
+
+export interface ApiCartVendor {
+  vendorKey?: string;
+  vendorName?: string;
+  notes?: string;
+  totalItems?: number;
+  totalAmount?: number;
+  items?: ApiCartItem[];
+}
+
+export interface ApiCartResource {
+  booking_name?: string;
+  patient_id?: string;
+  status?: string;
+  vendors?: ApiCartVendor[];
+}
+
+export interface ApiCartEnvelope {
+  errCode?: number;
+  message?: string;
+  count?: number;
+  resource?: ApiCartResource[];
+}
+
+export function mapCartItem(apiItem: ApiCartItem): CartItem {
+  const unitPrice = apiItem.selling_amount ?? apiItem.item_discounted_price ?? 0;
+  return {
+    id: apiItem.serviceItemCode ?? apiItem.serviceItemId ?? '',
+    name: apiItem.serviceItemName?.trim() ?? 'Medicine',
+    unitPrice,
+    qty: apiItem.quantity ?? 0,
+    isSubstitute: false,
+    originalBrand: apiItem.provider_name ?? '',
   };
 }
 

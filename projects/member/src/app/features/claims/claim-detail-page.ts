@@ -158,7 +158,7 @@ function humaniseCode(value: string | undefined): string {
                summary because it is the first thing a member wants when they
                see Rejected or Documents required, not something to hunt for
                below the amounts. -->
-          @if (actionReason(detail); as reason) {
+          @if (actionReason(detail); as reasons) {
             <section
               class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
               role="alert"
@@ -166,7 +166,15 @@ function humaniseCode(value: string | undefined): string {
               <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
                 {{ actionReasonHeading(detail) }}
               </h2>
-              <p class="text-sm text-ink-900">{{ reason }}</p>
+              @if (reasons.length) {
+                <ul class="mt-2 space-y-1">
+                  @for (reason of reasons; track $index) {
+                    <li class="text-sm text-ink-900">{{ reason }}</li>
+                  }
+                </ul>
+              } @else {
+                <p class="text-sm text-ink-900">No reasons provided</p>
+              }
             </section>
           }
 
@@ -982,19 +990,18 @@ export class ClaimDetailPage {
   }
 
   /**
-   * The assessor's reason for the current status, from `claim_action_reason`.
+   * The assessor's reasons for the current status, from `claim_action_reasons`.
    *
-   * Returns '' for anything that is not a rejected claim with a reason on it,
+   * Returns [] for anything that is not a rejected claim or docs-required claim,
    * so the block stays away rather than showing an empty red panel. The field
    * is absent from the payload today — the section appears the moment the API
    * starts sending it, and nothing changes here.
    */
-  protected actionReason(claim: any): string {
+  protected actionReason(claim: any): string[] {
     const status = claim?.claim_status;
-    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return '';
-    const reason = claim?.claim_action_reason;
-    if (typeof reason !== 'string') return '';
-    return this.store.getActionReasonDisplay(reason.trim());
+    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return [];
+    const reasons = Array.isArray(claim?.claim_action_reasons) ? claim.claim_action_reasons : [];
+    return reasons.map((code: string) => this.store.getActionReasonDisplay(code.trim())).filter(Boolean);
   }
 
   protected actionReasonHeading(claim: any): string {

@@ -292,8 +292,16 @@ const APPROVED_FACTOR: Record<ScenarioKey, number | null> = {
           @if (detail.statusCode === 'DOCUMENTS_REQUIRED') {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
               <h2 class="text-sm font-semibold text-ink-900">Send the documents requested</h2>
-              @if (actionReason(detail); as reason) {
-                <p class="mt-1 text-sm text-ink-700">{{ reason }}</p>
+              @if (actionReason(detail); as reasons) {
+                @if (reasons.length) {
+                  <ul class="mt-2 space-y-1">
+                    @for (reason of reasons; track $index) {
+                      <li class="text-sm text-ink-700">{{ reason }}</li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="mt-1 text-sm text-ink-700">No reasons provided</p>
+                }
               } @else {
                 <p class="mt-1 text-sm text-ink-700">
                   The assessor needs more before this claim can be settled. Attach what they asked
@@ -577,10 +585,10 @@ export class ClaimDetailPageTest {
 
     const s = SCENARIO_STATUS[key];
     const factor = APPROVED_FACTOR[key];
-    const reason = key === 'docs'
-      ? 'AMOUNT_ABOVE_THE_NETWORK_TARIFF'
+    const reasons = key === 'docs'
+      ? ['AMOUNT_ABOVE_THE_NETWORK_TARIFF']
       : key === 'rejected'
-        ? 'AMOUNT_ABOVE_THE_NETWORK_TARIFF'
+        ? ['AMOUNT_ABOVE_THE_NETWORK_TARIFF']
         : undefined;
     return {
       ...base,
@@ -588,7 +596,7 @@ export class ClaimDetailPageTest {
       status: { label: s.label, tone: s.tone, isFinal: s.isFinal },
       approvedAmount: factor !== null ? money(Math.round(base.billAmount.amount * factor)) : base.approvedAmount,
       isCancellable: s.cancellable,
-      claim_action_reason: reason,
+      claim_action_reasons: reasons,
     };
   });
 
@@ -655,11 +663,10 @@ export class ClaimDetailPageTest {
     return value ? DATE.format(value) : 'Not recorded';
   }
 
-  protected actionReason(claim: any): string {
+  protected actionReason(claim: any): string[] {
     const status = claim?.statusCode;
-    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return '';
-    const reason = claim?.claim_action_reason;
-    if (typeof reason !== 'string') return '';
-    return this.store.getActionReasonDisplay(reason.trim());
+    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return [];
+    const reasons = Array.isArray(claim?.claim_action_reasons) ? claim.claim_action_reasons : [];
+    return reasons.map((code: string) => this.store.getActionReasonDisplay(code.trim())).filter(Boolean);
   }
 }

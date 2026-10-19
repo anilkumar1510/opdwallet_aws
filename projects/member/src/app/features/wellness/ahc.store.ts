@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AppService } from '../../core/http/api.service';
 import { LocationStore } from '../../core/location/location.store';
+import { BookingsStore } from '../../core/bookings/bookings.store';
 
 /** One saved collection address, decrypted and ready to show. */
 export interface CollectionAddress {
@@ -77,6 +78,24 @@ export interface AhcCentre {
     raw: any;
 }
 
+/** One booked leg — an entry of `packageServiceItemsStatusInfo` whose stage is 'Booked'. */
+export interface AhcBooking {
+    id: string;
+    /** `serviceType_code`, lower-cased: 'pathology' or 'radiology'. */
+    leg: string;
+    serviceItemName: string;
+    providerName: string;
+    /** Centre address for a centre visit, collection address for home; decrypted. */
+    address: string;
+    mode: 'home' | 'clinic' | null;
+    instructions: string;
+    amount: number | null;
+    /** Epoch ms of the booking; null when the row carries none. */
+    bookedAt: number | null;
+    stage: string;
+    raw: any;
+}
+
 /** sessionStorage key for the picked provider. */
 const SELECTED_PROVIDER_KEY = 'ahcSelectedProvider';
 
@@ -84,6 +103,7 @@ const SELECTED_PROVIDER_KEY = 'ahcSelectedProvider';
 
 export class AHCStore {
     private readonly location = inject(LocationStore);
+    private readonly bookings = inject(BookingsStore);
     private readonly _ahcList = signal<any | null>(null);
     private readonly _ahcServiceItemList = signal<any | null>(null);
     private readonly _ahcSelectedItem = signal<AhcSelectedService | null>(null);
@@ -110,6 +130,7 @@ export class AHCStore {
     private readonly _ahcCheckoutResponse = signal(<any | null>(null));
     private readonly _isPathologyServiceStatus = signal(<any | null>(null));
     private readonly _ahcBookingInfo = signal(<any | null>(null));
+    private readonly _ahcBookings = signal<AhcBooking[]>([]);
     
     private slotSeq = 0;
     readonly AHC = this._ahcList.asReadonly();
@@ -131,6 +152,8 @@ export class AHCStore {
     readonly AHCCheckoutResponse = this._ahcCheckoutResponse.asReadonly();
     readonly IsPathologyServiceStatus = this._isPathologyServiceStatus.asReadonly();
     readonly AHCBookingInfo = this._ahcBookingInfo.asReadonly();
+    /** Legs of this year's package already booked, from AHC_PACKAGE_DETAIL. */
+    readonly AHCBookings = this._ahcBookings.asReadonly();
     startDateTimeStamp: any;
     startDateObj: any;
     dateAndStartTimeTimestamp:any;
@@ -178,26 +201,34 @@ export class AHCStore {
     getAHCList(userId: any){
         const userInfo = userId;
         const queryId = 'AHC_PACKAGE_LISTING';
-        const args = 'user_id:' + userInfo?.user_id + ',service_type_code:phc';
-       const applicationName = 'habit-opd';
-       const resourceName = 'opd_ahc_booking';
+        const args = 'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
+        const applicationName = 'habit-opd';
+        const resourceName = 'opd_ahc_booking';
         this._ahcPackageLoading.set(true);
         this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName).subscribe({
             next: (response: any) => {
                 const parsed = typeof response === 'string' ? JSON.parse(response) : response;
                 const resources: any[] = parsed?.resource ?? [];
-                const selectedPackage = resources.find(
-                        (item: any) =>
-                            item?.data?.id === "ddb554b0-c21b-11f1-97e2-eadcbe87e341-78"  //"853f03c0-c6d1-11f1-9653-4eb7369f2b18-21"
-                        );
-                this._ahcList.set(selectedPackage ?? null);
-                if (!selectedPackage) {
-                    // No matching package on the plan: nothing to detail.
+                // const selectedPackage = resources.find(
+                //         (item: any) =>
+                //             item?.data?.id === "853e6780-c6d1-11f1-9653-4eb7369f2b18-19"
+                //         //"ddb554b0-c21b-11f1-97e2-eadcbe87e341-78"
+                //         // pathalogy "853e6780-c6d1-11f1-9653-4eb7369f2b18-19"  //"853f03c0-c6d1-11f1-9653-4eb7369f2b18-21"
+                //         );
+                if(resources.length > 1){
+                    const selectedPackage = resources[0];
+                    this._ahcList.set(selectedPackage ?? null);
+                    if (!selectedPackage) {
+                        // No matching package on the plan: nothing to detail.
+                        this._ahcServiceItemList.set([]);
+                        this._ahcPackageLoading.set(false);
+                        return;
+                    }
+                    this.getAHCServiceItems(userInfo, selectedPackage);
+                } else{
                     this._ahcServiceItemList.set([]);
                     this._ahcPackageLoading.set(false);
-                    return;
                 }
-                this.getAHCServiceItems(userInfo, selectedPackage);
             },
             error: () => {
                 this._ahcList.set(null);
@@ -218,7 +249,7 @@ export class AHCStore {
                      ',bg_code:' + packageListObj.bg_code +
                      ',selling_discount_rate:' + packageListObj.total_share +
                      ',bp_service_item_id:'+ packageListObj.id;
-                    //  ',mode_of_appointment: opd_network';
+                     ',mode_of_appointment: opd_network';
         
         const filter = 'serviceType_code:' + packageListObj?.service_type_code +
                         'is_searchable:true' +
@@ -233,12 +264,20 @@ export class AHCStore {
                 const resources: any[] = parsed?.resource ?? [];
                 this._ahcServiceItemList.set(resources);
                 this._ahcPackageLoading.set(false);
-                if(resources && resources.length > 0 && resources[0]?.data?.packageServiceItemsStatusInfo.length > 0){
-                    const bookingInfo = resources[0]?.data?.packageServiceItemsStatusInfo[0];
-                    this.setPathologyBookingInfo(bookingInfo);
+                const statusInfo: any[] = resources[0]?.data?.packageServiceItemsStatusInfo ?? [];
+                const key = userInfo?.api_encryption_key ?? null;
+                // Only a leg whose stage is 'Booked' gets a booking status card.
+                const bookings = statusInfo
+                    .filter((item) => textOf(item?.stage).toLowerCase() === 'booked')
+                    .map((item, index) => this.toBooking(item, index, key));
+                this._ahcBookings.set(bookings);
+                this._isPathologyServiceStatus.set(bookings.some((b) => b.leg === 'pathology'));
+                if (statusInfo.length) {
+                    this.setPathologyBookingInfo(statusInfo.find((item) => textOf(item?.serviceType_code).toLowerCase() === 'pathology') ?? statusInfo[0]);
                 }
             },
             error: () => {
+                this._ahcBookings.set([]);
                 this._ahcServiceItemList.set([]);
                 this._ahcPackageLoading.set(false);
             }
@@ -262,22 +301,19 @@ export class AHCStore {
     async getAHCProviders(userInfo: any, modeOfCollection: any): Promise<void> {
         // console.log('_ahcSelectedItem', this.AHCSelectedItem())
         const selectedItem = this.AHCSelectedItem();
+        const serviceItem = this.legServiceItem();
         const packageListObj =this.AHC();
         const pincodeAndLocation = this.location.place();
         const phcServiceTypeCode = 'phc';
-        console.log('---user info', userInfo);
-        console.log('---selectedItem', selectedItem);
-        console.log('---packageListObj', packageListObj);
-        console.log('---location --', this.location.place());
         const queryId = 'AHC_PROVIDER_LISTING';
         const applicationName = 'habit-opd';
         const resourceName = 'opd_ahc_booking';
         const args = 'user_id:' + userInfo?.user_id +
-                        ',service_item_code:' + selectedItem?.package?.service_item[0]?.service_item_code +
+                        ',service_item_code:' + serviceItem?.service_item_code +
                         ',pin_code:' + pincodeAndLocation?.pincode + 
                         ',mode_of_collection:' + (modeOfCollection === 'home' ? 'home_collection' : 'center_visit') +
                         ',patient_state:'+ pincodeAndLocation?.state +
-                        ',serviceType_code:' + selectedItem?.package?.service_item[0]?.serviceType_code +
+                        ',serviceType_code:' + serviceItem?.serviceType_code +
                         ',cug_code:' + userInfo?.cug_code +
                         ',facility_id:' + userInfo?.facilities[0]?.org_id +
                         ',bp_code:' + packageListObj?.data?.bg_code +
@@ -308,6 +344,18 @@ export class AHCStore {
         }
     }
 
+    /**
+     * The package's service item for the leg being booked — its
+     * `serviceType_code` names the leg ('pathology', 'radiology'). Falls back
+     * to the first item, which is what was sent before legs were told apart.
+     */
+    private legServiceItem(): any {
+        const selectedItem = this.AHCSelectedItem();
+        const items: any[] = selectedItem?.package?.service_item ?? [];
+        const leg = selectedItem?.tile?.serviceType?.toLowerCase() || selectedItem?.leg;
+        return items.find((item) => String(item?.serviceType_code ?? '').toLowerCase() === leg) ?? items[0];
+    }
+
     /** Keeps the picked provider in the store and in sessionStorage, so a reload keeps it. */
     setSelectedProvider(provider: AhcProvider | null): void {
         this._selectedProvider.set(provider);
@@ -329,22 +377,29 @@ export class AHCStore {
         const resourceName = 'opd_ahc_booking'; //'provider_location_mapping'; //'opd_ahc_booking';
         const provider = this._selectedProvider();
         const pincodeAndLocation = this.location.place();
-        const selectedItem: any = this.AHCSelectedItem();
+        const serviceItem = this.legServiceItem();
         const isModeofCollectionHome = (modeOfCollection === 'home' ? true : false)
-        const args = 'provider_code:' + provider?.code  +
-                    ',serviceType_code:'+ selectedItem?.package?.service_item[0]?.serviceType_code +
+        let args = 'provider_code:' + provider?.code  +
+                    ',serviceType_code:'+ serviceItem?.serviceType_code +
                     ',pincode:'+ pincodeAndLocation?.pincode +
                     ',cug_code:' + userInfo?.cug_code +
                     ',patient_state:' + pincodeAndLocation?.state +
-                    ',serviceItemCode:' + selectedItem?.package?.service_item[0]?.service_item_code +
+                    ',serviceItemCode:' + serviceItem?.service_item_code +
                     ',is_centre_visit:'+ !isModeofCollectionHome +
                     ',is_home_collection:'+  isModeofCollectionHome+
-                    ',inclnic_code:'+  provider?.raw?.extra_data?.inclinic_code +
+                    
+                    // ',inclnic_code:'+  provider?.raw?.extra_data?.inclinic_code +
+                    // ',wellness_code:HHO001' +
                     ',latitude:' + pincodeAndLocation?.latitude +
                     ',longitude:' + pincodeAndLocation?.longitude +
                     ',radius:' + 60000+
                     ',applyRadius:'+ 'yes'
-
+        if(serviceItem?.serviceType_code == 'pathology' ){
+            args  += ',inclnic_code:'+  provider?.raw?.extra_data?.inclinic_code;
+        }
+        if(serviceItem?.serviceType_code == 'radiology'){
+            args += ',wellness_code:' + provider?.raw?.extra_data?.wellness_centre_code;
+        }
         // Only the latest call may write: going back and forth between steps can overlap them.
         const seq = ++this.centreSeq;
         this._centresLoading.set(true);
@@ -421,6 +476,43 @@ export class AHCStore {
             country: text(a.country),
             latitude: coord(a.latitude),
             longitude: coord(a.longitude),
+        };
+    }
+
+    /**
+     * Field names below are best guesses at a `packageServiceItemsStatusInfo`
+     * row, taken from what the checkout and booking calls send — confirm
+     * against a live row and trim to the real ones.
+     */
+    private toBooking(item: any, index: number, key: string | null): AhcBooking {
+        const a = item?.center_address ?? item?.order_address ?? item?.address ?? {};
+        const street = (value: unknown): string => this.decryptIfEncrypted(textOf(value), key);
+        const address = typeof a === 'string'
+            ? a.trim()
+            : [
+                street(a.street1),
+                street(a.street2),
+                street(a.street3),
+                textOf(a.cityDisplayName) || textOf(a.city),
+                textOf(a.stateDisplayName) || textOf(a.state),
+                textOf(a.countryDisplayName) || textOf(a.country),
+                textOf(a.pincode),
+            ].filter(Boolean).join(', ');
+        const mode = item?.is_centre_visit === true ? 'clinic' : item?.is_home_collection === true ? 'home' : null;
+        const amount = toCoord(item?.final_payable ?? item?.selling_amount ?? item?.amount);
+        const bookedAt = toEpoch(item?.booked_date ?? item?.booking_date ?? item?.order_date_time ?? item?.created_at ?? item?.createdAt ?? item?.created_on);
+        return {
+            id: textOf(item?.id) || textOf(item?.package_serviceRequestId) || 'booking-' + index,
+            leg: textOf(item?.serviceType_code).toLowerCase(),
+            serviceItemName: pickText(item, 'serviceItemName', 'service_item_name', 'serviceName', 'service_item'),
+            providerName: pickText(item, 'provider_name', 'providerName', 'center_name'),
+            address,
+            mode,
+            instructions: pickText(item, 'patient_instructions'),
+            amount,
+            bookedAt,
+            stage: textOf(item?.stage),
+            raw: item,
         };
     }
 
@@ -779,8 +871,8 @@ export class AHCStore {
                     },
                     // "order_address": {
                     "center_address": {
-                        "street1": this.appService.decryptText(cartRes?.center_address.street1 || cartRes?.order_address?.street1, userInfo?.api_encryption_key), //decreypt
-                        "street2": this.appService.decryptText(cartRes?.center_address.street2 || cartRes?.order_address?.street2, userInfo?.api_encryption_key), //decreypt
+                        "street1": this.appService.decryptText(cartRes?.center_address?.street1 || cartRes?.order_address?.street1, userInfo?.api_encryption_key), //decreypt
+                        "street2": this.appService.decryptText(cartRes?.center_address?.street2 || cartRes?.order_address?.street2, userInfo?.api_encryption_key), //decreypt
                         "city": cartRes?.center_address?.city || cartRes?.order_address?.city,
                         "state": cartRes?.center_address?.state || cartRes?.order_address?.state,
                         "pincode": cartRes?.center_address?.pincode || cartRes?.order_address?.pincode,
@@ -920,6 +1012,8 @@ export class AHCStore {
             const resources: any[] = parsed?.resource ?? [];
             console.log('Booking response ', resources)
             this.getAHCList(userInfo);
+            // The new booking belongs on the bookings screen too.
+            void this.bookings.refresh();
             return true;
         } catch (error) {
             console.error('AHC book_appointment failed:', error);
@@ -971,6 +1065,14 @@ function toProvider(row: any, index: number): AhcProvider {
 
 const toCoord = (value: unknown): number | null => {
     const n = typeof value === 'number' ? value : parseFloat(textOf(value));
+    return Number.isFinite(n) ? n : null;
+};
+
+/** Epoch ms from epoch ms (number or digits) or a date string; null otherwise. */
+const toEpoch = (value: unknown): number | null => {
+    const text = textOf(value);
+    if (!text) return null;
+    const n = /^\d+$/.test(text) ? Number(text) : Date.parse(text);
     return Number.isFinite(n) ? n : null;
 };
 

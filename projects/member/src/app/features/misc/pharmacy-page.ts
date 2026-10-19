@@ -3,11 +3,20 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { FamilyStore } from '../../core/family/family.store';
-import { formatMoney } from '../../core/domain/money';
+import { formatMoney, money } from '../../core/domain/money';
 import { ProfileStore } from '../../core/member/profile.store';
 import { PharmacyStore } from '../../core/pharmacy/pharmacy.store';
 import { AddressPicker } from '../../shared/ui/address-picker';
 import { EmptyView, LoadingView } from '../../shared/ui/state-views';
+import { CartItem } from '../../core/pharmacy/pharmacy';
+
+/** DUMMY / STATIC journey data for fallback */
+const ADJUDICATED_CART: CartItem[] = [
+  { id: 'm1', name: 'Crocin 500mg (Paracetamol)', qty: 2, unitPrice: 30, isSubstitute: false, originalBrand: '' },
+  { id: 'm2', name: 'Novamox 500mg (Amoxicillin)', qty: 1, unitPrice: 120, isSubstitute: true, originalBrand: 'Mox 500mg' },
+  { id: 'm3', name: 'Cetzine 10mg (Cetirizine)', qty: 1, unitPrice: 45, isSubstitute: false, originalBrand: '' },
+  { id: 'm4', name: 'Pan-D (Pantoprazole)', qty: 1, unitPrice: 85, isSubstitute: false, originalBrand: '' },
+];
 
 /**
  * Steps 1-4: click Pharmacy, upload a prescription (or skip it and consult a
@@ -156,9 +165,9 @@ import { EmptyView, LoadingView } from '../../shared/ui/state-views';
               <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
                 <h2 class="mb-3 text-base font-semibold text-[#0E51A2]">Your cart</h2>
                 <ul class="space-y-2">
-                  @for (item of cart.items; track item.medicineId) {
+                  @for (item of cart.items; track item.id) {
                     <li class="flex items-center justify-between gap-3 text-sm">
-                      <span class="min-w-0 truncate text-ink-900">{{ item.name }} x{{ item.quantity }}</span>
+                      <span class="min-w-0 truncate text-ink-900">{{ item.name }} x{{ item.qty }}</span>
                       <div class="flex shrink-0 items-center gap-2">
                         <!--
                           Amount first, then the control. Right-aligned figures
@@ -167,7 +176,7 @@ import { EmptyView, LoadingView } from '../../shared/ui/state-views';
                           across the gap a short price leaves behind.
                         -->
                         <span class="w-14 text-right font-medium tabular-nums text-ink-900">{{
-                          money(item.lineTotal)
+                          money(moneyValue(item.unitPrice * item.qty))
                         }}</span>
                         <!--
                           Down only. The cart was checked against the
@@ -185,12 +194,12 @@ import { EmptyView, LoadingView } from '../../shared/ui/state-views';
                           type="button"
                           class="flex h-7 w-7 items-center justify-center rounded-full border border-surface-border text-ink-900 hover:bg-surface-sunk"
                           [attr.aria-label]="
-                            item.quantity <= 1 ? 'Remove ' + item.name : 'Reduce ' + item.name
+                            item.qty <= 1 ? 'Remove ' + item.name : 'Reduce ' + item.name
                           "
                           [title]="
-                            item.quantity <= 1 ? 'Take this out of the cart' : 'Reduce the quantity'
+                            item.qty <= 1 ? 'Take this out of the cart' : 'Reduce the quantity'
                           "
-                          (click)="reduce(item.medicineId, item.quantity)"
+                          (click)="reduce(item.id, item.qty)"
                         >
                           &minus;
                         </button>
@@ -240,6 +249,7 @@ export class PharmacyPage {
   private readonly router = inject(Router);
 
   protected readonly money = formatMoney;
+  protected readonly moneyValue = money;
   protected readonly sentPrescriptionId = signal<string | null>(null);
   protected readonly sending = signal(false);
   protected readonly building = signal(false);
@@ -301,9 +311,34 @@ export class PharmacyPage {
         patient.id,
         patient.fullName,
       );
-      if (prescriptionId) this.sentPrescriptionId.set(prescriptionId);
+      if (prescriptionId) {
+        this.sentPrescriptionId.set(prescriptionId);
+        // After booking is accepted, fetch the cart using the prescriptionId (booking name)
+        await this.pushCart(prescriptionId, patient.id);
+      }
     } finally {
       this.sending.set(false);
+    }
+  }
+
+  /** After booking is accepted, fetch the cart using the booking_name from the response */
+  protected async pushCart(bookingName: string, patientId: string): Promise<void> {
+    // Ensure family is loaded to get active member
+    if (!this.family.family().length) await this.family.load();
+    
+    this.store.setCartLoading(true);
+    this.store.setCartError(null);
+    try {
+      const cartItems = await this.store.fetchCart(bookingName, patientId);
+      this.store.setCart(cartItems);
+    } catch (error: unknown) {
+      this.store.setCartError(
+        error instanceof Error ? error.message : 'We could not load the cart. Using demo cart instead.'
+      );
+      // Fallback to static demo cart as per existing requirement
+      this.store.setCart(ADJUDICATED_CART.map((i) => ({ ...i })));
+    } finally {
+      this.store.setCartLoading(false);
     }
   }
 
@@ -323,7 +358,7 @@ export class PharmacyPage {
     this.building.set(true);
     try {
       const cartId = await this.store.demoBuildCart(prescriptionId);
-      if (cartId) await this.store.openCart(patient.id, patient.fullName, prescriptionId);
+      if (cartId) await this.store.loadOpenCart(patient.id);
     } finally {
       this.building.set(false);
     }

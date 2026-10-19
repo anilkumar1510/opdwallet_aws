@@ -4,9 +4,9 @@ import { ClaimStatus } from '../../core/claims/claim.model';
 
 const TONES: Readonly<Record<string, string>> = {
   neutral: 'bg-gray-100 text-gray-700',
-  progress: 'bg-blue-50 text-[#034DA2]',
-  positive: 'bg-success-50 text-success-700',
-  negative: 'bg-danger-50 text-danger-700',
+  progress: 'bg-amber-100 text-amber-700',
+  positive: 'bg-emerald-100 text-emerald-700',
+  negative: 'bg-rose-100 text-rose-700',
 };
 
 @Component({

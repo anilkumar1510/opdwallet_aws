@@ -1,5 +1,5 @@
 import { toBenefitCategory } from '../domain/codes';
-import { money } from '../domain/money';
+import { Money, money } from '../domain/money';
 import { WalletCategoryBalance } from '../wallet/wallet.model';
 import { Policy } from './policy';
 import { PolicyDetail } from './policy-detail';
@@ -14,7 +14,7 @@ import { PolicyDetail } from './policy-detail';
  */
 
 /** Both members share one policy; the route id is the real policy id. */
-const POLICY_ID = '6a34ca5c4e45325c5a7c06e7';
+const POLICY_ID = '8ca9f31c-e1ad-478b-9b24-9f56e18a9165';
 
 /**
  * Home "Health Benefits" cards — DUMMY / STATIC, no wallet API.
@@ -50,6 +50,83 @@ export const STATIC_WALLET_TOTAL = {
   available: money(40000),
   allocated: money(40000),
 };
+
+export interface WalletPoolCategory {
+  readonly label: string;
+  readonly used: Money;
+}
+
+/** A pool of balance shared by several benefit categories. */
+export interface WalletPool {
+  readonly id: string;
+  readonly available: Money;
+  readonly allocated: Money;
+  /** What the pool pays for, as the policy words it. */
+  readonly description: string;
+  readonly categories: readonly WalletPoolCategory[];
+}
+
+/**
+ * Home "Your Wallet Balance" pools — DUMMY / STATIC until the pool-level
+ * balance API exists. Balances now sit at the pool level rather than per
+ * category; five ₹5,000 pools, nothing consumed yet.
+ */
+export const STATIC_WALLET_POOLS: readonly WalletPool[] = [
+  {
+    id: 'opd',
+    available: money(5000),
+    allocated: money(5000),
+    description:
+      "Prescribed pharmacy / medicines, doctor's fees for any consultation or session, vaccination, or any procedure fee paid during an OPD consultation.",
+    categories: [
+      { label: 'Doctor consultations', used: money(0) },
+      { label: 'Pharmacy / medicines', used: money(0) },
+      { label: 'Vaccination', used: money(0) },
+      { label: 'OPD procedures', used: money(0) },
+    ],
+  },
+  {
+    id: 'diagnostics',
+    available: money(5000),
+    allocated: money(5000),
+    description:
+      'Prescribed investigations and the preventive health check-up (no prescription needed for the preventive check-up).',
+    categories: [
+      { label: 'Prescribed diagnostic orders', used: money(0) },
+      { label: 'Preventive health check-up', used: money(0) },
+    ],
+  },
+  {
+    id: 'dental',
+    available: money(5000),
+    allocated: money(5000),
+    description: 'Dental consultations, cleaning, fillings and other dental procedures.',
+    categories: [
+      { label: 'Dental consultation', used: money(0) },
+      { label: 'Dental procedures', used: money(0) },
+    ],
+  },
+  {
+    id: 'vision',
+    available: money(5000),
+    allocated: money(5000),
+    description: 'Eye check-ups, spectacles and contact lenses.',
+    categories: [
+      { label: 'Eye check-up', used: money(0) },
+      { label: 'Spectacles / contact lenses', used: money(0) },
+    ],
+  },
+  {
+    id: 'physio-ayush',
+    available: money(5000),
+    allocated: money(5000),
+    description: 'Physiotherapy sessions and AYUSH consultations and treatment.',
+    categories: [
+      { label: 'Physiotherapy', used: money(0) },
+      { label: 'AYUSH', used: money(0) },
+    ],
+  },
+];
 
 /** In the exact order requested. */
 export const STATIC_BENEFITS: readonly WalletCategoryBalance[] = [
