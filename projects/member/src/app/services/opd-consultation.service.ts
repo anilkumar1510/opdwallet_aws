@@ -309,10 +309,10 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
       .pipe(
         map(response => response.resource || []),
         map(items => items.map(item => ({
-          id: item.patient_id,
-          name: item.patient_name,
-          rel: item.relationship,
-          patient_id: item.patient_id,
+          id: item.id,
+          name: item.mapped_name,
+          rel: item.relationship||'self',
+          patient_id: item.id,
           uhId: item.uhId
         })) as Patient[])
       );
