@@ -117,7 +117,6 @@ imports: [
                   </div>
                   @if (consultNow() === false) {
                     <div class="mt-5 border-t border-surface-border pt-4">
-                      <p class="mb-2 text-sm font-medium text-ink-700">Select date and time</p>
                       <app-appointment-date-slider
                         [availableDays]="7"
                         [showPickerButton]="true"
