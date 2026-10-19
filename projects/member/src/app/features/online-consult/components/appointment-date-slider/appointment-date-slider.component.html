@@ -28,7 +28,7 @@
         [class.available]="dateItem.status === 'available'"
         [class.not-available]="dateItem.status === 'not_available'"
         (click)="selectDate(dateItem)"
-        [disabled]="dateItem.status === 'loading'"
+        [disabled]="dateItem.isPast"
       >
         <div class="date-alias">{{ dateItem.alias }}</div>
         <div class="date-value">{{ dateItem.day }}</div>

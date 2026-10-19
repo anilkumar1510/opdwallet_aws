@@ -95,12 +95,18 @@
     
     &.not-available {
       opacity: 0.5;
-      cursor: default;
       
       .date-value,
       .slot-count {
         color: #94a3b8;
       }
+    }
+
+    &:disabled,
+    &[disabled] {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
     }
     
     .date-alias {
@@ -120,6 +126,9 @@
     .slot-count {
       font-size: 11px;
       color: #059669;
+      white-space: normal;
+      line-height: 1.2;
+      text-align: center;
       
       &.loading {
         color: #94a3b8;

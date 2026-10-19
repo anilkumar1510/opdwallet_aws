@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, OnInit } from '@angular/core';
 import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse } from '../../services/opd-consultation.service';
 import moment from 'moment';
 import { AgoraService } from '../../services/agora.service';
@@ -7,11 +7,10 @@ import { ConsultHeaderComponent } from './components/consult-header.component';
 import { ConsultBannerComponent } from './components/consult-banner.component';
 import { SpecialitySelectionComponent } from './components/speciality-selection.component';
 import { DoctorSelectionComponent } from './components/doctor-selection.component';
-import { SlotSelectionComponent } from './components/slot-selection.component';
 import { PatientSelectionComponent } from './components/patient-selection.component';
 import { WizardStepComponent } from './components/wizard-step.component';
 import { AppointmentDateSliderComponent } from './components/appointment-date-slider/appointment-date-slider.component';
-import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 
 type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consultation' | 'prescription';
 
@@ -24,13 +23,10 @@ imports: [
     ConsultBannerComponent,
     SpecialitySelectionComponent,
     DoctorSelectionComponent,
-    SlotSelectionComponent,
     PatientSelectionComponent,
     WizardStepComponent,
     AppointmentDateSliderComponent,
-    AgoraVideoComponent,
-    DatePipe,
-    CurrencyPipe
+    AgoraVideoComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -72,7 +68,7 @@ imports: [
                           <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="pickSpeciality(speciality())">Retry</button>
                         </p>
                       }
-                      <opd-doctor-selection [speciality]="speciality()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="onSearchChange($event)" (doctorSelected)="doctor.set($event)" />
+                      <opd-doctor-selection [speciality]="speciality()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="onSearchChange($event)" (doctorSelected)="selectDoctor($event)" />
                     </div>
                   }
                 </div>
@@ -127,16 +123,46 @@ imports: [
                         (dateSelected)="selectSlotDate($event)"
                       />
                       <div class="mt-4">
-                         <p class="mb-2 text-sm font-medium text-ink-700">Available time slots</p>
-                        @if (slots().length === 0) {
-                          <p class="text-center text-sm text-ink-500 py-4">No slots available for date selected.</p>
-                        }@else {
+                        <div class="mb-2 flex items-center justify-between">
+                          <p class="text-sm font-medium text-ink-700">Available time slots</p>
+                          @if (!isSlotsLoading() && slots().length > 0) {
+                            <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-[#034DA2]">
+                              {{ availableSlotCount() }} Available Slot{{ availableSlotCount() === 1 ? '' : 's' }}
+                            </span>
+                          }
+                        </div>
+
+                        @if (isSlotsLoading()) {
+                          <div class="flex justify-center py-6">
+                            <div class="h-6 w-6 animate-spin rounded-full border-2 border-[#0F5FDC] border-t-transparent"></div>
+                          </div>
+                        } @else if (slots().length === 0) {
+                          <p class="text-center text-sm text-ink-500 py-4">No slots available for this date</p>
+                        } @else {
+                          @if (availableSlotCount() === 0) {
+                            <p class="mb-3 rounded-xl bg-gray-50 py-3 text-center text-sm text-ink-500">No slots available for this date</p>
+                          }
                           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            @for (t of slots(); track t.id) {
-                              <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" (click)="slot.set(t)">
-                                {{ (t.slot_start_time || t.slotStartTime) | date:'hh:mm a' }}
-                                -
-                                {{ (t.slot_end_time || t.slotEndTime) | date:'hh:mm a' }}
+                            @for (t of slots(); track t.id || $index) {
+                              <button
+                                type="button"
+                                class="min-h-touch rounded-xl border px-3 text-sm transition-all flex items-center justify-center text-center"
+                                [class.border-[#0F5FDC]]="slot()?.id === t.id && isSlotValid(t)"
+                                [class.bg-blue-50]="slot()?.id === t.id && isSlotValid(t)"
+                                [class.text-[#034DA2]]="slot()?.id === t.id && isSlotValid(t)"
+                                [class.font-semibold]="slot()?.id === t.id && isSlotValid(t)"
+                                [class.border-surface-border]="slot()?.id !== t.id && isSlotValid(t)"
+                                [class.hover:border-blue-300]="isSlotValid(t) && slot()?.id !== t.id"
+                                [class.cursor-pointer]="isSlotValid(t)"
+                                [class.opacity-40]="!isSlotValid(t)"
+                                [class.cursor-not-allowed]="!isSlotValid(t)"
+                                [class.bg-gray-100]="!isSlotValid(t)"
+                                [class.text-ink-400]="!isSlotValid(t)"
+                                [class.border-gray-200]="!isSlotValid(t)"
+                                [disabled]="!isSlotValid(t)"
+                                (click)="selectSlot(t)"
+                              >
+                                {{ formatSlotRange(t) }}
                               </button>
                             }
                           </div>
@@ -248,6 +274,7 @@ imports: [
 export class OnlineConsultPage implements OnInit {
   private readonly consultationService = inject(OpdConsultationService);
   private readonly agoraService = inject(AgoraService);
+  readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly perTxn = 300;
   protected readonly copayPct = 20;
@@ -286,6 +313,7 @@ export class OnlineConsultPage implements OnInit {
   protected readonly mode = signal('');
   protected readonly slotDate = signal<number>(0);
   protected readonly slot = signal<Slot | null>(null);
+  protected readonly isSlotsLoading = signal(false);
   protected readonly inCall = signal(false);
   protected readonly consultationRequestId = signal<string | null>(null);
   protected readonly cancelNote = signal<string | null>(null);
@@ -318,6 +346,11 @@ export class OnlineConsultPage implements OnInit {
 
   protected readonly doctorAvailableNow = computed(() => this.doctor()?.nextIn === 'Available now');
 
+  /** Available slot count calculated dynamically from valid slots */
+  protected readonly availableSlotCount = computed(() => {
+    return this.slots().filter(s => this.isSlotValid(s)).length;
+  });
+
   /** Mock payment breakdown: per-transaction limit + co-payment, excess self-paid. */
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
@@ -335,7 +368,12 @@ export class OnlineConsultPage implements OnInit {
 
   protected loadInitialData(): void {
     this.consultationService.getSpecialities().subscribe(specs => this.specialities.set(specs));
-    this.consultationService.getFamilyList().subscribe(pats => this.patients.set(pats));
+    this.consultationService.getFamilyList().subscribe(pats => {
+      this.patients.set(pats);
+      if (pats.length && !this.patient()) {
+        this.patient.set(pats[0]);
+      }
+    });
   }
 
   protected start(): void {
@@ -348,9 +386,20 @@ export class OnlineConsultPage implements OnInit {
   protected pickSpeciality(code: string): void {
     this.speciality.set(code);
     this.doctor.set(null);
+    this.slot.set(null);
+    this.slots.set([]);
+    this.slotDate.set(0);
     this.search.set('');
     this.searchTerm.set('');
     this.consultationService.getDoctors(code).subscribe(docs => this.filteredDoctors.set(docs));
+  }
+
+  protected selectDoctor(doc: Doctor): void {
+    this.doctor.set(doc);
+    this.consultNow.set(null);
+    this.slot.set(null);
+    this.slots.set([]);
+    this.slotDate.set(0);
   }
 
   protected onSearchChange(value: string): void {
@@ -370,14 +419,93 @@ export class OnlineConsultPage implements OnInit {
   }
 
   private getSlotDay(timestamp: number): string {
-  const days = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-  return days[new Date(timestamp).getDay()];
-}
+    const days = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    return days[new Date(timestamp).getDay()];
+  }
+
+  /**
+   * Slot validation logic:
+   * A slot is valid only if:
+   * 1. Status is "available"
+   * 2. Start time is in the future
+   * 3. End time is in the future
+   */
+  protected isSlotValid(s: Slot): boolean {
+    if (!s) return false;
+
+    // Slot status must be "available"
+    const status = (s.status || '').toLowerCase().trim();
+    if (status !== 'available') {
+      return false;
+    }
+
+    const now = Date.now();
+
+    // Check direct timestamp
+    if (typeof s.slot_start_time === 'number' && s.slot_start_time > 0) {
+      if (s.slot_start_time <= now) return false;
+      if (typeof s.slot_end_time === 'number' && s.slot_end_time <= now) return false;
+      return true;
+    }
+
+    // Fallback: check slot_date and slotStartTime if start timestamp wasn't provided directly
+    if (s.slot_date) {
+      const slotDayStart = moment(s.slot_date).startOf('day');
+      const todayStart = moment().startOf('day');
+      if (slotDayStart.isBefore(todayStart)) {
+        return false;
+      }
+      if (slotDayStart.isSame(todayStart) && s.slotStartTime) {
+        const timeParts = s.slotStartTime.match(/(\d+):(\d+)/);
+        if (timeParts) {
+          const slotMoment = slotDayStart.clone()
+            .hour(parseInt(timeParts[1], 10))
+            .minute(parseInt(timeParts[2], 10));
+          if (slotMoment.valueOf() <= now) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  protected formatSlotRange(slot: Slot): string {
+    if (slot.slot_start_time && slot.slot_end_time) {
+      const start = new Date(slot.slot_start_time).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      const end = new Date(slot.slot_end_time).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      return `${start} - ${end}`;
+    }
+    if (slot.slotStartTime && slot.slotEndTime) {
+      return `${slot.slotStartTime} - ${slot.slotEndTime}`;
+    }
+    if (slot.slotNo) {
+      return `Slot ${slot.slotNo}`;
+    }
+    return 'Slot';
+  }
+
+  protected selectSlot(t: Slot): void {
+    if (!this.isSlotValid(t)) return;
+    this.slot.set(t);
+  }
 
   protected selectSlotDate(date: number): void {
     this.slotDate.set(date);
+    this.slot.set(null);
     if (this.doctor()) {
+      this.isSlotsLoading.set(true);
       const slotDays = this.getSlotDay(date);
+      const uhId = this.patient()?.uhId || 'HCLW-27028';
 
       this.consultationService
         .getSlots(
@@ -386,25 +514,30 @@ export class OnlineConsultPage implements OnInit {
           slotDays,
           this.doctor()?.facility_id || '',
           this.doctor()?.department_id || '',
-          this.patient()?.uhId||''
+          uhId
         )
         .subscribe({
           next: (slots) => {
             console.log('Slots Response:', slots);
+            const slotList = slots || [];
+            this.slots.set([...slotList]);
 
-            this.slots.set([...slots]);
+            // Auto-select first valid available slot
+            const firstValid = slotList.find(s => this.isSlotValid(s));
+            this.slot.set(firstValid ?? null);
 
-            if (slots.length) {
-              this.slot.set(slots[0]);
-            }
+            this.isSlotsLoading.set(false);
+            this.cdr.detectChanges();
           },
           error: (err) => {
             console.error('Slot Error', err);
             this.slots.set([]);
+            this.slot.set(null);
+            this.isSlotsLoading.set(false);
+            this.cdr.detectChanges();
           }
         });
     }
-    
   }
 
   protected openEmpanelment(): void {
@@ -431,7 +564,10 @@ export class OnlineConsultPage implements OnInit {
         return this.doctor() ? null : 'Select a doctor.';
       case 'schedule':
         if (this.consultNow() === null) return 'Choose Consult Now or Schedule.';
-        if (this.consultNow() === false && !(this.slotDate() && this.slot()?.id)) return 'Pick a date and time.';
+        if (this.consultNow() === false) {
+          if (!this.slotDate() || !this.slot()?.id) return 'Pick a date and time.';
+          if (!this.isSlotValid(this.slot()!)) return 'The selected slot is no longer available. Please select another slot.';
+        }
         return null;
       case 'details':
         if (!this.patient()) return 'Select who this is for.';

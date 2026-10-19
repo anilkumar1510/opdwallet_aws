@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChildren, QueryList, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, ElementRef, ViewChildren, QueryList, Input, Output, EventEmitter } from '@angular/core';
 import moment from 'moment';
 import { OpdConsultationService } from '../../../../services/opd-consultation.service';
 
@@ -8,6 +8,7 @@ export interface WeekDateItem {
   fullDate: number;
   slotCount: number | null;
   status: 'loading' | 'available' | 'not_available';
+  isPast?: boolean;
 }
 
 @Component({
@@ -17,7 +18,7 @@ export interface WeekDateItem {
   templateUrl: './appointment-date-slider.component.html',
   styleUrls: ['./appointment-date-slider.component.scss']
 })
-export class AppointmentDateSliderComponent implements OnInit {
+export class AppointmentDateSliderComponent implements OnInit, OnChanges {
   @ViewChildren('dateCard') dateCards!: QueryList<ElementRef>;
 
   weekDates: WeekDateItem[] = [];
@@ -35,29 +36,45 @@ export class AppointmentDateSliderComponent implements OnInit {
   @Output() onSlotCountChange = new EventEmitter<{date: number, count: number}>();
   @Output() dateSelected = new EventEmitter<number>();
 
+  showCalendarModal: boolean = false;
+  currentMonth: number = moment().startOf('month').valueOf();
+
   constructor(private cdr: ChangeDetectorRef, private consultationService: OpdConsultationService) {}
 
   ngOnInit(): void {
-  this.initializeWeekDates();
-  this.hasActiveDate = this.pickerValue;
-  this.selectedWeekDate = this.weekDates[0];
-  this.dateSelected.emit(this.pickerValue);
-}
+    this.initializeWeekDates();
+    this.hasActiveDate = this.pickerValue;
+    this.selectedWeekDate = this.weekDates[0] || null;
+    this.dateSelected.emit(this.pickerValue);
+  }
 
-initializeWeekDates(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['practitionerId'] && !changes['practitionerId'].firstChange) {
+      this.initializeWeekDates();
+      this.selectedWeekDate = this.weekDates[0] || null;
+      this.pickerValue = this.weekDates[0]?.fullDate || moment().startOf('day').valueOf();
+      this.hasActiveDate = this.pickerValue;
+      this.dateSelected.emit(this.pickerValue);
+    }
+  }
+
+  initializeWeekDates(): void {
     this.weekDates = [];
     const startDate = moment().startOf('day');
     const today = moment().startOf('day');
+    const tomorrow = moment().add(1, 'day').startOf('day');
     
     for (let i = 0; i < this.availableDays; i++) {
       const date = moment(startDate).add(i, 'day');
       const isPast = date.isBefore(today, 'day');
+      const alias = date.isSame(today, 'day') ? 'Today' : date.isSame(tomorrow, 'day') ? 'Tom' : date.format('ddd');
       const dateObj: WeekDateItem = {
-        alias: i === 0 ? 'Today' : i === 1 ? 'Tom' : date.format('ddd'),
+        alias,
         day: date.format('DD MMM'),
         fullDate: date.valueOf(),
         slotCount: null,
-        status: isPast ? 'not_available' : 'loading'
+        status: isPast ? 'not_available' : 'loading',
+        isPast
       };
       this.weekDates.push(dateObj);
       
@@ -68,11 +85,15 @@ initializeWeekDates(): void {
   }
 
   fetchSlotCount(dateItem: WeekDateItem): void {
-    const fetchStart = moment(dateItem.fullDate).startOf('day');
-    const fetchEnd = moment(fetchStart).add(1, 'day');
-
     const slotDate = dateItem.fullDate;
     const slotDays = moment(dateItem.fullDate).format('dd').toUpperCase();
+
+    if (!this.practitionerId) {
+      dateItem.slotCount = 0;
+      dateItem.status = 'not_available';
+      this.cdr.detectChanges();
+      return;
+    }
 
     this.consultationService.getSlots(
       this.practitionerId,
@@ -84,8 +105,16 @@ initializeWeekDates(): void {
     )
       .subscribe({
         next: (slots) => {
-          dateItem.slotCount = slots.length;
-          dateItem.status = slots.length > 0 ? 'available' : 'not_available';
+          const now = Date.now();
+          const validCount = (slots || []).filter(s => {
+            const status = (s.status || '').toLowerCase().trim();
+            const startOk = s.slot_start_time ? s.slot_start_time > now : true;
+            const endOk = s.slot_end_time ? s.slot_end_time > now : true;
+            return status === 'available' && startOk && endOk;
+          }).length;
+
+          dateItem.slotCount = validCount;
+          dateItem.status = validCount > 0 ? 'available' : 'not_available';
 
           if (dateItem.fullDate === this.pickerValue) {
             this.selectedWeekDate = dateItem;
@@ -102,17 +131,17 @@ initializeWeekDates(): void {
       });
   }
 
-selectDate(date: WeekDateItem): void {
-    if (this.selectedWeekDate?.fullDate !== date.fullDate) {
-      this.selectedWeekDate = date;
-      this.pickerValue = date.fullDate;
-      this.hasActiveDate = date.fullDate;
-      this.dateSelected.emit(date.fullDate);
-      this.cdr.detectChanges();
-    }
+  selectDate(date: WeekDateItem): void {
+    if (date.isPast) return;
+    this.selectedWeekDate = date;
+    this.pickerValue = date.fullDate;
+    this.hasActiveDate = date.fullDate;
+    this.dateSelected.emit(date.fullDate);
+    this.cdr.detectChanges();
   }
   
   openCalendarPicker(): void {
+    this.currentMonth = moment(this.pickerValue || undefined).startOf('month').valueOf();
     this.showCalendarModal = true;
   }
   
@@ -120,37 +149,42 @@ selectDate(date: WeekDateItem): void {
     const dateItem = this.weekDates.find(d => d.fullDate === date);
     if (dateItem) {
       this.selectDate(dateItem);
-      this.showCalendarModal = false;
     } else {
       this.generateWeekDatesAroundDate(date);
-      this.dateSelected.emit(date);
-      this.showCalendarModal = false;
     }
+    this.showCalendarModal = false;
+    this.cdr.detectChanges();
   }
 
   private generateWeekDatesAroundDate(selectedDate: number): void {
     const startDate = moment(selectedDate).startOf('day');
+    const today = moment().startOf('day');
+    const tomorrow = moment().add(1, 'day').startOf('day');
     this.weekDates = [];
     
     for (let i = 0; i < this.availableDays; i++) {
       const date = moment(startDate).add(i, 'day');
+      const isPast = date.isBefore(today, 'day');
+      const alias = date.isSame(today, 'day') ? 'Today' : date.isSame(tomorrow, 'day') ? 'Tom' : date.format('ddd');
       const dateObj: WeekDateItem = {
-        alias: i === 0 ? 'Today' : i === 1 ? 'Tom' : date.format('ddd'),
+        alias,
         day: date.format('DD MMM'),
         fullDate: date.valueOf(),
         slotCount: null,
-        status: 'loading'
+        status: isPast ? 'not_available' : 'loading',
+        isPast
       };
       this.weekDates.push(dateObj);
-      this.fetchSlotCount(dateObj);
+      if (!isPast) {
+        this.fetchSlotCount(dateObj);
+      }
     }
     this.pickerValue = startDate.valueOf();
     this.hasActiveDate = this.pickerValue;
+    this.selectedWeekDate = this.weekDates[0];
+    this.dateSelected.emit(this.pickerValue);
     this.cdr.detectChanges();
   }
-  
-  showCalendarModal: boolean = false;
-  currentMonth: number = moment().startOf('month').valueOf();
 
   formatDate(date: number): string {
     return moment(date).format('DD MMM');
@@ -166,12 +200,12 @@ selectDate(date: WeekDateItem): void {
 
   get calendarDays(): any[] {
     const monthStart = moment(this.currentMonth).startOf('month');
-    const startDay = monthStart.clone().subtract(monthStart.day(), 'days');
+    const startDay = monthStart.clone().subtract(monthStart.day(), 'days').startOf('day');
     const days: any[] = [];
     const today = moment().startOf('day');
 
     for (let i = 0; i < 42; i++) {
-      const day = startDay.add(1, 'day');
+      const day = startDay.clone().add(i, 'days');
       const date = day.valueOf();
       const isCurrentMonth = day.month() === monthStart.month();
       const isToday = this.isToday(date);
@@ -182,7 +216,7 @@ selectDate(date: WeekDateItem): void {
         isCurrentMonth,
         isToday,
         isPast,
-        disabled: isPast
+        disabled: isPast || !isCurrentMonth
       });
     }
 
@@ -195,7 +229,8 @@ selectDate(date: WeekDateItem): void {
 
   getSlotCountStatus(slotCount: number | null): string {
     if (slotCount === null) return 'Loading...';
-    if (slotCount > 0) return `${slotCount} Available`;
+    if (slotCount === 1) return '1 Available Slot';
+    if (slotCount > 1) return `${slotCount} Available Slots`;
     return 'No slots';
   }
 
