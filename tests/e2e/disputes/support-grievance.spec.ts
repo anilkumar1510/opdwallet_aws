@@ -33,6 +33,24 @@ test.describe('Claims that need your help', () => {
     await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
   });
 
+  test('a draft claim is not listed: a grievance cannot be raised on it', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00353')).toBeVisible({ timeout: 10000 });
+    await expect(section.getByText('OPD-2026-00354')).toHaveCount(0);
+  });
+
+  test('only drafts: the empty state shows', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'draft', 'Draft')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
+  });
+
   test('claim detail has no Amount / payment section; a cashless order still does', async ({ page }) => {
     await openSupport(page);
     await claimsSection(page).getByText('OPD-2026-00354').click();

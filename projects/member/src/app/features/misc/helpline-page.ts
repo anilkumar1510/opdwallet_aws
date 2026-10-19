@@ -499,6 +499,8 @@ export class HelplinePage {
     const seen = new Set<string>();
     return ([...((this.claimsStore.clailListData() ?? []) as any[]), ...this.moreClaimRows()])
       .filter((row) => row?.claim_id && !seen.has(row.claim_id) && !!seen.add(row.claim_id))
+      // A draft has not been submitted: there is nothing for support to look at yet.
+      .filter((row) => !isDraftClaim(row))
       .map(toClaimOrder)
       .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime());
   });
@@ -1079,6 +1081,12 @@ function toDate(raw: unknown): Date {
   const n = Number(raw);
   const d = new Date(Number.isNaN(n) ? String(raw) : n);
   return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+/** A claim the member has started but not submitted. No grievance can be raised on it. */
+function isDraftClaim(row: any): boolean {
+  const code = String(row?.claim_status ?? row?.status?.label ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return code === 'DRAFT';
 }
 
 /** One row of the claims listing, as the Support page's order shape. */

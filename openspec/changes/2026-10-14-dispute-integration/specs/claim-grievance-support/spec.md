@@ -13,6 +13,11 @@ The Support page SHALL list the member's claims from the same paginated claims l
 - **THEN** each claim shows its category, provider, date, claim id, order type "Reimbursement" and its status
 - **AND** each has an "Ask for help" action, or its ticket status when it already has a ticket
 
+#### Scenario: Draft claims
+- **WHEN** a claim is still a draft (not submitted)
+- **THEN** it is not listed and no grievance can be raised on it
+- **AND** when every claim is a draft, the page shows "No claim needs your attention right now."
+
 #### Scenario: No claims
 - **WHEN** the listing returns no claims
 - **THEN** the page shows "No claim needs your attention right now."

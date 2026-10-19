@@ -165,7 +165,8 @@ Still needs a backend change:
 4. **Security: `adjudicate` and `agentReply` accept any logged-in member.** `verifyCallbackIdentity` compares a string constant with itself and never checks the caller, and `agentReply` has no role check (`TODO`), so any member session can post as support or resolve or close any ticket. Check the caller (shared secret or support role) on `adjudicate`, `agentReply` and `agentResolve`.
 5. **Status strings differ from the declared values.** The code writes "Awaiting executive response", while the declared id is `AWAITING_EXECUTIVE_RESPONSE`; `adjudicate` does not accept `OPEN`. The portal understands every form.
 6. **Service grievances:** `category` accepts only `CLAIM` (the portal sends no `dispute_type`; the backend does not need it on `submit`); services need values, an order link (no claim id) and CRM support.
-7. **Smaller:** `X-XSRF-TOKEN` is not checked; DMS answers HTTP 500 for an unknown document id (404 would be right); notifications are a `TODO`; no configuration API yet (reasons, raise window, support phone and email).
+7. **Grievance on a draft claim (open, 19 Oct 2026).** `submit` accepted tickets DIS-2026-00454 and 00455 on claims in `DRAFT` status. A draft has not been submitted, so the backend should refuse a grievance on it (the portal already hides drafts).
+8. **Smaller:** `X-XSRF-TOKEN` is not checked; DMS answers HTTP 500 for an unknown document id (404 would be right); notifications are a `TODO`; no configuration API yet (reasons, raise window, support phone and email).
 8. **Test data to clean up** (no member delete API): DIS-2026-00393 and 00395 to 00414 and their "[TEST]" messages.
 9. **Callers must use `dispute_chat`:** the Twenty callback workflow still posts `agentReply` to `dispute`; it needs `dispute_chat` with `dispute_id` (the `disputeId`), `message_text` and `sender_name`.
 
