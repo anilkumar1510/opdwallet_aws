@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AppService } from '../http/api.service';
+import { ConsentModalService } from '../consent/consent-modal.service';
 
 /**
  * The member's payout bank account, fetched directly from the backend API:
@@ -60,6 +61,7 @@ export class BankDetailsStore {
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
   private readonly router = inject(Router, { optional: true });
+  private readonly consentService = inject(ConsentModalService);
 
   private readonly _details = signal<BankDetails | null>(null);
   private readonly _verification = signal<BankVerification | null>(null);
@@ -108,6 +110,17 @@ export class BankDetailsStore {
         this.appService.getcall('opd_profile_details', 'habit-opd', arg),
       );
       const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+      // A missing consent comes back as errCode -1 with the consent URL in the
+      // message (same convention as claim submit), e.g. "Consent not accepted.
+      // Please complete consent at: https://consent.habithealth.com/?token=…".
+      // Hand it to the modal service; reload once consent is captured.
+      if (parsed && typeof parsed === 'object' && parsed.errCode !== undefined && parsed.errCode !== 0) {
+        if (this.tryConsent(parsed.message ?? '')) {
+          return this._details();
+        }
+      }
+
       const rows: any[] = parsed?.resource ?? [];
 
       if (rows && rows.length > 0) {
@@ -156,11 +169,42 @@ export class BankDetailsStore {
         return null;
       }
     } catch (err: any) {
+      // HTTP-error path (the 200-with-errCode case is handled above): the
+      // consent URL can arrive in the error envelope's message just the same.
+      const errBody = err?.error;
+      let message = '';
+      if (typeof errBody === 'string') {
+        try {
+          message = JSON.parse(errBody)?.message ?? '';
+        } catch {
+          message = '';
+        }
+      } else {
+        message = errBody?.message ?? '';
+      }
+      if (this.tryConsent(message)) {
+        return this._details();
+      }
       console.error('Failed to load profile details:', err);
       return this._details();
     } finally {
       this._loading.set(false);
     }
+  }
+
+  /**
+   * Open the consent modal when the API message carries a consent URL.
+   * Returns true only when a token was found and the modal opened.
+   */
+  private tryConsent(message: string): boolean {
+    if (!message) return false;
+    return this.consentService.openFromApiMessage(message, {
+      onSuccess: () => {
+        // Consent captured — reload profile details once the modal has
+        // finished closing, so the re-prompt (if any) can't stack on it.
+        setTimeout(() => void this.load(), 1500);
+      },
+    });
   }
 
   /**
