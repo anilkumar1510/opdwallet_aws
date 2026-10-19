@@ -77,24 +77,31 @@ imports: [
 <ng-container *ngSwitchCase="'schedule'">
                 <div class="space-y-4">
                   <p class="mb-1 text-sm font-medium text-ink-700">How would you like to consult?</p>
-                  <p class="mb-3 text-xs text-ink-500">with {{ doctor()?.name }} — {{ doctor()?.nextIn }}</p>
+                  <p class="mb-3 text-xs text-ink-500">with {{ doctor()?.name }}{{ doctor()?.nextIn ? ' — ' + doctor()?.nextIn : '' }}</p>
                   <div class="space-y-3">
                     <button
                       type="button"
-                      class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] p-4 text-left disabled:opacity-50"
-                      [class.border-brand-500]="consultNow() === true"
-                      [class.bg-blue-50]="consultNow() === true"
-                      [class.border-surface-border]="consultNow() !== true"
+                      class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] p-4 text-left transition-all"
+                      [class.border-brand-500]="consultNow() === true && doctorAvailableNow()"
+                      [class.bg-blue-50]="consultNow() === true && doctorAvailableNow()"
+                      [class.border-surface-border]="consultNow() !== true && doctorAvailableNow()"
+                      [class.border-gray-200]="!doctorAvailableNow()"
+                      [class.bg-gray-100]="!doctorAvailableNow()"
+                      [class.cursor-not-allowed]="!doctorAvailableNow()"
+                      [class.opacity-50]="!doctorAvailableNow()"
+                      [class.grayscale]="!doctorAvailableNow()"
                       [disabled]="!doctorAvailableNow()"
-                      (click)="consultNow.set(true)"
+                      (click)="doctorAvailableNow() && consultNow.set(true)"
                     >
                       <span>
-                        <span class="block font-semibold text-[#034DA2]">Consult Now</span>
-                        <span class="mt-0.5 block text-xs" [class.text-success-700]="doctorAvailableNow()" [class.text-ink-500]="!doctorAvailableNow()">
+                        <span class="block font-semibold" [class.text-[#034DA2]]="doctorAvailableNow()" [class.text-gray-500]="!doctorAvailableNow()">
+                          Consult Now
+                        </span>
+                        <span class="mt-0.5 block text-xs" [class.text-success-700]="doctorAvailableNow()" [class.text-gray-400]="!doctorAvailableNow()">
                           {{ doctorAvailableNow() ? 'Connect instantly' : 'Not available immediately — schedule instead' }}
                         </span>
                       </span>
-                      @if (consultNow() === true) { <span class="text-brand-700">✓</span> }
+                      @if (consultNow() === true && doctorAvailableNow()) { <span class="text-brand-700">✓</span> }
                     </button>
                     <button
                       type="button"
@@ -344,7 +351,14 @@ export class OnlineConsultPage implements OnInit {
   ]);
   protected readonly currentStep = computed<Step>(() => this.steps()[this.step()] ?? 'find');
 
-  protected readonly doctorAvailableNow = computed(() => this.doctor()?.nextIn === 'Available now');
+  protected readonly doctorAvailableNow = computed(() => {
+    const doc = this.doctor();
+    if (!doc) return false;
+    if (typeof doc.canConsultNow === 'boolean') {
+      return doc.canConsultNow;
+    }
+    return doc.nextIn === 'Available now';
+  });
 
   /** Available slot count calculated dynamically from valid slots */
   protected readonly availableSlotCount = computed(() => {
@@ -564,6 +578,9 @@ export class OnlineConsultPage implements OnInit {
         return this.doctor() ? null : 'Select a doctor.';
       case 'schedule':
         if (this.consultNow() === null) return 'Choose Consult Now or Schedule.';
+        if (this.consultNow() === true && !this.doctorAvailableNow()) {
+          return 'Doctor is not available for immediate consultation. Please schedule for later.';
+        }
         if (this.consultNow() === false) {
           if (!this.slotDate() || !this.slot()?.id) return 'Pick a date and time.';
           if (!this.isSlotValid(this.slot()!)) return 'The selected slot is no longer available. Please select another slot.';

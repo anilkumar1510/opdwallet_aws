@@ -27,6 +27,8 @@ export interface Doctor {
   gender?: 'Male' | 'Female';
   languages?: string;
   nextIn?: string;
+  next_slot_date_video?: number;
+  canConsultNow?: boolean;
   speciality?: string;
   speciality_id?: string;
   profile_id?: string;
@@ -257,6 +259,18 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
         map((response: any) => response.resource || []),
         map((items: any[]) => items.map((item: any): Doctor => {
           const videoFee = item.data?.price_details?.find((p: any) => p.consultation_type === 'video')?.selling_amount || 0;
+          const nextSlotVideo = item.data?.next_slot_date_video ? Number(item.data.next_slot_date_video) : null;
+          let nextInLabel = '';
+          let canConsultNow = false;
+
+          if (nextSlotVideo) {
+            const diffMinutes = Math.round((nextSlotVideo - Date.now()) / 60000);
+            if (diffMinutes >= -5 && diffMinutes <= 5) {
+              nextInLabel = 'Available now';
+              canConsultNow = true;
+            }
+          }
+
           return {
             id: item.data?.doctor_id,
             name: item.data?.display_name,
@@ -266,7 +280,9 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
             rating: 0,
             gender: item.data?.gender_name,
             languages: item.data?.language?.map((l: any) => l.text).join(', '),
-            nextIn: item.data?.status_code === 'active' ? 'Available now' : 'in ' + Math.round((item.data?.next_slot_date_video - Date.now()) / 60000) + ' min',
+            nextIn: nextInLabel,
+            next_slot_date_video: nextSlotVideo || undefined,
+            canConsultNow,
             speciality: item.data?.speciality,
             speciality_id: item.data?.speciality_id,
             facility_id: item.data?.facility_id,
