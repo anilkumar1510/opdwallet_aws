@@ -127,10 +127,12 @@ imports: [
                         (dateSelected)="selectSlotDate($event)"
                       />
                       <div class="mt-4">
-                        <p class="mb-2 text-sm font-medium text-ink-700">Available time slots</p>
-                       
+                         <p class="mb-2 text-sm font-medium text-ink-700">Available time slots</p>
+                        @if (slots().length === 0) {
+                          <p class="text-center text-sm text-ink-500 py-4">No slots available for date selected.</p>
+                        }@else {
                           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            @for (t of slots().filter(s => s.status === 'available'); track t.id) {
+                            @for (t of slots(); track t.id) {
                               <button type="button" class="min-h-touch rounded-xl border px-3 text-sm" [class.border-brand-500]="slot()?.id === t.id" [class.bg-blue-50]="slot()?.id === t.id" (click)="slot.set(t)">
                                 {{ (t.slot_start_time || t.slotStartTime) | date:'hh:mm a' }}
                                 -
@@ -138,6 +140,7 @@ imports: [
                               </button>
                             }
                           </div>
+                        }
                       </div>
                     </div>
                   }
