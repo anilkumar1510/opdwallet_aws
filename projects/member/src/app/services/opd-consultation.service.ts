@@ -260,7 +260,7 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
         map((items: any[]) => items.map((item: any): Doctor => {
           const videoFee = item.data?.price_details?.find((p: any) => p.consultation_type === 'video')?.selling_amount || 0;
           const nextSlotVideo = item.data?.next_slot_date_video ? Number(item.data.next_slot_date_video) : null;
-          let nextInLabel = '';
+          let nextInLabel = 'Not available';
           let canConsultNow = false;
 
           if (nextSlotVideo) {
@@ -268,6 +268,18 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
             if (diffMinutes >= -5 && diffMinutes <= 5) {
               nextInLabel = 'Available now';
               canConsultNow = true;
+            } else if (diffMinutes > 5 && diffMinutes < 60) {
+              nextInLabel = `in ${diffMinutes} min`;
+              canConsultNow = false;
+            } else if (diffMinutes >= 60 && diffMinutes < 24 * 60) {
+              const hours = Math.floor(diffMinutes / 60);
+              const mins = diffMinutes % 60;
+              nextInLabel = mins > 0 ? `in ${hours} hr ${mins} min` : `in ${hours} hr`;
+              canConsultNow = false;
+            } else if (diffMinutes >= 24 * 60) {
+              const days = Math.round(diffMinutes / (24 * 60));
+              nextInLabel = `in ${days} day${days > 1 ? 's' : ''}`;
+              canConsultNow = false;
             }
           }
 

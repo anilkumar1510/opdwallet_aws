@@ -31,9 +31,7 @@ import { Doctor } from '../../../services/opd-consultation.service';
             </div>
             <div class="shrink-0 text-right">
               <p class="text-sm font-semibold text-[#034DA2]">₹{{ d.fee }}</p>
-              @if (d.nextIn) {
-                <p class="text-xs font-medium text-success-700">{{ d.nextIn }}</p>
-              }
+              <p class="text-xs" [class.text-success-700]="d.nextIn === 'Available now'" [class.text-ink-500]="d.nextIn !== 'Available now'">{{ d.nextIn }}</p>
             </div>
           </div>
         </button>
