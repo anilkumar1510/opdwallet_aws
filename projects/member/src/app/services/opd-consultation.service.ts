@@ -5,6 +5,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { catchError, map, tap, finalize } from 'rxjs/operators';
+import { HttpHeaders } from '@angular/common/http';
 
 // API Response Interfaces
 export interface Speciality {
@@ -36,6 +37,7 @@ export interface Doctor {
   doctor_code?: string;
   facility_id?: string;
   department_id?: string;
+  provider_code?:string
 }
 
 export interface Slot {
@@ -64,6 +66,7 @@ export interface Patient {
   rel?: string;
   patient_id?: string;
   uhId?: string;
+  mapped_id?:string
 }
 
 export interface CartSnapshot {
@@ -252,7 +255,7 @@ export class OpdConsultationService {
 
   // Doctor Listing API
   getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
-    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:${this.cugCode},serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
+    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCLHC001,serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
 
 return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
@@ -300,7 +303,8 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
             facility_id: item.data?.facility_id,
             department_id: item.data?.department_id,
             doctor_code: item.data?.doctor_code,
-            profile_path: item.data?.profile_path
+            profile_path: item.data?.profile_path,
+            provider_code:item.data?.provider_code
           };
         }))
       );
@@ -341,39 +345,49 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
           name: item.mapped_name,
           rel: item.relationship||'self',
           patient_id: item.id,
-          uhId: item.uhId
+          uhId: item.uhId,
+          mapped_id:item.mapped_id
         })) as Patient[])
       );
   }
 
   // Add to Cart API
   addToCart(cartData: CartSnapshot): Observable<{ resource: { cart_snapshot: any } }> {
-    const body = {
-      resource: btoa(JSON.stringify(cartData)),
-      action: 'cart_add'
-    };
+    const body = new HttpParams()
+      .set('resource', btoa(JSON.stringify(cartData)))
+      .set('action', 'cart_add');
 
-    return this.executeWithLoading('cart', this.http.post<{ resource: { cart_snapshot: any } }>(this.baseUrl, body));
+    return this.executeWithLoading('cart', this.http.post<{ resource: { cart_snapshot: any } }>(this.baseUrl, body.toString(), {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      })
+    }));
   }
 
   // Checkout API
   checkout(checkoutData: CheckoutSnapshot): Observable<any> {
-    const body = {
-      resource: btoa(JSON.stringify(checkoutData)),
-      action: 'checkout'
-    };
+    const body = new HttpParams()
+      .set('resource', btoa(JSON.stringify(checkoutData)))
+      .set('action', 'checkout');
 
-    return this.executeWithLoading('checkout', this.http.post<any>(this.baseUrl, body));
+    return this.executeWithLoading('checkout', this.http.post<any>(this.baseUrl, body.toString(), {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      })
+    }));
   }
 
   // Book Appointment API
   bookAppointment(bookingData: any): Observable<BookingResponse> {
-    const body = {
-      resource: btoa(JSON.stringify(bookingData)),
-      action: 'book_appointment'
-    };
+    const body = new HttpParams()
+      .set('resource', btoa(JSON.stringify(bookingData)))
+      .set('action', 'book_appointment');
 
-    return this.executeWithLoading('booking', this.http.post<{ resource: BookingResponse }>(this.baseUrl, body))
+    return this.executeWithLoading('booking', this.http.post<{ resource: BookingResponse }>(this.baseUrl, body.toString(), {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      })
+    }))
       .pipe(
         map(response => response.resource || {})
       );
@@ -381,15 +395,18 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
 
   // Video Checkin API
   videoCheckin(serviceRequestId: string): Observable<any> {
-    const body = {
-      resource: btoa(JSON.stringify({
+    const body = new HttpParams()
+      .set('resource', btoa(JSON.stringify({
         service_request_id: serviceRequestId,
         tag_data: []
-      })),
-      action: 'video_checkin'
-    };
+      })))
+      .set('action', 'video_checkin');
 
-    return this.executeWithLoading('videoCheckin', this.http.post(this.baseUrl, body))
+    return this.executeWithLoading('videoCheckin', this.http.post(this.baseUrl, body.toString(), {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      })
+    }))
       .pipe(
         map(response => (response as any).resource || [])
       );

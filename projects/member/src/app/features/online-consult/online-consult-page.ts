@@ -683,12 +683,12 @@ export class OnlineConsultPage implements OnInit {
           serviceStartTime: this.slot()?.slot_start_time,
           serviceEndTime: this.slot()?.slotEndTime,
           slotId: this.slot()?.id,
-          patient_id: this.patient()?.patient_id,
+          patient_id: this.patient()?.mapped_id,
           speciality_id: this.doctor()?.speciality_id,
           facility_id: this.doctor()?.facility_id,
-          provider_code: 'HCL-001',
+          provider_code: this.doctor()?.provider_code,
           serviceType_code: 'op_consultation',
-          mode_of_appointment: 'opd_network',
+          // mode_of_appointment: 'opd_network',
           serviceType: 'OP Consultation',
           serviceItemCode: this.doctor()?.doctor_code
         }
