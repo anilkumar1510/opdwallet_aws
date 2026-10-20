@@ -110,17 +110,6 @@ export class BankDetailsStore {
         this.appService.getcall('opd_profile_details', 'habit-opd', arg),
       );
       const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-      // A missing consent comes back as errCode -1 with the consent URL in the
-      // message (same convention as claim submit), e.g. "Consent not accepted.
-      // Please complete consent at: https://consent.habithealth.com/?token=…".
-      // Hand it to the modal service; reload once consent is captured.
-      if (parsed && typeof parsed === 'object' && parsed.errCode !== undefined && parsed.errCode !== 0) {
-        if (this.tryConsent(parsed.message ?? '')) {
-          return this._details();
-        }
-      }
-
       const rows: any[] = parsed?.resource ?? [];
 
       if (rows && rows.length > 0) {
@@ -169,22 +158,6 @@ export class BankDetailsStore {
         return null;
       }
     } catch (err: any) {
-      // HTTP-error path (the 200-with-errCode case is handled above): the
-      // consent URL can arrive in the error envelope's message just the same.
-      const errBody = err?.error;
-      let message = '';
-      if (typeof errBody === 'string') {
-        try {
-          message = JSON.parse(errBody)?.message ?? '';
-        } catch {
-          message = '';
-        }
-      } else {
-        message = errBody?.message ?? '';
-      }
-      if (this.tryConsent(message)) {
-        return this._details();
-      }
       console.error('Failed to load profile details:', err);
       return this._details();
     } finally {
@@ -205,6 +178,19 @@ export class BankDetailsStore {
         setTimeout(() => void this.load(), 1500);
       },
     });
+  }
+
+  /** The API's error message — from an HTTP error envelope or a thrown Error. */
+  private apiMessage(err: any): string {
+    const body = err?.error ?? err;
+    if (typeof body === 'string') {
+      try {
+        return JSON.parse(body)?.message ?? '';
+      } catch {
+        return '';
+      }
+    }
+    return body?.message ?? '';
   }
 
   /**
@@ -289,6 +275,14 @@ export class BankDetailsStore {
       await this.load();
       return true;
     } catch (err: any) {
+      // A missing consent comes back as errCode -1 with the consent URL in the
+      // message (same convention as claim submit), e.g. "Consent not accepted.
+      // Please complete consent at: https://consent.habithealth.com/?token=…".
+      // Open the consent modal instead of surfacing an error — the user
+      // re-saves after consenting.
+      if (this.tryConsent(this.apiMessage(err))) {
+        return false;
+      }
       console.error('Failed to upsert bank details:', err);
       this._error.set(err?.message ?? 'Failed to save bank details');
       return false;

@@ -28,7 +28,6 @@ import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
 import { Observable } from 'rxjs';
-import { ConsentModalService } from '../../core/consent/consent-modal.service';
 const MAX_BYTES = 5 * 1024 * 1024;
 const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -472,7 +471,6 @@ export class NewClaimPage {
   protected readonly family = inject(FamilyStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
-  private readonly consentService = inject(ConsentModalService);
 
   protected readonly steps = STEPS;
   /** Opens on the bank step until the payout account is approved. */
@@ -782,7 +780,8 @@ export class NewClaimPage {
       // A resubmission needs fresh proof, so the old file does not carry over.
       this.chequeFile.set(null);
     } else {
-      this.problem.set(this.bank.error() || 'Could not submit bank details. Please try again.');
+      // null when the consent modal opened instead of an error.
+      this.problem.set(this.bank.error());
     }
   }
 
@@ -1113,27 +1112,7 @@ export class NewClaimPage {
     encodedResourceData += "&action=" + action;
     var options = this.appService.addXsrfToken(encodedResourceData, true);
 
-    // A missing consent comes back as errCode -1 with the consent URL in the
-    // message, e.g. "Consent not accepted. Please complete consent at:
-    // https://consent.habithealth.com/?token=…". Hand the message straight to
-    // the modal service, which pulls the token out and opens the remote.
-    const tryConsent = (message: string): boolean =>
-      this.consentService.openFromApiMessage(message, {
-        onSuccess: () => {
-          // Consent captured — stay on the page. The user submits the claim again.
-          this.submitting.set(false);
-          this.problem.set(null);
-        },
-        onClose: () => {
-          this.submitting.set(false);
-        },
-      });
-
     const fail = (message: string) => {
-      if (message && tryConsent(message)) {
-        this.submitting.set(false);
-        return;
-      }
       console.error('[NewClaimPage] Claim submit failed:', message);
       this.submitting.set(false);
       this.problem.set('We could not submit your claim. Please check your details and try again.');
