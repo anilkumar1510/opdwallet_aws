@@ -22,6 +22,10 @@ export class SessionStore {
   readonly resolved = computed(() => true);
   readonly isAuthenticated = computed(() => true);
 
+  setMember(member: Member): void {
+    this._member.set(member);
+  }
+
   async login(_email: string, _password: string): Promise<boolean> {
     return true;
   }

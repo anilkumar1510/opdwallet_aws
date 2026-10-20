@@ -5,12 +5,12 @@ import { PolicyDetail } from '../../core/member/policy-detail';
 import { PolicyStore } from '../../core/member/policy.store';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Icon, IconName } from '../../shared/ui/icon';
-import { ErrorView, LoadingView } from '../../shared/ui/state-views';
+import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 
 @Component({
   selector: 'opd-policy-details-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, LoadingView, ErrorView, Disclosure],
+  imports: [RouterLink, Icon, LoadingView, ErrorView, EmptyView, Disclosure],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -34,7 +34,22 @@ import { ErrorView, LoadingView } from '../../shared/ui/state-views';
 
       <div class="mx-auto max-w-[1240px] px-5 py-6 lg:px-8">
         @if (store.loading()) {
-          <opd-loading label="Loading policy" />
+          <div class="space-y-5 animate-pulse" role="status" aria-label="Loading policy details">
+            <div class="rounded-2xl border border-[#CDDDFE] bg-blue-50/40 p-5 lg:p-6">
+              <div class="flex items-center gap-3">
+                <div class="h-11 w-11 rounded-full bg-slate-200"></div>
+                <div class="h-6 w-44 rounded bg-slate-200"></div>
+              </div>
+              <div class="mt-4 space-y-3">
+                @for (row of [1, 2, 3, 4, 5, 6]; track row) {
+                  <div class="h-14 rounded-xl bg-white/70"></div>
+                }
+              </div>
+            </div>
+            <div class="rounded-2xl border border-[#CDDDFE] bg-blue-50/40 p-5 lg:p-6">
+              <div class="h-6 w-36 rounded bg-slate-200"></div>
+            </div>
+          </div>
         } @else if (store.error(); as error) {
           <opd-error [error]="error" (retry)="store.retry()" />
         } @else if (store.detail(); as detail) {
@@ -62,9 +77,9 @@ import { ErrorView, LoadingView } from '../../shared/ui/state-views';
                   >
                     <opd-icon [name]="row.icon" [size]="18" />
                   </span>
-                  <div class="min-w-0">
+                  <div class="min-w-0 flex-1">
                     <dt class="text-xs text-ink-500">{{ row.label }}</dt>
-                    <dd class="truncate font-bold text-[#034DA2]">{{ row.value }}</dd>
+                    <dd class="font-bold text-[#034DA2] break-words">{{ row.value }}</dd>
                   </div>
                 </div>
               }
@@ -118,6 +133,11 @@ import { ErrorView, LoadingView } from '../../shared/ui/state-views';
               </opd-disclosure>
             </section>
           }
+        } @else {
+          <opd-empty
+            title="No policy details found"
+            detail="No policy details are available for this account."
+          />
         }
       </div>
     </div>

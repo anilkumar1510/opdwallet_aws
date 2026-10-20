@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { Money } from '../../core/domain/money';
 import { Policy } from '../../core/member/policy';
-import { WalletPool } from '../../core/member/static-policy.data';
+import { WalletPool } from '../../core/member/wallet-pool.model';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { Icon } from '../../shared/ui/icon';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';

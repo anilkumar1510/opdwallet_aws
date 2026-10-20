@@ -15,6 +15,7 @@ export interface Member {
   readonly email: string | null;
   readonly phone: string | null;
   readonly relationship: Relationship;
+  readonly relationshipCode?: string;
   readonly isPrimary: boolean;
   readonly uhid: string | null;
   readonly dateOfBirth: Date | null;

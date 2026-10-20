@@ -12,18 +12,19 @@ import { Member } from './member.model';
  */
 
 export const STATIC_SELF: Member = {
-  id: 'shivam',
-  memberId: 'MEM35637',
-  firstName: 'Shivam',
-  lastName: 'Jha',
-  fullName: 'Shivam Jha',
-  initials: 'SJ',
-  email: 'shivam@example.com',
-  phone: '9876500000',
+  id: '62381260-cc83-11f1-9ef8-4270a1b31eb1-60',
+  memberId: '97945158-c95c-11f1-9ab3-062314d4b409-18',
+  firstName: 'Shailab',
+  lastName: '',
+  fullName: 'Mr Shailab',
+  initials: 'MS',
+  email: 'Shailabhopd@yopmail.com',
+  phone: '8826395311',
   relationship: Relationship.Self,
+  relationshipCode: 'self',
   isPrimary: true,
-  uhid: 'UHID35637',
-  dateOfBirth: new Date('1996-05-14'),
+  uhid: 'HH-448725',
+  dateOfBirth: null,
   gender: 'MALE',
 };
 
