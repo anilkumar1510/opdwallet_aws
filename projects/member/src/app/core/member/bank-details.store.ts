@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AppService } from '../http/api.service';
+import { ConsentModalService } from '../consent/consent-modal.service';
 
 /**
  * The member's payout bank account, fetched directly from the backend API:
@@ -60,6 +61,7 @@ export class BankDetailsStore {
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);
   private readonly router = inject(Router, { optional: true });
+  private readonly consentService = inject(ConsentModalService);
 
   private readonly _details = signal<BankDetails | null>(null);
   private readonly _verification = signal<BankVerification | null>(null);
@@ -164,6 +166,34 @@ export class BankDetailsStore {
   }
 
   /**
+   * Open the consent modal when the API message carries a consent URL.
+   * Returns true only when a token was found and the modal opened.
+   */
+  private tryConsent(message: string): boolean {
+    if (!message) return false;
+    return this.consentService.openFromApiMessage(message, {
+      onSuccess: () => {
+        // Consent captured — reload profile details once the modal has
+        // finished closing, so the re-prompt (if any) can't stack on it.
+        setTimeout(() => void this.load(), 1500);
+      },
+    });
+  }
+
+  /** The API's error message — from an HTTP error envelope or a thrown Error. */
+  private apiMessage(err: any): string {
+    const body = err?.error ?? err;
+    if (typeof body === 'string') {
+      try {
+        return JSON.parse(body)?.message ?? '';
+      } catch {
+        return '';
+      }
+    }
+    return body?.message ?? '';
+  }
+
+  /**
    * Upload cancelled cheque file to DMS /dms/api/v1/emrImage.
    */
   async uploadCancelledCheque(file: File): Promise<string> {
@@ -245,6 +275,14 @@ export class BankDetailsStore {
       await this.load();
       return true;
     } catch (err: any) {
+      // A missing consent comes back as errCode -1 with the consent URL in the
+      // message (same convention as claim submit), e.g. "Consent not accepted.
+      // Please complete consent at: https://consent.habithealth.com/?token=…".
+      // Open the consent modal instead of surfacing an error — the user
+      // re-saves after consenting.
+      if (this.tryConsent(this.apiMessage(err))) {
+        return false;
+      }
       console.error('Failed to upsert bank details:', err);
       this._error.set(err?.message ?? 'Failed to save bank details');
       return false;
