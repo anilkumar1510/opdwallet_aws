@@ -58,6 +58,10 @@ See `proposal.md` for motivation. The application is an Angular 21 zoneless micr
   In `claim-option.ts`, replace the static demo box with a live policy coverage card showing the active policy number and mode. QA test mode controls only display and allow selection of options provided by the policy for that category (e.g. if a category allows claims only, only 'claims' is shown), with one-click reset to policy default.
 - **Rationale**: Removes brittle static claim mode tables while empowering QA teams to verify permitted UI states without backend data manipulation.
 
+### 9. Dynamic Benefit Category Pool Resolution
+- **Approach**: Once `policy_id` is available from the member assignment, fetch `habit-opd/api/v1/opd_benefit_category_pool` in parallel with `opd_policy_version`. Map each pool's `annual_limit` to its `allocated` and `available` balance, sort pools ascending by `code` (`POOL-0004`, `POOL-0005`, `POOL-0006`), associate matching categories by `pool_code` and `claim_pool_code`, and display the pool code badge alongside the balance in `WalletBalanceModal`.
+- **Rationale**: Accurately reflects floater pool sub-limits and categorized entitlements in the wallet balance modal rather than guessing from un-parameterized policy totals.
+
 ## Risks / Trade-offs
 
 - **[Risk] High API Latency**: Two sequential calls (`assignment` then `version`) could take longer than a single endpoint.

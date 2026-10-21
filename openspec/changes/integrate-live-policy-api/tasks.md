@@ -34,6 +34,10 @@
 - [x] 4.6 Update `new-claim-page.ts` to dynamically resolve category options from the active policy version based on selected patient
 - [x] 4.7 Update `ClaimModeStore` to dynamically derive claim modes from `PolicyStore` category configuration
 - [x] 4.8 Update `claim-option.ts` with dynamic policy coverage badge and QA test override controls
+- [x] 4.9 Add `PolicyBenefitPoolDto` and update `WalletPool` model with `code`
+- [x] 4.10 Implement `toPoolsFromApiAndVersion` with ascending pool code sorting and category association
+- [x] 4.11 Query `opd_benefit_category_pool` in `PolicyStore.load` in parallel with `opd_policy_version`
+- [x] 4.12 Render pool code badge in `WalletBalanceModal` alongside balance and description
 
 ## 5. Verification
 

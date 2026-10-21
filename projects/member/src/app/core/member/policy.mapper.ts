@@ -7,6 +7,7 @@ import { PolicyClause, PolicyDetail } from './policy-detail';
 import {
   OpdPolicyMemberAssignmentDto,
   OpdPolicyVersionDto,
+  PolicyBenefitPoolDto,
   PolicyCategoryDto,
   PolicyRelationshipDto,
 } from './policy.dto';
@@ -307,9 +308,12 @@ export function toPoolsFromVersion(version: OpdPolicyVersionDto): readonly Walle
   }
 
   const pools: WalletPool[] = [];
-  for (const [poolCode, data] of poolMap.entries()) {
+  const sortedCodes = Array.from(poolMap.keys()).sort((a, b) => a.localeCompare(b));
+  for (const poolCode of sortedCodes) {
+    const data = poolMap.get(poolCode)!;
     pools.push({
       id: poolCode,
+      code: poolCode,
       available: money(annualLimit),
       allocated: money(annualLimit),
       description: data.name,
@@ -318,4 +322,55 @@ export function toPoolsFromVersion(version: OpdPolicyVersionDto): readonly Walle
   }
 
   return pools;
+}
+
+/**
+ * Builds wallet pools from the live opd_benefit_category_pool API and maps
+ * categories defined in the policy version under each pool, sorted ascending by pool code.
+ */
+export function toPoolsFromApiAndVersion(
+  poolsDto: readonly PolicyBenefitPoolDto[] | null | undefined,
+  version: OpdPolicyVersionDto,
+): readonly WalletPool[] {
+  if (!poolsDto || poolsDto.length === 0) {
+    return toPoolsFromVersion(version);
+  }
+
+  const primary = getPrimaryRelationship(version);
+  const rawCategories = primary?.categories ?? [];
+  const additionalCategories = primary?.additional_claim_categories ?? [];
+
+  // Sort pools ascending by code (POOL-0004, POOL-0005, POOL-0006)
+  const sorted = [...poolsDto].sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+
+  return sorted.map((pool) => {
+    const matchingCategories: WalletPoolCategory[] = [];
+
+    for (const cat of rawCategories) {
+      if (cat.pool_code === pool.code) {
+        matchingCategories.push({
+          label: cat.category_name,
+          used: money(0),
+        });
+      }
+    }
+
+    for (const add of additionalCategories) {
+      if (add.claim_pool_code === pool.code) {
+        matchingCategories.push({
+          label: add.claim_category_name,
+          used: money(0),
+        });
+      }
+    }
+
+    return {
+      id: pool.code,
+      code: pool.code,
+      available: money(pool.annual_limit),
+      allocated: money(pool.annual_limit),
+      description: pool.pool_name,
+      categories: matchingCategories,
+    };
+  });
 }

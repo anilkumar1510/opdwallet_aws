@@ -41,7 +41,7 @@ import { Icon } from '../../shared/ui/icon';
           >
           <span class="flex flex-col gap-[2px]">
             <span class="flex items-center gap-[5px] text-[18px] font-medium leading-[1.2] text-[#1c1c1c] lg:text-xl lg:font-medium lg:leading-[1.2] lg:text-[#1c1c1c]">
-              Hi {{ firstName() }}!
+              Hi, {{firstName()}}!
               <span
                 class="transition-transform duration-200"
                 [class]="open() ? 'rotate-180' : 'rotate-90'"
@@ -146,7 +146,7 @@ export class ProfileMenu {
   protected readonly open = signal(false);
   protected readonly active = computed(() => this.family.activeMember());
   protected readonly firstName = computed(
-    () => this.active()?.fullName.split(' ')[0] ?? 'there',
+    () => this.active()?.fullName ?? 'there',
   );
 
   protected label(member: Member): string {

@@ -72,6 +72,13 @@ export interface PolicyAdditionalClaimCategoryDto {
   claim_pool_code?: string;
 }
 
+export interface PolicyBenefitPoolDto {
+  code: string;
+  pool_name: string;
+  policy_id: string;
+  annual_limit: number;
+}
+
 export interface PolicyRelationshipDto {
   relationship_code: string;
   relationship_name: string;

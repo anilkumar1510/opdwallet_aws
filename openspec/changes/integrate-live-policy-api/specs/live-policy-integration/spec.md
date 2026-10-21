@@ -104,3 +104,18 @@ The system SHALL dynamically resolve the claim mode (`both`, `cashless`, or `cla
 #### Scenario: QA test mode override restricted to provided options
 - **WHEN** a QA tester selects an available mode option
 - **THEN** only options permitted by the policy for that category are displayed and selectable (e.g. if the policy allows claims only, only 'claims' is shown), and when an override is active, an indicator and reset button are rendered
+
+### Requirement: Dynamic Benefit Category Pool Resolution
+The system SHALL query `opd_benefit_category_pool` with the assigned `policy_id` to retrieve configured wallet pools, sort them ascending by pool code, map matching standard and additional claim categories from `opd_policy_version`, and display the pool code alongside balance and description in the wallet balance modal.
+
+#### Scenario: Policy pools retrieved from live API
+- **WHEN** an assigned policy has configured pools in `opd_benefit_category_pool`
+- **THEN** the system resolves the pools sorted ascending by pool code (e.g. POOL-0004, POOL-0005, POOL-0006), allocating each pool's distinct `annual_limit`
+
+#### Scenario: Category mapping under pools
+- **WHEN** policy version categories define `pool_code` or `claim_pool_code` matching a pool's code
+- **THEN** the category is grouped under that pool with an initial used balance of ₹0
+
+#### Scenario: Pool card rendering in wallet balance modal
+- **WHEN** the user opens the "Your Wallet Balance" modal
+- **THEN** each pool card displays its pool code badge (e.g. `POOL-0004`), available and allocated balance, pool description, and an expandable category breakdown

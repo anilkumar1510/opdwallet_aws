@@ -9,6 +9,7 @@ import { PolicyDetail } from './policy-detail';
 import {
   OpdPolicyMemberAssignmentDto,
   OpdPolicyVersionDto,
+  PolicyBenefitPoolDto,
 } from './policy.dto';
 import {
   findRelationshipInVersion,
@@ -18,6 +19,7 @@ import {
   toCombinedClaimCategories,
   toPolicyDetailFromVersion,
   toPolicyFromVersion,
+  toPoolsFromApiAndVersion,
   toPoolsFromVersion,
   toWalletTotalFromVersion,
 } from './policy.mapper';
@@ -109,8 +111,8 @@ export class PolicyStore {
 
       this._assignment.set(assignment);
 
-      // Step 2: Query policy version by policy_version_id
-      const versionRes: any = await new Promise((resolve, reject) => {
+      // Step 2: Query policy version and policy benefit category pools in parallel
+      const versionPromise: Promise<any> = new Promise((resolve, reject) => {
         const queryArgs = `queryId=GET_PAGE&filter=id%3A${encodeURIComponent(assignment.policy_version_id)}&page_no=0&page_size=2`;
         this.appService
           .getcall('opd_policy_version', 'habit-opd', queryArgs)
@@ -120,8 +122,48 @@ export class PolicyStore {
           });
       });
 
+      const policyId = assignment.policy_id;
+      const poolsPromise: Promise<any> = policyId
+        ? new Promise((resolve) => {
+            const queryArgs = `queryId=GET_PAGE&args=noCount%3A1&filter=policy_id%3A${encodeURIComponent(policyId)}&projectionKeys=code%2Cpool_name%2Cpolicy_id%2Cannual_limit&page_size=1000&application=habit-opd`;
+            this.appService
+              .getcall('opd_benefit_category_pool', 'habit-opd', queryArgs)
+              .subscribe({
+                next: (res: any) => resolve(res),
+                error: (err: any) => {
+                  console.error('Failed to load benefit category pools:', err);
+                  resolve(null);
+                },
+              });
+          })
+        : Promise.resolve(null);
+
+      const [versionRes, poolsRes] = await Promise.all([versionPromise, poolsPromise]);
+
       const parsedVersion = typeof versionRes === 'string' ? JSON.parse(versionRes) : versionRes;
       const version: OpdPolicyVersionDto | undefined = parsedVersion?.resource?.[0];
+
+      let parsedPools: PolicyBenefitPoolDto[] = [];
+      if (poolsRes) {
+        const parsed = typeof poolsRes === 'string' ? JSON.parse(poolsRes) : poolsRes;
+        parsedPools = parsed?.resource ?? [];
+      } else if (version?.policy_id && !policyId) {
+        try {
+          const queryArgs = `queryId=GET_PAGE&args=noCount%3A1&filter=policy_id%3A${encodeURIComponent(version.policy_id)}&projectionKeys=code%2Cpool_name%2Cpolicy_id%2Cannual_limit&page_size=1000&application=habit-opd`;
+          const fallbackRes: any = await new Promise((resolve, reject) => {
+            this.appService
+              .getcall('opd_benefit_category_pool', 'habit-opd', queryArgs)
+              .subscribe({
+                next: (res: any) => resolve(res),
+                error: (err: any) => reject(err),
+              });
+          });
+          const parsed = typeof fallbackRes === 'string' ? JSON.parse(fallbackRes) : fallbackRes;
+          parsedPools = parsed?.resource ?? [];
+        } catch {
+          // Fallback to version-derived pools handled by mapper
+        }
+      }
 
       if (version) {
         const primary = getPrimaryRelationship(version);
@@ -145,7 +187,7 @@ export class PolicyStore {
         this._detail.set(toPolicyDetailFromVersion(normalizedVersion));
         this._walletTotal.set(toWalletTotalFromVersion(normalizedVersion));
         this._categories.set(toCategoriesFromVersion(normalizedVersion));
-        this._pools.set(toPoolsFromVersion(normalizedVersion));
+        this._pools.set(toPoolsFromApiAndVersion(parsedPools, normalizedVersion));
       }
     } catch (err: any) {
       this._error.set(appError('network', err?.message, err?.status ?? null));
