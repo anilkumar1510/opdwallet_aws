@@ -40,7 +40,7 @@ Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/opd_dis
 
 #### Scenario: The member's own words
 - **WHEN** the member wrote details
-- **THEN** they are sent as `final_reason` and `description` in the submit, and also as the first reply on the new ticket and appear as the first message in the thread, commas and colons as typed
+- **THEN** they are sent as `description` in the submit (`final_reason` is not sent), and also as the first reply on the new ticket and appear as the first message in the thread, commas and colons as typed
 - **AND** when no details were written, no message is sent
 - **AND** if that first message is refused it is retried once, and if it still fails the ticket stays raised and the words are put back in the reply box with a notice
 

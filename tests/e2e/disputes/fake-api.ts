@@ -43,6 +43,7 @@ export interface Dispute {
   g_creation_time: number;
   g_modify_time: number;
   final_reason?: string;
+  description?: string;
   last_message_sender?: string;
   documents?: object[];
 }
@@ -187,7 +188,7 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
         if (api.submitDelayMs) await new Promise((r) => setTimeout(r, api.submitDelayMs));
         if (api.failSubmit === 500) return route.fulfill({ status: 500, body: 'boom' });
         if (api.failSubmit === 'errCode') return route.fulfill(json({ errCode: -1, message: 'Claim not found' }));
-        const d = api.seed({ claim_id: payload.claim_id, selected_reason: payload.selected_reason, dispute_status: 'OPEN', g_creation_time: Date.now(), final_reason: payload.final_reason, documents: payload.documents });
+        const d = api.seed({ claim_id: payload.claim_id, selected_reason: payload.selected_reason, dispute_status: 'OPEN', g_creation_time: Date.now(), description: payload.description, final_reason: payload.final_reason, documents: payload.documents });
         return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, name: d.name, ticket_id: d.name }] }));
       }
 

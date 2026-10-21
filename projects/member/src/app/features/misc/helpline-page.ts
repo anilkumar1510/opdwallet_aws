@@ -1132,9 +1132,9 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
   if (closedByMember) {
     messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
   } else if (state === 'closed') {
-    // `final_reason` starts as the member's own words (submit stores them there)
-    // and becomes the resolution when support closes the ticket: only show it as
-    // support's remark once it is no longer the member's first message.
+    // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
+    // (it is now left blank until support closes the ticket): only show it as
+    // support's remark when it is not the member's first message.
     const first = thread.find((m) => m.sender === 'MEMBER')?.text;
     const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
     messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });

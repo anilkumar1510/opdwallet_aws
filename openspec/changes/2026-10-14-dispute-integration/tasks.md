@@ -10,7 +10,7 @@
 - [x] 2.1 Read "Claims that need your help" from the paginated claims listing (5 at a time, Load more reads one 100-row page because 20-row paging repeats page 0, repeats removed, failed read retried).
 - [x] 2.2 Hide the Amount / payment section for reimbursement claims.
 - [x] 2.3 Optional supporting-documents upload in the raise form (claims).
-- [x] 2.4 Submit via the dispute API (the member's words in `final_reason` and `description`, no `dispute_type`); the member's own words become the first message (one retry, then back into the reply box); show API errors and create no ticket on failure.
+- [x] 2.4 Submit via the dispute API (the member's words in `description`, no `final_reason`, no `dispute_type`); the member's own words become the first message (one retry, then back into the reply box); show API errors and create no ticket on failure.
 - [x] 2.5 Tickets and status from the API; thread from the API; refresh every 30 s; nothing stored in the browser.
 - [x] 2.6 Reply via `dispute_chat`: disabled while sending and for the 3 s guard, text kept on failure, 2000 character cap, a refusal on a just-closed ticket shown and the ticket refreshed.
 - [x] 2.7 No member reopen; "Mark resolved" (`userResolve`) on real tickets, demo support buttons hidden; remove the wireframe banner.
@@ -32,7 +32,7 @@
 
 - [x] 4.1 Claims reachable despite the backend's unstable paging (one 100-row page, repeats removed); `benefit_category` from the claim's category code; reply retry after the 3 s guard; friendlier missing-document message; status ids and names understood.
 - [x] 4.2 Replies on `dispute_chat` with text verbatim (commas and colons work); `userResolve` wired; tickets de-duplicated; `dispute_type` no longer sent.
-- [ ] 4.3 Stop sending `final_reason` once a new ticket's Description is seen filled in Twenty (`daf8d03` merged in `new_prod`).
+- [x] 4.3 Stop sending `final_reason`: Description arrives verbatim in Twenty on portal tickets (checked 16 Oct); done 21 Oct. The display rule for old tickets stays.
 - [ ] 4.4 Backend creates the Twenty record for portal-raised tickets (none appear in the Twenty workspace yet) and sends replies to Twenty.
 - [ ] 4.5 Backend fixes: `dispute_type` optional (stable claims sort is done and checked live, 16 Oct), caller checks on `adjudicate`, `agentReply` and `agentResolve` (parked).
 - [ ] 4.6 Service-line (non-claim) grievances once backend and CRM support them.

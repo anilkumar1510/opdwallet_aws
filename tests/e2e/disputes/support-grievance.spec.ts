@@ -180,8 +180,9 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('Bill is wrong, see note: it was ₹1,500.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
     expect(api.replies[0].text).toBe('Bill is wrong, see note: it was ₹1,500.');
-    // The same words are stored as final_reason (the only field passed on to support) and as description.
-    expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.', description: 'Bill is wrong, see note: it was ₹1,500.' });
+    // The words go in `description`; `final_reason` (support's resolution) is not sent.
+    expect(api.submits[0]).toMatchObject({ description: 'Bill is wrong, see note: it was ₹1,500.' });
+    expect(api.submits[0]).not.toHaveProperty('final_reason');
   });
 
   test('a closed ticket does not show the member own words as the support resolution', async ({ page }) => {
