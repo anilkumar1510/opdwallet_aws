@@ -76,6 +76,14 @@ export class PolicyStore {
     toPoolsFromApiAndVersion(this._rawPools(), this._version(), this._activeRelationshipCode()),
   );
 
+  /**
+   * Indicates whether the policy requires both digital and physical original documents
+   * for claims (claim_type === 'DIGITAL_PHYSICAL').
+   */
+  readonly isDigitalPhysicalClaim = computed<boolean>(() => {
+    return this._version()?.claim_type?.trim().toUpperCase() === 'DIGITAL_PHYSICAL';
+  });
+
   setActiveRelationship(code: string): void {
     const normalized = (code || 'self').trim().toLowerCase();
     if (this._activeRelationshipCode() !== normalized) {

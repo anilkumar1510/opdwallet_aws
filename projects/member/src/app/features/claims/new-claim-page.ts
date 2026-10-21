@@ -99,7 +99,7 @@ const STEPS = [
              originals posted after submission (renders nothing otherwise). -->
         @if (step() >= 1) {
           <div class="mb-5">
-            <opd-original-docs-notice variant="claim" [showDemo]="true" />
+            <opd-original-docs-notice variant="claim" />
           </div>
         }
 

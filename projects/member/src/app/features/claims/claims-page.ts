@@ -80,7 +80,7 @@ const CLAIMS_PAGE_SIZE = 5;
              claimed amount than they filed, with no explanation. -->
         <!-- Policy needs originals as well as digital copies (renders nothing otherwise). -->
         <div class="mt-5">
-          <opd-original-docs-notice variant="list" [showDemo]="true" />
+          <opd-original-docs-notice variant="list" />
         </div>
 
         @if (store.capNotice(); as notice) {
