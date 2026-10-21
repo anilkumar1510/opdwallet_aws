@@ -28,7 +28,23 @@ export class FamilyStore {
   private readonly session = inject(SessionStore);
   private readonly policyStore = inject(PolicyStore);
 
-  readonly family = this._family.asReadonly();
+  readonly rawFamily = this._family.asReadonly();
+
+  /**
+   * Filtered family members: Primary (Self) is always included; dependents are
+   * included ONLY if covered under the active policy version's allowed relationships.
+   */
+  readonly family = computed<readonly Member[]>(() => {
+    const version = this.policyStore.version();
+    const list = this._family();
+    if (!version) return list;
+    return list.filter((m) => {
+      const isSelf = m.isPrimary || m.relationship === Relationship.Self || m.relationshipCode === 'self';
+      if (isSelf) return true;
+      return this.isMemberCovered(m);
+    });
+  });
+
   private readonly _loading = signal(false);
   readonly loading = this._loading.asReadonly();
   private readonly _error = signal<AppError | null>(null);
@@ -36,21 +52,26 @@ export class FamilyStore {
   readonly failed = signal(false).asReadonly();
 
   readonly activeMember = computed<Member | null>(() => {
-    const family = this._family();
+    const family = this.family();
     const activeId = this._activeId();
-    if (activeId) return family.find((m) => m.id === activeId) ?? null;
+    if (activeId) {
+      const found = family.find((m) => m.id === activeId);
+      if (found) return found;
+    }
     return family.find((m) => m.isPrimary) ?? family[0] ?? null;
   });
 
-  readonly isViewingSelf = computed(() => this.activeMember()?.isPrimary === true);
+  readonly isViewingSelf = computed(() => {
+    const active = this.activeMember();
+    return !active || active.isPrimary === true || active.relationship === Relationship.Self || active.relationshipCode === 'self';
+  });
 
   /**
-   * Generates policy cards for family members who are covered under the active
-   * policy version's allowed relationship types.
+   * Generates policy cards for covered family members.
    */
   readonly allPolicies = computed<readonly Policy[]>(() => {
     const version = this.policyStore.version();
-    const family = this._family();
+    const family = this.family();
 
     if (!version || !family.length) {
       return [];
@@ -58,35 +79,42 @@ export class FamilyStore {
 
     const cards: Policy[] = [];
     for (const member of family) {
-      const relCode = member.relationshipCode || (member.isPrimary ? 'self' : '');
-      if (isRelationshipCoveredInPolicy(relCode, version)) {
-        cards.push({
-          id: version.id || version.policy_id,
-          holderId: member.id,
-          holderName: member.fullName,
-          policyNumber: version.policy_number,
-          corporate: 'HCL Healthcare',
-          validFrom: version.effective_from ? new Date(version.effective_from) : null,
-          validTill: version.effective_to ? new Date(version.effective_to) : null,
-        });
-      }
+      cards.push({
+        id: version.id || version.policy_id,
+        holderId: member.id,
+        holderName: member.fullName,
+        policyNumber: version.policy_number,
+        corporate: 'HCL Healthcare',
+        validFrom: version.effective_from ? new Date(version.effective_from) : null,
+        validTill: version.effective_to ? new Date(version.effective_to) : null,
+      });
     }
 
     return cards;
   });
 
-  /** The dashboard carousel: entitled policies, with the active member's first. */
+  /**
+   * The dashboard carousel:
+   * - When Self is selected: shows all cards covered under the policy.
+   * - When any other user (dependent) is selected: shows ONLY that user's card.
+   */
   readonly policies = computed<readonly Policy[]>(() => {
     const entitled = this.allPolicies();
-    const activeId = this.activeMember()?.id;
-    return [
-      ...entitled.filter((p) => p.holderId === activeId),
-      ...entitled.filter((p) => p.holderId !== activeId),
-    ];
+    const active = this.activeMember();
+    const isSelf = !active || active.isPrimary || active.relationship === Relationship.Self || active.relationshipCode === 'self';
+
+    if (isSelf) {
+      return entitled;
+    }
+
+    return entitled.filter((p) => p.holderId === active.id);
   });
 
-  /** Switching is offered only to a primary with dependants. */
-  readonly canSwitch = computed(() => this._family().some((m) => m.isPrimary) && this._family().length > 1);
+  /** Switching is offered only when there is a primary member and at least one covered dependent. */
+  readonly canSwitch = computed(() => {
+    const family = this.family();
+    return family.some((m) => m.isPrimary) && family.length > 1;
+  });
 
   isMemberCovered(member: Member): boolean {
     const version = this.policyStore.version();
@@ -169,7 +197,7 @@ export class FamilyStore {
   }
 
   setActiveMember(member: Member): void {
-    if (!this._family().some((m) => m.id === member.id)) return;
+    if (!this.family().some((m) => m.id === member.id)) return;
     this._activeId.set(member.id);
     writeStored(member.id);
   }

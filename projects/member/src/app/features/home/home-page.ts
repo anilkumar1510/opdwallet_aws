@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
@@ -251,15 +252,6 @@ function benefitLink(categoryCode: string): string {
               }
             }
 
-            @if (!isCurrentMemberCovered() && !isLoading() && !error()) {
-              <div class="mt-4 flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-2.5 text-xs text-amber-800">
-                <svg class="h-4 w-4 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span><span class="font-semibold">{{ greetingName() }}</span> is not covered under this policy. Showing other covered family members.</span>
-              </div>
-            }
-
             @if (isLoading()) {
               <!-- SKELETON: Policy Card (aspect-[2.13] matches PolicyCard exactly, preventing layout shift) -->
               <div class="mt-8 w-full lg:mt-[36px] lg:w-[500px]" role="status" aria-label="Loading policy details">
@@ -351,7 +343,7 @@ function benefitLink(categoryCode: string): string {
                     <opd-policy-card
                       class="w-[90%] shrink-0 snap-start transition-transform duration-300 lg:w-[500px]"
                       [policy]="policy"
-                      [style.transform]="i === activeIndex() ? null : 'scale(0.85)'"
+                      [style.transform]="policies().length > 1 && i !== activeIndex() ? 'scale(0.85)' : null"
                       [style.transform-origin]="i < activeIndex() ? 'right center' : 'left center'"
                     />
                   }
@@ -520,7 +512,6 @@ export class HomePage {
   }
 
   protected readonly greetingName = computed(() => this.family.activeMember()?.fullName ?? 'there');
-  protected readonly isCurrentMemberCovered = computed(() => this.family.isCurrentMemberCovered());
   protected readonly policies = computed(() => this.family.policies());
   protected readonly quickLinks = computed(() => quickLinksFor(this.policies()[0]?.id ?? null));
 
@@ -529,6 +520,18 @@ export class HomePage {
 
   protected readonly isLoading = computed(() => this.family.loading() || this.policyStore.loading());
   protected readonly error = computed(() => this.policyStore.error() ?? this.family.error());
+
+  constructor() {
+    effect(() => {
+      // Whenever active member changes, reset carousel position to the first card
+      this.family.activeMember();
+      this.activeIndex.set(0);
+      const track = this.policyScroller()?.nativeElement;
+      if (track) {
+        track.scrollLeft = 0;
+      }
+    });
+  }
 
   protected retry(): void {
     if (this.family.error()) {

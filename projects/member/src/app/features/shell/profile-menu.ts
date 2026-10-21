@@ -116,20 +116,13 @@ import { Icon } from '../../shared/ui/icon';
                     [class.text-[#383838]]="!isSelected(member)"
                     >{{ member.fullName }}</span
                   >
-                  <div class="flex shrink-0 items-center gap-1.5">
-                    <span
-                      class="text-xs"
-                      [class.font-medium]="isSelected(member)"
-                      [class.text-[#0E51A2]]="isSelected(member)"
-                      [class.text-[#9ca3af]]="!isSelected(member)"
-                      >{{ label(member) }}</span
-                    >
-                    @if (!isCovered(member)) {
-                      <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                        Not covered
-                      </span>
-                    }
-                  </div>
+                  <span
+                    class="text-xs"
+                    [class.font-medium]="isSelected(member)"
+                    [class.text-[#0E51A2]]="isSelected(member)"
+                    [class.text-[#9ca3af]]="!isSelected(member)"
+                    >{{ label(member) }}</span
+                  >
                   @if (isSelected(member)) {
                     <span class="shrink-0 text-[#0E51A2]" aria-label="Active profile">
                       <opd-icon name="check" [size]="15" [strokeWidth]="2.2" />
@@ -194,10 +187,6 @@ export class ProfileMenu {
     const current = this.active();
     if (!current) return false;
     return member.id === current.id || (member.isPrimary && current.isPrimary);
-  }
-
-  protected isCovered(member: Member): boolean {
-    return this.family.isMemberCovered(member);
   }
 
   protected label(member: Member): string {
