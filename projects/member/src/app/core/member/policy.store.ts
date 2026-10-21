@@ -1,4 +1,4 @@
-import { Injectable, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { AppError, appError } from '../http/app-error';
 import { AppService } from '../http/api.service';
@@ -14,6 +14,7 @@ import {
 import {
   findRelationshipInVersion,
   getPrimaryRelationship,
+  isRelationshipCoveredInPolicy,
   resolveRelationshipBenefits,
   toCategoriesFromVersion,
   toCombinedClaimCategories,
@@ -41,14 +42,10 @@ export class PolicyStore {
 
   private readonly _assignment = signal<OpdPolicyMemberAssignmentDto | null>(null);
   private readonly _version = signal<OpdPolicyVersionDto | null>(null);
+  private readonly _rawPools = signal<readonly PolicyBenefitPoolDto[]>([]);
   private readonly _policies = signal<readonly Policy[]>([]);
   private readonly _detail = signal<PolicyDetail | null>(null);
-  private readonly _walletTotal = signal<{ available: Money; allocated: Money }>({
-    available: money(0),
-    allocated: money(0),
-  });
-  private readonly _categories = signal<readonly WalletCategoryBalance[]>([]);
-  private readonly _pools = signal<readonly WalletPool[]>([]);
+  private readonly _activeRelationshipCode = signal<string>('self');
   private readonly _loading = signal(false);
   private readonly _error = signal<AppError | null>(null);
 
@@ -59,11 +56,32 @@ export class PolicyStore {
   readonly version = this._version.asReadonly();
   readonly policies = this._policies.asReadonly();
   readonly detail = this._detail.asReadonly();
-  readonly walletTotal = this._walletTotal.asReadonly();
-  readonly categories = this._categories.asReadonly();
-  readonly pools = this._pools.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly activeRelationshipCode = this._activeRelationshipCode.asReadonly();
+
+  readonly isCovered = computed(() =>
+    isRelationshipCoveredInPolicy(this._activeRelationshipCode(), this._version()),
+  );
+
+  readonly walletTotal = computed(() =>
+    toWalletTotalFromVersion(this._version(), this._activeRelationshipCode()),
+  );
+
+  readonly categories = computed(() =>
+    toCategoriesFromVersion(this._version(), this._activeRelationshipCode()),
+  );
+
+  readonly pools = computed(() =>
+    toPoolsFromApiAndVersion(this._rawPools(), this._version(), this._activeRelationshipCode()),
+  );
+
+  setActiveRelationship(code: string): void {
+    const normalized = (code || 'self').trim().toLowerCase();
+    if (this._activeRelationshipCode() !== normalized) {
+      this._activeRelationshipCode.set(normalized);
+    }
+  }
 
   constructor() {
     effect(() => {
@@ -100,11 +118,9 @@ export class PolicyStore {
       if (!assignment?.policy_version_id) {
         this._assignment.set(null);
         this._version.set(null);
+        this._rawPools.set([]);
         this._policies.set([]);
         this._detail.set(null);
-        this._walletTotal.set({ available: money(0), allocated: money(0) });
-        this._categories.set([]);
-        this._pools.set([]);
         this._loading.set(false);
         return;
       }
@@ -185,19 +201,15 @@ export class PolicyStore {
         this._policies.set([policy]);
 
         this._detail.set(toPolicyDetailFromVersion(normalizedVersion));
-        this._walletTotal.set(toWalletTotalFromVersion(normalizedVersion));
-        this._categories.set(toCategoriesFromVersion(normalizedVersion));
-        this._pools.set(toPoolsFromApiAndVersion(parsedPools, normalizedVersion));
+        this._rawPools.set(parsedPools);
       }
     } catch (err: any) {
       this._error.set(appError('network', err?.message, err?.status ?? null));
       this._assignment.set(null);
       this._version.set(null);
+      this._rawPools.set([]);
       this._policies.set([]);
       this._detail.set(null);
-      this._walletTotal.set({ available: money(0), allocated: money(0) });
-      this._categories.set([]);
-      this._pools.set([]);
     } finally {
       this._loading.set(false);
     }
@@ -241,11 +253,10 @@ export class PolicyStore {
     this.lastPatientId = null;
     this._assignment.set(null);
     this._version.set(null);
+    this._rawPools.set([]);
     this._policies.set([]);
     this._detail.set(null);
-    this._walletTotal.set({ available: money(0), allocated: money(0) });
-    this._categories.set([]);
-    this._pools.set([]);
+    this._activeRelationshipCode.set('self');
     this._error.set(null);
   }
 }

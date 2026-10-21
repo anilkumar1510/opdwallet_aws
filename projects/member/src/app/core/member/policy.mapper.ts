@@ -240,22 +240,41 @@ export function toPolicyDetailFromVersion(version: OpdPolicyVersionDto): PolicyD
   };
 }
 
-export function toWalletTotalFromVersion(version: OpdPolicyVersionDto): {
+export function toWalletTotalFromVersion(
+  version: OpdPolicyVersionDto | null | undefined,
+  relationshipCode: string = 'self',
+): {
   available: Money;
   allocated: Money;
 } {
+  if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
+    return {
+      available: money(0),
+      allocated: money(0),
+    };
+  }
+
   const primary = getPrimaryRelationship(version);
-  const limit = primary?.wallet_configuration?.annual_limit ?? 26000;
+  const rel = findRelationshipInVersion(version, relationshipCode);
+  const limit = rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
   return {
     available: money(limit),
     allocated: money(limit),
   };
 }
 
-export function toCategoriesFromVersion(version: OpdPolicyVersionDto): readonly WalletCategoryBalance[] {
+export function toCategoriesFromVersion(
+  version: OpdPolicyVersionDto | null | undefined,
+  relationshipCode: string = 'self',
+): readonly WalletCategoryBalance[] {
+  if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
+    return [];
+  }
+
   const primary = getPrimaryRelationship(version);
-  const annualLimit = primary?.wallet_configuration?.annual_limit ?? 26000;
-  const rawCategories = primary?.categories ?? [];
+  const rel = findRelationshipInVersion(version, relationshipCode) ?? primary;
+  const annualLimit = rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
+  const rawCategories = rel?.categories ?? primary?.categories ?? [];
 
   return rawCategories.map((cat) => {
     const subLimit = cat.per_claim_limit && cat.per_claim_limit > 0 ? cat.per_claim_limit : annualLimit;
@@ -274,11 +293,19 @@ export function toCategoriesFromVersion(version: OpdPolicyVersionDto): readonly 
   });
 }
 
-export function toPoolsFromVersion(version: OpdPolicyVersionDto): readonly WalletPool[] {
+export function toPoolsFromVersion(
+  version: OpdPolicyVersionDto | null | undefined,
+  relationshipCode: string = 'self',
+): readonly WalletPool[] {
+  if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
+    return [];
+  }
+
   const primary = getPrimaryRelationship(version);
-  const annualLimit = primary?.wallet_configuration?.annual_limit ?? 26000;
-  const rawCategories = primary?.categories ?? [];
-  const additionalCategories = primary?.additional_claim_categories ?? [];
+  const rel = findRelationshipInVersion(version, relationshipCode) ?? primary;
+  const annualLimit = rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
+  const rawCategories = rel?.categories ?? primary?.categories ?? [];
+  const additionalCategories = rel?.additional_claim_categories ?? primary?.additional_claim_categories ?? [];
 
   // Group by pool_code
   const poolMap = new Map<string, { name: string; categories: WalletPoolCategory[] }>();
@@ -330,15 +357,21 @@ export function toPoolsFromVersion(version: OpdPolicyVersionDto): readonly Walle
  */
 export function toPoolsFromApiAndVersion(
   poolsDto: readonly PolicyBenefitPoolDto[] | null | undefined,
-  version: OpdPolicyVersionDto,
+  version: OpdPolicyVersionDto | null | undefined,
+  relationshipCode: string = 'self',
 ): readonly WalletPool[] {
+  if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
+    return [];
+  }
+
   if (!poolsDto || poolsDto.length === 0) {
-    return toPoolsFromVersion(version);
+    return toPoolsFromVersion(version, relationshipCode);
   }
 
   const primary = getPrimaryRelationship(version);
-  const rawCategories = primary?.categories ?? [];
-  const additionalCategories = primary?.additional_claim_categories ?? [];
+  const rel = findRelationshipInVersion(version, relationshipCode) ?? primary;
+  const rawCategories = rel?.categories ?? primary?.categories ?? [];
+  const additionalCategories = rel?.additional_claim_categories ?? primary?.additional_claim_categories ?? [];
 
   // Sort pools ascending by code (POOL-0004, POOL-0005, POOL-0006)
   const sorted = [...poolsDto].sort((a, b) => (a.code || '').localeCompare(b.code || ''));

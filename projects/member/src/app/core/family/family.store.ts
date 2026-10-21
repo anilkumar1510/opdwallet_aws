@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { AppError, appError } from '../http/app-error';
 import { Member } from '../member/member.model';
@@ -88,7 +88,23 @@ export class FamilyStore {
   /** Switching is offered only to a primary with dependants. */
   readonly canSwitch = computed(() => this._family().some((m) => m.isPrimary) && this._family().length > 1);
 
+  isMemberCovered(member: Member): boolean {
+    const version = this.policyStore.version();
+    const relCode = member.relationshipCode || (member.isPrimary ? 'self' : '');
+    return isRelationshipCoveredInPolicy(relCode, version);
+  }
+
+  readonly isCurrentMemberCovered = computed(() => {
+    const active = this.activeMember();
+    return active ? this.isMemberCovered(active) : false;
+  });
+
   constructor() {
+    effect(() => {
+      const active = this.activeMember();
+      const relCode = active?.relationshipCode || (active?.isPrimary ? 'self' : 'self');
+      this.policyStore.setActiveRelationship(relCode);
+    });
     void this.load();
   }
 

@@ -62,6 +62,10 @@ See `proposal.md` for motivation. The application is an Angular 21 zoneless micr
 - **Approach**: Once `policy_id` is available from the member assignment, fetch `habit-opd/api/v1/opd_benefit_category_pool` in parallel with `opd_policy_version`. Map each pool's `annual_limit` to its `allocated` and `available` balance, sort pools ascending by `code` (`POOL-0004`, `POOL-0005`, `POOL-0006`), associate matching categories by `pool_code` and `claim_pool_code`, and display the pool code badge alongside the balance in `WalletBalanceModal`.
 - **Rationale**: Accurately reflects floater pool sub-limits and categorized entitlements in the wallet balance modal rather than guessing from un-parameterized policy totals.
 
+### 10. Dependent Coverage Verification & Reactive Profile Switching
+- **Approach**: Use `isRelationshipCoveredInPolicy(relCode, version)` to verify whether a dependent is covered. In `FamilyStore`, an effect syncs the active relationship code to `PolicyStore.setActiveRelationship`. `PolicyStore` computes `walletTotal`, `categories`, `pools`, and `isCovered` reactively based on the active relationship. In `ProfileMenu`, non-covered dependents are labeled with a "Not covered" badge while remaining switchable so users can view their profile and zero-state.
+- **Rationale**: Eliminates stale primary-only wallet and category data on dependent views while clearly differentiating covered vs non-covered members across the application.
+
 ## Risks / Trade-offs
 
 - **[Risk] High API Latency**: Two sequential calls (`assignment` then `version`) could take longer than a single endpoint.

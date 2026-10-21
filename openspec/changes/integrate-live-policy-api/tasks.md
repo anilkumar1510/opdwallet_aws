@@ -38,6 +38,9 @@
 - [x] 4.10 Implement `toPoolsFromApiAndVersion` with ascending pool code sorting and category association
 - [x] 4.11 Query `opd_benefit_category_pool` in `PolicyStore.load` in parallel with `opd_policy_version`
 - [x] 4.12 Render pool code badge in `WalletBalanceModal` alongside balance and description
+- [x] 4.13 Add `isMemberCovered` and sync active relationship code in `FamilyStore`
+- [x] 4.14 Make `PolicyStore.walletTotal`, `categories`, and `pools` reactive to the active relationship
+- [x] 4.15 Display "Not covered" badge in profile switcher and non-covered banner on dashboard
 
 ## 5. Verification
 

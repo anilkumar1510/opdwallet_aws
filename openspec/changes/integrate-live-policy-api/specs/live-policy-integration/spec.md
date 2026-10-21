@@ -119,3 +119,14 @@ The system SHALL query `opd_benefit_category_pool` with the assigned `policy_id`
 #### Scenario: Pool card rendering in wallet balance modal
 - **WHEN** the user opens the "Your Wallet Balance" modal
 - **THEN** each pool card displays its pool code badge (e.g. `POOL-0004`), available and allocated balance, pool description, and an expandable category breakdown
+
+### Requirement: Dependent Coverage Verification and Profile Switch Data Updates
+The system SHALL verify whether each family member is covered under the active policy version, indicate coverage status in the profile switcher, and dynamically update all wallet, category, pool, and carousel data across the project when switching profiles.
+
+#### Scenario: Switching to a covered dependent
+- **WHEN** the user switches to a family dependent whose relationship is covered in the policy version
+- **THEN** the active member updates, the policy carousel elevates their policy card first, and wallet balances, pools, and category limits reflect the shared floater entitlement for their relationship
+
+#### Scenario: Switching to a non-covered dependent
+- **WHEN** the user switches to a dependent whose relationship is marked as not covered in the policy version (such as Father in a Non-Parental policy)
+- **THEN** the profile switcher marks the dependent as "Not covered", their wallet total and categories resolve to zero/empty, and the dashboard displays an informative non-covered notice while retaining access to view their profile
