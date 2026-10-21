@@ -8,6 +8,7 @@ import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageHeader } from '../../shared/ui/page-header';
+import { OriginalDocsNotice } from '../../shared/ui/original-docs-notice';
 import { AppService } from '../../core/http/api.service';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -16,7 +17,7 @@ const CLAIMS_PAGE_SIZE = 5;
 @Component({
   selector: 'opd-claims-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LoadingView, ErrorView, EmptyView, StatusBadge, BackLink, PageHeader],
+  imports: [RouterLink, LoadingView, ErrorView, EmptyView, StatusBadge, BackLink, PageHeader, OriginalDocsNotice],
   template: `
     <opd-page-header
       title="Claims"
@@ -77,6 +78,11 @@ const CLAIMS_PAGE_SIZE = 5;
         <!-- The API caps a bill above the per-claim limit on submit and says so
              only in that response; without this the member would see a smaller
              claimed amount than they filed, with no explanation. -->
+        <!-- Policy needs originals as well as digital copies (renders nothing otherwise). -->
+        <div class="mt-5">
+          <opd-original-docs-notice variant="list" [showDemo]="true" />
+        </div>
+
         @if (store.capNotice(); as notice) {
           <p class="mt-5 rounded-xl bg-warning-50 px-4 py-3 text-sm text-warning-700" role="status">
             {{ notice }}
@@ -116,6 +122,12 @@ const CLAIMS_PAGE_SIZE = 5;
                     }
                   </div>
                 </a>
+                <!-- A claim asking for its documents again also needs the originals. -->
+                @if (asksForDocuments(claim)) {
+                  <div class="mt-2 border-t border-[#EDF0F7] pt-2">
+                    <opd-original-docs-notice variant="resubmit" />
+                  </div>
+                }
               </li>
             }
           </ul>
@@ -213,6 +225,12 @@ export class ClaimsPage {
   protected patientName(): string {
     return 'this member'
     // this.store.claims[0]?.patientName ?? 'this member';
+  }
+
+  /** Documents needed, or a resubmission asked for — either way the documents again. */
+  protected asksForDocuments(claim: { claim_status?: string; status?: { label?: string } } | null): boolean {
+    const raw = `${claim?.claim_status ?? ''} ${claim?.status?.label ?? ''}`.toUpperCase();
+    return /DOCUMENTS_REQUIRED|DOCUMENTS NEEDED|RESUBMI/.test(raw);
   }
 
   protected date(value: Date | null): string {

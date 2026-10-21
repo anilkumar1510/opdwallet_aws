@@ -27,6 +27,7 @@ import { AppService } from '../../core/http/api.service';
 import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
+import { OriginalDocsNotice } from '../../shared/ui/original-docs-notice';
 import { Observable } from 'rxjs';
 const MAX_BYTES = 5 * 1024 * 1024;
 const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -47,7 +48,7 @@ const STEPS = [
 @Component({
   selector: 'opd-new-claim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, FileUploader],
+  imports: [FormsModule, RouterLink, FileUploader, OriginalDocsNotice],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -92,6 +93,14 @@ const STEPS = [
             </li>
           }
         </ol>
+
+        <!-- Steps 2–4 (Details, Documents, Review): the policy may need the
+             originals posted after submission (renders nothing otherwise). -->
+        @if (step() >= 1) {
+          <div class="mb-5">
+            <opd-original-docs-notice variant="claim" [showDemo]="true" />
+          </div>
+        }
 
         <form (ngSubmit)="onPrimary()">
           <!-- ── Step 0 · Bank account (verified once, before any claim) ──── -->
