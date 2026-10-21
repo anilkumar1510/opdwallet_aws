@@ -29,7 +29,7 @@ async function expectTappable(page: Page, name: string | RegExp): Promise<void> 
   expect(box!.x + box!.width, `${name} fits the screen`).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
 }
 
-test.use({ headless: true });
+// test.use({ headless: true });
 
 /** One test on an emulated phone (a fresh context per test, as device settings cannot change inside a describe). */
 function onPhone(label: string, device: (typeof PHONES)[number][1], name: string, run: (page: Page) => Promise<void>): void {

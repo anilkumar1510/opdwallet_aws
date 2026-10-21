@@ -596,7 +596,12 @@ export class HelplinePage {
     });
     // Each refresh replaces the records, which re-runs the effect above and
     // reloads the open thread, so the interval only has to refresh the list.
-    const timer = setInterval(() => void this.refreshDisputes(), POLL_MS);
+    // The claims are read again too: a draft the member submits meanwhile
+    // (status DRAFT to UNDER_REVIEW) then shows up without reopening the page.
+    const timer = setInterval(() => {
+      void this.refreshDisputes();
+      void this.claimsStore.getClimListData();
+    }, POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 

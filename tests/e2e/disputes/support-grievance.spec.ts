@@ -13,7 +13,7 @@ import { FakeApi, claimRow, claimRowOf, claimsSection, DAY, mockBackend, openSup
  * action twice within 3 seconds. No session or backend is needed. Run with the dev server up (4500).
  * The real thing is covered by live-api.spec.ts.
  */
-test.use({ headless: true });
+// test.use({ headless: true });
 
 test.describe('Claims that need your help', () => {
   test('lists the claims from the listing API, newest first, with Load more', async ({ page }) => {
@@ -41,6 +41,21 @@ test.describe('Claims that need your help', () => {
     const section = claimsSection(page);
     await expect(section.getByText('OPD-2026-00353')).toBeVisible({ timeout: 10000 });
     await expect(section.getByText('OPD-2026-00354')).toHaveCount(0);
+  });
+
+  test('a draft that is submitted while the page is open appears after the next refresh', async ({ page }) => {
+    await page.clock.install();
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00353')).toBeVisible({ timeout: 10000 });
+    await expect(section.getByText('OPD-2026-00354')).toHaveCount(0);
+    // The member submits the draft: it is no longer a draft.
+    api.claims = [claimRow(0, 'UNDER_REVIEW', 'Under review'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await page.clock.fastForward(31_000);
+    await expect(section.getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
   });
 
   test('only drafts: the empty state shows', async ({ page }) => {

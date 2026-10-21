@@ -116,6 +116,7 @@ static demo data until the backend and Twenty support them. All calls go through
 
 | What | Call |
 |---|---|
+| Claim statuses (backend `ClaimStatus`) | `DRAFT` (created, not submitted: not listed on Support), `UNDER_REVIEW` (submitted), `DOCUMENTS_REQUIRED`, `APPROVED`, `PARTIALLY_APPROVED`, `REJECTED`, `PAYMENT_DONE`; `submit` moves DRAFT to UNDER_REVIEW |
 | Claims that need help | `GET habit-opd/api/v1/opd_claim?queryId=GET_CLAIMS_BY_USER&page_no=N&page_size=20` (page 0 via `ClaimsStore`; the rest via `ClaimPages`, one `page_size=100` read because the 20-row pages overlap; 5 shown at a time; repeats removed) |
 | Raise a grievance | `POST habit-opd/api/v1/opd_dispute` `action=submit`. Response `resource[0]` has `id` (uuid), `name` / `ticket_id` (DIS-2026-xxxxx) |
 | My tickets + status | `GET habit-opd/api/v1/opd_dispute?queryId=GET_PAGE&page_no&page_size=20` (all pages) |

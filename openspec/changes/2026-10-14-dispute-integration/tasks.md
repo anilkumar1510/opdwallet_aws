@@ -22,7 +22,7 @@
 ## 3. Verification
 
 - [x] 3.1 Unit tests for the API service (55): payloads (no `dispute_type`, `message_text`, resolve by name), documents, signing, paging, ticket de-duplication, mapping, errors, state mapping, status ids and names.
-- [x] 3.2 Browser tests against a fake of the real API (76 with the phone layouts; shared fake in `fake-api.ts` models `dispute_chat`, `userResolve`, closed-ticket refusal): list, detail, claim paging, submit, first message, documents, validation, errors, double clicks, window, existing ticket, 45-message thread, support reply arriving, closed ticket, Mark resolved, reply on a just-closed ticket, list/thread failures, reply rules, no fake actions.
+- [x] 3.2 Browser tests against a fake of the real API (77 with the phone layouts; shared fake in `fake-api.ts` models `dispute_chat`, `userResolve`, closed-ticket refusal): list, detail, claim paging, submit, first message, documents, validation, errors, double clicks, window, existing ticket, 45-message thread, support reply arriving, closed ticket, Mark resolved, reply on a just-closed ticket, list/thread failures, reply rules, no fake actions.
 - [x] 3.3 Browser tests against the REAL API (4, need `SESSION_ID`): raise with a real one-page PDF (stored verbatim, downloaded back intact), thread, reply, 3 s guard, Mark resolved, reload keeps it closed, expired session. They create real "[TEST]" tickets.
 - [x] 3.4 Production build with no errors; `openspec validate --strict`.
 - [x] 3.5 Phone layouts (emulated iPhone 13 and Pixel 7, 12 tests): no sideways scroll with long words and long file names, tap-sized buttons. Real devices by hand.
@@ -39,3 +39,4 @@
 - [ ] 4.7 Notifications (in-app, WhatsApp, email), central configuration (reasons, windows), real support phone and email values.
 - [x] 4.8 Follow the backend's `opd_` resource rename (`opd_claim`, `opd_dispute`, `opd_dispute_chat`) in the portal, tests and docs (17 Oct); live re-check needs a signed-in session.
 - [x] 4.9 Draft claims are not listed on the Support page, so no grievance can be raised on an unsubmitted claim (19 Oct).
+- [x] 4.10 Every claim status except `DRAFT` is listed on the Support page; the claims are re-read with the 30 s refresh so a claim submitted meanwhile (DRAFT to UNDER_REVIEW) appears (21 Oct).
