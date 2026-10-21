@@ -10,6 +10,7 @@ import { RouterLink } from '@angular/router';
 
 import { relationshipLabel } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
+import { Relationship } from '../../core/member/family-mapper';
 import { Member } from '../../core/member/member.model';
 import { Icon } from '../../shared/ui/icon';
 
@@ -76,7 +77,7 @@ import { Icon } from '../../shared/ui/icon';
         ></button>
 
         <div
-          class="absolute z-50 mt-2 w-60 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+          class="absolute z-50 mt-2 w-64 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
           [class]="showName() ? 'left-0' : 'right-0'"
           role="menu"
         >
@@ -90,21 +91,43 @@ import { Icon } from '../../shared/ui/icon';
               <p class="px-4 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-[#9ca3af]">
                 Switch profile
               </p>
-              @for (member of family.family(); track member.id) {
+              @for (member of members(); track member.id) {
                 <button
                   type="button"
                   role="menuitem"
-                  class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50"
-                  [class.bg-blue-50]="member.id === active()?.id"
+                  class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors hover:bg-gray-50"
+                  [class.bg-[#F0F5FF]]="isSelected(member)"
+                  [class.hover:bg-[#E8EEF9]]="isSelected(member)"
                   (click)="choose(member)"
                 >
                   <span
-                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-[#0E51A2]"
-                    style="background: linear-gradient(261.92deg, rgba(223,232,255,.75) 4.4%, rgba(189,209,255,.75) 91.97%); border: 1px solid #A4BFFE7A"
+                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                    [style]="isSelected(member)
+                      ? 'background: linear-gradient(180deg,#5B99F9 0%,#1E5BB8 100%)'
+                      : 'background: linear-gradient(261.92deg, rgba(223,232,255,.75) 4.4%, rgba(189,209,255,.75) 91.97%); border: 1px solid #A4BFFE7A'"
+                    [class.text-white]="isSelected(member)"
+                    [class.text-[#0E51A2]]="!isSelected(member)"
                     >{{ member.initials }}</span
                   >
-                  <span class="min-w-0 flex-1 truncate text-[#383838]">{{ member.fullName }}</span>
-                  <span class="shrink-0 text-xs text-[#9ca3af]">{{ label(member) }}</span>
+                  <span
+                    class="min-w-0 flex-1 truncate"
+                    [class.font-semibold]="isSelected(member)"
+                    [class.text-[#0E51A2]]="isSelected(member)"
+                    [class.text-[#383838]]="!isSelected(member)"
+                    >{{ member.fullName }}</span
+                  >
+                  <span
+                    class="shrink-0 text-xs"
+                    [class.font-medium]="isSelected(member)"
+                    [class.text-[#0E51A2]]="isSelected(member)"
+                    [class.text-[#9ca3af]]="!isSelected(member)"
+                    >{{ label(member) }}</span
+                  >
+                  @if (isSelected(member)) {
+                    <span class="shrink-0 text-[#0E51A2]" aria-label="Active profile">
+                      <opd-icon name="check" [size]="15" [strokeWidth]="2.2" />
+                    </span>
+                  }
                 </button>
               }
             </div>
@@ -148,6 +171,23 @@ export class ProfileMenu {
   protected readonly firstName = computed(
     () => this.active()?.fullName ?? 'there',
   );
+
+  protected readonly members = computed(() => {
+    const list = this.family.family();
+    return [...list].sort((a, b) => {
+      const aIsSelf = a.isPrimary || a.relationship === Relationship.Self || a.relationshipCode === 'self';
+      const bIsSelf = b.isPrimary || b.relationship === Relationship.Self || b.relationshipCode === 'self';
+      if (aIsSelf && !bIsSelf) return -1;
+      if (!aIsSelf && bIsSelf) return 1;
+      return 0;
+    });
+  });
+
+  protected isSelected(member: Member): boolean {
+    const current = this.active();
+    if (!current) return false;
+    return member.id === current.id || (member.isPrimary && current.isPrimary);
+  }
 
   protected label(member: Member): string {
     return relationshipLabel(member.relationship);

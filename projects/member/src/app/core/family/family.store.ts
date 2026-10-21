@@ -4,7 +4,7 @@ import { AppError, appError } from '../http/app-error';
 import { Member } from '../member/member.model';
 import { Policy } from '../member/policy';
 import { PolicyStore } from '../member/policy.store';
-import { FamilyMemberResource, toFamilyMember } from '../member/family-mapper';
+import { FamilyMemberResource, Relationship, toFamilyMember } from '../member/family-mapper';
 import { isRelationshipCoveredInPolicy } from '../member/policy.mapper';
 import { AppService } from '../http/api.service';
 import { SessionStore } from '../session/session.store';
@@ -133,6 +133,13 @@ export class FamilyStore {
 
     if (dynamicUserId) {
       const familyMembers = resources.map((r) => toFamilyMember(r, dynamicUserId));
+      familyMembers.sort((a, b) => {
+        const aIsSelf = a.isPrimary || a.relationship === Relationship.Self || a.relationshipCode === 'self';
+        const bIsSelf = b.isPrimary || b.relationship === Relationship.Self || b.relationshipCode === 'self';
+        if (aIsSelf && !bIsSelf) return -1;
+        if (!aIsSelf && bIsSelf) return 1;
+        return 0;
+      });
       this._family.set(familyMembers);
 
       const primaryMember = familyMembers.find((m) => m.isPrimary);
