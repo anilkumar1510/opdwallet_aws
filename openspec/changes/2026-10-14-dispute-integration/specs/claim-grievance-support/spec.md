@@ -14,9 +14,14 @@ The Support page SHALL list the member's claims from the same paginated claims l
 - **AND** each has an "Ask for help" action, or its ticket status when it already has a ticket
 
 #### Scenario: Draft claims
-- **WHEN** a claim is still a draft (not submitted)
+- **WHEN** a claim is still a draft (backend status `DRAFT`, not submitted)
 - **THEN** it is not listed and no grievance can be raised on it
+- **AND** every other status is listed (under review, documents required, approved, partially approved, rejected, paid, cancelled)
 - **AND** when every claim is a draft, the page shows "No claim needs your attention right now."
+
+#### Scenario: A draft is submitted while the page is open
+- **WHEN** the member submits a draft (it becomes `UNDER_REVIEW`)
+- **THEN** it appears in the list at the next 30-second refresh, without reopening the page
 
 #### Scenario: No claims
 - **WHEN** the listing returns no claims

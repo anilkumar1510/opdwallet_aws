@@ -237,3 +237,7 @@ Claims still in DRAFT are no longer listed under "Claims that need your help", s
 ## Update: the portal stops sending `final_reason` (2026-10-21)
 
 New tickets send the member's words only as `description` (checked 16 Oct: it arrives verbatim in Twenty on portal tickets). `final_reason` is not sent, so it stays blank until support closes the ticket and Twenty's Resolution Reason no longer shows the member's words. The backend does not require it (only `claim_id` and `name`). Tickets raised earlier keep the member's words in `final_reason`, so the closed-ticket display rule stays for them. Verified: build clean and 76 browser tests pass (the unit test change could not be run: the unit test setup was unavailable).
+
+## Update: which claims the Support page lists (2026-10-21)
+
+Every claim is listed except those in status `DRAFT` (the backend's status for a claim that is created but not submitted; `submit` moves it to `UNDER_REVIEW`). Statuses seen in the backend: DRAFT, UNDER_REVIEW, DOCUMENTS_REQUIRED, APPROVED, PARTIALLY_APPROVED, REJECTED, PAYMENT_DONE. The claims are also re-read with the 30-second refresh, so a draft submitted while the page is open appears without reopening it. If a draft still shows on a device, the page was loaded before the deploy: reload it. Verified: build clean, 77 browser tests pass.

@@ -12,7 +12,7 @@ import { injectSessionCookie } from '../../utils/session';
  *   SESSION_ID=... npx playwright test tests/e2e/disputes/live-api.spec.ts
  */
 test.skip(!process.env.SESSION_ID, 'needs SESSION_ID');
-test.use({ headless: true });
+// test.use({ headless: true });
 test.describe.configure({ mode: 'serial' });
 
 const section = (page: Page, name: string) => page.locator('section', { has: page.getByRole('heading', { name }) });
