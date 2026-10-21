@@ -499,6 +499,8 @@ export class HelplinePage {
     const seen = new Set<string>();
     return ([...((this.claimsStore.clailListData() ?? []) as any[]), ...this.moreClaimRows()])
       .filter((row) => row?.claim_id && !seen.has(row.claim_id) && !!seen.add(row.claim_id))
+      // A draft has not been submitted: there is nothing for support to look at yet.
+      .filter((row) => !isDraftClaim(row))
       .map(toClaimOrder)
       .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime());
   });
@@ -1081,6 +1083,12 @@ function toDate(raw: unknown): Date {
   return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
+/** A claim the member has started but not submitted. No grievance can be raised on it. */
+function isDraftClaim(row: any): boolean {
+  const code = String(row?.claim_status ?? row?.status?.label ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return code === 'DRAFT';
+}
+
 /** One row of the claims listing, as the Support page's order shape. */
 function toClaimOrder(row: any): SupportOrder {
   const code = String(row?.claim_status ?? row?.status?.label ?? '').toUpperCase().replace(/[\s-]+/g, '_');
@@ -1124,9 +1132,9 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
   if (closedByMember) {
     messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
   } else if (state === 'closed') {
-    // `final_reason` starts as the member's own words (submit stores them there)
-    // and becomes the resolution when support closes the ticket: only show it as
-    // support's remark once it is no longer the member's first message.
+    // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
+    // (it is now left blank until support closes the ticket): only show it as
+    // support's remark when it is not the member's first message.
     const first = thread.find((m) => m.sender === 'MEMBER')?.text;
     const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
     messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });

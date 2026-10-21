@@ -80,10 +80,10 @@ test('raise a grievance, see it in the thread, reply, refresh and still see ever
   const stored = await page.request.get(`/habit-opd/api/v1/opd_dispute?queryId=GET_PAGE&filter=name:${ticketId}`);
   const record = (await stored.json()).resource?.[0];
   expect(JSON.stringify(record)).toContain(documentId);
-  // The member's description is stored verbatim in `final_reason` (commas and colons are fine there).
-  expect(record.final_reason).toBe('[TEST - please ignore] integration check, with a comma: and a colon. Amount ₹1,500 "quoted" & more.');
-  // `description` keeps the same words (the backend added the field; it is not passed on to the support system).
-  expect(record.description).toBe(record.final_reason);
+  // The member's description is stored verbatim in `description` (commas and colons are fine there);
+  // `final_reason` stays blank until support closes the ticket.
+  expect(record.description).toBe('[TEST - please ignore] integration check, with a comma: and a colon. Amount ₹1,500 "quoted" & more.');
+  expect(record.final_reason ?? '').toBe('');
   // The member's own words are the first message in the thread (comma and colon swapped for lookalikes).
   await expect(page.getByText(/integration check, with a comma: and a colon\. Amount ₹1,500 "quoted" & more\./)).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Ticket opened')).toBeVisible();

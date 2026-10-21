@@ -13,6 +13,11 @@ The Support page SHALL list the member's claims from the same paginated claims l
 - **THEN** each claim shows its category, provider, date, claim id, order type "Reimbursement" and its status
 - **AND** each has an "Ask for help" action, or its ticket status when it already has a ticket
 
+#### Scenario: Draft claims
+- **WHEN** a claim is still a draft (not submitted)
+- **THEN** it is not listed and no grievance can be raised on it
+- **AND** when every claim is a draft, the page shows "No claim needs your attention right now."
+
 #### Scenario: No claims
 - **WHEN** the listing returns no claims
 - **THEN** the page shows "No claim needs your attention right now."
@@ -35,7 +40,7 @@ Submitting the raise form for a claim SHALL call `POST /habit-opd/api/v1/opd_dis
 
 #### Scenario: The member's own words
 - **WHEN** the member wrote details
-- **THEN** they are sent as `final_reason` and `description` in the submit, and also as the first reply on the new ticket and appear as the first message in the thread, commas and colons as typed
+- **THEN** they are sent as `description` in the submit (`final_reason` is not sent), and also as the first reply on the new ticket and appear as the first message in the thread, commas and colons as typed
 - **AND** when no details were written, no message is sent
 - **AND** if that first message is refused it is retried once, and if it still fails the ticket stays raised and the words are put back in the reply box with a notice
 

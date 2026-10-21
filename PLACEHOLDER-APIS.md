@@ -131,8 +131,7 @@ failure even on HTTP 200.
 
 **Submit payload:** `claim_id, member_name, patient_name, relation_to_member,
 category (CLAIM), benefit_category, selected_reason,
-dispute_status (OPEN)`, plus optional `final_reason` and `description` (both hold the member's own words:
-`final_reason` is the only one the backend passes to Twenty until its mapper sends `description`, then `final_reason` will be dropped) and `documents` (`name, document_id,
+dispute_status (OPEN)`, plus optional `description` (the member's own words; `final_reason` is no longer sent, it is support's resolution) and `documents` (`name, document_id,
 document_type, originalname, verification_status, filetype, filesize`).
 No `dispute_type` is sent. The same words are also sent as the first reply (`dispute_chat`) so the thread shows them
 (retried once after the 3 s guard; if it still fails the text goes back in the
@@ -160,7 +159,7 @@ Done and verified live:
 
 Still needs a backend change:
 1. **Claims paging (fixed 16 Oct 2026).** The backend now orders claims by `g_creation_time DESC, id DESC`. Checked live: at `page_size=20` the pages return 20, 20, 20 and 2 rows, 62 distinct claims, the same set as one 100-row read. The portal still reads one page of 100 and removes repeats, which stays correct if the order ever changes.
-2. **Merge `daf8d03` into `new_prod`** (`description` into the Twenty payload; on `feature/pharmacy-twenty-integration` only). Until it is live the portal keeps sending the member's words as both `final_reason` and `description`.
+2. **Merge `daf8d03` into `new_prod`** (`description` into the Twenty payload; on `feature/pharmacy-twenty-integration` only). Done: the portal now sends only `description` (21 Oct 2026).
 3. **Send replies to Twenty.** `userReply` does not call Twenty, so the agent queue and `memberReply` never update.
 4. **Security: `adjudicate` and `agentReply` accept any logged-in member.** `verifyCallbackIdentity` compares a string constant with itself and never checks the caller, and `agentReply` has no role check (`TODO`), so any member session can post as support or resolve or close any ticket. Check the caller (shared secret or support role) on `adjudicate`, `agentReply` and `agentResolve`.
 5. **Status strings differ from the declared values.** The code writes "Awaiting executive response", while the declared id is `AWAITING_EXECUTIVE_RESPONSE`; `adjudicate` does not accept `OPEN`. The portal understands every form.

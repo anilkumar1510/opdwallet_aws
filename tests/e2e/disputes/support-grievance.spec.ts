@@ -33,6 +33,24 @@ test.describe('Claims that need your help', () => {
     await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
   });
 
+  test('a draft claim is not listed: a grievance cannot be raised on it', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00353')).toBeVisible({ timeout: 10000 });
+    await expect(section.getByText('OPD-2026-00354')).toHaveCount(0);
+  });
+
+  test('only drafts: the empty state shows', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'draft', 'Draft')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
+  });
+
   test('claim detail has no Amount / payment section; a cashless order still does', async ({ page }) => {
     await openSupport(page);
     await claimsSection(page).getByText('OPD-2026-00354').click();
@@ -162,8 +180,9 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('Bill is wrong, see note: it was ₹1,500.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
     expect(api.replies[0].text).toBe('Bill is wrong, see note: it was ₹1,500.');
-    // The same words are stored as final_reason (the only field passed on to support) and as description.
-    expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.', description: 'Bill is wrong, see note: it was ₹1,500.' });
+    // The words go in `description`; `final_reason` (support's resolution) is not sent.
+    expect(api.submits[0]).toMatchObject({ description: 'Bill is wrong, see note: it was ₹1,500.' });
+    expect(api.submits[0]).not.toHaveProperty('final_reason');
   });
 
   test('a closed ticket does not show the member own words as the support resolution', async ({ page }) => {

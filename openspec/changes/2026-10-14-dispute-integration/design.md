@@ -28,10 +28,10 @@ Body `resource=<URL-encoded base64 JSON>&application=habit-opd&action=<action>`,
 ### 4. Replies go to `dispute_chat`, text verbatim
 `reply` posts `action=userReply` to the `dispute_chat` resource with the resource `{resourceType:"DisputeChat",dispute_id:<ticket uuid>,message_text:<text>}` and no `args` (the backend reads `message_text` and stores it verbatim, commas and colons included). The old `dispute` + `userReply` now answers "Invalid Query". The backend refuses the same action twice within 3 s, so Send is disabled for ~3 s after a send, including after the first message that follows a submit, and a refusal is retried once after 3.2 s. Replies are capped at 2000 characters client-side. A reply on a resolved or closed ticket is refused by the backend ("Cannot reply on a resolved or closed dispute"); the portal shows that message and refreshes the ticket and thread so it reads closed. Replies written before the backend read `message_text` carry lookalike characters (`‚` for `,`, `∶` for `:`); `toArgSafe` is kept only to recognise those old messages.
 
-### 5. `submit` takes the member's words as `final_reason` and `description`, and the documents
+### 5. `submit` takes the member's words as `description`, and the documents
 Supporting documents are uploaded to DMS first and sent in the submit's `documents` array (`name`, `document_id`, `document_type`, `originalname`, `verification_status`, `filetype`, `filesize`); the backend stores them on the grievance and the ticket lists them with a Download action (DMS `image-response-entity`). The member's own words are sent as BOTH `final_reason` and `description`: the backend passes only `final_reason` to the support system (Twenty) until its mapper sends `description` (merged in `new_prod` as `daf8d03`, not yet confirmed in Twenty), so both stay until a new ticket's Description is seen filled in Twenty; then `final_reason` is dropped (task 4.2b). No `dispute_type` is sent (not needed on `submit`). Submit creates no thread message, so the same words are also sent as the first `userReply`. That message is retried once after the 3 s guard; if it still fails the grievance stays raised and the words go back into the reply box with a notice.
 
-### 5b. `final_reason` is also support's resolution
+### 5b. `final_reason` is support's resolution only
 Support's resolution later replaces `final_reason`. On a closed ticket it is shown as support's remark only when it differs from the member's first message, so the member never sees their own words presented as a resolution.
 
 ### 5c. Claims beyond the first 20
@@ -49,7 +49,7 @@ The reopen button and logic are removed. On real tickets the demo support button
 ## Risks / Trade-offs
 
 - Support only sees a portal ticket if the backend creates the Twenty record; at the time of writing none of the portal-raised tickets appear in the Twenty workspace (backend step `DISPUTE_CREATE`, see `PLACEHOLDER-APIS.md` section 7).
-- `final_reason` carries two meanings (member's words, then support's resolution); the display rule above is a heuristic until the portal stops sending it and only `description` holds the member's words.
+- Tickets raised before 21 Oct 2026 carry the member's words in `final_reason`; the display rule above (hide it when it equals the member's first message) stays for them. New tickets leave `final_reason` blank until support closes the ticket.
 - The claims listing is read as one 100-row page. The backend's sort is now stable (checked live on 16 Oct: 62 claims, no repeats at 20 a page), so more than 100 claims would also page correctly.
 - `benefit_category` is the claim's own category code; the backend takes any string.
 - `helpline-page.ts` is shared with the static demo author; edits may conflict with their changes.
