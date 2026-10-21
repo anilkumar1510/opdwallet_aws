@@ -67,3 +67,40 @@ The policy details screen SHALL display all covered relationship types returned 
 #### Scenario: Displaying all covered relationship types
 - **WHEN** a policy version defines covered relationships
 - **THEN** all unique relationship names are displayed under "Members Covered" and wrap cleanly across multiple lines
+
+### Requirement: Relationship Benefit Inheritance (INHERIT_FROM_PRIMARY)
+The system SHALL identify the primary relationship in `opd_policy_version` where `is_primary === true`. For any dependent relationship where `benefit_set === 'INHERIT_FROM_PRIMARY'`, the system SHALL map the same `categories` and `additional_claim_categories` as configured on the primary relationship.
+
+#### Scenario: Dependent relationship inherits primary benefits
+- **WHEN** a dependent relationship (such as Spouse or Child) has `benefit_set === 'INHERIT_FROM_PRIMARY'`
+- **THEN** it inherits the categories and additional claim categories defined on the primary relationship
+
+#### Scenario: Relationship with own benefit set
+- **WHEN** a relationship has `benefit_set === 'OWN'`
+- **THEN** it retains its own defined categories and additional claim categories without inheriting from primary
+
+### Requirement: Dynamic Combined Claim Categories in Claim Submission
+The claim creation category dropdown SHALL dynamically present the combined options of standard categories (where `claims === true`) and `additional_claim_categories` (mapped as uppercase slug codes) for the selected patient's relationship under the active policy.
+
+#### Scenario: Combined category options for primary member
+- **WHEN** the primary patient is selected in the new claim form
+- **THEN** the category dropdown renders all standard categories with `claims === true` plus all additional claim categories formatted with uppercase slug values (e.g. "PHYSIOTHERAPY", "AYUSH_CONSULTATION")
+
+#### Scenario: Combined category options for dependent member inheriting benefits
+- **WHEN** a dependent patient with `benefit_set === 'INHERIT_FROM_PRIMARY'` is selected in the new claim form
+- **THEN** the category dropdown reflects the inherited standard and additional claim categories from the primary relationship
+
+#### Scenario: Changing selected patient updates available categories
+- **WHEN** the user selects a different patient in the new claim form
+- **THEN** the category dropdown reactively refreshes to the new patient's allowed categories, clearing any previously selected category that is no longer permitted
+
+### Requirement: Dynamic Benefit Claim Mode Resolution and QA Override
+The system SHALL dynamically resolve the claim mode (`both`, `cashless`, or `claims`) for any benefit category from `cashless` and `claims` booleans in `opd_policy_version`, while only displaying and allowing selection of options provided by the policy.
+
+#### Scenario: Live policy coverage display
+- **WHEN** a benefit landing screen is rendered with an active policy
+- **THEN** the policy coverage status displays the dynamic mode derived from the policy version (`cashless: true, claims: true` → 'both' ("Cashless + claims"), `cashless: false, claims: true` → 'claims' ("Claims"), `cashless: true, claims: false` → 'cashless' ("Cashless")) along with the active policy number
+
+#### Scenario: QA test mode override restricted to provided options
+- **WHEN** a QA tester selects an available mode option
+- **THEN** only options permitted by the policy for that category are displayed and selectable (e.g. if the policy allows claims only, only 'claims' is shown), and when an override is active, an indicator and reset button are rendered

@@ -42,6 +42,22 @@ See `proposal.md` for motivation. The application is an Angular 21 zoneless micr
 - **Approach**: In `policy-details-page.ts`, replace `truncate` with `break-words` on the summary value container.
 - **Rationale**: Allows comprehensive display of all allowed relationships (Self, Spouse, Son, Daughter, Brother, Sister, Father, Mother) without truncation.
 
+### 6. Primary Relationship Benefit Inheritance (`INHERIT_FROM_PRIMARY`)
+- **Approach**: Locate the primary relationship where `is_primary === true`. When a dependent relationship specifies `benefit_set === 'INHERIT_FROM_PRIMARY'`, inherit `categories`, `additional_claim_categories`, and `additional_claim_categories_enabled` from the primary relationship.
+- **Rationale**: Backends omit repetitive category arrays on dependent records that inherit floater benefits from the primary employee.
+
+### 7. Combined Category Mapping in Claim Creation Form
+- **Approach**: In `new-claim-page.ts`, reactively resolve the selected patient's relationship from `PolicyStore`. Combine standard `categories` (filtered by `claims === true`) with `additional_claim_categories` (converted to uppercase snake_case slugs via `toCategorySlug()`). If a member switches patient, re-evaluate and clear any invalid previously-selected category.
+- **Rationale**: Ensures the claim creation form only allows submitting claims for valid, entitled categories configured in the member's policy version.
+
+### 8. Dynamic Benefit Claim Mode Resolution and QA Override
+- **Approach**: In `ClaimModeStore`, derive the active claim mode for each category dynamically from `PolicyStore` by inspecting `cashless` and `claims` booleans:
+  - `cashless: true, claims: true` → `'both'` ("Cashless + claims")
+  - `cashless: false, claims: true` → `'claims'` ("Claims")
+  - `cashless: true, claims: false` → `'cashless'` ("Cashless")
+  In `claim-option.ts`, replace the static demo box with a live policy coverage card showing the active policy number and mode. QA test mode controls only display and allow selection of options provided by the policy for that category (e.g. if a category allows claims only, only 'claims' is shown), with one-click reset to policy default.
+- **Rationale**: Removes brittle static claim mode tables while empowering QA teams to verify permitted UI states without backend data manipulation.
+
 ## Risks / Trade-offs
 
 - **[Risk] High API Latency**: Two sequential calls (`assignment` then `version`) could take longer than a single endpoint.

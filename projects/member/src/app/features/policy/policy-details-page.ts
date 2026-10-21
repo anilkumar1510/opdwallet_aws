@@ -5,12 +5,12 @@ import { PolicyDetail } from '../../core/member/policy-detail';
 import { PolicyStore } from '../../core/member/policy.store';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Icon, IconName } from '../../shared/ui/icon';
-import { EmptyView, ErrorView, LoadingView } from '../../shared/ui/state-views';
+import { EmptyView, ErrorView } from '../../shared/ui/state-views';
 
 @Component({
   selector: 'opd-policy-details-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, LoadingView, ErrorView, EmptyView, Disclosure],
+  imports: [RouterLink, Icon, ErrorView, EmptyView, Disclosure],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header

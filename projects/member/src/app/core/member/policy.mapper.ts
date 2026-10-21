@@ -1,5 +1,6 @@
 import { toBenefitCategory } from '../domain/codes';
 import { Money, formatMoney, money } from '../domain/money';
+import { ClaimCategory } from '../claims/claim.mapper';
 import { WalletCategoryBalance } from '../wallet/wallet.model';
 import { Policy } from './policy';
 import { PolicyClause, PolicyDetail } from './policy-detail';
@@ -27,7 +28,123 @@ function formatTimestamp(timestamp: number | undefined): string {
 }
 
 export function getPrimaryRelationship(version: OpdPolicyVersionDto): PolicyRelationshipDto | undefined {
-  return version.relationships.find((r) => r.is_primary || r.relationship_code?.toLowerCase() === 'self');
+  return version.relationships.find((r) => r.is_primary === true) ?? version.relationships.find((r) => r.relationship_code?.toLowerCase() === 'self');
+}
+
+/**
+ * Converts a category or additional claim category name into an uppercase slug code
+ * (e.g. "AYUSH Consultation" -> "AYUSH_CONSULTATION", "Physiotherapy" -> "PHYSIOTHERAPY").
+ */
+export function toCategorySlug(name: string): string {
+  return name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+/**
+ * Resolves a relationship's benefits, inheriting categories and additional_claim_categories
+ * from the primary relationship if benefit_set === 'INHERIT_FROM_PRIMARY'.
+ */
+export function resolveRelationshipBenefits(
+  relationship: PolicyRelationshipDto,
+  primaryRelationship: PolicyRelationshipDto | undefined,
+): PolicyRelationshipDto {
+  if (relationship.is_primary || relationship.benefit_set !== 'INHERIT_FROM_PRIMARY' || !primaryRelationship) {
+    return relationship;
+  }
+
+  return {
+    ...relationship,
+    wallet_configuration: relationship.wallet_configuration ?? primaryRelationship.wallet_configuration,
+    categories: relationship.categories?.length ? relationship.categories : primaryRelationship.categories,
+    additional_claim_categories_enabled:
+      relationship.additional_claim_categories_enabled ?? primaryRelationship.additional_claim_categories_enabled,
+    additional_claim_categories:
+      relationship.additional_claim_categories?.length
+        ? relationship.additional_claim_categories
+        : primaryRelationship.additional_claim_categories,
+  };
+}
+
+/**
+ * Finds and resolves the matching relationship in the policy version for a given relationship code.
+ */
+export function findRelationshipInVersion(
+  version: OpdPolicyVersionDto | null | undefined,
+  relationshipCode: string | undefined,
+): PolicyRelationshipDto | undefined {
+  if (!version?.relationships?.length) return undefined;
+  const primary = getPrimaryRelationship(version);
+  const code = (relationshipCode || 'self').trim().toLowerCase().replace(/[-_]/g, '');
+
+  if (code === 'self') {
+    return primary ?? version.relationships[0];
+  }
+
+  const match = version.relationships.find((r) => {
+    const rCode = (r.relationship_code || '').trim().toLowerCase().replace(/[-_]/g, '');
+    if (rCode === code) return true;
+    if (code === 'child' && (rCode === 'son' || rCode === 'daughter' || rCode === 'child')) return true;
+    if ((code === 'son' || code === 'daughter') && rCode === 'child') return true;
+    if (code === 'spouse' && (rCode === 'husband' || rCode === 'wife' || rCode === 'spouse')) return true;
+    if ((code === 'husband' || code === 'wife') && rCode === 'spouse') return true;
+    return false;
+  });
+
+  if (!match) return undefined;
+  return resolveRelationshipBenefits(match, primary);
+}
+
+/**
+ * Builds combined claim categories from a relationship's standard categories
+ * (filtered by claims: true) and its additional_claim_categories (mapped with uppercase slug codes).
+ */
+export function toCombinedClaimCategories(relationship: PolicyRelationshipDto | undefined): ClaimCategory[] {
+  if (!relationship) return [];
+
+  const standardCategories: ClaimCategory[] = (relationship.categories ?? [])
+    .filter((c) => c.claims === true)
+    .map((c) => ({
+      id: c.category_code,
+      name: c.category_name,
+      claimCategory: c.category_code,
+      perClaimLimit: c.per_claim_limit ?? 0,
+      copayMode: (c.co_payment_mode === 'PERCENT' ? 'PERCENT' : c.co_payment_mode === 'FLAT' ? 'FLAT' : null) as
+        | 'PERCENT'
+        | 'FLAT'
+        | null,
+      copayValue: c.co_payment_value ?? null,
+      perTransactionLimit: c.per_transaction_limit ?? null,
+      isPlaceholder: false,
+    }));
+
+  const additionalCategories: ClaimCategory[] = (relationship.additional_claim_categories ?? []).map((add) => {
+    const slug = toCategorySlug(add.claim_category_name);
+    return {
+      id: slug,
+      name: add.claim_category_name,
+      claimCategory: slug,
+      perClaimLimit: add.claim_per_claim_limit ?? 0,
+      copayMode: null,
+      copayValue: null,
+      perTransactionLimit: null,
+      isPlaceholder: false,
+    };
+  });
+
+  // De-duplicate by claimCategory to avoid duplicate codes
+  const seen = new Set<string>();
+  const combined: ClaimCategory[] = [];
+  for (const cat of [...standardCategories, ...additionalCategories]) {
+    if (!seen.has(cat.claimCategory)) {
+      seen.add(cat.claimCategory);
+      combined.push(cat);
+    }
+  }
+
+  return combined;
 }
 
 /**

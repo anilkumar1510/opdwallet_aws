@@ -24,8 +24,19 @@
 - [x] 3.5 Implement skeleton loader and "No policy details found" empty view in `policy-details-page.ts`
 - [x] 3.6 Display all covered member relationships in `policy-details-page.ts` with `break-words` text wrapping
 
-## 4. Verification
+## 4. Benefit Inheritance & Claim Category Integration
 
-- [x] 4.1 Run `npx tsc --noEmit -p projects/member/tsconfig.app.json` and verify 0 type errors
-- [x] 4.2 Run domain checks (`codes.check.ts` and `family-mapper.check.ts`) and verify all assertions pass
-- [x] 4.3 Validate OpenSpec change artifacts with `openspec validate integrate-live-policy-api`
+- [x] 4.1 Update `getPrimaryRelationship` to check `is_primary === true`
+- [x] 4.2 Add `resolveRelationshipBenefits` to inherit `categories` and `additional_claim_categories` when `benefit_set === 'INHERIT_FROM_PRIMARY'`
+- [x] 4.3 Add `toCategorySlug` to convert additional claim category names into uppercase snake_case slugs
+- [x] 4.4 Add `toCombinedClaimCategories` filtering standard categories by `claims === true` and combining with additional claim categories
+- [x] 4.5 Add `getClaimCategoriesForRelationship` in `PolicyStore`
+- [x] 4.6 Update `new-claim-page.ts` to dynamically resolve category options from the active policy version based on selected patient
+- [x] 4.7 Update `ClaimModeStore` to dynamically derive claim modes from `PolicyStore` category configuration
+- [x] 4.8 Update `claim-option.ts` with dynamic policy coverage badge and QA test override controls
+
+## 5. Verification
+
+- [x] 5.1 Run `npx tsc --noEmit -p projects/member/tsconfig.app.json` and verify 0 type errors
+- [x] 5.2 Run domain checks (`codes.check.ts` and `family-mapper.check.ts`) and verify all assertions pass
+- [x] 5.3 Validate OpenSpec change artifacts with `openspec validate integrate-live-policy-api`

@@ -2,6 +2,7 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 
 import { AppError, appError } from '../http/app-error';
 import { AppService } from '../http/api.service';
+import { ClaimCategory } from '../claims/claim.mapper';
 import { SessionStore } from '../session/session.store';
 import { Policy } from './policy';
 import { PolicyDetail } from './policy-detail';
@@ -10,7 +11,11 @@ import {
   OpdPolicyVersionDto,
 } from './policy.dto';
 import {
+  findRelationshipInVersion,
+  getPrimaryRelationship,
+  resolveRelationshipBenefits,
   toCategoriesFromVersion,
+  toCombinedClaimCategories,
   toPolicyDetailFromVersion,
   toPolicyFromVersion,
   toPoolsFromVersion,
@@ -119,19 +124,28 @@ export class PolicyStore {
       const version: OpdPolicyVersionDto | undefined = parsedVersion?.resource?.[0];
 
       if (version) {
-        this._version.set(version);
+        const primary = getPrimaryRelationship(version);
+        const normalizedRelationships = (version.relationships ?? []).map((rel) =>
+          resolveRelationshipBenefits(rel, primary),
+        );
+        const normalizedVersion: OpdPolicyVersionDto = {
+          ...version,
+          relationships: normalizedRelationships,
+        };
+
+        this._version.set(normalizedVersion);
 
         const member = this.session.member();
         const holderId = member?.id ?? patientId;
         const holderName = member?.fullName ?? 'Member';
 
-        const policy = toPolicyFromVersion(assignment, version, holderId, holderName);
+        const policy = toPolicyFromVersion(assignment, normalizedVersion, holderId, holderName);
         this._policies.set([policy]);
 
-        this._detail.set(toPolicyDetailFromVersion(version));
-        this._walletTotal.set(toWalletTotalFromVersion(version));
-        this._categories.set(toCategoriesFromVersion(version));
-        this._pools.set(toPoolsFromVersion(version));
+        this._detail.set(toPolicyDetailFromVersion(normalizedVersion));
+        this._walletTotal.set(toWalletTotalFromVersion(normalizedVersion));
+        this._categories.set(toCategoriesFromVersion(normalizedVersion));
+        this._pools.set(toPoolsFromVersion(normalizedVersion));
       }
     } catch (err: any) {
       this._error.set(appError('network', err?.message, err?.status ?? null));
@@ -145,6 +159,17 @@ export class PolicyStore {
     } finally {
       this._loading.set(false);
     }
+  }
+
+  /**
+   * Returns combined claim categories (standard categories with claims: true + additional_claim_categories)
+   * for a given member relationship code under the active policy version.
+   */
+  getClaimCategoriesForRelationship(relationshipCode: string | undefined): readonly ClaimCategory[] {
+    const version = this._version();
+    if (!version) return [];
+    const rel = findRelationshipInVersion(version, relationshipCode);
+    return toCombinedClaimCategories(rel);
   }
 
   /**
