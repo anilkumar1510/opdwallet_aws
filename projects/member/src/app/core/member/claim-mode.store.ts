@@ -2,7 +2,11 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { BenefitCategory, toBenefitCategory } from '../domain/codes';
 import { FamilyStore } from '../family/family.store';
-import { findRelationshipInVersion, getPrimaryRelationship } from './policy.mapper';
+import {
+  findRelationshipInVersion,
+  getPrimaryRelationship,
+  isRelationshipCoveredInPolicy,
+} from './policy.mapper';
 import { PolicyStore } from './policy.store';
 
 /**
@@ -116,10 +120,22 @@ export class ClaimModeStore {
   }
 
   allowsCashless(category: BenefitCategory): boolean {
+    const version = this.policyStore.version();
+    const activeMember = this.family.activeMember();
+    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    if (version && !isRelationshipCoveredInPolicy(relCode, version)) {
+      return false;
+    }
     return this.modeFor(category) !== 'claims';
   }
 
   allowsClaims(category: BenefitCategory): boolean {
+    const version = this.policyStore.version();
+    const activeMember = this.family.activeMember();
+    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    if (version && !isRelationshipCoveredInPolicy(relCode, version)) {
+      return false;
+    }
     return this.modeFor(category) !== 'cashless';
   }
 

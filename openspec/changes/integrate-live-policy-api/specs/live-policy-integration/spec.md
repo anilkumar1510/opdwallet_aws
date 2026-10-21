@@ -94,16 +94,24 @@ The claim creation category dropdown SHALL dynamically present the combined opti
 - **WHEN** the user selects a different patient in the new claim form
 - **THEN** the category dropdown reactively refreshes to the new patient's allowed categories, clearing any previously selected category that is no longer permitted
 
-### Requirement: Dynamic Benefit Claim Mode Resolution and QA Override
-The system SHALL dynamically resolve the claim mode (`both`, `cashless`, or `claims`) for any benefit category from `cashless` and `claims` booleans in `opd_policy_version`, while only displaying and allowing selection of options provided by the policy.
+### Requirement: Dynamic Benefit Claim Mode Resolution
+The system SHALL dynamically resolve the claim mode (`both`, `cashless`, or `claims`) for any benefit category from `cashless` and `claims` booleans in `opd_policy_version`, governing cashless booking and claim action buttons on benefit landing pages.
 
-#### Scenario: Live policy coverage display
-- **WHEN** a benefit landing screen is rendered with an active policy
-- **THEN** the policy coverage status displays the dynamic mode derived from the policy version (`cashless: true, claims: true` → 'both' ("Cashless + claims"), `cashless: false, claims: true` → 'claims' ("Claims"), `cashless: true, claims: false` → 'cashless' ("Cashless")) along with the active policy number
+#### Scenario: Category allowing both cashless and claims
+- **WHEN** a category has `cashless: true, claims: true` in the active policy version
+- **THEN** both the cashless booking action and the secondary "File a claim" option are displayed
 
-#### Scenario: QA test mode override restricted to provided options
-- **WHEN** a QA tester selects an available mode option
-- **THEN** only options permitted by the policy for that category are displayed and selectable (e.g. if the policy allows claims only, only 'claims' is shown), and when an override is active, an indicator and reset button are rendered
+#### Scenario: Category allowing claims only
+- **WHEN** a category has `cashless: false, claims: true` in the active policy version (such as Pharmacy)
+- **THEN** the cashless booking action is hidden, and the primary "File a claim" action is displayed with an informative note
+
+#### Scenario: Category allowing cashless only
+- **WHEN** a category has `cashless: true, claims: false` in the active policy version (such as Health Packages)
+- **THEN** only the cashless booking action is displayed and claim filing is hidden
+
+#### Scenario: Non-covered dependent viewing a category
+- **WHEN** the active member is not covered under the active policy
+- **THEN** both cashless booking and claim options are disabled/hidden for that member
 
 ### Requirement: Dynamic Benefit Category Pool Resolution
 The system SHALL query `opd_benefit_category_pool` with the assigned `policy_id` to retrieve configured wallet pools, sort them ascending by pool code, map matching standard and additional claim categories from `opd_policy_version`, and display the pool code alongside balance and description in the wallet balance modal.
