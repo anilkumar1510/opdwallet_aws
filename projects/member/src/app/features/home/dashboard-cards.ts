@@ -172,7 +172,7 @@ export interface LinkTile {
       >‹</button>
       <div
         #row
-        class="scrollbar-hide -mr-5 flex gap-2.5 overflow-x-auto pb-4 pr-5 lg:mr-0 lg:min-w-0 lg:flex-1 lg:gap-[21px] lg:scroll-smooth lg:pb-8 lg:pr-0"
+        class="scrollbar-hide -mr-5 -mt-1.5 flex gap-2.5 overflow-x-auto pb-4 pr-5 pt-1.5 lg:mr-0 lg:min-w-0 lg:flex-1 lg:gap-[21px] lg:scroll-smooth lg:pb-8 lg:pr-0"
         (scroll)="onRowScroll()"
       >
         @for (link of links(); track link.id) {
