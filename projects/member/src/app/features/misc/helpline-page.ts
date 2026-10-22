@@ -556,8 +556,6 @@ export class HelplinePage {
   protected readonly replying = signal(false);
   protected readonly resolving = signal(false);
   protected readonly replyError = signal<string | null>(null);
-  /** The backend refuses the same action twice inside 3 seconds. */
-  protected readonly cooling = signal(false);
   private readonly liveTickets = computed(() => this.liveRecords().map((r) => toTicket(r, this.threads()[r.id] ?? [])));
   private readonly allTickets = computed(() => [...this.liveTickets(), ...this.tickets()]);
 
@@ -646,32 +644,45 @@ export class HelplinePage {
     void this.claimsStore.getClimListData();
     setTimeout(() => this.claimsFetched.set(true), 4000);
 
-    // Tickets and threads come from the dispute API: now, when a ticket is opened,
-    // and every 30 seconds while the page is open (support replies arrive there).
+    // Initial dispute listing fetch
     void this.refreshDisputes();
+
+    // Effect: Load thread whenever active ticket view changes
     effect(() => {
       const t = this.view() === 'ticket' ? this.liveRecords().find((r) => r.name === this.ticketId()) : undefined;
       if (t) untracked(() => void this.loadThread(t));
     });
-    // Each refresh replaces the records, which re-runs the effect above and
-    // reloads the open thread, so the interval only has to refresh the list.
-    // The claims are read again too: a draft the member submits meanwhile
-    // (status DRAFT to UNDER_REVIEW) then shows up without reopening the page.
-    const timer = setInterval(() => {
-      void this.refreshDisputes().then(() => {
-        if (this.view() === 'ticket' && this.ticketId()) {
-          const rec = this.liveRecords().find((r) => r.name === this.ticketId());
-          if (rec) void this.loadThread(rec);
-        }
-      });
-      void this.claimsStore.getClimListData();
-    }, POLL_MS);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
-  }
 
-  private startCooldown(): void {
-    this.cooling.set(true);
-    setTimeout(() => this.cooling.set(false), COOLDOWN_MS);
+    // Event-driven refresh: auto-reload when member returns to tab or window gains focus
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void this.refreshDisputes().then(() => {
+          if (this.view() === 'ticket' && this.ticketId()) {
+            const rec = this.liveRecords().find((r) => r.name === this.ticketId());
+            if (rec) void this.loadThread(rec);
+          }
+        });
+        void this.claimsStore.getClimListData();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+      window.addEventListener('focus', onVisibility);
+      inject(DestroyRef).onDestroy(() => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('focus', onVisibility);
+      });
+    }
+
+    // Active ticket live refresher: only runs while viewing a ticket and window is visible
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && this.view() === 'ticket' && this.ticketId()) {
+        const rec = this.liveRecords().find((r) => r.name === this.ticketId());
+        if (rec) void this.loadThread(rec);
+      }
+    }, LIVE_SYNC_INTERVAL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
   private async refreshDisputes(): Promise<void> {
@@ -969,14 +980,8 @@ export class HelplinePage {
   private async afterLiveSubmit(o: SupportOrder, name: string | null, id: string | null, detail: string): Promise<void> {
     let kept = '';
     if (name && id && detail) {
-      let sent = await this.disputeApi.reply({ name, id }, detail);
-      if (!sent.ok) {
-        // One retry after the backend's 3 second guard; the member's words must not be lost.
-        await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
-        sent = await this.disputeApi.reply({ name, id }, detail);
-      }
+      const sent = await this.disputeApi.reply({ name, id }, detail);
       if (!sent.ok) kept = detail;
-      this.startCooldown(); // the next reply would be the same action inside 3 seconds
     }
     await this.refreshDisputes();
     const record = this.liveRecords().find((r) => r.name === name) ?? this.liveRecords().find((r) => r.claimId === o.id);
@@ -1205,10 +1210,8 @@ function toClaimOrder(row: any): SupportOrder {
   };
 }
 
-/** Ticket and thread refresh while the page is open. */
-const POLL_MS = 4_000;
-/** Cooldown between sends (0 allows consecutive messaging). */
-const COOLDOWN_MS = 0;
+/** Configurable interval for background synchronization while actively viewing a ticket. */
+const LIVE_SYNC_INTERVAL_MS = 5_000;
 
 /** A stored grievance, plus its thread, as the Support page's ticket shape. */
 function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportTicket {
