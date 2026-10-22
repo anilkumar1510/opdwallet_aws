@@ -242,7 +242,14 @@ export const claimRowOf = (page: Page, id: string) => claimsSection(page).locato
 export async function openSupport(page: Page, api?: FakeApi): Promise<FakeApi> {
   const fake = await mockBackend(page, api);
   await page.goto('/member/helpline');
-  await expect(claimsSection(page).getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+  const claimText = claimsSection(page).getByText('OPD-2026-00354');
+  if (!(await claimText.isVisible().catch(() => false))) {
+    const loadMore = claimsSection(page).getByRole('button', { name: 'Load more' });
+    if (await loadMore.isVisible().catch(() => false)) {
+      await loadMore.click();
+    }
+  }
+  await expect(claimText).toBeVisible({ timeout: 20000 });
   return fake;
 }
 
