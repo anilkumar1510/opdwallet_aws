@@ -166,3 +166,14 @@ The "Something else?" section SHALL let the member call or email support and SHA
 #### Scenario: Email
 - **WHEN** a member presses the email address
 - **THEN** a prefilled message to the support address opens
+
+### Requirement: Reply Chatbox Supporting Document Upload
+Members SHALL be able to attach and upload supporting documents directly from the chat reply box (`#liveReply`) with every follow-up message:
+- Uploads are saved to DMS (`/dms/api/v1/emrImage`), with attached file tokens passed to `disputeApi.reply` via `documents` and `documentIds`.
+- The backend appends these document IDs to the dispute's persistent document record and propagates them to Twenty CRM.
+- The UI displays attached chips with remove actions and disables submission while uploads are pending.
+
+#### Scenario: Member attaches supporting document in reply chatbox
+- **WHEN** a member clicks "Attach documents" in the active reply box and selects a PDF or image
+- **THEN** the document is uploaded to DMS, displayed as an attachment tag, and included in `documents` and `documentIds` when sending the reply
+
