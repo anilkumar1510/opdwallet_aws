@@ -967,6 +967,7 @@ export class ClaimDetailPage {
         void this.router.navigate(['/member/claims']);
       }
       this.submitting.set(false);
+      this.confirming.set(false);
       return;
     }
     // Issue HTTP request to the opd_claim backend to set status to CANCELLED
@@ -989,10 +990,12 @@ export class ClaimDetailPage {
       );
       // Success: navigate to claims list where claim shows CANCELLED
       void this.router.navigate(['/member/claims']);
+      this.confirming.set(false);
     } catch (error) {
       console.error('Failed to cancel claim:', error);
       // Keep member on the page, show error
       this.resubmitError.set('We could not cancel that claim. Please try again.');
+      this.confirming.set(false);
     } finally {
       this.submitting.set(false);
     }
