@@ -11,12 +11,23 @@ import { AppService } from '../core/http/api.service';
 // API Response Interfaces
 export interface Speciality {
   id?: string;
-  name: string;
+  name?: string;
   speciality_id?: string;
   speciality_name: string;
   speciality_code: string;
   speciality_type?: string;
   mode_of_appointment?: string;
+  code?: string;
+  display?: string;
+  facility_name?: string;
+  facility_id?: string;
+  facility_master_type?: string;
+  speciality_system_name?: string;
+  status?: string;
+  status_id?: string;
+  applicable_for_appointment?: boolean;
+  applicable_for_women?: boolean;
+  profile_id?: string;
 }
 
 export interface Doctor {
@@ -207,6 +218,7 @@ export interface BookingResponse {
   cartId?: string;
   invoiceUrl?: string;
   bookingStatus?: string;
+  [key: string]: any;
 }
 
 @Injectable({
@@ -313,22 +325,55 @@ export class OpdConsultationService {
   // Speciality Listing API
   getSpecialities(): Observable<Speciality[]> {
     const url = this.buildUrl('TELE_SPECIALITY_LISTING', `cug_code:${this.cugCode},mode_of_appointment:opd_network`);
-    return this.executeWithLoading('specialities', this.http.get<{ resource: any[] }>(url))
+    return this.executeWithLoading('specialities', this.http.get<any>(url))
       .pipe(
-        map(response => response.resource || []),
-        map(items => items.map(item => ({
-          speciality_id: item.data?.speciality_id,
-          speciality_name: item.data?.speciality_name,
-          speciality_code: item.data?.speciality_code,
-          speciality_type: item.data?.speciality_type,
-          mode_of_appointment: item.data?.mode_of_appointment
-        })) as Speciality[])
+        map((response: any) => {
+          const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+          return parsed?.resource || [];
+        }),
+        map((items: any[]) =>
+          items
+            .filter((item: any) => {
+              const d = item?.data || item;
+              if (!d) return false;
+              if (d.applicable_for_appointment === false) return false;
+              if (typeof d.status === 'string' && d.status.trim().toLowerCase() === 'inactive') return false;
+              if (typeof d.status_id === 'string' && d.status_id.trim().toLowerCase() === 'inactive') return false;
+              return true;
+            })
+            .map((item: any): Speciality => {
+              const d = item?.data || item;
+              const name = d.display || d.speciality_system_name || d.speciality_name || d.name || '';
+              const code = d.code || d.speciality_code || d.speciality_system_name || name;
+              const id = d.id || item?.id || d.speciality_id || '';
+              return {
+                id,
+                name,
+                speciality_id: id,
+                speciality_name: name,
+                speciality_code: code,
+                speciality_type: d.speciality_type || d.facility_master_type,
+                mode_of_appointment: d.mode_of_appointment,
+                code,
+                display: name,
+                facility_name: d.facility_name,
+                facility_id: d.facility_id,
+                facility_master_type: d.facility_master_type,
+                speciality_system_name: d.speciality_system_name,
+                status: d.status,
+                status_id: d.status_id,
+                applicable_for_appointment: d.applicable_for_appointment,
+                applicable_for_women: d.applicable_for_women,
+                profile_id: d.profile_id,
+              };
+            })
+        )
       );
   }
 
   // Doctor Listing API
   getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
-    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCLHC001,serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
+    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},serviceType_code:op_consultation,doctor_mode:yes`);
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(

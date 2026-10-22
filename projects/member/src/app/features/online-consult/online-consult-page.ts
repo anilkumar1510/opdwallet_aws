@@ -59,7 +59,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                     <div class="flex justify-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div></div>
                   } @else if (getError('specialities'); as err) {
                     <p class="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 flex items-center gap-2" role="alert">
-                      <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="pickSpeciality('retry')">Retry</button>
+                      <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="loadSpecialities()">Retry</button>
                     </p>
                   }
                   <opd-speciality-selection [specialities]="specialities()" [selectedSpeciality]="speciality()" (specialitySelected)="pickSpeciality($event)" />
@@ -72,7 +72,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                           <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="pickSpeciality(speciality())">Retry</button>
                         </p>
                       }
-                      <opd-doctor-selection [speciality]="speciality()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="onSearchChange($event)" (doctorSelected)="selectDoctor($event)" />
+                      <opd-doctor-selection [speciality]="selectedSpecialityName()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="onSearchChange($event)" (doctorSelected)="selectDoctor($event)" />
                     </div>
                   }
                 </div>
@@ -424,13 +424,28 @@ export class OnlineConsultPage implements OnInit {
     return { fee, covered, copay, walletBlock, excess, selfPay };
   });
 
+  protected readonly selectedSpecialityName = computed(() => {
+    const code = this.speciality();
+    if (!code) return '';
+    const found = this.specialities().find(
+      (s) =>
+        (s.speciality_code && s.speciality_code.toLowerCase() === code.toLowerCase()) ||
+        (s.code && s.code.toLowerCase() === code.toLowerCase()),
+    );
+    return found?.display || found?.speciality_name || code;
+  });
+
   ngOnInit() {
     this.loadInitialData();
   }
 
+  protected loadSpecialities(): void {
+    this.consultationService.getSpecialities().subscribe((specs) => this.specialities.set(specs));
+  }
+
   protected loadInitialData(): void {
-    this.consultationService.getSpecialities().subscribe(specs => this.specialities.set(specs));
-    this.consultationService.getFamilyList().subscribe(pats => {
+    this.loadSpecialities();
+    this.consultationService.getFamilyList().subscribe((pats) => {
       this.patients.set(pats);
       if (pats.length && !this.patient()) {
         this.patient.set(pats[0]);
@@ -656,12 +671,13 @@ export class OnlineConsultPage implements OnInit {
           // Build checkout snapshot and calculate payment
           const checkoutData = this.buildCheckoutSnapshot(cartId);
           this.consultationService.checkout(checkoutData).subscribe({
-            next: () => {
+            next: (checkoutRes: any) => {
               // Proceed to booking
-              const bookingData = this.buildBookingSnapshot();
+              const bookingData = this.buildBookingSnapshot(checkoutRes, cartId);
               this.consultationService.bookAppointment(bookingData).subscribe({
-                next: (res) => {
-                  this.consultationRequestId.set(res.serviceRequestId || '');
+                next: (res: any) => {
+                  const sReqId = res?.serviceRequestId || res?.[0]?.serviceRequestId || res?.resource?.[0]?.serviceRequestId || res?.[0]?.id || res?.id || '';
+                  this.consultationRequestId.set(sReqId);
                   this.step.set(this.step() + 1);
                 },
                 error: (err) => this.stepError.set('Booking failed: ' + err.message)
@@ -869,34 +885,208 @@ export class OnlineConsultPage implements OnInit {
     };
   }
 
-  private buildBookingSnapshot(): any {
+  private buildBookingSnapshot(checkoutRes?: any, cartId?: string): any {
     const doc = this.doctor();
     const s = this.slot();
     const pat = this.patient();
+    const now = Date.now();
+    const sDate = s?.slot_date || now;
+    const sStart = s?.slot_start_time || now;
+    const sEnd = s?.slot_end_time || (s?.slot_start_time ? s.slot_start_time + 1200000 : now + 1200000);
+    const uhId = pat?.uhId || 'HCLW-27028';
+
+    // Extract checkout opdCheckout data if available
+    const checkoutItem = checkoutRes?.resource?.[0]?.checkout_snapshot?.opdCheckout 
+      || checkoutRes?.checkout_snapshot?.opdCheckout;
+
+    const payerDetails = checkoutItem?.payer_details || {
+      id: checkoutItem?.id || '',
+      payer_type: 'cash',
+      payer_name: 'Cash',
+      payer_id: 'd5f7a780-a316-11ef-8659-1a1066140ad2-98',
+      payment_typeId: 'cash',
+      tariff_id: '5b385080-a316-11ef-b415-faae46bbaeec-35'
+    };
+
+    const facilityAddress = checkoutItem?.facility_address || doc?.facility_address || {
+      street1: 'Raheja Mind Space',
+      street2: 'Madhapur',
+      street3: '',
+      city: 'hyderabad',
+      state: 'telangana',
+      pincode: '500081',
+      country: 'india',
+      latitude: 17.4410131,
+      longitude: 78.3808268,
+      cityDisplayName: 'Hyderabad',
+      stateDisplayName: 'Telangana',
+      pincodeDisplayName: '',
+      countryDisplayName: 'India'
+    };
+
+    let servicesList: any[] = [];
+    if (checkoutItem?.op_services && checkoutItem.op_services.length > 0) {
+      servicesList = checkoutItem.op_services.map((svc: any) => ({
+        ...svc,
+        priority: svc.priority || 'Routine',
+        priorityCode: svc.priorityCode || 'routine',
+        appointment_time: String(svc.appointment_time || sEnd),
+        cart_id: svc.cart_id || cartId || '',
+        referenceId: svc.referenceId || '',
+        common_tax_detail: svc.common_tax_detail || [],
+        unit_price: svc.unit_price ?? 0,
+        serviceDate: String(svc.serviceDate || sDate)
+      }));
+    } else if (checkoutItem?.op_failed_items && checkoutItem.op_failed_items.length > 0) {
+      servicesList = checkoutItem.op_failed_items.map((svc: any) => ({
+        ...svc,
+        priority: 'Routine',
+        priorityCode: 'routine',
+        appointment_time: String(svc.appointment_time || sEnd),
+        cart_id: svc.cart_id || cartId || '',
+        referenceId: '',
+        common_tax_detail: [],
+        unit_price: 0,
+        is_failed_items: false,
+        failed_items_message: '',
+        serviceDate: String(svc.serviceDate || sDate)
+      }));
+    } else {
+      servicesList = [
+        {
+          id: doc?.id || '',
+          serviceItemId: doc?.id || '',
+          serviceItemCode: doc?.doctor_code || doc?.id || '',
+          serviceItemName: doc?.name || '',
+          serviceType_code: 'op_consultation',
+          serviceType: 'OP Consultation',
+          department_id: doc?.department_id || '',
+          department_name: doc?.department_name || 'OP Consultation',
+          subDepartment_id: doc?.subDepartment_id || '',
+          subDepartment_name: doc?.subDepartment_name || 'OP Consultation',
+          priority: 'Routine',
+          priorityCode: 'routine',
+          speciality_code: (doc?.speciality_code || doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+          speciality_id: doc?.speciality_id || '',
+          speciality_name: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+          category: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+          qty: 1,
+          appointment_time: String(sEnd),
+          unit_price: 0,
+          bill_amount: 0,
+          discount: 0,
+          net_amount: 0,
+          patient_amount: 0,
+          payer_amount: 0,
+          tax: 0,
+          consultation_type: 'Tele Consult',
+          consultation_type_code: this.mode(),
+          cart_id: cartId || '',
+          failed_items_message: '',
+          is_failed_items: false,
+          serviceDate: String(sDate),
+          serviceStartTime: sStart,
+          serviceEndTime: sEnd,
+          participant: [
+            {
+              participantId: doc?.id || '',
+              participantName: doc?.name || '',
+              participantRole: 'doctor'
+            }
+          ],
+          performing_doctor: doc?.name || '',
+          slotId: s?.id || '',
+          over_booking_status: false,
+          practice_type_code: 'individual',
+          practice_type_name: 'Individual Practice',
+          order_date_time: now,
+          referenceId: '',
+          common_tax_detail: [],
+          patient_instructions: '',
+          logo_id: '',
+          doctor_profile_path: doc?.profile_path || 'assets/images/doctorProfile/alternatedocImage.png',
+          cug_amount: 0,
+          slotNo: Number(s?.slotNo || 1),
+          service_mrp: doc?.mrp ?? doc?.fee ?? 0,
+          service_selling_amount: doc?.selling_amount ?? doc?.fee ?? 0,
+          care_coin_discount: 0,
+          care_coin_discount_amount: 0,
+          used_wallet_amount: 0,
+          earn_care_coins: 0,
+          service_code: doc?.doctor_code || '',
+          doctor_experience: String(doc?.experience || 0),
+          is_home_collection: false,
+          doctor_telecom: doc?.telecom || '9999444444',
+          is_centre_visit: false,
+          part_of_package: false,
+          extra_data: {
+            edit_price: false,
+            speciality_name: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+            facility_name: doc?.facility_name || 'HCL Healthcare Clinic',
+            qualification: doc?.qualification || 'MBBS'
+          }
+        }
+      ];
+    }
 
     return {
       booking_snapshot: {
         serviceRequestHandler: {
           patient_details: {
-            patient_id: pat?.mapped_id || pat?.patient_id || pat?.id,
+            patient_id: checkoutItem?.patient_id || pat?.mapped_id || pat?.patient_id || pat?.id || '',
             patientType: 'OP',
-            uhId: pat?.uhId,
-            payer_info: { id: 'cash', payer_type: 'cash', payer_name: 'Cash' }
+            uhId: checkoutItem?.uhId || uhId,
+            payer_info: payerDetails
           },
-          facility_id: doc?.facility_id,
-          doctor_id: doc?.id,
-          services: [{
-            id: doc?.id,
-            serviceItemId: doc?.id,
-            serviceItemName: doc?.name,
-            consultation_type: this.mode(),
-            consultation_type_code: this.mode(),
-            serviceType: 'OP Consultation',
-            serviceType_code: 'op_consultation',
-            slotId: s?.id
-          }],
-          payment_details: [{ payment_type: 'E-Payment', payment_status: 'Pending' }],
-          mode_of_appointment: doc?.mode_of_appointment || 'habithealth'
+          selectedPackageServiceItemIds: [],
+          facility_id: checkoutItem?.facility_id || doc?.facility_id || '',
+          scheme_code: checkoutItem?.scheme_code || '',
+          is_use_wallet: checkoutItem?.is_use_wallet ?? false,
+          bg_code: checkoutItem?.bg_code || 'cash-benefit-group',
+          scheme_discount_applicable: false,
+          cug_code: checkoutItem?.cug_code || doc?.cug_code || 'TC0001',
+          doctor_id: doc?.id || '',
+          type: '',
+          tag_data: [],
+          bill_amount: checkoutItem?.bill_amount ?? 0,
+          net_amount: checkoutItem?.net_amount ?? 0,
+          final_payable: checkoutItem?.final_payable ?? 0,
+          service_mrp: checkoutItem?.service_mrp ?? 0,
+          service_selling_amount: checkoutItem?.service_selling_amount ?? 0,
+          home_collection_charges: 0,
+          discount: checkoutItem?.discount ?? 0,
+          care_coin_discount: 0,
+          care_coin_discount_amount: 0,
+          tax: checkoutItem?.tax ?? 0,
+          patient_amount: checkoutItem?.patient_amount ?? 0,
+          payer_amount: checkoutItem?.payer_amount ?? 0,
+          cug_amount: checkoutItem?.cug_amount ?? 0,
+          authorized_amount: checkoutItem?.authorized_amount ?? 0,
+          used_wallet_amount: checkoutItem?.used_wallet_amount ?? 0,
+          roundOff: 0,
+          earn_care_coins: 0,
+          is_use_care_coin: false,
+          billing_category_id: checkoutItem?.billing_category_id || 'a8c94c60-a315-11ef-8659-1a1066140ad2-93',
+          billing_category_name: checkoutItem?.billing_category_name || 'OP Billing',
+          payment_details: [],
+          payment_type: 'E-Payment',
+          payment_status: 'Pending',
+          provider_name: checkoutItem?.provider_name || doc?.provider_name || 'HCL Healthcare',
+          provider_code: checkoutItem?.provider_code || doc?.provider_code || 'HCL-001',
+          old_serviceRequestId: '',
+          orderedFrom: 'Patient Portal',
+          is_walkin: false,
+          order_device: 'WEB',
+          order_type: 'Patient Portal',
+          services: servicesList,
+          rule_code: '',
+          facility_address: facilityAddress,
+          mode_of_appointment: checkoutItem?.mode_of_appointment || doc?.mode_of_appointment || 'habithealth',
+          area_id: '',
+          branch_id: '',
+          city_id: '',
+          zone_Id: '',
+          slot_id: ''
         }
       }
     };
