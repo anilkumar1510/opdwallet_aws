@@ -173,8 +173,6 @@ function humaniseCode(value: string | undefined): string {
                     <li class="text-sm text-ink-900">{{ reason }}</li>
                   }
                 </ul>
-              } @else {
-                <p class="text-sm text-ink-900">No reasons provided</p>
               }
             </section>
           }
