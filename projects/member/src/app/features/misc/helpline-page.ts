@@ -334,7 +334,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               @if (isLiveTicket(t) && threadError(); as terr) {
                 <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-700" role="status">{{ terr }}</p>
               }
-              <section class="mt-4 space-y-3">
+              <section id="ticket-messages" class="mt-4 max-h-[380px] overflow-y-auto space-y-3 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
                 @for (m of t.messages; track $index) {
                   @if (m.from === 'system') {
                     <p class="text-center text-[11px] text-ink-500">{{ m.text }} · {{ dateTime(m.at) }}</p>
@@ -447,7 +447,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
         @if (replyError(); as err) {
           <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
         }
-        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying() || cooling()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
         <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : (isResolved ? 'Close Ticket' : 'Mark resolved') }}</button>
         <p class="mt-2 text-xs text-ink-500">{{ isResolved ? 'Close Ticket marks the grievance as closed for good.' : 'Mark resolved closes the ticket.' }}</p>
       </ng-template>
@@ -592,7 +592,28 @@ export class HelplinePage {
   protected readonly order = computed(() => this.everyOrder().find((o) => o.id === this.orderId()) ?? null);
   protected readonly ticket = computed(() => this.allTickets().find((t) => t.id === this.ticketId()) ?? null);
 
-  protected readonly flaggedClaims = computed(() => this.claimOrders());
+  protected readonly flaggedClaims = computed(() => {
+    const claims = [...this.claimOrders()];
+    const rank: Record<GrievanceStatus, number> = {
+      response: 0,
+      open: 1,
+      resolved: 2,
+      none: 3,
+      closed: 4,
+    };
+    return claims.sort((a, b) => {
+      const sa = this.statusOf(a);
+      const sb = this.statusOf(b);
+      const rankDiff = rank[sa] - rank[sb];
+      if (rankDiff !== 0) return rankDiff;
+      const ta = this.ticketFor(a);
+      const tb = this.ticketFor(b);
+      const taTime = ta ? (ta.resolvedAt ?? ta.closedAt ?? ta.createdAt).getTime() : 0;
+      const tbTime = tb ? (tb.resolvedAt ?? tb.closedAt ?? tb.createdAt).getTime() : 0;
+      if (taTime !== tbTime) return tbTime - taTime;
+      return b.placedAt.getTime() - a.placedAt.getTime();
+    });
+  });
 
   protected readonly shownClaims = computed(() => this.flaggedClaims().slice(0, this.claimsShown()));
 
@@ -637,7 +658,12 @@ export class HelplinePage {
     // The claims are read again too: a draft the member submits meanwhile
     // (status DRAFT to UNDER_REVIEW) then shows up without reopening the page.
     const timer = setInterval(() => {
-      void this.refreshDisputes();
+      void this.refreshDisputes().then(() => {
+        if (this.view() === 'ticket' && this.ticketId()) {
+          const rec = this.liveRecords().find((r) => r.name === this.ticketId());
+          if (rec) void this.loadThread(rec);
+        }
+      });
       void this.claimsStore.getClimListData();
     }, POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
@@ -823,7 +849,11 @@ export class HelplinePage {
 
   protected scrollToActions(): void {
     setTimeout(() => {
-      document.getElementById('ticket-actions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const msgBox = document.getElementById('ticket-messages');
+      if (msgBox) {
+        msgBox.scrollTop = msgBox.scrollHeight;
+      }
+      document.getElementById('ticket-actions')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 50);
   }
 
@@ -1021,7 +1051,7 @@ export class HelplinePage {
     if (!text) return;
     const record = this.liveRecords().find((r) => r.name === t.id);
     if (record) {
-      if (this.replying() || this.cooling()) return;
+      if (this.replying()) return;
       this.replying.set(true);
       this.replyError.set(null);
       const result = await this.disputeApi.reply(record, text);
@@ -1035,8 +1065,8 @@ export class HelplinePage {
       }
       this.reply.set('');
       this.notice.set('Reply sent. The ticket is back with the support team.');
-      this.startCooldown();
       await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+      this.scrollToActions();
       return;
     }
     this.update(t, { state: 'awaiting_support' }, { from: 'member', text, at: new Date() });
@@ -1169,9 +1199,9 @@ function toClaimOrder(row: any): SupportOrder {
 }
 
 /** Ticket and thread refresh while the page is open. */
-const POLL_MS = 30_000;
-/** The backend refuses the same action twice within 3 seconds. */
-const COOLDOWN_MS = 3_200;
+const POLL_MS = 4_000;
+/** Cooldown between sends (0 allows consecutive messaging). */
+const COOLDOWN_MS = 0;
 
 /** A stored grievance, plus its thread, as the Support page's ticket shape. */
 function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportTicket {
