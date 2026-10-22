@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { Money } from '../../core/domain/money';
 import { Policy } from '../../core/member/policy';
-import { WalletPool } from '../../core/member/static-policy.data';
+import { WalletPool } from '../../core/member/wallet-pool.model';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { Icon } from '../../shared/ui/icon';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
@@ -270,10 +270,12 @@ export class QuickLinks {
           @for (pool of pools(); track pool.id) {
             <div class="rounded-[20px] border border-[#EEF0F4] bg-white px-5 py-4 lg:px-7 lg:py-5" style="box-shadow: 0 4px 18px 0 rgba(0,0,0,.05)">
               <button type="button" class="flex w-full items-start justify-between gap-3 text-left" [attr.aria-expanded]="openPool() === pool.id" (click)="togglePool(pool.id)">
-                <span class="whitespace-nowrap">
-                  <span class="text-[24px] font-normal leading-none text-[#1c1c1c] lg:text-[28px]">₹{{ plain(pool.available) }}</span>
-                  <span class="text-[15px] text-[#7A7A7A]"> / {{ plain(pool.allocated) }}</span>
-                </span>
+                <div class="flex flex-col gap-1.5">
+                  <span class="whitespace-nowrap">
+                    <span class="text-[24px] font-normal leading-none text-[#1c1c1c] lg:text-[28px]">₹{{ plain(pool.available) }}</span>
+                    <span class="text-[15px] text-[#7A7A7A]"> / {{ plain(pool.allocated) }}</span>
+                  </span>
+                </div>
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E8EEF9] text-[#1c1c1c]" [class.rotate-180]="openPool() === pool.id" aria-hidden="true"
                   ><svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
                 ></span>
