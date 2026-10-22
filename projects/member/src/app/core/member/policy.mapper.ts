@@ -371,6 +371,8 @@ export function toCategoriesFromVersion(
       isExhausted: availableAmount === 0 && subLimit > 0,
       annualLimit: money(annualLimit),
       perClaimLimit: cat.per_claim_limit ? money(cat.per_claim_limit) : null,
+      cashless: cat.cashless === true,
+      claims: cat.claims === true,
     };
   });
 }

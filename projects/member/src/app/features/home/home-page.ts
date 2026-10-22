@@ -515,8 +515,14 @@ export class HomePage {
   protected readonly policies = computed(() => this.family.policies());
   protected readonly quickLinks = computed(() => quickLinksFor(this.policies()[0]?.id ?? null));
 
-  /** Category balances derived from the member's active policy version. */
-  protected readonly categories = computed(() => this.policyStore.categories());
+  /**
+   * Category balances derived from the member's active policy version.
+   * Health benefit cards are rendered only when cashless is true for that category.
+   * If cashless is false, the category card is excluded from the UI.
+   */
+  protected readonly categories = computed(() =>
+    this.policyStore.categories().filter((c) => c.cashless === true),
+  );
 
   protected readonly isLoading = computed(() => this.family.loading() || this.policyStore.loading());
   protected readonly error = computed(() => this.policyStore.error() ?? this.family.error());

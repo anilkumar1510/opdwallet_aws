@@ -192,3 +192,14 @@ The system SHALL query `opd_consumption_cycle` for the member's patient ID, cons
 #### Scenario: Consumed amount formatted with negative sign
 - **WHEN** a category, pool, or wallet stat tile has a non-zero consumed amount
 - **THEN** the consumed amount is displayed with a negative sign (e.g. `-₹6,000` or `-₹11,000`)
+
+### Requirement: Health Benefits Cards Filtered by Cashless Mode
+The system SHALL filter the Health Benefits / Cashless Benefits grid on the dashboard so that a category benefit card (`opd-benefit-card`) is rendered only if `cashless === true` for that category in the policy version, and any category where `cashless === false` is excluded from the UI.
+
+#### Scenario: Category with cashless enabled rendered on dashboard
+- **WHEN** a category has `cashless === true` in the active policy version
+- **THEN** its benefit card is rendered in the Health Benefits grid on the dashboard
+
+#### Scenario: Category with cashless disabled excluded from dashboard
+- **WHEN** a category has `cashless === false` in the active policy version (such as claims-only Pharmacy)
+- **THEN** its benefit card is excluded from the Health Benefits grid on the dashboard
