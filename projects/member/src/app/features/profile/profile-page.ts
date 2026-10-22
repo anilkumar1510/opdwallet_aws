@@ -274,7 +274,8 @@ export class ProfilePage {
       this.bankProblem.set(null);
       this.editingBank.set(false);
     } else {
-      this.bankProblem.set(this.bank.error() || 'Could not save bank details. Please try again.');
+      // null when the consent modal opened instead of an error.
+      this.bankProblem.set(this.bank.error());
     }
   }
 

@@ -9,7 +9,7 @@ Builds on the static grievance demo (`features/misc/helpline-page.ts`, `features
 - "Claims that need your help" reads the same paginated claims listing API as the Claims page, every page (older claims through Load more, repeats removed).
 - Claim detail drops the Amount / payment section (claims are reimbursements).
 - The raise form gets an optional supporting-documents upload (DMS) for claims; the documents show on the ticket and download from DMS.
-- "Send to support" calls `POST /habit-opd/api/v1/opd_dispute` (`action=submit`); the backend stores the grievance, the member's words in `final_reason` and `description`, and the documents in `documents`. No `dispute_type` is sent.
+- "Send to support" calls `POST /habit-opd/api/v1/opd_dispute` (`action=submit`); the backend stores the grievance, the member's words in `description` (not `final_reason`, which is support's resolution), and the documents in `documents`. No `dispute_type` is sent.
 - Tickets and their status come from the API (`GET_PAGE`); threads from `GET_DISPUTE_MESSAGES` (all pages); both refresh every 30 s while the page is open.
 - The member's reply goes to `POST /habit-opd/api/v1/opd_dispute_chat` (`action=userReply`, text verbatim in `message_text`); the member's own words after submit are sent as the first message. A reply on a ticket support has just closed is refused by the backend and the ticket refreshes to closed.
 - The member can no longer reopen a closed ticket; a member can close a real ticket with "Mark resolved" (`userResolve`).

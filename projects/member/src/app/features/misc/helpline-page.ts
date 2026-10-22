@@ -45,7 +45,7 @@ type GrievanceStatus = 'none' | 'open' | 'response' | 'closed';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const DATE_TIME = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-const SUPPORT_EMAIL = 'support@opdwallet.com';
+const SUPPORT_EMAIL = 'OPD@hclhealthcare.in';
 const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 
 const STATUS_LABEL: Record<GrievanceStatus, string> = {
@@ -139,10 +139,9 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
             <!-- 3 · Something else (no ticket) -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 text-center shadow-sm">
               <h2 class="text-base font-semibold text-[#0E51A2]">Something else?</h2>
-              <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, call or write to us. This doesn't open a ticket.</p>
+              <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, email us. This doesn't open a ticket.</p>
               <div class="mt-3 flex flex-wrap justify-center gap-3">
-                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]" (click)="onCall($event)">📞 {{ phone }}</a>
-                <a [href]="mailHref()" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900" (click)="onMail()">✉ {{ email }}</a>
+                <a [href]="mailHref()" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]" (click)="onMail()">✉ {{ email }}</a>
               </div>
               @if (contactNote(); as c) {
                 <p class="mt-3 text-xs text-success-700" role="status">{{ c }}</p>
@@ -499,6 +498,8 @@ export class HelplinePage {
     const seen = new Set<string>();
     return ([...((this.claimsStore.clailListData() ?? []) as any[]), ...this.moreClaimRows()])
       .filter((row) => row?.claim_id && !seen.has(row.claim_id) && !!seen.add(row.claim_id))
+      // A draft has not been submitted: there is nothing for support to look at yet.
+      .filter((row) => !isDraftClaim(row))
       .map(toClaimOrder)
       .sort((a, b) => b.placedAt.getTime() - a.placedAt.getTime());
   });
@@ -595,7 +596,12 @@ export class HelplinePage {
     });
     // Each refresh replaces the records, which re-runs the effect above and
     // reloads the open thread, so the interval only has to refresh the list.
-    const timer = setInterval(() => void this.refreshDisputes(), POLL_MS);
+    // The claims are read again too: a draft the member submits meanwhile
+    // (status DRAFT to UNDER_REVIEW) then shows up without reopening the page.
+    const timer = setInterval(() => {
+      void this.refreshDisputes();
+      void this.claimsStore.getClimListData();
+    }, POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
@@ -619,14 +625,6 @@ export class HelplinePage {
     }
   }
 
-  /** True for a claim from the live listing, whose grievance is really saved. */
-  /** A phone can dial; a desktop cannot, so there the number is copied instead. */
-  protected async onCall(event: Event): Promise<void> {
-    if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) return;
-    event.preventDefault();
-    await this.copy(this.phone, `${this.phone} copied — dial it from your phone.`);
-  }
-
   protected onMail(): void {
     this.contactNote.set(`Opening your email app to write to ${this.email}. If nothing opens, write to us at that address.`);
   }
@@ -636,15 +634,7 @@ export class HelplinePage {
     return `mailto:${this.email}?subject=${encodeURIComponent('Support request')}&body=${encodeURIComponent(body)}`;
   }
 
-  private async copy(text: string, done: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(text);
-      this.contactNote.set(done);
-    } catch {
-      this.contactNote.set(`Call us on ${text}.`);
-    }
-  }
-
+  /** True for a claim from the live listing, whose grievance is really saved. */
   protected isLive(o: SupportOrder): boolean {
     return this.claimOrders().some((c) => c.id === o.id);
   }
@@ -1081,6 +1071,12 @@ function toDate(raw: unknown): Date {
   return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
+/** A claim the member has started but not submitted. No grievance can be raised on it. */
+function isDraftClaim(row: any): boolean {
+  const code = String(row?.claim_status ?? row?.status?.label ?? '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return code === 'DRAFT';
+}
+
 /** One row of the claims listing, as the Support page's order shape. */
 function toClaimOrder(row: any): SupportOrder {
   const code = String(row?.claim_status ?? row?.status?.label ?? '').toUpperCase().replace(/[\s-]+/g, '_');
@@ -1124,9 +1120,9 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
   if (closedByMember) {
     messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
   } else if (state === 'closed') {
-    // `final_reason` starts as the member's own words (submit stores them there)
-    // and becomes the resolution when support closes the ticket: only show it as
-    // support's remark once it is no longer the member's first message.
+    // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
+    // (it is now left blank until support closes the ticket): only show it as
+    // support's remark when it is not the member's first message.
     const first = thread.find((m) => m.sender === 'MEMBER')?.text;
     const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
     messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });

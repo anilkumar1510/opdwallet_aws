@@ -21,14 +21,15 @@ import {
 } from '../../core/member/bank-details.store';
 import { FamilyStore } from '../../core/family/family.store';
 import { Member } from '../../core/member/member.model';
+import { PolicyStore } from '../../core/member/policy.store';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment.production';
 import { AppService } from '../../core/http/api.service';
 import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
+import { OriginalDocsNotice } from '../../shared/ui/original-docs-notice';
 import { Observable } from 'rxjs';
-import { ConsentModalService } from '../../core/consent/consent-modal.service';
 const MAX_BYTES = 5 * 1024 * 1024;
 const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -48,7 +49,7 @@ const STEPS = [
 @Component({
   selector: 'opd-new-claim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, FileUploader],
+  imports: [FormsModule, RouterLink, FileUploader, OriginalDocsNotice],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -93,6 +94,14 @@ const STEPS = [
             </li>
           }
         </ol>
+
+        <!-- Steps 2–4 (Details, Documents, Review): the policy may need the
+             originals posted after submission (renders nothing otherwise). -->
+        @if (step() >= 1) {
+          <div class="mb-5">
+            <opd-original-docs-notice variant="claim" />
+          </div>
+        }
 
         <form (ngSubmit)="onPrimary()">
           <!-- ── Step 0 · Bank account (verified once, before any claim) ──── -->
@@ -470,9 +479,9 @@ const STEPS = [
 export class NewClaimPage {
   protected readonly store = inject(ClaimsStore);
   protected readonly family = inject(FamilyStore);
+  protected readonly policyStore = inject(PolicyStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
-  private readonly consentService = inject(ConsentModalService);
 
   protected readonly steps = STEPS;
   /** Opens on the bank step until the payout account is approved. */
@@ -487,9 +496,40 @@ export class NewClaimPage {
    */
   protected readonly submitting = signal(false);
 
-  protected readonly categories = signal<readonly ClaimCategory[]>([]);
-  protected readonly categoriesLoading = signal(false);
+  private readonly fallbackCategories = signal<readonly ClaimCategory[]>([]);
+  private readonly fallbackLoading = signal(false);
   protected readonly patientId = signal('');
+
+  protected readonly selectedPatient = computed(() =>
+    this.family.family().find((member) => member.id === this.patientId()) ?? null,
+  );
+
+  /**
+   * Resolves the combined categories (standard with claims: true + additional_claim_categories)
+   * for the selected patient from the active policy version, honoring INHERIT_FROM_PRIMARY.
+   */
+  protected readonly policyCategories = computed<readonly ClaimCategory[]>(() => {
+    const version = this.policyStore.version();
+    if (!version) return [];
+    const patient = this.selectedPatient();
+    const relCode = patient?.relationshipCode || (patient?.isPrimary ? 'self' : 'self');
+    return this.policyStore.getClaimCategoriesForRelationship(relCode);
+  });
+
+  protected readonly categories = computed<readonly ClaimCategory[]>(() => {
+    const fromPolicy = this.policyCategories();
+    if (fromPolicy.length > 0) {
+      return fromPolicy;
+    }
+    return this.fallbackCategories();
+  });
+
+  protected readonly categoriesLoading = computed(() => {
+    if (this.policyStore.loading()) return true;
+    if (this.policyCategories().length > 0) return false;
+    return this.fallbackLoading();
+  });
+
   protected readonly category = signal('');
   protected readonly dentalSubType = signal<DentalSubType>('consultation');
   protected readonly dentalOptions = [
@@ -549,8 +589,20 @@ export class NewClaimPage {
         this.step.set(1);
       }
     });
-    this.categoriesLoading.set(true);
-    void this.store.categories().then((rows) => this.categories.set(rows)).finally(() => this.categoriesLoading.set(false));
+    this.fallbackLoading.set(true);
+    void this.store
+      .categories()
+      .then((rows) => this.fallbackCategories.set(rows))
+      .finally(() => this.fallbackLoading.set(false));
+
+    // Reset selected category if patient changes and current category is not allowed for new patient
+    effect(() => {
+      const allowed = this.categories();
+      const current = this.category();
+      if (current && allowed.length > 0 && !allowed.some((c) => c.claimCategory === current)) {
+        this.category.set('');
+      }
+    });
     let patientPrefilled = false;
     effect(() => {
       // Default to Self (the primary) even if a dependant was last active.
@@ -782,7 +834,8 @@ export class NewClaimPage {
       // A resubmission needs fresh proof, so the old file does not carry over.
       this.chequeFile.set(null);
     } else {
-      this.problem.set(this.bank.error() || 'Could not submit bank details. Please try again.');
+      // null when the consent modal opened instead of an error.
+      this.problem.set(this.bank.error());
     }
   }
 
@@ -1113,27 +1166,7 @@ export class NewClaimPage {
     encodedResourceData += "&action=" + action;
     var options = this.appService.addXsrfToken(encodedResourceData, true);
 
-    // A missing consent comes back as errCode -1 with the consent URL in the
-    // message, e.g. "Consent not accepted. Please complete consent at:
-    // https://consent.habithealth.com/?token=…". Hand the message straight to
-    // the modal service, which pulls the token out and opens the remote.
-    const tryConsent = (message: string): boolean =>
-      this.consentService.openFromApiMessage(message, {
-        onSuccess: () => {
-          // Consent captured — stay on the page. The user submits the claim again.
-          this.submitting.set(false);
-          this.problem.set(null);
-        },
-        onClose: () => {
-          this.submitting.set(false);
-        },
-      });
-
     const fail = (message: string) => {
-      if (message && tryConsent(message)) {
-        this.submitting.set(false);
-        return;
-      }
       console.error('[NewClaimPage] Claim submit failed:', message);
       this.submitting.set(false);
       this.problem.set('We could not submit your claim. Please check your details and try again.');

@@ -34,11 +34,11 @@ export interface DisputeSubmitPayload {
   readonly selected_reason: string;
   readonly dispute_status: 'OPEN';
   /**
-   * What the member typed in "Tell us more". `final_reason` is the only field the
-   * backend passes on to the support system on create (the executive's resolution
-   * later overwrites it); `description` keeps the member's words untouched.
+   * What the member typed in "Tell us more", sent as `description` (the backend
+   * passes it to the support system). `final_reason` is not sent: it is the
+   * support executive's resolution and stays blank until a ticket is closed.
+   * Tickets raised before 21 Oct 2026 still carry the member's words there.
    */
-  readonly final_reason?: string;
   readonly description?: string;
   /** The optional supporting documents, as the dispute API stores them. */
   readonly documents?: readonly DisputeDocument[];
@@ -192,7 +192,7 @@ export class DisputeApi {
       benefit_category: input.categoryCode?.trim() || benefitCategoryOf(input.categoryLabel),
       selected_reason: input.reason,
       dispute_status: 'OPEN',
-      ...(description ? { final_reason: description, description } : {}),
+      ...(description ? { description } : {}),
       ...(input.documents.length ? { documents: input.documents } : {}),
     };
   }

@@ -13,7 +13,7 @@ import { FakeApi, claimRow, claimRowOf, claimsSection, DAY, mockBackend, openSup
  * action twice within 3 seconds. No session or backend is needed. Run with the dev server up (4500).
  * The real thing is covered by live-api.spec.ts.
  */
-test.use({ headless: true });
+// test.use({ headless: true });
 
 test.describe('Claims that need your help', () => {
   test('lists the claims from the listing API, newest first, with Load more', async ({ page }) => {
@@ -28,6 +28,39 @@ test.describe('Claims that need your help', () => {
   test('no claims shows the empty state', async ({ page }) => {
     const api = new FakeApi();
     api.claims = [];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('a draft claim is not listed: a grievance cannot be raised on it', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00353')).toBeVisible({ timeout: 10000 });
+    await expect(section.getByText('OPD-2026-00354')).toHaveCount(0);
+  });
+
+  test('a draft that is submitted while the page is open appears after the next refresh', async ({ page }) => {
+    await page.clock.install();
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await mockBackend(page, api);
+    await page.goto('/member/helpline');
+    const section = claimsSection(page);
+    await expect(section.getByText('OPD-2026-00353')).toBeVisible({ timeout: 10000 });
+    await expect(section.getByText('OPD-2026-00354')).toHaveCount(0);
+    // The member submits the draft: it is no longer a draft.
+    api.claims = [claimRow(0, 'UNDER_REVIEW', 'Under review'), claimRow(1, 'UNDER_REVIEW', 'Under review')];
+    await page.clock.fastForward(31_000);
+    await expect(section.getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+  });
+
+  test('only drafts: the empty state shows', async ({ page }) => {
+    const api = new FakeApi();
+    api.claims = [claimRow(0, 'DRAFT', 'Draft'), claimRow(1, 'draft', 'Draft')];
     await mockBackend(page, api);
     await page.goto('/member/helpline');
     await expect(claimsSection(page).getByText('No claim needs your attention right now.')).toBeVisible({ timeout: 10000 });
@@ -162,8 +195,9 @@ test.describe('Raise a grievance (submit)', () => {
     await expect(page.getByText('Bill is wrong, see note: it was ₹1,500.')).toBeVisible({ timeout: 20000 });
     expect(api.replies).toHaveLength(1);
     expect(api.replies[0].text).toBe('Bill is wrong, see note: it was ₹1,500.');
-    // The same words are stored as final_reason (the only field passed on to support) and as description.
-    expect(api.submits[0]).toMatchObject({ final_reason: 'Bill is wrong, see note: it was ₹1,500.', description: 'Bill is wrong, see note: it was ₹1,500.' });
+    // The words go in `description`; `final_reason` (support's resolution) is not sent.
+    expect(api.submits[0]).toMatchObject({ description: 'Bill is wrong, see note: it was ₹1,500.' });
+    expect(api.submits[0]).not.toHaveProperty('final_reason');
   });
 
   test('a closed ticket does not show the member own words as the support resolution', async ({ page }) => {
