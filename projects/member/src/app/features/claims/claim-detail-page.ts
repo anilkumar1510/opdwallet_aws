@@ -496,7 +496,7 @@ function humaniseCode(value: string | undefined): string {
 
           @if (detail.isCancellable) {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
-              @if (store.submitError(); as error) {
+              @if (resubmitError(); as error) {
                 <p class="mb-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">
                   {{ error }}
                 </p>
@@ -523,15 +523,15 @@ function humaniseCode(value: string | undefined): string {
                   <button
                     type="button"
                     class="min-h-touch flex-1 rounded-xl bg-danger-600 px-4 text-sm font-semibold text-white disabled:opacity-60"
-                    [disabled]="store.submitting()"
+                    [disabled]="submitting()"
                     (click)="cancelClaim()"
                   >
-                    {{ store.submitting() ? 'Cancelling…' : 'Yes, withdraw it' }}
+                    {{ submitting() ? 'Cancelling…' : 'Yes, withdraw it' }}
                   </button>
                   <button
                     type="button"
                     class="min-h-touch flex-1 rounded-xl border border-surface-border px-4 text-sm font-semibold text-ink-900"
-                    [disabled]="store.submitting()"
+                    [disabled]="submitting()"
                     (click)="confirming.set(false)"
                   >
                     Keep it
@@ -970,26 +970,76 @@ export class ClaimDetailPage {
       this.confirming.set(false);
       return;
     }
-    // Issue HTTP request to the opd_claim backend to set status to CANCELLED
-    // Pattern matches sendDocuments() format: resource=<encoded_json>&application=habit-opod&action=cancel
-    const resourcePayload = {
-      claim_status: 'CANCELLED',
-      action: 'cancel',
-      reason: this.reason(),
-    };
-    const encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(resourcePayload))));
-    const params = 'resource=' + encodedResourceData + '&application=habit-opd&action=cancel';
-    const options = this.appService.addXsrfToken(params, true);
+
+    // BACKEND CONTRACT (from user):
+    // POST /opd_claim?action=cancel
+    // Body form-data: resource = minified JSON string
+    // Example: {"name":"CLAI-001","claim_status":"UNDER_REVIEW","g_soft_delete":"false"}
+    //
+    // Success: HTTP 200 with {errCode: 0, message: "Success", count: 1, resource: [...]}
+    // Error: HTTP 200 with {errCode: -1, message: "claim {name} cannot be cancelled from {status}"}
+    // Important: errCode -1 is in 200 OK envelope, NOT HTTP error status!
+
     try {
-      await firstValueFrom(
-        this.http.post('habit-opd/api/v1/opd_claim', params, options),
+      // Get the current claim detail to extract name and claim_status
+      const detail = this.displayClaim();
+
+      // Build minified JSON resource payload matching backend format
+      // {"name":"CLAI-...","claim_status":"CURRENT_STATUS","g_soft_delete":"false"}
+      const resourceData = {
+        name: claimId || (detail?.claim_id || ''),
+        claim_status: detail?.claim_status || '',
+        g_soft_delete: 'false'
+      };
+      const resourceMinified = JSON.stringify(resourceData, null, 0); // no spaces/newlines
+
+      // Make the request: URL with ?action=cancel query param, body with resource
+      const options = this.appService.addXsrfToken(
+        'resource=' + encodeURIComponent(resourceMinified),
+        true,
       );
-      // Success: navigate to claims list where claim shows CANCELLED
-      void this.router.navigate(['/member/claims']);
-      this.confirming.set(false);
-    } catch (error) {
+
+      const response = await firstValueFrom(
+        this.http.post('habit-opd/api/v1/opd_claim?action=cancel',
+          'resource=' + encodeURIComponent(resourceMinified),
+          options,
+        ),
+      );
+
+      // BACKEND RESPONSE HANDLING:
+      // Always HTTP 200 - check errCode in the response body
+      // errCode: 0 = success, errCode: -1 = failure with message
+
+      // Parse the response - it may come as string or parsed object
+      let parsedResponse: any;
+      try {
+        parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      } catch {
+        // If we can't parse JSON, treat as success (backward compat)
+        void this.router.navigate(['/member/claims']);
+        this.confirming.set(false);
+        this.submitting.set(false);
+        return;
+      }
+
+      // Check errCode
+      if (parsedResponse.errCode === 0) {
+        // SUCCESS: claim cancelled
+        // Navigate to claims list where the claim now shows CANCELLED
+        void this.router.navigate(['/member/claims']);
+        this.confirming.set(false);
+      } else if (parsedResponse.errCode === -1) {
+        // FAILURE: show error message from backend
+        this.resubmitError.set(parsedResponse.message || 'We could not cancel that claim. Please try again.');
+        this.confirming.set(false);
+      } else {
+        // Unknown errCode
+        this.resubmitError.set('We could not cancel that claim. Please try again.');
+        this.confirming.set(false);
+      }
+    } catch (error: any) {
+      // Network or truly unexpected error
       console.error('Failed to cancel claim:', error);
-      // Keep member on the page, show error
       this.resubmitError.set('We could not cancel that claim. Please try again.');
       this.confirming.set(false);
     } finally {
