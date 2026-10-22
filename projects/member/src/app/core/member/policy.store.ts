@@ -10,6 +10,7 @@ import {
   OpdConsumptionCycleDto,
   OpdPolicyMemberAssignmentDto,
   OpdPolicyVersionDto,
+  OpdWalletAccountDto,
   PolicyBenefitPoolDto,
 } from './policy.dto';
 import {
@@ -51,6 +52,11 @@ export class PolicyStore {
   private readonly _loading = signal(false);
   private readonly _error = signal<AppError | null>(null);
 
+  private readonly _walletAccount = signal<OpdWalletAccountDto | null>(null);
+  private readonly _walletCache = new Map<string, OpdWalletAccountDto>();
+  private readonly _activeUhId = signal<string | null>(null);
+  private readonly _primaryUhId = signal<string | null>(null);
+
   private loadedId: string | null = null;
   private lastPatientId: string | null = null;
 
@@ -62,14 +68,45 @@ export class PolicyStore {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly activeRelationshipCode = this._activeRelationshipCode.asReadonly();
+  readonly walletAccount = this._walletAccount.asReadonly();
 
   readonly isCovered = computed(() =>
     isRelationshipCoveredInPolicy(this._activeRelationshipCode(), this._version()),
   );
 
-  readonly walletTotal = computed(() =>
-    toWalletTotalFromVersion(this._version(), this._activeRelationshipCode(), this._consumptionCycles()),
-  );
+  readonly isFloater = computed<boolean>(() => {
+    return (this._version()?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
+  });
+
+  readonly basePolicyLimit = computed<number>(() => {
+    const version = this._version();
+    if (!version) return 0;
+    const primary = getPrimaryRelationship(version);
+    const rel = findRelationshipInVersion(version, this._activeRelationshipCode());
+    return rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
+  });
+
+  readonly topupAmount = computed<number>(() => {
+    const account = this._walletAccount();
+    const base = this.basePolicyLimit();
+    if (!account) return 0;
+    return Math.max(0, (Number(account.total_topup_amt) || 0) - base);
+  });
+
+  readonly walletTotal = computed(() => {
+    const account = this._walletAccount();
+    if (account) {
+      const allocated = Number(account.total_topup_amt) || 0;
+      const available = Number(account.avl_bal) || 0;
+      const consumed = Math.max(0, allocated - available);
+      return {
+        available: money(available),
+        allocated: money(allocated),
+        consumed: money(consumed),
+      };
+    }
+    return toWalletTotalFromVersion(this._version(), this._activeRelationshipCode(), this._consumptionCycles());
+  });
 
   readonly categories = computed(() =>
     toCategoriesFromVersion(this._version(), this._activeRelationshipCode(), this._consumptionCycles()),
@@ -238,6 +275,7 @@ export class PolicyStore {
 
         this._detail.set(toPolicyDetailFromVersion(normalizedVersion));
         this._rawPools.set(parsedPools);
+        void this.resolveAndLoadWallet();
       }
     } catch (err: any) {
       this._error.set(appError('network', err?.message, err?.status ?? null));
@@ -247,8 +285,68 @@ export class PolicyStore {
       this._consumptionCycles.set([]);
       this._policies.set([]);
       this._detail.set(null);
+      this._walletAccount.set(null);
     } finally {
       this._loading.set(false);
+    }
+  }
+
+  /**
+   * Synchronizes member UHID context from FamilyStore and triggers wallet resolution
+   * based on the policy version's allocation_type (FLOATER vs INDIVIDUAL).
+   */
+  async syncMemberWalletContext(activeUhId: string | null, primaryUhId: string | null): Promise<void> {
+    const cleanActive = activeUhId?.trim() || null;
+    const cleanPrimary = primaryUhId?.trim() || null;
+    this._activeUhId.set(cleanActive);
+    this._primaryUhId.set(cleanPrimary);
+    await this.resolveAndLoadWallet();
+  }
+
+  private async resolveAndLoadWallet(): Promise<void> {
+    const version = this._version();
+    const isFloater = (version?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
+    const targetUhId = isFloater
+      ? (this._primaryUhId() || this._activeUhId())
+      : (this._activeUhId() || this._primaryUhId());
+
+    if (!targetUhId) {
+      this._walletAccount.set(null);
+      return;
+    }
+
+    if (this._walletCache.has(targetUhId)) {
+      this._walletAccount.set(this._walletCache.get(targetUhId)!);
+      return;
+    }
+
+    try {
+      const queryArgs = `queryId=GET_PAGE&filter=user_code%3A${encodeURIComponent(targetUhId)}%2Cstatus_id%3Aactive&page_no=0&page_size=0`;
+      const walletRes: any = await new Promise((resolve) => {
+        this.appService
+          .getcall('wallet', 'wallet', queryArgs)
+          .subscribe({
+            next: (res: any) => resolve(res),
+            error: (err: any) => {
+              console.error('Failed to load wallet data for uhId:', targetUhId, err);
+              resolve(null);
+            },
+          });
+      });
+
+      if (walletRes) {
+        const parsed = typeof walletRes === 'string' ? JSON.parse(walletRes) : walletRes;
+        const account: OpdWalletAccountDto | undefined = parsed?.resource?.[0];
+        if (account) {
+          this._walletCache.set(targetUhId, account);
+          this._walletAccount.set(account);
+          return;
+        }
+      }
+      this._walletAccount.set(null);
+    } catch (e) {
+      console.error('Error fetching wallet account:', e);
+      this._walletAccount.set(null);
     }
   }
 
@@ -296,5 +394,9 @@ export class PolicyStore {
     this._detail.set(null);
     this._activeRelationshipCode.set('self');
     this._error.set(null);
+    this._walletAccount.set(null);
+    this._walletCache.clear();
+    this._activeUhId.set(null);
+    this._primaryUhId.set(null);
   }
 }

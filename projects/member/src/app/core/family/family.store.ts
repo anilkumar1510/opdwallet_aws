@@ -132,6 +132,9 @@ export class FamilyStore {
       const active = this.activeMember();
       const relCode = active?.relationshipCode || (active?.isPrimary ? 'self' : 'self');
       this.policyStore.setActiveRelationship(relCode);
+
+      const primary = this.family().find((m) => m.isPrimary);
+      void this.policyStore.syncMemberWalletContext(active?.uhid ?? null, primary?.uhid ?? null);
     });
     void this.load();
   }
