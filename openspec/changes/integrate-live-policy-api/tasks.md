@@ -40,7 +40,12 @@
 - [x] 4.12 Render pool code badge in `WalletBalanceModal` alongside balance and description
 - [x] 4.13 Add `isMemberCovered` and sync active relationship code in `FamilyStore`
 - [x] 4.14 Make `PolicyStore.walletTotal`, `categories`, and `pools` reactive to the active relationship
-- [x] 4.15 Display "Not covered" badge in profile switcher and non-covered banner on dashboard
+- [x] 4.15 Exclude non-covered members from profile switcher and Family page, and dynamically filter carousel policy cards (all cards for Self, only active card for dependent)
+- [x] 4.16 Create reusable `CoverageBannerComponent` (`opd-coverage-banner`) resolving category to pool code, annual limit, and per-transaction/copay rules
+- [x] 4.17 Replace static coverage card with `opd-coverage-banner` across service landing screens (`inclinic-page.ts`, `dental-page.ts`, `diagnostics-page.ts`, `online-consult-page.ts`, `pharmacy-page.ts`, `vaccination-page.ts`, `vision-page.ts`, `wellness-page.ts`)
+- [x] 4.18 Dynamically control `<opd-original-docs-notice>` visibility based on `claim_type === 'DIGITAL_PHYSICAL'`
+- [x] 4.19 Add detailed layout variant to `opd-coverage-banner` and adopt in `vision-page.ts` to dynamically display vision pool annual limit
+- [x] 4.20 Fallback to wallet annual limit when category has no pool assigned and display pool name details on coverage banner
 
 ## 5. Verification
 

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
+import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
 
 import { FamilyStore } from '../../core/family/family.store';
 
@@ -166,7 +167,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption],
+  imports: [ClaimOption, CoverageBannerComponent],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -192,9 +193,6 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
 
       <div class="mx-auto px-5 pb-32 pt-6 lg:px-8 lg:pb-10" [class.max-w-[820px]]="!activeLeg()" [class.max-w-[1040px]]="!!activeLeg()">
         <!-- Demo-only note -->
-        <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
-          🧪 Static demo journey — no data is saved. Use “Start over” to try every route again.
-        </p>
 
         @if (confirmation(); as msg) {
           <div class="mb-5 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
@@ -204,6 +202,8 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
 
         <!-- ── Landing: three options ─────────────────────────────────────── -->
         @if (!activeLeg()) {
+          <opd-coverage-banner [category]="BenefitCategory.HealthPackages" />
+
           @if (fullyUsed()) {
             <div class="mb-5 rounded-2xl border border-[#CDDDFE] bg-[#F3F7FF] p-5">
               <p class="text-base font-semibold text-[#034DA2]">Annual Health Check used for this year</p>
