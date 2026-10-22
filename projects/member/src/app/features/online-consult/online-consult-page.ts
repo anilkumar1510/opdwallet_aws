@@ -93,7 +93,6 @@ type Step =
         <!-- ── Landing ─────────────────────────────────────────────────────── -->
         @if (!started()) {
           <opd-coverage-banner [category]="BenefitCategory.OnlineConsultation" />
-
           @if (claimModes.allowsCashless(BenefitCategory.OnlineConsultation)) {
             <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
               Find a doctor →
@@ -352,7 +351,7 @@ export class OnlineConsultPage {
       .sort((a, b) => (a.nextIn === 'Available now' ? -1 : 1) - (b.nextIn === 'Available now' ? -1 : 1));
   });
 
-  /** Mock payment breakdown: per-transaction limit + co-payment, excess self-paid. */
+  /** Dynamic payment breakdown: per-transaction limit + co-payment, excess self-paid. */
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
     const covered = Math.min(fee, PER_TXN_LIMIT);

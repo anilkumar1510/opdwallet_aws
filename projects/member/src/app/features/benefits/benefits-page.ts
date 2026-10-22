@@ -139,7 +139,7 @@ const ICONS: Readonly<Partial<Record<BenefitCategory, IconName>>> = {
                         ></div>
                       </div>
                       <p class="mt-1.5 text-xs text-ink-500">
-                        {{ money(category.consumed) }} used &middot;
+                        {{ category.consumed.amount > 0 ? '-' : '' }}{{ money(category.consumed) }} used &middot;
                         {{ money(category.available) }} left
                       </p>
                     </div>

@@ -91,7 +91,7 @@ import { EmptyView, ErrorView } from '../../shared/ui/state-views';
           </div>
           <div class="rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)">
             <p class="text-xs text-ink-500">Used</p>
-            <p class="mt-1 text-lg font-semibold text-[#303030]">{{ amount(used()) }}</p>
+            <p class="mt-1 text-lg font-semibold text-[#303030]">{{ used().amount > 0 ? '-' : '' }}{{ amount(used()) }}</p>
           </div>
           <div class="rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center" style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)">
             <p class="text-xs text-ink-500">Left</p>

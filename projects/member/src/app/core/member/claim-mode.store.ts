@@ -14,7 +14,7 @@ import { PolicyStore } from './policy.store';
  * (book through the portal), claims only (pay the provider and file a
  * claim), or both.
  */
-export type ClaimMode = 'cashless' | 'claims' | 'both';
+export type ClaimMode = 'cashless' | 'claims' | 'both' | 'none';
 
 /**
  * Fallback static modes when policy is not yet loaded.
@@ -74,7 +74,9 @@ export class ClaimModeStore {
     if (!rel?.categories?.length) return STATIC_CLAIM_MODES[category] ?? 'both';
 
     const match = rel.categories.find(
-      (c) => toBenefitCategory(c.category_code) === category,
+      (c) =>
+        toBenefitCategory(c.category_code) === category ||
+        toBenefitCategory(c.category_name) === category,
     );
     if (!match) return STATIC_CLAIM_MODES[category] ?? 'both';
 
@@ -85,7 +87,7 @@ export class ClaimModeStore {
     if (isCashless && !isClaims) return 'cashless';
     if (!isCashless && isClaims) return 'claims';
 
-    return STATIC_CLAIM_MODES[category] ?? 'both';
+    return 'none';
   }
 
   /**
@@ -93,11 +95,15 @@ export class ClaimModeStore {
    * - If policy provides 'both' (cashless + claims) → ['both', 'cashless', 'claims']
    * - If policy provides 'claims' only → ['claims']
    * - If policy provides 'cashless' only → ['cashless']
+   * - If policy provides 'none' → ['none']
    */
   allowedModesFor(category: BenefitCategory): readonly ClaimMode[] {
     const base = this.policyModeFor(category);
     if (base === 'both') {
       return ['both', 'cashless', 'claims'];
+    }
+    if (base === 'none') {
+      return ['none'];
     }
     return [base];
   }
@@ -126,7 +132,8 @@ export class ClaimModeStore {
     if (version && !isRelationshipCoveredInPolicy(relCode, version)) {
       return false;
     }
-    return this.modeFor(category) !== 'claims';
+    const mode = this.modeFor(category);
+    return mode === 'cashless' || mode === 'both';
   }
 
   allowsClaims(category: BenefitCategory): boolean {
@@ -136,7 +143,8 @@ export class ClaimModeStore {
     if (version && !isRelationshipCoveredInPolicy(relCode, version)) {
       return false;
     }
-    return this.modeFor(category) !== 'cashless';
+    const mode = this.modeFor(category);
+    return mode === 'claims' || mode === 'both';
   }
 
   setDemoOverride(mode: ClaimMode | null): void {
@@ -157,7 +165,7 @@ export class ClaimModeStore {
 function readDemo(): ClaimMode | null {
   try {
     const v = localStorage.getItem(DEMO_KEY);
-    return v === 'cashless' || v === 'claims' || v === 'both' ? v : null;
+    return v === 'cashless' || v === 'claims' || v === 'both' || v === 'none' ? v : null;
   } catch {
     return null;
   }

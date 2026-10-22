@@ -11,6 +11,7 @@ export interface WalletPool {
   readonly code: string;
   readonly available: Money;
   readonly allocated: Money;
+  readonly consumed: Money;
   /** What the pool pays for, as the policy words it. */
   readonly description: string;
   readonly categories: readonly WalletPoolCategory[];

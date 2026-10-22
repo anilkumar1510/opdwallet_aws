@@ -59,6 +59,8 @@ function toCategory(
     annualLimit: typeof config?.annualLimit === 'number' ? money(config.annualLimit) : null,
     perClaimLimit:
       typeof config?.perClaimLimit === 'number' ? money(config.perClaimLimit) : null,
+    cashless: true,
+    claims: true,
   };
 }
 
