@@ -344,7 +344,7 @@ export class OpdConsultationService {
             .map((item: any): Speciality => {
               const d = item?.data || item;
               const name = d.display || d.speciality_system_name || d.speciality_name || d.name || '';
-              const code = d.code || d.speciality_code || d.speciality_system_name || name;
+              const code = d.specialityCode || d.speciality_code || d.speciality_system_name || d.code || name;
               const id = d.id || item?.id || d.speciality_id || '';
               return {
                 id,
@@ -371,19 +371,27 @@ export class OpdConsultationService {
       );
   }
 
-  // Doctor Listing API
-  getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
-    const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},serviceType_code:op_consultation,doctor_mode:yes`);
+  // Doctor Listing API - doctor_cug_mapping
+  getDoctors(specialityCode?: string, modeOfAppointment: string = 'opd_network'): Observable<Doctor[]> {
+    const code = (specialityCode || '').trim();
+    const filter = code
+      ? `mode_of_appointment:${modeOfAppointment},specialityCode:${encodeURIComponent(code)}`
+      : `mode_of_appointment:${modeOfAppointment}`;
+    const url = `/master-management/api/v1/doctor_cug_mapping?queryId=GET_PAGE&filter=${filter}`;
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
-        map((response: any) => response.resource || []),
+        map((response: any) => {
+          const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+          return parsed?.resource || [];
+        }),
         map((items: any[]) => items.map((item: any): Doctor => {
-          const videoPrice = item.data?.price_details?.find((p: any) => p.consultation_type === 'video');
-          const videoFee = videoPrice?.selling_amount ?? videoPrice?.mrp ?? 0;
+          const d = item.data || item;
+          const videoPrice = d.price_details?.find((p: any) => p.consultation_type === 'video');
+          const videoFee = videoPrice?.selling_amount ?? videoPrice?.mrp ?? d.fee ?? 0;
           const mrp = videoPrice?.mrp ?? videoFee;
           const sellingDiscountRate = videoPrice?.selling_discount_rate ?? 0;
-          const nextSlotVideo = item.data?.next_slot_date_video ? Number(item.data.next_slot_date_video) : null;
+          const nextSlotVideo = d.next_slot_date_video ? Number(d.next_slot_date_video) : null;
           let nextInLabel = 'Not available';
           let canConsultNow = false;
 
@@ -407,38 +415,46 @@ export class OpdConsultationService {
             }
           }
 
+          const qualText = Array.isArray(d.qualification)
+            ? d.qualification.map((q: any) => q.text || q).join(', ')
+            : (d.qualification?.[0]?.text || d.qualification?.text || d.qualification || '');
+
+          const langText = Array.isArray(d.language)
+            ? d.language.map((l: any) => l.text || l).join(', ')
+            : (d.languages || '');
+
           return {
-            id: item.data?.doctor_id || item.data?.id,
-            name: item.data?.display_name,
-            qualification: item.data?.qualification?.[0]?.text,
-            experience: parseInt(item.data?.doctor_experience) || 0,
+            id: d.doctor_id || d.id || item.id,
+            name: d.display_name || d.name || '',
+            qualification: qualText,
+            experience: parseInt(d.doctor_experience || d.experience) || 0,
             fee: videoFee,
             mrp,
             selling_amount: videoFee,
             selling_discount_rate: sellingDiscountRate,
-            rating: 0,
-            gender: item.data?.gender_name,
-            languages: item.data?.language?.map((l: any) => l.text).join(', '),
+            rating: d.rating || 0,
+            gender: d.gender_name || d.gender,
+            languages: langText,
             nextIn: nextInLabel,
             next_slot_date_video: nextSlotVideo || undefined,
             canConsultNow,
-            speciality: item.data?.speciality,
-            speciality_id: item.data?.speciality_id,
-            speciality_code: item.data?.speciality_code || item.data?.specialityCode || item.data?.speciality,
-            facility_id: item.data?.facility_id,
-            facility_name: item.data?.facility_name,
-            facility_address: item.data?.facility_address || item.data?.address,
-            department_id: item.data?.department_id,
-            department_name: item.data?.department_name,
-            subDepartment_id: item.data?.subDepartment_id,
-            subDepartment_name: item.data?.subDepartment_name,
-            doctor_code: item.data?.doctor_code,
-            profile_path: item.data?.profile_path,
-            provider_code: item.data?.provider_code || 'HCLHC001',
-            provider_name: item.data?.provider_name || 'HCL Healthcare',
-            cug_code: item.data?.cug_code || this.cugCode,
-            mode_of_appointment: item.data?.mode_of_appointment || 'habithealth',
-            telecom: item.data?.telecom || item.data?.doctor_telecom || '9999444444'
+            speciality: d.speciality || d.speciality_name || d.specialityCode || code,
+            speciality_id: d.speciality_id || '',
+            speciality_code: d.speciality_code || d.specialityCode || code,
+            facility_id: d.facility_id || '',
+            facility_name: d.facility_name || '',
+            facility_address: d.facility_address || d.address,
+            department_id: d.department_id || '',
+            department_name: d.department_name || '',
+            subDepartment_id: d.subDepartment_id || '',
+            subDepartment_name: d.subDepartment_name || '',
+            doctor_code: d.doctor_code || '',
+            profile_path: d.profile_path || '',
+            provider_code: d.provider_code || 'HCLHC001',
+            provider_name: d.provider_name || 'HCL Healthcare',
+            cug_code: d.cug_code || this.cugCode,
+            mode_of_appointment: d.mode_of_appointment || modeOfAppointment,
+            telecom: d.telecom || d.doctor_telecom || '9999444444'
           };
         }))
       );

@@ -468,7 +468,14 @@ export class OnlineConsultPage implements OnInit {
     this.slotDate.set(0);
     this.search.set('');
     this.searchTerm.set('');
-    this.consultationService.getDoctors(code).subscribe(docs => this.filteredDoctors.set(docs));
+    const spec = this.specialities().find(s => 
+      (s.speciality_code && s.speciality_code.toLowerCase() === code.toLowerCase()) ||
+      (s.code && s.code.toLowerCase() === code.toLowerCase()) ||
+      (s.speciality_name && s.speciality_name.toLowerCase() === code.toLowerCase()) ||
+      (s.display && s.display.toLowerCase() === code.toLowerCase())
+    );
+    const dynamicCode = spec?.speciality_code || spec?.code || spec?.speciality_system_name || spec?.speciality_name || code;
+    this.consultationService.getDoctors(dynamicCode).subscribe(docs => this.filteredDoctors.set(docs));
   }
 
   protected selectDoctor(doc: Doctor): void {
@@ -481,7 +488,14 @@ export class OnlineConsultPage implements OnInit {
 
   protected onSearchChange(value: string): void {
     if (!value.trim()) {
-      this.consultationService.getDoctors(this.speciality()).subscribe(docs => {
+      const spec = this.specialities().find(s => 
+        (s.speciality_code && s.speciality_code.toLowerCase() === this.speciality().toLowerCase()) ||
+        (s.code && s.code.toLowerCase() === this.speciality().toLowerCase()) ||
+        (s.speciality_name && s.speciality_name.toLowerCase() === this.speciality().toLowerCase()) ||
+        (s.display && s.display.toLowerCase() === this.speciality().toLowerCase())
+      );
+      const dynamicCode = spec?.speciality_code || spec?.code || spec?.speciality_system_name || spec?.speciality_name || this.speciality();
+      this.consultationService.getDoctors(dynamicCode).subscribe(docs => {
         this.filteredDoctors.set(docs);
         this.search.set('');
       });

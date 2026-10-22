@@ -14,7 +14,7 @@ import { Speciality } from '../../../services/opd-consultation.service';
             [class.border-brand-500]="isSelected(s)" 
             [class.bg-blue-50]="isSelected(s)" 
             [class.border-surface-border]="!isSelected(s)" 
-            (click)="specialitySelected.emit(s.speciality_code || s.code || '')">
+            (click)="specialitySelected.emit(s.speciality_code || s.code || s.speciality_name || s.name || '')">
             {{ s.display || s.speciality_name }}
           </button>
         }
