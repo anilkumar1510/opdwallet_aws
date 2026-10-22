@@ -305,6 +305,12 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   <div><dt class="text-xs text-ink-500">Raised on</dt><dd class="font-medium text-ink-900">{{ dateTime(t.createdAt) }}</dd></div>
                   <div class="sm:col-span-2"><dt class="text-xs text-ink-500">Reason</dt><dd class="font-medium text-ink-900">{{ t.reason }}</dd></div>
                 </dl>
+                @if (t.state !== 'closed') {
+                  <div class="mt-4 flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2.5 text-xs">
+                    <span class="font-medium text-ink-700">Ticket status: <span class="font-semibold text-ink-900">{{ ticketLabel(t) }}</span></span>
+                    <button type="button" class="font-semibold text-[#0F5FDC] hover:underline" (click)="scrollToActions()">Jump to text box ↓</button>
+                  </div>
+                }
               </section>
 
               @if (isLiveTicket(t) && ticketDocuments(t).length) {
@@ -352,7 +358,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               </section>
 
               <!-- Member actions -->
-              <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+              <section id="ticket-actions" class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
                 @switch (t.state) {
                   @case ('awaiting_support') {
                     <p class="text-sm text-ink-700">⏳ Waiting on support. We'll notify you in the app, on WhatsApp and by email when they reply.</p>
@@ -378,7 +384,18 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   }
                   @case ('resolved') {
                     @if (t.closedBy === 'member') {
-                      <p class="text-sm text-ink-700">✓ You marked this ticket as resolved.</p>
+                      <p class="text-sm font-medium text-success-700">✓ You marked this ticket as resolved.</p>
+                      @if (t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
+                        </div>
+                      }
+                      <p class="mt-2 text-xs text-ink-500">Need more help? You can reply below, or close this ticket for good.</p>
+                      @if (isLiveTicket(t)) {
+                        <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t, isResolved: true }" />
+                      } @else {
+                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#16a34a] px-4 text-sm font-semibold text-white hover:bg-[#15803d]" (click)="markResolved(t)">Close Ticket</button>
+                      }
                     } @else {
                       <p class="text-sm font-medium text-success-700">✓ Support has marked this ticket as Resolved.</p>
                       @if (t.finalReason) {
@@ -641,6 +658,7 @@ export class HelplinePage {
     if (result.ok) {
       this.threads.update((all) => ({ ...all, [record.id]: [...result.items] }));
       this.threadError.set(null);
+      this.scrollToActions();
     } else {
       this.threadError.set('We could not load the latest messages. Showing what we have.');
     }
@@ -803,6 +821,12 @@ export class HelplinePage {
     this.view.set('raise');
   }
 
+  protected scrollToActions(): void {
+    setTimeout(() => {
+      document.getElementById('ticket-actions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
+
   protected openTicketFor(o: SupportOrder): void {
     const t = this.ticketFor(o);
     if (!t) return;
@@ -815,6 +839,7 @@ export class HelplinePage {
     this.docError.set(null);
     this.notice.set(null);
     this.view.set('ticket');
+    this.scrollToActions();
   }
 
   protected back(): void {
