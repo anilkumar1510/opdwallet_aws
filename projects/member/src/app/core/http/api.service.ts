@@ -10,12 +10,12 @@ import { map } from "rxjs";
 })
 //We are using localstorage here, not storage service.
 export class AppService {
-    _currentSessionData : any = {};
-    constructor(public _http: HttpClient, public Router: Router,){
-        this._currentSessionData.encryptKey = this.getCookie('encryptKey');
+    _currentSessionData : any = {
+        userInfo: [],
+        encryptKey: ''
+    };
+    constructor(public _http: HttpClient, public Router: Router,) {  
     }
-
-    
 
     addXsrfToken(data: any, login_required: boolean) {
         var encrypted = this.getXsrfToken(data, login_required);
@@ -34,7 +34,7 @@ export class AppService {
     }
 
     getXsrfToken(data : any, login_required : boolean) {
-        var key = this._currentSessionData.encryptKey;
+        var key = this.getCurrentSessionData('encryptKey');
         console.log("getXsrfToken Data:::" + data);
         if (key && login_required) {
             console.log("Inside getXsrfToken If Condition:::" + CryptoJS.MD5(data).toString());
@@ -97,9 +97,31 @@ export class AppService {
             map((response: any) => response.body ?? response)
         );
     }
+    /** `getcall` for a binary body (a PDF or image), with the same signed headers. */
+    getBlob(resorceName: string, applicationname: string, arg?: any){
+        let url = applicationname+"/api/v1/"+resorceName;
+        if(arg){
+            url += '?'+arg
+        }
+        const { headers } = this.addXsrfToken(url, true);
+        return this._http.get(url, { headers, responseType: 'blob' });
+    }
+    postCall(resorceName: string, applicationName: string, arg?: any, payload?: any, action?: any){
+        let url = applicationName+"/api/v1/"+resorceName;
+        var encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        var params = "resource=" + encodedResourceData;
+        params += "&application=" + applicationName 
+        if(action){
+            params += "&action=" + action
+        }
+        var options = this.addXsrfToken(encodedResourceData, true);
+        return this._http.post(url, params, options).pipe(
+            map((response: any) => response.body ?? response)
+        );
+    }
 
-    decryptText(encryptedCipherText: string) {
-       const key = this._currentSessionData.encryptKey ? this._currentSessionData.encryptKey : '';
+    decryptText(encryptedCipherText: string, key: any) {
+    //    const key = this.getCurrentSessionData('encryptKey');
         if (key == '' || encryptedCipherText == '' || !encryptedCipherText || !key) {
             return encryptedCipherText;
         }
@@ -111,7 +133,7 @@ export class AppService {
                 mode: CryptoJS.mode.CBC,
                 padding: CryptoJS.pad.Pkcs7
             });
-            return decryptedData.toString(CryptoJS.enc.Utf8);
+            return decryptedData.toString(CryptoJS.enc.Utf8);   
         } catch (e) {
             console.error(e);
             return encryptedCipherText;
@@ -131,7 +153,7 @@ export class AppService {
         if (!this._currentSessionData.encryptKey || !encryptedCipherText) {
             return { value: encryptedCipherText, ok: false };
         }
-        const decrypted = this.decryptText(encryptedCipherText);
+        const decrypted = this.decryptText(encryptedCipherText, this._currentSessionData.encryptKey);
         return { value: decrypted, ok: decrypted.length > 0 };
     }
 }

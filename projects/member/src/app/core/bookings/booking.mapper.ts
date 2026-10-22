@@ -52,6 +52,10 @@ export const BOOKINGS_API = {
 
 const STATUSES: Readonly<Record<string, ClaimStatus>> = {
   SCHEDULED: { label: 'Scheduled', tone: 'progress', isFinal: false },
+  // LIST_BOOKED_SERVICES stages.
+  BOOKED: { label: 'Booked', tone: 'positive', isFinal: false },
+  INPROGRESS: { label: 'In progress', tone: 'progress', isFinal: false },
+  IN_PROGRESS: { label: 'In progress', tone: 'progress', isFinal: false },
   PENDING: { label: 'Pending', tone: 'progress', isFinal: false },
   CONFIRMED: { label: 'Confirmed', tone: 'positive', isFinal: false },
   DELIVERED: { label: 'Delivered', tone: 'neutral', isFinal: true },
@@ -416,5 +420,81 @@ export function pharmacyOrderToBooking(dto: PharmacyOrderDto, now: Date): Bookin
     // delivered) — it refunds the wallet debit when one was made. Only
     // DELIVERED and an already-CANCELLED order refuse it.
     isCancellable: order.status === 'ADJUDICATED' || order.status === 'CONFIRMED',
+  };
+}
+
+/** First non-empty text among `keys` on `row`. */
+function pick(row: any, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+  }
+  return '';
+}
+
+/** Epoch ms (number or digits) or a date string. */
+function toInstant(value: unknown): Date | null {
+  if (value === undefined || value === null || value === '') return null;
+  const text = String(value).trim();
+  const parsed = /^\d+$/.test(text) ? new Date(Number(text)) : new Date(text);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * A LIST_BOOKED_SERVICES row (`opd_ahc_booking`, serviceType_code phc) as a
+ * bookings row.
+ *
+ * Field names follow what the AHC checkout and book_appointment calls send
+ * (serviceItemName, provider_name, serviceStartTime, center_address …) —
+ * confirm against a live row and trim to the real ones. Street lines arrive
+ * encrypted, so `decrypt` is the member's key-bound decrypt.
+ */
+export function bookedServiceToBooking(row: any, now: Date, decrypt: (value: string) => string): Booking {
+  const d = row?.data ?? row ?? {};
+  const code = pick(d, 'stage', 'status', 'booking_status').toUpperCase().replace(/[\s-]+/g, '_');
+  const status = toStatus(code);
+  const start = toInstant(d.serviceStartTime ?? d.appointment_time);
+  const scheduledFor = start ?? toInstant(d.serviceDate ?? d.service_date);
+  const isCentre = d.is_centre_visit === true || d.is_centre_visit === 'true';
+  const isHome = d.is_home_collection === true || d.is_home_collection === 'true';
+  const a = d.center_address ?? d.order_address ?? d.address ?? {};
+  const street = (value: unknown): string => {
+    const text = value === undefined || value === null ? '' : String(value).trim();
+    return text ? decrypt(text) || text : '';
+  };
+  const address = [
+    street(a.street1),
+    street(a.street2),
+    pick(a, 'cityDisplayName', 'city'),
+    pick(a, 'stateDisplayName', 'state'),
+    pick(a, 'pincode'),
+  ].filter(Boolean).join(', ');
+  const provider = pick(d, 'provider_name', 'providerName');
+
+  return {
+    id: pick(d, 'id', '_id') || pick(row, 'id') || pick(d, 'serviceRequestId'),
+    kind: BookingKind.Ahc,
+    kindLabel: BOOKING_KIND_LABELS[BookingKind.Ahc],
+    reference: pick(d, 'serviceRequestId', 'order_id', 'orderId', 'booking_id', 'id'),
+    patientName: pick(d, 'patient_name', 'patientName') || 'Member',
+    title: pick(d, 'serviceItemName', 'service_item_name', 'serviceName') || 'Annual health check',
+    subtitle: [provider, isCentre ? 'Centre visit' : isHome ? 'Home collection' : ''].filter(Boolean).join(' · '),
+    location: [pick(d, 'center_name', 'centre_name'), address].filter(Boolean).join(' — '),
+    scheduledFor,
+    hasExactTime: start !== null,
+    timeLabel: pick(d, 'slot'),
+    amount: money(Number(pick(d, 'final_payable', 'selling_amount', 'amount')) || 0),
+    walletPaid: null,
+    selfPaid: null,
+    outstanding: null,
+    status,
+    isUpcoming: isUpcoming(scheduledFor, status, now),
+    hasPrescription: false,
+    hasInvoice: false,
+    invoicePath: null,
+    cancelPrescriptionPath: null,
+    consultMode: null,
+    statusCode: code,
+    isCancellable: false,
   };
 }

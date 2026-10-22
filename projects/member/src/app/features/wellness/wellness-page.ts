@@ -1,4 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { AHCStore, AhcBooking, AhcCentre, AhcProvider, AhcServiceTile, AhcSlot, CollectionAddress } from './ahc.store';
+import { UserInfoStore } from './../../core/session/userinfo.store';
+import { LocationStore } from './../../core/location/location.store';
+import { Place } from './../../core/location/location';
 
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
@@ -6,163 +10,72 @@ import { ClaimOption } from '../../shared/ui/claim-option';
 import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
 
 import { FamilyStore } from '../../core/family/family.store';
+import { Router } from '@angular/router';
 
 /**
- * Annual Health Check — DUMMY / STATIC journey, zero backend.
+ * Annual Health Check booking.
  *
- * Reproduces patient-flows Section 8 end to end so the whole journey can be
- * experienced without any API: the three entry options, Route A (pathology
- * first, then radiology) and Route B (full package), the grey-out rules and the
- * once-a-year limit. Each booking is one page of accordion steps — pincode →
- * mode → address or clinic → provider (home collection) → slot — followed by a
- * review. A demo reset re-opens everything so every scenario is
- * reachable. No network calls are made. See REMOVED-APIS.md.
+ * Reproduces patient-flows Section 8: Route A (pathology first, then radiology)
+ * and Route B (full package), the grey-out rules and the once-a-year limit.
+ * Each booking is one page of accordion steps — pincode → mode → address or
+ * clinic → provider (home collection) → slot — followed by a review. The
+ * package, providers, saved addresses, centres, slots and the booking status
+ * of booked legs come from AHCStore.
  */
 
 type Leg = 'pathology' | 'radiology' | 'package';
 type StepKey = 'pincode' | 'mode' | 'location' | 'provider' | 'slot';
 type Mode = 'home' | 'clinic';
 
-interface PinArea {
-  pin: string;
-  area: string;
-  district: string;
-  state: string;
-}
-
-/** Serviceable pincodes — placeholder for the pincode-lookup API. */
-const PIN_AREAS: PinArea[] = [
-  { pin: '122001', area: 'Gurugram City', district: 'Gurugram', state: 'Haryana' },
-  { pin: '122002', area: 'DLF Phase 2', district: 'Gurugram', state: 'Haryana' },
-  { pin: '122003', area: 'Sector 45', district: 'Gurugram', state: 'Haryana' },
-  { pin: '122018', area: 'Sohna Road', district: 'Gurugram', state: 'Haryana' },
-  { pin: '110001', area: 'Connaught Place', district: 'New Delhi', state: 'Delhi' },
-  { pin: '110017', area: 'Malviya Nagar', district: 'South Delhi', state: 'Delhi' },
-  { pin: '201301', area: 'Noida Sector 18', district: 'Gautam Buddha Nagar', state: 'Uttar Pradesh' },
-  { pin: '201014', area: 'Indirapuram', district: 'Ghaziabad', state: 'Uttar Pradesh' },
-];
-
-/** "Use my current location" — placeholder geolocation. */
-const CURRENT_LOCATION_PIN = '122018';
-
-interface HomeProvider {
-  name: string;
-  available: boolean;
-}
-
-/** Home-collection labs; one is shown unavailable to exercise that state. */
-const HOME_PROVIDERS: HomeProvider[] = [
-  { name: 'Metropolis Labs', available: true },
-  { name: 'Dr Lal PathLabs', available: true },
-  { name: 'Thyrocare', available: true },
-  { name: 'SRL Diagnostics', available: false },
-];
-
-interface Centre {
-  id: string;
-  name: string;
-  provider: string;
-  address: string;
-  /** Which legs the centre can take. */
-  legs: Leg[];
-}
-
-/** Collection and scan centres, with their full address — placeholder data. */
-const CENTRES: Centre[] = [
-  { id: 'c1', name: 'Metropolis Sector 44', provider: 'Metropolis Labs', address: 'Plot 12, Sector 44, Near HUDA City Centre Metro, Gurugram, Haryana 122003', legs: ['pathology'] },
-  { id: 'c2', name: 'Dr Lal PathLabs Cyber City', provider: 'Dr Lal PathLabs', address: 'Shop G-14, Ground Floor, Building 8, DLF Cyber City, Phase 2, Gurugram, Haryana 122002', legs: ['pathology'] },
-  { id: 'c3', name: 'Thyrocare Sohna Road', provider: 'Thyrocare', address: 'SCO 27, First Floor, Sohna Road, Sector 48, Gurugram, Haryana 122018', legs: ['pathology'] },
-  { id: 'c4', name: 'Medanta Diagnostics', provider: 'Medanta Diagnostics', address: 'Medanta – The Medicity, CH Baktawar Singh Road, Sector 38, Gurugram, Haryana 122001', legs: ['radiology', 'package'] },
-  { id: 'c5', name: 'Fortis Radiology Sector 44', provider: 'Fortis Radiology', address: 'Fortis Memorial Research Institute, Sector 44, Opposite HUDA City Centre, Gurugram, Haryana 122002', legs: ['radiology', 'package'] },
-  { id: 'c6', name: 'Max Imaging Sohna Road', provider: 'Max Imaging', address: 'Unit 3, Vatika Business Park, Sohna Road, Sector 49, Gurugram, Haryana 122018', legs: ['radiology', 'package'] },
-];
-
-const SLOT_TIMES = [
-  '06:00 – 07:00 AM',
-  '07:00 – 08:00 AM',
-  '08:00 – 09:00 AM',
-  '09:00 – 10:00 AM',
-  '10:00 – 11:00 AM',
-  '11:00 – 12:00 PM',
-  '02:00 – 03:00 PM',
-  '04:00 – 05:00 PM',
-];
-
 interface SlotDate {
+  /** `yyyy-MM-dd`, local. */
   key: string;
   label: string;
 }
 
-/** The next seven days from today, labelled Today / Tomorrow / weekday. */
-function nextSevenDays(): SlotDate[] {
+/** A local date as `yyyy-MM-dd`. */
+function toDateInput(d: Date): string {
+  return [d.getFullYear(), d.getMonth() + 1, d.getDate()].map((n, i) => (i ? String(n).padStart(2, '0') : String(n))).join('-');
+}
+
+/** `yyyy-MM-dd` back to local midnight — `new Date('yyyy-MM-dd')` would be UTC. */
+function fromDateInput(value: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+
+/** Seven bookable days from tomorrow — today and the past are not offered. */
+function bookableDays(): SlotDate[] {
   const fmt = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' });
   const weekday = new Intl.DateTimeFormat('en-IN', { weekday: 'short' });
   const out: SlotDate[] = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 1; i <= 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() + i);
-    const prefix = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : weekday.format(d);
-    out.push({ key: d.toISOString().slice(0, 10), label: `${prefix}, ${fmt.format(d)}` });
+    const prefix = i === 1 ? 'Tomorrow' : weekday.format(d);
+    out.push({ key: toDateInput(d), label: `${prefix}, ${fmt.format(d)}` });
   }
   return out;
 }
 
 type AddressType = 'Home' | 'Work' | 'Other';
 
-interface SavedAddress {
-  id: string;
-  type: AddressType;
-  line1: string;
-  line2: string;
-  landmark: string;
-  city: string;
-  state: string;
-  pincode: string;
+/** "2.4 km" — under 100 m the figure means nothing more precise than that. */
+function formatDistance(km: number | null): string {
+  if (km === null) return '';
+  return km < 0.1 ? '< 0.1 km' : `${km.toFixed(1)} km`;
 }
 
-/** Static, in-memory saved addresses — placeholder for the profile addresses API. */
-const SEED_ADDRESSES: SavedAddress[] = [
-  { id: 'a1', type: 'Home', line1: 'B-402, Green Avenue', line2: 'Sector 45', landmark: 'Near City Park', city: 'Gurugram', state: 'Haryana', pincode: '122003' },
-  { id: 'a2', type: 'Work', line1: 'DLF Cyber City, Tower B', line2: 'Phase 2', landmark: '', city: 'Gurugram', state: 'Haryana', pincode: '122002' },
-];
-
-function formatAddress(a: SavedAddress): string {
-  return [a.line1, a.line2, a.landmark, `${a.city}, ${a.state} ${a.pincode}`]
+function formatAddress(a: CollectionAddress): string {
+  return [a.line1, a.line2, a.landmark, [a.city, [a.state, a.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ')]
     .filter((p) => p && p.trim())
     .join(', ');
 }
 
-interface OrderStep {
-  label: string;
-  note: string;
-}
+const RUPEES = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
 
-/** Post-booking lifecycle (spec steps 13–15), per leg. */
-const CONFIRMED_STEP: OrderStep = {
-  label: 'Order confirmed with the provider',
-  note: 'Integrated partners confirm in real time; others are confirmed by operations.',
-};
-const REPORT_STEP: OrderStep = {
-  label: 'Report delivered to Health Records',
-  note: 'Pushed by integrated partners, uploaded by operations for the rest.',
-};
-const ORDER_STEPS: Record<Leg, OrderStep[]> = {
-  pathology: [
-    CONFIRMED_STEP,
-    { label: 'Sample collected', note: 'Home collection or a visit to the centre by the partner field team.' },
-    REPORT_STEP,
-  ],
-  radiology: [
-    CONFIRMED_STEP,
-    { label: 'Scan completed', note: 'Performed at the selected centre.' },
-    REPORT_STEP,
-  ],
-  package: [
-    CONFIRMED_STEP,
-    { label: 'Collection & scan completed', note: 'Both legs done — pathology collection and the radiology scan.' },
-    { label: 'Reports delivered to Health Records', note: 'Both reports are stored together.' },
-  ],
-};
+/** The booking status timeline; a row's `stage` names where it is. */
+const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 
 @Component({
   selector: 'opd-wellness-page',
@@ -192,15 +105,13 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
       </header>
 
       <div class="mx-auto px-5 pb-32 pt-6 lg:px-8 lg:pb-10" [class.max-w-[820px]]="!activeLeg()" [class.max-w-[1040px]]="!!activeLeg()">
-        <!-- Demo-only note -->
-
         @if (confirmation(); as msg) {
           <div class="mb-5 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
             <p class="text-sm font-semibold text-success-700">{{ msg }}</p>
           </div>
         }
 
-        <!-- ── Landing: three options ─────────────────────────────────────── -->
+        <!-- ── Landing: one option per leg of the package ─────────────────── -->
         @if (!activeLeg()) {
           <opd-coverage-banner [category]="BenefitCategory.HealthPackages" />
 
@@ -211,7 +122,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                 This benefit can be taken only once a year. Both pathology and radiology are booked.
               </p>
             </div>
-          } @else if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
+          } @else if (canBookCashless()) {
             <h2 class="mb-1 text-lg font-bold text-[#034DA2]">Choose how to book</h2>
             <p class="mb-3 text-sm text-ink-700">
               Book pathology and radiology individually, or the entire package in one go. Choosing a
@@ -225,51 +136,64 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
             }
           }
 
-          @if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
+          @if (canBookCashless()) {
           <div class="space-y-3">
-            <!-- Book Pathology -->
-            <button
-              type="button"
-              class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 text-left disabled:opacity-50"
-              style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
-              [disabled]="!canBook('pathology')"
-              (click)="startLeg('pathology')"
-            >
-              <span>
-                <span class="block font-semibold text-[#034DA2]">Book Pathology</span>
-                <span class="mt-0.5 block text-xs text-ink-500">Home collection or centre visit</span>
-              </span>
-              <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="pathologyBooked()" [class.text-ink-400]="!pathologyBooked()">
-                {{ pathologyBooked() ? '✓ Booked' : 'Book →' }}
-              </span>
-            </button>
-
-            <!-- Book Radiology (only after pathology, on the individual route) -->
-            <button
-              type="button"
-              class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 text-left disabled:opacity-50"
-              style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
-              [disabled]="!canBook('radiology')"
-              (click)="startLeg('radiology')"
-            >
-              <span>
-                <span class="block font-semibold text-[#034DA2]">Book Radiology</span>
-                <span class="mt-0.5 block text-xs text-ink-500">
-                  {{ pathologyBooked() || radiologyBooked() ? 'Centre visit' : 'Book pathology first' }}
-                </span>
-              </span>
-              <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="radiologyBooked()" [class.text-ink-400]="!radiologyBooked()">
-                {{ radiologyBooked() ? '✓ Booked' : 'Book →' }}
-              </span>
-            </button>
+            @if (ahcStore.packageLoading()) {
+              <p class="rounded-2xl border border-[#EDF0F7] bg-white p-4 text-sm text-ink-500">Loading your health check package…</p>
+            } @else if (!ahcStore.serviceTiles().length) {
+              <p class="rounded-2xl border border-[#EDF0F7] bg-white p-4 text-sm text-ink-500">
+                No Annual Health Check package is available on your plan right now.
+              </p>
+            } @else {
+            <!-- One button per leg of the package (data.benefits_package_service_tiles), in API order. -->
+            @for (tile of ahcStore.serviceTiles(); track tile.id) {
+              @if (tile.serviceType === 'PATHOLOGY') {
+                <!-- Book Pathology -->
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 text-left disabled:opacity-50"
+                  style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
+                  [disabled]="!canBook('pathology')"
+                  (click)="startLeg('pathology', tile)"
+                >
+                  <span>
+                    <span class="block font-semibold text-[#034DA2]">Book Pathology</span>
+                    <span class="mt-0.5 block text-xs text-ink-500">Home collection or centre visit</span>
+                  </span>
+                  <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="pathologyBooked()" [class.text-ink-400]="!pathologyBooked()">
+                    {{ pathologyBooked() ? '✓ Booked' : 'Book →' }}
+                  </span>
+                </button>
+              } @else if (tile.serviceType === 'RADIOLOGY') {
+                <!-- Book Radiology (only after pathology, on the individual route) -->
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 text-left disabled:opacity-50"
+                  style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
+                  [disabled]="!canBook('radiology')"
+                  (click)="startLeg('radiology', tile)"
+                >
+                  <span>
+                    <span class="block font-semibold text-[#034DA2]">Book Radiology</span>
+                    <span class="mt-0.5 block text-xs text-ink-500">
+                      {{ !hasPathology() || pathologyBooked() || radiologyBooked() ? 'Centre visit' : 'Book pathology first' }}
+                    </span>
+                  </span>
+                  <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="radiologyBooked()" [class.text-ink-400]="!radiologyBooked()">
+                    {{ radiologyBooked() ? '✓ Booked' : 'Book →' }}
+                  </span>
+                </button>
+              }
+            }
+            }
 
             <!-- Book the entire package -->
-            <button
+            <!-- <button
               type="button"
               class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#CDDDFE] bg-[#F3F7FF] p-4 text-left disabled:opacity-50"
               style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
               [disabled]="!canBook('package')"
-              (click)="startLeg('package')"
+              (click)="startLeg('package', null)"
             >
               <span>
                 <span class="block font-semibold text-[#034DA2]">Book the entire package</span>
@@ -278,54 +202,74 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
               <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="packageBooked()" [class.text-ink-400]="!packageBooked()">
                 {{ packageBooked() ? '✓ Booked' : 'Book →' }}
               </span>
-            </button>
+            </button> -->
           </div>
           }
           <div class="mt-4">
-            <opd-claim-option [category]="BenefitCategory.HealthPackages" [label]="'the annual health check'" />
+            <opd-claim-option [category]="BenefitCategory.HealthPackages" [label]="'the annual health check'" [cashlessAvailable]="canBookCashless()" />
           </div>
 
 
-          <!-- Post-booking lifecycle (spec steps 13–15): order confirmed with the
-               provider → sample collection / scan → report delivered to Health
-               Records. Demo-advances through the states, static. -->
-          @for (order of bookedOrders(); track order.key) {
-            <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
-              <p class="mb-3 text-sm font-semibold text-[#034DA2]">{{ order.title }} — order status</p>
-              <ol class="space-y-3">
-                @for (s of order.steps; track s.label; let i = $index) {
-                  <li class="flex gap-3">
-                    <span
-                      class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-                      [class.bg-success-600]="i < order.stage"
-                      [class.text-white]="i <= order.stage"
-                      [class.bg-[#0F5FDC]]="i === order.stage"
-                      [class.bg-surface-border]="i > order.stage"
-                      [class.text-ink-400]="i > order.stage"
-                    >{{ i < order.stage ? '✓' : (i + 1) }}</span>
-                    <span class="min-w-0">
-                      <span class="block text-sm" [class.font-semibold]="i === order.stage" [class.text-ink-900]="i <= order.stage" [class.text-ink-400]="i > order.stage">{{ s.label }}</span>
-                      @if (i === order.stage) {
-                        <span class="mt-0.5 block text-xs text-ink-500">{{ s.note }}</span>
+          <!-- Booked legs (packageServiceItemsStatusInfo rows with stage 'Booked'), with their status. -->
+          @if (!ahcStore.packageLoading()) {
+          @for (b of ahcStore.AHCBookings(); track b.id) {
+            <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm lg:p-5">
+              <div class="flex flex-col gap-4 sm:flex-row">
+                <div class="flex shrink-0 flex-col items-center text-center sm:w-[200px]">
+                  <span class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#EDF0F7]">
+                    <img class="h-8 w-8" alt="" [src]="b.leg === 'radiology' ? 'images/icons/home/benefit-radiology.svg' : 'images/icons/home/benefit-pathology.svg'" />
+                  </span>
+                  <p class="mt-2 text-sm font-semibold text-ink-900">{{ b.serviceItemName || legTitle(b.leg) }}</p>
+                  @if (b.instructions) {
+                    <p class="mt-0.5 text-xs text-success-700">{{ b.instructions }}</p>
+                  }
+                </div>
+                <div class="min-w-0 flex-1">
+                  @if (b.providerName) {
+                    <span class="inline-block rounded-full bg-[#EEF3FF] px-3 py-1 text-xs font-medium text-ink-900">{{ b.providerName }}</span>
+                  }
+                  @if (b.address) {
+                    <p class="mt-2 flex gap-1.5 text-xs text-ink-700">
+                      <span aria-hidden="true">📍</span><span class="min-w-0 break-words">{{ b.address }}</span>
+                    </p>
+                  }
+                  <div class="mt-2 flex items-center justify-between gap-3">
+                    @if (b.mode) {
+                      <span class="text-sm font-medium text-[#034DA2]">{{ b.mode === 'home' ? 'Home Collection' : 'Center Visit' }}</span>
+                    }
+                    @if (b.amount !== null) {
+                      <span class="ml-auto text-sm font-bold text-ink-900">INR {{ b.amount }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 border-t border-surface-border pt-4">
+                <p class="mb-3 text-sm font-semibold text-ink-900">Booking Status</p>
+                <ol>
+                  @for (s of bookingSteps; track s; let i = $index; let last = $last) {
+                    <li class="relative flex gap-3" [class.pb-5]="!last">
+                      @if (!last) {
+                        <span class="absolute left-[7px] top-4 h-full w-0.5 bg-[#2E6B4F]" aria-hidden="true"></span>
                       }
-                    </span>
-                  </li>
-                }
-              </ol>
-              @if (order.stage < order.steps.length - 1) {
-                <button
-                  type="button"
-                  class="mt-3 min-h-touch w-full rounded-xl border border-dashed border-surface-border px-4 text-sm font-semibold text-ink-700 hover:bg-[#F2F4F8]"
-                  (click)="advanceStage(order.key)"
-                >
-                  Advance status (demo)
-                </button>
-              } @else {
-                <p class="mt-3 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm font-medium text-success-700">
-                  ✓ Report available in your Health Records.
-                </p>
-              }
+                      <span
+                        class="relative mt-0.5 h-4 w-4 shrink-0 rounded-full"
+                        [class.bg-[#2E6B4F]]="i <= stageIndex(b)"
+                        [class.bg-[#D9D9D9]]="i > stageIndex(b)"
+                        aria-hidden="true"
+                      ></span>
+                      <span>
+                        <span class="block text-sm text-[#2E6B4F]">{{ s }}</span>
+                        @if (i === 0 && b.bookedAt !== null) {
+                          <span class="block text-xs text-ink-500">{{ formatBookedAt(b.bookedAt) }}</span>
+                        }
+                      </span>
+                    </li>
+                  }
+                </ol>
+              </div>
             </section>
+          }
           }
 
           @if (pathologyBooked() && !radiologyBooked() && !packageBooked()) {
@@ -333,16 +277,6 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
               Pathology is booked and billed. Complete the radiology leg — the benefit is billed
               either way, so an unbooked radiology leg is paid for and not used.
             </p>
-          }
-
-          @if (pathologyBooked() || radiologyBooked() || packageBooked()) {
-            <button
-              type="button"
-              class="mt-6 text-sm font-medium text-brand-700 underline"
-              (click)="reset()"
-            >
-              Start over (demo reset)
-            </button>
           }
         }
 
@@ -404,7 +338,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                     <div class="rounded-xl bg-[#F2F4F8] px-4 py-2.5 text-sm text-ink-900">
                       @switch (key) {
                         @case ('pincode') {
-                          {{ selectedPin()?.pin }} <span class="text-ink-500">· {{ selectedPin()?.area }}, {{ selectedPin()?.district }}</span>
+                          {{ location.place()?.pincode }} <span class="text-ink-500">· {{ location.place()?.label }}</span>
                         }
                         @case ('mode') {
                           <span aria-hidden="true">{{ mode() === 'home' ? '🏠' : '🏥' }}</span> {{ mode() === 'home' ? 'Home Collection' : 'In Clinic' }}
@@ -413,22 +347,23 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                           @if (mode() === 'home') {
                             @if (selectedAddress(); as addr) {
                               <span class="font-medium">{{ addr.type }}</span>
-                              @if (addr.id === defaultAddressId()) { <span class="text-ink-500"> (Default)</span> }
                               <span class="mt-0.5 block text-ink-700">{{ formatAddress(addr) }}</span>
                             }
                           } @else {
-                            @if (selectedCentre(); as c) {
+                            @if (centre(); as c) {
                               <span class="font-medium">{{ c.name }}</span>
-                              <span class="ml-1 rounded-full bg-[#034DA2] px-2 py-0.5 text-[11px] font-medium text-white">{{ c.provider }}</span>
+                              @if (provider(); as p) {
+                                <span class="ml-1 rounded-full bg-[#034DA2] px-2 py-0.5 text-[11px] font-medium text-white">{{ p.name }}</span>
+                              }
                               <span class="mt-0.5 block text-ink-700">{{ c.address }}</span>
                             }
                           }
                         }
                         @case ('provider') {
-                          {{ provider() }}
+                          {{ provider()?.name }}
                         }
                         @case ('slot') {
-                          {{ slotDate()?.label }} · {{ slotTime() }}
+                          {{ slotDate()?.label }} · {{ slot()?.label }}
                         }
                       }
                     </div>
@@ -440,48 +375,60 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                   <div class="border-t border-surface-border px-4 pb-5 pt-4 lg:pl-[60px] lg:pr-6">
                     @switch (key) {
                       @case ('pincode') {
-                        <!-- 1 · Pincode -->
-                        <label for="ahc-pin" class="sr-only">Pincode</label>
+                        <!-- 1 · Pincode, area or street -->
+                        <label for="ahc-pin" class="sr-only">Pincode, area or street</label>
                         <div class="flex min-h-touch items-center gap-2 rounded-xl border border-surface-border bg-[#F2F4F8] px-3 focus-within:border-brand-500">
                           <span aria-hidden="true">📍</span>
                           <input
                             id="ahc-pin"
                             class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                            inputmode="numeric"
-                            maxlength="6"
-                            placeholder="Enter pincode"
-                            [value]="pinQuery()"
-                            (input)="onPinInput($event)"
+                            autocomplete="off"
+                            placeholder="Search by pincode, area or street"
+                            [value]="addressQuery()"
+                            (input)="onAddressQuery($any($event.target).value)"
                           />
                         </div>
-                        <button type="button" class="mt-3 flex items-center gap-2 text-sm font-medium text-[#0F5FDC]" (click)="useCurrentLocation()">
-                          <span aria-hidden="true">◎</span> Use my current location
+                        <button
+                          type="button"
+                          class="mt-3 flex items-center gap-2 text-sm font-medium text-[#0F5FDC] disabled:opacity-60"
+                          [disabled]="location.busy()"
+                          (click)="detectLocation()"
+                        >
+                          <span aria-hidden="true">◎</span> {{ location.busy() ? 'Detecting your location…' : 'Use my current location' }}
                         </button>
+                        @if (addressQuery().trim().length > 0 && addressQuery().trim().length < 3) {
+                          <p class="mt-2 text-xs text-ink-500">Type at least 3 characters to search.</p>
+                        }
 
-                        @if (pinQuery().length >= 2) {
+                        @if (location.searching()) {
+                          <p class="mt-4 text-xs text-ink-500">Searching addresses…</p>
+                        } @else if (location.matches().length) {
                           <div class="mt-4 border-t border-surface-border pt-3">
                             <p class="mb-2 text-xs font-medium text-ink-700">Search results</p>
-                            @if (pinResults().length) {
-                              <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto pb-1 pr-4 lg:mr-0 lg:pr-0">
-                                @for (p of pinResults(); track p.pin + p.area) {
-                                  <button
-                                    type="button"
-                                    class="w-[210px] shrink-0 rounded-xl border px-3 py-2.5 text-left"
-                                    [class.border-[#0F5FDC]]="selectedPin()?.pin === p.pin && selectedPin()?.area === p.area"
-                                    [class.border-surface-border]="!(selectedPin()?.pin === p.pin && selectedPin()?.area === p.area)"
-                                    (click)="selectPin(p)"
-                                  >
-                                    <span class="block text-sm font-medium text-ink-900">📍 {{ p.pin }}</span>
-                                    <span class="mt-0.5 block text-xs text-ink-500">{{ p.area }}, {{ p.district }}, {{ p.state }}</span>
-                                  </button>
-                                }
-                              </div>
-                            } @else if (pinQuery().length === 6) {
-                              <p class="rounded-xl bg-warning-50 px-3 py-2 text-sm text-warning-700">We don't serve {{ pinQuery() }} yet. Try a nearby pincode.</p>
-                            } @else {
-                              <p class="text-xs text-ink-500">No matching pincode.</p>
-                            }
+                            <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto pb-1 pr-4 lg:mr-0 lg:pr-0" role="listbox" aria-label="Search results">
+                              @for (m of location.matches(); track $index) {
+                                <button
+                                  type="button"
+                                  role="option"
+                                  class="w-[210px] shrink-0 rounded-xl border px-3 py-2.5 text-left"
+                                  [attr.aria-selected]="isSelected(m)"
+                                  [class.border-[#0F5FDC]]="isSelected(m)"
+                                  [class.border-surface-border]="!isSelected(m)"
+                                  (click)="selectPlace(m)"
+                                >
+                                  <span class="block text-sm font-medium text-ink-900">📍 {{ m.pincode || m.city }}</span>
+                                  <span class="mt-0.5 line-clamp-2 block text-xs text-ink-500">{{ m.label }}</span>
+                                </button>
+                              }
+                            </div>
                           </div>
+                        }
+
+                        @if (location.locating()) {
+                          <p class="mt-3 text-xs text-ink-500">Getting the location of this address…</p>
+                        }
+                        @if (location.error(); as err) {
+                          <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-xs text-danger-700" role="alert">{{ err }}</p>
                         }
                       }
 
@@ -519,27 +466,23 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                         @if (mode() === 'home') {
                           @if (!addressFormOpen()) {
                             <p class="mb-3 text-sm text-ink-900">Select address</p>
+                            @if (ahcStore.collectionAddressLoading() && !savedAddresses().length) {
+                              <p class="text-sm text-ink-500">Loading your saved addresses…</p>
+                            } @else if (!savedAddresses().length) {
+                              <p class="text-sm text-ink-500">No saved addresses yet.</p>
+                            }
                             <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto pb-1 pr-4 lg:mr-0 lg:pr-0">
                               @for (addr of savedAddresses(); track addr.id) {
-                                <div
-                                  class="flex w-[250px] shrink-0 flex-col rounded-xl border-[1.5px] bg-white p-3"
+                                <button
+                                  type="button"
+                                  class="flex w-[250px] shrink-0 flex-col rounded-xl border-[1.5px] bg-white p-3 text-left"
                                   [class.border-[#0F5FDC]]="selectedAddressId() === addr.id"
                                   [class.border-surface-border]="selectedAddressId() !== addr.id"
+                                  (click)="chooseAddress(addr)"
                                 >
-                                  <button type="button" class="flex-1 text-left" (click)="chooseAddress(addr.id)">
-                                    <span class="block text-sm font-medium text-ink-900">
-                                      🏠 {{ addr.type }}@if (addr.id === defaultAddressId()) {<span class="font-normal text-ink-500"> (Default)</span>}
-                                    </span>
-                                    <span class="mt-1 line-clamp-3 block text-xs text-ink-700">{{ formatAddress(addr) }}</span>
-                                  </button>
-                                  <div class="mt-2 flex justify-between text-xs font-medium">
-                                    <button type="button" class="text-[#0F5FDC]" (click)="editAddress(addr)">✎ Edit</button>
-                                    <button type="button" class="text-danger-700" (click)="deleteAddress(addr.id)">🗑 Delete</button>
-                                  </div>
-                                </div>
-                              }
-                              @if (!savedAddresses().length) {
-                                <p class="text-sm text-ink-500">No saved addresses yet.</p>
+                                  <span class="block text-sm font-medium text-ink-900">🏠 {{ addr.type }}</span>
+                                  <span class="mt-1 line-clamp-3 block text-xs text-ink-700">{{ formatAddress(addr) }}</span>
+                                </button>
                               }
                             </div>
                             <button
@@ -551,7 +494,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                             </button>
                           } @else {
                             <div class="rounded-2xl border border-surface-border p-4">
-                              <p class="mb-2 text-sm font-medium text-ink-700">{{ editingAddressId() ? 'Edit address' : 'New address' }}</p>
+                              <p class="mb-2 text-sm font-medium text-ink-700">New address</p>
                               <div class="mb-4 flex gap-2">
                                 @for (t of addressTypes; track t) {
                                   <button
@@ -596,85 +539,101 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                               }
                               <div class="mt-4 flex gap-3">
                                 <button type="button" class="min-h-touch flex-1 rounded-xl border border-surface-border px-4 text-sm font-semibold text-ink-900" (click)="cancelAddressForm()">Cancel</button>
-                                <button type="button" class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white" (click)="saveAddress()">Save address</button>
+                                <button
+                                  type="button"
+                                  class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-60"
+                                  [disabled]="savingAddress()"
+                                  (click)="saveAddress()"
+                                >{{ savingAddress() ? 'Saving…' : 'Save address' }}</button>
                               </div>
                             </div>
                           }
                         } @else {
-                          <!-- In clinic: filter by provider, then pick a centre. -->
+                          <!-- In clinic: pick a provider, then one of its centres. -->
                           <p class="mb-2 text-sm text-ink-900">Select provider</p>
-                          <div class="scrollbar-hide -mr-4 flex gap-2 overflow-x-auto rounded-xl bg-[#F2F4F8] p-2 pr-4 lg:mr-0">
-                            <button
-                              type="button"
-                              class="flex shrink-0 items-center rounded-xl border-[1.5px] bg-white px-4 py-2 text-sm font-medium"
-                              [class.border-[#0F5FDC]]="clinicFilter() === ''"
-                              [class.border-transparent]="clinicFilter() !== ''"
-                              (click)="clinicFilter.set('')"
-                            >All providers</button>
-                            @for (p of clinicProviders(); track p.name) {
-                              <button
-                                type="button"
-                                class="flex shrink-0 items-center gap-2.5 rounded-xl border-[1.5px] bg-white px-3 py-2 text-left"
-                                [class.border-[#0F5FDC]]="clinicFilter() === p.name"
-                                [class.border-transparent]="clinicFilter() !== p.name"
-                                (click)="clinicFilter.set(p.name)"
-                              >
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-[11px] font-bold text-[#034DA2]" aria-hidden="true">{{ initials(p.name) }}</span>
-                                <span>
-                                  <span class="block whitespace-nowrap text-sm font-medium text-ink-900">{{ p.name }}</span>
-                                </span>
-                              </button>
-                            }
-                          </div>
-
-                          <p class="mb-2 mt-4 border-b border-surface-border pb-2 text-sm text-ink-900">Choose centre</p>
-                          @if (filteredCentres().length) {
-                            <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto pb-1 pr-4 lg:mr-0 lg:pr-0">
-                              @for (c of filteredCentres(); track c.id) {
+                          @if (providersLoading()) {
+                            <p class="rounded-xl bg-[#F2F4F8] px-3 py-3 text-sm text-ink-500">Finding providers near you…</p>
+                          } @else if (!providers().length) {
+                            <p class="rounded-xl bg-[#F2F4F8] px-3 py-3 text-sm text-ink-500">
+                              No provider serves {{ location.place()?.pincode }} for this test yet. Try another pincode.
+                            </p>
+                          } @else {
+                            <div class="scrollbar-hide -mr-4 flex gap-2 overflow-x-auto rounded-xl bg-[#F2F4F8] p-2 pr-4 lg:mr-0">
+                              @for (p of providers(); track p.id) {
                                 <button
                                   type="button"
-                                  class="flex w-[280px] shrink-0 flex-col rounded-xl border-[1.5px] bg-white p-3 text-left"
-                                  [class.border-[#0F5FDC]]="centreId() === c.id"
-                                  [class.border-surface-border]="centreId() !== c.id"
-                                  (click)="chooseCentre(c.id)"
+                                  class="flex shrink-0 items-center gap-2.5 rounded-xl border-[1.5px] bg-white px-3 py-2 text-left"
+                                  [class.border-[#0F5FDC]]="provider()?.id === p.id"
+                                  [class.border-transparent]="provider()?.id !== p.id"
+                                  (click)="chooseProvider(p)"
                                 >
-                                  <span class="flex items-start justify-between gap-2">
-                                    <span class="text-sm font-medium text-ink-900">📍 {{ c.name }}</span>
-                                    <span class="shrink-0 rounded-full bg-[#034DA2] px-2 py-0.5 text-[11px] font-medium text-white">{{ c.provider }}</span>
-                                  </span>
-                                  <span class="mt-1.5 block text-xs leading-snug text-ink-500">{{ c.address }}</span>
+                                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-[11px] font-bold text-[#034DA2]" aria-hidden="true">{{ initials(p.name) }}</span>
+                                  <span class="block whitespace-nowrap text-sm font-medium text-ink-900">{{ p.name }}</span>
                                 </button>
                               }
                             </div>
+                          }
+
+                          <p class="mb-2 mt-4 border-b border-surface-border pb-2 text-sm text-ink-900">Choose centre</p>
+                          @if (!provider()) {
+                            <p class="text-sm text-ink-500">Pick a provider to see its centres.</p>
+                          } @else if (ahcStore.centresLoading()) {
+                            <p class="text-sm text-ink-500">Finding centres near you…</p>
+                          } @else if (!ahcStore.AHCCentres().length) {
+                            <p class="text-sm text-ink-500">No centre of this provider near {{ location.place()?.pincode }}.</p>
                           } @else {
-                            <p class="text-sm text-ink-500">No centre for this provider near {{ selectedPin()?.pin }}.</p>
+                            <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto pb-1 pr-4 lg:mr-0 lg:pr-0">
+                              @for (c of ahcStore.AHCCentres(); track c.id) {
+                                <button
+                                  type="button"
+                                  class="flex w-[280px] shrink-0 flex-col rounded-xl border-[1.5px] bg-white p-3 text-left"
+                                  [class.border-[#0F5FDC]]="centre()?.id === c.id"
+                                  [class.border-surface-border]="centre()?.id !== c.id"
+                                  (click)="chooseCentre(c)"
+                                >
+                                  <span class="flex items-start justify-between gap-2">
+                                    <span class="text-sm font-medium text-ink-900">📍 {{ c.name }}</span>
+                                    @if (c.distanceKm !== null) {
+                                      <span class="shrink-0 rounded-full bg-[#034DA2] px-2 py-0.5 text-[11px] font-medium text-white">{{ formatDistance(c.distanceKm) }}</span>
+                                    }
+                                  </span>
+                                  @if (c.address) {
+                                    <span class="mt-1.5 block text-xs leading-snug text-ink-500">{{ c.address }}</span>
+                                  }
+                                </button>
+                              }
+                            </div>
                           }
                         }
                       }
 
                       @case ('provider') {
                         <!-- 4 · Provider (home collection only) -->
-                        <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto rounded-xl bg-[#F2F4F8] p-3 pr-4 lg:mr-0">
-                          @for (p of homeProviders(); track p.name) {
-                            <button
-                              type="button"
-                              class="relative w-[150px] shrink-0 rounded-xl border-[1.5px] bg-white p-3 pt-4 text-left disabled:cursor-not-allowed disabled:opacity-60"
-                              [class.border-[#0F5FDC]]="provider() === p.name"
-                              [class.border-transparent]="provider() !== p.name"
-                              [disabled]="!p.available"
-                              (click)="chooseProvider(p.name)"
-                            >
-                              <span
-                                class="absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
-                                [class.bg-[#34A853]]="p.available"
-                                [class.bg-danger-700]="!p.available"
-                                >{{ p.available ? 'Available' : 'Not Available' }}</span
+                        @if (providersLoading()) {
+                          <p class="rounded-xl bg-[#F2F4F8] px-3 py-3 text-sm text-ink-500">Finding providers near you…</p>
+                        } @else if (!providers().length) {
+                          <p class="rounded-xl bg-[#F2F4F8] px-3 py-3 text-sm text-ink-500">
+                            No provider serves {{ location.place()?.pincode }} for this test yet. Try another pincode.
+                          </p>
+                        } @else {
+                          <div class="scrollbar-hide -mr-4 flex gap-3 overflow-x-auto rounded-xl bg-[#F2F4F8] p-3 pr-4 lg:mr-0">
+                            @for (p of providers(); track p.id) {
+                              <button
+                                type="button"
+                                class="w-[180px] shrink-0 rounded-xl border-[1.5px] bg-white p-3 text-left"
+                                [class.border-[#0F5FDC]]="provider()?.id === p.id"
+                                [class.border-transparent]="provider()?.id !== p.id"
+                                (click)="chooseProvider(p)"
                               >
-                              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF3FF] text-[11px] font-bold text-[#034DA2]" aria-hidden="true">{{ initials(p.name) }}</span>
-                              <span class="mt-2 block text-sm font-medium text-ink-900">{{ p.name }}</span>
-                            </button>
-                          }
-                        </div>
+                                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF3FF] text-[11px] font-bold text-[#034DA2]" aria-hidden="true">{{ initials(p.name) }}</span>
+                                <span class="mt-2 block text-sm font-medium text-ink-900">{{ p.name }}</span>
+                                @if (p.address) {
+                                  <span class="mt-0.5 line-clamp-2 block text-xs text-ink-500">{{ p.address }}</span>
+                                }
+                              </button>
+                            }
+                          </div>
+                        }
                       }
 
                       @case ('slot') {
@@ -693,21 +652,25 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
                             }
                           </div>
                           <p class="mb-2 mt-4 text-sm text-ink-900">Your available slots</p>
-                          @if (slotDate()) {
+                          @if (!slotDate()) {
+                            <p class="text-xs text-ink-500">Pick a date to see its slots.</p>
+                          } @else if (ahcStore.slotsLoading()) {
+                            <p class="text-xs text-ink-500">Loading slots…</p>
+                          } @else if (!ahcStore.AHCSlots().length) {
+                            <p class="text-xs text-ink-500">No slots on this day. Pick another date.</p>
+                          } @else {
                             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                              @for (t of slotTimes; track t; let j = $index) {
+                              @for (t of ahcStore.AHCSlots(); track t.id) {
                                 <button
                                   type="button"
                                   class="min-h-[40px] rounded-xl border-[1.5px] bg-white px-2 text-sm disabled:cursor-not-allowed disabled:text-ink-400 disabled:line-through"
-                                  [class.border-[#0F5FDC]]="slotTime() === t"
-                                  [class.border-transparent]="slotTime() !== t"
-                                  [disabled]="isSlotTaken(j)"
-                                  (click)="chooseTime(t)"
-                                >{{ t }}</button>
+                                  [class.border-[#0F5FDC]]="slot()?.id === t.id"
+                                  [class.border-transparent]="slot()?.id !== t.id"
+                                  [disabled]="!t.available"
+                                  (click)="chooseSlot(t)"
+                                >{{ t.label }}</button>
                               }
                             </div>
-                          } @else {
-                            <p class="text-xs text-ink-500">Pick a date to see its slots.</p>
                           }
                         </div>
                         @if (activeLeg() !== 'radiology') {
@@ -733,7 +696,7 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
               type="button"
               class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50"
               [disabled]="!allDone()"
-              (click)="view.set('review')"
+              (click)="reviewBooking()"
             >
               Review booking
             </button>
@@ -775,52 +738,72 @@ const ORDER_STEPS: Record<Leg, OrderStep[]> = {
             </button>
             <button
               type="button"
-              class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]"
+              class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50"
+              [disabled]="!ahcStore.AHCIsProceedToBooking() || ahcStore.checkoutLoading() || booking()"
               (click)="confirm()"
             >
-              Proceed to booking
+              {{ proceedLabel() }}
             </button>
           </div>
+          @if (!ahcStore.checkoutLoading() && !ahcStore.AHCIsProceedToBooking()) {
+            <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">
+              We could not prepare this booking. Go back and review it again.
+            </p>
+          }
+          @if (bookingError(); as err) {
+            <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p>
+          }
         }
       </div>
     </div>
   `,
 })
 export class WellnessPage {
+  protected readonly userStore = inject(UserInfoStore);
+  protected readonly ahcStore = inject(AHCStore);
+  protected readonly location = inject(LocationStore);
   protected readonly claimModes = inject(ClaimModeStore);
   protected readonly BenefitCategory = BenefitCategory;
+  private readonly router = inject(Router);
   private readonly family = inject(FamilyStore);
 
+  // Booked in this visit, before AHC_PACKAGE_DETAIL is read again and lists it.
+  private readonly pathologyBookedNow = signal(false);
+  private readonly radiologyBookedNow = signal(false);
   protected readonly packageBooked = signal(false);
-  protected readonly pathologyBooked = signal(false);
-  protected readonly radiologyBooked = signal(false);
+  protected readonly pathologyBooked = computed(
+    () => this.pathologyBookedNow() || this.ahcStore.AHCBookings().some((b) => b.leg === 'pathology'),
+  );
+  protected readonly radiologyBooked = computed(
+    () => this.radiologyBookedNow() || this.ahcStore.AHCBookings().some((b) => b.leg === 'radiology'),
+  );
   protected readonly confirmation = signal<string | null>(null);
-
-  // Post-booking order stage per leg (0 confirmed, 1 collection/scan, 2 report).
-  protected readonly pathologyStage = signal(0);
-  protected readonly radiologyStage = signal(0);
-  protected readonly packageStage = signal(0);
+  protected readonly bookingSteps = BOOKING_STEPS;
+  /** True while book_appointment, and any payment after it, is under way. */
+  protected readonly booking = signal(false);
+  protected readonly bookingError = signal<string | null>(null);
 
   protected readonly activeLeg = signal<Leg | null>(null);
   /** The accordion of steps, or the review that follows it. */
   protected readonly view = signal<'steps' | 'review'>('steps');
   protected readonly openStep = signal<StepKey | null>('pincode');
 
-  // Step answers.
-  protected readonly pinQuery = signal('');
-  protected readonly selectedPin = signal<PinArea | null>(null);
+  // Step answers. The place itself lives in LocationStore, which the provider,
+  // centre and booking calls read.
+  /** What the member types in the search box: pincode, area or street. */
+  protected readonly addressQuery = signal('');
+  private searchTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly mode = signal<Mode | null>(null);
   protected readonly selectedAddressId = signal<string | null>(null);
-  protected readonly clinicFilter = signal('');
-  protected readonly centreId = signal<string | null>(null);
-  protected readonly provider = signal('');
+  protected readonly provider = signal<AhcProvider | null>(null);
+  protected readonly centre = signal<AhcCentre | null>(null);
   protected readonly slotDate = signal<SlotDate | null>(null);
-  protected readonly slotTime = signal('');
+  protected readonly slot = signal<AhcSlot | null>(null);
 
-  // Address book (static placeholder — no profile-addresses API).
-  protected readonly savedAddresses = signal<SavedAddress[]>([...SEED_ADDRESSES]);
+  // Address book — the member's saved addresses, loaded by AHCStore.getCollectionAddress().
+  protected readonly savedAddresses = computed(() => this.ahcStore.AHCCollectionAddress());
   protected readonly addressFormOpen = signal(false);
-  protected readonly editingAddressId = signal<string | null>(null);
+  protected readonly savingAddress = signal(false);
   protected readonly addressError = signal<string | null>(null);
   protected readonly addressTypes: AddressType[] = ['Home', 'Work', 'Other'];
   protected readonly naType = signal<AddressType>('Home');
@@ -831,31 +814,53 @@ export class WellnessPage {
   protected readonly naState = signal('');
   protected readonly naPincode = signal('');
   protected readonly formatAddress = formatAddress;
+  protected readonly formatDistance = formatDistance;
 
-  protected readonly slotTimes = SLOT_TIMES;
-  protected readonly slotDates = signal<SlotDate[]>(nextSevenDays());
-
-  protected readonly memberName = computed(
-    () => this.family.activeMember()?.fullName?.split(' ')[0] ?? 'You',
-  );
+  protected readonly slotDates = signal<SlotDate[]>(bookableDays());
 
   protected readonly fullyUsed = computed(
     () => this.packageBooked() || (this.pathologyBooked() && this.radiologyBooked()),
   );
 
-  /** Booked legs with their post-booking lifecycle state. */
-  protected readonly bookedOrders = computed(() => {
-    const out: { key: Leg; title: string; stage: number; steps: OrderStep[] }[] = [];
-    if (this.pathologyBooked()) out.push({ key: 'pathology', title: 'Pathology', stage: this.pathologyStage(), steps: ORDER_STEPS.pathology });
-    if (this.radiologyBooked()) out.push({ key: 'radiology', title: 'Radiology', stage: this.radiologyStage(), steps: ORDER_STEPS.radiology });
-    if (this.packageBooked()) out.push({ key: 'package', title: 'Health Check Package', stage: this.packageStage(), steps: ORDER_STEPS.package });
-    return out;
-  });
+  userInfo = this.userStore.userInfo();
 
-  protected advanceStage(key: Leg): void {
-    const sig = key === 'pathology' ? this.pathologyStage : key === 'radiology' ? this.radiologyStage : this.packageStage;
-    const max = ORDER_STEPS[key].length - 1;
-    sig.set(Math.min(max, sig() + 1));
+  /**
+   * Whether the booking tiles are offered. The policy's cashless flag decides,
+   * unless AHC_PACKAGE_DETAIL hands the member a package with bookable legs —
+   * a package the API offers is bookable whatever the claim mode says. While
+   * the package loads, its loading state shows rather than a claims-only note.
+   */
+  protected readonly canBookCashless = computed(
+    () =>
+      this.claimModes.allowsCashless(BenefitCategory.HealthPackages) ||
+      this.ahcStore.packageLoading() ||
+      this.ahcStore.serviceTiles().length > 0,
+  );
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.searchTimer));
+    // A fresh start on every visit: nothing from an earlier one is shown while
+    // the package is read again.
+    this.ahcStore.resetForEntry();
+    if (this.userInfo && this.userInfo[0]?.user_id) {
+      this.ahcStore.getAHCList(this.userInfo[0]);
+    }
+  }
+
+  protected legTitle(leg: string): string {
+    return leg === 'radiology' ? 'Radiology' : leg === 'pathology' ? 'Pathology' : 'Health Check';
+  }
+
+  /** Where the row's `stage` sits on the timeline; unknown stages count as Booked. */
+  protected stageIndex(b: AhcBooking): number {
+    const stage = b.stage.toLowerCase().replace(/[\s_-]/g, '');
+    return Math.max(0, BOOKING_STEPS.findIndex((s) => s.toLowerCase() === stage));
+  }
+
+  /** "14/10/2026 06:34 pm". */
+  protected formatBookedAt(ms: number): string {
+    const d = new Date(ms);
+    return `${d.toLocaleDateString('en-GB')} ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
   }
 
   // ── Steps ──────────────────────────────────────────────────────────────
@@ -863,7 +868,7 @@ export class WellnessPage {
   /** Scans are done at a centre, so only pathology can be collected at home. */
   protected readonly homeAllowed = computed(() => this.activeLeg() === 'pathology');
 
-  /** In clinic, the centre names its provider, so there is no provider step. */
+  /** In clinic, the provider is picked inside the clinic step, so there is no provider step. */
   protected readonly visibleSteps = computed<StepKey[]>(() =>
     this.mode() === 'home'
       ? ['pincode', 'mode', 'location', 'provider', 'slot']
@@ -872,11 +877,11 @@ export class WellnessPage {
 
   protected isDone(key: StepKey): boolean {
     switch (key) {
-      case 'pincode': return this.selectedPin() !== null;
+      case 'pincode': return !!this.location.place()?.pincode && !this.location.locating();
       case 'mode': return this.mode() !== null;
-      case 'location': return this.mode() === 'home' ? this.selectedAddress() !== undefined : this.selectedCentre() !== undefined;
-      case 'provider': return this.provider() !== '';
-      case 'slot': return this.slotDate() !== null && this.slotTime() !== '';
+      case 'location': return this.mode() === 'home' ? this.selectedAddress() !== undefined : this.centre() !== null;
+      case 'provider': return this.provider() !== null;
+      case 'slot': return this.slotDate() !== null && this.slot() !== null;
     }
   }
 
@@ -905,43 +910,63 @@ export class WellnessPage {
 
   protected toggleStep(key: StepKey): void {
     if (this.isLocked(key)) return;
-    this.openStep.set(this.openStep() === key ? null : key);
+    const next = this.openStep() === key ? null : key;
+    this.openStep.set(next);
+    if (next) this.opened(next);
   }
 
   /** After an answer, open the first step still waiting for one. */
   private advance(): void {
-    this.openStep.set(this.visibleSteps().find((k) => !this.isDone(k)) ?? null);
+    const next = this.visibleSteps().find((k) => !this.isDone(k)) ?? null;
+    this.openStep.set(next);
+    if (next) this.opened(next);
+  }
+
+  /** The slot step opens on the first bookable day, with its slots loaded. */
+  private opened(key: StepKey): void {
+    if (key === 'slot' && !this.slotDate() && this.slotDates().length) this.chooseDate(this.slotDates()[0]);
   }
 
   // Pincode
-  protected readonly pinResults = computed(() => {
-    const q = this.pinQuery();
-    return q.length >= 2 ? PIN_AREAS.filter((p) => p.pin.startsWith(q)) : [];
-  });
-
-  protected onPinInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const digits = input.value.replace(/\D/g, '').slice(0, 6);
-    input.value = digits;
-    this.pinQuery.set(digits);
+  /**
+   * Debounced so the search runs when typing pauses, not on every key. The
+   * store ignores anything under three characters and clears the list.
+   */
+  protected onAddressQuery(value: string): void {
+    this.addressQuery.set(value);
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => void this.location.searchAddresses(value), 400);
   }
 
-  protected useCurrentLocation(): void {
-    const here = PIN_AREAS.find((p) => p.pin === CURRENT_LOCATION_PIN);
-    if (here) this.selectPin(here);
+  /** Rows can share a locality across pincodes, so both are compared. */
+  protected isSelected(place: Place): boolean {
+    const sel = this.location.place();
+    return !!sel && sel.label === place.label && sel.pincode === place.pincode;
   }
 
-  protected selectPin(p: PinArea): void {
-    const changed = this.selectedPin()?.pin !== p.pin;
-    this.pinQuery.set(p.pin);
-    this.selectedPin.set(p);
-    // Who can serve you, and when, depends on where.
-    if (changed) {
-      this.centreId.set(null);
-      this.provider.set('');
-      this.clearSlot();
-    }
+  /** Writes the pick to LocationStore; coordinates are looked up when the row has none. */
+  protected async selectPlace(place: Place): Promise<void> {
+    clearTimeout(this.searchTimer);
+    const changed = !this.isSelected(place);
+    await this.location.choose(place);
+    if (changed) this.onPlaceChanged();
     this.advance();
+  }
+
+  /** Fills the place from the browser location, reverse-geocoded via Google Maps. */
+  protected async detectLocation(): Promise<void> {
+    const place = await this.location.detect();
+    if (!place) return; // location.error() carries the message shown on the step
+    clearTimeout(this.searchTimer);
+    this.addressQuery.set(place.pincode);
+    this.onPlaceChanged();
+    this.advance();
+  }
+
+  /** Who can serve you, and when, depends on where. */
+  private onPlaceChanged(): void {
+    this.clearProvider();
+    void this.loadProviders();
   }
 
   // Mode
@@ -949,38 +974,40 @@ export class WellnessPage {
     if (m === 'home' && !this.homeAllowed()) return;
     if (this.mode() !== m) {
       this.mode.set(m);
-      this.centreId.set(null);
-      this.provider.set('');
-      this.clearSlot();
+      this.clearProvider();
+      void this.loadProviders();
+      if (m === 'home') this.loadAddresses();
     }
     this.advance();
   }
 
   // Address (home)
-  protected readonly defaultAddressId = computed(() => this.savedAddresses()[0]?.id ?? null);
-
-  protected selectedAddress(): SavedAddress | undefined {
+  protected selectedAddress(): CollectionAddress | undefined {
     return this.savedAddresses().find((a) => a.id === this.selectedAddressId());
   }
 
-  protected chooseAddress(id: string): void {
-    this.selectedAddressId.set(id);
+  protected chooseAddress(addr: CollectionAddress): void {
+    // Home slots are looked up for the collection address.
+    if (this.selectedAddressId() !== addr.id) this.clearSlot();
+    this.selectedAddressId.set(addr.id);
+    this.ahcStore.setSelectedCollectionAddress(addr);
     this.advance();
   }
 
+  private loadAddresses(): void {
+    if (this.userInfo?.length) void this.ahcStore.getCollectionAddress(this.userInfo[0]);
+  }
+
   protected startAddAddress(): void {
-    this.fillAddressForm(null);
+    this.addressError.set(null);
+    this.naType.set('Home');
+    this.naLine1.set('');
+    this.naLine2.set('');
+    this.naLandmark.set('');
+    this.naCity.set(this.location.place()?.city ?? '');
+    this.naState.set(this.location.place()?.state ?? '');
+    this.naPincode.set(this.location.place()?.pincode ?? '');
     this.addressFormOpen.set(true);
-  }
-
-  protected editAddress(addr: SavedAddress): void {
-    this.fillAddressForm(addr);
-    this.addressFormOpen.set(true);
-  }
-
-  protected deleteAddress(id: string): void {
-    this.savedAddresses.set(this.savedAddresses().filter((a) => a.id !== id));
-    if (this.selectedAddressId() === id) this.selectedAddressId.set(null);
   }
 
   protected cancelAddressForm(): void {
@@ -988,26 +1015,13 @@ export class WellnessPage {
     this.addressError.set(null);
   }
 
-  private fillAddressForm(addr: SavedAddress | null): void {
-    this.addressError.set(null);
-    this.editingAddressId.set(addr?.id ?? null);
-    this.naType.set(addr?.type ?? 'Home');
-    this.naLine1.set(addr?.line1 ?? '');
-    this.naLine2.set(addr?.line2 ?? '');
-    this.naLandmark.set(addr?.landmark ?? '');
-    this.naCity.set(addr?.city ?? '');
-    this.naState.set(addr?.state ?? '');
-    this.naPincode.set(addr?.pincode ?? this.selectedPin()?.pin ?? '');
-  }
-
-  protected saveAddress(): void {
+  protected async saveAddress(): Promise<void> {
     if (!this.naLine1().trim()) return this.addressError.set('Enter address line 1.');
     if (!this.naCity().trim()) return this.addressError.set('Enter the city.');
     if (!this.naState().trim()) return this.addressError.set('Enter the state.');
     if (!/^\d{6}$/.test(this.naPincode().trim())) return this.addressError.set('Enter a valid 6-digit pincode.');
-    const editing = this.editingAddressId();
-    const addr: SavedAddress = {
-      id: editing ?? `a${Date.now()}`,
+    if (this.savingAddress() || !this.userInfo?.length) return;
+    const draft = {
       type: this.naType(),
       line1: this.naLine1().trim(),
       line2: this.naLine2().trim(),
@@ -1016,71 +1030,90 @@ export class WellnessPage {
       state: this.naState().trim(),
       pincode: this.naPincode().trim(),
     };
-    this.savedAddresses.set(
-      editing
-        ? this.savedAddresses().map((a) => (a.id === editing ? addr : a))
-        : [...this.savedAddresses(), addr],
-    );
-    this.addressFormOpen.set(false);
+    this.savingAddress.set(true);
     this.addressError.set(null);
-    this.chooseAddress(addr.id);
+    const saved = await this.ahcStore.addNewCollectionAddress(draft, this.userInfo[0]);
+    this.savingAddress.set(false);
+    if (!saved) {
+      this.addressError.set('We could not save this address. Try again.');
+      return;
+    }
+    this.addressFormOpen.set(false);
+    // The reloaded list has the new row; pick it by what was typed.
+    const added = [...this.savedAddresses()]
+      .reverse()
+      .find((a) => a.line1 === draft.line1 && a.pincode === draft.pincode);
+    if (added) this.chooseAddress(added);
+  }
+
+  // Provider — the home-collection step, or the first half of the clinic step.
+  protected readonly providers = computed(() => this.ahcStore.AHCProviders());
+  protected readonly providersLoading = computed(() => this.ahcStore.providersLoading());
+
+  /** A fresh list for this place and mode: an earlier pick may not be on it. */
+  private async loadProviders(): Promise<void> {
+    const mode = this.mode();
+    if (!mode || !this.location.place()?.pincode || !this.userInfo?.length) return;
+    await this.ahcStore.getAHCProviders(this.userInfo[0], mode);
+    // In clinic with a single provider there is nothing to choose: go straight to its centres.
+    const list = this.providers();
+    if (this.mode() === 'clinic' && list.length === 1 && !this.provider()) this.chooseProvider(list[0]);
+  }
+
+  protected chooseProvider(p: AhcProvider): void {
+    if (this.provider()?.id !== p.id) {
+      this.provider.set(p);
+      // The store keeps it (and sessionStorage) for the slot and booking calls.
+      this.ahcStore.setSelectedProvider(p);
+      this.clearCentre();
+      this.clearSlot();
+      if (this.mode() === 'clinic' && this.userInfo?.length) {
+        void this.ahcStore.getCentreAddress(this.userInfo[0], this.mode());
+      }
+    }
+    this.advance();
+  }
+
+  private clearProvider(): void {
+    this.provider.set(null);
+    this.ahcStore.setSelectedProvider(null);
+    this.clearCentre();
+    this.clearSlot();
   }
 
   // Clinic (in clinic)
-  private readonly legCentres = computed(() => {
-    const leg = this.activeLeg();
-    return leg ? CENTRES.filter((c) => c.legs.includes(leg)) : [];
-  });
-
-  protected readonly clinicProviders = computed(() => {
-    const names = [...new Set(this.legCentres().map((c) => c.provider))];
-    return names.map((name) => ({ name }));
-  });
-
-  protected readonly filteredCentres = computed(() => {
-    const f = this.clinicFilter();
-    return f ? this.legCentres().filter((c) => c.provider === f) : this.legCentres();
-  });
-
-  protected selectedCentre(): Centre | undefined {
-    return CENTRES.find((c) => c.id === this.centreId());
-  }
-
-  protected chooseCentre(id: string): void {
-    if (this.centreId() !== id) this.clearSlot();
-    this.centreId.set(id);
+  protected chooseCentre(c: AhcCentre): void {
+    if (this.centre()?.id !== c.id) this.clearSlot();
+    this.centre.set(c);
+    this.ahcStore.setSelectedCentre(c);
     this.advance();
   }
 
-  // Provider (home collection)
-  protected readonly homeProviders = computed(() => HOME_PROVIDERS);
-
-  protected chooseProvider(name: string): void {
-    if (this.provider() !== name) this.clearSlot();
-    this.provider.set(name);
-    this.advance();
+  private clearCentre(): void {
+    this.centre.set(null);
+    this.ahcStore.setSelectedCentre(null);
   }
 
   // Slot
   protected chooseDate(d: SlotDate): void {
-    if (this.slotDate()?.key !== d.key) this.slotTime.set('');
+    if (this.slotDate()?.key === d.key) return;
     this.slotDate.set(d);
+    this.slot.set(null);
+    this.ahcStore.setSelectedSlot(null);
+    const day = fromDateInput(d.key);
+    if (day && this.userInfo?.length) void this.ahcStore.getAHCDynamicSlots(this.userInfo[0], day, this.mode());
   }
 
-  protected chooseTime(t: string): void {
-    this.slotTime.set(t);
+  protected chooseSlot(t: AhcSlot): void {
+    this.slot.set(t);
+    this.ahcStore.setSelectedSlot(t);
     this.advance();
-  }
-
-  /** A few slots show as taken, varying by day, so that state is visible. */
-  protected isSlotTaken(index: number): boolean {
-    const day = this.slotDates().findIndex((d) => d.key === this.slotDate()?.key);
-    return (index + day) % 4 === 1;
   }
 
   private clearSlot(): void {
     this.slotDate.set(null);
-    this.slotTime.set('');
+    this.slot.set(null);
+    this.ahcStore.setSelectedSlot(null);
   }
 
   protected initials(name: string): string {
@@ -1095,23 +1128,23 @@ export class WellnessPage {
   // ── Review ─────────────────────────────────────────────────────────────
 
   protected reviewRows(): { label: string; value: string }[] {
+    const place = this.location.place();
     const rows = [
       { label: 'Booking', value: this.legLabel() },
-      { label: 'Pincode', value: this.selectedPin()?.pin ?? '' },
-      { label: 'Mode', value: this.mode() === 'home' ? 'Home collection' : 'In clinic' },
+      { label: 'Pincode', value: place?.pincode ?? '' },
     ];
+    if (place?.label) rows.push({ label: 'Location', value: place.label });
+    rows.push({ label: 'Mode', value: this.mode() === 'home' ? 'Home collection' : 'In clinic' });
     if (this.mode() === 'home') {
       const addr = this.selectedAddress();
       if (addr) rows.push({ label: 'Address', value: `${addr.type} · ${formatAddress(addr)}` });
-      rows.push({ label: 'Provider', value: this.provider() });
+      rows.push({ label: 'Provider', value: this.provider()?.name ?? '' });
     } else {
-      const c = this.selectedCentre();
-      if (c) {
-        rows.push({ label: 'Provider', value: c.provider });
-        rows.push({ label: 'Centre', value: `${c.name}, ${c.address}` });
-      }
+      rows.push({ label: 'Provider', value: this.provider()?.name ?? '' });
+      const c = this.centre();
+      if (c) rows.push({ label: 'Centre', value: [c.name, c.address].filter(Boolean).join(', ') });
     }
-    rows.push({ label: 'Slot', value: `${this.slotDate()?.label ?? ''} · ${this.slotTime()}` });
+    rows.push({ label: 'Slot', value: [this.slotDate()?.label, this.slot()?.label].filter(Boolean).join(' · ') });
     return rows;
   }
 
@@ -1131,33 +1164,40 @@ export class WellnessPage {
     }
   }
 
+  /** Whether the member's package includes a pathology leg. */
+  protected readonly hasPathology = computed(() =>
+    this.ahcStore.serviceTiles().some((t) => t.serviceType === 'PATHOLOGY'),
+  );
+
   /** Grey-out rules from the spec. */
   protected canBook(leg: Leg): boolean {
     if (this.packageBooked()) return false; // package taken → everything closed
-    if (leg === 'pathology') return !this.pathologyBooked();
-    if (leg === 'radiology') return this.pathologyBooked() && !this.radiologyBooked();
+    if (leg === 'pathology') return !this.ahcStore.IsPathologyServiceStatus();
+    // Pathology first — unless the package has no pathology leg to book.
+    if (leg === 'radiology') return (!this.hasPathology() || this.pathologyBooked()) && !this.radiologyBooked();
     // package: only if the individual route has not started
     return !this.pathologyBooked() && !this.radiologyBooked();
   }
 
-  protected startLeg(leg: Leg): void {
+  /** Stores the picked leg — its tile and the package — for the later steps. */
+  protected startLeg(leg: Leg, tile: AhcServiceTile | null): void {
     if (!this.canBook(leg)) return;
+    this.ahcStore.setAHCSelctedItem({ leg, tile, package: this.ahcStore.ahcPackage() });
     this.activeLeg.set(leg);
     this.view.set('steps');
     this.confirmation.set(null);
-    this.pinQuery.set('');
-    this.selectedPin.set(null);
+    this.addressQuery.set('');
     // Scans happen at a centre, so those legs start in clinic.
     this.mode.set(leg === 'pathology' ? null : 'clinic');
     this.selectedAddressId.set(null);
-    this.clinicFilter.set('');
-    this.centreId.set(null);
-    this.provider.set('');
-    this.clearSlot();
-    this.slotDates.set(nextSevenDays());
+    this.ahcStore.setSelectedCollectionAddress(null);
+    this.clearProvider();
+    this.slotDates.set(bookableDays());
     this.addressFormOpen.set(false);
     this.addressError.set(null);
-    this.openStep.set('pincode');
+    // A place chosen earlier is kept, so the pincode step may already be done.
+    this.advance();
+    void this.loadProviders();
   }
 
   protected closeLeg(): void {
@@ -1173,17 +1213,41 @@ export class WellnessPage {
     history.back();
   }
 
-  protected confirm(): void {
+  /**
+   * Books the leg; when the member has a share to pay, the store opens the
+   * payment gateway before this resolves.
+   */
+  protected async confirm(): Promise<void> {
+    if (this.booking() || !this.userInfo?.length) return;
     const leg = this.activeLeg();
-    if (leg === 'pathology') {
-      this.pathologyBooked.set(true);
-      this.confirmation.set('Pathology booked and billed. You can now book the radiology leg.');
-    } else if (leg === 'radiology') {
-      this.radiologyBooked.set(true);
-      this.confirmation.set('Radiology booked and confirmed. Your annual health check is complete.');
-    } else if (leg === 'package') {
-      this.packageBooked.set(true);
-      this.confirmation.set('Package booked and billed — pathology and radiology are both confirmed.');
+    this.booking.set(true);
+    this.bookingError.set(null);
+    const outcome = await this.ahcStore.ahcBookAppointment(this.userInfo[0]);
+    this.booking.set(false);
+
+    if (outcome.status === 'failed') {
+      this.bookingError.set('We could not book this. Please try again.');
+      return;
+    }
+    // Off to Razorpay; the member comes back on the payment-status page.
+    if (outcome.status === 'redirecting') return;
+
+    if (leg === 'pathology') this.pathologyBookedNow.set(true);
+    else if (leg === 'radiology') this.radiologyBookedNow.set(true);
+    else if (leg === 'package') this.packageBooked.set(true);
+
+    const what = leg === 'pathology' ? 'Pathology' : leg === 'radiology' ? 'Radiology' : 'Package';
+    switch (outcome.status) {
+      case 'payment-cancelled':
+        this.confirmation.set(`${what} is booked, but the payment was not completed. Your booking stays pending until it is paid.`);
+        break;
+      case 'payment-failed':
+        this.confirmation.set(`${what} is booked, but the payment failed: ${outcome.reason} Your booking stays pending until it is paid.`);
+        break;
+      default:
+        if (leg === 'pathology') this.confirmation.set('Pathology booked and billed. You can now book the radiology leg.');
+        else if (leg === 'radiology') this.confirmation.set('Radiology booked and confirmed. Your annual health check is complete.');
+        else this.confirmation.set('Package booked and billed — pathology and radiology are both confirmed.');
     }
     this.activeLeg.set(null);
     this.view.set('steps');
@@ -1191,12 +1255,26 @@ export class WellnessPage {
 
   protected reset(): void {
     this.packageBooked.set(false);
-    this.pathologyBooked.set(false);
-    this.radiologyBooked.set(false);
-    this.pathologyStage.set(0);
-    this.radiologyStage.set(0);
-    this.packageStage.set(0);
+    this.pathologyBookedNow.set(false);
+    this.radiologyBookedNow.set(false);
     this.confirmation.set(null);
     this.activeLeg.set(null);
   }
+  /** Opens the review and prices the booking (cart_add, then checkout) for it. */
+  protected reviewBooking(): void {
+    this.view.set('review');
+    const user = this.userStore.userInfo()?.[0];
+    if (user) void this.ahcStore.ahcAddToCart(user);
+  }
+
+  /** The member's share from checkout; the API may send it as text ("1200.0"). */
+  protected readonly copayAmount = computed(() => Number(this.ahcStore.AHCCopayAmount()) || 0);
+
+  /** The review's main button — it books, and takes the payment when there is a share to pay. */
+  protected readonly proceedLabel = computed(() => {
+    if (this.booking()) return 'Booking…';
+    if (this.ahcStore.checkoutLoading()) return 'Preparing your booking…';
+    const copay = this.copayAmount();
+    return copay > 0 ? `Pay ${RUPEES.format(copay)} via Razorpay` : 'Proceed to booking';
+  });
 }

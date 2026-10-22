@@ -47,6 +47,8 @@ export interface LocationErrorDto {
 }
 
 export interface Place {
+  /** Street / area line. Set by the address search; absent elsewhere. */
+  readonly street?: string;
   /** May be empty: a town-level match carries no postal code. */
   readonly pincode: string;
   readonly city: string;

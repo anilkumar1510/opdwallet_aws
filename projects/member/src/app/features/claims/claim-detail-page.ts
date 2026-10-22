@@ -1050,7 +1050,8 @@ export class ClaimDetailPage {
   }
 
   decryptText(encText: string){
-   return this.appService.decryptText(encText);
+    console.log('decryptText called with:', this.appService.getCurrentSessionData('encryptKey'));
+   return this.appService.decryptText(encText, this.appService.getCurrentSessionData('encryptKey'));
   }
 }
 
