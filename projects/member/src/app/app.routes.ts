@@ -1,16 +1,27 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './core/session/auth.guard';
+
 /**
  * One route tree for every viewport width. There is no mobile-only route and
  * no device-based redirect: a URL identifies a screen, not a screen-and-device.
  *
- * DUMMY / STATIC — the login page is removed and the session is always
- * authenticated, so the app opens straight into /member. See REMOVED-APIS.md.
+ * There is no login page: the platform signs the member in and sets the
+ * `session_id` cookie. authGuard proves that session (GET_MY_CONFIG) before
+ * /member renders, and sends a refused one to /session-error.
  */
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'member' },
   {
+    // Invalid or expired session. Unguarded, so it renders without one.
+    path: 'session-error',
+    loadComponent: () =>
+      import('./features/session/session-error-page').then((m) => m.SessionErrorPage),
+  },
+  {
     path: 'member',
+    // GET_MY_CONFIG must answer for the session_id cookie before anything renders.
+    canActivate: [authGuard],
     loadComponent: () => import('./features/shell/member-shell').then((m) => m.MemberShell),
     children: [
       {
@@ -695,6 +706,12 @@ export const routes: Routes = [
           import('./features/transactions/transaction-detail-page').then(
             (m) => m.TransactionDetailPage,
           ),
+      },
+      {
+        // Every Razorpay payment comes back here (the gateway's source_url).
+        path: 'payment-status',
+        loadComponent: () =>
+          import('./features/payment/payment-status-page').then((m) => m.PaymentStatusPage),
       },
       {
         path: 'payments/:paymentId',

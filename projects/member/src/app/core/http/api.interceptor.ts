@@ -4,6 +4,7 @@ import { catchError, map, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { toAppError } from './app-error';
+import { SessionStore, bodySaysSessionEnded } from '../session/session.store';
 import { isPlatformBrowser } from '@angular/common';
 /**
  * Resolves relative API paths against the configured base and ensures session
@@ -20,18 +21,29 @@ export const apiUrlInterceptor: HttpInterceptorFn = (request, next) => {
 };
 
 /**
- * Ends the session once when the API reports it is no longer valid.
+ * Ends the session once when any API reports it is no longer valid: HTTP
+ * 401/403, or a 200 whose body says the session has ended. The session check
+ * itself (application_master) is left to SessionStore, which reports its own
+ * failure.
+ *
+ * SessionStore is fetched from the injector only when needed: it depends on
+ * HttpClient, so injecting it up front would be circular.
  */
 export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
   const injector = inject(Injector);
+  if (request.url.includes('application_master')) return next(request);
+
+  const end = (reason: 'expired' | 'invalid', message = '') => injector.get(SessionStore).terminate(reason, message);
+
   return next(request).pipe(
-    catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
-        void Promise.resolve().then(async () => {
-          const { SessionStore } = await import('../session/session.store');
-          injector.get(SessionStore).terminate();
-        });
+    tap((event) => {
+      if (event instanceof HttpResponse && event.status === 200) {
+        const message = bodySaysSessionEnded(event.body);
+        if (message) end(/expire|timed? ?out/i.test(message) ? 'expired' : 'invalid', message);
       }
+    }),
+    catchError((error: unknown) => {
+      if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) end('expired');
       return throwError(() => error);
     }),
   );

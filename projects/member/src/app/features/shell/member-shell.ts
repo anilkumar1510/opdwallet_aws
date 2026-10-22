@@ -179,6 +179,7 @@ export class MemberShell {
   protected readonly notifications = inject(NotificationsStore);
   protected readonly ago = timeAgo;
 
+  // The user's configuration (GET_MY_CONFIG) is loaded by authGuard before this shell renders.
   /** The list is fetched on open, not polled — only the badge polls. */
   protected toggleNotifications(): void {
     const open = !this.notificationsOpen();
