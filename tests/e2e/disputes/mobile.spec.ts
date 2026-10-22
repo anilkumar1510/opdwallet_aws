@@ -91,7 +91,7 @@ for (const [label, device] of PHONES) {
 
     test('a closed ticket with a long resolution fits the screen', async ({ page }) => {
       const api = new FakeApi();
-      api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: LONG_WORD }, [{ sender_type: 'MEMBER', message_text: 'hi' }]);
+      api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: LONG_WORD }, [{ sender_type: 'MEMBER', message_text: 'hi' }]);
       await openSupport(page, api);
       await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
       await expect(page.getByText('Want to take it further?')).toBeVisible({ timeout: 20000 });
