@@ -1,10 +1,14 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, OnInit } from '@angular/core';
 import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse, CartSnapshot } from '../../services/opd-consultation.service';
 import moment from 'moment';
+import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
+import { FamilyStore } from '../../core/family/family.store';
+import { findRelationshipInVersion, getPrimaryRelationship } from '../../core/member/policy.mapper';
+import { PolicyStore } from '../../core/member/policy.store';
+import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
 import { AgoraService } from '../../services/agora.service';
 import { AgoraVideoComponent } from './components/agora-video.component';
 import { ConsultHeaderComponent } from './components/consult-header.component';
-import { ConsultBannerComponent } from './components/consult-banner.component';
 import { SpecialitySelectionComponent } from './components/speciality-selection.component';
 import { DoctorSelectionComponent } from './components/doctor-selection.component';
 import { PatientSelectionComponent } from './components/patient-selection.component';
@@ -17,10 +21,10 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
 @Component({
   selector: 'opd-online-consult-page',
   standalone: true,
-imports: [
+  imports: [
     CommonModule,
     ConsultHeaderComponent,
-    ConsultBannerComponent,
+    CoverageBannerComponent,
     SpecialitySelectionComponent,
     DoctorSelectionComponent,
     PatientSelectionComponent,
@@ -35,7 +39,7 @@ imports: [
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
         @if (!started()) {
-          <opd-consult-banner [perTxn]="300" [copayPct]="20" />
+          <opd-coverage-banner [category]="BenefitCategory.OnlineConsultation" />
           <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
             Find a doctor →
           </button>
@@ -206,8 +210,8 @@ imports: [
                     <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
                     <dl class="space-y-2 text-sm">
                       <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
-                      <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                      <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd></div>
+                      <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn() }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
+                      <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }})</dt><dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd></div>
                       <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd></div>
                       @if (pay().excess > 0) {
                         <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
@@ -279,12 +283,42 @@ imports: [
   `,
 })
 export class OnlineConsultPage implements OnInit {
+  readonly BenefitCategory = BenefitCategory;
+
   private readonly consultationService = inject(OpdConsultationService);
   private readonly agoraService = inject(AgoraService);
+  private readonly policyStore = inject(PolicyStore);
+  private readonly family = inject(FamilyStore);
   readonly cdr = inject(ChangeDetectorRef);
 
-  protected readonly perTxn = 300;
-  protected readonly copayPct = 20;
+  protected readonly policyCategory = computed(() => {
+    const version = this.policyStore.version();
+    const activeMember = this.family.activeMember();
+    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    const rel = version
+      ? (findRelationshipInVersion(version, relCode) ?? getPrimaryRelationship(version))
+      : null;
+    return rel?.categories?.find(
+      (c) =>
+        toBenefitCategory(c.category_code) === BenefitCategory.OnlineConsultation ||
+        toBenefitCategory(c.category_name) === BenefitCategory.OnlineConsultation,
+    );
+  });
+
+  protected readonly perTxn = computed(() => {
+    const cat = this.policyCategory();
+    return cat?.per_transaction_limit ?? cat?.per_claim_limit ?? 300;
+  });
+
+  protected readonly copayPct = computed(() => {
+    const cat = this.policyCategory();
+    return typeof cat?.co_payment_value === 'number' ? cat.co_payment_value : 20;
+  });
+
+  protected readonly copayMode = computed(() => {
+    const cat = this.policyCategory();
+    return cat?.co_payment_mode?.toLowerCase() === 'flat' ? 'flat' : 'percent';
+  });
 
   protected readonly specialities = signal<Speciality[]>([]);
   protected readonly patients = signal<Patient[]>([]);
@@ -365,14 +399,28 @@ export class OnlineConsultPage implements OnInit {
     return this.slots().filter(s => this.isSlotValid(s)).length;
   });
 
-  /** Mock payment breakdown: per-transaction limit + co-payment, excess self-paid. */
+  /** Dynamic payment breakdown: per-transaction limit + co-payment, excess self-paid. */
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
-    const covered = Math.min(fee, this.perTxn);
-    const copay = Math.round((covered * this.copayPct) / 100);
-    const walletBlock = covered - copay;
-    const excess = Math.max(0, fee - this.perTxn);
-    const selfPay = copay + excess;
+    const perTxnLimit = this.perTxn();
+    const cat = this.policyCategory();
+    const poolCode = cat?.pool_code?.trim();
+    const pool = poolCode
+      ? this.policyStore.pools().find(
+          (p) =>
+            p.code?.trim().toUpperCase() === poolCode?.toUpperCase() ||
+            p.id?.trim().toUpperCase() === poolCode?.toUpperCase(),
+        )
+      : null;
+    const availableBalance = pool ? pool.available.amount : this.policyStore.walletTotal().available.amount;
+
+    const covered = Math.min(fee, perTxnLimit, availableBalance);
+    const copay = this.copayMode() === 'flat'
+      ? Math.min(this.copayPct(), covered)
+      : Math.round((covered * this.copayPct()) / 100);
+    const walletBlock = Math.max(0, covered - copay);
+    const excess = Math.max(0, fee - covered);
+    const selfPay = fee - walletBlock;
     return { fee, covered, copay, walletBlock, excess, selfPay };
   });
 
