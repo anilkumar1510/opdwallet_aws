@@ -15,7 +15,6 @@ import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { CartStore } from '../../core/lab/cart.store';
-import { NotificationsStore } from '../../core/notifications/notifications.store';
 import { PolicyStore } from '../../core/member/policy.store';
 import { ProfileMenu } from '../shell/profile-menu';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
@@ -144,29 +143,6 @@ function benefitLink(categoryCode: string): string {
           <!-- The design's own glyphs. brightness-0 paints the blue source
                files black. -->
           <div class="flex items-center gap-2.5">
-            <a
-              routerLink="/member/notifications"
-              class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
-              [attr.aria-label]="
-                notifications.unread()
-                  ? 'Notifications, ' + notifications.unread() + ' unread'
-                  : 'Notifications'
-              "
-            >
-              <img
-                [src]="'images/icons/notification-bell.svg' | remoteAsset"
-                alt=""
-                width="16"
-                height="18"
-                class="h-[18px] w-4 object-contain brightness-0"
-              />
-              @if (notifications.unread(); as unread) {
-                <span
-                  class="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F58220] px-1 text-[11px] font-bold text-white"
-                  >{{ unread > 9 ? '9+' : unread }}</span
-                >
-              }
-            </a>
             <a
               routerLink="/member/wallet"
               class="flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
@@ -455,7 +431,6 @@ export class HomePage {
 
   protected readonly family = inject(FamilyStore);
   protected readonly policyStore = inject(PolicyStore);
-  protected readonly notifications = inject(NotificationsStore);
   protected readonly carts = inject(CartStore);
 
   protected get walletTotal() {
