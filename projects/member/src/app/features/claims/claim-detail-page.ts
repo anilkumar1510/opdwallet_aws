@@ -1005,7 +1005,9 @@ export class ClaimDetailPage {
   }
 
   protected actionReasonHeading(claim: any): string {
-    return claim?.claim_status === 'REJECTED' ? 'Why this claim was rejected' : 'Documents needed';
+    if (claim?.claim_status === 'REJECTED') return 'Why this claim was rejected';
+    if (claim?.claim_status === 'DOCUMENTS_REQUIRED') return 'Documents needed';
+    return '';
   }
 
   /** StatusBadge takes a ClaimStatus; the payload only carries the raw code. */
