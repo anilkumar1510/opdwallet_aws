@@ -352,7 +352,7 @@ export class OnlineConsultPage {
       .sort((a, b) => (a.nextIn === 'Available now' ? -1 : 1) - (b.nextIn === 'Available now' ? -1 : 1));
   });
 
-  /** Mock payment breakdown: per-transaction limit + co-payment, excess self-paid. */
+  /** Dynamic payment breakdown: per-transaction limit + co-payment, excess self-paid. */
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
     const covered = Math.min(fee, PER_TXN_LIMIT);
