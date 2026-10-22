@@ -125,3 +125,41 @@ export interface OpdPolicyVersionDto {
   claim_type?: string;
   tag_data?: unknown[];
 }
+
+export interface OpdConsumptionCycleDto {
+  id: string;
+  g_created_by_id?: string;
+  g_created_by_name?: string;
+  g_created_by_loginId?: string;
+  account_time_zone?: string;
+  g_creation_time?: number;
+  g_modify_time?: number;
+  g_created_by_role?: string;
+  cug_code?: string;
+  account_id?: string;
+  consumption_id?: string;
+  reference_id?: string;
+  cycle_no?: number;
+  patient_id?: string;
+  policy_version_id?: string;
+  benefit_year?: string;
+  category_code?: string;
+  route?: string;
+  event?: string;
+  to_status?: string;
+  bill_amount?: number;
+  copay_amount?: number;
+  covered_amount?: number;
+  excess_above_cap?: number;
+  delta_amount?: number;
+  delta_visits?: number;
+  previous_consumed?: number;
+  updated_consumed?: number;
+  previous_visits?: number;
+  updated_visits?: number;
+  wallet_block_id?: string;
+  wallet_txn_id?: string;
+  channel?: string;
+  actor_user_id?: string;
+  occurred_at?: number;
+}

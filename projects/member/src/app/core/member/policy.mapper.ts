@@ -1,10 +1,11 @@
-import { toBenefitCategory } from '../domain/codes';
+import { BenefitCategory, toBenefitCategory } from '../domain/codes';
 import { Money, formatMoney, money } from '../domain/money';
 import { ClaimCategory } from '../claims/claim.mapper';
 import { WalletCategoryBalance } from '../wallet/wallet.model';
 import { Policy } from './policy';
 import { PolicyClause, PolicyDetail } from './policy-detail';
 import {
+  OpdConsumptionCycleDto,
   OpdPolicyMemberAssignmentDto,
   OpdPolicyVersionDto,
   PolicyBenefitPoolDto,
@@ -240,32 +241,109 @@ export function toPolicyDetailFromVersion(version: OpdPolicyVersionDto): PolicyD
   };
 }
 
+export interface CategoryConsumptionSummary {
+  readonly byBenefitCategory: ReadonlyMap<BenefitCategory, number>;
+  readonly byRawCode: ReadonlyMap<string, number>;
+  readonly totalConsumed: number;
+}
+
+/**
+ * Consolidates category consumption from `opd_consumption_cycle` records.
+ * Multiple consumption events for the same category are summed together.
+ */
+export function consolidateCategoryConsumption(
+  cycles: readonly OpdConsumptionCycleDto[] | null | undefined,
+): CategoryConsumptionSummary {
+  const byBenefitCategory = new Map<BenefitCategory, number>();
+  const byRawCode = new Map<string, number>();
+  let totalConsumed = 0;
+
+  if (!cycles?.length) {
+    return { byBenefitCategory, byRawCode, totalConsumed: 0 };
+  }
+
+  for (const cycle of cycles) {
+    const status = (cycle.to_status || '').trim().toUpperCase();
+    if (status !== 'CONSUMED') {
+      continue;
+    }
+
+    const rawCode = (cycle.category_code || '').trim().toUpperCase();
+    const amount = Number(cycle.delta_amount ?? cycle.covered_amount ?? 0);
+    if (!rawCode || isNaN(amount) || amount <= 0) continue;
+
+    totalConsumed += amount;
+
+    // Consolidate multiple consumption amounts under the raw category code
+    const currentRaw = byRawCode.get(rawCode) ?? 0;
+    byRawCode.set(rawCode, currentRaw + amount);
+
+    // Also consolidate under standard BenefitCategory
+    const benCat = toBenefitCategory(rawCode);
+    if (benCat !== BenefitCategory.Unknown) {
+      const currentBen = byBenefitCategory.get(benCat) ?? 0;
+      byBenefitCategory.set(benCat, currentBen + amount);
+    }
+  }
+
+  return { byBenefitCategory, byRawCode, totalConsumed };
+}
+
+export function getCategoryConsumedAmount(
+  categoryCode: string | undefined,
+  categoryName: string | undefined,
+  summary: CategoryConsumptionSummary,
+): number {
+  const rawCode = (categoryCode || '').trim().toUpperCase();
+  if (rawCode && summary.byRawCode.has(rawCode)) {
+    return summary.byRawCode.get(rawCode)!;
+  }
+  const benCatFromCode = toBenefitCategory(categoryCode);
+  if (benCatFromCode !== BenefitCategory.Unknown && summary.byBenefitCategory.has(benCatFromCode)) {
+    return summary.byBenefitCategory.get(benCatFromCode)!;
+  }
+  const benCatFromName = toBenefitCategory(categoryName);
+  if (benCatFromName !== BenefitCategory.Unknown && summary.byBenefitCategory.has(benCatFromName)) {
+    return summary.byBenefitCategory.get(benCatFromName)!;
+  }
+  return 0;
+}
+
 export function toWalletTotalFromVersion(
   version: OpdPolicyVersionDto | null | undefined,
   relationshipCode: string = 'self',
+  consumption?: readonly OpdConsumptionCycleDto[] | null,
 ): {
   available: Money;
   allocated: Money;
+  consumed: Money;
 } {
   if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
     return {
       available: money(0),
       allocated: money(0),
+      consumed: money(0),
     };
   }
 
   const primary = getPrimaryRelationship(version);
   const rel = findRelationshipInVersion(version, relationshipCode);
   const limit = rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
+  const summary = consolidateCategoryConsumption(consumption);
+  const totalConsumed = summary.totalConsumed;
+  const available = Math.max(0, limit - totalConsumed);
+
   return {
-    available: money(limit),
+    available: money(available),
     allocated: money(limit),
+    consumed: money(totalConsumed),
   };
 }
 
 export function toCategoriesFromVersion(
   version: OpdPolicyVersionDto | null | undefined,
   relationshipCode: string = 'self',
+  consumption?: readonly OpdConsumptionCycleDto[] | null,
 ): readonly WalletCategoryBalance[] {
   if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
     return [];
@@ -275,18 +353,22 @@ export function toCategoriesFromVersion(
   const rel = findRelationshipInVersion(version, relationshipCode) ?? primary;
   const annualLimit = rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
   const rawCategories = rel?.categories ?? primary?.categories ?? [];
+  const summary = consolidateCategoryConsumption(consumption);
 
   return rawCategories.map((cat) => {
     const subLimit = cat.per_claim_limit && cat.per_claim_limit > 0 ? cat.per_claim_limit : annualLimit;
+    const consumedAmount = getCategoryConsumedAmount(cat.category_code, cat.category_name, summary);
+    const availableAmount = Math.max(0, subLimit - consumedAmount);
+
     return {
       category: toBenefitCategory(cat.category_code),
       code: cat.category_code,
       label: cat.category_name,
       allocated: money(subLimit),
-      available: money(subLimit),
-      consumed: money(0),
+      available: money(availableAmount),
+      consumed: money(consumedAmount),
       isUnlimited: false,
-      isExhausted: false,
+      isExhausted: availableAmount === 0 && subLimit > 0,
       annualLimit: money(annualLimit),
       perClaimLimit: cat.per_claim_limit ? money(cat.per_claim_limit) : null,
     };
@@ -296,11 +378,13 @@ export function toCategoriesFromVersion(
 export function toPoolsFromVersion(
   version: OpdPolicyVersionDto | null | undefined,
   relationshipCode: string = 'self',
+  consumption?: readonly OpdConsumptionCycleDto[] | null,
 ): readonly WalletPool[] {
   if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
     return [];
   }
 
+  const summary = consolidateCategoryConsumption(consumption);
   const primary = getPrimaryRelationship(version);
   const rel = findRelationshipInVersion(version, relationshipCode) ?? primary;
   const annualLimit = rel?.wallet_configuration?.annual_limit ?? primary?.wallet_configuration?.annual_limit ?? 26000;
@@ -308,17 +392,20 @@ export function toPoolsFromVersion(
   const additionalCategories = rel?.additional_claim_categories ?? primary?.additional_claim_categories ?? [];
 
   // Group by pool_code
-  const poolMap = new Map<string, { name: string; categories: WalletPoolCategory[] }>();
+  const poolMap = new Map<string, { name: string; categories: WalletPoolCategory[]; poolConsumed: number }>();
 
   for (const cat of rawCategories) {
     const code = cat.pool_code || 'DEFAULT_POOL';
     const entry = poolMap.get(code) ?? {
       name: cat.pool_name || cat.category_name,
       categories: [],
+      poolConsumed: 0,
     };
+    const catConsumed = getCategoryConsumedAmount(cat.category_code, cat.category_name, summary);
+    entry.poolConsumed += catConsumed;
     entry.categories.push({
       label: cat.category_name,
-      used: money(0),
+      used: money(catConsumed),
     });
     poolMap.set(code, entry);
   }
@@ -327,9 +414,11 @@ export function toPoolsFromVersion(
     const code = add.claim_pool_code || 'DEFAULT_POOL';
     const entry = poolMap.get(code);
     if (entry) {
+      const catConsumed = getCategoryConsumedAmount(undefined, add.claim_category_name, summary);
+      entry.poolConsumed += catConsumed;
       entry.categories.push({
         label: add.claim_category_name,
-        used: money(0),
+        used: money(catConsumed),
       });
     }
   }
@@ -338,11 +427,13 @@ export function toPoolsFromVersion(
   const sortedCodes = Array.from(poolMap.keys()).sort((a, b) => a.localeCompare(b));
   for (const poolCode of sortedCodes) {
     const data = poolMap.get(poolCode)!;
+    const availableAmount = Math.max(0, annualLimit - data.poolConsumed);
     pools.push({
       id: poolCode,
       code: poolCode,
-      available: money(annualLimit),
+      available: money(availableAmount),
       allocated: money(annualLimit),
+      consumed: money(data.poolConsumed),
       description: data.name,
       categories: data.categories,
     });
@@ -354,20 +445,23 @@ export function toPoolsFromVersion(
 /**
  * Builds wallet pools from the live opd_benefit_category_pool API and maps
  * categories defined in the policy version under each pool, sorted ascending by pool code.
+ * Calculates pool-level consumption by consolidating multiple consumption cycles for each category.
  */
 export function toPoolsFromApiAndVersion(
   poolsDto: readonly PolicyBenefitPoolDto[] | null | undefined,
   version: OpdPolicyVersionDto | null | undefined,
   relationshipCode: string = 'self',
+  consumption?: readonly OpdConsumptionCycleDto[] | null,
 ): readonly WalletPool[] {
   if (!version || !isRelationshipCoveredInPolicy(relationshipCode, version)) {
     return [];
   }
 
   if (!poolsDto || poolsDto.length === 0) {
-    return toPoolsFromVersion(version, relationshipCode);
+    return toPoolsFromVersion(version, relationshipCode, consumption);
   }
 
+  const summary = consolidateCategoryConsumption(consumption);
   const primary = getPrimaryRelationship(version);
   const rel = findRelationshipInVersion(version, relationshipCode) ?? primary;
   const rawCategories = rel?.categories ?? primary?.categories ?? [];
@@ -378,30 +472,38 @@ export function toPoolsFromApiAndVersion(
 
   return sorted.map((pool) => {
     const matchingCategories: WalletPoolCategory[] = [];
+    let poolConsumedAmount = 0;
 
     for (const cat of rawCategories) {
       if (cat.pool_code === pool.code) {
+        const catConsumed = getCategoryConsumedAmount(cat.category_code, cat.category_name, summary);
+        poolConsumedAmount += catConsumed;
         matchingCategories.push({
           label: cat.category_name,
-          used: money(0),
+          used: money(catConsumed),
         });
       }
     }
 
     for (const add of additionalCategories) {
       if (add.claim_pool_code === pool.code) {
+        const catConsumed = getCategoryConsumedAmount(undefined, add.claim_category_name, summary);
+        poolConsumedAmount += catConsumed;
         matchingCategories.push({
           label: add.claim_category_name,
-          used: money(0),
+          used: money(catConsumed),
         });
       }
     }
 
+    const availableAmount = Math.max(0, pool.annual_limit - poolConsumedAmount);
+
     return {
       id: pool.code,
       code: pool.code,
-      available: money(pool.annual_limit),
+      available: money(availableAmount),
       allocated: money(pool.annual_limit),
+      consumed: money(poolConsumedAmount),
       description: pool.pool_name,
       categories: matchingCategories,
     };

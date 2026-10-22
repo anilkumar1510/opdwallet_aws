@@ -286,7 +286,7 @@ export class QuickLinks {
                   @for (c of pool.categories; track c.label) {
                     <li class="flex items-center justify-between border-b border-[#E5E7EB] py-2.5">
                       <span class="text-[13px] text-[#1c1c1c]">{{ c.label }}</span>
-                      <span class="text-[15px] font-medium text-[#0E51A2]" [attr.aria-label]="'₹' + plain(c.used) + ' used'">₹{{ plain(c.used) }}</span>
+                      <span class="text-[15px] font-medium text-[#0E51A2]" [attr.aria-label]="'₹' + plain(c.used) + ' used'">{{ c.used.amount > 0 ? '-₹' + plain(c.used) : '₹0' }}</span>
                     </li>
                   }
                 </ul>

@@ -7,6 +7,7 @@ import { SessionStore } from '../session/session.store';
 import { Policy } from './policy';
 import { PolicyDetail } from './policy-detail';
 import {
+  OpdConsumptionCycleDto,
   OpdPolicyMemberAssignmentDto,
   OpdPolicyVersionDto,
   PolicyBenefitPoolDto,
@@ -43,6 +44,7 @@ export class PolicyStore {
   private readonly _assignment = signal<OpdPolicyMemberAssignmentDto | null>(null);
   private readonly _version = signal<OpdPolicyVersionDto | null>(null);
   private readonly _rawPools = signal<readonly PolicyBenefitPoolDto[]>([]);
+  private readonly _consumptionCycles = signal<readonly OpdConsumptionCycleDto[]>([]);
   private readonly _policies = signal<readonly Policy[]>([]);
   private readonly _detail = signal<PolicyDetail | null>(null);
   private readonly _activeRelationshipCode = signal<string>('self');
@@ -54,6 +56,7 @@ export class PolicyStore {
 
   readonly assignment = this._assignment.asReadonly();
   readonly version = this._version.asReadonly();
+  readonly consumptionCycles = this._consumptionCycles.asReadonly();
   readonly policies = this._policies.asReadonly();
   readonly detail = this._detail.asReadonly();
   readonly loading = this._loading.asReadonly();
@@ -65,15 +68,15 @@ export class PolicyStore {
   );
 
   readonly walletTotal = computed(() =>
-    toWalletTotalFromVersion(this._version(), this._activeRelationshipCode()),
+    toWalletTotalFromVersion(this._version(), this._activeRelationshipCode(), this._consumptionCycles()),
   );
 
   readonly categories = computed(() =>
-    toCategoriesFromVersion(this._version(), this._activeRelationshipCode()),
+    toCategoriesFromVersion(this._version(), this._activeRelationshipCode(), this._consumptionCycles()),
   );
 
   readonly pools = computed(() =>
-    toPoolsFromApiAndVersion(this._rawPools(), this._version(), this._activeRelationshipCode()),
+    toPoolsFromApiAndVersion(this._rawPools(), this._version(), this._activeRelationshipCode(), this._consumptionCycles()),
   );
 
   /**
@@ -127,6 +130,7 @@ export class PolicyStore {
         this._assignment.set(null);
         this._version.set(null);
         this._rawPools.set([]);
+        this._consumptionCycles.set([]);
         this._policies.set([]);
         this._detail.set(null);
         this._loading.set(false);
@@ -135,7 +139,7 @@ export class PolicyStore {
 
       this._assignment.set(assignment);
 
-      // Step 2: Query policy version and policy benefit category pools in parallel
+      // Step 2: Query policy version, benefit pools, and consumption cycles in parallel
       const versionPromise: Promise<any> = new Promise((resolve, reject) => {
         const queryArgs = `queryId=GET_PAGE&filter=id%3A${encodeURIComponent(assignment.policy_version_id)}&page_no=0&page_size=2`;
         this.appService
@@ -162,7 +166,31 @@ export class PolicyStore {
           })
         : Promise.resolve(null);
 
-      const [versionRes, poolsRes] = await Promise.all([versionPromise, poolsPromise]);
+      const consumptionPromise: Promise<any> = new Promise((resolve) => {
+        const queryArgs = `queryId=GET_PAGE&filter=patient_id%3A${encodeURIComponent(patientId)}&page_no=0&page_size=1000`;
+        this.appService
+          .getcall('opd_consumption_cycle', 'habit-opd', queryArgs)
+          .subscribe({
+            next: (res: any) => resolve(res),
+            error: (err: any) => {
+              console.error('Failed to load consumption cycles:', err);
+              resolve(null);
+            },
+          });
+      });
+
+      const [versionRes, poolsRes, consumptionRes] = await Promise.all([
+        versionPromise,
+        poolsPromise,
+        consumptionPromise,
+      ]);
+
+      let parsedCycles: OpdConsumptionCycleDto[] = [];
+      if (consumptionRes) {
+        const parsed = typeof consumptionRes === 'string' ? JSON.parse(consumptionRes) : consumptionRes;
+        parsedCycles = parsed?.resource ?? [];
+      }
+      this._consumptionCycles.set(parsedCycles);
 
       const parsedVersion = typeof versionRes === 'string' ? JSON.parse(versionRes) : versionRes;
       const version: OpdPolicyVersionDto | undefined = parsedVersion?.resource?.[0];
@@ -216,6 +244,7 @@ export class PolicyStore {
       this._assignment.set(null);
       this._version.set(null);
       this._rawPools.set([]);
+      this._consumptionCycles.set([]);
       this._policies.set([]);
       this._detail.set(null);
     } finally {
@@ -262,6 +291,7 @@ export class PolicyStore {
     this._assignment.set(null);
     this._version.set(null);
     this._rawPools.set([]);
+    this._consumptionCycles.set([]);
     this._policies.set([]);
     this._detail.set(null);
     this._activeRelationshipCode.set('self');
