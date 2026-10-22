@@ -10,7 +10,6 @@ import { ClaimOption } from '../../shared/ui/claim-option';
 
 import { FamilyStore } from '../../core/family/family.store';
 import { Router } from '@angular/router';
-import { NgClass } from '../../../../../../node_modules/@angular/common/types/_common_module-chunk';
 
 /**
  * Annual Health Check booking.
@@ -80,7 +79,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption, NgClass],
+  imports: [ClaimOption],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -120,7 +119,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                 This benefit can be taken only once a year. Both pathology and radiology are booked.
               </p>
             </div>
-          } @else if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
+          } @else if (canBookCashless()) {
             <h2 class="mb-1 text-lg font-bold text-[#034DA2]">Choose how to book</h2>
             <p class="mb-3 text-sm text-ink-700">
               Book pathology and radiology individually, or the entire package in one go. Choosing a
@@ -134,7 +133,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
             }
           }
 
-          @if (claimModes.allowsCashless(BenefitCategory.HealthPackages)) {
+          @if (canBookCashless()) {
           <div class="space-y-3">
             @if (ahcStore.packageLoading()) {
               <p class="rounded-2xl border border-[#EDF0F7] bg-white p-4 text-sm text-ink-500">Loading your health check package…</p>
@@ -204,7 +203,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
           </div>
           }
           <div class="mt-4">
-            <opd-claim-option [category]="BenefitCategory.HealthPackages" [label]="'the annual health check'" />
+            <opd-claim-option [category]="BenefitCategory.HealthPackages" [label]="'the annual health check'" [cashlessAvailable]="canBookCashless()" />
           </div>
 
 
@@ -821,6 +820,19 @@ export class WellnessPage {
   );
 
   userInfo = this.userStore.userInfo();
+
+  /**
+   * Whether the booking tiles are offered. The policy's cashless flag decides,
+   * unless AHC_PACKAGE_DETAIL hands the member a package with bookable legs —
+   * a package the API offers is bookable whatever the claim mode says. While
+   * the package loads, its loading state shows rather than a claims-only note.
+   */
+  protected readonly canBookCashless = computed(
+    () =>
+      this.claimModes.allowsCashless(BenefitCategory.HealthPackages) ||
+      this.ahcStore.packageLoading() ||
+      this.ahcStore.serviceTiles().length > 0,
+  );
 
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.searchTimer));

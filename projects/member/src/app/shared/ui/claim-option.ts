@@ -44,7 +44,15 @@ export class ClaimOption {
   readonly category = input.required<BenefitCategory>();
   /** The benefit's name, for the claims-only note. */
   readonly label = input.required<string>();
+  /**
+   * Whether the screen has something to book cashless. Left unset, the policy's
+   * claim mode decides; a screen that knows better (e.g. the API offered a
+   * bookable package) passes it so the claims-only note does not contradict it.
+   */
+  readonly cashlessAvailable = input<boolean | null>(null);
 
   protected readonly modes = inject(ClaimModeStore);
-  protected readonly claimsOnly = computed(() => !this.modes.allowsCashless(this.category()));
+  protected readonly claimsOnly = computed(
+    () => !(this.cashlessAvailable() ?? this.modes.allowsCashless(this.category())),
+  );
 }

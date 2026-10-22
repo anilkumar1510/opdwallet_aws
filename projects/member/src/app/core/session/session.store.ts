@@ -85,6 +85,11 @@ export class SessionStore {
     void this.router.navigate([SESSION_ERROR_PATH], { queryParams: { reason } });
   }
 
+  /** The signed-in member, once the family list names the primary one (FamilyStore). */
+  setMember(member: Member): void {
+    this._member.set(member);
+  }
+
   async login(_email: string, _password: string): Promise<boolean> {
     return this.restore();
   }
