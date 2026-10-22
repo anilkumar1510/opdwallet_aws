@@ -9,6 +9,8 @@ import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
 
 import { FamilyStore } from '../../core/family/family.store';
+import { Router } from '@angular/router';
+import { NgClass } from '../../../../../../node_modules/@angular/common/types/_common_module-chunk';
 
 /**
  * Annual Health Check booking.
@@ -70,13 +72,15 @@ function formatAddress(a: CollectionAddress): string {
     .join(', ');
 }
 
+const RUPEES = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
+
 /** The booking status timeline; a row's `stage` names where it is. */
 const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption],
+  imports: [ClaimOption, NgClass],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -687,7 +691,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
               type="button"
               class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50"
               [disabled]="!allDone()"
-              (click)="view.set('review')"
+              (click)="reviewBooking()"
             >
               Review booking
             </button>
@@ -729,12 +733,21 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
             </button>
             <button
               type="button"
-              class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]"
+              class="min-h-touch flex-1 rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2] disabled:opacity-50"
+              [disabled]="!ahcStore.AHCIsProceedToBooking() || ahcStore.checkoutLoading() || booking()"
               (click)="confirm()"
             >
-              Proceed to booking
+              {{ proceedLabel() }}
             </button>
           </div>
+          @if (!ahcStore.checkoutLoading() && !ahcStore.AHCIsProceedToBooking()) {
+            <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">
+              We could not prepare this booking. Go back and review it again.
+            </p>
+          }
+          @if (bookingError(); as err) {
+            <p class="mt-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ err }}</p>
+          }
         }
       </div>
     </div>
@@ -746,6 +759,7 @@ export class WellnessPage {
   protected readonly location = inject(LocationStore);
   protected readonly claimModes = inject(ClaimModeStore);
   protected readonly BenefitCategory = BenefitCategory;
+  private readonly router = inject(Router);
   private readonly family = inject(FamilyStore);
 
   // Booked in this visit, before AHC_PACKAGE_DETAIL is read again and lists it.
@@ -760,6 +774,9 @@ export class WellnessPage {
   );
   protected readonly confirmation = signal<string | null>(null);
   protected readonly bookingSteps = BOOKING_STEPS;
+  /** True while book_appointment, and any payment after it, is under way. */
+  protected readonly booking = signal(false);
+  protected readonly bookingError = signal<string | null>(null);
 
   protected readonly activeLeg = signal<Leg | null>(null);
   /** The accordion of steps, or the review that follows it. */
@@ -1175,18 +1192,41 @@ export class WellnessPage {
     history.back();
   }
 
-  protected confirm(): void {
+  /**
+   * Books the leg; when the member has a share to pay, the store opens the
+   * payment gateway before this resolves.
+   */
+  protected async confirm(): Promise<void> {
+    if (this.booking() || !this.userInfo?.length) return;
     const leg = this.activeLeg();
-    this.ahcStore.ahcAddToCart(this.userInfo[0]);
-    if (leg === 'pathology') {
-      this.pathologyBookedNow.set(true);
-      this.confirmation.set('Pathology booked and billed. You can now book the radiology leg.');
-    } else if (leg === 'radiology') {
-      this.radiologyBookedNow.set(true);
-      this.confirmation.set('Radiology booked and confirmed. Your annual health check is complete.');
-    } else if (leg === 'package') {
-      this.packageBooked.set(true);
-      this.confirmation.set('Package booked and billed — pathology and radiology are both confirmed.');
+    this.booking.set(true);
+    this.bookingError.set(null);
+    const outcome = await this.ahcStore.ahcBookAppointment(this.userInfo[0]);
+    this.booking.set(false);
+
+    if (outcome.status === 'failed') {
+      this.bookingError.set('We could not book this. Please try again.');
+      return;
+    }
+    // Off to Razorpay; the member comes back on the payment-status page.
+    if (outcome.status === 'redirecting') return;
+
+    if (leg === 'pathology') this.pathologyBookedNow.set(true);
+    else if (leg === 'radiology') this.radiologyBookedNow.set(true);
+    else if (leg === 'package') this.packageBooked.set(true);
+
+    const what = leg === 'pathology' ? 'Pathology' : leg === 'radiology' ? 'Radiology' : 'Package';
+    switch (outcome.status) {
+      case 'payment-cancelled':
+        this.confirmation.set(`${what} is booked, but the payment was not completed. Your booking stays pending until it is paid.`);
+        break;
+      case 'payment-failed':
+        this.confirmation.set(`${what} is booked, but the payment failed: ${outcome.reason} Your booking stays pending until it is paid.`);
+        break;
+      default:
+        if (leg === 'pathology') this.confirmation.set('Pathology booked and billed. You can now book the radiology leg.');
+        else if (leg === 'radiology') this.confirmation.set('Radiology booked and confirmed. Your annual health check is complete.');
+        else this.confirmation.set('Package booked and billed — pathology and radiology are both confirmed.');
     }
     this.activeLeg.set(null);
     this.view.set('steps');
@@ -1199,4 +1239,21 @@ export class WellnessPage {
     this.confirmation.set(null);
     this.activeLeg.set(null);
   }
+  /** Opens the review and prices the booking (cart_add, then checkout) for it. */
+  protected reviewBooking(): void {
+    this.view.set('review');
+    const user = this.userStore.userInfo()?.[0];
+    if (user) void this.ahcStore.ahcAddToCart(user);
+  }
+
+  /** The member's share from checkout; the API may send it as text ("1200.0"). */
+  protected readonly copayAmount = computed(() => Number(this.ahcStore.AHCCopayAmount()) || 0);
+
+  /** The review's main button — it books, and takes the payment when there is a share to pay. */
+  protected readonly proceedLabel = computed(() => {
+    if (this.booking()) return 'Booking…';
+    if (this.ahcStore.checkoutLoading()) return 'Preparing your booking…';
+    const copay = this.copayAmount();
+    return copay > 0 ? `Pay ${RUPEES.format(copay)} via Razorpay` : 'Proceed to booking';
+  });
 }

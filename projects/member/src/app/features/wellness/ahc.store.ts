@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { AppService } from '../../core/http/api.service';
 import { LocationStore } from '../../core/location/location.store';
 import { BookingsStore } from '../../core/bookings/bookings.store';
+import { PaymentGatewayService, PaymentRequest } from '../../core/payment/payment-gateway.service';
 
 /** One saved collection address, decrypted and ready to show. */
 export interface CollectionAddress {
@@ -96,6 +97,15 @@ export interface AhcBooking {
     raw: any;
 }
 
+/** How a booking attempt ended, for the page to report. */
+export type AhcBookingOutcome =
+    | { status: 'booked' }
+    /** Sent to Razorpay; the member comes back on the payment-status page. */
+    | { status: 'redirecting' }
+    | { status: 'payment-cancelled' }
+    | { status: 'payment-failed'; reason: string }
+    | { status: 'failed' };
+
 /** sessionStorage key for the picked provider. */
 const SELECTED_PROVIDER_KEY = 'ahcSelectedProvider';
 
@@ -104,6 +114,7 @@ const SELECTED_PROVIDER_KEY = 'ahcSelectedProvider';
 export class AHCStore {
     private readonly location = inject(LocationStore);
     private readonly bookings = inject(BookingsStore);
+    private readonly payments = inject(PaymentGatewayService);
     private readonly _ahcList = signal<any | null>(null);
     private readonly _ahcServiceItemList = signal<any | null>(null);
     private readonly _ahcSelectedItem = signal<AhcSelectedService | null>(null);
@@ -131,6 +142,10 @@ export class AHCStore {
     private readonly _isPathologyServiceStatus = signal(<any | null>(null));
     private readonly _ahcBookingInfo = signal(<any | null>(null));
     private readonly _ahcBookings = signal<AhcBooking[]>([]);
+    private readonly _ahcIsProceedToBooking = signal<any>(false);
+    /** True from cart_add until checkout settles — the copay is unknown until then. */
+    private readonly _checkoutLoading = signal(false);
+    private readonly _ahcCopayAmount = signal(<any | null>(null));
     
     private slotSeq = 0;
     readonly AHC = this._ahcList.asReadonly();
@@ -154,6 +169,9 @@ export class AHCStore {
     readonly AHCBookingInfo = this._ahcBookingInfo.asReadonly();
     /** Legs of this year's package already booked, from AHC_PACKAGE_DETAIL. */
     readonly AHCBookings = this._ahcBookings.asReadonly();
+    readonly AHCIsProceedToBooking = this._ahcIsProceedToBooking.asReadonly();
+    readonly checkoutLoading = this._checkoutLoading.asReadonly();
+    readonly AHCCopayAmount = this._ahcCopayAmount.asReadonly();
     startDateTimeStamp: any;
     startDateObj: any;
     dateAndStartTimeTimestamp:any;
@@ -215,7 +233,7 @@ export class AHCStore {
                 //         //"ddb554b0-c21b-11f1-97e2-eadcbe87e341-78"
                 //         // pathalogy "853e6780-c6d1-11f1-9653-4eb7369f2b18-19"  //"853f03c0-c6d1-11f1-9653-4eb7369f2b18-21"
                 //         );
-                if(resources.length > 1){
+                if(resources.length > 0){
                     const selectedPackage = resources[0];
                     this._ahcList.set(selectedPackage ?? null);
                     if (!selectedPackage) {
@@ -670,7 +688,7 @@ export class AHCStore {
         console.log('dateAndStartTimeTimestamp :', this.dateAndEndTimeTimestamp)
         let payload: any= {
             cart_snapshot: {
-                opdcart: {
+                // opdcart: {
                     "facility_id": userInfo?.facilities[0]?.org_id,
                     "patient_id": userInfo?.user_id,
                     "serviceType": packageListObj?.data?.service_type, //"OP Package",
@@ -727,13 +745,16 @@ export class AHCStore {
                     "slot": selectedSlots?.raw?.slot || selectedSlots?.label,
                     "slot_type": slotResponse?.slot_type,
                     "mode_of_appointment": "opd_network"
-                }
+                // }
             }
         }
         if(provider?.raw?.extra_data?.is_centre_visit){
-            payload.cart_snapshot.opdcart.center_name = provider?.name;
-            payload.cart_snapshot.opdcart.center_code = provider?.code;
-            payload.cart_snapshot.opdcart.center_address = {
+            // payload.cart_snapshot.opdcart.center_name = provider?.name;
+            // payload.cart_snapshot.opdcart.center_code = provider?.code;
+            // payload.cart_snapshot.opdcart.center_address = {
+            payload.cart_snapshot.center_name = provider?.name;
+            payload.cart_snapshot.center_code = provider?.code;
+            payload.cart_snapshot.center_address = {
                         "street1": selectedCentre?.raw?.primary_address?.street1 ,
                         "street2": selectedCentre?.raw?.primary_address?.street2 ,
                         "street3": "",
@@ -749,7 +770,8 @@ export class AHCStore {
                         "longitude": selectedCentre?.raw?.primary_address?.longitude 
                     }
         } else {
-            payload.cart_snapshot.opdcart.order_address = {
+            // payload.cart_snapshot.opdcart.order_address = {
+            payload.cart_snapshot.order_address = {
                         "id": selectedCollectionAddress?.id,
                         "label": selectedCollectionAddress?.type,
                         "isDefault": false,
@@ -768,18 +790,28 @@ export class AHCStore {
                         "stateDisplayName": selectedCollectionAddress?.state,
                     }
         }
+        // A previous leg's checkout must not be booked or paid for while this one loads.
+        this._ahcCheckoutResponse.set(null);
+        this._ahcIsProceedToBooking.set(false);
+        this._ahcCopayAmount.set(0);
+        this._checkoutLoading.set(true);
         try {
             const response = await firstValueFrom( this.appService.postCall(resourceName, applicationName, '', payload, actionName));
             const parsed = typeof response === 'string' ? JSON.parse(response) : response;
-            const resources: any[] = parsed?.resource ?? [];
-            console.log('resources ', resources)
-            this._ahcCartResponse.set(resources[0])
-            await this.ahcCheckout(userInfo, resources[0], selectedItem)
+            if(parsed?.errCode !== -1){
+                const resources: any[] = parsed?.resource ?? [];
+                this._ahcCartResponse.set(resources[0])
+                await this.ahcCheckout(userInfo, resources[0], selectedItem)
+            } else{
+                this._ahcCartResponse.set(null)
+            }
             return true;
         } catch (error) {
             console.error('AHC cart_add failed:', error);
             this._ahcCartResponse.set(null)
             return false;
+        } finally {
+            this._checkoutLoading.set(false);
         }
 
     }
@@ -790,11 +822,13 @@ export class AHCStore {
         const provider = this._selectedProvider();
         const pincodeAndLocation = this.location.place();
         const packageListObj =this.AHC();
-        const selectedSlots = this.AHCSelectedSlot()
-        const cartRes = cartResponse?.cart_snapshot?.opdcart;
+        const selectedSlots = this.AHCSelectedSlot();
+        // const cartRes = cartResponse?.cart_snapshot?.opdcart;
+        const cartRes = cartResponse?.cart_snapshot;
         const cartId = cartResponse?.id
         let payload = {
-            policy_id: "786123",
+            policy_id: "238c2e20-cb8e-11f1-8207-5ab01a7f1a07-1", //<-- Test CUG //"786123",--> testprod
+            ahc_route: selectedItem?.tile?.serviceType,
             checkout_snapshot: {
                 opdCheckout: {
                     "mode_of_appointment": "opd_network",
@@ -894,23 +928,33 @@ export class AHCStore {
         try {
             const response = await firstValueFrom( this.appService.postCall(resorceName, applicationName, '', payload, actionName));
             const parsed = typeof response === 'string' ? JSON.parse(response) : response;
-            const resources: any[] = parsed?.resource ?? [];
-            console.log('checkout resources ', resources)
-            this._ahcCheckoutResponse.set(resources[0])
-            await this.ahcBookAppointment(userInfo, resources[0])
+            if(parsed?.errCode !== -1){
+                const resources: any[] = parsed?.resource ?? [];
+                console.log('checkout resources ', resources)
+                this._ahcCheckoutResponse.set(resources[0])
+                this._ahcIsProceedToBooking.set(true)
+                this._ahcCopayAmount.set(resources[0]?.checkout_snapshot?.copay_amount)
+            } else{
+                this._ahcCheckoutResponse.set(null)
+                this._ahcIsProceedToBooking.set(false)
+                this._ahcCopayAmount.set(0)
+            }
+            // await this.ahcBookAppointment(userInfo, resources[0])
             return true;
         } catch (error) {
             console.error('AHC checkout failed:', error);
             this._ahcCheckoutResponse.set(null)
+            this._ahcCopayAmount.set(0)
             return false;
         }
 
     }
-    async ahcBookAppointment(userInfo: any, checkoutResponse: any){
+    async ahcBookAppointment(userInfo: any): Promise<AhcBookingOutcome> {
         const applicationName = 'habit-opd';
         const resorceName = 'opd_ahc_booking';
         const actionName = 'book_appointment';
-        // const selectedItem: any = this.AHCSelectedItem();
+        const selectedItem: any = this.AHCSelectedItem();
+        const checkoutResponse = this._ahcCheckoutResponse();
         const checkoutRes = checkoutResponse?.checkout_snapshot?.opdCheckout;
         const checkoutCenterAddress = checkoutResponse?.checkout_snapshot?.opdCheckout?.center_address;
         const checkoutPatientDetails = checkoutResponse?.checkout_snapshot?.opdCheckout?.patient_details;
@@ -924,6 +968,7 @@ export class AHCStore {
             // finalPayableAmount = finalPayableAmount + homeCollectionCharges;
         }
         let payload: any = {
+                ahc_route: selectedItem?.tile?.serviceType,
                 booking_snapshot: {
                     serviceRequestHandler: {
                         "patient_details": {
@@ -1009,17 +1054,67 @@ export class AHCStore {
             console.log('AHC book_appointment request starting');
             const response = await firstValueFrom( this.appService.postCall(resorceName, applicationName, '', payload, actionName));
             const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            if (parsed?.errCode === -1) return { status: 'failed' };
             const resources: any[] = parsed?.resource ?? [];
             console.log('Booking response ', resources)
-            this.getAHCList(userInfo);
-            // The new booking belongs on the bookings screen too.
-            void this.bookings.refresh();
-            return true;
+            const patientAmount = Number(checkoutResponse?.checkout_snapshot?.copay_amount) || 0;
+            let outcome: AhcBookingOutcome = { status: 'booked' };
+            // The member's share is taken through the payment gateway once the booking exists.
+            if (patientAmount > 0) {
+                const payment = await this.payments.pay(this.paymentRequest(userInfo, checkoutRes, resources, patientAmount));
+                outcome =
+                    payment.status === 'redirecting' ? { status: 'redirecting' }
+                    : payment.status === 'cancelled' ? { status: 'payment-cancelled' }
+                    : { status: 'payment-failed', reason: payment.reason };
+            }
+            // if (outcome.status !== 'redirected') {
+            //     this.getAHCList(userInfo);
+            //     // The new booking belongs on the bookings screen too.
+            //     void this.bookings.refresh();
+            // }
+            return outcome;
         } catch (error) {
             console.error('AHC book_appointment failed:', error);
             this._ahcCheckoutResponse.set(null)
-            return false;
+            return { status: 'failed' };
         }
+    }
+
+    /**
+     * The payment for a just-booked AHC leg. Ids are read off the
+     * book_appointment response — field names are best guesses, confirm
+     * against a live response.
+     */
+    private paymentRequest(userInfo: any, checkoutRes: any, resources: any[], amount: number): PaymentRequest {
+        const rows = resources.flatMap((row) => (row?.data ? [row.data, row] : [row]));
+        const first = (...keys: string[]): string => {
+            for (const row of rows) for (const key of keys) if (textOf(row?.[key])) return textOf(row[key]);
+            return '';
+        };
+        const listed: unknown[] = rows.find((row) => Array.isArray(row?.serviceRequestIds))?.serviceRequestIds ?? [];
+        const fromServices = rows.flatMap((row) => (Array.isArray(row?.services) ? row.services : []))
+            .map((service: any) => textOf(service?.serviceRequestId ?? service?.id));
+        const serviceRequestIds = (listed.length ? listed.map(textOf) : fromServices).filter(Boolean);
+        const facilityId = textOf(checkoutRes?.facility_id) || textOf(userInfo?.facilities?.[0]?.org_id);
+        const name = pickText(userInfo, 'full_name', 'name', 'display_name') ||
+            [userInfo?.first_name, userInfo?.last_name].map(textOf).filter(Boolean).join(' ');
+        return {
+            amount,
+            orderId: first('orderId', 'order_id', 'order_no', 'orderNo'),
+            gatewayFacilityId: textOf(checkoutRes?.ordering_facility_id) || facilityId,
+            facilityId,
+            uhId: textOf(checkoutRes?.uhId) || textOf(userInfo?.user_roles?.[0]?.uhid),
+            serviceRequestIds: serviceRequestIds.length ? serviceRequestIds : [first('serviceRequestId')].filter(Boolean),
+            serviceRequestHandlerId: first('service_request_handler_id', 'serviceRequestHandlerId', 'id'),
+            description: this.AHC()?.data?.service_item || 'Annual Health Check',
+            returnTo: '/member/wellness',
+            returnLabel: 'Back to Annual Health Check',
+            prefill: {
+                name,
+                email: pickText(userInfo, 'email', 'email_id'),
+                contact: pickText(userInfo, 'mobile', 'mobile_no', 'mobile_number', 'phone'),
+            },
+        };
     }
 }
 

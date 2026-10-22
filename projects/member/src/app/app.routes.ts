@@ -697,6 +697,12 @@ export const routes: Routes = [
           ),
       },
       {
+        // Every Razorpay payment comes back here (the gateway's source_url).
+        path: 'payment-status',
+        loadComponent: () =>
+          import('./features/payment/payment-status-page').then((m) => m.PaymentStatusPage),
+      },
+      {
         path: 'payments/:paymentId',
         loadComponent: () =>
           import('./features/transactions/payment-detail-page').then((m) => m.PaymentDetailPage),

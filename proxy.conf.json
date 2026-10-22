@@ -64,5 +64,16 @@
         "referer": "https://habithealth.com",
         "origin": "https://habithealth.com"
     }
+  },
+  "/payment-gateway/api": {
+    "target": "https://api.habithealth.com",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "headers": {
+        "host": "api.habithealth.com",
+        "referer": "https://habithealth.com",
+        "origin": "https://habithealth.com"
+    }
   }
 }
