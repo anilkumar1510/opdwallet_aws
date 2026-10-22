@@ -971,22 +971,18 @@ export class ClaimDetailPage {
       return;
     }
     // Issue HTTP request to the opd_claim backend to set status to CANCELLED
-    const payload = {
-      resource: JSON.stringify({
-        claim_status: 'CANCELLED',
-        action: 'cancel',
-        reason: this.reason(),
-      }),
+    // Pattern matches sendDocuments() format: resource=<encoded_json>&application=habit-opod&action=cancel
+    const resourcePayload = {
+      claim_status: 'CANCELLED',
       action: 'cancel',
-      application: 'habit-opd',
+      reason: this.reason(),
     };
-    const options = this.appService.addXsrfToken(
-      btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),
-      true,
-    );
+    const encodedResourceData = btoa(unescape(encodeURIComponent(JSON.stringify(resourcePayload))));
+    const params = 'resource=' + encodedResourceData + '&application=habit-opd&action=cancel';
+    const options = this.appService.addXsrfToken(params, true);
     try {
       await firstValueFrom(
-        this.http.post('habit-opd/api/v1/opd_claim', payload, options),
+        this.http.post('habit-opd/api/v1/opd_claim', params, options),
       );
       // Success: navigate to claims list where claim shows CANCELLED
       void this.router.navigate(['/member/claims']);
@@ -1000,7 +996,6 @@ export class ClaimDetailPage {
       this.submitting.set(false);
     }
   }
-
   /**
    * `treatment_date` and `submitted_at` arrive from GET_PAGE as epoch millis,
    * while the timeline entries are still `Date`s — both reach this one helper,
