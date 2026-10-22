@@ -443,10 +443,29 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
       <ng-template #liveReply let-t let-isResolved="isResolved">
         <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
         <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" maxlength="2000" [value]="reply()" [disabled]="replying()" (input)="reply.set($any($event.target).value)"></textarea>
+
+        <!-- Document upload section with chatbox -->
+        <div class="mt-3">
+          <input type="file" id="reply-docs" class="sr-only" multiple [accept]="attachmentAccept" [disabled]="replying()" (change)="onReplyDocs($event)" />
+          <label for="reply-docs" class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-4 py-2.5 text-center transition-colors hover:border-[#0F5FDC]">
+            <span class="text-sm font-medium text-[#0B2C63]">📎 {{ replyDocs().length ? 'Add more documents' : 'Attach documents (PDF, Word, Image)' }}</span>
+          </label>
+          @if (replyDocs().length) {
+            <ul class="mt-2 space-y-1.5">
+              @for (d of replyDocs(); track d.file) {
+                <li class="flex items-center justify-between gap-2 rounded-lg border border-surface-border bg-white px-3 py-1.5 text-xs">
+                  <span class="min-w-0 truncate text-ink-900">{{ d.file.name }} · {{ d.state === 'uploading' ? 'uploading…' : d.state === 'done' ? 'uploaded' : 'failed' }}</span>
+                  <button type="button" class="min-h-touch shrink-0 px-1 font-medium text-danger-700 underline" [attr.aria-label]="'Remove ' + d.file.name" (click)="removeReplyDoc(d.file)">Remove</button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
         @if (replyError(); as err) {
           <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
         }
-        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="(!reply().trim() && !hasUploadedReplyDocs()) || replying() || hasUploadingReplyDocs()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
         <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : (isResolved ? 'Close Ticket' : 'Mark resolved') }}</button>
         <p class="mt-2 text-xs text-ink-500">{{ isResolved ? 'Close Ticket marks the grievance as closed for good.' : 'Mark resolved closes the ticket.' }}</p>
       </ng-template>
@@ -577,6 +596,9 @@ export class HelplinePage {
   protected readonly reason = signal('');
   protected readonly detail = signal('');
   protected readonly reply = signal('');
+  protected readonly replyDocs = signal<UploadedDoc[]>([]);
+  protected readonly hasUploadedReplyDocs = computed(() => this.replyDocs().some((d) => d.state === 'done'));
+  protected readonly hasUploadingReplyDocs = computed(() => this.replyDocs().some((d) => d.state === 'uploading'));
   protected readonly docs = signal<UploadedDoc[]>([]);
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<string | null>(null);
@@ -1034,15 +1056,49 @@ export class HelplinePage {
     this.docs.update((list) => list.filter((d) => d.file !== file));
   }
 
+  protected async onReplyDocs(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const chosen = Array.from(input.files ?? []);
+    input.value = '';
+    this.replyError.set(null);
+    const tooBig = chosen.filter((f) => f.size > MAX_ATTACHMENT_BYTES).map((f) => f.name);
+    const wrongType = chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && !isAllowedAttachment(f)).map((f) => f.name);
+    const problems: string[] = [];
+    if (tooBig.length) problems.push(`Over 5 MB: ${tooBig.join(', ')}`);
+    if (wrongType.length) problems.push(`Not a PDF, Word or image file: ${wrongType.join(', ')}`);
+    const have = new Set(this.replyDocs().map((d) => d.file.name));
+    for (const file of chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && isAllowedAttachment(f) && !have.has(f.name))) {
+      const entry: UploadedDoc = { file, state: 'uploading' };
+      this.replyDocs.update((list) => [...list, entry]);
+      const result = await this.disputeApi.uploadDocument(file);
+      this.replyDocs.update((list) => list.map((d) => (d.file === file
+        ? (result.ok ? { file, state: 'done', documentId: result.documentId, name: result.name } : { file, state: 'failed' })
+        : d)));
+      if (!result.ok) problems.push(result.message);
+    }
+    if (problems.length) this.replyError.set(problems.join('. ').replace(/\.\.+/g, '.') + (problems.join('').endsWith('.') ? '' : '.'));
+  }
+
+  protected removeReplyDoc(file: File): void {
+    this.replyDocs.update((list) => list.filter((d) => d.file !== file));
+  }
+
   protected async sendReply(t: SupportTicket): Promise<void> {
     const text = this.reply().trim();
-    if (!text) return;
+    const uploaded = this.replyDocs().filter((d) => d.state === 'done' && d.documentId);
+    if (!text && uploaded.length === 0) return;
     const record = this.liveRecords().find((r) => r.name === t.id);
     if (record) {
       if (this.replying()) return;
       this.replying.set(true);
       this.replyError.set(null);
-      const result = await this.disputeApi.reply(record, text);
+      const docsPayload = uploaded.map((d) => ({
+        documentId: d.documentId!,
+        name: d.name || d.file.name,
+      }));
+      const docIds = uploaded.map((d) => d.documentId!);
+      const messageText = text || 'Attached document(s)';
+      const result = await this.disputeApi.reply(record, messageText, docsPayload, docIds);
       this.replying.set(false);
       if (!result.ok) {
         // The text stays in the box so nothing the member wrote is lost.
@@ -1052,13 +1108,15 @@ export class HelplinePage {
         return;
       }
       this.reply.set('');
+      this.replyDocs.set([]);
       this.notice.set('Reply sent. The ticket is back with the support team.');
       await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
       this.scrollToActions();
       return;
     }
-    this.update(t, { state: 'awaiting_support' }, { from: 'member', text, at: new Date() });
+    this.update(t, { state: 'awaiting_support' }, { from: 'member', text: text || 'Attached document(s)', at: new Date() });
     this.reply.set('');
+    this.replyDocs.set([]);
     this.notice.set('Reply sent. The ticket is back with the support team.');
   }
 
@@ -1066,18 +1124,16 @@ export class HelplinePage {
     const record = this.liveRecords().find((r) => r.name === t.id);
     if (record) {
       if (this.resolving()) return;
-      let text = this.reply().trim();
-      if (!text) {
-        const input = window.prompt('Please enter remarks for resolving this ticket (optional):');
-        if (input === null) return;
-        text = input.trim();
-      }
+      const isResolved = t.state === 'resolved';
+      const text = this.reply().trim();
       this.resolving.set(true);
       this.replyError.set(null);
+      const targetStatus = isResolved ? 'CLOSE' : 'RESOLVED';
+      const defaultReason = isResolved ? 'Closed by member' : 'Resolved by member';
       const result = await this.disputeApi.resolve({
         name: record.name,
-        finalReason: text || 'Resolved by member',
-        disputeStatus: 'CLOSE',
+        finalReason: text || defaultReason,
+        disputeStatus: targetStatus,
       });
       this.resolving.set(false);
       if (!result.ok) {
@@ -1085,7 +1141,9 @@ export class HelplinePage {
         return;
       }
       this.reply.set('');
-      this.notice.set('Thanks — the ticket is closed.');
+      this.replyDocs.set([]);
+      this.notice.set(isResolved ? 'Thanks — the ticket is closed.' : 'Ticket marked as resolved.');
+      this.update(t, { state: isResolved ? 'closed' : 'resolved' });
       await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
       return;
     }
@@ -1114,8 +1172,8 @@ export class HelplinePage {
     this.notice.set('Support resolved and closed the ticket — you were notified in the app, on WhatsApp and by email.');
   }
 
-  private update(t: SupportTicket, patch: Partial<SupportTicket>, message: TicketMessage): void {
-    this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, ...patch, messages: [...x.messages, message] } : x)));
+  private update(t: SupportTicket, patch: Partial<SupportTicket>, message?: TicketMessage): void {
+    this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, ...patch, ...(message ? { messages: [...x.messages, message] } : {}) } : x)));
   }
 
   // ── Formatting ─────────────────────────────────────────────────────────

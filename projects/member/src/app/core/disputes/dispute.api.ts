@@ -283,10 +283,31 @@ export class DisputeApi {
    * in the resource's `message_text` (commas and colons included; the backend no
    * longer reads `args`). The backend flips the ticket back to support.
    */
-  reply(dispute: { name: string; id: string }, text: string): Promise<ReplyResult> {
+  reply(
+    dispute: { name: string; id: string },
+    text: string,
+    documents?: readonly { readonly documentId: string; readonly name: string }[],
+    documentIds?: readonly string[],
+  ): Promise<ReplyResult> {
+    const payload: Record<string, unknown> = {
+      resourceType: 'DisputeChat',
+      dispute_id: dispute.id,
+      message_text: text,
+    };
+    if (documents && documents.length > 0) {
+      payload['documents'] = documents.map((d) => ({
+        document_id: d.documentId,
+        originalname: d.name,
+        name: d.name,
+      }));
+    }
+    if (documentIds && documentIds.length > 0) {
+      payload['docidS'] = documentIds;
+      payload['documentIds'] = documentIds;
+    }
     return this.act(
       DISPUTE_API.chatResource,
-      { resourceType: 'DisputeChat', dispute_id: dispute.id, message_text: text },
+      payload,
       'userReply',
       undefined,
       'We could not send your reply. Please try again.',
@@ -300,7 +321,7 @@ export class DisputeApi {
       {
         resourceType: 'Dispute',
         name: dispute.name,
-        dispute_status: dispute.disputeStatus || 'CLOSE',
+        dispute_status: dispute.disputeStatus || 'RESOLVED',
         final_reason: dispute.finalReason || 'Resolved by member',
       },
       'userResolve',
@@ -312,7 +333,7 @@ export class DisputeApi {
   /** One signed `dispute` action on an existing ticket. */
   private async act(
     resource: string,
-    payload: Record<string, string>,
+    payload: Record<string, unknown>,
     action: string,
     args: string | undefined,
     failure: string,
@@ -443,6 +464,20 @@ function toDate(raw: unknown): Date {
 function toRecord(row: Record<string, any>): DisputeRecord | null {
   const name = row['name'] ?? row['ticket_id'];
   if (!name || !row['id']) return null;
+  const rawDocs = Array.isArray(row['documents']) ? row['documents'] : [];
+  const rawDocIds = Array.isArray(row['docidS']) ? row['docidS'] : (Array.isArray(row['documentIds']) ? row['documentIds'] : []);
+  const documents: Array<{ documentId: string; name: string }> = [];
+  for (const d of rawDocs) {
+    const docId = d?.document_id || d?.id || d?.documentId;
+    if (docId) {
+      documents.push({ documentId: String(docId), name: String(d.originalname || d.name || 'Document') });
+    }
+  }
+  for (const id of rawDocIds) {
+    if (typeof id === 'string' && id.trim() && !documents.some((d) => d.documentId === id.trim())) {
+      documents.push({ documentId: id.trim(), name: 'Document' });
+    }
+  }
   return {
     name: String(name),
     id: String(row['id']),
@@ -453,9 +488,7 @@ function toRecord(row: Record<string, any>): DisputeRecord | null {
     modifiedAt: toDate(row['g_modify_time'] ?? row['g_creation_time']),
     finalReason: row['final_reason'] ? String(row['final_reason']) : null,
     lastMessageSender: row['last_message_sender'] ? String(row['last_message_sender']) : null,
-    documents: (Array.isArray(row['documents']) ? row['documents'] : [])
-      .filter((d: any) => d?.document_id)
-      .map((d: any) => ({ documentId: String(d.document_id), name: String(d.originalname || d.name || 'Document') })),
+    documents,
   };
 }
 

@@ -50,3 +50,11 @@
 - [x] 5.5 Multi-tier ticket priority sorting in flagged claims: `Response Received (Rank 0) -> Open (Rank 1) -> Resolved (Rank 2) -> Un-ticketed / Ask for help (Rank 3) -> Closed (Rank 4)`.
 - [x] 5.6 Verified production build (`ng build member`) succeeds with zero errors.
 
+## 6. Live Reply Supporting Documents & Member Resolution (2026-10-22)
+
+- [x] 6.1 Remove blocking `window.prompt` confirmation on "Mark resolved" in `helpline-page.ts`, directly transitioning tickets to `RESOLVED` and dispatching `userResolve`.
+- [x] 6.2 Add integrated document attachment trigger directly in the active chatbox (`#liveReply`), enabling document uploads with every reply message via DMS (`/dms/api/v1/emrImage`).
+- [x] 6.3 Update `disputeApi.reply` to accept `documents` and `documentIds`, appending new supporting documents to the dispute thread and forwarding to Twenty CRM.
+- [x] 6.4 Verified production build succeeds with zero errors.
+
+
