@@ -524,7 +524,7 @@ function humaniseCode(value: string | undefined): string {
                     type="button"
                     class="min-h-touch flex-1 rounded-xl bg-danger-600 px-4 text-sm font-semibold text-white disabled:opacity-60"
                     [disabled]="store.submitting()"
-                    (click)="cancelClaim(detail.reference)"
+                    (click)="cancelClaim()"
                   >
                     {{ store.submitting() ? 'Cancelling…' : 'Yes, withdraw it' }}
                   </button>
@@ -592,6 +592,10 @@ export class ClaimDetailPage {
   }
 
   protected readonly confirming = signal(false);
+  protected readonly submitting = signal(false);
+  private getClaimId(): string | undefined {
+    return this.displayClaim()?.claim_id ?? this.claimId();
+  }
   protected readonly downloading = signal<string | null>(null);
   protected readonly downloadError = signal<string | null>(null);
 
@@ -955,11 +959,42 @@ export class ClaimDetailPage {
    * Takes the business reference, not the route's id — the cancel endpoint
    * wants CLM-… while the detail endpoint that loaded this claim wants _id.
    */
-  protected async cancelClaim(reference: string): Promise<void> {
-    console.log('Cancelling claim', reference, 'with reason', this.reason());
-    if (await this.store.cancel(reference, this.reason())) {
-      // web-member returns to the list, where the new status is visible.
+  protected async cancelClaim(): Promise<void> {
+    this.submitting.set(true);
+    const claimId = this.getClaimId();
+    if (!claimId) {
+      if (await this.store.cancel('', this.reason())) {
+        void this.router.navigate(['/member/claims']);
+      }
+      this.submitting.set(false);
+      return;
+    }
+    // Issue HTTP request to the opd_claim backend to set status to CANCELLED
+    const payload = {
+      resource: JSON.stringify({
+        claim_status: 'CANCELLED',
+        action: 'cancel',
+        reason: this.reason(),
+      }),
+      action: 'cancel',
+      application: 'habit-opd',
+    };
+    const options = this.appService.addXsrfToken(
+      btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),
+      true,
+    );
+    try {
+      await firstValueFrom(
+        this.http.post('habit-opd/api/v1/opd_claim', payload, options),
+      );
+      // Success: navigate to claims list where claim shows CANCELLED
       void this.router.navigate(['/member/claims']);
+    } catch (error) {
+      console.error('Failed to cancel claim:', error);
+      // Keep member on the page, show error
+      this.resubmitError.set('We could not cancel that claim. Please try again.');
+    } finally {
+      this.submitting.set(false);
     }
   }
 
