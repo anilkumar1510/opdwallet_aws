@@ -457,6 +457,28 @@ test.describe('Tickets come from the API', () => {
     await expect(page.getByText('Support has marked this ticket as Resolved.')).toBeVisible();
     await expect(page.getByText(/Resolution remarks:.*Claim re-adjudicated and approved\./)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Close Ticket' })).toBeVisible();
+    await expect(page.locator('#g-reply')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Jump to text box ↓' })).toBeVisible();
+  });
+
+  test('a ticket marked resolved by the member keeps the reply text box and close button available', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({
+      claim_id: 'OPD-2026-00354',
+      dispute_status: 'Resolved',
+      last_message_sender: 'MEMBER',
+      final_reason: 'I am satisfied with the current status.',
+    }, [
+      { sender_type: 'MEMBER', message_text: 'Issue details' },
+      { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Checked and clarified' },
+    ]);
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Resolved' }).click();
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible();
+    await expect(page.getByText(/Resolution remarks:.*I am satisfied with the current status\./)).toBeVisible();
+    await expect(page.locator('#g-reply')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close Ticket' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send reply' })).toBeVisible();
   });
 
   test('a closed ticket shows closed with its final remark, no reply box, no reopen, only the phone route', async ({ page }) => {
