@@ -118,7 +118,9 @@ export class PaymentGatewayService {
         return { status: 'failed', reason: 'Online payment is not set up for this facility yet.' };
       }
 
-      const returnUrl = `${window.location.origin}${PAYMENT_STATUS_PATH}?orderId=${encodeURIComponent(request.orderId)}`;
+      // No query string of its own: the gateway appends `?orderId=…&status=…` without
+      // checking for one, so a "?" here would leave a second "?" and garble both.
+      const returnUrl = `${window.location.origin}${PAYMENT_STATUS_PATH}`;
       const proceed = firstRow(
         await firstValueFrom(
           this.api.postCall(
