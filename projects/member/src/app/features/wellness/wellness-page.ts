@@ -7,6 +7,7 @@ import { Place } from './../../core/location/location';
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
+import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
 
 import { FamilyStore } from '../../core/family/family.store';
 import { Router } from '@angular/router';
@@ -79,7 +80,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 @Component({
   selector: 'opd-wellness-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption],
+  imports: [ClaimOption, CoverageBannerComponent],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -112,6 +113,8 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 
         <!-- ── Landing: one option per leg of the package ─────────────────── -->
         @if (!activeLeg()) {
+          <opd-coverage-banner [category]="BenefitCategory.HealthPackages" />
+
           @if (fullyUsed()) {
             <div class="mb-5 rounded-2xl border border-[#CDDDFE] bg-[#F3F7FF] p-5">
               <p class="text-base font-semibold text-[#034DA2]">Annual Health Check used for this year</p>

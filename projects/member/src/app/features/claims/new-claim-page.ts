@@ -267,9 +267,6 @@ const STEPS = [
                 <div>
                   <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount</label>
                   <input id="billAmount" name="billAmount" type="number" min="1" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="billAmount()" (ngModelChange)="billAmount.set($event)" />
-                  @if (overLimit()) {
-                    <p class="mt-1 text-xs text-warning-700">Above the {{ amount(selectedCategory()!.perClaimLimit) }} per-claim limit — the excess will not be reimbursed.</p>
-                  }
                 </div>
 
                 <div>
@@ -430,9 +427,6 @@ const STEPS = [
             </section>
           }
 
-          @if (overBalance()) {
-            <p class="mt-4 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">Amount exceeds available balance {{ amount(categoryBalance()!.amount) }}</p>
-          }
           @if (problem(); as message) {
             <p class="mt-4 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ message }}</p>
           }
@@ -624,23 +618,11 @@ export class NewClaimPage {
   protected readonly isDental = computed(() => isDentalCategory(this.category()));
   protected readonly locationFields = computed(() => locationFieldsFor(this.category()));
 
-  protected readonly overLimit = computed(() => {
-    const chosen = this.selectedCategory();
-    const amount = this.billAmount();
-    return Boolean(chosen && chosen.perClaimLimit > 0 && amount && amount > chosen.perClaimLimit);
-  });
-
   protected readonly categoryBalance = computed(() => {
     const chosen = this.selectedCategory();
     if (!chosen || chosen.isPlaceholder) return null;
     // DUMMY — static per-category balance (₹5,000), no wallet API.
     return money(5000);
-  });
-
-  protected readonly overBalance = computed(() => {
-    const balance = this.categoryBalance();
-    const amount = this.billAmount();
-    return Boolean(balance && amount && amount > balance.amount);
   });
 
   /**
@@ -746,8 +728,6 @@ export class NewClaimPage {
     }
     if (this.treatmentDate() === '') return 'Choose the treatment date.';
     if ((this.billAmount() ?? 0) <= 0) return 'Enter the bill amount.';
-    if (this.overBalance())
-      return `Amount exceeds available balance ${this.amount(this.categoryBalance()!.amount)}.`;
     return null;
   }
 

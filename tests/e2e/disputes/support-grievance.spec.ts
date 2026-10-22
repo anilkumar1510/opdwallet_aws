@@ -202,7 +202,7 @@ test.describe('Raise a grievance (submit)', () => {
 
   test('a closed ticket does not show the member own words as the support resolution', async ({ page }) => {
     const api = new FakeApi();
-    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: 'Bill is wrong, see note: x' }, [
+    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: 'Bill is wrong, see note: x' }, [
       { sender_type: 'MEMBER', message_text: 'Bill is wrong‚ see note∶ x' },
     ]);
     await openSupport(page, api);
@@ -213,7 +213,7 @@ test.describe('Raise a grievance (submit)', () => {
 
   test('a closed ticket shows the support resolution once final_reason has been overwritten', async ({ page }) => {
     const api = new FakeApi();
-    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: 'Re-adjudicated and approved.' }, [
+    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: 'Re-adjudicated and approved.' }, [
       { sender_type: 'MEMBER', message_text: 'Bill is wrong' },
     ]);
     await openSupport(page, api);
@@ -446,16 +446,51 @@ test.describe('Tickets come from the API', () => {
     await expect(page.getByText('Support has replied')).toBeVisible();
   });
 
-  test('a resolved ticket shows closed with its final remark, no reply box, no reopen, only the phone route', async ({ page }) => {
+  test('a resolved ticket shows resolved status with remarks and close option', async ({ page }) => {
     const api = new FakeApi();
     api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: 'Claim re-adjudicated and approved.' }, [
       { sender_type: 'MEMBER', message_text: 'Please re-check' },
       { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Done' },
     ]);
     await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Resolved' }).click();
+    await expect(page.getByText('Support has marked this ticket as Resolved.')).toBeVisible();
+    await expect(page.getByText(/Resolution remarks:.*Claim re-adjudicated and approved\./)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close Ticket' })).toBeVisible();
+    await expect(page.locator('#g-reply')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Jump to text box ↓' })).toBeVisible();
+  });
+
+  test('a ticket marked resolved by the member keeps the reply text box and close button available', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({
+      claim_id: 'OPD-2026-00354',
+      dispute_status: 'Resolved',
+      last_message_sender: 'MEMBER',
+      final_reason: 'I am satisfied with the current status.',
+    }, [
+      { sender_type: 'MEMBER', message_text: 'Issue details' },
+      { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Checked and clarified' },
+    ]);
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Resolved' }).click();
+    await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible();
+    await expect(page.getByText(/Resolution remarks:.*I am satisfied with the current status\./)).toBeVisible();
+    await expect(page.locator('#g-reply')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Close Ticket' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send reply' })).toBeVisible();
+  });
+
+  test('a closed ticket shows closed with its final remark, no reply box, no reopen, only the phone route', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: 'Claim re-adjudicated and approved.' }, [
+      { sender_type: 'MEMBER', message_text: 'Please re-check' },
+      { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'Done' },
+    ]);
+    await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
     await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
-    await expect(page.getByText(/Claim re-adjudicated and approved\./)).toBeVisible();
+    await expect(page.getByText(/Resolved and closed by support — Claim re-adjudicated and approved\./)).toBeVisible();
     await expect(page.locator('#g-reply')).toHaveCount(0);
     await expect(page.getByText(/reopen/i)).toHaveCount(0);
     await expect(page.getByText('Want to take it further?')).toBeVisible();
@@ -686,8 +721,13 @@ test.describe('Mark resolved (userResolve)', () => {
     await page.getByRole('button', { name: 'Mark resolved' }).click();
     await expect(page.getByText('Thanks — the ticket is closed.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toEqual([d.name]);
-    // The ticket is identified by its name only.
-    expect(api.resolvePayloads[0]).toEqual({ resourceType: 'Dispute', name: d.name });
+    // The ticket is identified by name with dispute_status CLOSE and final_reason.
+    expect(api.resolvePayloads[0]).toEqual({
+      resourceType: 'Dispute',
+      name: d.name,
+      dispute_status: 'CLOSE',
+      final_reason: 'Claim amount verified against policy benefits. Awaiting support executive response.',
+    });
     expect(api.replies).toEqual([]);
     await expect(page.getByText('You marked this resolved on')).toBeVisible();
     await expect(page.getByText('Marked resolved by you')).toBeVisible();
@@ -717,7 +757,7 @@ test.describe('Mark resolved (userResolve)', () => {
 
   test('a ticket closed by support is not shown as closed by the member', async ({ page }) => {
     const api = new FakeApi();
-    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'RESOLVED', last_message_sender: 'SUPPORT_EXECUTIVE', final_reason: 'Approved.' }, [
+    api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'CLOSED', last_message_sender: 'SUPPORT_EXECUTIVE', final_reason: 'Approved.' }, [
       { sender_type: 'MEMBER', message_text: 'Please re-check' },
     ]);
     await openSupport(page, api);
