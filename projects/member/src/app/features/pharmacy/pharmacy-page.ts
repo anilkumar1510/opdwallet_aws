@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signa
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
+import { CoverageBannerComponent } from '../../shared/ui/coverage-banner';
 import { Router } from '@angular/router';
 
 import { FamilyStore } from '../../core/family/family.store';
@@ -91,7 +92,7 @@ export function readUploadedDocId(body: unknown): string | null {
 @Component({
   selector: 'opd-pharmacy-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent, ClaimOption],
+  imports: [PharmacyAddressCards, AddAddressModal, PharmacyPastOrders, PharmacyCartComponent, ClaimOption, CoverageBannerComponent],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -105,16 +106,9 @@ export function readUploadedDocId(body: unknown): string | null {
       </header>
 
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
-        <p class="mb-4 rounded-xl border border-dashed border-warning-400 bg-warning-50 px-3 py-2 text-xs text-warning-700">
-          🧪 Static demo journey — no data is saved and no payment is taken.
-        </p>
 
         @if (!started()) {
-          <div class="rounded-2xl border border-[#CDDDFE] bg-[#F3F7FF] p-5">
-            <p class="text-sm text-ink-700">Pharmacy coverage</p>
-            <p class="mt-1 text-2xl font-bold text-[#034DA2]">₹5,000 <span class="text-sm font-normal text-ink-500">left this year</span></p>
-            <p class="mt-1 text-xs text-ink-500">{{ copayPct }}% co-payment · you submit a prescription, our team builds the cart for you.</p>
-          </div>
+          <opd-coverage-banner [category]="BenefitCategory.Pharmacy" />
           @if (claimModes.allowsCashless(BenefitCategory.Pharmacy)) {
             <button type="button" class="mt-5 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">Order medicines →</button>
           }

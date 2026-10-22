@@ -129,12 +129,47 @@ The system SHALL query `opd_benefit_category_pool` with the assigned `policy_id`
 - **THEN** each pool card displays its pool code badge (e.g. `POOL-0004`), available and allocated balance, pool description, and an expandable category breakdown
 
 ### Requirement: Dependent Coverage Verification and Profile Switch Data Updates
-The system SHALL verify whether each family member is covered under the active policy version, indicate coverage status in the profile switcher, and dynamically update all wallet, category, pool, and carousel data across the project when switching profiles.
+The system SHALL verify whether each family member is covered under the active policy version, exclude non-covered family members from profile switching and the family page, and dynamically filter policy cards and update all wallet, category, and pool data across the project when switching profiles.
 
 #### Scenario: Switching to a covered dependent
 - **WHEN** the user switches to a family dependent whose relationship is covered in the policy version
-- **THEN** the active member updates, the policy carousel elevates their policy card first, and wallet balances, pools, and category limits reflect the shared floater entitlement for their relationship
+- **THEN** the active member updates, the policy carousel displays only that dependent's policy card, and wallet balances, pools, and category limits reflect the shared floater entitlement for their relationship
 
-#### Scenario: Switching to a non-covered dependent
-- **WHEN** the user switches to a dependent whose relationship is marked as not covered in the policy version (such as Father in a Non-Parental policy)
-- **THEN** the profile switcher marks the dependent as "Not covered", their wallet total and categories resolve to zero/empty, and the dashboard displays an informative non-covered notice while retaining access to view their profile
+#### Scenario: Viewing dashboard as primary Self member
+- **WHEN** the primary Self member profile is active
+- **THEN** the policy carousel displays all policy cards for all covered members under the policy in order, with navigation controls enabled
+
+#### Scenario: Non-covered family members excluded from switching
+- **WHEN** a family member's relationship is not covered under the active policy version (such as Father in a Non-Parental policy)
+- **THEN** that member is excluded from the profile switcher dropdown and the family members list page
+
+### Requirement: Reusable Dynamic Category Coverage Banner and Pool Allocation Mapping
+The system SHALL provide a reusable category coverage banner component (`opd-coverage-banner` / `CoverageBannerComponent`) on service landing screens that checks if a category is related to a benefit category pool under the active relationship, and dynamically maps the pool's annual limit (or falls back to the wallet annual limit when unpooled), pool code/name details, and per-transaction/co-payment rules.
+
+#### Scenario: Category mapped to a benefit pool with annual limit
+- **WHEN** a service landing page is viewed for a category that maps to a `pool_code` (or `claim_pool_code`) in the active relationship
+- **THEN** the banner displays the category coverage title, the pool code badge, the pool's allocated annual limit formatted as `₹{annualLimit} left this year`, the pool name details, and a footnote with per-transaction wallet limits and co-payment percentages
+
+#### Scenario: Category not mapped to a pool falls back to wallet annual limit
+- **WHEN** a category does not have a pool code or pool assigned under the active relationship
+- **THEN** the banner falls back to displaying the wallet annual limit allocated for this member (`walletTotal().allocated.amount`) formatted as `₹{walletAnnualLimit} left this year` without a pool badge or pool name
+
+#### Scenario: Category or wallet with zero annual limit
+- **WHEN** a category has an allocated annual limit of zero (or wallet annual limit is zero)
+- **THEN** the banner displays `"No annual limit allocated for this"` in place of the annual balance
+
+#### Scenario: Pool name details displayed on coverage banner
+- **WHEN** a category is mapped to a pool having a pool name or description
+- **THEN** the banner displays the pool name details below the balance amount
+
+#### Scenario: Loading state skeleton placeholder
+- **WHEN** policy or family data is actively loading
+- **THEN** the banner renders an animated pulse skeleton loader to prevent layout shifts
+
+#### Scenario: Profile switch re-evaluation
+- **WHEN** the user switches between covered family profiles
+- **THEN** the coverage banner reactively recalculates and reflects the active member's own or inherited category pool limits, pool name, and co-payment rules
+
+#### Scenario: Detailed category coverage layout for vision
+- **WHEN** the vision landing page renders `<opd-coverage-banner [category]="BenefitCategory.Vision">`
+- **THEN** it renders the detailed definition-list layout showing dynamic eligible pool amount (or wallet annual limit fallback), frequency, covered item types, and the partner coupon disclaimer
