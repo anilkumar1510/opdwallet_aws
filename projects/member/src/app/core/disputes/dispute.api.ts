@@ -42,6 +42,8 @@ export interface DisputeSubmitPayload {
   readonly description?: string;
   /** The optional supporting documents, as the dispute API stores them. */
   readonly documents?: readonly DisputeDocument[];
+  /** Optional array of raw document UUIDs for Habit Health / Twenty sync. */
+  readonly docidS?: readonly string[];
 }
 
 /** One supporting document on a dispute (uploaded to DMS first). */
@@ -116,18 +118,21 @@ export type ListResult<T> =
 
 export type ReplyResult = { readonly ok: true } | { readonly ok: false; readonly message: string };
 
-export type TicketState = 'awaiting_support' | 'awaiting_member' | 'closed';
+export type TicketState = 'awaiting_support' | 'awaiting_member' | 'resolved' | 'closed';
 
 /**
- * The member-facing state from the backend's status text. Anything resolved or
- * closed is closed; "awaiting user/member" means support has replied; every
- * other status (new, assigned, awaiting executive) is still with support.
+ * The member-facing state from the backend's status text.
+ * - 'closed': directly closed or completed
+ * - 'resolved': marked resolved (allows verification or member closure)
+ * - 'awaiting_member': support has replied
+ * - 'awaiting_support': pending support executive action
  */
 export function ticketStateOf(status: string): TicketState {
   // Display text ("Awaiting user response") and codes (AWAITING_USER_RESPONSE,
   // awaiting-user-response) both reach this: compare on words only.
   const s = status.toLowerCase().replace(/[^a-z]+/g, ' ').trim();
-  if (/\b(resolved|closed|closure|completed|cancel(l)?ed)\b/.test(s)) return 'closed';
+  if (/\b(closed|closure|completed|cancel(l)?ed)\b/.test(s)) return 'closed';
+  if (/\bresolved\b/.test(s)) return 'resolved';
   if (/\bawaiting (user|member|patient|customer)\b/.test(s)) return 'awaiting_member';
   return 'awaiting_support';
 }
@@ -193,7 +198,12 @@ export class DisputeApi {
       selected_reason: input.reason,
       dispute_status: 'OPEN',
       ...(description ? { description } : {}),
-      ...(input.documents.length ? { documents: input.documents } : {}),
+      ...(input.documents.length
+        ? {
+            documents: input.documents,
+            docidS: input.documents.map((d) => d.document_id).filter(Boolean),
+          }
+        : {}),
     };
   }
 
@@ -277,11 +287,18 @@ export class DisputeApi {
     );
   }
 
-  /** The member closes their own ticket as resolved: `action=userResolve`, identified by `name` only (no text, no reopen). */
-  resolve(dispute: { name: string }): Promise<ReplyResult> {
+  /** The member closes or resolves their own ticket: `action=userResolve`, with dispute_status and final_reason. */
+  resolve(dispute: { name: string; finalReason?: string | null; disputeStatus?: string }): Promise<ReplyResult> {
     return this.act(
       DISPUTE_API.resource,
-      { resourceType: 'Dispute', name: dispute.name },
+      {
+        resourceType: 'Dispute',
+        name: dispute.name,
+        dispute_status: dispute.disputeStatus || 'CLOSE',
+        final_reason:
+          dispute.finalReason ||
+          'Claim amount verified against policy benefits. Awaiting support executive response.',
+      },
       'userResolve',
       undefined,
       'We could not close the ticket. Please try again.',

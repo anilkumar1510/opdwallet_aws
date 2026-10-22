@@ -198,8 +198,9 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
         api.resolvePayloads.push(payload);
         if (api.failResolve) return route.fulfill(json({ errCode: -1, message: api.failResolve }));
         const d = api.disputes.find((x) => x.name === payload.name)!;
-        // Like the backend: RESOLVED, the member as the last sender, no message.
-        d.dispute_status = 'RESOLVED';
+        // Like the backend: RESOLVED/CLOSED, the member as the last sender, no message.
+        d.dispute_status = payload.dispute_status === 'CLOSE' ? 'CLOSED' : 'RESOLVED';
+        if (payload.final_reason) d.final_reason = payload.final_reason;
         d.last_message_sender = 'MEMBER';
         d.g_modify_time = Date.now();
         return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
