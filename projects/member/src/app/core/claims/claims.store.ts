@@ -306,42 +306,54 @@ export class ClaimsStore {
   private _patch(reference: string, patch: Partial<Claim>): void {
     this._claims.set(this._claims().map((c) => (c.reference === reference ? { ...c, ...patch } : c)));
   }
-  async getClimListData():Promise<void> {
+  getClimListData(): Promise<void> {
     this._getClimListData.set(true);
     const pageNo: any = 0;
     const pageSize = 20;
-    const arg = "queryId=GET_CLAIMS_BY_USER&page_no="+pageNo+"&page_size="+pageSize;
-    try{
-      this.appService.getcall('opd_claim','habit-opd', arg).subscribe(res =>{
-        const response = JSON.parse(res)
-        // Error bodies (`{errCode:-1, message:'Invalid Session'}`) carry no
-        // `resource` at all, so this has to be optional or the list throws.
-        if(response?.resource?.length > 0){
-          this.categories().then((cats) => {
-            const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
-            this._claimList.set(
-              response.resource
-                .map((row: any) => ({
-                  ...row,
-                  category:
-                    row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
-                  // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
-                  provider: row?.provider ?? row?.providerName ?? '',
-                  // The badge needs a ClaimStatus object, not the raw status string.
-                  status: toStatus(row?.claim_status ?? row?.status),
-                }))
-                // Most recently updated first; the API returns rows in its own
-                // order, so a claim that just changed would otherwise be buried.
-                .sort((a: any, b: any) => updatedAtMillis(b) - updatedAtMillis(a)),
-            );
-          });
-        }
-      })
-    } catch(error){
-      console.error('Failed to load dashboard aggregate:', error);
-    }finally{
-      this._getClimListData.set(false);
-    }
+    const arg = "queryId=GET_CLAIMS_BY_USER&page_no=" + pageNo + "&page_size=" + pageSize;
+    return new Promise<void>((resolve) => {
+      this.appService.getcall('opd_claim', 'habit-opd', arg).subscribe({
+        next: (res) => {
+          try {
+            const response = JSON.parse(res);
+            // Error bodies (`{errCode:-1, message:'Invalid Session'}`) carry no
+            // `resource` at all, so this has to be optional or the list throws.
+            if (response?.resource?.length > 0) {
+              void this.categories().then((cats) => {
+                const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
+                this._claimList.set(
+                  response.resource
+                    .map((row: any) => ({
+                      ...row,
+                      category:
+                        row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
+                      // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
+                      provider: row?.provider ?? row?.providerName ?? '',
+                      // The badge needs a ClaimStatus object, not the raw status string.
+                      status: toStatus(row?.claim_status ?? row?.status),
+                    }))
+                    // Most recently updated first; the API returns rows in its own
+                    // order, so a claim that just changed would otherwise be buried.
+                    .sort((a: any, b: any) => updatedAtMillis(b) - updatedAtMillis(a)),
+                );
+                this._getClimListData.set(false);
+                resolve();
+              });
+              return;
+            }
+          } catch (error) {
+            console.error('Failed to load claims list:', error);
+          }
+          this._getClimListData.set(false);
+          resolve();
+        },
+        error: (error) => {
+          console.error('Failed to load claims list:', error);
+          this._getClimListData.set(false);
+          resolve();
+        },
+      });
+    });
   }
   /**
    * Loads one claim by its business reference (CLM-…) into `claimDetails`.
