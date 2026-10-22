@@ -44,12 +44,15 @@ export interface DisputeSubmitPayload {
   readonly documents?: readonly DisputeDocument[];
   /** Optional array of raw document UUIDs for Habit Health / Twenty sync. */
   readonly docidS?: readonly string[];
+  readonly document_ids?: readonly string[];
+  readonly documentIds?: readonly string[];
 }
 
 /** One supporting document on a dispute (uploaded to DMS first). */
 export interface DisputeDocument {
   readonly name: string;
   readonly document_id: string;
+  readonly id?: string;
   readonly document_type: 'INVOICE' | 'PRESCRIPTION' | 'REPORT' | 'OTHER';
   readonly originalname: string;
   readonly verification_status: 'PENDING';
@@ -62,6 +65,7 @@ export function toDisputeDocument(file: File, documentId: string, uploadedName: 
   return {
     name: uploadedName || file.name,
     document_id: documentId,
+    id: documentId,
     document_type: 'OTHER',
     originalname: file.name,
     verification_status: 'PENDING',
@@ -202,6 +206,8 @@ export class DisputeApi {
         ? {
             documents: input.documents,
             docidS: input.documents.map((d) => d.document_id).filter(Boolean),
+            document_ids: input.documents.map((d) => d.document_id).filter(Boolean),
+            documentIds: input.documents.map((d) => d.document_id).filter(Boolean),
           }
         : {}),
     };
@@ -295,9 +301,7 @@ export class DisputeApi {
         resourceType: 'Dispute',
         name: dispute.name,
         dispute_status: dispute.disputeStatus || 'CLOSE',
-        final_reason:
-          dispute.finalReason ||
-          'Claim amount verified against policy benefits. Awaiting support executive response.',
+        final_reason: dispute.finalReason || 'Resolved by member',
       },
       'userResolve',
       undefined,
@@ -416,9 +420,11 @@ export class DisputeApi {
           },
         ),
       );
-      const row = response.body?.resource?.[0];
-      if (response.body?.errCode === 0 && row?.document_id) {
-        return { ok: true, documentId: row.document_id, name: row.file_name ?? file.name };
+      const rawRes = response.body?.resource;
+      const row = Array.isArray(rawRes) ? rawRes[0] : (rawRes as any);
+      const docId = row?.document_id || row?.id || row?.documentId;
+      if (response.body?.errCode === 0 && docId) {
+        return { ok: true, documentId: String(docId), name: row?.file_name ?? row?.name ?? file.name };
       }
       return { ok: false, message: response.body?.message || `Could not upload ${file.name}.` };
     } catch (error) {
