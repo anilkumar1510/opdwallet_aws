@@ -893,7 +893,7 @@ export class ClaimDetailPage {
 
     const key = this.scenarioKey();
     if (key === 'live') {
-      return { ...base, isCancellable: CANCELLABLE_STATUSES.has(base.claim_status) };
+      return { ...base, isCancellable: CANCELLABLE_STATUSES.has(base.claim_status.toUpperCase()) };
     }
 
     const s = SCENARIO_STATUS[key];
