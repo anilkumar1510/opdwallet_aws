@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FamilyStore } from '../../core/family/family.store';
 import { WalletStore } from '../../core/wallet/wallet.store';
 import { formatMoney, money } from '../../core/domain/money';
-import { VisionPurchaseMode, modeLabel } from '../../core/vision/vision';
+import { VisionPartner, VisionPurchaseMode, modeLabel } from '../../core/vision/vision';
 import { VisionStore } from '../../core/vision/vision.store';
 import { LoadingView } from '../../shared/ui/state-views';
 
@@ -431,7 +431,9 @@ export class VisionOrderPage {
    * The partner the coupon will be for. First active one — the member is not
    * asked to choose.
    */
-  protected readonly defaultPartner = computed(() => this.store.partners()[0] ?? null);
+  protected readonly defaultPartner = computed<VisionPartner | null>(
+    () => this.store.partners()[0] ?? null,
+  );
 
   protected modeText(mode: VisionPurchaseMode | null): string {
     return mode ? modeLabel(mode) : '';

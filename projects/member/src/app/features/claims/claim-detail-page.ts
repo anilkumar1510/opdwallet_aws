@@ -160,21 +160,23 @@ function humaniseCode(value: string | undefined): string {
                see Rejected or Documents required, not something to hunt for
                below the amounts. -->
           @if (actionReason(detail); as reasons) {
-            <section
-              class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
-              role="alert"
-            >
-              <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
-                {{ actionReasonHeading(detail) }}
-              </h2>
-              @if (reasons.length) {
-                <ul class="mt-2 space-y-1">
-                  @for (reason of reasons; track $index) {
-                    <li class="text-sm text-ink-900">{{ reason }}</li>
-                  }
-                </ul>
-              }
-            </section>
+            @if (actionReasonHeading(detail); as heading) {
+              <section
+                class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
+                role="alert"
+              >
+                <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
+                  {{ heading }}
+                </h2>
+                @if (reasons.length) {
+                  <ul class="mt-2 space-y-1">
+                    @for (reason of reasons; track $index) {
+                      <li class="text-sm text-ink-900">{{ reason }}</li>
+                    }
+                  </ul>
+                }
+              </section>
+            }
           }
 
           <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
@@ -975,7 +977,7 @@ export class ClaimDetailPage {
     // Only include name and claim_status as specified
     const resourceData = {
       name: claimId || (this.displayClaim()?.claim_id || ''),
-      claim_status: this.displayClaim()?.claim_status || ''
+      claim_status: 'CANCELLED',
     };
 
     // Minify the JSON (no spaces/newlines) then base64 encode
@@ -991,10 +993,12 @@ export class ClaimDetailPage {
 
     try {
       const response = await firstValueFrom(
-        this.http.post('habit-opd/api/v1/opd_claim?action=cancel',
+        this.http.post(
+          'habit-opd/api/v1/opd_claim?action=cancel',
           'resource=' + encodeURIComponent(encodedResourceData),
           options,
-        );
+        ),
+      );
 
       // BACKEND RESPONSE HANDLING:
       // Always HTTP 200 - check errCode in the response body
@@ -1006,6 +1010,12 @@ export class ClaimDetailPage {
         parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
       } catch {
         // If we can't parse JSON, treat as success (backward compat)
+        const ref = claimId || this.claimId() || this.route.snapshot.paramMap.get('claimId');
+        if (ref) {
+          await this.store.getClimDetails(ref);
+        }
+        await this.store.getClimListData();
+        void this.store.loadDashboard();
         void this.router.navigate(['/member/claims']);
         this.confirming.set(false);
         this.submitting.set(false);
@@ -1015,6 +1025,14 @@ export class ClaimDetailPage {
       // Check errCode
       if (parsedResponse.errCode === 0) {
         // SUCCESS: claim cancelled
+        // Reload claim details and claims list API
+        const ref = claimId || this.claimId() || this.route.snapshot.paramMap.get('claimId');
+        if (ref) {
+          await this.store.getClimDetails(ref);
+        }
+        await this.store.getClimListData();
+        void this.store.loadDashboard();
+
         // Navigate to claims list where the claim now shows CANCELLED
         void this.router.navigate(['/member/claims']);
         this.confirming.set(false);
@@ -1064,16 +1082,16 @@ export class ClaimDetailPage {
   /**
    * The assessor's reasons for the current status, from `claim_action_reasons`.
    *
-   * Returns [] for anything that is not a rejected claim or docs-required claim,
-   * so the block stays away rather than showing an empty red panel. The field
-   * is absent from the payload today — the section appears the moment the API
-   * starts sending it, and nothing changes here.
+   * Returns null for anything that is not a rejected claim or docs-required claim,
+   * or when there are no action reasons, so the block stays away rather than
+   * showing an empty red panel.
    */
-  protected actionReason(claim: any): string[] {
+  protected actionReason(claim: any): string[] | null {
     const status = claim?.claim_status;
-    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return [];
+    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return null;
     const reasons = Array.isArray(claim?.claim_action_reasons) ? claim.claim_action_reasons : [];
-    return reasons.map((code: string) => this.store.getActionReasonDisplay(code.trim())).filter(Boolean);
+    const mapped = reasons.map((code: string) => this.store.getActionReasonDisplay(code.trim())).filter(Boolean);
+    return mapped.length > 0 ? mapped : null;
   }
 
   protected actionReasonHeading(claim: any): string {
