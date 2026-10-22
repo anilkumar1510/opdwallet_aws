@@ -6,6 +6,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { catchError, map, tap, finalize } from 'rxjs/operators';
 import { HttpHeaders } from '@angular/common/http';
+import { AppService } from '../core/http/api.service';
 
 // API Response Interfaces
 export interface Speciality {
@@ -24,6 +25,9 @@ export interface Doctor {
   qualification?: string;
   experience?: number;
   fee?: number;
+  mrp?: number;
+  selling_amount?: number;
+  selling_discount_rate?: number;
   rating?: number;
   gender?: 'Male' | 'Female';
   languages?: string;
@@ -36,8 +40,15 @@ export interface Doctor {
   profile_path?: string;
   doctor_code?: string;
   facility_id?: string;
+  facility_name?: string;
   department_id?: string;
-  provider_code?:string
+  department_name?: string;
+  subDepartment_id?: string;
+  subDepartment_name?: string;
+  provider_code?: string;
+  provider_name?: string;
+  cug_code?: string;
+  mode_of_appointment?: string;
 }
 
 export interface Slot {
@@ -71,43 +82,37 @@ export interface Patient {
 
 export interface CartSnapshot {
   cart_snapshot?: {
-    opdcart?: {
-      id?: string;
-      facility_id?: string;
-      facility_name?: string;
-      patient_id?: string;
-      speciality_id?: string;
-      serviceType?: string;
-      serviceType_code?: string;
-      serviceItemId?: string;
-      serviceItemName?: string;
-      serviceItemCode?: string;
-      service_code?: string;
-      provider_name?: string;
-      provider_code?: string;
-      mode_of_appointment?: string;
-      extra_data?: any;
-      tag_data?: any[];
-      facility_address?: {
-        street1?: string;
-        street2?: string;
-        street3?: string;
-        city?: string;
-        state?: string;
-        pincode?: string;
-        country?: string;
-        latitude?: number;
-        longitude?: number;
-        cityDisplayName?: string;
-        stateDisplayName?: string;
-        pincodeDisplayName?: string;
-        countryDisplayName?: string;
-      };
-      status?: string;
-      specility_code?: string;
-      specility_display?: string;
-      doctor_experience?: string;
-    };
+    facility_id?: string;
+    patient_id?: string;
+    serviceType?: string;
+    serviceType_code?: string;
+    serviceItemId?: string;
+    serviceItemName?: string;
+    serviceItemCode?: string;
+    service_code?: string;
+    provider_name?: string;
+    provider_code?: string;
+    cug_code?: string;
+    mrp?: number;
+    selling_discount_rate?: number;
+    selling_amount?: number;
+    status?: string;
+    department_name?: string;
+    department_id?: string;
+    subDepartment_name?: string;
+    subDepartment_id?: string;
+    speciality_id?: string;
+    serviceDate?: number;
+    serviceStartTime?: number;
+    serviceEndTime?: number;
+    slotId?: string;
+    slotNo?: number;
+    slot?: string;
+    slot_type?: string;
+    mode_of_appointment?: string;
+    consultation_type_code?: string;
+    tag_data?: any[];
+    [key: string]: any;
   };
 }
 
@@ -154,7 +159,10 @@ export class OpdConsultationService {
 
   private cugCode: string = 'HCLHC001';
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private appService: AppService
+  ) {
     this.fetchInitialConfig();
   }
 
@@ -257,11 +265,14 @@ export class OpdConsultationService {
   getDoctors(specialityCode: string, consultationType: string = 'video'): Observable<Doctor[]> {
     const url = this.buildUrl('TELE_DOCTOR_LISTING', `consultation_type:${consultationType},speciality_code:${specialityCode},provider_code:HCLHC001,serviceType_code:op_consultation,doctor_mode:yes,cug_code:${this.cugCode}`);
 
-return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
+    return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
         map((response: any) => response.resource || []),
         map((items: any[]) => items.map((item: any): Doctor => {
-          const videoFee = item.data?.price_details?.find((p: any) => p.consultation_type === 'video')?.selling_amount || 0;
+          const videoPrice = item.data?.price_details?.find((p: any) => p.consultation_type === 'video');
+          const videoFee = videoPrice?.selling_amount ?? videoPrice?.mrp ?? 0;
+          const mrp = videoPrice?.mrp ?? videoFee;
+          const sellingDiscountRate = videoPrice?.selling_discount_rate ?? 0;
           const nextSlotVideo = item.data?.next_slot_date_video ? Number(item.data.next_slot_date_video) : null;
           let nextInLabel = 'Not available';
           let canConsultNow = false;
@@ -287,11 +298,14 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
           }
 
           return {
-            id: item.data?.doctor_id,
+            id: item.data?.doctor_id || item.data?.id,
             name: item.data?.display_name,
             qualification: item.data?.qualification?.[0]?.text,
             experience: parseInt(item.data?.doctor_experience) || 0,
             fee: videoFee,
+            mrp,
+            selling_amount: videoFee,
+            selling_discount_rate: sellingDiscountRate,
             rating: 0,
             gender: item.data?.gender_name,
             languages: item.data?.language?.map((l: any) => l.text).join(', '),
@@ -301,16 +315,23 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
             speciality: item.data?.speciality,
             speciality_id: item.data?.speciality_id,
             facility_id: item.data?.facility_id,
+            facility_name: item.data?.facility_name,
             department_id: item.data?.department_id,
+            department_name: item.data?.department_name,
+            subDepartment_id: item.data?.subDepartment_id,
+            subDepartment_name: item.data?.subDepartment_name,
             doctor_code: item.data?.doctor_code,
             profile_path: item.data?.profile_path,
-            provider_code:item.data?.provider_code
+            provider_code: item.data?.provider_code || 'HCLHC001',
+            provider_name: item.data?.provider_name || 'HCL Healthcare',
+            cug_code: item.data?.cug_code || this.cugCode,
+            mode_of_appointment: item.data?.mode_of_appointment || 'habithealth'
           };
         }))
       );
   }
 
-// Slot Availability API
+  // Slot Availability API
   getSlots(practitionerId: string, slotDate: number, slotDays: string, facilityId: string, departmentId: string, uhId: string): Observable<Slot[]> {
     const url = this.buildUrl('TELE_SLOT_AVAILABILITY', `practitioner_id:${practitionerId},slot_date:${slotDate},slot_days:${slotDays},serviceItemCode:video,facility_id:${facilityId},practice_type_code:individual,department_id:${departmentId},serviceType_code:op_consultation,uhId:${uhId}`);
 
@@ -343,73 +364,53 @@ return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url
         map(items => items.map(item => ({
           id: item.id,
           name: item.mapped_name,
-          rel: item.relationship||'self',
+          rel: item.relationship || 'self',
           patient_id: item.id,
           uhId: item.uhId,
-          mapped_id:item.mapped_id
+          mapped_id: item.mapped_id
         })) as Patient[])
       );
   }
 
   // Add to Cart API
   addToCart(cartData: CartSnapshot): Observable<{ resource: { cart_snapshot: any } }> {
-    const body = new HttpParams()
-      .set('resource', btoa(JSON.stringify(cartData)))
-      .set('action', 'cart_add');
-
-    return this.executeWithLoading('cart', this.http.post<{ resource: { cart_snapshot: any } }>(this.baseUrl, body.toString(), {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      })
-    }));
+    return this.executeWithLoading('cart',
+      this.appService.postCall('opd_tele_booking', 'habit-opd', '', cartData, 'cart_add').pipe(
+        map((response: any) => typeof response === 'string' ? JSON.parse(response) : response)
+      )
+    );
   }
 
   // Checkout API
   checkout(checkoutData: CheckoutSnapshot): Observable<any> {
-    const body = new HttpParams()
-      .set('resource', btoa(JSON.stringify(checkoutData)))
-      .set('action', 'checkout');
-
-    return this.executeWithLoading('checkout', this.http.post<any>(this.baseUrl, body.toString(), {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      })
-    }));
+    return this.executeWithLoading('checkout',
+      this.appService.postCall('opd_tele_booking', 'habit-opd', '', checkoutData, 'checkout').pipe(
+        map((response: any) => typeof response === 'string' ? JSON.parse(response) : response)
+      )
+    );
   }
 
   // Book Appointment API
   bookAppointment(bookingData: any): Observable<BookingResponse> {
-    const body = new HttpParams()
-      .set('resource', btoa(JSON.stringify(bookingData)))
-      .set('action', 'book_appointment');
-
-    return this.executeWithLoading('booking', this.http.post<{ resource: BookingResponse }>(this.baseUrl, body.toString(), {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      })
-    }))
-      .pipe(
-        map(response => response.resource || {})
-      );
+    return this.executeWithLoading('booking',
+      this.appService.postCall('opd_tele_booking', 'habit-opd', '', bookingData, 'book_appointment').pipe(
+        map((response: any) => typeof response === 'string' ? JSON.parse(response) : response),
+        map(response => response?.resource || response || {})
+      )
+    );
   }
 
   // Video Checkin API
   videoCheckin(serviceRequestId: string): Observable<any> {
-    const body = new HttpParams()
-      .set('resource', btoa(JSON.stringify({
+    return this.executeWithLoading('videoCheckin',
+      this.appService.postCall('opd_tele_booking', 'habit-opd', '', {
         service_request_id: serviceRequestId,
         tag_data: []
-      })))
-      .set('action', 'video_checkin');
-
-    return this.executeWithLoading('videoCheckin', this.http.post(this.baseUrl, body.toString(), {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      })
-    }))
-      .pipe(
-        map(response => (response as any).resource || [])
-      );
+      }, 'video_checkin').pipe(
+        map((response: any) => typeof response === 'string' ? JSON.parse(response) : response),
+        map(response => response?.resource || [])
+      )
+    );
   }
 
   // Prescription Document API

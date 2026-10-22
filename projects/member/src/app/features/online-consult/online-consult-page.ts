@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, OnInit } from '@angular/core';
-import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse } from '../../services/opd-consultation.service';
+import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse, CartSnapshot } from '../../services/opd-consultation.service';
 import moment from 'moment';
 import { AgoraService } from '../../services/agora.service';
 import { AgoraVideoComponent } from './components/agora-video.component';
@@ -672,75 +672,100 @@ export class OnlineConsultPage implements OnInit {
     }
   }
 
-  private buildCartSnapshot(): any {
+  private buildCartSnapshot(): CartSnapshot {
+    const doc = this.doctor();
+    const s = this.slot();
+    const pat = this.patient();
+
     return {
       cart_snapshot: {
-        opdcart: {
-          serviceItemId: this.doctor()?.id,
-          serviceItemName: this.doctor()?.name,
-          consultation_type_code: this.mode(),
-          serviceDate: this.slot()?.slot_date,
-          serviceStartTime: this.slot()?.slot_start_time,
-          serviceEndTime: this.slot()?.slotEndTime,
-          slotId: this.slot()?.id,
-          patient_id: this.patient()?.mapped_id,
-          speciality_id: this.doctor()?.speciality_id,
-          facility_id: this.doctor()?.facility_id,
-          provider_code: this.doctor()?.provider_code,
-          serviceType_code: 'op_consultation',
-          // mode_of_appointment: 'opd_network',
-          serviceType: 'OP Consultation',
-          serviceItemCode: this.doctor()?.doctor_code
-        }
+        facility_id: doc?.facility_id || '',
+        patient_id: pat?.mapped_id || pat?.patient_id || pat?.id || '',
+        serviceType: 'OP Consultation',
+        serviceType_code: 'op_consultation',
+        serviceItemName: doc?.name || '',
+        serviceItemCode: doc?.doctor_code || '',
+        service_code: doc?.doctor_code || '',
+        serviceItemId: doc?.id || '',
+        provider_name: doc?.provider_name || 'HCL Healthcare',
+        provider_code: doc?.provider_code || 'HCLHC001',
+        cug_code: doc?.cug_code || 'TC0001',
+        mrp: doc?.mrp ?? doc?.fee ?? 0,
+        selling_discount_rate: doc?.selling_discount_rate ?? 0,
+        selling_amount: doc?.selling_amount ?? doc?.fee ?? 0,
+        status: 'Pending',
+        department_name: doc?.department_name || doc?.speciality || 'General Physician',
+        department_id: doc?.department_id || '',
+        subDepartment_name: doc?.subDepartment_name || doc?.speciality || 'General Physician',
+        subDepartment_id: doc?.subDepartment_id || '',
+        speciality_id: doc?.speciality_id || '',
+        serviceDate: s?.slot_date || Date.now(),
+        serviceStartTime: s?.slot_start_time || Date.now(),
+        serviceEndTime: s?.slot_end_time || (s?.slot_start_time ? s.slot_start_time + 1200000 : Date.now() + 1200000),
+        slotId: s?.id || '',
+        slotNo: s?.slotNo || 1,
+        slot: s ? this.formatSlotRange(s) : '',
+        slot_type: 'dynamic',
+        mode_of_appointment: doc?.mode_of_appointment || 'habithealth',
+        consultation_type_code: this.mode(),
+        tag_data: []
       }
     };
   }
 
   private buildCheckoutSnapshot(): any {
+    const doc = this.doctor();
+    const s = this.slot();
+    const pat = this.patient();
+
     return {
       checkout_snapshot: {
-        patient_id: this.patient()?.patient_id,
+        patient_id: pat?.mapped_id || pat?.patient_id || pat?.id,
         checkoutsnapshot: {
-          facility_id: this.doctor()?.facility_id,
-          doctor_id: this.doctor()?.id,
-          speciality_id: this.doctor()?.speciality_id,
+          facility_id: doc?.facility_id,
+          doctor_id: doc?.id,
+          speciality_id: doc?.speciality_id,
           consultation_type: this.mode(),
           consultation_type_code: this.mode(),
           patient_type: 'OP',
-          slot_id: this.slot()?.id,
-          serviceDate: Date.now(),
-          serviceStartTime: Date.now(),
-          serviceEndTime: Date.now() + 900000,
-          serviceItemId: this.doctor()?.id
+          slot_id: s?.id,
+          serviceDate: s?.slot_date || Date.now(),
+          serviceStartTime: s?.slot_start_time || Date.now(),
+          serviceEndTime: s?.slot_end_time || (s?.slot_start_time ? s.slot_start_time + 1200000 : Date.now() + 1200000),
+          serviceItemId: doc?.id
         }
       }
     };
   }
 
   private buildBookingSnapshot(): any {
+    const doc = this.doctor();
+    const s = this.slot();
+    const pat = this.patient();
+
     return {
       booking_snapshot: {
         serviceRequestHandler: {
           patient_details: {
-            patient_id: this.patient()?.patient_id,
+            patient_id: pat?.mapped_id || pat?.patient_id || pat?.id,
             patientType: 'OP',
-            uhId: this.patient()?.uhId,
+            uhId: pat?.uhId,
             payer_info: { id: 'cash', payer_type: 'cash', payer_name: 'Cash' }
           },
-          facility_id: this.doctor()?.facility_id,
-          doctor_id: this.doctor()?.id,
+          facility_id: doc?.facility_id,
+          doctor_id: doc?.id,
           services: [{
-            id: this.doctor()?.id,
-            serviceItemId: this.doctor()?.id,
-            serviceItemName: this.doctor()?.name,
+            id: doc?.id,
+            serviceItemId: doc?.id,
+            serviceItemName: doc?.name,
             consultation_type: this.mode(),
             consultation_type_code: this.mode(),
             serviceType: 'OP Consultation',
             serviceType_code: 'op_consultation',
-            slotId: this.slot()?.id
+            slotId: s?.id
           }],
           payment_details: [{ payment_type: 'E-Payment', payment_status: 'Pending' }],
-          mode_of_appointment: 'opd_network'
+          mode_of_appointment: doc?.mode_of_appointment || 'habithealth'
         }
       }
     };
