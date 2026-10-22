@@ -971,40 +971,30 @@ export class ClaimDetailPage {
       return;
     }
 
-    // BACKEND CONTRACT (from user):
-    // POST /opd_claim?action=cancel
-    // Body form-data: resource = minified JSON string
-    // Example: {"name":"CLAI-001","claim_status":"UNDER_REVIEW","g_soft_delete":"false"}
-    //
-    // Success: HTTP 200 with {errCode: 0, message: "Success", count: 1, resource: [...]}
-    // Error: HTTP 200 with {errCode: -1, message: "claim {name} cannot be cancelled from {status}"}
-    // Important: errCode -1 is in 200 OK envelope, NOT HTTP error status!
+    // Build the resource object WITHOUT g_soft_delete
+    // Only include name and claim_status as specified
+    const resourceData = {
+      name: claimId || (this.displayClaim()?.claim_id || ''),
+      claim_status: this.displayClaim()?.claim_status || ''
+    };
+
+    // Minify the JSON (no spaces/newlines) then base64 encode
+    // The API expects: resource=<base64_encoded_json>
+    const resourceMinified = JSON.stringify(resourceData, null, 0);
+    const encodedResourceData = btoa(resourceMinified);
+
+    // Make the request: URL with ?action=cancel query param, body with base64-encoded resource
+    const options = this.appService.addXsrfToken(
+      'resource=' + encodeURIComponent(encodedResourceData),
+      true,
+    );
 
     try {
-      // Get the current claim detail to extract name and claim_status
-      const detail = this.displayClaim();
-
-      // Build minified JSON resource payload matching backend format
-      // {"name":"CLAI-...","claim_status":"CURRENT_STATUS","g_soft_delete":"false"}
-      const resourceData = {
-        name: claimId || (detail?.claim_id || ''),
-        claim_status: detail?.claim_status || '',
-        g_soft_delete: 'false'
-      };
-      const resourceMinified = JSON.stringify(resourceData, null, 0); // no spaces/newlines
-
-      // Make the request: URL with ?action=cancel query param, body with resource
-      const options = this.appService.addXsrfToken(
-        'resource=' + encodeURIComponent(resourceMinified),
-        true,
-      );
-
       const response = await firstValueFrom(
         this.http.post('habit-opd/api/v1/opd_claim?action=cancel',
-          'resource=' + encodeURIComponent(resourceMinified),
+          'resource=' + encodeURIComponent(encodedResourceData),
           options,
-        ),
-      );
+        );
 
       // BACKEND RESPONSE HANDLING:
       // Always HTTP 200 - check errCode in the response body
