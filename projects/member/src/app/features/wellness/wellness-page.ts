@@ -142,7 +142,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
               <p class="rounded-2xl border border-[#EDF0F7] bg-white p-4 text-sm text-ink-500">
                 No Annual Health Check package is available on your plan right now.
               </p>
-            }
+            } @else {
             <!-- One button per leg of the package (data.benefits_package_service_tiles), in API order. -->
             @for (tile of ahcStore.serviceTiles(); track tile.id) {
               @if (tile.serviceType === 'PATHOLOGY') {
@@ -183,6 +183,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                 </button>
               }
             }
+            }
 
             <!-- Book the entire package -->
             <!-- <button
@@ -208,6 +209,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
 
 
           <!-- Booked legs (packageServiceItemsStatusInfo rows with stage 'Booked'), with their status. -->
+          @if (!ahcStore.packageLoading()) {
           @for (b of ahcStore.AHCBookings(); track b.id) {
             <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm lg:p-5">
               <div class="flex flex-col gap-4 sm:flex-row">
@@ -265,6 +267,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                 </ol>
               </div>
             </section>
+          }
           }
 
           @if (pathologyBooked() && !radiologyBooked() && !packageBooked()) {
@@ -821,6 +824,9 @@ export class WellnessPage {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.searchTimer));
+    // A fresh start on every visit: nothing from an earlier one is shown while
+    // the package is read again.
+    this.ahcStore.resetForEntry();
     if (this.userInfo && this.userInfo[0]?.user_id) {
       this.ahcStore.getAHCList(this.userInfo[0]);
     }

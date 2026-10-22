@@ -133,6 +133,17 @@ const FILTERS: readonly { key: BookingKind | 'ALL'; label: string }[] = [
         } @else {
           <opd-empty title="Nothing here yet" detail="Bookings you make will appear here." />
         }
+
+        @if (store.hasMore()) {
+          <button
+            type="button"
+            class="mx-auto mt-6 flex min-h-touch items-center rounded-xl border border-[#0F5FDC] px-6 text-sm font-semibold text-[#0F5FDC] hover:bg-blue-50 disabled:opacity-60"
+            [disabled]="store.loadingMore()"
+            (click)="store.loadMore()"
+          >
+            {{ store.loadingMore() ? 'Loading…' : 'Load more bookings' }}
+          </button>
+        }
       }
     </div>
 
@@ -437,6 +448,8 @@ export class BookingsPage {
   }
 
   constructor() {
+    // This screen is the only one that reads LIST_BOOKED_SERVICES — once per visit.
+    void this.store.load();
     effect(() => {
       // Tab keys are already web-member's lowercase values, so compare as-is.
       const requested = this.tab()?.trim().toLowerCase();

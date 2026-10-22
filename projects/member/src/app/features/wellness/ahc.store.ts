@@ -148,6 +148,8 @@ export class AHCStore {
     private readonly _ahcCopayAmount = signal(<any | null>(null));
     
     private slotSeq = 0;
+    /** Only the latest package load may write — an earlier visit's late response is dropped. */
+    private packageSeq = 0;
     readonly AHC = this._ahcList.asReadonly();
     readonly AHCProviders = this._ahcProviders.asReadonly();
     readonly providersLoading = this._providersLoading.asReadonly();
@@ -222,9 +224,11 @@ export class AHCStore {
         const args = 'user_id:' + userInfo?.user_id + ',service_type_code:phc,mode_of_appointment:opd_network';
         const applicationName = 'habit-opd';
         const resourceName = 'opd_ahc_booking';
+        const seq = ++this.packageSeq;
         this._ahcPackageLoading.set(true);
         this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName).subscribe({
             next: (response: any) => {
+                if (seq !== this.packageSeq) return;
                 const parsed = typeof response === 'string' ? JSON.parse(response) : response;
                 const resources: any[] = parsed?.resource ?? [];
                 // const selectedPackage = resources.find(
@@ -242,20 +246,21 @@ export class AHCStore {
                         this._ahcPackageLoading.set(false);
                         return;
                     }
-                    this.getAHCServiceItems(userInfo, selectedPackage);
+                    this.getAHCServiceItems(userInfo, selectedPackage, seq);
                 } else{
                     this._ahcServiceItemList.set([]);
                     this._ahcPackageLoading.set(false);
                 }
             },
             error: () => {
+                if (seq !== this.packageSeq) return;
                 this._ahcList.set(null);
                 this._ahcServiceItemList.set([]);
                 this._ahcPackageLoading.set(false);
             }
         });
     }
-    getAHCServiceItems(userInfo: any, packageList: any){
+    getAHCServiceItems(userInfo: any, packageList: any, seq = this.packageSeq){
         const packageListObj = packageList.data;
         const resourceName = 'opd_ahc_booking';
         const queryId = 'AHC_PACKAGE_DETAIL';
@@ -278,6 +283,7 @@ export class AHCStore {
 
         this.appService.getcall(resourceName, applicationName, 'queryId=' + queryId + '&args=' + args+'&application='+ applicationName + '&filter=' + filter).subscribe({
             next: (response: any) => {
+                if (seq !== this.packageSeq) return;
                 const parsed = typeof response === 'string' ? JSON.parse(response) : response;
                 const resources: any[] = parsed?.resource ?? [];
                 this._ahcServiceItemList.set(resources);
@@ -295,12 +301,52 @@ export class AHCStore {
                 }
             },
             error: () => {
+                if (seq !== this.packageSeq) return;
                 this._ahcBookings.set([]);
                 this._ahcServiceItemList.set([]);
                 this._ahcPackageLoading.set(false);
             }
         });
     }
+    /**
+     * Forgets everything from an earlier visit — package, bookings, providers,
+     * centres, slots, checkout — so the screen shows only what the API sends
+     * this time. Called when the Annual Health Check screen opens.
+     */
+    resetForEntry(): void {
+        this.packageSeq++;
+        this.slotSeq++;
+        this.centreSeq++;
+        this._ahcList.set(null);
+        this._ahcServiceItemList.set(null);
+        this._ahcSelectedItem.set(null);
+        this._ahcPackageLoading.set(false);
+        this._ahcSelectedModeofCollection.set(null);
+        this._ahcCollectionAddress.set([]);
+        this._collectionAddressLoading.set(false);
+        this._selectedCollectionAddress.set(null);
+        this._ahcProviders.set([]);
+        this._providersLoading.set(false);
+        this.setSelectedProvider(null);
+        this._ahcCentres.set([]);
+        this._centresLoading.set(false);
+        this._selectedCentre.set(null);
+        this._ahcSlotResponse.set([]);
+        this._ahcSelectedSlot.set([]);
+        this._ahcCartResponse.set(null);
+        this._ahcCheckoutResponse.set(null);
+        this._isPathologyServiceStatus.set(null);
+        this._ahcBookingInfo.set(null);
+        this._ahcBookings.set([]);
+        this._ahcIsProceedToBooking.set(false);
+        this._checkoutLoading.set(false);
+        this._ahcCopayAmount.set(null);
+        this.startDateTimeStamp = undefined;
+        this.startDateObj = undefined;
+        this.dateAndStartTimeTimestamp = undefined;
+        this.dateAndEndTimeTimestamp = undefined;
+    }
+
     setPathologyBookingInfo(serviceBookingInfo: any){
         if(serviceBookingInfo?.serviceType_code == 'pathology' && serviceBookingInfo?.stage == 'Booked'){
             this._isPathologyServiceStatus.set(serviceBookingInfo?.serviceType_code == 'pathology' && serviceBookingInfo?.stage == 'Booked' ? true : false)

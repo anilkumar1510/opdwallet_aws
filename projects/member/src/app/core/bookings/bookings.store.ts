@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AppService } from '../http/api.service';
@@ -8,10 +8,8 @@ import { UserInfoStore } from '../session/userinfo.store';
 import { bookedServiceToBooking } from './booking.mapper';
 import { Booking, BookingKind } from './booking.model';
 
-/** LIST_BOOKED_SERVICES is paged; rows are read a page at a time until a short page. */
+/** LIST_BOOKED_SERVICES is paged; one page is read per request, more on "Load more". */
 const PAGE_SIZE = 10;
-/** Guard against a server that never sends a short page. */
-const MAX_PAGES = 20;
 
 /**
  * The member's bookings.
@@ -21,6 +19,10 @@ const MAX_PAGES = 20;
  * pharmacy — are not wired to an API yet, so their tabs stay empty. Cancel,
  * invoice and prescription actions are inert: the AHC rows expose none of
  * those controls. See REMOVED-APIS.md.
+ *
+ * Nothing loads on its own: other screens inject this store for its rows, and
+ * none of them needs LIST_BOOKED_SERVICES. Only the Bookings screen calls
+ * `load()`, once per visit, with concurrent calls sharing one request.
  */
 @Injectable({ providedIn: 'root' })
 export class BookingsStore {
@@ -29,9 +31,13 @@ export class BookingsStore {
   private readonly userStore = inject(UserInfoStore);
 
   private readonly _bookings = signal<readonly Booking[]>([]);
-  /** The patient the list was loaded for, so a reload happens only when it changes. */
-  private loadedFor: string | null = null;
   private loadSeq = 0;
+  /** The first-page request under way, shared by concurrent `load()` calls. */
+  private inFlight: Promise<void> | null = null;
+  /** Zero-based page last read. */
+  private page = 0;
+  private readonly _hasMore = signal(false);
+  private readonly _loadingMore = signal(false);
   private readonly _loading = signal(false);
   private readonly _error = signal<AppError | null>(null);
   private readonly _partial = signal<readonly string[]>([]);
@@ -54,6 +60,9 @@ export class BookingsStore {
   readonly downloading = this._downloading.asReadonly();
   readonly invoiceError = this._invoiceError.asReadonly();
   readonly all = this._bookings.asReadonly();
+  /** Whether the server has bookings beyond those read so far. */
+  readonly hasMore = this._hasMore.asReadonly();
+  readonly loadingMore = this._loadingMore.asReadonly();
 
   readonly bookings = computed(() => {
     const filter = this._filter();
@@ -73,57 +82,102 @@ export class BookingsStore {
   });
 
   constructor() {
-    // Loads once the signed-in member's user info has arrived; sign-out clears the list.
+    // Sign-out, or another member signing in, drops what was read. Loading is
+    // left to the Bookings screen.
+    const signedIn = () => (this.session.isAuthenticated() ? (this.userStore.userInfo()?.[0]?.user_id ?? null) : null);
+    // Starts from whoever is signed in now, so the effect's first run does not
+    // cancel a load() the screen has already started.
+    let user = untracked(signedIn);
     effect(() => {
-      const user = this.userStore.userInfo()?.[0];
-      if (!this.session.isAuthenticated() || !user?.user_id) {
-        this.loadedFor = null;
-        this.loadSeq++;
-        this._bookings.set([]);
-        return;
-      }
-      if (this.loadedFor !== user.user_id) void this.load(user);
+      const current = signedIn();
+      if (current === user) return;
+      user = current;
+      this.loadSeq++;
+      this.inFlight = null;
+      this.page = 0;
+      this._bookings.set([]);
+      this._hasMore.set(false);
+      this._error.set(null);
     });
+  }
+
+  /** Reads the first page. Called by the Bookings screen; concurrent calls share one request. */
+  load(): Promise<void> {
+    this.inFlight ??= this.loadFirstPage().finally(() => {
+      this.inFlight = null;
+    });
+    return this.inFlight;
   }
 
   /** Reads the list again, e.g. after a new booking. */
   refresh(): Promise<void> {
-    const user = this.userStore.userInfo()?.[0];
-    return user?.user_id ? this.load(user) : Promise.resolve();
+    return this.load();
   }
 
-  private async load(user: any): Promise<void> {
+  /** Appends the next page. */
+  async loadMore(): Promise<void> {
+    const user = this.userStore.userInfo()?.[0];
+    if (!user?.user_id || this._loadingMore() || this._loading() || !this._hasMore()) return;
+    const seq = this.loadSeq;
+    const next = this.page + 1;
+    this._loadingMore.set(true);
+    try {
+      const { rows, total } = await this.fetchPage(user.user_id, next);
+      if (seq !== this.loadSeq) return;
+      // A server that ignores page_no sends the same rows again: keep each booking once.
+      const seen = new Set(this._bookings().map((b) => b.id));
+      const added = this.toBookings(rows, user).filter((b) => !seen.has(b.id));
+      this.page = next;
+      this._bookings.set(this.sorted([...this._bookings(), ...added]));
+      this._hasMore.set(added.length > 0 && this.moreAfter(rows.length, total));
+    } catch {
+      if (seq === this.loadSeq) this._error.set(appError('server', 'We could not load more bookings. Please try again.'));
+    } finally {
+      if (seq === this.loadSeq) this._loadingMore.set(false);
+    }
+  }
+
+  private async loadFirstPage(): Promise<void> {
+    const user = this.userStore.userInfo()?.[0];
+    if (!user?.user_id) return;
     const seq = ++this.loadSeq;
-    this.loadedFor = user.user_id;
     this._loading.set(true);
     this._error.set(null);
     try {
-      const rows: any[] = [];
-      for (let page = 0; page < MAX_PAGES; page++) {
-        const batch = await this.fetchPage(user.user_id, page);
-        if (seq !== this.loadSeq) return;
-        rows.push(...batch);
-        if (batch.length < PAGE_SIZE) break;
-      }
-      const now = new Date();
-      const key = user.api_encryption_key ?? null;
-      const decrypt = (value: string): string => this.api.decryptText(value, key);
-      const bookings = rows
-        .map((row) => bookedServiceToBooking(row, now, decrypt))
-        // Newest appointment first.
-        .sort((a, b) => (b.scheduledFor?.getTime() ?? 0) - (a.scheduledFor?.getTime() ?? 0));
-      this._bookings.set(bookings);
+      const { rows, total } = await this.fetchPage(user.user_id, 0);
+      if (seq !== this.loadSeq) return;
+      this.page = 0;
+      this._bookings.set(this.sorted(this.toBookings(rows, user)));
+      this._hasMore.set(this.moreAfter(rows.length, total));
     } catch {
       if (seq !== this.loadSeq) return;
-      this.loadedFor = null;
       this._bookings.set([]);
+      this._hasMore.set(false);
       this._error.set(appError('server', 'We could not load your bookings. Please try again.'));
     } finally {
       if (seq === this.loadSeq) this._loading.set(false);
     }
   }
 
-  private async fetchPage(patientId: string, page: number): Promise<any[]> {
+  /** `count` is used as the total when the server sends one larger than what is read; else a full page hints at more. */
+  private moreAfter(pageLength: number, total: number | null): boolean {
+    const read = (this.page + 1) * PAGE_SIZE;
+    return total !== null && total > pageLength ? total > read : pageLength === PAGE_SIZE;
+  }
+
+  private toBookings(rows: any[], user: any): Booking[] {
+    const now = new Date();
+    const key = user.api_encryption_key ?? null;
+    const decrypt = (value: string): string => this.api.decryptText(value, key);
+    return rows.map((row) => bookedServiceToBooking(row, now, decrypt));
+  }
+
+  /** Newest appointment first. */
+  private sorted(bookings: Booking[]): Booking[] {
+    return bookings.sort((a, b) => (b.scheduledFor?.getTime() ?? 0) - (a.scheduledFor?.getTime() ?? 0));
+  }
+
+  private async fetchPage(patientId: string, page: number): Promise<{ rows: any[]; total: number | null }> {
     const applicationName = 'habit-opd';
     const resourceName = 'opd_ahc_booking';
     const queryId = 'LIST_BOOKED_SERVICES';
@@ -144,7 +198,11 @@ export class BookingsStore {
       '&application=' + applicationName;
     const response = await firstValueFrom(this.api.getcall(resourceName, applicationName, query));
     const parsed = typeof response === 'string' ? JSON.parse(response) : response;
-    return Array.isArray(parsed?.resource) ? parsed.resource : [];
+    const count = Number(parsed?.count);
+    return {
+      rows: Array.isArray(parsed?.resource) ? parsed.resource : [],
+      total: Number.isFinite(count) ? count : null,
+    };
   }
 
   setFilter(filter: BookingKind | 'ALL'): void {
@@ -152,7 +210,7 @@ export class BookingsStore {
   }
 
   retry(): void {
-    void this.refresh();
+    void this.load();
   }
 
   // Inert in dummy mode — no backend. The static rows carry `isCancellable:false`

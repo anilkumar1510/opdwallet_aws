@@ -38,17 +38,10 @@ export class UserInfoStore {
   getUserInfo(): any {
     return this._userInfo();
   }
-  getApplicationMasterByUaser(){
-    this.appService.getcall('application_master', 'account-management', 'queryId=GET_MY_CONFIG&args=dummy:dummy,account_url:wellnessdevhh.hclhealthcare.in&application=account-management').subscribe({
-      next: (response: any) => {
-        const parsed = JSON.parse(response);
-        const resources: any[] = parsed?.resource ?? [];
-        this._userInfo.set(resources);
-      },
-      error: () => {
-        this._userInfo.set(null);
-      }
-    });
+  /** Forgets the user, e.g. when the session is refused. */
+  clear(): void {
+    this._userInfo.set(null);
+    this.appService.setCurrentSessionData('userInfo', []);
+    this.appService.setCurrentSessionData('encryptKey', '');
   }
-  
 }
