@@ -41,7 +41,7 @@ import {
  */
 
 type View = 'home' | 'order' | 'raise' | 'ticket';
-type GrievanceStatus = 'none' | 'open' | 'response' | 'closed';
+type GrievanceStatus = 'none' | 'open' | 'response' | 'resolved' | 'closed';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const DATE_TIME = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -52,12 +52,14 @@ const STATUS_LABEL: Record<GrievanceStatus, string> = {
   none: 'Ask for help',
   open: 'Ticket open',
   response: 'Response received',
+  resolved: 'Resolved',
   closed: 'Ticket closed',
 };
 const STATUS_CLASS: Record<GrievanceStatus, string> = {
   none: 'bg-[#EEF3FF] text-[#0F5FDC]',
   open: 'bg-warning-50 text-warning-700',
   response: 'bg-[#F0FDF4] text-success-700',
+  resolved: 'bg-[#DCFCE7] text-[#166534]',
   closed: 'bg-[#F2F4F8] text-ink-500',
 };
 
@@ -374,6 +376,24 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                     <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket.</p>
                     }
                   }
+                  @case ('resolved') {
+                    @if (t.closedBy === 'member') {
+                      <p class="text-sm text-ink-700">✓ You marked this ticket as resolved.</p>
+                    } @else {
+                      <p class="text-sm font-medium text-success-700">✓ Support has marked this ticket as Resolved.</p>
+                      @if (t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
+                        </div>
+                      }
+                      <p class="mt-2 text-xs text-ink-500">You can close this ticket if you are satisfied, or reply below if you have any questions.</p>
+                      @if (isLiveTicket(t)) {
+                        <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t, isResolved: true }" />
+                      } @else {
+                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#16a34a] px-4 text-sm font-semibold text-white hover:bg-[#15803d]" (click)="markResolved(t)">Close Ticket</button>
+                      }
+                    }
+                  }
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
                       <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
@@ -404,15 +424,15 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
       </div>
 
       <!-- Reply on a real ticket: sent to the support system, shown once it is in the thread. -->
-      <ng-template #liveReply let-t>
+      <ng-template #liveReply let-t let-isResolved="isResolved">
         <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
         <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" maxlength="2000" [value]="reply()" [disabled]="replying()" (input)="reply.set($any($event.target).value)"></textarea>
         @if (replyError(); as err) {
           <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
         }
         <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying() || cooling()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
-        <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : 'Mark resolved' }}</button>
-        <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good.</p>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : (isResolved ? 'Close Ticket' : 'Mark resolved') }}</button>
+        <p class="mt-2 text-xs text-ink-500">{{ isResolved ? 'Close Ticket marks the grievance as closed for good.' : 'Mark resolved closes the ticket.' }}</p>
       </ng-template>
 
       <!-- One row layout for both lists: what, when and which, then the
@@ -701,6 +721,7 @@ export class HelplinePage {
   private status(t: SupportTicket | undefined): GrievanceStatus {
     if (!t) return 'none';
     if (t.state === 'closed') return 'closed';
+    if (t.state === 'resolved') return 'resolved';
     return t.state === 'awaiting_member' ? 'response' : 'open';
   }
 
@@ -1004,7 +1025,11 @@ export class HelplinePage {
       if (this.resolving()) return;
       this.resolving.set(true);
       this.replyError.set(null);
-      const result = await this.disputeApi.resolve(record);
+      const result = await this.disputeApi.resolve({
+        name: record.name,
+        finalReason: record.finalReason || 'Claim amount verified against policy benefits. Awaiting support executive response.',
+        disputeStatus: 'CLOSE',
+      });
       this.resolving.set(false);
       if (!result.ok) {
         this.replyError.set(result.message);
@@ -1133,9 +1158,12 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
       : { from: 'support', author: m.senderName, text: m.text, at: m.at })),
   ];
   // `userResolve` leaves the member as the last sender; support's close does not.
-  const closedByMember = state === 'closed' && r.lastMessageSender === 'MEMBER';
+  const closedByMember = (state === 'closed' || state === 'resolved') && r.lastMessageSender === 'MEMBER';
   if (closedByMember) {
     messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
+  } else if (state === 'resolved') {
+    const remark = r.finalReason ? r.finalReason : null;
+    messages.push({ from: 'system', text: remark ? `Resolved by support — ${remark}` : 'Resolved by support', at: r.modifiedAt });
   } else if (state === 'closed') {
     // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
     // (it is now left blank until support closes the ticket): only show it as
@@ -1151,8 +1179,10 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
     detail: '',
     createdAt: r.createdAt,
     state,
+    resolvedAt: state === 'resolved' || state === 'closed' ? r.modifiedAt : undefined,
     closedAt: state === 'closed' ? r.modifiedAt : undefined,
-    closedBy: state === 'closed' ? (closedByMember ? 'member' : 'support') : undefined,
+    closedBy: (state === 'closed' || state === 'resolved') ? (closedByMember ? 'member' : 'support') : undefined,
+    finalReason: r.finalReason ?? undefined,
     messages,
   };
 }

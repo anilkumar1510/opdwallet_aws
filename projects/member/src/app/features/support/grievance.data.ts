@@ -42,7 +42,7 @@ export interface SupportOrder {
   readonly invoiceLines: readonly InvoiceLine[];
 }
 
-export type TicketState = 'awaiting_support' | 'awaiting_member' | 'closed';
+export type TicketState = 'awaiting_support' | 'awaiting_member' | 'resolved' | 'closed';
 export type ClosedBy = 'support' | 'member' | 'auto';
 
 export interface TicketMessage {
@@ -62,8 +62,10 @@ export interface SupportTicket {
   readonly detail: string;
   readonly createdAt: Date;
   readonly state: TicketState;
+  readonly resolvedAt?: Date;
   readonly closedAt?: Date;
   readonly closedBy?: ClosedBy;
+  readonly finalReason?: string;
   readonly messages: readonly TicketMessage[];
 }
 
