@@ -14,12 +14,12 @@ import { ClaimModeStore } from '../../core/member/claim-mode.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    @if (claimsOnly()) {
-      <p class="mb-3 rounded-xl border border-[#CDDDFE] bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
-        Your policy covers {{ label() }} by claims only — pay the provider, then file a claim.
-      </p>
-    }
     @if (modes.allowsClaims(category())) {
+      @if (claimsOnly()) {
+        <p class="mb-3 rounded-xl border border-[#CDDDFE] bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
+          Your policy covers {{ label() }} by claims only — pay the provider, then file a claim.
+        </p>
+      }
       <a
         routerLink="/member/claims"
         class="flex min-h-touch w-full items-center justify-center rounded-xl px-6 text-sm font-semibold"

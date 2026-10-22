@@ -93,7 +93,6 @@ type Step =
         <!-- ── Landing ─────────────────────────────────────────────────────── -->
         @if (!started()) {
           <opd-coverage-banner [category]="BenefitCategory.OnlineConsultation" />
-
           @if (claimModes.allowsCashless(BenefitCategory.OnlineConsultation)) {
             <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
               Find a doctor →
