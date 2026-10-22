@@ -36,11 +36,13 @@ export interface Doctor {
   canConsultNow?: boolean;
   speciality?: string;
   speciality_id?: string;
+  speciality_code?: string;
   profile_id?: string;
   profile_path?: string;
   doctor_code?: string;
   facility_id?: string;
   facility_name?: string;
+  facility_address?: any;
   department_id?: string;
   department_name?: string;
   subDepartment_id?: string;
@@ -49,6 +51,7 @@ export interface Doctor {
   provider_name?: string;
   cug_code?: string;
   mode_of_appointment?: string;
+  telecom?: string;
 }
 
 export interface Slot {
@@ -116,24 +119,86 @@ export interface CartSnapshot {
   };
 }
 
+export interface OpService {
+  serviceItemId?: string;
+  serviceItemName?: string;
+  speciality_id?: string;
+  speciality_name?: string;
+  speciality_code?: string;
+  service_code?: string;
+  part_of_package?: boolean;
+  serviceItemCode?: string;
+  consultation_type?: string;
+  consultation_type_code?: string;
+  over_booking_status?: boolean;
+  order_date_time?: number;
+  speciality_name_upper?: string;
+  service_type?: string;
+  serviceName?: string;
+  appointment_time?: number;
+  serviceType?: string;
+  serviceType_code?: string;
+  slotId?: string;
+  extra_data?: {
+    edit_price?: boolean;
+    speciality_name?: string;
+    facility_name?: string;
+    qualification?: string;
+    [key: string]: any;
+  };
+  slotNo?: string | number;
+  serviceDate?: number;
+  serviceStartTime?: number;
+  serviceEndTime?: number;
+  category?: string;
+  department_id?: string;
+  department_name?: string;
+  subDepartment_id?: string;
+  subDepartment_name?: string;
+  qty?: number;
+  cart_id?: string;
+  is_centre_visit?: boolean;
+  is_home_collection?: boolean;
+  logo_id?: string;
+  doctor_profile_path?: string;
+  patient_instructions?: string;
+  practice_type_code?: string;
+  practice_type_name?: string;
+  performing_doctor?: string;
+  participant?: Array<{
+    participantId?: string;
+    participantName?: string;
+    participantRole?: string;
+  }>;
+  doctor_experience?: string;
+  doctor_telecom?: string;
+  [key: string]: any;
+}
+
 export interface CheckoutSnapshot {
+  policy_id?: string;
   checkout_snapshot?: {
-    patient_id?: string;
-    checkoutsnapshot?: {
+    opdCheckout?: {
       facility_id?: string;
-      doctor_id?: string;
-      speciality_id?: string;
-      consultation_type?: string;
-      consultation_type_code?: string;
-      patient_type?: string;
-      slot_id?: string;
-      serviceDate?: number;
-      serviceStartTime?: number;
-      serviceEndTime?: number;
-      overdure?: number;
-      penalty?: number;
-      serviceItemId?: string;
+      patient_id?: string;
+      scheme_code?: string;
+      is_use_wallet?: boolean;
+      bg_code?: string;
+      scheme_discount_applicable?: boolean;
+      type?: string;
+      uhId?: string;
+      is_use_care_coin?: boolean;
+      orderedFrom?: string;
+      old_serviceRequestId?: string;
+      provider_name?: string;
+      provider_code?: string;
+      op_services?: OpService[];
+      mode_of_appointment?: string;
+      facility_address?: any;
+      tag_data?: any[];
+      [key: string]: any;
     };
+    [key: string]: any;
   };
 }
 
@@ -314,8 +379,10 @@ export class OpdConsultationService {
             canConsultNow,
             speciality: item.data?.speciality,
             speciality_id: item.data?.speciality_id,
+            speciality_code: item.data?.speciality_code || item.data?.specialityCode || item.data?.speciality,
             facility_id: item.data?.facility_id,
             facility_name: item.data?.facility_name,
+            facility_address: item.data?.facility_address || item.data?.address,
             department_id: item.data?.department_id,
             department_name: item.data?.department_name,
             subDepartment_id: item.data?.subDepartment_id,
@@ -325,7 +392,8 @@ export class OpdConsultationService {
             provider_code: item.data?.provider_code || 'HCLHC001',
             provider_name: item.data?.provider_name || 'HCL Healthcare',
             cug_code: item.data?.cug_code || this.cugCode,
-            mode_of_appointment: item.data?.mode_of_appointment || 'habithealth'
+            mode_of_appointment: item.data?.mode_of_appointment || 'habithealth',
+            telecom: item.data?.telecom || item.data?.doctor_telecom || '9999444444'
           };
         }))
       );

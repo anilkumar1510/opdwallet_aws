@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, OnInit } from '@angular/core';
-import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse, CartSnapshot } from '../../services/opd-consultation.service';
+import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse, CartSnapshot, CheckoutSnapshot } from '../../services/opd-consultation.service';
 import moment from 'moment';
 import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
@@ -651,9 +651,10 @@ export class OnlineConsultPage implements OnInit {
       // Build cart snapshot and add to cart
       const cartData = this.buildCartSnapshot();
       this.consultationService.addToCart(cartData).subscribe({
-        next: () => {
+        next: (cartRes: any) => {
+          const cartId = cartRes?.resource?.[0]?.id || cartRes?.resource?.[0]?.cart_snapshot?.id || cartRes?.id || '';
           // Build checkout snapshot and calculate payment
-          const checkoutData = this.buildCheckoutSnapshot();
+          const checkoutData = this.buildCheckoutSnapshot(cartId);
           this.consultationService.checkout(checkoutData).subscribe({
             next: () => {
               // Proceed to booking
@@ -761,26 +762,108 @@ export class OnlineConsultPage implements OnInit {
     };
   }
 
-  private buildCheckoutSnapshot(): any {
+  private buildCheckoutSnapshot(cartId?: string): CheckoutSnapshot {
     const doc = this.doctor();
     const s = this.slot();
     const pat = this.patient();
+    const policyId = this.policyStore.version()?.policy_id || this.policyStore.assignment()?.policy_id || '786123';
+    const now = Date.now();
+    const sDate = s?.slot_date || now;
+    const sStart = s?.slot_start_time || now;
+    const sEnd = s?.slot_end_time || (s?.slot_start_time ? s.slot_start_time + 1200000 : now + 1200000);
+    const uhId = pat?.uhId || 'HCLW-27028';
+    const facilityAddress = doc?.facility_address || {
+      street1: 'Raheja Mind Space',
+      street2: 'Madhapur',
+      street3: '',
+      city: 'hyderabad',
+      state: 'telangana',
+      pincode: '500081',
+      country: 'india',
+      latitude: 17.4410131,
+      longitude: 78.3808268,
+      cityDisplayName: 'Hyderabad',
+      stateDisplayName: 'Telangana',
+      pincodeDisplayName: '',
+      countryDisplayName: 'India'
+    };
 
     return {
+      policy_id: policyId,
       checkout_snapshot: {
-        patient_id: pat?.mapped_id || pat?.patient_id || pat?.id,
-        checkoutsnapshot: {
-          facility_id: doc?.facility_id,
-          doctor_id: doc?.id,
-          speciality_id: doc?.speciality_id,
-          consultation_type: this.mode(),
-          consultation_type_code: this.mode(),
-          patient_type: 'OP',
-          slot_id: s?.id,
-          serviceDate: s?.slot_date || Date.now(),
-          serviceStartTime: s?.slot_start_time || Date.now(),
-          serviceEndTime: s?.slot_end_time || (s?.slot_start_time ? s.slot_start_time + 1200000 : Date.now() + 1200000),
-          serviceItemId: doc?.id
+        opdCheckout: {
+          facility_id: doc?.facility_id || '',
+          patient_id: pat?.mapped_id || pat?.patient_id || pat?.id || '',
+          scheme_code: '',
+          is_use_wallet: false,
+          bg_code: 'cash-benefit-group',
+          scheme_discount_applicable: false,
+          type: '',
+          uhId: uhId,
+          is_use_care_coin: false,
+          orderedFrom: 'Patient Portal',
+          old_serviceRequestId: '',
+          provider_name: doc?.provider_name || 'HCL Healthcare',
+          provider_code: doc?.provider_code || 'HCL-001',
+          op_services: [
+            {
+              serviceItemId: doc?.id || '',
+              serviceItemName: doc?.name || '',
+              speciality_id: doc?.speciality_id || '',
+              service_code: doc?.doctor_code || '',
+              part_of_package: false,
+              serviceItemCode: doc?.doctor_code || doc?.id || '',
+              consultation_type: 'Tele Consult',
+              consultation_type_code: this.mode(),
+              over_booking_status: false,
+              order_date_time: now,
+              speciality_name: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+              service_type: 'OP Consultation',
+              serviceName: doc?.name || '',
+              appointment_time: sEnd,
+              serviceType: 'OP Consultation',
+              serviceType_code: 'op_consultation',
+              slotId: s?.id || '',
+              extra_data: {
+                edit_price: false,
+                speciality_name: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+                facility_name: doc?.facility_name || 'HCL Healthcare Clinic',
+                qualification: doc?.qualification || 'MBBS'
+              },
+              slotNo: String(s?.slotNo || 1),
+              serviceDate: sDate,
+              serviceStartTime: sStart,
+              serviceEndTime: sEnd,
+              category: (doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+              speciality_code: (doc?.speciality_code || doc?.speciality || 'GENERAL PHYSICIAN').toUpperCase(),
+              department_id: doc?.department_id || '',
+              department_name: doc?.department_name || 'OP Consultation',
+              subDepartment_id: doc?.subDepartment_id || '',
+              subDepartment_name: doc?.subDepartment_name || 'OP Consultation',
+              qty: 1,
+              cart_id: cartId || '',
+              is_centre_visit: false,
+              is_home_collection: false,
+              logo_id: '',
+              doctor_profile_path: doc?.profile_path || 'assets/images/doctorProfile/alternatedocImage.png',
+              patient_instructions: '',
+              practice_type_code: 'individual',
+              practice_type_name: 'Individual Practice',
+              performing_doctor: doc?.name || '',
+              participant: [
+                {
+                  participantId: doc?.id || '',
+                  participantName: doc?.name || '',
+                  participantRole: 'doctor'
+                }
+              ],
+              doctor_experience: String(doc?.experience || 0),
+              doctor_telecom: doc?.telecom || '9999444444'
+            }
+          ],
+          mode_of_appointment: doc?.mode_of_appointment || 'habithealth',
+          facility_address: facilityAddress,
+          tag_data: []
         }
       }
     };
