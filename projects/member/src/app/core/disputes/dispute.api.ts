@@ -301,9 +301,7 @@ export class DisputeApi {
         resourceType: 'Dispute',
         name: dispute.name,
         dispute_status: dispute.disputeStatus || 'CLOSE',
-        final_reason:
-          dispute.finalReason ||
-          'Claim amount verified against policy benefits. Awaiting support executive response.',
+        final_reason: dispute.finalReason || 'Resolved by member',
       },
       'userResolve',
       undefined,

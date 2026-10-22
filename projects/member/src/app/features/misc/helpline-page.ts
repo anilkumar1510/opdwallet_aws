@@ -1078,11 +1078,17 @@ export class HelplinePage {
     const record = this.liveRecords().find((r) => r.name === t.id);
     if (record) {
       if (this.resolving()) return;
+      let text = this.reply().trim();
+      if (!text) {
+        const input = window.prompt('Please enter remarks for resolving this ticket (optional):');
+        if (input === null) return;
+        text = input.trim();
+      }
       this.resolving.set(true);
       this.replyError.set(null);
       const result = await this.disputeApi.resolve({
         name: record.name,
-        finalReason: record.finalReason || 'Claim amount verified against policy benefits. Awaiting support executive response.',
+        finalReason: text || 'Resolved by member',
         disputeStatus: 'CLOSE',
       });
       this.resolving.set(false);
@@ -1090,6 +1096,7 @@ export class HelplinePage {
         this.replyError.set(result.message);
         return;
       }
+      this.reply.set('');
       this.notice.set('Thanks — the ticket is closed.');
       await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
       return;
