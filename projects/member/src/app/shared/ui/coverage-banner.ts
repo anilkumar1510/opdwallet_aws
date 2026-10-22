@@ -131,11 +131,6 @@ function buildFootnote(
         <div class="mb-5 rounded-2xl border border-[#CDDDFE] bg-[#F3F7FF] p-5">
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm text-ink-700">{{ c.title }}</p>
-            @if (c.poolCode) {
-              <span class="inline-flex shrink-0 items-center rounded-md bg-blue-100/80 px-2 py-0.5 text-[11px] font-semibold text-[#034DA2]">
-                {{ c.poolCode }}
-              </span>
-            }
           </div>
           @if (c.annualLimit > 0) {
             <p class="mt-1 text-2xl font-bold text-[#034DA2]">
