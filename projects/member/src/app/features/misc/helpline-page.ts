@@ -414,8 +414,18 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
                       <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
+                      @if (t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-surface-border bg-[#F8FAFC] p-3 text-xs text-ink-700">
+                          <span class="font-semibold">Closure remarks:</span> {{ t.finalReason }}
+                        </div>
+                      }
                     } @else {
                       <p class="text-sm text-ink-700">{{ closedText(t.closedBy!) }} on {{ date(t.closedAt!) }}.</p>
+                      @if (t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
+                        </div>
+                      }
                       <p class="mt-3 rounded-xl bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
                         Want to take it further? Call support on <a [href]="'tel:' + phone" class="font-semibold underline">{{ phone }}</a> and quote {{ t.id }}.
                       </p>
@@ -1282,17 +1292,21 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
   ];
   // `userResolve` leaves the member as the last sender; support's close does not.
   const closedByMember = (state === 'closed' || state === 'resolved') && r.lastMessageSender === 'MEMBER';
+  const first = thread.find((m) => m.sender === 'MEMBER')?.text;
+  const isLegacyMemberWords = r.lastMessageSender !== 'SUPPORT_EXECUTIVE' && (r.finalReason === first || toArgSafe(r.finalReason ?? '') === first);
+  const effectiveFinalReason = r.finalReason && !isLegacyMemberWords ? r.finalReason.trim() : undefined;
+
   if (closedByMember) {
-    messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
+    const remark = r.finalReason ? r.finalReason.trim() : null;
+    messages.push({ from: 'system', text: remark ? `Marked resolved by you — ${remark}` : 'Marked resolved by you', at: r.modifiedAt });
   } else if (state === 'resolved') {
-    const remark = r.finalReason ? r.finalReason : null;
+    const remark = r.finalReason ? r.finalReason.trim() : null;
     messages.push({ from: 'system', text: remark ? `Resolved by support — ${remark}` : 'Resolved by support', at: r.modifiedAt });
   } else if (state === 'closed') {
     // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
     // (it is now left blank until support closes the ticket): only show it as
-    // support's remark when it is not the member's first message.
-    const first = thread.find((m) => m.sender === 'MEMBER')?.text;
-    const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
+    // support's remark when it is not the member's first message, unless support explicitly closed it.
+    const remark = effectiveFinalReason ?? null;
     messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });
   }
   return {
@@ -1305,7 +1319,7 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
     resolvedAt: state === 'resolved' || state === 'closed' ? r.modifiedAt : undefined,
     closedAt: state === 'closed' ? r.modifiedAt : undefined,
     closedBy: (state === 'closed' || state === 'resolved') ? (closedByMember ? 'member' : 'support') : undefined,
-    finalReason: r.finalReason ?? undefined,
+    finalReason: effectiveFinalReason,
     messages,
   };
 }

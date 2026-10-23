@@ -491,12 +491,30 @@ test.describe('Tickets come from the API', () => {
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
     await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
     await expect(page.getByText(/Resolved and closed by support — Claim re-adjudicated and approved\./)).toBeVisible();
+    await expect(page.getByText('Resolution remarks:')).toBeVisible();
+    await expect(page.getByText('Claim re-adjudicated and approved.').first()).toBeVisible();
     await expect(page.locator('#g-reply')).toHaveCount(0);
     await expect(page.getByText(/reopen/i)).toHaveCount(0);
     await expect(page.getByText('Want to take it further?')).toBeVisible();
     // Nothing can be raised on a claim that already has a ticket, even a closed one.
     await page.getByRole('button', { name: 'OPD-2026-00354' }).click();
     await expect(page.getByRole('button', { name: 'Raise a grievance' })).toHaveCount(0);
+  });
+
+  test('a closed ticket displays the support resolution remarks card and thread remark even when matching member words', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed(
+      { claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: 'hii', last_message_sender: 'SUPPORT_EXECUTIVE' },
+      [
+        { sender_type: 'MEMBER', message_text: 'hii' },
+        { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'jii' },
+      ],
+    );
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
+    await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
+    await expect(page.getByText(/Resolved and closed by support — hii/)).toBeVisible();
+    await expect(page.getByText('Resolution remarks:')).toBeVisible();
   });
 
   test('if the ticket list cannot be loaded the page still works and shows the claims', async ({ page }) => {

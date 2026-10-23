@@ -483,11 +483,11 @@ function toRecord(row: Record<string, any>): DisputeRecord | null {
     id: String(row['id']),
     claimId: String(row['claim_id'] ?? ''),
     reason: String(row['selected_reason'] ?? ''),
-    status: String(row['dispute_status'] ?? ''),
+    status: String(row['dispute_status'] ?? row['disputeStatus'] ?? row['status'] ?? ''),
     createdAt: toDate(row['g_creation_time']),
     modifiedAt: toDate(row['g_modify_time'] ?? row['g_creation_time']),
-    finalReason: row['final_reason'] ? String(row['final_reason']) : null,
-    lastMessageSender: row['last_message_sender'] ? String(row['last_message_sender']) : null,
+    finalReason: (row['final_reason'] ?? row['finalReason']) ? String(row['final_reason'] ?? row['finalReason']) : null,
+    lastMessageSender: (row['last_message_sender'] ?? row['lastMessageSender']) ? String(row['last_message_sender'] ?? row['lastMessageSender']) : null,
     documents,
   };
 }
