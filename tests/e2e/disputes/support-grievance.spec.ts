@@ -517,6 +517,29 @@ test.describe('Tickets come from the API', () => {
     await expect(page.getByText('Resolution remarks:')).toBeVisible();
   });
 
+  test('a closed ticket displays both resolution remarks and closure remarks when support enters both', async ({ page }) => {
+    const api = new FakeApi();
+    api.seed(
+      {
+        claim_id: 'OPD-2026-00354',
+        dispute_status: 'Closed',
+        final_reason: 'Resolution remarks: Claim approved for 5000\nClosure remarks: Credited via NEFT and closed',
+        last_message_sender: 'SUPPORT_EXECUTIVE',
+      },
+      [
+        { sender_type: 'MEMBER', message_text: 'My claim was rejected' },
+        { sender_type: 'SUPPORT_EXECUTIVE', message_text: 'We are investigating' },
+      ],
+    );
+    await openSupport(page, api);
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
+    await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
+    await expect(page.getByText('Resolution remarks: Claim approved for 5000')).toBeVisible();
+    await expect(page.getByText('Closure remarks: Credited via NEFT and closed')).toBeVisible();
+    await expect(page.getByText(/Resolved by support — Claim approved for 5000/)).toBeVisible();
+    await expect(page.getByText(/Resolved and closed by support — Credited via NEFT and closed/)).toBeVisible();
+  });
+
   test('if the ticket list cannot be loaded the page still works and shows the claims', async ({ page }) => {
     const api = new FakeApi();
     api.failList = true;

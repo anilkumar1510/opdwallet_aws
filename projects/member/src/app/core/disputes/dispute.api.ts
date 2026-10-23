@@ -102,6 +102,8 @@ export interface DisputeRecord {
   readonly createdAt: Date;
   readonly modifiedAt: Date;
   readonly finalReason: string | null;
+  readonly resolutionRemarks?: string | null;
+  readonly closureRemarks?: string | null;
   readonly lastMessageSender: string | null;
   /** Documents the member attached when raising it. */
   readonly documents: readonly { readonly documentId: string; readonly name: string }[];
@@ -461,6 +463,40 @@ function toDate(raw: unknown): Date {
   return Number.isNaN(d.getTime()) ? new Date(0) : d;
 }
 
+export function parseDisputeRemarks(
+  raw: string | null | undefined,
+  extraData?: Record<string, any>,
+): {
+  resolutionRemarks: string | null;
+  closureRemarks: string | null;
+} {
+  let resolutionRemarks = (extraData?.['resolution_remarks'] ?? extraData?.['resolutionRemarks'])
+    ? String(extraData['resolution_remarks'] ?? extraData['resolutionRemarks']).trim()
+    : null;
+  let closureRemarks = (extraData?.['closure_remarks'] ?? extraData?.['closureRemarks'])
+    ? String(extraData['closure_remarks'] ?? extraData['closureRemarks']).trim()
+    : null;
+
+  if (raw) {
+    const trimmed = raw.trim();
+    const resMatch = trimmed.match(
+      /Resolution remarks:\s*([\s\S]*?)(?=\n\s*Closure remarks:|$)/i,
+    );
+    const cloMatch = trimmed.match(/Closure remarks:\s*([\s\S]*?)$/i);
+
+    if (resMatch && cloMatch) {
+      if (!resolutionRemarks) resolutionRemarks = resMatch[1].trim();
+      if (!closureRemarks) closureRemarks = cloMatch[1].trim();
+    } else if (resMatch && !resolutionRemarks) {
+      resolutionRemarks = resMatch[1].trim();
+    } else if (cloMatch && !closureRemarks) {
+      closureRemarks = cloMatch[1].trim();
+    }
+  }
+
+  return { resolutionRemarks, closureRemarks };
+}
+
 function toRecord(row: Record<string, any>): DisputeRecord | null {
   const name = row['name'] ?? row['ticket_id'];
   if (!name || !row['id']) return null;
@@ -478,6 +514,12 @@ function toRecord(row: Record<string, any>): DisputeRecord | null {
       documents.push({ documentId: id.trim(), name: 'Document' });
     }
   }
+
+  const rawFinalReason = (row['final_reason'] ?? row['finalReason']) ? String(row['final_reason'] ?? row['finalReason']) : null;
+  const extraData = row['extra_data'] && typeof row['extra_data'] === 'object' ? row['extra_data'] : undefined;
+  const fallbackExtra = row['resolution_remarks'] || row['closure_remarks'] || row['resolutionRemarks'] || row['closureRemarks'] ? row : undefined;
+  const { resolutionRemarks, closureRemarks } = parseDisputeRemarks(rawFinalReason, extraData ?? fallbackExtra);
+
   return {
     name: String(name),
     id: String(row['id']),
@@ -486,7 +528,9 @@ function toRecord(row: Record<string, any>): DisputeRecord | null {
     status: String(row['dispute_status'] ?? row['disputeStatus'] ?? row['status'] ?? ''),
     createdAt: toDate(row['g_creation_time']),
     modifiedAt: toDate(row['g_modify_time'] ?? row['g_creation_time']),
-    finalReason: (row['final_reason'] ?? row['finalReason']) ? String(row['final_reason'] ?? row['finalReason']) : null,
+    finalReason: rawFinalReason,
+    resolutionRemarks,
+    closureRemarks,
     lastMessageSender: (row['last_message_sender'] ?? row['lastMessageSender']) ? String(row['last_message_sender'] ?? row['lastMessageSender']) : null,
     documents,
   };
