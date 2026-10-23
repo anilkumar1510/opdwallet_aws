@@ -397,9 +397,9 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                       }
                     } @else {
                       <p class="text-sm font-medium text-success-700">✓ Support has marked this ticket as Resolved.</p>
-                      @if (t.finalReason) {
+                      @if (t.resolutionRemarks || t.finalReason) {
                         <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
-                          <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.resolutionRemarks || t.finalReason }}
                         </div>
                       }
                       <p class="mt-2 text-xs text-ink-500">You can close this ticket if you are satisfied, or reply below if you have any questions.</p>
@@ -413,14 +413,24 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
                       <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
-                      @if (t.finalReason) {
+                      @if (t.closureRemarks || t.finalReason) {
                         <div class="mt-2 rounded-xl border border-surface-border bg-[#F8FAFC] p-3 text-xs text-ink-700">
-                          <span class="font-semibold">Closure remarks:</span> {{ t.finalReason }}
+                          <span class="font-semibold">Closure remarks:</span> {{ t.closureRemarks || t.finalReason }}
                         </div>
                       }
                     } @else {
                       <p class="text-sm text-ink-700">{{ closedText(t.closedBy!) }} on {{ date(t.closedAt!) }}.</p>
-                      @if (t.finalReason) {
+                      @if (t.resolutionRemarks) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.resolutionRemarks }}
+                        </div>
+                      }
+                      @if (t.closureRemarks) {
+                        <div class="mt-2 rounded-xl border border-surface-border bg-[#F8FAFC] p-3 text-xs text-ink-700">
+                          <span class="font-semibold">Closure remarks:</span> {{ t.closureRemarks }}
+                        </div>
+                      }
+                      @if (!t.resolutionRemarks && !t.closureRemarks && t.finalReason) {
                         <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
                           <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
                         </div>
@@ -1278,19 +1288,15 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
   const first = thread.find((m) => m.sender === 'MEMBER')?.text;
   const isLegacyMemberWords = r.lastMessageSender !== 'SUPPORT_EXECUTIVE' && (r.finalReason === first || toArgSafe(r.finalReason ?? '') === first);
   const effectiveFinalReason = r.finalReason && !isLegacyMemberWords ? r.finalReason.trim() : undefined;
+  const effectiveResolutionRemarks = r.resolutionRemarks && !isLegacyMemberWords ? r.resolutionRemarks.trim() : undefined;
+  const effectiveClosureRemarks = r.closureRemarks && !isLegacyMemberWords ? r.closureRemarks.trim() : undefined;
 
   if (closedByMember) {
-    const remark = r.finalReason ? r.finalReason.trim() : null;
-    messages.push({ from: 'system', text: remark ? `Marked resolved by you — ${remark}` : 'Marked resolved by you', at: r.modifiedAt });
+    messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
   } else if (state === 'resolved') {
-    const remark = r.finalReason ? r.finalReason.trim() : null;
-    messages.push({ from: 'system', text: remark ? `Resolved by support — ${remark}` : 'Resolved by support', at: r.modifiedAt });
+    messages.push({ from: 'system', text: 'Resolved by support', at: r.modifiedAt });
   } else if (state === 'closed') {
-    // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
-    // (it is now left blank until support closes the ticket): only show it as
-    // support's remark when it is not the member's first message, unless support explicitly closed it.
-    const remark = effectiveFinalReason ?? null;
-    messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });
+    messages.push({ from: 'system', text: 'Resolved and closed by support', at: r.modifiedAt });
   }
   return {
     id: r.name,
@@ -1303,6 +1309,8 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
     closedAt: state === 'closed' ? r.modifiedAt : undefined,
     closedBy: (state === 'closed' || state === 'resolved') ? (closedByMember ? 'member' : 'support') : undefined,
     finalReason: effectiveFinalReason,
+    resolutionRemarks: effectiveResolutionRemarks,
+    closureRemarks: effectiveClosureRemarks,
     messages,
   };
 }

@@ -66,6 +66,8 @@ export interface SupportTicket {
   readonly closedAt?: Date;
   readonly closedBy?: ClosedBy;
   readonly finalReason?: string;
+  readonly resolutionRemarks?: string;
+  readonly closureRemarks?: string;
   readonly messages: readonly TicketMessage[];
 }
 
