@@ -107,12 +107,16 @@ export function toFamilyMember(resource: FamilyMemberResource, userId: string) {
   const { firstName, lastName } = splitName(resource.mapped_name);
   const fullName = [firstName, lastName].filter(Boolean).join(' ');
   // The API omits relationship_code on the signed-in member's own record.
-  const isSelf = !resource.relationship_code || resource.mapped_id === userId || resource.relationship_code?.trim().toLowerCase() === 'self';
+  const isSelf =
+    !resource.relationship_code ||
+    resource.mapped_id === userId ||
+    resource.relationship_code?.trim().toLowerCase() === 'self' ||
+    resource.relationship_code?.trim().toUpperCase() === 'REL001';
   const relationship = isSelf ? Relationship.Self : toRelationship(resource.relationship_code);
 
   return {
     id: resource.id,
-    memberId: resource.mapped_id,
+    memberId: resource.mapped_id || resource.user_id || resource.id,
     firstName,
     lastName,
     fullName: fullName || resource.mapped_name || resource.mapped_id || 'Member',
