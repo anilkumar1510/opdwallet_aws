@@ -513,8 +513,14 @@ export class HomePage {
    * Health benefit cards are rendered only when cashless is true for that category.
    * If cashless is false, the category card is excluded from the UI.
    */
+  
+  /***
+  Excluding this cashless true fliter from categories as product team 
+  want to show all actegory to user in home screen.
+  this.policyStore.categories().filter((c) => c.cashless === true),
+  */
   protected readonly categories = computed(() =>
-    this.policyStore.categories().filter((c) => c.cashless === true),
+    this.policyStore.categories()
   );
 
   protected readonly isLoading = computed(() => this.family.loading() || this.policyStore.loading());
