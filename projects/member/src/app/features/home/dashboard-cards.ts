@@ -287,9 +287,6 @@ export class QuickLinks {
                   <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
                 </p>
               </div>
-              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">
-                {{ isFloater() ? 'Floater Shared' : 'Individual' }}
-              </span>
             </div>
 
             @if (baseLimit() && (topup() > 0 || (consumed() && consumed()!.amount > 0))) {
