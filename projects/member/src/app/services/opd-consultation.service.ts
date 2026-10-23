@@ -371,13 +371,18 @@ export class OpdConsultationService {
       );
   }
 
-  // Doctor Listing API - doctor_cug_mapping
-  getDoctors(specialityCode?: string, modeOfAppointment: string = 'opd_network'): Observable<Doctor[]> {
-    const code = (specialityCode || '').trim();
-    const filter = code
-      ? `mode_of_appointment:${modeOfAppointment},specialityCode:${encodeURIComponent(code)}`
-      : `mode_of_appointment:${modeOfAppointment}`;
-    const url = `/master-management/api/v1/doctor_cug_mapping?queryId=GET_PAGE&filter=${filter}`;
+  // Doctor Listing API - TELE_DOCTOR_LISTING
+  getDoctors(
+    specialityCode: string = 'GENERAL PHYSICIAN',
+    consultationType: string = 'video',
+    search: string = '',
+    pageSize: number = 20,
+    pageNo: number = 0
+  ): Observable<Doctor[]> {
+    const code = (specialityCode || 'GENERAL PHYSICIAN').trim();
+    const args = `consultation_type:${consultationType},speciality_code:${code},serviceType_code:op_consultation,doctor_mode:yes`;
+    const searchParam = search ? encodeURIComponent(search.trim()) : '';
+    const url = `${this.baseUrl}?queryId=TELE_DOCTOR_LISTING&args=${encodeURIComponent(args)}&page_size=${pageSize}&page_no=${pageNo}&query_id=TELE_DOCTOR_LISTING&filter=&search=${searchParam}&search_columns=display_name&application=habit-opd`;
 
     return this.executeWithLoading('doctors', this.http.get<{ resource: any[] }>(url))
       .pipe(
@@ -391,11 +396,14 @@ export class OpdConsultationService {
           const videoFee = videoPrice?.selling_amount ?? videoPrice?.mrp ?? d.fee ?? 0;
           const mrp = videoPrice?.mrp ?? videoFee;
           const sellingDiscountRate = videoPrice?.selling_discount_rate ?? 0;
-          const nextSlotVideo = d.next_slot_date_video ? Number(d.next_slot_date_video) : null;
+          const nextSlotVideo = d.next_slot_date_video ? Number(d.next_slot_date_video) : (d.slot_start_time ? Number(d.slot_start_time) : null);
           let nextInLabel = 'Not available';
           let canConsultNow = false;
 
-          if (nextSlotVideo) {
+          if (d.status === 'available') {
+            nextInLabel = 'Available now';
+            canConsultNow = true;
+          } else if (nextSlotVideo) {
             const diffMinutes = Math.round((nextSlotVideo - Date.now()) / 60000);
             if (diffMinutes >= -5 && diffMinutes <= 5) {
               nextInLabel = 'Available now';
@@ -417,7 +425,7 @@ export class OpdConsultationService {
 
           const qualText = Array.isArray(d.qualification)
             ? d.qualification.map((q: any) => q.text || q).join(', ')
-            : (d.qualification?.[0]?.text || d.qualification?.text || d.qualification || '');
+            : (d.qualification?.[0]?.text || d.qualification?.text || d.qualification || d.extra_data?.qualification || '');
 
           const langText = Array.isArray(d.language)
             ? d.language.map((l: any) => l.text || l).join(', ')
@@ -425,7 +433,7 @@ export class OpdConsultationService {
 
           return {
             id: d.doctor_id || d.id || item.id,
-            name: d.display_name || d.name || '',
+            name: d.display_name || d.doctor_name || d.name || '',
             qualification: qualText,
             experience: parseInt(d.doctor_experience || d.experience) || 0,
             fee: videoFee,
@@ -442,18 +450,18 @@ export class OpdConsultationService {
             speciality_id: d.speciality_id || '',
             speciality_code: d.speciality_code || d.specialityCode || code,
             facility_id: d.facility_id || '',
-            facility_name: d.facility_name || '',
+            facility_name: d.facility_name || d.extra_data?.facility_name || '',
             facility_address: d.facility_address || d.address,
             department_id: d.department_id || '',
             department_name: d.department_name || '',
             subDepartment_id: d.subDepartment_id || '',
             subDepartment_name: d.subDepartment_name || '',
-            doctor_code: d.doctor_code || '',
-            profile_path: d.profile_path || '',
+            doctor_code: d.doctor_code || d.serviceItemCode || '',
+            profile_path: d.doctor_profile_path || d.profile_path || '',
             provider_code: d.provider_code || 'HCLHC001',
             provider_name: d.provider_name || 'HCL Healthcare',
             cug_code: d.cug_code || this.cugCode,
-            mode_of_appointment: d.mode_of_appointment || modeOfAppointment,
+            mode_of_appointment: d.mode_of_appointment || 'opd_network',
             telecom: d.telecom || d.doctor_telecom || '9999444444'
           };
         }))

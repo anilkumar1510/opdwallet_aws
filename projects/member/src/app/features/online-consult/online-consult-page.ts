@@ -48,6 +48,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
             [title]="'Book consultation'"
             [stepIndex]="step()"
             [totalSteps]="steps().length"
+            [showBackNext]="!isPaymentGatewayOpen()"
             (back)="back()"
             (next)="next()"
             [primaryLabel]="primaryLabel()"
@@ -198,29 +199,157 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
               </ng-container>
 
               <ng-container *ngSwitchCase="'payment'">
-                <div class="space-y-4">
-                  @if (isLoading('cart') || isLoading('checkout') || isLoading('booking')) {
-                    <div class="flex justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div></div>
-                  } @else if (getError('cart') || getError('checkout') || getError('booking'); as err) {
-                    <p class="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 flex items-center gap-2" role="alert">
-                      <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="next()">Retry</button>
-                    </p>
-                  }
+                @if (!isPaymentGatewayOpen()) {
                   <div class="space-y-4">
-                    <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
-                    <dl class="space-y-2 text-sm">
-                      <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
-                      <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn() }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                      <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }})</dt><dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd></div>
-                      <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd></div>
-                      @if (pay().excess > 0) {
-                        <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
+                    @if (isLoading('cart') || isLoading('checkout') || isLoading('booking')) {
+                      <div class="flex justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div></div>
+                    } @else if (getError('cart') || getError('checkout') || getError('booking'); as err) {
+                      <p class="rounded-xl bg-red-100 px-3 py-2 text-sm text-red-700 flex items-center gap-2" role="alert">
+                        <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="next()">Retry</button>
+                      </p>
+                    }
+                    <div class="space-y-4">
+                      <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
+                      <dl class="space-y-2 text-sm">
+                        <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn() }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
+                        <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }})</dt><dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd></div>
+                        <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd></div>
+                        @if (pay().excess > 0) {
+                          <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
+                        }
+                        <div class="flex justify-between border-t border-surface-border pt-2">
+                          <dt class="font-semibold text-ink-900">Patient Co-payment</dt>
+                          <dd class="text-lg font-bold" [class.text-[#034DA2]]="pay().copay > 0" [class.text-green-700]="pay().copay === 0">₹{{ pay().copay }}</dd>
+                        </div>
+                      </dl>
+                      @if (pay().copay > 0) {
+                        <p class="mt-3 text-xs text-amber-800 bg-amber-50 rounded-xl p-3 border border-amber-200">
+                          ℹ Co-payment of <strong>₹{{ pay().copay }}</strong> is required. Clicking continue will initiate the payment gateway.
+                        </p>
+                      } @else {
+                        <p class="mt-3 text-xs text-green-800 bg-green-50 rounded-xl p-3 border border-green-200">
+                          ✓ 100% covered by your corporate health wallet. No co-payment required!
+                        </p>
                       }
-                      <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                    </dl>
-                    <p class="mt-3 text-xs text-ink-500">Wallet is blocked on payment; the self-pay amount goes through Razorpay.</p>
+                    </div>
                   </div>
-                </div>
+                } @else {
+                  <!-- Initiate Payment Dummy UI (Gateway Simulation) -->
+                  <div class="space-y-4 rounded-2xl border border-blue-200 bg-gradient-to-b from-blue-50/40 to-white p-5 shadow-sm">
+                    <!-- Gateway Header -->
+                    <div class="flex items-center justify-between border-b border-surface-border pb-3">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xl">💳</span>
+                        <div>
+                          <p class="text-[11px] font-semibold uppercase tracking-wider text-blue-700">Payment Gateway Simulation</p>
+                          <p class="text-sm font-bold text-ink-900">HCL Healthcare Checkout</p>
+                        </div>
+                      </div>
+                      <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">Test Mode</span>
+                    </div>
+
+                    <!-- Amount Box -->
+                    <div class="rounded-xl bg-white p-4 border border-surface-border shadow-xs">
+                      <div class="flex items-baseline justify-between">
+                        <span class="text-xs font-medium text-ink-500">Co-Pay Amount Due</span>
+                        <span class="text-2xl font-extrabold text-[#034DA2]">₹{{ copayToPay() }}</span>
+                      </div>
+                      <div class="mt-2 text-xs text-ink-500 flex justify-between pt-2 border-t border-gray-100">
+                        <span>Ref: {{ dummyTxnId() }}</span>
+                        <span>Patient: {{ patient()?.name }}</span>
+                      </div>
+                    </div>
+
+                    @if (paymentGatewayState() === 'processing') {
+                      <!-- Processing State -->
+                      <div class="py-8 text-center space-y-3">
+                        <div class="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent mx-auto"></div>
+                        <p class="text-sm font-semibold text-ink-900">Processing payment with bank...</p>
+                        <p class="text-xs text-ink-500">Please do not refresh or navigate away.</p>
+                      </div>
+                    } @else if (paymentGatewayState() === 'failed') {
+                      <!-- Failure State -->
+                      <div class="rounded-xl bg-red-50 border border-red-200 p-4 space-y-3">
+                        <div class="flex items-start gap-3">
+                          <span class="text-2xl">❌</span>
+                          <div>
+                            <p class="text-sm font-bold text-red-800">Payment Failed</p>
+                            <p class="mt-1 text-xs text-red-700">{{ paymentFailureReason() }}</p>
+                            <p class="mt-1 text-[11px] text-red-500">Transaction ID: {{ dummyTxnId() }}</p>
+                          </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-2 border-t border-red-200">
+                          <button type="button" class="min-h-touch flex-1 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white hover:bg-red-700" (click)="retryPayment()">
+                            Retry Payment
+                          </button>
+                          <button type="button" class="min-h-touch rounded-xl border border-red-300 bg-white px-4 text-xs font-semibold text-red-700 hover:bg-red-50" (click)="cancelPaymentGateway()">
+                            Cancel & Return
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <!-- Mock Payment Methods -->
+                      <div class="space-y-2">
+                        <p class="text-xs font-medium text-ink-700">Select payment method</p>
+                        <div class="grid grid-cols-3 gap-2">
+                          <button type="button" class="rounded-xl border p-2.5 text-xs font-medium text-center transition-all"
+                            [class.border-blue-600]="selectedPaymentMethod() === 'upi'"
+                            [class.bg-blue-50]="selectedPaymentMethod() === 'upi'"
+                            [class.text-blue-700]="selectedPaymentMethod() === 'upi'"
+                            [class.border-gray-200]="selectedPaymentMethod() !== 'upi'"
+                            (click)="selectedPaymentMethod.set('upi')">
+                            📱 UPI / QR
+                          </button>
+                          <button type="button" class="rounded-xl border p-2.5 text-xs font-medium text-center transition-all"
+                            [class.border-blue-600]="selectedPaymentMethod() === 'card'"
+                            [class.bg-blue-50]="selectedPaymentMethod() === 'card'"
+                            [class.text-blue-700]="selectedPaymentMethod() === 'card'"
+                            [class.border-gray-200]="selectedPaymentMethod() !== 'card'"
+                            (click)="selectedPaymentMethod.set('card')">
+                            💳 Card
+                          </button>
+                          <button type="button" class="rounded-xl border p-2.5 text-xs font-medium text-center transition-all"
+                            [class.border-blue-600]="selectedPaymentMethod() === 'netbanking'"
+                            [class.bg-blue-50]="selectedPaymentMethod() === 'netbanking'"
+                            [class.text-blue-700]="selectedPaymentMethod() === 'netbanking'"
+                            [class.border-gray-200]="selectedPaymentMethod() !== 'netbanking'"
+                            (click)="selectedPaymentMethod.set('netbanking')">
+                            🏦 NetBanking
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Gateway Simulation Controls -->
+                      <div class="pt-2 space-y-2">
+                        <button
+                          type="button"
+                          class="min-h-touch w-full rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 flex items-center justify-center gap-2"
+                          (click)="simulatePaymentSuccess()"
+                        >
+                          <span>✓</span> Simulate Payment Success (Pay ₹{{ copayToPay() }})
+                        </button>
+
+                        <button
+                          type="button"
+                          class="min-h-touch w-full rounded-xl border border-red-300 bg-white px-4 text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+                          (click)="simulatePaymentFailure()"
+                        >
+                          <span>✕</span> Simulate Payment Failure
+                        </button>
+
+                        <button
+                          type="button"
+                          class="w-full text-center text-xs text-ink-500 underline pt-1 hover:text-ink-800"
+                          (click)="cancelPaymentGateway()"
+                        >
+                          ← Cancel and back to payment breakdown
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
               </ng-container>
 
               <ng-container *ngSwitchCase="'confirmed'">
@@ -233,7 +362,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                   <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Doctor</dt><dd class="text-right font-medium text-ink-900">{{ doctor()?.name }}</dd></div>
                   <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Patient</dt><dd class="text-right font-medium text-ink-900">{{ patient()?.name }}</dd></div>
                   <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Mode</dt><dd class="text-right font-medium text-ink-900">{{ mode() }}</dd></div>
-                  <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Paid</dt><dd class="text-right font-medium text-ink-900">₹{{ pay().selfPay }} (₹{{ pay().walletBlock }} from wallet)</dd></div>
+                  <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Paid</dt><dd class="text-right font-medium text-ink-900">₹{{ copayToPay() > 0 ? copayToPay() : pay().copay }} co-pay (₹{{ pay().walletBlock }} from wallet)</dd></div>
                 </dl>
                 <p class="mt-3 rounded-xl bg-green-100 px-3 py-2 text-sm text-green-700">🧾 Invoice generated and stored under Health Records › Invoices.</p>
               </ng-container>
@@ -359,6 +488,15 @@ export class OnlineConsultPage implements OnInit {
   protected readonly consultationRequestId = signal<string | null>(null);
   protected readonly cancelNote = signal<string | null>(null);
   protected readonly prescription = signal<any | null>(null);
+
+  // Initiate payment dummy gateway state
+  protected readonly isPaymentGatewayOpen = signal(false);
+  protected readonly paymentGatewayState = signal<'closed' | 'initiating' | 'processing' | 'failed'>('closed');
+  protected readonly copayToPay = signal<number>(0);
+  protected readonly dummyTxnId = signal<string>('');
+  protected readonly paymentFailureReason = signal<string>('Transaction was declined by bank or user cancelled.');
+  protected readonly pendingBookingData = signal<any>(null);
+  protected readonly selectedPaymentMethod = signal<'upi' | 'card' | 'netbanking'>('upi');
 
   // Loading and error states from service
   protected readonly loading = this.consultationService.loading$;
@@ -686,16 +824,37 @@ export class OnlineConsultPage implements OnInit {
           const checkoutData = this.buildCheckoutSnapshot(cartId);
           this.consultationService.checkout(checkoutData).subscribe({
             next: (checkoutRes: any) => {
-              // Proceed to booking
+              const checkoutItem = checkoutRes?.resource?.[0]?.checkout_snapshot?.opdCheckout 
+                || checkoutRes?.checkout_snapshot?.opdCheckout;
+              const copayAmount = Number(
+                checkoutItem?.copay_amount ??
+                checkoutItem?.co_pay_amount ??
+                checkoutItem?.patient_amount ??
+                checkoutItem?.final_payable ??
+                this.pay().copay ??
+                0
+              );
+
               const bookingData = this.buildBookingSnapshot(checkoutRes, cartId);
-              this.consultationService.bookAppointment(bookingData).subscribe({
-                next: (res: any) => {
-                  const sReqId = res?.serviceRequestId || res?.[0]?.serviceRequestId || res?.resource?.[0]?.serviceRequestId || res?.[0]?.id || res?.id || '';
-                  this.consultationRequestId.set(sReqId);
-                  this.step.set(this.step() + 1);
-                },
-                error: (err) => this.stepError.set('Booking failed: ' + err.message)
-              });
+
+              if (copayAmount > 0) {
+                // Co-payment greater than 0: Initiate payment flow
+                this.pendingBookingData.set(bookingData);
+                this.copayToPay.set(copayAmount);
+                this.dummyTxnId.set('TXN_OPD_' + Date.now().toString().slice(-6));
+                this.paymentGatewayState.set('initiating');
+                this.isPaymentGatewayOpen.set(true);
+              } else {
+                // Co-payment is 0: Directly proceed to booking
+                this.consultationService.bookAppointment(bookingData).subscribe({
+                  next: (res: any) => {
+                    const sReqId = res?.serviceRequestId || res?.[0]?.serviceRequestId || res?.resource?.[0]?.serviceRequestId || res?.[0]?.id || res?.id || '';
+                    this.consultationRequestId.set(sReqId);
+                    this.step.set(this.step() + 1);
+                  },
+                  error: (err) => this.stepError.set('Booking failed: ' + err.message)
+                });
+              }
             },
             error: (err) => this.stepError.set('Checkout failed: ' + err.message)
           });
@@ -715,8 +874,54 @@ export class OnlineConsultPage implements OnInit {
 
   protected back(): void {
     this.stepError.set(null);
+    if (this.isPaymentGatewayOpen()) {
+      this.cancelPaymentGateway();
+      return;
+    }
     if (this.step() === 0) { this.started.set(false); return; }
     this.step.set(this.step() - 1);
+  }
+
+  protected cancelPaymentGateway(): void {
+    this.isPaymentGatewayOpen.set(false);
+    this.paymentGatewayState.set('closed');
+    this.dummyTxnId.set('');
+    this.pendingBookingData.set(null);
+  }
+
+  protected retryPayment(): void {
+    this.dummyTxnId.set('TXN_OPD_' + Date.now().toString().slice(-6));
+    this.paymentGatewayState.set('initiating');
+  }
+
+  protected simulatePaymentSuccess(): void {
+    this.paymentGatewayState.set('processing');
+    this.stepError.set(null);
+
+    setTimeout(() => {
+      const bookingData = this.pendingBookingData();
+      this.consultationService.bookAppointment(bookingData).subscribe({
+        next: (res: any) => {
+          const sReqId = res?.serviceRequestId || res?.[0]?.serviceRequestId || res?.resource?.[0]?.serviceRequestId || res?.[0]?.id || res?.id || '';
+          this.consultationRequestId.set(sReqId);
+          this.isPaymentGatewayOpen.set(false);
+          this.paymentGatewayState.set('closed');
+          this.step.set(this.step() + 1);
+        },
+        error: (err) => {
+          this.paymentGatewayState.set('failed');
+          this.paymentFailureReason.set('Booking failed after payment: ' + (err.message || 'Unknown error'));
+        }
+      });
+    }, 800);
+  }
+
+  protected simulatePaymentFailure(): void {
+    this.paymentGatewayState.set('processing');
+    setTimeout(() => {
+      this.paymentGatewayState.set('failed');
+      this.paymentFailureReason.set('Payment was declined by the bank or cancelled by user.');
+    }, 600);
   }
 
   protected headerBack(): void {
@@ -726,7 +931,10 @@ export class OnlineConsultPage implements OnInit {
 
   protected primaryLabel(): string {
     switch (this.currentStep()) {
-      case 'payment': return `Pay ₹${this.pay().selfPay} via Razorpay`;
+      case 'payment': {
+        const copay = this.pay().copay;
+        return copay > 0 ? `Proceed to Pay ₹${copay}` : 'Confirm & Book Appointment (₹0)';
+      }
       case 'prescription': return 'Done';
       case 'confirmed': return 'Join consultation';
       case 'consultation': return 'View prescription';
