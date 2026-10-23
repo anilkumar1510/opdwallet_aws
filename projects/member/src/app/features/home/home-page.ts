@@ -205,6 +205,8 @@ function benefitLink(categoryCode: string): string {
               <opd-balance-summary
                 [available]="walletTotal.available"
                 [allocated]="walletTotal.allocated"
+                [consumed]="walletTotal.consumed"
+                [topup]="topupAmount"
               />
               <!-- The pool-level breakdown behind the total. -->
               <button
@@ -223,6 +225,10 @@ function benefitLink(categoryCode: string): string {
                   [available]="walletTotal.available"
                   [allocated]="walletTotal.allocated"
                   [pools]="walletPools"
+                  [consumed]="walletTotal.consumed"
+                  [baseLimit]="basePolicyLimit"
+                  [topup]="topupAmount"
+                  [isFloater]="isFloater"
                   (closed)="walletInfoOpen.set(false)"
                 />
               }
@@ -437,6 +443,18 @@ export class HomePage {
     return this.policyStore.walletTotal();
   }
 
+  protected get basePolicyLimit() {
+    return this.policyStore.basePolicyLimit();
+  }
+
+  protected get topupAmount() {
+    return this.policyStore.topupAmount();
+  }
+
+  protected get isFloater() {
+    return this.policyStore.isFloater();
+  }
+
   protected readonly activeIndex = signal(0);
   protected get walletPools() {
     return this.policyStore.pools();
@@ -495,8 +513,14 @@ export class HomePage {
    * Health benefit cards are rendered only when cashless is true for that category.
    * If cashless is false, the category card is excluded from the UI.
    */
+  
+  /***
+  Excluding this cashless true fliter from categories as product team 
+  want to show all actegory to user in home screen.
+  this.policyStore.categories().filter((c) => c.cashless === true),
+  */
   protected readonly categories = computed(() =>
-    this.policyStore.categories().filter((c) => c.cashless === true),
+    this.policyStore.categories()
   );
 
   protected readonly isLoading = computed(() => this.family.loading() || this.policyStore.loading());

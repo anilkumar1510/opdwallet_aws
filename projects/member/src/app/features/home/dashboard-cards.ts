@@ -78,15 +78,35 @@ export class PolicyCard {
         >
         <span class="text-[18px] text-[#656565]"> / {{ plain(allocated()) }}</span>
       </p>
+      <!-- @if ((consumed() && consumed()!.amount > 0) || topup() > 0) {
+        <div class="mt-2 flex items-center justify-center gap-2 flex-wrap text-xs">
+          @if (consumed() && consumed()!.amount > 0) {
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium border border-red-100">
+              Consumed: <strong class="ml-1 font-semibold">-₹{{ plain(consumed()!) }}</strong>
+            </span>
+          }
+          @if (topup() > 0) {
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-100">
+              Top-up: <strong class="ml-1 font-semibold">+₹{{ plainNumber(topup()) }}</strong>
+            </span>
+          }
+        </div>
+      } -->
     </a>
   `,
 })
 export class BalanceSummary {
   readonly available = input.required<Money>();
   readonly allocated = input.required<Money>();
+  readonly consumed = input<Money | null>(null);
+  readonly topup = input<number>(0);
 
   protected plain(value: Money): string {
     return NUMBER.format(value.amount);
+  }
+
+  protected plainNumber(value: number): string {
+    return NUMBER.format(value);
   }
 }
 
@@ -259,12 +279,38 @@ export class QuickLinks {
             class="rounded-[20px] px-5 py-4 text-white lg:px-7 lg:py-5"
             style="background: linear-gradient(180deg,#0A78E8 0%,#0560D2 100%); border: 1.5px solid rgba(91,153,249,.6); box-shadow: 0 8px 24px -8px rgba(5,96,210,.45)"
           >
-            <p class="text-[13px] text-white/85">Available Balance</p>
-            <p class="mt-2 whitespace-nowrap">
-              <span class="text-[26px] font-medium leading-none lg:text-[30px]">₹{{ plain(available()) }}</span>
-              <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
-            </p>
-            <p class="mt-1 text-[13px] text-white/85">Your total usage cannot exceed this amount.</p>
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-[13px] text-white/85">Available Balance</p>
+                <p class="mt-2 whitespace-nowrap">
+                  <span class="text-[26px] font-medium leading-none lg:text-[30px]">₹{{ plain(available()) }}</span>
+                  <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
+                </p>
+              </div>
+            </div>
+
+            @if (baseLimit() && (topup() > 0 || (consumed() && consumed()!.amount > 0))) {
+              <div class="mt-3.5 pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Base Policy Limit:</span>
+                  <span class="font-semibold text-white text-sm">₹{{ plainNumber(baseLimit()!) }}</span>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Top-up / Upgrade:</span>
+                  <span class="font-semibold text-emerald-300 text-sm">+₹{{ plainNumber(topup()) }}</span>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Total Wallet Limit:</span>
+                  <span class="font-semibold text-white text-sm">₹{{ plain(allocated()) }}</span>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Total Consumed:</span>
+                  <span class="font-semibold text-red-200 text-sm">{{ consumed() && consumed()!.amount > 0 ? '-₹' + plain(consumed()!) : '₹0' }}</span>
+                </div>
+              </div>
+            }
+
+            <p class="mt-2 text-[13px] text-white/85">Your total usage cannot exceed this amount.</p>
           </div>
 
           @for (pool of pools(); track pool.id) {
@@ -318,6 +364,10 @@ export class WalletBalanceModal {
   readonly available = input.required<Money>();
   readonly allocated = input.required<Money>();
   readonly pools = input.required<readonly WalletPool[]>();
+  readonly consumed = input<Money | null>(null);
+  readonly baseLimit = input<number | null>(null);
+  readonly topup = input<number>(0);
+  readonly isFloater = input<boolean>(true);
   readonly closed = output<void>();
 
   protected readonly openPool = signal<string | null>(null);
@@ -328,5 +378,9 @@ export class WalletBalanceModal {
 
   protected plain(value: Money): string {
     return NUMBER.format(value.amount);
+  }
+
+  protected plainNumber(value: number): string {
+    return NUMBER.format(value);
   }
 }
