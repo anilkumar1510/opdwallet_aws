@@ -78,7 +78,7 @@ export class PolicyCard {
         >
         <span class="text-[18px] text-[#656565]"> / {{ plain(allocated()) }}</span>
       </p>
-      @if ((consumed() && consumed()!.amount > 0) || topup() > 0) {
+      <!-- @if ((consumed() && consumed()!.amount > 0) || topup() > 0) {
         <div class="mt-2 flex items-center justify-center gap-2 flex-wrap text-xs">
           @if (consumed() && consumed()!.amount > 0) {
             <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium border border-red-100">
@@ -91,7 +91,7 @@ export class PolicyCard {
             </span>
           }
         </div>
-      }
+      } -->
     </a>
   `,
 })
