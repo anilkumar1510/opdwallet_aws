@@ -59,6 +59,7 @@ export class PolicyStore {
 
   private loadedId: string | null = null;
   private lastPatientId: string | null = null;
+  private loadedPatientId: string | null = null;
 
   readonly assignment = this._assignment.asReadonly();
   readonly version = this._version.asReadonly();
@@ -142,8 +143,14 @@ export class PolicyStore {
   /**
    * Loads the assigned policy version for a given patientId from the live APIs.
    */
-  async load(patientId: string): Promise<void> {
+  async load(patientId: string, force = false): Promise<void> {
     if (!patientId) return;
+    if (!force && this.loadedPatientId === patientId) {
+      return;
+    }
+    if (this._loading() && this.lastPatientId === patientId) {
+      return;
+    }
     this.lastPatientId = patientId;
     this._loading.set(true);
     this._error.set(null);
@@ -160,16 +167,23 @@ export class PolicyStore {
           });
       });
 
-      const parsedAssignment = typeof assignmentRes === 'string' ? JSON.parse(assignmentRes) : assignmentRes;
+      let parsedAssignment: any = null;
+      try {
+        parsedAssignment = typeof assignmentRes === 'string' ? JSON.parse(assignmentRes) : assignmentRes;
+      } catch {
+        parsedAssignment = null;
+      }
       const assignment: OpdPolicyMemberAssignmentDto | undefined = parsedAssignment?.resource?.[0];
 
       if (!assignment?.policy_version_id) {
+        this.loadedPatientId = patientId;
         this._assignment.set(null);
         this._version.set(null);
         this._rawPools.set([]);
         this._consumptionCycles.set([]);
         this._policies.set([]);
         this._detail.set(null);
+        this._walletAccount.set(null);
         this._loading.set(false);
         return;
       }
@@ -275,9 +289,13 @@ export class PolicyStore {
 
         this._detail.set(toPolicyDetailFromVersion(normalizedVersion));
         this._rawPools.set(parsedPools);
+        this.loadedPatientId = patientId;
         void this.resolveAndLoadWallet();
+      } else {
+        this.loadedPatientId = patientId;
       }
     } catch (err: any) {
+      this.loadedPatientId = patientId;
       this._error.set(appError('network', err?.message, err?.status ?? null));
       this._assignment.set(null);
       this._version.set(null);
@@ -379,13 +397,14 @@ export class PolicyStore {
 
   retry(): void {
     if (this.lastPatientId) {
-      void this.load(this.lastPatientId);
+      void this.load(this.lastPatientId, true);
     }
   }
 
   private reset(): void {
     this.loadedId = null;
     this.lastPatientId = null;
+    this.loadedPatientId = null;
     this._assignment.set(null);
     this._version.set(null);
     this._rawPools.set([]);
