@@ -261,8 +261,8 @@ test.describe('Raise a grievance (submit)', () => {
     expect(api.uploads).toBe(1);
     expect(api.submits[0]).toMatchObject({
       documents: [{ name: 'bill.pdf', document_id: 'doc-1', document_type: 'OTHER', originalname: 'bill.pdf', verification_status: 'PENDING', filetype: 'application/pdf', filesize: '15' }],
+      document_ids: ['doc-1'],
     });
-    expect(api.submits[0]).not.toHaveProperty('document_ids');
   });
 
   test('reason is required; "Other" also needs a description', async ({ page }) => {
@@ -746,7 +746,7 @@ test.describe('Mark resolved (userResolve)', () => {
     await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     await page.reload();
     await expect(claimsSection(page).getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
-    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket resolved' }).click();
+    await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: /Resolved/ }).click();
     await expect(page.getByText('You marked this ticket as resolved.')).toBeVisible({ timeout: 20000 });
     expect(api.resolves).toHaveLength(1);
   });
