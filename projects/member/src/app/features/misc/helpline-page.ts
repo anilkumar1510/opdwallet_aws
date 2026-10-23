@@ -1309,19 +1309,11 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
   const effectiveClosureRemarks = r.closureRemarks && !isLegacyMemberWords ? r.closureRemarks.trim() : undefined;
 
   if (closedByMember) {
-    const remark = effectiveClosureRemarks ?? effectiveFinalReason ?? null;
-    messages.push({ from: 'system', text: remark ? `Marked resolved by you — ${remark}` : 'Marked resolved by you', at: r.modifiedAt });
+    messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
   } else if (state === 'resolved') {
-    const remark = effectiveResolutionRemarks ?? effectiveFinalReason ?? null;
-    messages.push({ from: 'system', text: remark ? `Resolved by support — ${remark}` : 'Resolved by support', at: r.modifiedAt });
+    messages.push({ from: 'system', text: 'Resolved by support', at: r.modifiedAt });
   } else if (state === 'closed') {
-    if (effectiveResolutionRemarks && effectiveClosureRemarks && effectiveResolutionRemarks !== effectiveClosureRemarks) {
-      messages.push({ from: 'system', text: `Resolved by support — ${effectiveResolutionRemarks}`, at: r.modifiedAt });
-      messages.push({ from: 'system', text: `Resolved and closed by support — ${effectiveClosureRemarks}`, at: r.modifiedAt });
-    } else {
-      const remark = effectiveClosureRemarks ?? effectiveResolutionRemarks ?? effectiveFinalReason ?? null;
-      messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });
-    }
+    messages.push({ from: 'system', text: 'Resolved and closed by support', at: r.modifiedAt });
   }
   return {
     id: r.name,

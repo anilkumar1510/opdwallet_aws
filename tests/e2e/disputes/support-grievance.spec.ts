@@ -218,7 +218,8 @@ test.describe('Raise a grievance (submit)', () => {
     ]);
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
-    await expect(page.getByText(/Resolved and closed by support — Re-adjudicated and approved\./)).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: Re-adjudicated and approved.')).toBeVisible();
   });
 
   test('no details means no first message, only "Ticket opened"', async ({ page }) => {
@@ -490,9 +491,8 @@ test.describe('Tickets come from the API', () => {
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
     await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
-    await expect(page.getByText(/Resolved and closed by support — Claim re-adjudicated and approved\./)).toBeVisible();
-    await expect(page.getByText('Resolution remarks:')).toBeVisible();
-    await expect(page.getByText('Claim re-adjudicated and approved.').first()).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: Claim re-adjudicated and approved.')).toBeVisible();
     await expect(page.locator('#g-reply')).toHaveCount(0);
     await expect(page.getByText(/reopen/i)).toHaveCount(0);
     await expect(page.getByText('Want to take it further?')).toBeVisible();
@@ -513,8 +513,8 @@ test.describe('Tickets come from the API', () => {
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
     await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
-    await expect(page.getByText(/Resolved and closed by support — hii/)).toBeVisible();
-    await expect(page.getByText('Resolution remarks:')).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Resolution remarks: hii')).toBeVisible();
   });
 
   test('a closed ticket displays both resolution remarks and closure remarks when support enters both', async ({ page }) => {
@@ -534,10 +534,9 @@ test.describe('Tickets come from the API', () => {
     await openSupport(page, api);
     await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
     await expect(page.getByText('Resolved and closed by support on')).toBeVisible();
+    await expect(page.getByText('Resolved and closed by support', { exact: false }).first()).toBeVisible();
     await expect(page.getByText('Resolution remarks: Claim approved for 5000')).toBeVisible();
     await expect(page.getByText('Closure remarks: Credited via NEFT and closed')).toBeVisible();
-    await expect(page.getByText(/Resolved by support — Claim approved for 5000/)).toBeVisible();
-    await expect(page.getByText(/Resolved and closed by support — Credited via NEFT and closed/)).toBeVisible();
   });
 
   test('if the ticket list cannot be loaded the page still works and shows the claims', async ({ page }) => {
