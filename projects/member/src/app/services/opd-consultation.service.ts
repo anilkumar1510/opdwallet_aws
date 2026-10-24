@@ -462,7 +462,7 @@ export class OpdConsultationService {
             provider_name: d.provider_name || 'HCL Healthcare',
             cug_code: d.cug_code || this.cugCode,
             mode_of_appointment: d.mode_of_appointment || 'opd_network',
-            telecom: d.telecom || d.doctor_telecom || '9999444444'
+            telecom: d.telecom || d.doctor_telecom || ''
           };
         }))
       );
@@ -498,14 +498,22 @@ export class OpdConsultationService {
     return this.executeWithLoading('family', this.http.get<{ resource: any[] }>('/account-management/api/v1/user_relationship_mapping?queryId=GET_FAMILY_LIST&args=&application=account-management'))
       .pipe(
         map(response => response.resource || []),
-        map(items => items.map(item => ({
-          id: item.id,
-          name: item.mapped_name,
-          rel: item.relationship || 'self',
-          patient_id: item.id,
-          uhId: item.uhId,
-          mapped_id: item.mapped_id
-        })) as Patient[])
+        map(items => {
+          const sessionUser = this.appService.getCurrentSessionData('userInfo');
+          const sessionUhId = sessionUser?.[0]?.user_roles?.[0]?.uhid || sessionUser?.[0]?.uhid || '';
+          return items.map(item => {
+            const isSelf = !item.relationship_code || item.relationship_code?.toLowerCase() === 'self' || item.relationship?.toLowerCase() === 'self';
+            const uhId = item.uhId || item.uhid || (isSelf ? sessionUhId : '') || '';
+            return {
+              id: item.id,
+              name: item.mapped_name,
+              rel: item.relationship || 'self',
+              patient_id: item.id,
+              uhId: uhId,
+              mapped_id: item.mapped_id
+            } as Patient;
+          });
+        })
       );
   }
 
