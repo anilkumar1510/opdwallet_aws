@@ -313,15 +313,15 @@ export class PolicyStore {
    * Synchronizes member UHID context from FamilyStore and triggers wallet resolution
    * based on the policy version's allocation_type (FLOATER vs INDIVIDUAL).
    */
-  async syncMemberWalletContext(activeUhId: string | null, primaryUhId: string | null): Promise<void> {
+  async syncMemberWalletContext(activeUhId: string | null, primaryUhId: string | null, forceRefresh: boolean = false): Promise<void> {
     const cleanActive = activeUhId?.trim() || null;
     const cleanPrimary = primaryUhId?.trim() || null;
     this._activeUhId.set(cleanActive);
     this._primaryUhId.set(cleanPrimary);
-    await this.resolveAndLoadWallet();
+    await this.resolveAndLoadWallet(forceRefresh);
   }
 
-  private async resolveAndLoadWallet(): Promise<void> {
+  private async resolveAndLoadWallet(forceRefresh: boolean = false): Promise<void> {
     const version = this._version();
     const isFloater = (version?.allocation_type || '').trim().toUpperCase() === 'FLOATER';
     const targetUhId = isFloater
@@ -333,7 +333,7 @@ export class PolicyStore {
       return;
     }
 
-    if (this._walletCache.has(targetUhId)) {
+    if (!forceRefresh && this._walletCache.has(targetUhId)) {
       this._walletAccount.set(this._walletCache.get(targetUhId)!);
       return;
     }

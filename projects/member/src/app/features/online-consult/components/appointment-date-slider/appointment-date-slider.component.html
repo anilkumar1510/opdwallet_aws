@@ -1,0 +1,120 @@
+<div class="appointment-date-slider">
+  <!-- Picker Button -->
+  <div class="date-selector">
+    <p class="mb-2 text-sm font-medium text-ink-700">Select date and time</p>
+  
+    @if (showPickerButton) {
+    <div class="date-picker-header">
+      <button type="button" class="date-picker-button" (click)="openCalendarPicker()">
+        <span class="date-label">
+          {{ formatDate(selectedWeekDate?.fullDate || pickerValue) }}
+        </span>
+        <span class="caret-icon">▼</span>
+      </button>
+    </div>
+    }
+  </div>
+
+  <!-- 7-Day Horizontal Scroll -->
+  <div class="week-dates-container">
+    @for (dateItem of weekDates; track dateItem.fullDate) {
+      <button
+        #dateCard
+        type="button"
+        class="date-card"
+        [class.selected]="selectedWeekDate?.fullDate === dateItem.fullDate"
+        [class.today]="isToday(dateItem.fullDate)"
+        [class.loading]="dateItem.status === 'loading'"
+        [class.available]="dateItem.status === 'available'"
+        [class.not-available]="dateItem.status === 'not_available'"
+        (click)="selectDate(dateItem)"
+        [disabled]="dateItem.isPast"
+      >
+        <div class="date-alias">{{ dateItem.alias }}</div>
+        <div class="date-value">{{ dateItem.day }}</div>
+
+        <div
+          class="slot-count"
+          [class.loading]="dateItem.status === 'loading'"
+          [class.available]="dateItem.status === 'available'"
+          [class.not-available]="dateItem.status === 'not_available'"
+        >
+          {{ getSlotCountStatus(dateItem.slotCount) }}
+        </div>
+      </button>
+    }
+  </div>
+
+  <!-- Calendar Picker Modal -->
+  @if (showCalendarModal) {
+    <div
+      class="calendar-modal-overlay"
+      (click)="showCalendarModal = false"
+    >
+      <div
+        class="calendar-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="calendar-header">
+          <h3>Pick a date</h3>
+          <button
+            type="button"
+            class="close-btn"
+            (click)="showCalendarModal = false"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="calendar-content">
+          <div class="calendar-month">
+            <button
+              type="button"
+              (click)="changeMonth(-1)"
+            >
+              ‹
+            </button>
+
+            <span>
+              {{ formatMonth(currentMonth) }}
+            </span>
+
+            <button
+              type="button"
+              (click)="changeMonth(1)"
+            >
+              ›
+            </button>
+          </div>
+
+          <div class="calendar-grid">
+            @for (
+              dayName of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              track dayName
+            ) {
+              <div class="day-header">
+                {{ dayName }}
+              </div>
+            }
+
+            @for (
+              day of calendarDays;
+              track day.date ?? $index
+            ) {
+              <div
+                class="day-cell"
+                [class.other-month]="!day.isCurrentMonth"
+                [class.today]="day.isToday"
+                [class.selected]="day.date === pickerValue"
+                [class.disabled]="day.disabled"
+                (click)="!day.disabled && day.date && selectCalendarDate(day.date)"
+              >
+                {{ day.date ? formatDayNumber(day.date) : '' }}
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
