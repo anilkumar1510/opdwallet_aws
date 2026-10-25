@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, signal, inject, effect, OnInit } from '@angular/core';
 import { OpdConsultationService, Speciality, Doctor, Patient, Slot, BookingResponse, CartSnapshot, CheckoutSnapshot } from '../../services/opd-consultation.service';
 import moment from 'moment';
 import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
-import { findRelationshipInVersion, getPrimaryRelationship } from '../../core/member/policy.mapper';
+import { findRelationshipInVersion, getPrimaryRelationship, isRelationshipCoveredInPolicy } from '../../core/member/policy.mapper';
 import { PolicyStore } from '../../core/member/policy.store';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { AppService } from '../../core/http/api.service';
@@ -33,8 +33,9 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
     PatientSelectionComponent,
     WizardStepComponent,
     AppointmentDateSliderComponent,
-    AgoraVideoComponent
-  ],
+    AgoraVideoComponent,
+    ClaimOption
+],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
@@ -43,9 +44,12 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
       <div class="mx-auto max-w-[820px] px-5 py-6 lg:px-8">
         @if (!started()) {
           <opd-coverage-banner [category]="BenefitCategory.OnlineConsultation" />
-          <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
-            Find a doctor →
-          </button>
+          @if (claimModes.allowsCashless(BenefitCategory.OnlineConsultation) && policyStore.isCovered()) {
+            <button type="button" class="min-h-touch w-full rounded-xl bg-[#0F5FDC] px-6 text-sm font-semibold text-white hover:bg-[#034DA2]" (click)="start()">
+              Find a doctor →
+            </button>
+          }
+          <opd-claim-option [category]="BenefitCategory.OnlineConsultation" [label]="'online consultation'" />
         } @else {
           <opd-wizard-step
             [title]="'Book consultation'"
@@ -76,7 +80,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                           <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="pickSpeciality(speciality())">Retry</button>
                         </p>
                       }
-                      <opd-doctor-selection [speciality]="selectedSpecialityName()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" (searchChanged)="onSearchChange($event)" (doctorSelected)="selectDoctor($event)" />
+                      <opd-doctor-selection [speciality]="selectedSpecialityName()" [doctors]="filteredDoctors()" [selectedDoctor]="doctor()" [ceiling]="doctorFeeCeiling()" (searchChanged)="onSearchChange($event)" (doctorSelected)="selectDoctor($event)" />
                     </div>
                   }
                 </div>
@@ -197,7 +201,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                       <span>⚠</span> {{ err }} <button class="ml-2 underline text-sm" (click)="loadInitialData()">Retry</button>
                     </p>
                   }
-                  <opd-patient-selection [patients]="patients()" [selectedPatient]="patient()" [mode]="mode()" (patientSelected)="patient.set($event)" (modeChanged)="mode.set($event)" />
+                  <opd-patient-selection [patients]="patients()" [selectedPatient]="patient()" [mode]="mode()" (patientSelected)="selectPatient($event)" (modeChanged)="mode.set($event)" />
                 </div>
               </ng-container>
 
@@ -215,24 +219,59 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                       <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
                       <dl class="space-y-2 text-sm">
                         <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
-                        <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn() }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                        <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }})</dt><dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd></div>
-                        <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd></div>
-                        @if (pay().excess > 0) {
-                          <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div>
+                        <div class="flex justify-between">
+                          <dt class="text-ink-700">
+                            Wallet eligible
+                            @if (pay().ceiling !== null && (pay().ceiling ?? 0) < pay().perTxnLimit) {
+                              <span class="text-xs text-ink-500">(ceiling ₹{{ pay().ceiling }})</span>
+                            } @else {
+                              <span class="text-xs text-ink-500">(limit ₹{{ pay().perTxnLimit }})</span>
+                            }
+                          </dt>
+                          <dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd>
+                        </div>
+                        @if (pay().copay > 0) {
+                          <div class="flex justify-between">
+                            <dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }})</dt>
+                            <dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd>
+                          </div>
                         }
                         <div class="flex justify-between border-t border-surface-border pt-2">
-                          <dt class="font-semibold text-ink-900">Patient Co-payment</dt>
-                          <dd class="text-lg font-bold" [class.text-[#034DA2]]="pay().copay > 0" [class.text-green-700]="pay().copay === 0">₹{{ pay().copay }}</dd>
+                          <dt class="text-ink-700">Paid from Corporate Wallet</dt>
+                          <dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd>
+                        </div>
+                        @if (pay().excess > 0) {
+                          <div class="flex justify-between">
+                            <dt class="text-ink-700">
+                              @if (pay().ceiling !== null && pay().fee > (pay().ceiling ?? 0)) {
+                                Above doctor fee ceiling
+                              } @else {
+                                Above per-transaction limit
+                              }
+                            </dt>
+                            <dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd>
+                          </div>
+                        }
+                        <div class="flex justify-between border-t border-surface-border pt-2">
+                          <dt class="font-semibold text-ink-900">Total Payable by Patient</dt>
+                          <dd class="text-lg font-bold" [class.text-[#034DA2]]="pay().selfPay > 0" [class.text-green-700]="pay().selfPay === 0">₹{{ pay().selfPay }}</dd>
                         </div>
                       </dl>
-                      @if (pay().copay > 0) {
+                      @if (pay().selfPay > 0) {
                         <p class="mt-3 text-xs text-amber-800 bg-amber-50 rounded-xl p-3 border border-amber-200">
-                          ℹ Co-payment of <strong>₹{{ pay().copay }}</strong> is required. Clicking continue will initiate the payment gateway.
+                          ℹ Patient payable amount of <strong>₹{{ pay().selfPay }}</strong>
+                          @if (pay().copay > 0 && pay().excess > 0) {
+                            (₹{{ pay().copay }} co-payment + ₹{{ pay().excess }} above policy limit)
+                          } @else if (pay().copay > 0) {
+                            (co-payment)
+                          } @else {
+                            (above policy limit)
+                          }
+                          is required. Clicking continue will initiate the payment gateway.
                         </p>
                       } @else {
                         <p class="mt-3 text-xs text-green-800 bg-green-50 rounded-xl p-3 border border-green-200">
-                          ✓ 100% covered by your corporate health wallet. No co-payment required!
+                          ✓ 100% covered by your corporate health wallet. No out-of-pocket payment required!
                         </p>
                       }
                     </div>
@@ -255,7 +294,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                     <!-- Amount Box -->
                     <div class="rounded-xl bg-white p-4 border border-surface-border shadow-xs">
                       <div class="flex items-baseline justify-between">
-                        <span class="text-xs font-medium text-ink-500">Co-Pay Amount Due</span>
+                        <span class="text-xs font-medium text-ink-500">Amount Due</span>
                         <span class="text-2xl font-extrabold text-[#034DA2]">₹{{ copayToPay() }}</span>
                       </div>
                       <div class="mt-2 text-xs text-ink-500 flex justify-between pt-2 border-t border-gray-100">
@@ -365,7 +404,7 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                   <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Doctor</dt><dd class="text-right font-medium text-ink-900">{{ doctor()?.name }}</dd></div>
                   <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Patient</dt><dd class="text-right font-medium text-ink-900">{{ patient()?.name }}</dd></div>
                   <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Mode</dt><dd class="text-right font-medium text-ink-900">{{ mode() }}</dd></div>
-                  <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Paid</dt><dd class="text-right font-medium text-ink-900">₹{{ copayToPay() > 0 ? copayToPay() : pay().copay }} co-pay (₹{{ pay().walletBlock }} from wallet)</dd></div>
+                  <div class="flex justify-between gap-3 border-b border-surface-border pb-2"><dt class="text-ink-500">Paid</dt><dd class="text-right font-medium text-ink-900">₹{{ copayToPay() > 0 ? copayToPay() : pay().selfPay }} (₹{{ pay().walletBlock }} from wallet)</dd></div>
                 </dl>
                 <p class="mt-3 rounded-xl bg-green-100 px-3 py-2 text-sm text-green-700">🧾 Invoice generated and stored under Health Records › Invoices.</p>
               </ng-container>
@@ -379,7 +418,12 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                     <button type="button" class="mt-4 min-h-touch w-full rounded-xl bg-blue-700 px-4 text-sm font-semibold text-white" (click)="joinVideoCall()">Join {{ mode() }} call</button>
                   </div>
                 } @else {
-                  <opd-agora-video [serviceRequestId]="consultationRequestId()" (callEnded)="endCall()" />
+                  <opd-agora-video
+                    [serviceRequestId]="consultationRequestId()"
+                    [mode]="mode() === 'Audio' ? 'Audio' : 'Video'"
+                    [doctorName]="doctor()?.name || 'Doctor'"
+                    (callEnded)="endCall()"
+                  />
                 }
               </ng-container>
 
@@ -419,7 +463,7 @@ export class OnlineConsultPage implements OnInit {
 
   private readonly consultationService = inject(OpdConsultationService);
   private readonly agoraService = inject(AgoraService);
-  private readonly policyStore = inject(PolicyStore);
+  protected readonly policyStore = inject(PolicyStore);
   private readonly family = inject(FamilyStore);
   protected readonly claimModes = inject(ClaimModeStore);
   private readonly appService = inject(AppService);
@@ -466,10 +510,34 @@ export class OnlineConsultPage implements OnInit {
     return 'HH-448732';
   }
 
+  constructor() {
+    effect(() => {
+      const pats = this.patients();
+      const current = this.patient();
+      if (pats.length > 0) {
+        if (!current || !pats.some((p) => p.id === current.id)) {
+          const active = this.family.activeMember();
+          const match = pats.find((p) => p.id === active?.id || p.mapped_id === active?.memberId) || pats[0];
+          this.selectPatient(match);
+        }
+      }
+    });
+  }
+
+  protected selectPatient(pat: Patient): void {
+    this.patient.set(pat);
+    if (!this.policyStore.isFloater()) {
+      const activeUhId = pat?.uhId?.trim() || null;
+      const primaryUhId = this.family.family().find((m) => m.isPrimary)?.uhid?.trim() || null;
+      this.policyStore.syncMemberWalletContext(activeUhId, primaryUhId);
+    }
+  }
+
   protected readonly policyCategory = computed(() => {
     const version = this.policyStore.version();
+    const pat = this.patient();
     const activeMember = this.family.activeMember();
-    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    const relCode = pat?.rel || activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
     const rel = version
       ? (findRelationshipInVersion(version, relCode) ?? getPrimaryRelationship(version))
       : null;
@@ -485,6 +553,14 @@ export class OnlineConsultPage implements OnInit {
     return cat?.per_transaction_limit ?? cat?.per_claim_limit ?? 300;
   });
 
+  protected readonly doctorFeeCeiling = computed<number | null>(() => {
+    const cat = this.policyCategory();
+    if (cat?.doctor_fee_ceiling && typeof cat.doctor_fee_ceiling_amount === 'number' && cat.doctor_fee_ceiling_amount > 0) {
+      return cat.doctor_fee_ceiling_amount;
+    }
+    return null;
+  });
+
   protected readonly copayPct = computed(() => {
     const cat = this.policyCategory();
     return typeof cat?.co_payment_value === 'number' ? cat.co_payment_value : 20;
@@ -496,7 +572,17 @@ export class OnlineConsultPage implements OnInit {
   });
 
   protected readonly specialities = signal<Speciality[]>([]);
-  protected readonly patients = signal<Patient[]>([]);
+  private readonly _allPatients = signal<Patient[]>([]);
+  protected readonly patients = computed<Patient[]>(() => {
+    const version = this.policyStore.version();
+    const all = this._allPatients();
+    if (!version) return all;
+    return all.filter((p) => {
+      const isSelf = !p.rel || p.rel.trim().toLowerCase() === 'self';
+      if (isSelf) return true;
+      return isRelationshipCoveredInPolicy(p.rel, version);
+    });
+  });
   protected readonly slots = signal<Slot[]>([]);
   protected readonly slotDates = signal<number[]>([]);
 
@@ -583,10 +669,11 @@ export class OnlineConsultPage implements OnInit {
     return this.slots().filter(s => this.isSlotValid(s)).length;
   });
 
-  /** Dynamic payment breakdown: per-transaction limit + co-payment, excess self-paid. */
+  /** Dynamic payment breakdown: per-transaction limit + doctor fee ceiling + co-payment, excess self-paid. */
   protected readonly pay = computed(() => {
     const fee = this.doctor()?.fee ?? 0;
     const perTxnLimit = this.perTxn();
+    const ceiling = this.doctorFeeCeiling();
     const cat = this.policyCategory();
     const poolCode = cat?.pool_code?.trim();
     const pool = poolCode
@@ -598,14 +685,15 @@ export class OnlineConsultPage implements OnInit {
       : null;
     const availableBalance = pool ? pool.available.amount : this.policyStore.walletTotal().available.amount;
 
-    const covered = Math.min(fee, perTxnLimit, availableBalance);
+    const effectiveCap = ceiling !== null ? Math.min(perTxnLimit, ceiling) : perTxnLimit;
+    const covered = Math.min(fee, effectiveCap, availableBalance);
     const copay = this.copayMode() === 'flat'
       ? Math.min(this.copayPct(), covered)
       : Math.round((covered * this.copayPct()) / 100);
     const walletBlock = Math.max(0, covered - copay);
     const excess = Math.max(0, fee - covered);
     const selfPay = fee - walletBlock;
-    return { fee, covered, copay, walletBlock, excess, selfPay };
+    return { fee, covered, copay, walletBlock, excess, selfPay, ceiling, perTxnLimit };
   });
 
   protected readonly selectedSpecialityName = computed(() => {
@@ -630,14 +718,14 @@ export class OnlineConsultPage implements OnInit {
   protected loadInitialData(): void {
     this.loadSpecialities();
     this.consultationService.getFamilyList().subscribe((pats) => {
-      this.patients.set(pats);
-      if (pats.length && !this.patient()) {
-        this.patient.set(pats[0]);
-      }
+      this._allPatients.set(pats || []);
     });
   }
 
   protected start(): void {
+    if (!this.policyStore.isCovered() || !this.claimModes.allowsCashless(BenefitCategory.OnlineConsultation)) {
+      return;
+    }
     this.consultNow.set(null);
     this.started.set(true);
     this.step.set(0);
@@ -874,30 +962,29 @@ export class OnlineConsultPage implements OnInit {
                 || checkoutRes?.checkout_snapshot?.opdCheckout
                 || checkoutRes?.resource?.[0]
                 || checkoutRes;
+              const checkoutPatientAmount = checkoutItem?.patient_amount ?? checkoutItem?.final_payable;
               const copayAmount = Number(
-                checkoutItem?.copay_amount ??
-                checkoutItem?.co_pay_amount ??
-                checkoutItem?.patient_amount ??
-                checkoutItem?.final_payable ??
-                this.pay().copay ??
-                0
+                checkoutPatientAmount !== undefined && checkoutPatientAmount !== null
+                  ? checkoutPatientAmount
+                  : (this.pay().selfPay ?? 0)
               );
 
               const bookingData = this.buildBookingSnapshot(checkoutRes, cartId);
 
               if (copayAmount > 0) {
-                // Co-payment greater than 0: Initiate payment flow
+                // Out-of-pocket amount > 0: Initiate payment flow
                 this.pendingBookingData.set(bookingData);
                 this.copayToPay.set(copayAmount);
                 this.dummyTxnId.set('TXN_OPD_' + Date.now().toString().slice(-6));
                 this.paymentGatewayState.set('initiating');
                 this.isPaymentGatewayOpen.set(true);
               } else {
-                // Co-payment is 0: Directly proceed to booking
+                // Out-of-pocket is 0: Directly proceed to booking
                 this.consultationService.bookAppointment(bookingData).subscribe({
                   next: (res: any) => {
                     const sReqId = res?.serviceRequestId || res?.service_request_id || res?.[0]?.serviceRequestId || res?.[0]?.service_request_id || res?.resource?.[0]?.serviceRequestId || res?.resource?.[0]?.service_request_id || res?.[0]?.id || res?.id || '';
                     this.consultationRequestId.set(sReqId);
+                    this.onBookingSuccess();
                     this.step.set(this.step() + 1);
                   },
                   error: (err) => this.stepError.set('Booking failed: ' + err.message)
@@ -952,6 +1039,7 @@ export class OnlineConsultPage implements OnInit {
         next: (res: any) => {
           const sReqId = res?.serviceRequestId || res?.service_request_id || res?.[0]?.serviceRequestId || res?.[0]?.service_request_id || res?.resource?.[0]?.serviceRequestId || res?.resource?.[0]?.service_request_id || res?.[0]?.id || res?.id || '';
           this.consultationRequestId.set(sReqId);
+          this.onBookingSuccess();
           this.isPaymentGatewayOpen.set(false);
           this.paymentGatewayState.set('closed');
           this.step.set(this.step() + 1);
@@ -980,14 +1068,21 @@ export class OnlineConsultPage implements OnInit {
   protected primaryLabel(): string {
     switch (this.currentStep()) {
       case 'payment': {
-        const copay = this.pay().copay;
-        return copay > 0 ? `Proceed to Pay ₹${copay}` : 'Confirm & Book Appointment (₹0)';
+        const selfPay = this.pay().selfPay;
+        return selfPay > 0 ? `Proceed to Pay ₹${selfPay}` : 'Confirm & Book Appointment (₹0)';
       }
       case 'prescription': return 'Done';
       case 'confirmed': return 'Join consultation';
       case 'consultation': return 'View prescription';
       default: return 'Continue';
     }
+  }
+
+  private onBookingSuccess(): void {
+    const pat = this.patient();
+    const activeUhId = pat?.uhId?.trim() || this.getResolvedUhId();
+    const primaryUhId = this.family.family().find((m) => m.isPrimary)?.uhid?.trim() || null;
+    this.policyStore.syncMemberWalletContext(activeUhId, primaryUhId, true);
   }
 
   protected joinVideoCall(): void {

@@ -16,6 +16,7 @@ export class AgoraService {
   private localAudioTrack: IMicrophoneAudioTrack | null = null;
   private localVideoTrack: ICameraVideoTrack | null = null;
   private statsTimer: any = null;
+  private tokenRenewalFn: (() => Promise<string | null>) | null = null;
 
   public remoteUsers$ = new BehaviorSubject<IAgoraRTCRemoteUser[]>([]);
   public isJoined$ = new BehaviorSubject<boolean>(false);
@@ -58,7 +59,32 @@ export class AgoraService {
     });
 
     this.client.on('token-privilege-will-expire', async () => {
-      console.warn('Agora token is about to expire. Implement renewal callback.');
+      console.warn('Agora token is about to expire, attempting renewal...');
+      if (this.tokenRenewalFn) {
+        try {
+          const newToken = await this.tokenRenewalFn();
+          if (newToken) {
+            await this.client.renewToken(newToken);
+            console.log('Agora token renewed successfully.');
+          }
+        } catch (e) {
+          console.error('Failed to renew Agora token:', e);
+        }
+      }
+    });
+
+    this.client.on('token-privilege-did-expire', async () => {
+      console.warn('Agora token expired, renewing immediately...');
+      if (this.tokenRenewalFn) {
+        try {
+          const newToken = await this.tokenRenewalFn();
+          if (newToken) {
+            await this.client.renewToken(newToken);
+          }
+        } catch (e) {
+          console.error('Failed to renew expired token:', e);
+        }
+      }
     });
   }
 
@@ -66,16 +92,40 @@ export class AgoraService {
     this.remoteUsers$.next([...this.client.remoteUsers]);
   }
 
-  public async createLocalTracks(): Promise<{ audio: IMicrophoneAudioTrack; video: ICameraVideoTrack }> {
-    [this.localAudioTrack, this.localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-    return { audio: this.localAudioTrack, video: this.localVideoTrack };
+  public onTokenExpiring(fn: () => Promise<string | null>): void {
+    this.tokenRenewalFn = fn;
   }
 
-  public async joinChannel(appId: string, channelName: string, token: string | null, uid?: UID): Promise<UID> {
+  public async createLocalTracks(mode: 'Audio' | 'Video' = 'Video'): Promise<{ audio: IMicrophoneAudioTrack | null; video: ICameraVideoTrack | null }> {
+    if (mode === 'Audio') {
+      this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      this.localVideoTrack = null;
+      this.isVideoMuted$.next(true);
+      return { audio: this.localAudioTrack, video: null };
+    } else {
+      [this.localAudioTrack, this.localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+      this.isVideoMuted$.next(false);
+      return { audio: this.localAudioTrack, video: this.localVideoTrack };
+    }
+  }
+
+  public getLocalAudioTrack(): IMicrophoneAudioTrack | null {
+    return this.localAudioTrack;
+  }
+
+  public getLocalVideoTrack(): ICameraVideoTrack | null {
+    return this.localVideoTrack;
+  }
+
+  public async joinChannel(appId: string, channelName: string, token: string | null, uid?: UID | null): Promise<UID> {
     const assignedUid = await this.client.join(appId, channelName, token, uid || null);
 
-    if (this.localAudioTrack && this.localVideoTrack) {
-      await this.client.publish([this.localAudioTrack, this.localVideoTrack]);
+    const tracksToPublish: any[] = [];
+    if (this.localAudioTrack) tracksToPublish.push(this.localAudioTrack);
+    if (this.localVideoTrack) tracksToPublish.push(this.localVideoTrack);
+
+    if (tracksToPublish.length > 0) {
+      await this.client.publish(tracksToPublish);
     }
 
     this.isJoined$.next(true);
@@ -126,6 +176,7 @@ export class AgoraService {
 
     await this.client.leave();
 
+    this.tokenRenewalFn = null;
     this.remoteUsers$.next([]);
     this.isJoined$.next(false);
     this.isAudioMuted$.next(false);

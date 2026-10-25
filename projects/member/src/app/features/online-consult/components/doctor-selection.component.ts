@@ -31,6 +31,9 @@ import { Doctor } from '../../../services/opd-consultation.service';
             </div>
             <div class="shrink-0 text-right">
               <p class="text-sm font-semibold text-[#034DA2]">₹{{ d.fee }}</p>
+              @if (isAboveCeiling(d.fee)) {
+                <p class="text-[10px] font-medium text-amber-700">Ceiling ₹{{ ceiling() }}</p>
+              }
               <p class="text-xs" [class.text-success-700]="d.nextIn === 'Available now'" [class.text-ink-500]="d.nextIn !== 'Available now'">{{ d.nextIn }}</p>
             </div>
           </div>
@@ -43,10 +46,16 @@ export class DoctorSelectionComponent {
   speciality = input<string>('');
   doctors = input<Doctor[]>([]);
   selectedDoctor = input<Doctor | null>(null);
+  ceiling = input<number | null>(null);
   search = model<string>('');
   loading = input<boolean>(false);
   doctorSelected = output<Doctor>();
   searchChanged = output<string>();
+
+  protected isAboveCeiling(fee: number | undefined): boolean {
+    const c = this.ceiling();
+    return c !== null && c !== undefined && (fee ?? 0) > c;
+  }
 
   protected initials(name: string): string {
     const cleanName = name.replace('Dr. ', '');

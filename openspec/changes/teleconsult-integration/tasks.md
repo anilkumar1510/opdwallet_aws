@@ -61,3 +61,13 @@
 - [x] N.1 Confirm the full offline journey works with mocked API responses (Angular in-memory-web-api or mock responses)
 - [x] N.2 Ensure the `opd-online-consult-page` component selector is still valid at its route: `/member/online-consult`
 - [x] N.3 Verify no console errors appear during navigation through the refactored flow
+
+## 7. Production Agora Real APIs Integration
+
+- [x] 7.1 Implement `getAgoraCredentials()` in `OpdConsultationService` via `TELE_AGORA_CREDENTIALS` (extracts `agora_app_id`)
+- [x] 7.2 Implement `getAgoraToken(channelName: string)` in `OpdConsultationService` via `TELE_AGORA_TOKEN`
+- [x] 7.3 Connect `videoCheckin(serviceRequestId)` before fetching Agora token
+- [x] 7.4 Update `AgoraService` to support mode-specific track creation (`Audio` vs `Video`), wildcard UID join (`null`), and auto-renewal callback
+- [x] 7.5 Enhance `AgoraVideoComponent` with audio-only UI (avatar, audio wave, hidden camera) vs video UI (local & remote video streams)
+- [x] 7.6 Wire `/member/consultations/:appointmentId` (`ConsultationRoomPage`) to use `AgoraVideoComponent`
+- [x] 7.7 Maintain `openspec/changes/teleconsult-integration/specs/video-calling/spec.md` with complete API contracts

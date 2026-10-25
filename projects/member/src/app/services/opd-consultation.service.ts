@@ -558,6 +558,36 @@ export class OpdConsultationService {
     );
   }
 
+  // Agora App ID Credentials API
+  getAgoraCredentials(): Observable<string> {
+    const fallbackAppId = 'e4e1a21b3c8b4488bc3c219e2491bed0';
+    return this.appService.getcall('opd_tele_booking', 'habit-opd', 'queryId=TELE_AGORA_CREDENTIALS&args=key:agora_app_id&application=habit-opd').pipe(
+      map((response: any) => typeof response === 'string' ? JSON.parse(response) : response),
+      map((res: any) => {
+        const appId = res?.resource?.[0]?.data?.value;
+        return appId && typeof appId === 'string' ? appId.trim() : fallbackAppId;
+      }),
+      catchError((err) => {
+        console.warn('Failed to fetch Agora credentials, using fallback App ID:', err);
+        return of(fallbackAppId);
+      })
+    );
+  }
+
+  // Agora Token API
+  getAgoraToken(channelName: string): Observable<{ channelId: string; tokenId: string }> {
+    return this.appService.getcall('opd_tele_booking', 'habit-opd', `queryId=TELE_AGORA_TOKEN&args=channelName:${channelName}&application=habit-opd`).pipe(
+      map((response: any) => typeof response === 'string' ? JSON.parse(response) : response),
+      map((res: any) => {
+        const data = res?.resource?.[0]?.data || {};
+        return {
+          channelId: data.channel_id || channelName,
+          tokenId: data.token_id || ''
+        };
+      })
+    );
+  }
+
   // Prescription Document API
   getPrescription(serviceRequestId: string): Observable<any> {
     return this.http.get<{ resource: any }>(`${this.baseUrl}?queryId=TELE_PRESCRIPTION_DOCUMENT&args=service_request_id:${serviceRequestId}`)
