@@ -332,14 +332,11 @@ export function readUploadedDocId(body: unknown): string | null {
 })
 export class PharmacyPage {
   protected readonly claimModes = inject(ClaimModeStore);
-  private readonly policyStore = inject(PolicyStore);
   /**
-   * Wallet balance this benefit can draw on — its pool's when it belongs to
-   * one, else the total wallet — once the policy loads; the mock until then.
+   * Wallet balance this benefit can draw on. Fixed mock for now; the live
+   * pool-or-total balance is PolicyStore.availableBalanceFor(benefit).
    */
-  protected readonly walletBalance = computed(() =>
-    this.policyStore.version() ? this.policyStore.availableBalanceFor(BenefitCategory.Pharmacy) : MOCK_WALLET_BALANCE,
-  );
+  protected readonly walletBalance = computed(() => MOCK_WALLET_BALANCE);
   protected readonly BenefitCategory = BenefitCategory;
   private readonly http = inject(HttpClient);
   private readonly appService = inject(AppService);

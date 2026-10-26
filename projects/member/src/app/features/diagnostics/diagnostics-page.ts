@@ -550,16 +550,13 @@ type AdjResult = 'pending' | 'ready' | 'rejected';
 })
 export class DiagnosticsPage {
   protected readonly claimModes = inject(ClaimModeStore);
-  private readonly policyStore = inject(PolicyStore);
   /** The benefit this page books, for the policy's claim mode. */
   protected readonly claimCategory = computed(() => (this.kind() === 'RADIOLOGY' ? BenefitCategory.Radiology : BenefitCategory.Pathology));
   /**
-   * Wallet balance this benefit can draw on — its pool's when it belongs to
-   * one, else the total wallet — once the policy loads; the mock until then.
+   * Wallet balance this benefit can draw on. Fixed mock for now; the live
+   * pool-or-total balance is PolicyStore.availableBalanceFor(benefit).
    */
-  protected readonly walletBalance = computed(() =>
-    this.policyStore.version() ? this.policyStore.availableBalanceFor(this.claimCategory()) : MOCK_WALLET_BALANCE,
-  );
+  protected readonly walletBalance = computed(() => MOCK_WALLET_BALANCE);
   protected readonly BenefitCategory = BenefitCategory;
   /** Bound from route data via withComponentInputBinding(). */
   readonly kind = input<Kind>('PATHOLOGY');
