@@ -96,6 +96,9 @@ export class ClaimsStore {
 
   private readonly _claimList = signal<any | null>(null);
   private readonly _getClimListData = signal(false);
+  private readonly _claimsPage = signal<number>(0);
+  private readonly _claimsTotalCount = signal<number | null>(null);
+  private readonly _claimsHasMore = signal<boolean>(true);
   
   private readonly _claimDetails = signal<any | null>(null);
   private readonly _getClimDetails = signal(false);
@@ -107,6 +110,21 @@ export class ClaimsStore {
   private readonly _categoryLabelsLoading = signal(false);
 
   readonly dashboardLoading = this._dashboardLoading.asReadonly();
+  /** True while GET_CLAIMS_BY_USER for claims list is in flight. */
+  readonly getClimListDataLoading = this._getClimListData.asReadonly();
+  readonly claimListLoading = this._getClimListData.asReadonly();
+  readonly claimsPage = this._claimsPage.asReadonly();
+  readonly claimsTotalCount = this._claimsTotalCount.asReadonly();
+  readonly claimsHasMore = this._claimsHasMore.asReadonly();
+
+  readonly totalClaimsCount = computed<number | null>(() => {
+    const fromApi = this._claimsTotalCount();
+    if (typeof fromApi === 'number' && fromApi >= 0) return fromApi;
+    const fromDashboard = this.dashboardSummary()?.total;
+    if (typeof fromDashboard === 'number' && fromDashboard >= 0) return fromDashboard;
+    return null;
+  });
+
   /** True while GET_PAGE for a single claim is in flight. */
   readonly claimDetailsLoading = this._getClimDetails.asReadonly();
   readonly actionReasonsLoading = this._actionReasonsLoading.asReadonly();
@@ -306,46 +324,73 @@ export class ClaimsStore {
   private _patch(reference: string, patch: Partial<Claim>): void {
     this._claims.set(this._claims().map((c) => (c.reference === reference ? { ...c, ...patch } : c)));
   }
-  getClimListData(): Promise<void> {
+  getClimListData(pageNo: number = 0, pageSize: number = 10): Promise<void> {
     this._getClimListData.set(true);
-    const pageNo: any = 0;
-    const pageSize = 20;
-    const arg = "queryId=GET_CLAIMS_BY_USER&page_no=" + pageNo + "&page_size=" + pageSize;
+    this._claimsPage.set(pageNo);
+    const arg = `queryId=GET_CLAIMS_BY_USER&page_no=${pageNo}&page_size=${pageSize}`;
     return new Promise<void>((resolve) => {
       this.appService.getcall('opd_claim', 'habit-opd', arg).subscribe({
-        next: (res) => {
+        next: async (res) => {
           try {
-            const response = JSON.parse(res);
-            // Error bodies (`{errCode:-1, message:'Invalid Session'}`) carry no
-            // `resource` at all, so this has to be optional or the list throws.
-            if (response?.resource?.length > 0) {
-              void this.categories().then((cats) => {
-                const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
-                this._claimList.set(
-                  response.resource
-                    .map((row: any) => ({
-                      ...row,
-                      category:
-                        row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
-                      // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
-                      provider: row?.provider ?? row?.providerName ?? '',
-                      // The badge needs a ClaimStatus object, not the raw status string.
-                      status: toStatus(row?.claim_status ?? row?.status),
-                    }))
-                    // Most recently updated first; the API returns rows in its own
-                    // order, so a claim that just changed would otherwise be buried.
-                    .sort((a: any, b: any) => updatedAtMillis(b) - updatedAtMillis(a)),
-                );
-                this._getClimListData.set(false);
-                resolve();
-              });
-              return;
+            const parsed = typeof res === 'string' ? JSON.parse(res) : res;
+            const items: any[] = parsed?.resource || parsed?.data || (Array.isArray(parsed) ? parsed : []);
+
+            if (typeof parsed?.count === 'number') {
+              this._claimsTotalCount.set(parsed.count);
+            } else if (typeof parsed?.total === 'number') {
+              this._claimsTotalCount.set(parsed.total);
+            } else if (this._claimsTotalCount() === null && items.length < pageSize) {
+              this._claimsTotalCount.set(pageNo * pageSize + items.length);
             }
+
+            if (items.length > 0) {
+              const cats = await this.categories().catch(() => STATIC_CLAIM_CATEGORIES);
+              const byCode = new Map(cats.map((c) => [c.claimCategory, c.name]));
+              const mapped = items
+                .map((row: any) => ({
+                  ...row,
+                  category:
+                    row?.category && byCode.has(row.category) ? byCode.get(row.category) : row?.category,
+                  // GET_CLAIMS_BY_USER may name it `provider` or `providerName`.
+                  provider: row?.provider ?? row?.providerName ?? '',
+                  // The badge needs a ClaimStatus object, not the raw status string.
+                  status: toStatus(row?.claim_status ?? row?.status),
+                }))
+                // Most recently updated first; the API returns rows in its own
+                // order, so a claim that just changed would otherwise be buried.
+                .sort((a: any, b: any) => updatedAtMillis(b) - updatedAtMillis(a));
+
+              // If backend returns all rows ignoring page_size, slice to show exactly pageSize items
+              if (mapped.length > pageSize) {
+                if (this._claimsTotalCount() === null) {
+                  this._claimsTotalCount.set(mapped.length);
+                }
+                const start = pageNo * pageSize;
+                this._claimList.set(mapped.slice(start, start + pageSize));
+              } else {
+                this._claimList.set(mapped);
+              }
+            } else {
+              this._claimList.set([]);
+            }
+
+            // Determine if more records exist on the server
+            const total = this._claimsTotalCount() ?? this._dashboard()?.total_claims ?? null;
+            let hasMore: boolean;
+            if (items.length < pageSize) {
+              hasMore = false;
+            } else if (total !== null && total !== undefined) {
+              hasMore = (pageNo + 1) * pageSize < total;
+            } else {
+              hasMore = items.length >= pageSize;
+            }
+            this._claimsHasMore.set(hasMore);
           } catch (error) {
             console.error('Failed to load claims list:', error);
+          } finally {
+            this._getClimListData.set(false);
+            resolve();
           }
-          this._getClimListData.set(false);
-          resolve();
         },
         error: (error) => {
           console.error('Failed to load claims list:', error);
@@ -354,6 +399,21 @@ export class ClaimsStore {
         },
       });
     });
+  }
+
+  /**
+   * Navigates to a specific page of claims (0-indexed) with the specified page size.
+   */
+  goToClaimsPage(pageNo: number, pageSize: number = 10): void {
+    if (pageNo < 0 || this._getClimListData()) {
+      return;
+    }
+    const total = this.totalClaimsCount();
+    if (total !== null && total !== undefined) {
+      const maxPages = Math.max(1, Math.ceil(total / pageSize));
+      if (pageNo >= maxPages) return;
+    }
+    void this.getClimListData(pageNo, pageSize);
   }
   /**
    * Loads one claim by its business reference (CLM-…) into `claimDetails`.

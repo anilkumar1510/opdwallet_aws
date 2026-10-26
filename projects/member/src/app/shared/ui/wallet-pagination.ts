@@ -17,14 +17,14 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
     <nav [attr.aria-label]="ariaLabel()" class="mt-3 flex items-center justify-between gap-3">
       <button
         type="button"
-        class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 disabled:opacity-40"
+        class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 hover:bg-brand-50/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         [disabled]="!hasPrev() || loading()"
         (click)="onPrev()"
       >
         ← Previous
       </button>
 
-      <p class="text-sm text-ink-500">
+      <p class="text-sm font-medium text-ink-500">
         @if (totalPages() > 0) {
           Page {{ page() + 1 }} of {{ totalPages() }}
         } @else {
@@ -34,7 +34,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
       <button
         type="button"
-        class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 disabled:opacity-40"
+        class="min-h-touch rounded-xl border border-surface-border bg-white px-4 text-sm font-medium text-brand-700 hover:bg-brand-50/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         [disabled]="!hasNext() || loading()"
         (click)="onNext()"
       >
