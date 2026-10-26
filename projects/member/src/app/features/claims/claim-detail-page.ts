@@ -160,23 +160,23 @@ function humaniseCode(value: string | undefined): string {
                see Rejected or Documents required, not something to hunt for
                below the amounts. -->
           @if (actionReason(detail); as reasons) {
-            <section
-              class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
-              role="alert"
-            >
-              <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
-                {{ actionReasonHeading(detail) }}
-              </h2>
-              @if (reasons.length) {
-                <ul class="mt-2 space-y-1">
-                  @for (reason of reasons; track $index) {
-                    <li class="text-sm text-ink-900">{{ reason }}</li>
-                  }
-                </ul>
-              } @else {
-                <p class="text-sm text-ink-900">No reasons provided</p>
-              }
-            </section>
+            @if (actionReasonHeading(detail); as heading) {
+              <section
+                class="mt-5 rounded-2xl border border-danger-200 bg-danger-50 p-5 lg:p-6"
+                role="alert"
+              >
+                <h2 class="mb-2 text-base font-semibold text-danger-700 lg:text-lg">
+                  {{ heading }}
+                </h2>
+                @if (reasons.length) {
+                  <ul class="mt-2 space-y-1">
+                    @for (reason of reasons; track $index) {
+                      <li class="text-sm text-ink-900">{{ reason }}</li>
+                    }
+                  </ul>
+                }
+              </section>
+            }
           }
 
           <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
@@ -498,7 +498,7 @@ function humaniseCode(value: string | undefined): string {
 
           @if (detail.isCancellable) {
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
-              @if (store.submitError(); as error) {
+              @if (resubmitError(); as error) {
                 <p class="mb-3 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">
                   {{ error }}
                 </p>
@@ -525,15 +525,15 @@ function humaniseCode(value: string | undefined): string {
                   <button
                     type="button"
                     class="min-h-touch flex-1 rounded-xl bg-danger-600 px-4 text-sm font-semibold text-white disabled:opacity-60"
-                    [disabled]="store.submitting()"
-                    (click)="cancelClaim(detail.reference)"
+                    [disabled]="submitting()"
+                    (click)="cancelClaim()"
                   >
-                    {{ store.submitting() ? 'Cancelling…' : 'Yes, withdraw it' }}
+                    {{ submitting() ? 'Cancelling…' : 'Yes, withdraw it' }}
                   </button>
                   <button
                     type="button"
                     class="min-h-touch flex-1 rounded-xl border border-surface-border px-4 text-sm font-semibold text-ink-900"
-                    [disabled]="store.submitting()"
+                    [disabled]="submitting()"
                     (click)="confirming.set(false)"
                   >
                     Keep it
@@ -594,6 +594,10 @@ export class ClaimDetailPage {
   }
 
   protected readonly confirming = signal(false);
+  protected readonly submitting = signal(false);
+  private getClaimId(): string | undefined {
+    return this.displayClaim()?.claim_id ?? this.claimId();
+  }
   protected readonly downloading = signal<string | null>(null);
   protected readonly downloadError = signal<string | null>(null);
 
@@ -891,7 +895,7 @@ export class ClaimDetailPage {
 
     const key = this.scenarioKey();
     if (key === 'live') {
-      return { ...base, isCancellable: CANCELLABLE_STATUSES.has(base.claim_status) };
+      return { ...base, isCancellable: CANCELLABLE_STATUSES.has(base.claim_status.toUpperCase()) };
     }
 
     const s = SCENARIO_STATUS[key];
@@ -957,13 +961,99 @@ export class ClaimDetailPage {
    * Takes the business reference, not the route's id — the cancel endpoint
    * wants CLM-… while the detail endpoint that loaded this claim wants _id.
    */
-  protected async cancelClaim(reference: string): Promise<void> {
-    if (await this.store.cancel(reference, this.reason())) {
-      // web-member returns to the list, where the new status is visible.
-      void this.router.navigate(['/member/claims']);
+  protected async cancelClaim(): Promise<void> {
+    this.submitting.set(true);
+    const claimId = this.getClaimId();
+    if (!claimId) {
+      if (await this.store.cancel('', this.reason())) {
+        void this.router.navigate(['/member/claims']);
+      }
+      this.submitting.set(false);
+      this.confirming.set(false);
+      return;
+    }
+
+    // Build the resource object WITHOUT g_soft_delete
+    // Only include name and claim_status as specified
+    const resourceData = {
+      name: claimId || (this.displayClaim()?.claim_id || ''),
+      claim_status: 'CANCELLED',
+    };
+
+    // Minify the JSON (no spaces/newlines) then base64 encode
+    // The API expects: resource=<base64_encoded_json>
+    const resourceMinified = JSON.stringify(resourceData, null, 0);
+    const encodedResourceData = btoa(resourceMinified);
+
+    // Make the request: URL with ?action=cancel query param, body with base64-encoded resource
+    const options = this.appService.addXsrfToken(
+      'resource=' + encodeURIComponent(encodedResourceData),
+      true,
+    );
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post(
+          'habit-opd/api/v1/opd_claim?action=cancel',
+          'resource=' + encodeURIComponent(encodedResourceData),
+          options,
+        ),
+      );
+
+      // BACKEND RESPONSE HANDLING:
+      // Always HTTP 200 - check errCode in the response body
+      // errCode: 0 = success, errCode: -1 = failure with message
+
+      // Parse the response - it may come as string or parsed object
+      let parsedResponse: any;
+      try {
+        parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      } catch {
+        // If we can't parse JSON, treat as success (backward compat)
+        const ref = claimId || this.claimId() || this.route.snapshot.paramMap.get('claimId');
+        if (ref) {
+          await this.store.getClimDetails(ref);
+        }
+        await this.store.getClimListData();
+        void this.store.loadDashboard();
+        void this.router.navigate(['/member/claims']);
+        this.confirming.set(false);
+        this.submitting.set(false);
+        return;
+      }
+
+      // Check errCode
+      if (parsedResponse.errCode === 0) {
+        // SUCCESS: claim cancelled
+        // Reload claim details and claims list API
+        const ref = claimId || this.claimId() || this.route.snapshot.paramMap.get('claimId');
+        if (ref) {
+          await this.store.getClimDetails(ref);
+        }
+        await this.store.getClimListData();
+        void this.store.loadDashboard();
+
+        // Navigate to claims list where the claim now shows CANCELLED
+        void this.router.navigate(['/member/claims']);
+        this.confirming.set(false);
+      } else if (parsedResponse.errCode === -1) {
+        // FAILURE: show error message from backend
+        this.resubmitError.set(parsedResponse.message || 'We could not cancel that claim. Please try again.');
+        this.confirming.set(false);
+      } else {
+        // Unknown errCode
+        this.resubmitError.set('We could not cancel that claim. Please try again.');
+        this.confirming.set(false);
+      }
+    } catch (error: any) {
+      // Network or truly unexpected error
+      console.error('Failed to cancel claim:', error);
+      this.resubmitError.set('We could not cancel that claim. Please try again.');
+      this.confirming.set(false);
+    } finally {
+      this.submitting.set(false);
     }
   }
-
   /**
    * `treatment_date` and `submitted_at` arrive from GET_PAGE as epoch millis,
    * while the timeline entries are still `Date`s — both reach this one helper,
@@ -992,20 +1082,22 @@ export class ClaimDetailPage {
   /**
    * The assessor's reasons for the current status, from `claim_action_reasons`.
    *
-   * Returns [] for anything that is not a rejected claim or docs-required claim,
-   * so the block stays away rather than showing an empty red panel. The field
-   * is absent from the payload today — the section appears the moment the API
-   * starts sending it, and nothing changes here.
+   * Returns null for anything that is not a rejected claim or docs-required claim,
+   * or when there are no action reasons, so the block stays away rather than
+   * showing an empty red panel.
    */
-  protected actionReason(claim: any): string[] {
+  protected actionReason(claim: any): string[] | null {
     const status = claim?.claim_status;
-    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return [];
+    if (status !== 'REJECTED' && status !== 'DOCUMENTS_REQUIRED') return null;
     const reasons = Array.isArray(claim?.claim_action_reasons) ? claim.claim_action_reasons : [];
-    return reasons.map((code: string) => this.store.getActionReasonDisplay(code.trim())).filter(Boolean);
+    const mapped = reasons.map((code: string) => this.store.getActionReasonDisplay(code.trim())).filter(Boolean);
+    return mapped.length > 0 ? mapped : null;
   }
 
   protected actionReasonHeading(claim: any): string {
-    return claim?.claim_status === 'REJECTED' ? 'Why this claim was rejected' : 'Documents needed';
+    if (claim?.claim_status === 'REJECTED') return 'Why this claim was rejected';
+    if (claim?.claim_status === 'DOCUMENTS_REQUIRED') return 'Documents needed';
+    return '';
   }
 
   /** StatusBadge takes a ClaimStatus; the payload only carries the raw code. */
@@ -1014,7 +1106,8 @@ export class ClaimDetailPage {
   }
 
   decryptText(encText: string){
-   return this.appService.decryptText(encText);
+    console.log('decryptText called with:', this.appService.getCurrentSessionData('encryptKey'));
+   return this.appService.decryptText(encText, this.appService.getCurrentSessionData('encryptKey'));
   }
 }
 

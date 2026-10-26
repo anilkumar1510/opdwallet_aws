@@ -46,29 +46,6 @@ import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
             <opd-profile-menu [showName]="true" />
             <div class="flex items-center gap-3">
               <a
-                routerLink="/member/notifications"
-                class="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
-                [attr.aria-label]="
-                  notifications.unread()
-                    ? 'Notifications, ' + notifications.unread() + ' unread'
-                    : 'Notifications'
-                "
-              >
-                <img
-                  [src]="'images/icons/notification-bell.svg' | remoteAsset"
-                  alt=""
-                  width="16"
-                  height="18"
-                  class="h-[18px] w-4 object-contain brightness-0"
-                />
-                @if (notifications.unread(); as unread) {
-                  <span
-                    class="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F58220] px-1 text-[11px] font-bold text-white"
-                    >{{ unread > 9 ? '9+' : unread }}</span
-                  >
-                }
-              </a>
-              <a
                 routerLink="/member/wallet"
                 class="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
                 aria-label="Wallet"
@@ -202,6 +179,7 @@ export class MemberShell {
   protected readonly notifications = inject(NotificationsStore);
   protected readonly ago = timeAgo;
 
+  // The user's configuration (GET_MY_CONFIG) is loaded by authGuard before this shell renders.
   /** The list is fetched on open, not polled — only the badge polls. */
   protected toggleNotifications(): void {
     const open = !this.notificationsOpen();

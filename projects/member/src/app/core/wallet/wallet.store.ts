@@ -5,8 +5,17 @@ import { firstValueFrom } from 'rxjs';
 import { FamilyStore } from '../family/family.store';
 import { AppError, appError, isAppError } from '../http/app-error';
 import { SessionStore } from '../session/session.store';
+import { AppService } from '../http/api.service';
+import { PolicyStore } from '../member/policy.store';
 import { WalletBalanceDto, WalletTransactionsResponseDto } from './wallet.dto';
-import { WALLET_API, summarise, toTransaction, toWallet } from './wallet.mapper';
+import {
+  WALLET_API,
+  passbookItemToWalletTransaction,
+  summarise,
+  summarisePassbookItems,
+  toTransaction,
+  toWallet,
+} from './wallet.mapper';
 import { Wallet, WalletActivityTotals, WalletTransaction } from './wallet.model';
 
 const PAGE_SIZE = 15;
@@ -38,6 +47,8 @@ export class WalletStore {
   private readonly http = inject(HttpClient);
   private readonly family = inject(FamilyStore);
   private readonly session = inject(SessionStore);
+  private readonly appService = inject(AppService);
+  private readonly policyStore = inject(PolicyStore);
 
   private readonly _wallet = signal<Wallet | null>(null);
   private readonly _transactions = signal<readonly WalletTransaction[]>([]);
@@ -52,12 +63,30 @@ export class WalletStore {
   private loadedFor: string | null = null;
 
   readonly wallet = this._wallet.asReadonly();
-  readonly transactions = this._transactions.asReadonly();
+  readonly transactions = computed<readonly WalletTransaction[]>(() => {
+    const livePassbook = this.policyStore.enrichedPassbook();
+    if (livePassbook.length > 0) {
+      return livePassbook.map(passbookItemToWalletTransaction).slice(0, this._limit());
+    }
+    return this._transactions();
+  });
   readonly loading = this._loading.asReadonly();
   readonly loadingMore = this._loadingMore.asReadonly();
   readonly error = this._error.asReadonly();
-  readonly hasMore = this._hasMore.asReadonly();
-  readonly activityTotals = this._activityTotals.asReadonly();
+  readonly hasMore = computed<boolean>(() => {
+    const livePassbook = this.policyStore.enrichedPassbook();
+    if (livePassbook.length > 0) {
+      return this._limit() < livePassbook.length;
+    }
+    return this._hasMore();
+  });
+  readonly activityTotals = computed<WalletActivityTotals | null>(() => {
+    const livePassbook = this.policyStore.enrichedPassbook();
+    if (livePassbook.length > 0) {
+      return summarisePassbookItems(livePassbook);
+    }
+    return this._activityTotals();
+  });
 
   readonly memberName = computed(() => this.family.activeMember()?.fullName ?? '');
   readonly isEmpty = computed(() => this._wallet()?.exists === false);
@@ -87,6 +116,13 @@ export class WalletStore {
     this._loading.set(true);
     this._error.set(null);
     this._limit.set(PAGE_SIZE);
+
+    // Trigger live wallet_passbook fetch
+    const activeMember = this.family.activeMember();
+    const primaryMember = this.family.family().find((m) => m.isPrimary);
+    const uhId = primaryMember?.uhid || activeMember?.uhid || 'HH-448725';
+    this.policyStore.fetchWalletPassbook(uhId);
+
     try {
       const [balance, history, everything] = await Promise.all([
         firstValueFrom(this.http.get<WalletBalanceDto>(WALLET_API.balance, { params: this.forUser(userId) })),
@@ -121,6 +157,14 @@ export class WalletStore {
    * GET /wallet/transactions, as GET /transactions already has.
    */
   async loadMore(): Promise<void> {
+    const livePassbook = this.policyStore.enrichedPassbook();
+    if (livePassbook.length > 0) {
+      if (this._limit() < livePassbook.length) {
+        this._limit.update((l) => l + PAGE_SIZE);
+      }
+      return;
+    }
+
     const userId = this.family.activeMember()?.id;
     if (!userId || this._loadingMore() || this._loading() || !this._hasMore()) return;
 

@@ -14,9 +14,14 @@ The Support page SHALL list the member's claims from the same paginated claims l
 - **AND** each has an "Ask for help" action, or its ticket status when it already has a ticket
 
 #### Scenario: Draft claims
-- **WHEN** a claim is still a draft (not submitted)
+- **WHEN** a claim is still a draft (backend status `DRAFT`, not submitted)
 - **THEN** it is not listed and no grievance can be raised on it
+- **AND** every other status is listed (under review, documents required, approved, partially approved, rejected, paid, cancelled)
 - **AND** when every claim is a draft, the page shows "No claim needs your attention right now."
+
+#### Scenario: A draft is submitted while the page is open
+- **WHEN** the member submits a draft (it becomes `UNDER_REVIEW`)
+- **THEN** it appears in the list at the next 30-second refresh, without reopening the page
 
 #### Scenario: No claims
 - **WHEN** the listing returns no claims
@@ -161,3 +166,14 @@ The "Something else?" section SHALL let the member call or email support and SHA
 #### Scenario: Email
 - **WHEN** a member presses the email address
 - **THEN** a prefilled message to the support address opens
+
+### Requirement: Reply Chatbox Supporting Document Upload
+Members SHALL be able to attach and upload supporting documents directly from the chat reply box (`#liveReply`) with every follow-up message:
+- Uploads are saved to DMS (`/dms/api/v1/emrImage`), with attached file tokens passed to `disputeApi.reply` via `documents` and `documentIds`.
+- The backend appends these document IDs to the dispute's persistent document record and propagates them to Twenty CRM.
+- The UI displays attached chips with remove actions and disables submission while uploads are pending.
+
+#### Scenario: Member attaches supporting document in reply chatbox
+- **WHEN** a member clicks "Attach documents" in the active reply box and selects a PDF or image
+- **THEN** the document is uploaded to DMS, displayed as an attachment tag, and included in `documents` and `documentIds` when sending the reply
+

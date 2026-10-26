@@ -21,12 +21,14 @@ import {
 } from '../../core/member/bank-details.store';
 import { FamilyStore } from '../../core/family/family.store';
 import { Member } from '../../core/member/member.model';
+import { PolicyStore } from '../../core/member/policy.store';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment.production';
 import { AppService } from '../../core/http/api.service';
 import { appConfig } from '../../app.config';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FileUploader } from './../../shared/file-uploader/file-uploader';
+import { OriginalDocsNotice } from '../../shared/ui/original-docs-notice';
 import { Observable } from 'rxjs';
 const MAX_BYTES = 5 * 1024 * 1024;
 const WHEN = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -47,7 +49,7 @@ const STEPS = [
 @Component({
   selector: 'opd-new-claim-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, FileUploader],
+  imports: [FormsModule, RouterLink, FileUploader, OriginalDocsNotice],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header
@@ -92,6 +94,14 @@ const STEPS = [
             </li>
           }
         </ol>
+
+        <!-- Steps 2–4 (Details, Documents, Review): the policy may need the
+             originals posted after submission (renders nothing otherwise). -->
+        @if (step() >= 1) {
+          <div class="mb-5">
+            <opd-original-docs-notice variant="claim" />
+          </div>
+        }
 
         <form (ngSubmit)="onPrimary()">
           <!-- ── Step 0 · Bank account (verified once, before any claim) ──── -->
@@ -257,9 +267,6 @@ const STEPS = [
                 <div>
                   <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount</label>
                   <input id="billAmount" name="billAmount" type="number" min="1" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="billAmount()" (ngModelChange)="billAmount.set($event)" />
-                  @if (overLimit()) {
-                    <p class="mt-1 text-xs text-warning-700">Above the {{ amount(selectedCategory()!.perClaimLimit) }} per-claim limit — the excess will not be reimbursed.</p>
-                  }
                 </div>
 
                 <div>
@@ -420,9 +427,6 @@ const STEPS = [
             </section>
           }
 
-          @if (overBalance()) {
-            <p class="mt-4 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">Amount exceeds available balance {{ amount(categoryBalance()!.amount) }}</p>
-          }
           @if (problem(); as message) {
             <p class="mt-4 rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700" role="alert">{{ message }}</p>
           }
@@ -469,6 +473,7 @@ const STEPS = [
 export class NewClaimPage {
   protected readonly store = inject(ClaimsStore);
   protected readonly family = inject(FamilyStore);
+  protected readonly policyStore = inject(PolicyStore);
   protected readonly bank = inject(BankDetailsStore);
   private readonly router = inject(Router);
 
@@ -485,9 +490,40 @@ export class NewClaimPage {
    */
   protected readonly submitting = signal(false);
 
-  protected readonly categories = signal<readonly ClaimCategory[]>([]);
-  protected readonly categoriesLoading = signal(false);
+  private readonly fallbackCategories = signal<readonly ClaimCategory[]>([]);
+  private readonly fallbackLoading = signal(false);
   protected readonly patientId = signal('');
+
+  protected readonly selectedPatient = computed(() =>
+    this.family.family().find((member) => member.id === this.patientId()) ?? null,
+  );
+
+  /**
+   * Resolves the combined categories (standard with claims: true + additional_claim_categories)
+   * for the selected patient from the active policy version, honoring INHERIT_FROM_PRIMARY.
+   */
+  protected readonly policyCategories = computed<readonly ClaimCategory[]>(() => {
+    const version = this.policyStore.version();
+    if (!version) return [];
+    const patient = this.selectedPatient();
+    const relCode = patient?.relationshipCode || (patient?.isPrimary ? 'self' : 'self');
+    return this.policyStore.getClaimCategoriesForRelationship(relCode);
+  });
+
+  protected readonly categories = computed<readonly ClaimCategory[]>(() => {
+    const fromPolicy = this.policyCategories();
+    if (fromPolicy.length > 0) {
+      return fromPolicy;
+    }
+    return this.fallbackCategories();
+  });
+
+  protected readonly categoriesLoading = computed(() => {
+    if (this.policyStore.loading()) return true;
+    if (this.policyCategories().length > 0) return false;
+    return this.fallbackLoading();
+  });
+
   protected readonly category = signal('');
   protected readonly dentalSubType = signal<DentalSubType>('consultation');
   protected readonly dentalOptions = [
@@ -547,8 +583,20 @@ export class NewClaimPage {
         this.step.set(1);
       }
     });
-    this.categoriesLoading.set(true);
-    void this.store.categories().then((rows) => this.categories.set(rows)).finally(() => this.categoriesLoading.set(false));
+    this.fallbackLoading.set(true);
+    void this.store
+      .categories()
+      .then((rows) => this.fallbackCategories.set(rows))
+      .finally(() => this.fallbackLoading.set(false));
+
+    // Reset selected category if patient changes and current category is not allowed for new patient
+    effect(() => {
+      const allowed = this.categories();
+      const current = this.category();
+      if (current && allowed.length > 0 && !allowed.some((c) => c.claimCategory === current)) {
+        this.category.set('');
+      }
+    });
     let patientPrefilled = false;
     effect(() => {
       // Default to Self (the primary) even if a dependant was last active.
@@ -570,23 +618,11 @@ export class NewClaimPage {
   protected readonly isDental = computed(() => isDentalCategory(this.category()));
   protected readonly locationFields = computed(() => locationFieldsFor(this.category()));
 
-  protected readonly overLimit = computed(() => {
-    const chosen = this.selectedCategory();
-    const amount = this.billAmount();
-    return Boolean(chosen && chosen.perClaimLimit > 0 && amount && amount > chosen.perClaimLimit);
-  });
-
   protected readonly categoryBalance = computed(() => {
     const chosen = this.selectedCategory();
     if (!chosen || chosen.isPlaceholder) return null;
     // DUMMY — static per-category balance (₹5,000), no wallet API.
     return money(5000);
-  });
-
-  protected readonly overBalance = computed(() => {
-    const balance = this.categoryBalance();
-    const amount = this.billAmount();
-    return Boolean(balance && amount && amount > balance.amount);
   });
 
   /**
@@ -692,8 +728,6 @@ export class NewClaimPage {
     }
     if (this.treatmentDate() === '') return 'Choose the treatment date.';
     if ((this.billAmount() ?? 0) <= 0) return 'Enter the bill amount.';
-    if (this.overBalance())
-      return `Amount exceeds available balance ${this.amount(this.categoryBalance()!.amount)}.`;
     return null;
   }
 

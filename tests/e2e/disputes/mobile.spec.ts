@@ -29,7 +29,7 @@ async function expectTappable(page: Page, name: string | RegExp): Promise<void> 
   expect(box!.x + box!.width, `${name} fits the screen`).toBeLessThanOrEqual(page.viewportSize()!.width + 1);
 }
 
-test.use({ headless: true });
+// test.use({ headless: true });
 
 /** One test on an emulated phone (a fresh context per test, as device settings cannot change inside a describe). */
 function onPhone(label: string, device: (typeof PHONES)[number][1], name: string, run: (page: Page) => Promise<void>): void {
@@ -91,7 +91,7 @@ for (const [label, device] of PHONES) {
 
     test('a closed ticket with a long resolution fits the screen', async ({ page }) => {
       const api = new FakeApi();
-      api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Resolved', final_reason: LONG_WORD }, [{ sender_type: 'MEMBER', message_text: 'hi' }]);
+      api.seed({ claim_id: 'OPD-2026-00354', dispute_status: 'Closed', final_reason: LONG_WORD }, [{ sender_type: 'MEMBER', message_text: 'hi' }]);
       await openSupport(page, api);
       await claimRowOf(page, 'OPD-2026-00354').getByRole('button', { name: 'Ticket closed' }).click();
       await expect(page.getByText('Want to take it further?')).toBeVisible({ timeout: 20000 });

@@ -3,6 +3,8 @@ export const PrescriptionSource = {
   Digital: 'DIGITAL',
   /** Uploaded by the member; a file, not structured data. */
   Uploaded: 'UPLOADED',
+  Diagnostic: 'diagnostic',
+  Billing: 'billing',
 } as const;
 
 export type PrescriptionSource = (typeof PrescriptionSource)[keyof typeof PrescriptionSource];

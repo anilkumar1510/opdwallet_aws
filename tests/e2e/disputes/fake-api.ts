@@ -198,8 +198,9 @@ export async function mockBackend(page: Page, api = new FakeApi()): Promise<Fake
         api.resolvePayloads.push(payload);
         if (api.failResolve) return route.fulfill(json({ errCode: -1, message: api.failResolve }));
         const d = api.disputes.find((x) => x.name === payload.name)!;
-        // Like the backend: RESOLVED, the member as the last sender, no message.
-        d.dispute_status = 'RESOLVED';
+        // Like the backend: RESOLVED/CLOSED, the member as the last sender, no message.
+        d.dispute_status = payload.dispute_status === 'CLOSE' ? 'CLOSED' : 'RESOLVED';
+        if (payload.final_reason) d.final_reason = payload.final_reason;
         d.last_message_sender = 'MEMBER';
         d.g_modify_time = Date.now();
         return route.fulfill(json({ errCode: 0, resource: [{ id: d.id, resourceType: 'Dispute', name: d.name }] }));
@@ -241,7 +242,14 @@ export const claimRowOf = (page: Page, id: string) => claimsSection(page).locato
 export async function openSupport(page: Page, api?: FakeApi): Promise<FakeApi> {
   const fake = await mockBackend(page, api);
   await page.goto('/member/helpline');
-  await expect(claimsSection(page).getByText('OPD-2026-00354')).toBeVisible({ timeout: 20000 });
+  const claimText = claimsSection(page).getByText('OPD-2026-00354');
+  if (!(await claimText.isVisible().catch(() => false))) {
+    const loadMore = claimsSection(page).getByRole('button', { name: 'Load more' });
+    if (await loadMore.isVisible().catch(() => false)) {
+      await loadMore.click();
+    }
+  }
+  await expect(claimText).toBeVisible({ timeout: 20000 });
   return fake;
 }
 

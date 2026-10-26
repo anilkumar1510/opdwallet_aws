@@ -41,23 +41,25 @@ import {
  */
 
 type View = 'home' | 'order' | 'raise' | 'ticket';
-type GrievanceStatus = 'none' | 'open' | 'response' | 'closed';
+type GrievanceStatus = 'none' | 'open' | 'response' | 'resolved' | 'closed';
 
 const DATE = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const DATE_TIME = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-const SUPPORT_EMAIL = 'support@opdwallet.com';
+const SUPPORT_EMAIL = 'OPD@hclhealthcare.in';
 const NUMBER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 
 const STATUS_LABEL: Record<GrievanceStatus, string> = {
   none: 'Ask for help',
   open: 'Ticket open',
   response: 'Response received',
+  resolved: 'Resolved',
   closed: 'Ticket closed',
 };
 const STATUS_CLASS: Record<GrievanceStatus, string> = {
   none: 'bg-[#EEF3FF] text-[#0F5FDC]',
   open: 'bg-warning-50 text-warning-700',
   response: 'bg-[#F0FDF4] text-success-700',
+  resolved: 'bg-[#DCFCE7] text-[#166534]',
   closed: 'bg-[#F2F4F8] text-ink-500',
 };
 
@@ -139,10 +141,9 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
             <!-- 3 · Something else (no ticket) -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 text-center shadow-sm">
               <h2 class="text-base font-semibold text-[#0E51A2]">Something else?</h2>
-              <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, call or write to us. This doesn't open a ticket.</p>
+              <p class="mx-auto mt-1 max-w-md text-sm text-ink-700">For anything not linked to an order or claim, email us. This doesn't open a ticket.</p>
               <div class="mt-3 flex flex-wrap justify-center gap-3">
-                <a [href]="'tel:' + phone" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]" (click)="onCall($event)">📞 {{ phone }}</a>
-                <a [href]="mailHref()" class="rounded-xl border border-surface-border px-4 py-2 text-sm font-semibold text-ink-900" (click)="onMail()">✉ {{ email }}</a>
+                <a [href]="mailHref()" class="rounded-xl border border-[#0F5FDC] px-4 py-2 text-sm font-semibold text-[#0F5FDC]" (click)="onMail()">✉ {{ email }}</a>
               </div>
               @if (contactNote(); as c) {
                 <p class="mt-3 text-xs text-success-700" role="status">{{ c }}</p>
@@ -303,6 +304,12 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                   <div><dt class="text-xs text-ink-500">Raised on</dt><dd class="font-medium text-ink-900">{{ dateTime(t.createdAt) }}</dd></div>
                   <div class="sm:col-span-2"><dt class="text-xs text-ink-500">Reason</dt><dd class="font-medium text-ink-900">{{ t.reason }}</dd></div>
                 </dl>
+                @if (t.state !== 'closed') {
+                  <div class="mt-4 flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2.5 text-xs">
+                    <span class="font-medium text-ink-700">Ticket status: <span class="font-semibold text-ink-900">{{ ticketLabel(t) }}</span></span>
+                    <button type="button" class="font-semibold text-[#0F5FDC] hover:underline" (click)="scrollToActions()">Jump to text box ↓</button>
+                  </div>
+                }
               </section>
 
               @if (isLiveTicket(t) && ticketDocuments(t).length) {
@@ -326,7 +333,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               @if (isLiveTicket(t) && threadError(); as terr) {
                 <p class="mt-4 rounded-xl bg-[#F2F4F8] px-4 py-3 text-sm text-ink-700" role="status">{{ terr }}</p>
               }
-              <section class="mt-4 space-y-3">
+              <section id="ticket-messages" class="mt-4 max-h-[380px] overflow-y-auto space-y-3 rounded-2xl border border-[#EDF0F7] bg-white p-4 shadow-sm">
                 @for (m of t.messages; track $index) {
                   @if (m.from === 'system') {
                     <p class="text-center text-[11px] text-ink-500">{{ m.text }} · {{ dateTime(m.at) }}</p>
@@ -350,7 +357,7 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
               </section>
 
               <!-- Member actions -->
-              <section class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
+              <section id="ticket-actions" class="mt-4 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm">
                 @switch (t.state) {
                   @case ('awaiting_support') {
                     <p class="text-sm text-ink-700">⏳ Waiting on support. We'll notify you in the app, on WhatsApp and by email when they reply.</p>
@@ -374,11 +381,60 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
                     <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket.</p>
                     }
                   }
+                  @case ('resolved') {
+                    @if (t.closedBy === 'member') {
+                      <p class="text-sm font-medium text-success-700">✓ You marked this ticket as resolved.</p>
+                      @if (t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
+                        </div>
+                      }
+                      <p class="mt-2 text-xs text-ink-500">Need more help? You can reply below, or close this ticket for good.</p>
+                      @if (isLiveTicket(t)) {
+                        <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t, isResolved: true }" />
+                      } @else {
+                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#16a34a] px-4 text-sm font-semibold text-white hover:bg-[#15803d]" (click)="markResolved(t)">Close Ticket</button>
+                      }
+                    } @else {
+                      <p class="text-sm font-medium text-success-700">✓ Support has marked this ticket as Resolved.</p>
+                      @if (t.resolutionRemarks || t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.resolutionRemarks || t.finalReason }}
+                        </div>
+                      }
+                      <p class="mt-2 text-xs text-ink-500">You can close this ticket if you are satisfied, or reply below if you have any questions.</p>
+                      @if (isLiveTicket(t)) {
+                        <ng-container *ngTemplateOutlet="liveReply; context: { $implicit: t, isResolved: true }" />
+                      } @else {
+                        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#16a34a] px-4 text-sm font-semibold text-white hover:bg-[#15803d]" (click)="markResolved(t)">Close Ticket</button>
+                      }
+                    }
+                  }
                   @case ('closed') {
                     @if (t.closedBy === 'member') {
                       <p class="text-sm text-ink-700">✓ You marked this resolved on {{ date(t.closedAt!) }}. The ticket is closed for good.</p>
+                      @if (t.closureRemarks || t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-surface-border bg-[#F8FAFC] p-3 text-xs text-ink-700">
+                          <span class="font-semibold">Closure remarks:</span> {{ t.closureRemarks || t.finalReason }}
+                        </div>
+                      }
                     } @else {
                       <p class="text-sm text-ink-700">{{ closedText(t.closedBy!) }} on {{ date(t.closedAt!) }}.</p>
+                      @if (t.resolutionRemarks) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.resolutionRemarks }}
+                        </div>
+                      }
+                      @if (t.closureRemarks) {
+                        <div class="mt-2 rounded-xl border border-surface-border bg-[#F8FAFC] p-3 text-xs text-ink-700">
+                          <span class="font-semibold">Closure remarks:</span> {{ t.closureRemarks }}
+                        </div>
+                      }
+                      @if (!t.resolutionRemarks && !t.closureRemarks && t.finalReason) {
+                        <div class="mt-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-xs text-[#166534]">
+                          <span class="font-semibold">Resolution remarks:</span> {{ t.finalReason }}
+                        </div>
+                      }
                       <p class="mt-3 rounded-xl bg-[#F3F7FF] px-4 py-3 text-sm text-[#034DA2]">
                         Want to take it further? Call support on <a [href]="'tel:' + phone" class="font-semibold underline">{{ phone }}</a> and quote {{ t.id }}.
                       </p>
@@ -404,15 +460,34 @@ const STATUS_CLASS: Record<GrievanceStatus, string> = {
       </div>
 
       <!-- Reply on a real ticket: sent to the support system, shown once it is in the thread. -->
-      <ng-template #liveReply let-t>
+      <ng-template #liveReply let-t let-isResolved="isResolved">
         <label for="g-reply" class="mb-1 mt-3 block text-sm font-medium text-ink-700">Reply</label>
         <textarea id="g-reply" rows="3" class="w-full rounded-xl border border-surface-border px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" placeholder="Write your reply" maxlength="2000" [value]="reply()" [disabled]="replying()" (input)="reply.set($any($event.target).value)"></textarea>
+
+        <!-- Document upload section with chatbox -->
+        <div class="mt-3">
+          <input type="file" id="reply-docs" class="sr-only" multiple [accept]="attachmentAccept" [disabled]="replying()" (change)="onReplyDocs($event)" />
+          <label for="reply-docs" class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-4 py-2.5 text-center transition-colors hover:border-[#0F5FDC]">
+            <span class="text-sm font-medium text-[#0B2C63]">📎 {{ replyDocs().length ? 'Add more documents' : 'Attach documents (PDF, Word, Image)' }}</span>
+          </label>
+          @if (replyDocs().length) {
+            <ul class="mt-2 space-y-1.5">
+              @for (d of replyDocs(); track d.file) {
+                <li class="flex items-center justify-between gap-2 rounded-lg border border-surface-border bg-white px-3 py-1.5 text-xs">
+                  <span class="min-w-0 truncate text-ink-900">{{ d.file.name }} · {{ d.state === 'uploading' ? 'uploading…' : d.state === 'done' ? 'uploaded' : 'failed' }}</span>
+                  <button type="button" class="min-h-touch shrink-0 px-1 font-medium text-danger-700 underline" [attr.aria-label]="'Remove ' + d.file.name" (click)="removeReplyDoc(d.file)">Remove</button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
         @if (replyError(); as err) {
           <p class="mt-2 text-sm text-danger-700" role="alert">{{ err }}</p>
         }
-        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="!reply().trim() || replying() || cooling()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
-        <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : 'Mark resolved' }}</button>
-        <p class="mt-2 text-xs text-ink-500">Mark resolved closes the ticket for good.</p>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl bg-[#0F5FDC] px-4 text-sm font-semibold text-white disabled:opacity-50" [disabled]="(!reply().trim() && !hasUploadedReplyDocs()) || replying() || hasUploadingReplyDocs()" (click)="sendReply(t)">{{ replying() ? 'Sending…' : 'Send reply' }}</button>
+        <button type="button" class="mt-3 min-h-touch w-full rounded-xl border border-success-700 px-4 text-sm font-semibold text-success-700 disabled:opacity-50" [disabled]="replying() || resolving()" (click)="markResolved(t)">{{ resolving() ? 'Closing…' : (isResolved ? 'Close Ticket' : 'Mark resolved') }}</button>
+        <p class="mt-2 text-xs text-ink-500">{{ isResolved ? 'Close Ticket marks the grievance as closed for good.' : 'Mark resolved closes the ticket.' }}</p>
       </ng-template>
 
       <!-- One row layout for both lists: what, when and which, then the
@@ -519,8 +594,6 @@ export class HelplinePage {
   protected readonly replying = signal(false);
   protected readonly resolving = signal(false);
   protected readonly replyError = signal<string | null>(null);
-  /** The backend refuses the same action twice inside 3 seconds. */
-  protected readonly cooling = signal(false);
   private readonly liveTickets = computed(() => this.liveRecords().map((r) => toTicket(r, this.threads()[r.id] ?? [])));
   private readonly allTickets = computed(() => [...this.liveTickets(), ...this.tickets()]);
 
@@ -543,6 +616,9 @@ export class HelplinePage {
   protected readonly reason = signal('');
   protected readonly detail = signal('');
   protected readonly reply = signal('');
+  protected readonly replyDocs = signal<UploadedDoc[]>([]);
+  protected readonly hasUploadedReplyDocs = computed(() => this.replyDocs().some((d) => d.state === 'done'));
+  protected readonly hasUploadingReplyDocs = computed(() => this.replyDocs().some((d) => d.state === 'uploading'));
   protected readonly docs = signal<UploadedDoc[]>([]);
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<string | null>(null);
@@ -555,7 +631,28 @@ export class HelplinePage {
   protected readonly order = computed(() => this.everyOrder().find((o) => o.id === this.orderId()) ?? null);
   protected readonly ticket = computed(() => this.allTickets().find((t) => t.id === this.ticketId()) ?? null);
 
-  protected readonly flaggedClaims = computed(() => this.claimOrders());
+  protected readonly flaggedClaims = computed(() => {
+    const claims = [...this.claimOrders()];
+    const rank: Record<GrievanceStatus, number> = {
+      response: 0,
+      open: 1,
+      resolved: 2,
+      none: 3,
+      closed: 4,
+    };
+    return claims.sort((a, b) => {
+      const sa = this.statusOf(a);
+      const sb = this.statusOf(b);
+      const rankDiff = rank[sa] - rank[sb];
+      if (rankDiff !== 0) return rankDiff;
+      const ta = this.ticketFor(a);
+      const tb = this.ticketFor(b);
+      const taTime = ta ? (ta.resolvedAt ?? ta.closedAt ?? ta.createdAt).getTime() : 0;
+      const tbTime = tb ? (tb.resolvedAt ?? tb.closedAt ?? tb.createdAt).getTime() : 0;
+      if (taTime !== tbTime) return tbTime - taTime;
+      return b.placedAt.getTime() - a.placedAt.getTime();
+    });
+  });
 
   protected readonly shownClaims = computed(() => this.flaggedClaims().slice(0, this.claimsShown()));
 
@@ -588,22 +685,45 @@ export class HelplinePage {
     void this.claimsStore.getClimListData();
     setTimeout(() => this.claimsFetched.set(true), 4000);
 
-    // Tickets and threads come from the dispute API: now, when a ticket is opened,
-    // and every 30 seconds while the page is open (support replies arrive there).
+    // Initial dispute listing fetch
     void this.refreshDisputes();
+
+    // Effect: Load thread whenever active ticket view changes
     effect(() => {
       const t = this.view() === 'ticket' ? this.liveRecords().find((r) => r.name === this.ticketId()) : undefined;
       if (t) untracked(() => void this.loadThread(t));
     });
-    // Each refresh replaces the records, which re-runs the effect above and
-    // reloads the open thread, so the interval only has to refresh the list.
-    const timer = setInterval(() => void this.refreshDisputes(), POLL_MS);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
-  }
 
-  private startCooldown(): void {
-    this.cooling.set(true);
-    setTimeout(() => this.cooling.set(false), COOLDOWN_MS);
+    // Event-driven refresh: auto-reload when member returns to tab or window gains focus
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void this.refreshDisputes().then(() => {
+          if (this.view() === 'ticket' && this.ticketId()) {
+            const rec = this.liveRecords().find((r) => r.name === this.ticketId());
+            if (rec) void this.loadThread(rec);
+          }
+        });
+        void this.claimsStore.getClimListData();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+      window.addEventListener('focus', onVisibility);
+      inject(DestroyRef).onDestroy(() => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('focus', onVisibility);
+      });
+    }
+
+    // Active ticket live refresher: only runs while viewing a ticket and window is visible
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && this.view() === 'ticket' && this.ticketId()) {
+        const rec = this.liveRecords().find((r) => r.name === this.ticketId());
+        if (rec) void this.loadThread(rec);
+      }
+    }, LIVE_SYNC_INTERVAL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
   private async refreshDisputes(): Promise<void> {
@@ -616,17 +736,10 @@ export class HelplinePage {
     if (result.ok) {
       this.threads.update((all) => ({ ...all, [record.id]: [...result.items] }));
       this.threadError.set(null);
+      this.scrollToActions();
     } else {
       this.threadError.set('We could not load the latest messages. Showing what we have.');
     }
-  }
-
-  /** True for a claim from the live listing, whose grievance is really saved. */
-  /** A phone can dial; a desktop cannot, so there the number is copied instead. */
-  protected async onCall(event: Event): Promise<void> {
-    if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) return;
-    event.preventDefault();
-    await this.copy(this.phone, `${this.phone} copied — dial it from your phone.`);
   }
 
   protected onMail(): void {
@@ -638,15 +751,7 @@ export class HelplinePage {
     return `mailto:${this.email}?subject=${encodeURIComponent('Support request')}&body=${encodeURIComponent(body)}`;
   }
 
-  private async copy(text: string, done: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(text);
-      this.contactNote.set(done);
-    } catch {
-      this.contactNote.set(`Call us on ${text}.`);
-    }
-  }
-
+  /** True for a claim from the live listing, whose grievance is really saved. */
   protected isLive(o: SupportOrder): boolean {
     return this.claimOrders().some((c) => c.id === o.id);
   }
@@ -696,6 +801,7 @@ export class HelplinePage {
   private status(t: SupportTicket | undefined): GrievanceStatus {
     if (!t) return 'none';
     if (t.state === 'closed') return 'closed';
+    if (t.state === 'resolved') return 'resolved';
     return t.state === 'awaiting_member' ? 'response' : 'open';
   }
 
@@ -777,6 +883,16 @@ export class HelplinePage {
     this.view.set('raise');
   }
 
+  protected scrollToActions(): void {
+    setTimeout(() => {
+      const msgBox = document.getElementById('ticket-messages');
+      if (msgBox) {
+        msgBox.scrollTop = msgBox.scrollHeight;
+      }
+      document.getElementById('ticket-actions')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+
   protected openTicketFor(o: SupportOrder): void {
     const t = this.ticketFor(o);
     if (!t) return;
@@ -789,6 +905,7 @@ export class HelplinePage {
     this.docError.set(null);
     this.notice.set(null);
     this.view.set('ticket');
+    this.scrollToActions();
   }
 
   protected back(): void {
@@ -888,14 +1005,8 @@ export class HelplinePage {
   private async afterLiveSubmit(o: SupportOrder, name: string | null, id: string | null, detail: string): Promise<void> {
     let kept = '';
     if (name && id && detail) {
-      let sent = await this.disputeApi.reply({ name, id }, detail);
-      if (!sent.ok) {
-        // One retry after the backend's 3 second guard; the member's words must not be lost.
-        await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
-        sent = await this.disputeApi.reply({ name, id }, detail);
-      }
+      const sent = await this.disputeApi.reply({ name, id }, detail);
       if (!sent.ok) kept = detail;
-      this.startCooldown(); // the next reply would be the same action inside 3 seconds
     }
     await this.refreshDisputes();
     const record = this.liveRecords().find((r) => r.name === name) ?? this.liveRecords().find((r) => r.claimId === o.id);
@@ -965,15 +1076,49 @@ export class HelplinePage {
     this.docs.update((list) => list.filter((d) => d.file !== file));
   }
 
+  protected async onReplyDocs(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const chosen = Array.from(input.files ?? []);
+    input.value = '';
+    this.replyError.set(null);
+    const tooBig = chosen.filter((f) => f.size > MAX_ATTACHMENT_BYTES).map((f) => f.name);
+    const wrongType = chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && !isAllowedAttachment(f)).map((f) => f.name);
+    const problems: string[] = [];
+    if (tooBig.length) problems.push(`Over 5 MB: ${tooBig.join(', ')}`);
+    if (wrongType.length) problems.push(`Not a PDF, Word or image file: ${wrongType.join(', ')}`);
+    const have = new Set(this.replyDocs().map((d) => d.file.name));
+    for (const file of chosen.filter((f) => f.size <= MAX_ATTACHMENT_BYTES && isAllowedAttachment(f) && !have.has(f.name))) {
+      const entry: UploadedDoc = { file, state: 'uploading' };
+      this.replyDocs.update((list) => [...list, entry]);
+      const result = await this.disputeApi.uploadDocument(file);
+      this.replyDocs.update((list) => list.map((d) => (d.file === file
+        ? (result.ok ? { file, state: 'done', documentId: result.documentId, name: result.name } : { file, state: 'failed' })
+        : d)));
+      if (!result.ok) problems.push(result.message);
+    }
+    if (problems.length) this.replyError.set(problems.join('. ').replace(/\.\.+/g, '.') + (problems.join('').endsWith('.') ? '' : '.'));
+  }
+
+  protected removeReplyDoc(file: File): void {
+    this.replyDocs.update((list) => list.filter((d) => d.file !== file));
+  }
+
   protected async sendReply(t: SupportTicket): Promise<void> {
     const text = this.reply().trim();
-    if (!text) return;
+    const uploaded = this.replyDocs().filter((d) => d.state === 'done' && d.documentId);
+    if (!text && uploaded.length === 0) return;
     const record = this.liveRecords().find((r) => r.name === t.id);
     if (record) {
-      if (this.replying() || this.cooling()) return;
+      if (this.replying()) return;
       this.replying.set(true);
       this.replyError.set(null);
-      const result = await this.disputeApi.reply(record, text);
+      const docsPayload = uploaded.map((d) => ({
+        documentId: d.documentId!,
+        name: d.name || d.file.name,
+      }));
+      const docIds = uploaded.map((d) => d.documentId!);
+      const messageText = text || 'Attached document(s)';
+      const result = await this.disputeApi.reply(record, messageText, docsPayload, docIds);
       this.replying.set(false);
       if (!result.ok) {
         // The text stays in the box so nothing the member wrote is lost.
@@ -983,13 +1128,15 @@ export class HelplinePage {
         return;
       }
       this.reply.set('');
+      this.replyDocs.set([]);
       this.notice.set('Reply sent. The ticket is back with the support team.');
-      this.startCooldown();
       await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
+      this.scrollToActions();
       return;
     }
-    this.update(t, { state: 'awaiting_support' }, { from: 'member', text, at: new Date() });
+    this.update(t, { state: 'awaiting_support' }, { from: 'member', text: text || 'Attached document(s)', at: new Date() });
     this.reply.set('');
+    this.replyDocs.set([]);
     this.notice.set('Reply sent. The ticket is back with the support team.');
   }
 
@@ -997,15 +1144,26 @@ export class HelplinePage {
     const record = this.liveRecords().find((r) => r.name === t.id);
     if (record) {
       if (this.resolving()) return;
+      const isResolved = t.state === 'resolved';
+      const text = this.reply().trim();
       this.resolving.set(true);
       this.replyError.set(null);
-      const result = await this.disputeApi.resolve(record);
+      const targetStatus = isResolved ? 'CLOSE' : 'RESOLVED';
+      const defaultReason = isResolved ? 'Closed by member' : 'Resolved by member';
+      const result = await this.disputeApi.resolve({
+        name: record.name,
+        finalReason: text || defaultReason,
+        disputeStatus: targetStatus,
+      });
       this.resolving.set(false);
       if (!result.ok) {
         this.replyError.set(result.message);
         return;
       }
-      this.notice.set('Thanks — the ticket is closed.');
+      this.reply.set('');
+      this.replyDocs.set([]);
+      this.notice.set(isResolved ? 'Thanks — the ticket is closed.' : 'Ticket marked as resolved.');
+      this.update(t, { state: isResolved ? 'closed' : 'resolved' });
       await Promise.all([this.refreshDisputes(), this.loadThread(record)]);
       return;
     }
@@ -1034,8 +1192,8 @@ export class HelplinePage {
     this.notice.set('Support resolved and closed the ticket — you were notified in the app, on WhatsApp and by email.');
   }
 
-  private update(t: SupportTicket, patch: Partial<SupportTicket>, message: TicketMessage): void {
-    this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, ...patch, messages: [...x.messages, message] } : x)));
+  private update(t: SupportTicket, patch: Partial<SupportTicket>, message?: TicketMessage): void {
+    this.tickets.set(this.tickets().map((x) => (x.id === t.id ? { ...x, ...patch, ...(message ? { messages: [...x.messages, message] } : {}) } : x)));
   }
 
   // ── Formatting ─────────────────────────────────────────────────────────
@@ -1113,10 +1271,8 @@ function toClaimOrder(row: any): SupportOrder {
   };
 }
 
-/** Ticket and thread refresh while the page is open. */
-const POLL_MS = 30_000;
-/** The backend refuses the same action twice within 3 seconds. */
-const COOLDOWN_MS = 3_200;
+/** Configurable interval for background synchronization while actively viewing a ticket. */
+const LIVE_SYNC_INTERVAL_MS = 5_000;
 
 /** A stored grievance, plus its thread, as the Support page's ticket shape. */
 function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportTicket {
@@ -1128,16 +1284,19 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
       : { from: 'support', author: m.senderName, text: m.text, at: m.at })),
   ];
   // `userResolve` leaves the member as the last sender; support's close does not.
-  const closedByMember = state === 'closed' && r.lastMessageSender === 'MEMBER';
+  const closedByMember = (state === 'closed' || state === 'resolved') && r.lastMessageSender === 'MEMBER';
+  const first = thread.find((m) => m.sender === 'MEMBER')?.text;
+  const isLegacyMemberWords = r.lastMessageSender !== 'SUPPORT_EXECUTIVE' && (r.finalReason === first || toArgSafe(r.finalReason ?? '') === first);
+  const effectiveFinalReason = r.finalReason && !isLegacyMemberWords ? r.finalReason.trim() : undefined;
+  const effectiveResolutionRemarks = r.resolutionRemarks && !isLegacyMemberWords ? r.resolutionRemarks.trim() : undefined;
+  const effectiveClosureRemarks = r.closureRemarks && !isLegacyMemberWords ? r.closureRemarks.trim() : undefined;
+
   if (closedByMember) {
     messages.push({ from: 'system', text: 'Marked resolved by you', at: r.modifiedAt });
+  } else if (state === 'resolved') {
+    messages.push({ from: 'system', text: 'Resolved by support', at: r.modifiedAt });
   } else if (state === 'closed') {
-    // Tickets raised before 21 Oct 2026 kept the member's own words in `final_reason`
-    // (it is now left blank until support closes the ticket): only show it as
-    // support's remark when it is not the member's first message.
-    const first = thread.find((m) => m.sender === 'MEMBER')?.text;
-    const remark = r.finalReason && r.finalReason !== first && toArgSafe(r.finalReason) !== first ? r.finalReason : null;
-    messages.push({ from: 'system', text: remark ? `Resolved and closed by support — ${remark}` : 'Resolved and closed by support', at: r.modifiedAt });
+    messages.push({ from: 'system', text: 'Resolved and closed by support', at: r.modifiedAt });
   }
   return {
     id: r.name,
@@ -1146,8 +1305,12 @@ function toTicket(r: DisputeRecord, thread: readonly DisputeMessage[]): SupportT
     detail: '',
     createdAt: r.createdAt,
     state,
+    resolvedAt: state === 'resolved' || state === 'closed' ? r.modifiedAt : undefined,
     closedAt: state === 'closed' ? r.modifiedAt : undefined,
-    closedBy: state === 'closed' ? (closedByMember ? 'member' : 'support') : undefined,
+    closedBy: (state === 'closed' || state === 'resolved') ? (closedByMember ? 'member' : 'support') : undefined,
+    finalReason: effectiveFinalReason,
+    resolutionRemarks: effectiveResolutionRemarks,
+    closureRemarks: effectiveClosureRemarks,
     messages,
   };
 }

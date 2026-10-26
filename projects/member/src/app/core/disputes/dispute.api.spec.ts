@@ -264,13 +264,18 @@ describe('DisputeApi', () => {
       expect(addXsrfToken).toHaveBeenCalledWith(`${encoded}&action=userReply`, true);
     });
 
-    it('resolve posts action=userResolve to the dispute resource, naming the ticket only', async () => {
+    it('resolve posts action=userResolve to the dispute resource with dispute_status CLOSE and final_reason', async () => {
       post.mockReturnValue(text({ errCode: 0 }));
       expect(await api.resolve(dispute)).toEqual({ ok: true });
       const [url, body] = post.mock.calls[0];
       expect(url).toBe('/habit-opd/api/v1/opd_dispute');
       expect(body).toMatch(/&application=habit-opd&action=userResolve$/);
-      expect(decode(body)).toEqual({ resourceType: 'Dispute', name: 'DIS-2026-00393' });
+      expect(decode(body)).toEqual({
+        resourceType: 'Dispute',
+        name: 'DIS-2026-00393',
+        dispute_status: 'CLOSE',
+        final_reason: 'Resolved by member',
+      });
     });
 
     it('resolve reports the backend refusal and a network failure', async () => {
@@ -335,16 +340,15 @@ describe('ticketStateOf', () => {
     ['AWAITING_EXECUTIVE_RESPONSE', 'awaiting_support'],
     ['OPEN_UNASSIGNED', 'awaiting_support'],
     ['ASSIGNED', 'awaiting_support'],
-    ['RESOLVED', 'closed'],
+    ['RESOLVED', 'resolved'],
     ['awaiting-user-response', 'awaiting_member'],
     // the backend's own ids and names
     ['OPEN', 'awaiting_support'],
     ['Open', 'awaiting_support'],
     ['Awaiting Executive Response', 'awaiting_support'],
     ['Awaiting User Response', 'awaiting_member'],
-    ['Resolved', 'closed'],
+    ['Resolved', 'resolved'],
     ['Closed', 'closed'],
-    ['Resolved', 'closed'],
     ['CLOSED', 'closed'],
     ['', 'awaiting_support'],
   ])('%s is %s', (status, expected) => {

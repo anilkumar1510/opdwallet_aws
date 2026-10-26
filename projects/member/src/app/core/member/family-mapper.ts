@@ -14,6 +14,7 @@ export const Relationship = {
   Spouse: 'SPOUSE',
   Son: 'SON',
   Daughter: 'DAUGHTER',
+  Child: 'CHILD',
   Father: 'FATHER',
   Mother: 'MOTHER',
   Brother: 'BROTHER',
@@ -34,6 +35,7 @@ const RELATIONSHIP_BY_CODE: ReadonlyMap<string, Relationship> = new Map([
   ['SON', Relationship.Son],
   ['REL004', Relationship.Daughter],
   ['DAUGHTER', Relationship.Daughter],
+  ['CHILD', Relationship.Child],
   ['REL005', Relationship.Father],
   ['FATHER', Relationship.Father],
   ['REL006', Relationship.Mother],
@@ -58,11 +60,14 @@ export interface FamilyMemberResource {
   id: string;
   mapped_id: string;
   mapped_name: string;
-  relationship_code: string;
-  uhId: string;
-  telecom: string;
-  dob: string;
-  gender_id: string;
+  relationship_code?: string;
+  uhId?: string;
+  telecom?: string;
+  dob?: string;
+  gender_id?: string;
+  user_id?: string;
+  user_name?: string;
+  relationship?: string;
   employee_id?: string;
   employeeId?: string;
 }
@@ -103,19 +108,24 @@ export function toFamilyMember(resource: FamilyMemberResource, userId: string) {
   const { firstName, lastName } = splitName(resource.mapped_name);
   const fullName = [firstName, lastName].filter(Boolean).join(' ');
   // The API omits relationship_code on the signed-in member's own record.
-  const isSelf = !resource.relationship_code || resource.mapped_id === userId;
+  const isSelf =
+    !resource.relationship_code ||
+    resource.mapped_id === userId ||
+    resource.relationship_code?.trim().toLowerCase() === 'self' ||
+    resource.relationship_code?.trim().toUpperCase() === 'REL001';
   const relationship = isSelf ? Relationship.Self : toRelationship(resource.relationship_code);
 
   return {
     id: resource.id,
-    memberId: resource.mapped_id,
+    memberId: resource.mapped_id || resource.user_id || resource.id,
     firstName,
     lastName,
-    fullName: fullName || resource.mapped_id || 'Member',
+    fullName: fullName || resource.mapped_name || resource.mapped_id || 'Member',
     initials: initialsOf(firstName, lastName),
     email: null,
     phone: resource.telecom?.trim() || null,
     relationship,
+    relationshipCode: isSelf ? 'self' : (resource.relationship_code?.trim().toLowerCase() || 'self'),
     isPrimary: relationship === Relationship.Self,
     uhid: resource.uhId?.trim() || null,
     employeeId: resource.employee_id?.trim() || resource.employeeId?.trim() || null,

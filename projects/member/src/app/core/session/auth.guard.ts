@@ -1,22 +1,23 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
-import { SessionStore } from './session.store';
+import { SESSION_ERROR_PATH, SessionStore } from './session.store';
 
 /**
- * Guards the member subtree. Waits for session restore to finish before
- * deciding — resolving eagerly is what makes a valid session flash the login
- * screen on reload.
+ * Guards the member subtree. Waits for the session check (GET_MY_CONFIG) to
+ * finish before deciding, and sends a refused session to the error page with
+ * its reason.
  */
-export const authGuard: CanActivateFn = async (_route, state) => {
+export const authGuard: CanActivateFn = async () => {
   const session = inject(SessionStore);
   const router = inject(Router);
 
-  if (!session.resolved()) await session.restore();
+  await session.restore();
   if (session.isAuthenticated()) return true;
 
-  session.captureRedirect(state.url);
-  return router.createUrlTree(['/login']);
+  return router.createUrlTree([SESSION_ERROR_PATH], {
+    queryParams: { reason: session.failure()?.reason ?? 'invalid' },
+  });
 };
 
 /** Keeps an already-authenticated member off the login screen. */

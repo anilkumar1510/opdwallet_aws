@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { Money } from '../../core/domain/money';
 import { Policy } from '../../core/member/policy';
-import { WalletPool } from '../../core/member/static-policy.data';
+import { WalletPool } from '../../core/member/wallet-pool.model';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { Icon } from '../../shared/ui/icon';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
@@ -78,15 +78,35 @@ export class PolicyCard {
         >
         <span class="text-[18px] text-[#656565]"> / {{ plain(allocated()) }}</span>
       </p>
+      <!-- @if ((consumed() && consumed()!.amount > 0) || topup() > 0) {
+        <div class="mt-2 flex items-center justify-center gap-2 flex-wrap text-xs">
+          @if (consumed() && consumed()!.amount > 0) {
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium border border-red-100">
+              Consumed: <strong class="ml-1 font-semibold">-₹{{ plain(consumed()!) }}</strong>
+            </span>
+          }
+          @if (topup() > 0) {
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-100">
+              Top-up: <strong class="ml-1 font-semibold">+₹{{ plainNumber(topup()) }}</strong>
+            </span>
+          }
+        </div>
+      } -->
     </a>
   `,
 })
 export class BalanceSummary {
   readonly available = input.required<Money>();
   readonly allocated = input.required<Money>();
+  readonly consumed = input<Money | null>(null);
+  readonly topup = input<number>(0);
 
   protected plain(value: Money): string {
     return NUMBER.format(value.amount);
+  }
+
+  protected plainNumber(value: number): string {
+    return NUMBER.format(value);
   }
 }
 
@@ -172,7 +192,7 @@ export interface LinkTile {
       >‹</button>
       <div
         #row
-        class="scrollbar-hide -mr-5 flex gap-2.5 overflow-x-auto pb-4 pr-5 lg:mr-0 lg:min-w-0 lg:flex-1 lg:gap-[21px] lg:scroll-smooth lg:pb-8 lg:pr-0"
+        class="scrollbar-hide -mr-5 -mt-1.5 flex gap-2.5 overflow-x-auto pb-4 pr-5 pt-1.5 lg:mr-0 lg:min-w-0 lg:flex-1 lg:gap-[21px] lg:scroll-smooth lg:pb-8 lg:pr-0"
         (scroll)="onRowScroll()"
       >
         @for (link of links(); track link.id) {
@@ -259,21 +279,49 @@ export class QuickLinks {
             class="rounded-[20px] px-5 py-4 text-white lg:px-7 lg:py-5"
             style="background: linear-gradient(180deg,#0A78E8 0%,#0560D2 100%); border: 1.5px solid rgba(91,153,249,.6); box-shadow: 0 8px 24px -8px rgba(5,96,210,.45)"
           >
-            <p class="text-[13px] text-white/85">Available Balance</p>
-            <p class="mt-2 whitespace-nowrap">
-              <span class="text-[26px] font-medium leading-none lg:text-[30px]">₹{{ plain(available()) }}</span>
-              <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
-            </p>
-            <p class="mt-1 text-[13px] text-white/85">Your total usage cannot exceed this amount.</p>
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-[13px] text-white/85">Available Balance</p>
+                <p class="mt-2 whitespace-nowrap">
+                  <span class="text-[26px] font-medium leading-none lg:text-[30px]">₹{{ plain(available()) }}</span>
+                  <span class="text-base text-white/70"> / {{ plain(allocated()) }}</span>
+                </p>
+              </div>
+            </div>
+
+            @if (baseLimit() && (topup() > 0 || (consumed() && consumed()!.amount > 0))) {
+              <div class="mt-3.5 pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Base Policy Limit:</span>
+                  <span class="font-semibold text-white text-sm">₹{{ plainNumber(baseLimit()!) }}</span>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Top-up / Upgrade:</span>
+                  <span class="font-semibold text-emerald-300 text-sm">+₹{{ plainNumber(topup()) }}</span>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Total Wallet Limit:</span>
+                  <span class="font-semibold text-white text-sm">₹{{ plain(allocated()) }}</span>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl">
+                  <span class="text-white/70 block text-[11px]">Total Consumed:</span>
+                  <span class="font-semibold text-red-200 text-sm">{{ consumed() && consumed()!.amount > 0 ? '-₹' + plain(consumed()!) : '₹0' }}</span>
+                </div>
+              </div>
+            }
+
+            <p class="mt-2 text-[13px] text-white/85">Your total usage cannot exceed this amount.</p>
           </div>
 
           @for (pool of pools(); track pool.id) {
             <div class="rounded-[20px] border border-[#EEF0F4] bg-white px-5 py-4 lg:px-7 lg:py-5" style="box-shadow: 0 4px 18px 0 rgba(0,0,0,.05)">
               <button type="button" class="flex w-full items-start justify-between gap-3 text-left" [attr.aria-expanded]="openPool() === pool.id" (click)="togglePool(pool.id)">
-                <span class="whitespace-nowrap">
-                  <span class="text-[24px] font-normal leading-none text-[#1c1c1c] lg:text-[28px]">₹{{ plain(pool.available) }}</span>
-                  <span class="text-[15px] text-[#7A7A7A]"> / {{ plain(pool.allocated) }}</span>
-                </span>
+                <div class="flex flex-col gap-1.5">
+                  <span class="whitespace-nowrap">
+                    <span class="text-[24px] font-normal leading-none text-[#1c1c1c] lg:text-[28px]">₹{{ plain(pool.available) }}</span>
+                    <span class="text-[15px] text-[#7A7A7A]"> / {{ plain(pool.allocated) }}</span>
+                  </span>
+                </div>
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E8EEF9] text-[#1c1c1c]" [class.rotate-180]="openPool() === pool.id" aria-hidden="true"
                   ><svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
                 ></span>
@@ -284,7 +332,7 @@ export class QuickLinks {
                   @for (c of pool.categories; track c.label) {
                     <li class="flex items-center justify-between border-b border-[#E5E7EB] py-2.5">
                       <span class="text-[13px] text-[#1c1c1c]">{{ c.label }}</span>
-                      <span class="text-[15px] font-medium text-[#0E51A2]" [attr.aria-label]="'₹' + plain(c.used) + ' used'">₹{{ plain(c.used) }}</span>
+                      <span class="text-[15px] font-medium text-[#0E51A2]" [attr.aria-label]="'₹' + plain(c.used) + ' used'">{{ c.used.amount > 0 ? '-₹' + plain(c.used) : '₹0' }}</span>
                     </li>
                   }
                 </ul>
@@ -316,6 +364,10 @@ export class WalletBalanceModal {
   readonly available = input.required<Money>();
   readonly allocated = input.required<Money>();
   readonly pools = input.required<readonly WalletPool[]>();
+  readonly consumed = input<Money | null>(null);
+  readonly baseLimit = input<number | null>(null);
+  readonly topup = input<number>(0);
+  readonly isFloater = input<boolean>(true);
   readonly closed = output<void>();
 
   protected readonly openPool = signal<string | null>(null);
@@ -326,5 +378,9 @@ export class WalletBalanceModal {
 
   protected plain(value: Money): string {
     return NUMBER.format(value.amount);
+  }
+
+  protected plainNumber(value: number): string {
+    return NUMBER.format(value);
   }
 }

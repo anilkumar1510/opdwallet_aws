@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
@@ -14,13 +15,7 @@ import { BenefitCategory, toBenefitCategory } from '../../core/domain/codes';
 import { FamilyStore } from '../../core/family/family.store';
 import { WalletCategoryBalance } from '../../core/wallet/wallet.model';
 import { CartStore } from '../../core/lab/cart.store';
-import { NotificationsStore } from '../../core/notifications/notifications.store';
-import {
-  STATIC_BENEFITS,
-  STATIC_POLICIES,
-  STATIC_WALLET_POOLS,
-  STATIC_WALLET_TOTAL,
-} from '../../core/member/static-policy.data';
+import { PolicyStore } from '../../core/member/policy.store';
 import { ProfileMenu } from '../shell/profile-menu';
 import { RemoteAssetPipe } from '../../shared/remote-asset.pipe';
 import {
@@ -149,29 +144,6 @@ function benefitLink(categoryCode: string): string {
                files black. -->
           <div class="flex items-center gap-2.5">
             <a
-              routerLink="/member/notifications"
-              class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
-              [attr.aria-label]="
-                notifications.unread()
-                  ? 'Notifications, ' + notifications.unread() + ' unread'
-                  : 'Notifications'
-              "
-            >
-              <img
-                [src]="'images/icons/notification-bell.svg' | remoteAsset"
-                alt=""
-                width="16"
-                height="18"
-                class="h-[18px] w-4 object-contain brightness-0"
-              />
-              @if (notifications.unread(); as unread) {
-                <span
-                  class="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F58220] px-1 text-[11px] font-bold text-white"
-                  >{{ unread > 9 ? '9+' : unread }}</span
-                >
-              }
-            </a>
-            <a
               routerLink="/member/wallet"
               class="flex h-9 w-9 items-center justify-center rounded-full bg-[#fbfdfe] shadow-sm"
               aria-label="Wallet"
@@ -215,34 +187,109 @@ function benefitLink(categoryCode: string): string {
         <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
           <!-- LEFT: balance + policy -->
           <div class="flex flex-col items-center px-5 pt-10 lg:px-0 lg:pt-3">
-            <!-- DUMMY / STATIC — benefit wallet total, no wallet API. -->
-            <opd-balance-summary
-              [available]="walletTotal.available"
-              [allocated]="walletTotal.allocated"
-            />
-            <!-- The pool-level breakdown behind the total. -->
-            <button
-              type="button"
-              class="mt-4 inline-flex items-center gap-2 rounded-full bg-white py-1 pl-3.5 pr-1.5 text-sm text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.14)]"
-              aria-haspopup="dialog"
-              (click)="walletInfoOpen.set(true)"
-            >
-              More Info
-              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEF9]" aria-hidden="true"
-                ><svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
-              ></span>
-            </button>
-            @if (walletInfoOpen()) {
-              <!-- DUMMY / STATIC — pool balances, until the pool API exists. -->
-              <opd-wallet-balance-modal
+            @if (isLoading()) {
+              <!-- SKELETON: Balance Summary -->
+              <div class="flex flex-col items-center animate-pulse py-2" role="status" aria-label="Loading balance">
+                <div class="h-4 w-32 rounded bg-slate-200"></div>
+                <div class="mt-2.5 h-9 w-56 rounded bg-slate-200"></div>
+                <div class="mt-4 h-7 w-28 rounded-full bg-slate-200"></div>
+              </div>
+            } @else if (error(); as err) {
+              <!-- Error State for Balance -->
+              <div class="text-center py-2">
+                <p class="text-[13px] text-[#3a3a3a] lg:text-[15px]">Available Balance</p>
+                <p class="mt-2 text-2xl font-semibold text-[#8b8b8b] lg:text-3xl">-- / --</p>
+              </div>
+            } @else {
+              <!-- Live balance summary from active policy version -->
+              <opd-balance-summary
                 [available]="walletTotal.available"
                 [allocated]="walletTotal.allocated"
-                [pools]="walletPools"
-                (closed)="walletInfoOpen.set(false)"
+                [consumed]="walletTotal.consumed"
+                [topup]="topupAmount"
               />
+              <!-- The pool-level breakdown behind the total. -->
+              <button
+                type="button"
+                class="mt-4 inline-flex items-center gap-2 rounded-full bg-white py-1 pl-3.5 pr-1.5 text-sm text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.14)]"
+                aria-haspopup="dialog"
+                (click)="walletInfoOpen.set(true)"
+              >
+                More Info
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8EEF9]" aria-hidden="true"
+                  ><svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l5 5 5-5" stroke-linecap="round" stroke-linejoin="round" /></svg
+                ></span>
+              </button>
+              @if (walletInfoOpen()) {
+                <opd-wallet-balance-modal
+                  [available]="walletTotal.available"
+                  [allocated]="walletTotal.allocated"
+                  [pools]="walletPools"
+                  [consumed]="walletTotal.consumed"
+                  [baseLimit]="basePolicyLimit"
+                  [topup]="topupAmount"
+                  [isFloater]="isFloater"
+                  (closed)="walletInfoOpen.set(false)"
+                />
+              }
             }
 
-            @if (policies().length) {
+            @if (isLoading()) {
+              <!-- SKELETON: Policy Card (aspect-[2.13] matches PolicyCard exactly, preventing layout shift) -->
+              <div class="mt-8 w-full lg:mt-[36px] lg:w-[500px]" role="status" aria-label="Loading policy details">
+                <div
+                  class="flex aspect-[2.13] w-full flex-col justify-between rounded-[20px] bg-slate-200/90 p-[6%] animate-pulse lg:rounded-[32px]"
+                >
+                  <div class="h-7 w-3/5 rounded-lg bg-slate-300"></div>
+                  <div class="my-2 h-px w-full bg-slate-300/70"></div>
+                  <div class="space-y-3 lg:space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div class="h-4 w-28 rounded bg-slate-300"></div>
+                      <div class="h-4 w-36 rounded bg-slate-300"></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="h-4 w-20 rounded bg-slate-300"></div>
+                      <div class="h-4 w-28 rounded bg-slate-300"></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="h-4 w-24 rounded bg-slate-300"></div>
+                      <div class="h-4 w-36 rounded bg-slate-300"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            } @else if (error(); as err) {
+              <!-- ERROR STATE -->
+              <div class="mt-8 flex w-full flex-col items-center justify-center rounded-[20px] border border-red-200 bg-white p-6 text-center shadow-sm lg:mt-[36px] lg:w-[500px] lg:rounded-[32px] lg:p-8" role="alert">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 class="mt-3 text-base font-semibold text-slate-800">Unable to load policy</h3>
+                <p class="mt-1 max-w-sm text-xs text-slate-500">{{ err.message || 'Something went wrong while fetching your policy information.' }}</p>
+                <button
+                  type="button"
+                  class="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#034DA2] px-5 py-2.5 text-xs font-semibold text-white shadow hover:bg-[#023B7C]"
+                  (click)="retry()"
+                >
+                  Try Again
+                </button>
+              </div>
+            } @else if (!policies().length) {
+              <!-- EMPTY STATE (NO POLICY) -->
+              <div class="mt-8 flex w-full flex-col items-center justify-center rounded-[20px] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm lg:mt-[36px] lg:w-[500px] lg:rounded-[32px] lg:p-10">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[#034DA2]">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 class="mt-3 text-base font-semibold text-slate-800">No Policy Assigned</h3>
+                <p class="mt-1 max-w-sm text-xs text-slate-500">
+                  No active OPD policy is assigned to your account yet. Please contact your company administrator or HR if you need assistance.
+                </p>
+              </div>
+            } @else {
               <div class="relative mt-8 w-full lg:mt-[36px] lg:w-[500px]">
                 <!-- Web: arrows either side of the card page between policies. -->
                 @if (policies().length > 1) {
@@ -278,7 +325,7 @@ function benefitLink(categoryCode: string): string {
                     <opd-policy-card
                       class="w-[90%] shrink-0 snap-start transition-transform duration-300 lg:w-[500px]"
                       [policy]="policy"
-                      [style.transform]="i === activeIndex() ? null : 'scale(0.85)'"
+                      [style.transform]="policies().length > 1 && i !== activeIndex() ? 'scale(0.85)' : null"
                       [style.transform-origin]="i < activeIndex() ? 'right center' : 'left center'"
                     />
                   }
@@ -298,8 +345,6 @@ function benefitLink(categoryCode: string): string {
                   </div>
                 }
               </div>
-            } @else {
-              <p class="mt-8 text-sm text-ink-500">No policy assigned yet.</p>
             }
           </div>
 
@@ -309,7 +354,26 @@ function benefitLink(categoryCode: string): string {
           </div>
 
           <!-- RIGHT: Health Benefits -->
-          @if (categories().length) {
+          @if (isLoading()) {
+            <!-- SKELETON: Health Benefits Grid -->
+            <section
+              class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[549px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
+              role="status"
+              aria-label="Loading health benefits"
+            >
+              <div class="mb-4 h-6 w-36 rounded bg-slate-200 animate-pulse lg:mb-[26px]"></div>
+              <div class="grid grid-cols-2 gap-x-3.5 gap-y-3.5 lg:grid-cols-[223px_223px] lg:gap-x-[22px] lg:gap-y-6">
+                @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+                  <div
+                    class="flex h-full min-h-[92px] flex-col justify-between rounded-[18px] border-[1.5px] border-[#EEF0F4] bg-white p-3.5 shadow-sm animate-pulse lg:min-h-[104px] lg:rounded-[22px] lg:p-4"
+                  >
+                    <div class="h-8 w-8 rounded-full bg-slate-200"></div>
+                    <div class="mt-4 h-4 w-28 rounded bg-slate-200"></div>
+                  </div>
+                }
+              </div>
+            </section>
+          } @else if (categories().length) {
             <section
               class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[549px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
             >
@@ -330,6 +394,19 @@ function benefitLink(categoryCode: string): string {
                     />
                   }
                 </div>
+              </div>
+            </section>
+          } @else if (!error()) {
+            <!-- Empty state for Health Benefits when policy has no categories -->
+            <section
+              class="px-5 pb-28 pt-2 lg:ml-8 lg:w-[549px] lg:border-l lg:border-[#E5E7EB] lg:px-0 lg:pb-0 lg:pl-8 lg:pt-0"
+            >
+              <h2 class="mb-4 text-[15px] font-medium leading-[1.2] text-[#1c1c1c] lg:mb-[26px] lg:text-[22px]">
+                <span class="lg:hidden">Cashless Benefits</span><span class="hidden lg:inline">Health Benefits</span>
+              </h2>
+              <div class="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-slate-200 bg-white p-8 text-center">
+                <p class="text-sm font-medium text-slate-700">No benefits available</p>
+                <p class="mt-1 text-xs text-slate-500">There are no health benefit categories configured for your active policy.</p>
               </div>
             </section>
           }
@@ -359,14 +436,29 @@ function benefitLink(categoryCode: string): string {
 export class HomePage {
 
   protected readonly family = inject(FamilyStore);
-  // DUMMY / STATIC — the home wallet total no longer reads wallet/balance.
-  protected readonly walletTotal = STATIC_WALLET_TOTAL;
-  protected readonly notifications = inject(NotificationsStore);
+  protected readonly policyStore = inject(PolicyStore);
   protected readonly carts = inject(CartStore);
 
+  protected get walletTotal() {
+    return this.policyStore.walletTotal();
+  }
+
+  protected get basePolicyLimit() {
+    return this.policyStore.basePolicyLimit();
+  }
+
+  protected get topupAmount() {
+    return this.policyStore.topupAmount();
+  }
+
+  protected get isFloater() {
+    return this.policyStore.isFloater();
+  }
+
   protected readonly activeIndex = signal(0);
-  // DUMMY / STATIC — pool balances behind More Info, until the pool API exists.
-  protected readonly walletPools = STATIC_WALLET_POOLS;
+  protected get walletPools() {
+    return this.policyStore.pools();
+  }
   protected readonly walletInfoOpen = signal(false);
 
   private readonly policyScroller = viewChild<ElementRef<HTMLElement>>('policyScroller');
@@ -413,16 +505,46 @@ export class HomePage {
   }
 
   protected readonly greetingName = computed(() => this.family.activeMember()?.fullName ?? 'there');
-  // DUMMY / STATIC — the policy card no longer derives from member/profile
-  // assignments; it is served from static-policy.data.ts. See REMOVED-APIS.md.
-  protected readonly policies = computed(() => STATIC_POLICIES);
+  protected readonly policies = computed(() => this.family.policies());
   protected readonly quickLinks = computed(() => quickLinksFor(this.policies()[0]?.id ?? null));
 
-  /** Highest balance first, matching the reference dashboard's ordering. */
-  // DUMMY / STATIC — the Health Benefits cards no longer read wallet/balance
-  // categories; they are served from STATIC_BENEFITS in the requested order.
-  // See REMOVED-APIS.md.
-  protected readonly categories = computed(() => STATIC_BENEFITS);
+  /**
+   * Category balances derived from the member's active policy version.
+   * Health benefit cards are rendered only when cashless is true for that category.
+   * If cashless is false, the category card is excluded from the UI.
+   */
+  
+  /***
+  Excluding this cashless true fliter from categories as product team 
+  want to show all actegory to user in home screen.
+  this.policyStore.categories().filter((c) => c.cashless === true),
+  */
+  protected readonly categories = computed(() =>
+    this.policyStore.categories()
+  );
+
+  protected readonly isLoading = computed(() => this.family.loading() || this.policyStore.loading());
+  protected readonly error = computed(() => this.policyStore.error() ?? this.family.error());
+
+  constructor() {
+    effect(() => {
+      // Whenever active member changes, reset carousel position to the first card
+      this.family.activeMember();
+      this.activeIndex.set(0);
+      const track = this.policyScroller()?.nativeElement;
+      if (track) {
+        track.scrollLeft = 0;
+      }
+    });
+  }
+
+  protected retry(): void {
+    if (this.family.error()) {
+      this.family.retry();
+    } else {
+      this.policyStore.retry();
+    }
+  }
 
   protected artFor(category: WalletCategoryBalance): { icon: string; label: string } | null {
     return BENEFIT_ART[category.category] ?? null;

@@ -1,52 +1,150 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { BenefitCategory } from '../domain/codes';
+import { BenefitCategory, toBenefitCategory } from '../domain/codes';
+import { FamilyStore } from '../family/family.store';
+import {
+  findRelationshipInVersion,
+  getPrimaryRelationship,
+  isRelationshipCoveredInPolicy,
+} from './policy.mapper';
+import { PolicyStore } from './policy.store';
 
 /**
  * How a benefit can be used, as set in the policy configuration: cashless only
- * (book through the portal), reimbursement only (pay the provider and file a
+ * (book through the portal), claims only (pay the provider and file a
  * claim), or both.
  */
-export type ClaimMode = 'cashless' | 'reimbursement' | 'both';
+export type ClaimMode = 'cashless' | 'claims' | 'both' | 'none';
 
 /**
- * DUMMY / STATIC policy configuration — the per-benefit claim mode is not yet
- * served by the API. Every benefit allows both until it is.
- *
- * TODO(API): read the mode per benefit from the policy configuration.
+ * Fallback static modes when policy is not yet loaded.
  */
 const STATIC_CLAIM_MODES: Readonly<Partial<Record<BenefitCategory, ClaimMode>>> = {
   [BenefitCategory.OnlineConsultation]: 'both',
   [BenefitCategory.InClinicConsultation]: 'both',
-  [BenefitCategory.Pharmacy]: 'both',
+  [BenefitCategory.Pharmacy]: 'claims',
   [BenefitCategory.Pathology]: 'both',
   [BenefitCategory.Radiology]: 'both',
   [BenefitCategory.Dental]: 'both',
   [BenefitCategory.Vision]: 'both',
   [BenefitCategory.Vaccination]: 'both',
-  [BenefitCategory.HealthPackages]: 'both',
+  [BenefitCategory.HealthPackages]: 'cashless',
 };
 
 const DEMO_KEY = 'opd.claimMode.demo';
 
 @Injectable({ providedIn: 'root' })
 export class ClaimModeStore {
+  private readonly policyStore = inject(PolicyStore);
+  private readonly family = inject(FamilyStore);
+
   /**
-   * DEMO — a policy-wide override so each case can be tried before the API
-   * exists. Null means the configuration above applies.
+   * QA / DEMO override so any permitted mode can be tested manually.
+   * Null means the live policy configuration applies.
    */
   readonly demoOverride = signal<ClaimMode | null>(readDemo());
 
+  readonly isOverridden = computed(() => this.demoOverride() !== null);
+
+  /**
+   * Whether an active demo override is in effect for a specific category.
+   * True only if override is set, allowed by the policy for this category,
+   * and differs from the category's policy default.
+   */
+  isOverriddenFor(category: BenefitCategory): boolean {
+    const override = this.demoOverride();
+    if (!override) return false;
+    const allowed = this.allowedModesFor(category);
+    return allowed.includes(override) && override !== this.policyModeFor(category);
+  }
+
+  /**
+   * Computes the live claim mode for a category from the active policy version:
+   * - cashless: true, claims: true  → 'both'
+   * - cashless: false, claims: true → 'claims'
+   * - cashless: true, claims: false → 'cashless'
+   */
+  policyModeFor(category: BenefitCategory): ClaimMode {
+    const version = this.policyStore.version();
+    if (!version) return STATIC_CLAIM_MODES[category] ?? 'both';
+
+    const activeMember = this.family.activeMember();
+    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    const rel = findRelationshipInVersion(version, relCode) ?? getPrimaryRelationship(version);
+    if (!rel?.categories?.length) return STATIC_CLAIM_MODES[category] ?? 'both';
+
+    const match = rel.categories.find(
+      (c) =>
+        toBenefitCategory(c.category_code) === category ||
+        toBenefitCategory(c.category_name) === category,
+    );
+    if (!match) return STATIC_CLAIM_MODES[category] ?? 'both';
+
+    const isCashless = match.cashless === true;
+    const isClaims = match.claims === true;
+
+    if (isCashless && isClaims) return 'both';
+    if (isCashless && !isClaims) return 'cashless';
+    if (!isCashless && isClaims) return 'claims';
+
+    return 'none';
+  }
+
+  /**
+   * Options provided by the policy for this category. User can only select from these:
+   * - If policy provides 'both' (cashless + claims) → ['both', 'cashless', 'claims']
+   * - If policy provides 'claims' only → ['claims']
+   * - If policy provides 'cashless' only → ['cashless']
+   * - If policy provides 'none' → ['none']
+   */
+  allowedModesFor(category: BenefitCategory): readonly ClaimMode[] {
+    const base = this.policyModeFor(category);
+    if (base === 'both') {
+      return ['both', 'cashless', 'claims'];
+    }
+    if (base === 'none') {
+      return ['none'];
+    }
+    return [base];
+  }
+
+  /**
+   * The effective claim mode: returns demoOverride if manually set and permitted by the policy,
+   * otherwise computes dynamically from the live policy version.
+   */
   modeFor(category: BenefitCategory): ClaimMode {
-    return this.demoOverride() ?? STATIC_CLAIM_MODES[category] ?? 'both';
+    const policyMode = this.policyModeFor(category);
+    const override = this.demoOverride();
+    if (!override) return policyMode;
+
+    // Only allow selecting an option that is provided by the policy
+    const allowed = this.allowedModesFor(category);
+    if (allowed.includes(override)) {
+      return override;
+    }
+    return policyMode;
   }
 
   allowsCashless(category: BenefitCategory): boolean {
-    return this.modeFor(category) !== 'reimbursement';
+    const version = this.policyStore.version();
+    const activeMember = this.family.activeMember();
+    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    if (version && !isRelationshipCoveredInPolicy(relCode, version)) {
+      return false;
+    }
+    const mode = this.modeFor(category);
+    return mode === 'cashless' || mode === 'both';
   }
 
   allowsClaims(category: BenefitCategory): boolean {
-    return this.modeFor(category) !== 'cashless';
+    const version = this.policyStore.version();
+    const activeMember = this.family.activeMember();
+    const relCode = activeMember?.relationshipCode || (activeMember?.isPrimary ? 'self' : 'self');
+    if (version && !isRelationshipCoveredInPolicy(relCode, version)) {
+      return false;
+    }
+    const mode = this.modeFor(category);
+    return mode === 'claims' || mode === 'both';
   }
 
   setDemoOverride(mode: ClaimMode | null): void {
@@ -58,12 +156,16 @@ export class ClaimModeStore {
       // Ignore; the override still holds for this session.
     }
   }
+
+  resetOverride(): void {
+    this.setDemoOverride(null);
+  }
 }
 
 function readDemo(): ClaimMode | null {
   try {
     const v = localStorage.getItem(DEMO_KEY);
-    return v === 'cashless' || v === 'reimbursement' || v === 'both' ? v : null;
+    return v === 'cashless' || v === 'claims' || v === 'both' || v === 'none' ? v : null;
   } catch {
     return null;
   }
