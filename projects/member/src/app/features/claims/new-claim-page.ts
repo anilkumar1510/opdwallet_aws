@@ -278,7 +278,23 @@ const STEPS = [
 
                 <div>
                   <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount</label>
-                  <input id="billAmount" name="billAmount" type="number" min="1" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="billAmount()" (ngModelChange)="billAmount.set($event)" />
+                  <input
+                    id="billAmount"
+                    name="billAmount"
+                    type="number"
+                    min="1"
+                    step="any"
+                    inputmode="decimal"
+                    class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none"
+                    [class.border-danger-500]="isNegativeOrZeroBill()"
+                    [ngModel]="billAmount()"
+                    (ngModelChange)="onBillAmountChange($event)"
+                    (keydown)="onAmountKeyDown($event)"
+                    (paste)="onAmountPaste($event)"
+                  />
+                  @if (isNegativeOrZeroBill()) {
+                    <p class="mt-1 text-xs text-danger-700" role="alert">Bill amount must be greater than zero.</p>
+                  }
                 </div>
 
                 <div>
@@ -591,6 +607,37 @@ export class NewClaimPage {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   });
+  /** Whether the user has entered a non-positive bill amount (<= 0). */
+  protected readonly isNegativeOrZeroBill = computed<boolean>(() => {
+    const val = this.billAmount();
+    return val !== null && val !== undefined && val <= 0;
+  });
+
+  /** Prevents typing negative signs, plus signs, and exponential notation in currency inputs. */
+  protected onAmountKeyDown(event: KeyboardEvent): void {
+    if (event.key === '-' || event.key === '+' || event.key === 'e' || event.key === 'E') {
+      event.preventDefault();
+    }
+  }
+
+  /** Prevents pasting negative numbers into the bill amount input. */
+  protected onAmountPaste(event: ClipboardEvent): void {
+    const text = event.clipboardData?.getData('text') ?? '';
+    if (text.includes('-') || text.includes('+')) {
+      event.preventDefault();
+    }
+  }
+
+  /** Handles bill amount changes, sanitizing inputs. */
+  protected onBillAmountChange(value: any): void {
+    if (value === null || value === undefined || value === '') {
+      this.billAmount.set(null);
+      return;
+    }
+    const num = Number(value);
+    this.billAmount.set(isNaN(num) ? null : num);
+  }
+
   protected readonly amount = (value: number) => formatMoney(money(value));
   data: any = {};
   eventData: any = [];
@@ -767,7 +814,9 @@ export class NewClaimPage {
     if (this.treatmentDate() < this.minTreatmentDate()) {
       return `Treatment date must be within the last ${this.claimExpiryDays()} days as per policy claim expiry rules.`;
     }
-    if ((this.billAmount() ?? 0) <= 0) return 'Enter the bill amount.';
+    const bill = this.billAmount();
+    if (bill === null || bill === undefined) return 'Enter the bill amount.';
+    if (bill <= 0) return 'Bill amount must be greater than zero.';
     return null;
   }
 
