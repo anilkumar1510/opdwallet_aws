@@ -53,9 +53,15 @@ While this captures the balance changes, the member needs to know:
 
 ## Key Mechanisms
 
-### 1. Allocation-Aware UHID Resolution
+### 1. Allocation-Aware UHID Resolution & GET_MY_CONFIG Fallback
 - For **FLOATER** policies: The wallet is pooled at the primary member level. The API is called with `args=user_code:{primaryMemberUhid}`.
 - For **INDIVIDUAL** policies: Each member has an isolated wallet allocation. The API is called with `args=user_code:{activeDependentUhid}`.
+- **GET_MY_CONFIG Fallback Mechanism**:
+  - The live backend API `GET_FAMILY_LIST` (`user_relationship_mapping`) omits the `uhId` field on the signed-in primary member's resource (setting it to `null`).
+  - Instead of hardcoding fallback strings, the system inspects `GET_MY_CONFIG` (`application_master?queryId=GET_MY_CONFIG`) via `UserInfoStore.getUhid()`.
+  - `UserInfoStore.extractUhidFromUserInfo()` inspects `user_roles[0].uhid` and root attributes from the active session.
+  - In `family-mapper.ts`, `toFamilyMember(resource, userId, configUhId)` maps `isSelf` members to `configUhId` when `resource.uhId` is empty or null.
+  - In `PolicyStore`, both `resolveAndLoadWallet()` (`wallet?queryId=GET_PAGE...`) and `fetchWalletPassbook()` (`wallet_passbook?queryId=GET_WALLET_PASSBOOK...`) use `UserInfoStore.getUhid()` as the verified fallback target UHID.
 
 ### 2. Multi-Tier Correlation
 To link a passbook entry to clinical consumption metadata:
@@ -87,3 +93,9 @@ To link a passbook entry to clinical consumption metadata:
      - `|j.g_creation_time - i.g_creation_time| < 2000` (within 2 seconds)
      - `j.updated_bal === i.previous_bal`
    - Both transactions in this pair are marked as noise reversals and filtered from the standard member view, eliminating noise clutter.
+
+### 5. Multi-Source Wallet Total Reconciliation (Wallet API + OPD Consumption Cycles)
+To prevent the wallet consumption UI from disappearing when `OpdWalletAccountDto` is loaded:
+- **Allocation Preservation**: `account.total_topup_amt` in the wallet microservice only reflects manual out-of-pocket top-ups and may be `0` or null. `walletTotal.allocated` therefore computes `baseLimit + topup`, ensuring corporate policy entitlement (e.g. ₹26,000 or ₹14,000) is never zeroed out.
+- **Consumption Cycle Preservation**: `walletTotal.consumed` prioritizes the real clinical consumption tracked by `opd_consumption_cycle` (`versionTotal.consumed`). If consumption cycle records exist, they are preserved rather than being overwritten by `account.total_topup_amt - account.avl_bal`.
+- **Live Balance Synchronization**: `walletTotal.available` utilizes live `account.avl_bal` from the wallet account when present, synchronizing the live balance with the consumption UI.
