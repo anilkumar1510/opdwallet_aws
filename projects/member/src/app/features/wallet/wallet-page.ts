@@ -7,6 +7,7 @@ import { UserInfoStore } from '../../core/session/userinfo.store';
 import { BackLink } from '../../shared/ui/back-link';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyView, ErrorView } from '../../shared/ui/state-views';
+import { WalletPagination } from '../../shared/ui/wallet-pagination';
 
 /**
  * Wallet — connected to PolicyStore, reflecting the active HCL policy floater balance.
@@ -14,7 +15,7 @@ import { EmptyView, ErrorView } from '../../shared/ui/state-views';
 @Component({
   selector: 'opd-wallet-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BackLink, PageHeader, ErrorView, EmptyView],
+  imports: [BackLink, PageHeader, ErrorView, EmptyView, WalletPagination],
   template: `
     <opd-page-header title="Wallet" [subtitle]="memberName()" />
 
@@ -162,15 +163,15 @@ import { EmptyView, ErrorView } from '../../shared/ui/state-views';
             }
           </ul>
 
-          @if (hasMorePassbook()) {
-            <button
-              type="button"
-              class="mt-3 min-h-touch w-full rounded-xl border border-[#E5E7EB] bg-white py-2.5 text-sm font-semibold text-[#0F5FDC] hover:bg-[#F8FAFC] active:bg-[#F1F5F9] transition-colors shadow-sm"
-              (click)="loadMorePassbook()"
-            >
-              Load more transactions (showing {{ visiblePassbook().length }} of {{ policyStore.enrichedPassbook().length }})
-            </button>
-          }
+          <opd-wallet-pagination
+            [page]="policyStore.passbookPage()"
+            [pageSize]="pageSize"
+            [total]="policyStore.passbookTotalCount()"
+            [hasMore]="hasMorePassbook()"
+            [loading]="policyStore.passbookLoading()"
+            ariaLabel="Past orders pages"
+            (pageChange)="onPassbookPageChange($event)"
+          />
         } @else {
           <div class="rounded-2xl border border-dashed border-[#E5E7EB] bg-white p-8 text-center">
             <p class="text-2xl">🧾</p>
@@ -188,19 +189,13 @@ export class WalletPage implements OnInit {
   protected readonly family = inject(FamilyStore);
   protected readonly userStore = inject(UserInfoStore);
 
-  protected readonly pageSize = 5;
-  protected readonly visibleCount = signal<number>(5);
+  protected readonly pageSize = 10;
 
-  protected readonly visiblePassbook = computed(() =>
-    this.policyStore.enrichedPassbook().slice(0, this.visibleCount()),
-  );
+  protected readonly visiblePassbook = this.policyStore.enrichedPassbook;
+  protected readonly hasMorePassbook = this.policyStore.passbookHasMore;
 
-  protected readonly hasMorePassbook = computed(() =>
-    this.visibleCount() < this.policyStore.enrichedPassbook().length,
-  );
-
-  protected loadMorePassbook(): void {
-    this.visibleCount.update((count) => count + this.pageSize);
+  protected onPassbookPageChange(page: number): void {
+    this.policyStore.goToPassbookPage(page, this.pageSize);
   }
 
   ngOnInit(): void {
@@ -212,7 +207,7 @@ export class WalletPage implements OnInit {
     const primaryUhId = primary?.uhid || configUhId;
     const activeUhId = active?.uhid || (active?.isPrimary ? primaryUhId : null);
     void this.policyStore.syncMemberWalletContext(activeUhId, primaryUhId);
-    this.policyStore.fetchWalletPassbook(activeUhId || primaryUhId);
+    this.policyStore.fetchWalletPassbook(activeUhId || primaryUhId, 0, this.pageSize, false);
   }
 
   protected readonly memberName = computed(() => this.family.activeMember()?.fullName ?? 'Member');

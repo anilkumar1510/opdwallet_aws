@@ -18,12 +18,15 @@
 - [x] 3.2 Update `WalletStore` to integrate passbook items into the unified wallet transactions signal.
 - [x] 3.3 Implement `GET_MY_CONFIG` UHID fallback in `UserInfoStore`, `FamilyStore`, and `PolicyStore` when `GET_FAMILY_LIST` omits `uhId` for the primary member.
 - [x] 3.4 Reconcile wallet total in `PolicyStore` to preserve policy base limit and `opd_consumption_cycle` when `OpdWalletAccountDto` is loaded.
+- [x] 3.5 Implement server-side pagination in `PolicyStore.fetchWalletPassbook` with `page_no` and `page_size`, deduplication, and `passbookLoadingMore`.
 
 ## 4. UI Presentation
 - [x] 4.1 Update `WalletPage` Recent Activity section with enriched badges (Claim / Cashless, Reference ID, 9 OPD categories, date/time, amount, balance).
 - [x] 4.2 Update `WalletLedger` (`/member/transactions` and `/member/wallet`) to display the enriched passbook view.
 - [x] 4.3 Apply color formatting: Red (`text-red-600`) for Debit ('D') and Green (`text-emerald-600`) for Credit ('C'), displaying native `id` with `ID: ...`.
 - [x] 4.4 Add pagination with "Load more" button across `WalletPage` (5 items/batch) and `WalletLedger` (15 items/batch).
+- [x] 4.5 Integrate server-side "Load more" button in `WalletPage` with inline loading spinner and summary count.
+- [x] 4.6 Create shared `opd-wallet-pagination` component with Previous/Next controls and Page X of Y indicator, integrated into `WalletPage` with 10 records per page.
 
 ## 5. Verification & Validation
 - [x] 5.1 Run `npx openspec validate wallet-passbook-integration`.

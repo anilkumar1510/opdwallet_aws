@@ -129,11 +129,46 @@ The system SHALL follow banking standard ledger auditability by retaining all tr
 
 ---
 
-### Requirement: Transaction Pagination with Load More
-The system SHALL paginate passbook transactions using an incremental "Load more" action.
-- In `WalletPage` Recent Activity, the view SHALL initially render 5 transactions; clicking "Load more" SHALL append the next 5 transactions until all entries are displayed.
-- In `WalletLedger` (`/member/transactions`), the view SHALL initially render 15 transactions; clicking "Show more" / "Load more" SHALL append the next 15 transactions.
+### Requirement: Server-Side Transaction Pagination with Previous / Next Controls
+The system SHALL paginate passbook transactions using server-side query parameters (`page_no` and `page_size = 10`) with Previous and Next page controls.
+- In `WalletPage` Recent Activity, the initial query to `/wallet/api/v1/wallet_passbook?queryId=GET_WALLET_PASSBOOK` SHALL pass `page_no=0&page_size=10`, retrieving and rendering the first 10 transactions.
+- Activating "Next →" SHALL navigate to `page_no={currentPage + 1}&page_size=10`.
+- Activating "← Previous" SHALL navigate to `page_no={currentPage - 1}&page_size=10`.
+- The current page indicator SHALL display `"Page X of Y"` when total record count is known, or `"Page X"` when total count is omitted.
+- Boundary states: "← Previous" SHALL be disabled on page 0; "Next →" SHALL be disabled when on the last page.
+- Both buttons SHALL be disabled while a network page request is in-flight.
 
-#### Scenario: User clicks Load More in Recent Activity
-- **WHEN** there are more transactions than currently visible in Recent Activity
-- **THEN** a "Load more transactions (showing X of Y)" button is rendered, and activating it increases the visible count by 5
+#### Scenario: Initial passbook retrieval retrieves 10 records
+- **WHEN** the member navigates to `WalletPage`
+- **THEN** the passbook API is queried with `page_no=0` and `page_size=10`
+- **AND** the first 10 transactions are initially rendered in Recent Activity
+- **AND** the "← Previous" button is disabled
+
+#### Scenario: User navigates to next page
+- **WHEN** more records exist on the server and the user clicks "Next →"
+- **THEN** the system triggers `GET /wallet/api/v1/wallet_passbook` with `page_no={currentPage + 1}&page_size=10`
+- **AND** both buttons are disabled during the request
+- **AND** the view renders the next 10 records upon completion
+
+#### Scenario: Single-page result renders both buttons disabled
+- **WHEN** total records fit within a single page (e.g. 5 records with `pageSize = 10`)
+- **THEN** the pagination navigation displays `"Page 1 of 1"`
+- **AND** both "← Previous" and "Next →" buttons are rendered with `disabled=""`
+
+---
+
+### Requirement: Shared Pagination Component (`opd-wallet-pagination`)
+The system SHALL provide a shared component `opd-wallet-pagination` rendering a standardized `<nav class="mt-3 flex items-center justify-between gap-3">` structure containing "← Previous", "Page X of Y", and "Next →" controls.
+
+#### Scenario: Renders pagination controls with page indicators
+- **WHEN** `opd-wallet-pagination` is rendered with `page`, `pageSize`, and `total`
+- **THEN** it displays "← Previous" button, "Page {page + 1} of {totalPages}" text, and "Next →" button
+
+#### Scenario: Disables buttons during loading
+- **WHEN** `loading` is true
+- **THEN** both "← Previous" and "Next →" buttons are disabled with `disabled:opacity-40` styling
+
+#### Scenario: Boundary page button states
+- **WHEN** on page 0
+- **THEN** "← Previous" is disabled
+- **AND** when on the final page (`page + 1 === totalPages`), "Next →" is disabled
