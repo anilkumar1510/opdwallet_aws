@@ -217,37 +217,42 @@ type Step = 'find' | 'schedule' | 'details' | 'payment' | 'confirmed' | 'consult
                     }
                     <div class="space-y-4">
                       <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
+                      <!-- Co-payment first, then the per transaction limit. -->
                       <dl class="space-y-2 text-sm">
                         <div class="flex justify-between"><dt class="text-ink-700">Consultation fee</dt><dd class="font-medium text-ink-900">₹{{ pay().fee }}</dd></div>
-                        <div class="flex justify-between">
-                          <dt class="text-ink-700">
-                            Wallet eligible
-                            @if (pay().ceiling !== null && (pay().ceiling ?? 0) < pay().perTxnLimit) {
-                              <span class="text-xs text-ink-500">(ceiling ₹{{ pay().ceiling }})</span>
-                            } @else {
-                              <span class="text-xs text-ink-500">(limit ₹{{ pay().perTxnLimit }})</span>
-                            }
-                          </dt>
-                          <dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd>
-                        </div>
                         @if (pay().copay > 0) {
                           <div class="flex justify-between">
-                            <dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }})</dt>
+                            <dt class="text-ink-700">Co-payment ({{ copayPct() }}{{ copayMode() === 'flat' ? '' : '%' }}) <span class="text-xs text-ink-500">· paid by you</span></dt>
                             <dd class="font-medium text-red-700">− ₹{{ pay().copay }}</dd>
                           </div>
+                          <div class="flex justify-between border-t border-surface-border pt-2">
+                            <dt class="text-ink-700">Amount after co-payment</dt>
+                            <dd class="font-medium text-ink-900">₹{{ pay().afterCopay }}</dd>
+                          </div>
                         }
-                        <div class="flex justify-between border-t border-surface-border pt-2">
-                          <dt class="text-ink-700">Paid from Corporate Wallet</dt>
+                        <div class="flex justify-between">
+                          <dt class="text-ink-700">
+                            @switch (pay().capReason) {
+                              @case ('ceiling') { Doctor fee ceiling }
+                              @case ('balance') { Wallet balance available }
+                              @default { Per transaction limit }
+                            }
+                          </dt>
+                          <dd class="font-medium text-ink-900">₹{{ pay().cap }}</dd>
+                        </div>
+                        <div class="flex justify-between">
+                          <dt class="text-ink-700">Paid from Corporate Wallet <span class="text-xs text-ink-500">· the lower of the two</span></dt>
                           <dd class="font-medium text-green-700">₹{{ pay().walletBlock }}</dd>
                         </div>
                         @if (pay().excess > 0) {
                           <div class="flex justify-between">
                             <dt class="text-ink-700">
-                              @if (pay().ceiling !== null && pay().fee > (pay().ceiling ?? 0)) {
-                                Above doctor fee ceiling
-                              } @else {
-                                Above per-transaction limit
+                              @switch (pay().capReason) {
+                                @case ('ceiling') { Above doctor fee ceiling }
+                                @case ('balance') { Above wallet balance }
+                                @default { Above the limit }
                               }
+                              <span class="text-xs text-ink-500">· paid by you</span>
                             </dt>
                             <dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd>
                           </div>
@@ -685,15 +690,24 @@ export class OnlineConsultPage implements OnInit {
       : null;
     const availableBalance = pool ? pool.available.amount : this.policyStore.walletTotal().available.amount;
 
-    const effectiveCap = ceiling !== null ? Math.min(perTxnLimit, ceiling) : perTxnLimit;
-    const covered = Math.min(fee, effectiveCap, availableBalance);
+    // Co-payment first, on the whole fee; then the wallet pays the lower of
+    // what is left and its cap — the per-transaction limit, narrowed by the
+    // doctor-fee ceiling or the pool balance when either is lower.
     const copay = this.copayMode() === 'flat'
-      ? Math.min(this.copayPct(), covered)
-      : Math.round((covered * this.copayPct()) / 100);
-    const walletBlock = Math.max(0, covered - copay);
-    const excess = Math.max(0, fee - covered);
-    const selfPay = fee - walletBlock;
-    return { fee, covered, copay, walletBlock, excess, selfPay, ceiling, perTxnLimit };
+      ? Math.min(this.copayPct(), fee)
+      : Math.round((fee * this.copayPct()) / 100);
+    const afterCopay = fee - copay;
+    const effectiveCap = Math.min(perTxnLimit, ceiling ?? Infinity, availableBalance);
+    const walletBlock = Math.max(0, Math.min(afterCopay, effectiveCap));
+    const excess = afterCopay - walletBlock;
+    const selfPay = copay + excess;
+    const capReason: 'limit' | 'ceiling' | 'balance' =
+      availableBalance < Math.min(perTxnLimit, ceiling ?? Infinity)
+        ? 'balance'
+        : ceiling !== null && ceiling < perTxnLimit
+          ? 'ceiling'
+          : 'limit';
+    return { fee, covered: walletBlock, copay, afterCopay, walletBlock, excess, selfPay, ceiling, perTxnLimit, cap: effectiveCap, capReason };
   });
 
   protected readonly selectedSpecialityName = computed(() => {

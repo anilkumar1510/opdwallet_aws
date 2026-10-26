@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, signal, inject } from '@angular/core';
 
+import { splitPayment, percentCopay } from '../../core/domain/payment-split';
+import { PaymentSplitView } from '../../shared/ui/payment-split';
+
 import { BenefitCategory } from '../../core/domain/codes';
 import { ClaimModeStore } from '../../core/member/claim-mode.store';
 import { ClaimOption } from '../../shared/ui/claim-option';
@@ -44,12 +47,10 @@ const SLOT_TIMES = ['10:00 AM', '12:30 PM', '3:00 PM', '6:30 PM'];
 const PER_TXN_LIMIT = 400;
 const COPAY_PCT = 20;
 
+/** Co-payment first, then the per-transaction limit. */
 function breakdown(value: number) {
-  const covered = Math.min(value, PER_TXN_LIMIT);
-  const copay = Math.round((covered * COPAY_PCT) / 100);
-  const walletBlock = covered - copay;
-  const excess = Math.max(0, value - PER_TXN_LIMIT);
-  return { value, covered, copay, walletBlock, excess, selfPay: copay + excess };
+  const split = splitPayment(value, percentCopay(COPAY_PCT), PER_TXN_LIMIT);
+  return { value, split, copay: split.copayAmount, walletBlock: split.walletPays, excess: split.aboveLimit, selfPay: split.memberPays };
 }
 
 type Step = 'vaccine' | 'details' | 'provider' | 'pending' | 'cart' | 'receipt' | 'visit' | 'completed';
@@ -57,7 +58,7 @@ type Step = 'vaccine' | 'details' | 'provider' | 'pending' | 'cart' | 'receipt' 
 @Component({
   selector: 'opd-vaccination-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClaimOption, CoverageBannerComponent],
+  imports: [ClaimOption, CoverageBannerComponent, PaymentSplitView],
   template: `
     <div class="min-h-screen bg-[#f7f7fc]">
       <header class="border-b border-transparent bg-[linear-gradient(180deg,#1F77E0_0%,#0E51A2_100%)] lg:border-surface-border lg:bg-white lg:bg-none">
@@ -134,14 +135,7 @@ type Step = 'vaccine' | 'details' | 'provider' | 'pending' | 'cart' | 'receipt' 
               @case ('cart') {
                 <p class="mb-2 rounded-xl bg-[#F0FDF4] px-3 py-2 text-sm text-success-700">🔔 Confirmed — your cart is ready.</p>
                 <p class="mb-3 text-sm font-medium text-ink-700">Payment breakdown</p>
-                <dl class="space-y-2 text-sm">
-                  <div class="flex justify-between"><dt class="text-ink-700">{{ vaccine()?.name }} · {{ dose() }}</dt><dd class="font-medium text-ink-900">₹{{ pay().value }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Wallet eligible (limit ₹{{ perTxn }})</dt><dd class="font-medium text-ink-900">₹{{ pay().covered }}</dd></div>
-                  <div class="flex justify-between"><dt class="text-ink-700">Co-payment ({{ copayPct }}%)</dt><dd class="font-medium text-danger-700">− ₹{{ pay().copay }}</dd></div>
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="text-ink-700">Wallet block</dt><dd class="font-medium text-success-700">₹{{ pay().walletBlock }}</dd></div>
-                  @if (pay().excess > 0) { <div class="flex justify-between"><dt class="text-ink-700">Above per-transaction limit</dt><dd class="font-medium text-ink-900">₹{{ pay().excess }}</dd></div> }
-                  <div class="flex justify-between border-t border-surface-border pt-2"><dt class="font-semibold text-ink-900">You pay now (Razorpay)</dt><dd class="text-lg font-bold text-ink-900">₹{{ pay().selfPay }}</dd></div>
-                </dl>
+                <opd-payment-split [split]="pay().split" [billLabel]="(vaccine()?.name ?? 'Vaccine') + ' · ' + dose()" />
               }
               @case ('receipt') {
                 <div class="text-center"><p class="text-3xl">🧾</p><p class="mt-2 text-base font-bold text-[#034DA2]">Payment received</p></div>

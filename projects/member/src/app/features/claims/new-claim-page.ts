@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ClaimsStore } from '../../core/claims/claims.store';
 import { ClaimCategory } from '../../core/claims/claim.mapper';
 import { claimRulesFor } from '../../core/claims/claim-rules';
+import { Copay, splitPayment } from '../../core/domain/payment-split';
 import {
   DentalSubType,
   DocSlotKey,
@@ -359,9 +360,9 @@ const STEPS = [
               </dl>
             </section>
 
-            <!-- Payment breakdown — the money rules. Per-claim limit is known;
-                 co-payment and per-transaction limit are confirmed at
-                 adjudication (no client-side figure). -->
+            <!-- Payment breakdown — co-payment first, then the per claim limit.
+                 The limit is real; the co-payment is real when the wallet
+                 config sends it, otherwise a placeholder. -->
             <section class="mt-5 rounded-2xl border border-[#EDF0F7] bg-white p-5 shadow-sm lg:p-6">
               <h2 class="mb-4 text-base font-semibold text-[#0E51A2] lg:text-lg">Payment breakdown</h2>
               @if (estimate(); as est) {
@@ -371,35 +372,33 @@ const STEPS = [
                     <dd class="font-medium text-ink-900">{{ amount(est.bill) }}</dd>
                   </div>
                   <div class="flex justify-between gap-3">
-                    <dt class="text-ink-700">Per-claim limit</dt>
-                    <dd class="font-medium text-ink-900">{{ est.perClaim !== null ? amount(est.perClaim) : 'No limit' }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-3">
                     <dt class="text-ink-700">
-                      Per-transaction limit
-                      @if (!est.txnReal) {
-                        <span class="text-[11px] text-warning-700">· placeholder</span>
-                      }
-                    </dt>
-                    <dd class="font-medium text-ink-900">{{ est.perTxn !== null ? amount(est.perTxn) : 'No limit' }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
-                    <dt class="text-ink-700">Eligible amount</dt>
-                    <dd class="font-medium text-ink-900">{{ amount(est.eligible) }}</dd>
-                  </div>
-                  <div class="flex justify-between gap-3">
-                    <dt class="text-ink-700">
-                      Co-payment{{ est.copayMode === 'PERCENT' ? ' (' + est.copayValue + '%)' : '' }}
+                      Co-payment{{ est.copay.mode === 'PERCENT' ? ' (' + est.copay.value + '%)' : '' }}
+                      <span class="text-xs text-ink-500">· paid by you</span>
                       @if (!est.copayReal) {
                         <span class="text-[11px] text-warning-700">· placeholder</span>
                       }
                     </dt>
                     <dd class="font-medium text-danger-700">− {{ amount(est.copayAmount) }}</dd>
                   </div>
-                  <div class="flex justify-between gap-3">
-                    <dt class="text-ink-700">Reimbursable amount</dt>
-                    <dd class="font-medium text-ink-900">{{ amount(est.reimbursable) }}</dd>
+                  <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
+                    <dt class="text-ink-700">Amount after co-payment</dt>
+                    <dd class="font-medium text-ink-900">{{ amount(est.afterCopay) }}</dd>
                   </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Per claim limit</dt>
+                    <dd class="font-medium text-ink-900">{{ est.perClaim !== null ? amount(est.perClaim) : 'No limit' }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-ink-700">Reimbursable amount <span class="text-xs text-ink-500">· the lower of the two</span></dt>
+                    <dd class="font-medium text-success-700">{{ amount(est.walletPays) }}</dd>
+                  </div>
+                  @if (est.aboveLimit > 0) {
+                    <div class="flex justify-between gap-3">
+                      <dt class="text-ink-700">Above the limit <span class="text-xs text-ink-500">· not reimbursed</span></dt>
+                      <dd class="font-medium text-ink-900">{{ amount(est.aboveLimit) }}</dd>
+                    </div>
+                  }
                   <div class="flex justify-between gap-3 border-t border-surface-border pt-2">
                     <dt class="font-semibold text-ink-900">Estimated wallet deduction</dt>
                     <dd class="font-semibold text-success-700">{{ est.balanceKnown ? amount(est.walletDeduction) : '—' }}</dd>
@@ -411,7 +410,7 @@ const STEPS = [
                 </dl>
                 <p class="mt-3 text-xs text-ink-500">
                   Estimates.
-                  @if (!est.copayReal || !est.txnReal) {
+                  @if (!est.copayReal) {
                     Rows marked <span class="text-warning-700">placeholder</span> are not from this
                     policy yet.
                   }
@@ -693,49 +692,29 @@ export class NewClaimPage {
     const chosen = this.selectedCategory();
     const rules = claimRulesFor(this.category());
 
+    // Claims carry a per-claim limit (the cashless screens call the same rule
+    // the per-transaction limit).
     const perClaim = chosen && chosen.perClaimLimit > 0 ? chosen.perClaimLimit : null;
-    const afterClaim = perClaim !== null ? Math.min(bill, perClaim) : bill;
-
-    // Per-transaction limit: real from the plan config when the API sent it,
-    // otherwise the placeholder rule.
-    const txnReal = !!chosen && chosen.perTransactionLimit !== null;
-    const perTxn = txnReal
-      ? chosen!.perTransactionLimit
-      : rules.perTransactionLimit > 0
-        ? rules.perTransactionLimit
-        : null;
-    const eligible = perTxn !== null ? Math.min(afterClaim, perTxn) : afterClaim;
 
     // Co-payment: real from the wallet config when present, otherwise placeholder.
     const copayReal = !!chosen && chosen.copayValue !== null;
-    const copayMode: 'PERCENT' | 'FLAT' = copayReal ? chosen!.copayMode! : 'PERCENT';
-    const copayValue = copayReal ? chosen!.copayValue! : rules.copayPercent;
-    const copayAmount =
-      copayMode === 'PERCENT'
-        ? Math.round((eligible * copayValue) / 100)
-        : Math.min(copayValue, eligible);
-    const reimbursable = Math.max(0, eligible - copayAmount);
+    const copay: Copay = copayReal
+      ? { mode: chosen!.copayMode!, value: chosen!.copayValue! }
+      : { mode: 'PERCENT', value: rules.copayPercent };
+
+    // Co-payment first, then the limit: the limit is the most the claim pays.
+    const split = splitPayment(bill, copay, perClaim);
 
     const balance = this.categoryBalance();
     const balanceAmount = balance ? balance.amount : null;
     const walletDeduction =
-      balanceAmount !== null ? Math.min(reimbursable, balanceAmount) : reimbursable;
+      balanceAmount !== null ? Math.min(split.walletPays, balanceAmount) : split.walletPays;
     const outOfPocket = Math.max(0, bill - walletDeduction);
 
     return {
-      bill,
+      ...split,
       perClaim,
-      afterClaim,
-      capped: perClaim !== null && bill > perClaim,
-      perTxn,
-      txnReal,
-      txnCapped: perTxn !== null && afterClaim > perTxn,
-      eligible,
       copayReal,
-      copayMode,
-      copayValue,
-      copayAmount,
-      reimbursable,
       walletDeduction,
       outOfPocket,
       balanceKnown: balanceAmount !== null,
