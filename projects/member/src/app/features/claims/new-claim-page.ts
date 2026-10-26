@@ -157,23 +157,23 @@ const STEPS = [
                   </p>
                   <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                      <label for="bankHolder" class="mb-1 block text-sm font-medium text-ink-700">Account holder name</label>
+                      <label for="bankHolder" class="mb-1 block text-sm font-medium text-ink-700">Account holder name <span class="text-danger-700">*</span></label>
                       <input id="bankHolder" name="bankHolder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankHolder()" (ngModelChange)="bankHolder.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div>
-                      <label for="bankAccount" class="mb-1 block text-sm font-medium text-ink-700">Account number</label>
+                      <label for="bankAccount" class="mb-1 block text-sm font-medium text-ink-700">Account number <span class="text-danger-700">*</span></label>
                       <input id="bankAccount" name="bankAccount" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankAccount()" (ngModelChange)="bankAccount.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div>
-                      <label for="bankIfsc" class="mb-1 block text-sm font-medium text-ink-700">IFSC code</label>
+                      <label for="bankIfsc" class="mb-1 block text-sm font-medium text-ink-700">IFSC code <span class="text-danger-700">*</span></label>
                       <input id="bankIfsc" name="bankIfsc" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm uppercase focus:border-brand-500 focus:outline-none" [ngModel]="bankIfsc()" (ngModelChange)="bankIfsc.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div class="sm:col-span-2">
-                      <label for="bankName" class="mb-1 block text-sm font-medium text-ink-700">Bank name</label>
+                      <label for="bankName" class="mb-1 block text-sm font-medium text-ink-700">Bank name <span class="text-danger-700">*</span></label>
                       <input id="bankName" name="bankName" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="bankName()" (ngModelChange)="bankName.set($event)" [ngModelOptions]="{ standalone: true }" />
                     </div>
                     <div class="sm:col-span-2">
-                      <span class="mb-1 block text-sm font-medium text-ink-700">Cancelled cheque</span>
+                      <span class="mb-1 block text-sm font-medium text-ink-700">Cancelled cheque <span class="text-danger-700">*</span></span>
                       <input type="file" class="sr-only" accept="image/*,.pdf" id="cheque" (change)="onChequeChosen($event)" />
                       <label for="cheque" class="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#CDDDFE] bg-[#F7FAFF] px-6 py-5 text-center transition-colors hover:border-[#0F5FDC]">
                         <span class="block font-medium text-[#0B2C63]">{{ chequeFile() ? 'Replace cancelled cheque' : 'Upload cancelled cheque' }}</span>
@@ -199,7 +199,7 @@ const STEPS = [
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label for="patient" class="mb-1 block text-sm font-medium text-ink-700">Patient</label>
+                  <label for="patient" class="mb-1 block text-sm font-medium text-ink-700">Patient <span class="text-danger-700">*</span></label>
                   <select id="patient" name="patient" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [disabled]="family.loading()" [ngModel]="patientId()" (ngModelChange)="patientId.set($event)">
                     @if (family.loading()) {
                       <option value="" disabled>Loading…</option>
@@ -211,7 +211,7 @@ const STEPS = [
                 </div>
 
                 <div>
-                  <label for="category" class="mb-1 block text-sm font-medium text-ink-700">Category</label>
+                  <label for="category" class="mb-1 block text-sm font-medium text-ink-700">Category <span class="text-danger-700">*</span></label>
                   <select id="category" name="category" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [disabled]="categoriesLoading()" [ngModel]="category()" (ngModelChange)="category.set($event)">
                     <option value="">Select a category</option>
                     @if (categoriesLoading()) {
@@ -250,7 +250,7 @@ const STEPS = [
                 </div>
 
                 <div>
-                  <label for="treatmentDate" class="mb-1 block text-sm font-medium text-ink-700">Treatment date</label>
+                  <label for="treatmentDate" class="mb-1 block text-sm font-medium text-ink-700">Treatment date <span class="text-danger-700">*</span></label>
                   <input id="treatmentDate" name="treatmentDate" type="date" [max]="today" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="treatmentDate()" (ngModelChange)="treatmentDate.set($event)" />
                 </div>
 
@@ -259,13 +259,13 @@ const STEPS = [
                      vision. Second location is a PLACEHOLDER param. -->
                 @for (field of locationFields(); track field.key) {
                   <div>
-                    <label [attr.for]="field.key" class="mb-1 block text-sm font-medium text-ink-700">{{ field.label }}</label>
+                    <label [attr.for]="field.key" class="mb-1 block text-sm font-medium text-ink-700">{{ field.label }}{{ field.required ? ' *' : '' }}</label>
                     <input [id]="field.key" [name]="field.key" [placeholder]="field.placeholder" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="locationValue(field.key)" (ngModelChange)="setLocation(field.key, $event)" [ngModelOptions]="{ standalone: true }" />
                   </div>
                 }
 
                 <div>
-                  <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount</label>
+                  <label for="billAmount" class="mb-1 block text-sm font-medium text-ink-700">Bill amount <span class="text-danger-700">*</span></label>
                   <input id="billAmount" name="billAmount" type="number" min="1" inputmode="numeric" class="min-h-touch w-full rounded-xl border border-surface-border bg-white px-3 text-sm focus:border-brand-500 focus:outline-none" [ngModel]="billAmount()" (ngModelChange)="billAmount.set($event)" />
                 </div>
 
@@ -310,7 +310,7 @@ const STEPS = [
                         <span class="text-sm font-medium text-[#0B2C63]">Uploading…</span>
                       </span>
                     } @else {
-                      <span class="block font-medium text-[#0B2C63]">{{ slot.label }}</span>
+                      <span class="block font-medium text-[#0B2C63]">{{ slot.label }}{{ slot.requirement === 'required' ? ' *' : '' }}</span>
                       <span class="mt-1 block text-xs" [class.text-danger-700]="slot.requirement === 'required'" [class.text-ink-500]="slot.requirement !== 'required'">{{ slot.requirement === 'required' ? 'Required' : 'Optional' }} — PDF or photos, up to 5 MB each</span>
                     }
                   </label>
