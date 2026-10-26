@@ -63,6 +63,8 @@ export interface FamilyMemberResource {
   telecom: string;
   dob: string;
   gender_id: string;
+  employee_id?: string;
+  employeeId?: string;
 }
 
 function toGender(value: string | undefined): 'MALE' | 'FEMALE' | 'OTHER' | null {
@@ -116,6 +118,7 @@ export function toFamilyMember(resource: FamilyMemberResource, userId: string) {
     relationship,
     isPrimary: relationship === Relationship.Self,
     uhid: resource.uhId?.trim() || null,
+    employeeId: resource.employee_id?.trim() || resource.employeeId?.trim() || null,
     dateOfBirth: toDob(resource.dob),
     gender: toGender(resource.gender_id),
   };
