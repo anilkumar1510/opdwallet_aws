@@ -64,6 +64,7 @@ export interface PolicyCategoryDto {
   doctor_fee_ceiling?: boolean;
   doctor_fee_ceiling_amount?: number;
   notes?: string;
+  ahc_package_codes?: []
 }
 
 export interface PolicyAdditionalClaimCategoryDto {

@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { AppService } from '../http/api.service';
+import { resolveApiUrl } from '../http/api.interceptor';
 
 const APPLICATION = 'payment-gateway';
 const DEFAULT_CHECKOUT_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -60,8 +61,62 @@ declare global {
   }
 }
 
+/** How a paid-for order stands, as the order service records it. */
+export type PaymentState = 'success' | 'failed' | 'pending';
+
+/** One attempt at paying an order, from GET_PAYMENTS. */
+export interface PaymentTransaction {
+  id: string;
+  status: string;
+  amount: number | null;
+  mode: string;
+  at: Date | null;
+}
+
+export interface PaymentVerification {
+  /** From the order's service requests; null when the order could not be read. */
+  state: PaymentState | null;
+  /** `payment_status` as sent, e.g. "Paid". */
+  statusText: string;
+  /** Newest first; empty when GET_PAYMENTS failed or has none. */
+  transactions: PaymentTransaction[];
+}
+
+const SUCCESS_STATES = ['paid', 'success', 'successful', 'captured', 'completed', 'settled', 'true'];
+const FAILURE_STATES = ['failed', 'failure', 'fail', 'cancelled', 'canceled', 'declined', 'error', 'false'];
+
+/** A payment status word as success, failure or still pending (anything else, e.g. "Pending"). */
+export function toPaymentState(value: unknown): PaymentState {
+  const status = String(value ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+  if (SUCCESS_STATES.includes(status)) return 'success';
+  if (FAILURE_STATES.includes(status)) return 'failed';
+  return 'pending';
+}
+
 const text = (value: unknown): string => (value === undefined || value === null ? '' : String(value).trim());
 
+/** Every row of `resource`, each unwrapped from `data` when it has one. */
+function allRows(response: unknown): any[] {
+  const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+  const resource = (parsed as any)?.resource;
+  const list = Array.isArray(resource) ? resource : resource ? [resource] : [];
+  return list.map((row: any) => (row?.data && typeof row.data === 'object' ? { ...row, ...row.data } : row));
+}
+
+function pick(row: any, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = text(row?.[key]);
+    if (value) return value;
+  }
+  return '';
+}
+
+function toInstant(value: unknown): Date | null {
+  const raw = text(value);
+  if (!raw) return null;
+  const parsed = /^\d+$/.test(raw) ? new Date(Number(raw)) : new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 /**
  * The gateway's `redirectURL` is usually a path (`/payment-gateway/api/v1/razorpay`).
  * It is resolved against the API base, not the page's origin: loaded as a federated
@@ -118,8 +173,8 @@ export class PaymentGatewayService {
         return { status: 'failed', reason: 'Online payment is not set up for this facility yet.' };
       }
 
-      // No query string of its own: the gateway appends `?orderId=…&status=…` without
-      // checking for one, so a "?" here would leave a second "?" and garble both.
+      // No query string of our own: the gateway appends `?orderId=…&status=…`
+      // itself, and a second `?` would fold both into one garbled orderId.
       const returnUrl = `${window.location.origin}${PAYMENT_STATUS_PATH}`;
       const proceed = firstRow(
         await firstValueFrom(
@@ -177,13 +232,61 @@ export class PaymentGatewayService {
         theme: { color: text(razorpay.theme_color) || '#1F77E0' },
         // Redirect mode: Razorpay posts the result to the gateway, which verifies it.
         ...(callback
-          ? { callback_url: absoluteCallback(callback), redirect: true }
+          ? { callback_url: resolveApiUrl(callback), redirect: true }
+          // ? { callback_url: absoluteCallback(callback), redirect: true }
           : {}),
       });
     } catch (error) {
       console.error('Payment could not be started:', error);
       return { status: 'failed', reason: 'The payment could not be started.' };
     }
+  }
+
+  /**
+   * What the servers say about an order's payment — the source of truth for
+   * the result page, not the redirect's query string. Both calls run together
+   * and either may fail on its own.
+   *
+   *   1. GET order `service_request` (GET_PAGE, filter orderId) → `payment_status`.
+   *   2. GET payment-gateway `epayment_transactions` (GET_PAYMENTS) → the attempts.
+   *
+   * Field names other than `payment_status` are best guesses — confirm
+   * against live responses.
+   */
+  async verify(orderId: string): Promise<PaymentVerification> {
+    const order =  'HPT-540' //encodeURIComponent(orderId);
+    const order1 =  encodeURIComponent(orderId);
+    const [requests, payments] = await Promise.all([
+      firstValueFrom(
+        this.api.getcall('service_request', 'order', `queryId=GET_PAGE&args=&application=order&filter=orderId:${order}`),
+      ).then(allRows, () => null),
+      firstValueFrom(
+        this.api.getcall('epayment_transactions', APPLICATION, `queryId=GET_PAYMENTS&args=orderId:${order1}&application=${APPLICATION}`),
+      ).then(allRows, () => null),
+    ]);
+
+    const statusText = requests
+      ? pick(requests.find((row) => pick(row, 'payment_status', 'paymentStatus')), 'payment_status', 'paymentStatus')
+      : '';
+    // Several service requests share one order: failed if any failed, paid only if all are.
+    const states = (requests ?? []).map((row) => pick(row, 'payment_status', 'paymentStatus')).filter(Boolean).map(toPaymentState);
+    const state: PaymentState | null = !requests
+      ? null
+      : states.includes('failed') ? 'failed'
+      : states.length && states.every((s) => s === 'success') ? 'success'
+      : 'pending';
+
+    const transactions = (payments ?? [])
+      .map((row): PaymentTransaction => ({
+        id: pick(row, 'razorpay_payment_id', 'payment_id', 'paymentId', 'transaction_id', 'txnId', 'id'),
+        status: pick(row, 'status', 'payment_status', 'txn_status', 'transaction_status', 'transactionSubType'),
+        amount: Number(pick(row, 'amount', 'txn_amount', 'paid_amount')) || null,
+        mode: pick(row, 'payment_mode', 'paymentMode', 'method', 'mode'),
+        at: toInstant(row?.g_creation_time ?? row?.transaction_date ?? row?.created_at ?? row?.createdAt),
+      }))
+      .sort((a, b) => (b.at?.getTime() ?? 0) - (a.at?.getTime() ?? 0));
+
+    return { state, statusText, transactions };
   }
 
   /** The payment the member was sent off to make, if this browser started one. */

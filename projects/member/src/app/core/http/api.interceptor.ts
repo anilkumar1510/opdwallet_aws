@@ -56,6 +56,30 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) =>
       throwError(() => (error instanceof HttpErrorResponse ? toAppError(error) : error)),
     ),
   );
+/**
+ * True on the dev server (localhost:4500), where API paths stay relative so
+ * proxy.conf.json forwards them. Everywhere else they go to environment.apiBaseUrl.
+ */
+export function isLocalProxyMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { hostname, port } = window.location;
+  const isLocalHostName = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+  return isLocalHostName && String(port) === '4500';
+}
+
+/**
+ * The address of an API path the browser must reach on its own — a form post
+ * or a third party's redirect, which no interceptor sees. Same rule as
+ * apiInterceptor: relative through the dev proxy, environment.apiBaseUrl elsewhere.
+ */
+export function resolveApiUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  const clean = '/' + path.replace(/^\/+/, '');
+  return isLocalProxyMode()
+    ? window.location.origin + clean
+    : (environment.apiBaseUrl ?? '').replace(/\/+$/, '') + clean;
+}
+
 const allowedUrls = [
   'https://maps.googleapis.com',
   'https://onemg.gumlet.io',
@@ -91,20 +115,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   // http://localhost:4500
   //
   // Any other host/port uses environment.apiBaseUrl.
-  const isLocalProxyMode = (() => {
-    if (!isBrowser) {
-      return false;
-    }
-
-    const { hostname, port } = window.location;
-
-    const isLocalHostName =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '0.0.0.0';
-
-    return isLocalHostName && String(port) === '4500';
-  })();
+  const localProxy = isBrowser && isLocalProxyMode();
 
   // 1) Relative URLs
   //
@@ -114,23 +125,23 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   // Other environments:
   //   Prefix with environment.apiBaseUrl.
   if (!isAbsoluteUrl && !isAsset) {
-    if (!isLocalProxyMode) {
+    if (!localProxy) {
       const path = updatedUrl.replace(/^\/+/, '');
 
       updatedUrl = `${base}/${path}`;
 
       if (isBrowser) {
-        console.log(
-          'Applying BASE_URL (relative, non-proxy-mode):',
-          updatedUrl
-        );
+        // console.log(
+        //   'Applying BASE_URL (relative, non-proxy-mode):',
+        //   updatedUrl
+        // );
       }
     } else {
       if (isBrowser) {
-        console.log(
-          'Keeping relative URL (localhost:4500 proxy mode):',
-          updatedUrl
-        );
+        // console.log(
+        //   'Keeping relative URL (localhost:4500 proxy mode):',
+        //   updatedUrl
+        // );
       }
     }
   }
@@ -139,7 +150,7 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
   //
   // Rewrite them to relative URLs so they go through
   // the local proxy.
-  if (isLocalProxyMode && isAbsoluteUrl && !isAsset) {
+  if (localProxy && isAbsoluteUrl && !isAsset) {
     try {
       const reqUrl = new URL(updatedUrl);
 
@@ -147,10 +158,10 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
         updatedUrl =
           `${reqUrl.pathname}${reqUrl.search}${reqUrl.hash}`;
 
-        console.log(
-          'Rewriting API absolute URL to relative (localhost:4500 proxy mode):',
-          updatedUrl
-        );
+        // console.log(
+        //   'Rewriting API absolute URL to relative (localhost:4500 proxy mode):',
+        //   updatedUrl
+        // );
       }
     } catch {
       // Ignore invalid URLs.

@@ -35,12 +35,9 @@ export class AppService {
 
     getXsrfToken(data : any, login_required : boolean) {
         var key = this.getCurrentSessionData('encryptKey');
-        console.log("getXsrfToken Data:::" + data);
         if (key && login_required) {
-            console.log("Inside getXsrfToken If Condition:::" + CryptoJS.MD5(data).toString());
             return this.encryptText(key, CryptoJS.MD5(data).toString());
         } else {
-            console.log("Inside getXsrfToken Else Condition:::" + CryptoJS.MD5(data).toString());
             return CryptoJS.MD5(data).toString();
         }
     }

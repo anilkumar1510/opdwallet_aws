@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { AHCStore, AhcBooking, AhcCentre, AhcProvider, AhcServiceTile, AhcSlot, CollectionAddress } from './ahc.store';
+import { AHCStore, AhcBooking, AhcCentre, AhcLab, AhcProvider, AhcServiceTile, AhcSlot, CollectionAddress } from './ahc.store';
 import { UserInfoStore } from './../../core/session/userinfo.store';
 import { LocationStore } from './../../core/location/location.store';
 import { Place } from './../../core/location/location';
@@ -145,44 +145,68 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                 No Annual Health Check package is available on your plan right now.
               </p>
             } @else {
-            <!-- One button per leg of the package (data.benefits_package_service_tiles), in API order. -->
+            <!-- One card per leg (pathology first), listing every lab that offers it.
+                 Picking a lab starts that leg's booking with the lab's provider. -->
             @for (tile of ahcStore.serviceTiles(); track tile.id) {
-              @if (tile.serviceType === 'PATHOLOGY') {
-                <!-- Book Pathology -->
-                <button
-                  type="button"
-                  class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 text-left disabled:opacity-50"
+              @if (legFor(tile); as leg) {
+                <section
+                  class="rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4"
                   style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
-                  [disabled]="!canBook('pathology')"
-                  (click)="startLeg('pathology', tile)"
                 >
-                  <span>
-                    <span class="block font-semibold text-[#034DA2]">Book Pathology</span>
-                    <span class="mt-0.5 block text-xs text-ink-500">Home collection or centre visit</span>
-                  </span>
-                  <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="pathologyBooked()" [class.text-ink-400]="!pathologyBooked()">
-                    {{ pathologyBooked() ? '✓ Booked' : 'Book →' }}
-                  </span>
-                </button>
-              } @else if (tile.serviceType === 'RADIOLOGY') {
-                <!-- Book Radiology (only after pathology, on the individual route) -->
-                <button
-                  type="button"
-                  class="flex w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-[#E5E7EB] bg-white p-4 text-left disabled:opacity-50"
-                  style="box-shadow: 0 1px 8px 0 rgba(3,77,162,.10)"
-                  [disabled]="!canBook('radiology')"
-                  (click)="startLeg('radiology', tile)"
-                >
-                  <span>
-                    <span class="block font-semibold text-[#034DA2]">Book Radiology</span>
-                    <span class="mt-0.5 block text-xs text-ink-500">
-                      {{ !hasPathology() || pathologyBooked() || radiologyBooked() ? 'Centre visit' : 'Book pathology first' }}
+                  <div class="flex items-start justify-between gap-3">
+                    <span>
+                      <span class="block font-semibold text-[#034DA2]" [class.opacity-50]="!canBook(leg) && !isBooked(leg)">
+                        {{ leg === 'pathology' ? 'Book Pathology' : 'Book Radiology' }}
+                      </span>
+                      <span class="mt-0.5 block text-xs text-ink-500">
+                        @if (leg === 'pathology') { Home collection or centre visit }
+                        @else { {{ !hasPathology() || pathologyBooked() || radiologyBooked() ? 'Centre visit' : 'Book pathology first' }} }
+                      </span>
                     </span>
-                  </span>
-                  <span class="shrink-0 text-xs font-semibold" [class.text-success-700]="radiologyBooked()" [class.text-ink-400]="!radiologyBooked()">
-                    {{ radiologyBooked() ? '✓ Booked' : 'Book →' }}
-                  </span>
-                </button>
+                    @if (isBooked(leg)) {
+                      <span class="shrink-0 text-xs font-semibold text-success-700">✓ Booked</span>
+                    } @else if (canBook(leg) && ahcStore.labsFor(tile.serviceType).length) {
+                      <span class="shrink-0 text-xs font-semibold text-ink-400">Choose a clinic / provider</span>
+                    }
+                  </div>
+
+                  @if (ahcStore.labsFor(tile.serviceType); as labs) {
+                    @if (labs.length) {
+                      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                        @for (lab of labs; track lab.id) {
+                          <button
+                            type="button"
+                            class="flex items-start gap-3 rounded-xl border-[1.5px] border-[#EDF0F7] bg-white p-3 text-left hover:border-[#0F5FDC] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#EDF0F7]"
+                            [disabled]="!canBook(leg)"
+                            (click)="startLeg(leg, tile, lab)"
+                          >
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EEF3FF] text-[11px] font-bold text-[#034DA2]" aria-hidden="true">{{ initials(lab.providerName) }}</span>
+                            <span class="min-w-0 flex-1">
+                              <span class="block text-sm font-semibold text-ink-900">{{ lab.providerName }}</span>
+                              <span class="mt-0.5 line-clamp-2 block text-xs text-ink-500">{{ lab.serviceItemName }}</span>
+                              @if (lab.testCount) {
+                                <span class="mt-1 block text-[11px] text-ink-500">{{ lab.profiles.length }} profile{{ lab.profiles.length === 1 ? '' : 's' }} · {{ lab.testCount }} test{{ lab.testCount === 1 ? '' : 's' }}</span>
+                              }
+                            </span>
+                            @if (canBook(leg)) {
+                              <span class="shrink-0 self-center text-xs font-semibold text-[#0F5FDC]">Book →</span>
+                            }
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <!-- A package that lists the leg without labs: book it as before. -->
+                      <button
+                        type="button"
+                        class="mt-3 min-h-touch w-full rounded-xl border border-[#0F5FDC] px-4 text-sm font-semibold text-[#0F5FDC] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="!canBook(leg)"
+                        (click)="startLeg(leg, tile, null)"
+                      >
+                        Book →
+                      </button>
+                    }
+                  }
+                </section>
               }
             }
             }
@@ -286,6 +310,11 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
         @else if (view() === 'steps') {
           <div class="mb-5">
             <h2 class="text-lg font-bold text-[#034DA2] lg:text-xl">{{ legLabel() }}</h2>
+            @if (selectedLab(); as lab) {
+              <p class="mt-0.5 text-sm text-ink-700">
+                <span class="font-medium">{{ lab.providerName }}</span> · {{ lab.serviceItemName }}
+              </p>
+            }
             <p class="text-sm text-ink-500">Complete the steps below to proceed</p>
             <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#E4EBFE]" aria-hidden="true">
               <div class="h-full rounded-full bg-[#0F5FDC] transition-all duration-300" [style.width.%]="progress()"></div>
@@ -549,7 +578,9 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                             </div>
                           }
                         } @else {
-                          <!-- In clinic: pick a provider, then one of its centres. -->
+                          <!-- In clinic: the provider picked on the first screen goes straight to
+                               its centres; without one (a package with no labs), pick a provider first. -->
+                          @if (!selectedLab()) {
                           <p class="mb-2 text-sm text-ink-900">Select provider</p>
                           @if (providersLoading()) {
                             <p class="rounded-xl bg-[#F2F4F8] px-3 py-3 text-sm text-ink-500">Finding providers near you…</p>
@@ -573,8 +604,11 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                               }
                             </div>
                           }
+                          }
 
-                          <p class="mb-2 mt-4 border-b border-surface-border pb-2 text-sm text-ink-900">Choose centre</p>
+                          <p class="mb-2 border-b border-surface-border pb-2 text-sm text-ink-900" [class.mt-4]="!selectedLab()">
+                            Choose centre@if (selectedLab(); as lab) { <span class="text-ink-500"> · {{ lab.providerName }}</span> }
+                          </p>
                           @if (!provider()) {
                             <p class="text-sm text-ink-500">Pick a provider to see its centres.</p>
                           } @else if (ahcStore.centresLoading()) {
@@ -608,7 +642,7 @@ const BOOKING_STEPS = ['Booked', 'Inprogress', 'Completed'];
                       }
 
                       @case ('provider') {
-                        <!-- 4 · Provider (home collection only) -->
+                        <!-- 4 · Provider (home collection, only when no lab was picked first) -->
                         @if (providersLoading()) {
                           <p class="rounded-xl bg-[#F2F4F8] px-3 py-3 text-sm text-ink-500">Finding providers near you…</p>
                         } @else if (!providers().length) {
@@ -868,9 +902,13 @@ export class WellnessPage {
   /** Scans are done at a centre, so only pathology can be collected at home. */
   protected readonly homeAllowed = computed(() => this.activeLeg() === 'pathology');
 
-  /** In clinic, the provider is picked inside the clinic step, so there is no provider step. */
+  /**
+   * The provider is picked on the first screen (the lab), so there is no
+   * provider step. Only a package without labs asks for one, at home; in
+   * clinic it is part of the clinic step.
+   */
   protected readonly visibleSteps = computed<StepKey[]>(() =>
-    this.mode() === 'home'
+    this.mode() === 'home' && !this.selectedLab()
       ? ['pincode', 'mode', 'location', 'provider', 'slot']
       : ['pincode', 'mode', 'location', 'slot'],
   );
@@ -967,6 +1005,7 @@ export class WellnessPage {
   private onPlaceChanged(): void {
     this.clearProvider();
     void this.loadProviders();
+    this.loadCentres();
   }
 
   // Mode
@@ -977,6 +1016,7 @@ export class WellnessPage {
       this.clearProvider();
       void this.loadProviders();
       if (m === 'home') this.loadAddresses();
+      else this.loadCentres();
     }
     this.advance();
   }
@@ -1055,9 +1095,59 @@ export class WellnessPage {
     const mode = this.mode();
     if (!mode || !this.location.place()?.pincode || !this.userInfo?.length) return;
     await this.ahcStore.getAHCProviders(this.userInfo[0], mode);
-    // In clinic with a single provider there is nothing to choose: go straight to its centres.
     const list = this.providers();
-    if (this.mode() === 'clinic' && list.length === 1 && !this.provider()) this.chooseProvider(list[0]);
+    if (this.selectedLab()) {
+      this.upgradeLabProvider();
+      return;
+    }
+    if (this.provider()) return;
+    // In clinic with a single provider there is nothing to choose: go straight to its centres.
+    if (this.mode() === 'clinic' && list.length === 1) this.chooseProvider(list[0]);
+  }
+
+  /** The lab picked on the first screen for this leg. */
+  protected readonly selectedLab = computed(() => this.ahcStore.AHCSelectedItem()?.lab ?? null);
+
+  /** The provider-listing row of the picked lab, matched on provider code. */
+  private readonly labProvider = computed(() => {
+    const code = this.selectedLab()?.providerCode.toLowerCase();
+    return code ? this.providers().find((p) => p.code.toLowerCase() === code) ?? null : null;
+  });
+
+  /**
+   * The picked lab as a provider, from its phc_detail row. It stands in until
+   * the provider listing returns the same provider code with its full row
+   * (extra_data: in-clinic and home-collection codes), and alone when the
+   * listing has none for this place.
+   */
+  private labAsProvider(lab: AhcLab): AhcProvider {
+    return {
+      id: 'lab:' + lab.id,
+      name: lab.providerName,
+      code: lab.providerCode,
+      centreCode: '',
+      address: '',
+      raw: { ...lab.raw, extra_data: lab.raw?.extra_data ?? {} },
+    };
+  }
+
+  /**
+   * Swaps the stand-in for the listing's row of the same provider, before any
+   * slot is picked (slots belong to the row they were read for).
+   */
+  private upgradeLabProvider(): void {
+    const match = this.labProvider();
+    const current = this.provider();
+    if (!match || !current || current.id === match.id || this.slotDate()) return;
+    this.provider.set(match);
+    this.ahcStore.setSelectedProvider(match);
+    if (!this.centre()) this.loadCentres();
+  }
+
+  /** In clinic, the provider's centres near the place. */
+  private loadCentres(): void {
+    if (this.mode() !== 'clinic' || !this.provider() || !this.location.place()?.pincode || !this.userInfo?.length) return;
+    void this.ahcStore.getCentreAddress(this.userInfo[0], 'clinic');
   }
 
   protected chooseProvider(p: AhcProvider): void {
@@ -1074,9 +1164,12 @@ export class WellnessPage {
     this.advance();
   }
 
+  /** Drops the provider's centre and slot; the picked lab stays the provider. */
   private clearProvider(): void {
-    this.provider.set(null);
-    this.ahcStore.setSelectedProvider(null);
+    const lab = this.selectedLab();
+    const base = lab ? this.labAsProvider(lab) : null;
+    this.provider.set(base);
+    this.ahcStore.setSelectedProvider(base);
     this.clearCentre();
     this.clearSlot();
   }
@@ -1131,8 +1224,10 @@ export class WellnessPage {
     const place = this.location.place();
     const rows = [
       { label: 'Booking', value: this.legLabel() },
-      { label: 'Pincode', value: place?.pincode ?? '' },
     ];
+    const lab = this.selectedLab();
+    if (lab?.serviceItemName) rows.push({ label: 'Package', value: lab.serviceItemName });
+    rows.push({ label: 'Pincode', value: place?.pincode ?? '' });
     if (place?.label) rows.push({ label: 'Location', value: place.label });
     rows.push({ label: 'Mode', value: this.mode() === 'home' ? 'Home collection' : 'In clinic' });
     if (this.mode() === 'home') {
@@ -1164,6 +1259,15 @@ export class WellnessPage {
     }
   }
 
+  /** The leg a tile books, or null for a service type this screen does not book. */
+  protected legFor(tile: AhcServiceTile): 'pathology' | 'radiology' | null {
+    return tile.serviceType === 'PATHOLOGY' ? 'pathology' : tile.serviceType === 'RADIOLOGY' ? 'radiology' : null;
+  }
+
+  protected isBooked(leg: Leg): boolean {
+    return leg === 'pathology' ? this.pathologyBooked() : leg === 'radiology' ? this.radiologyBooked() : this.packageBooked();
+  }
+
   /** Whether the member's package includes a pathology leg. */
   protected readonly hasPathology = computed(() =>
     this.ahcStore.serviceTiles().some((t) => t.serviceType === 'PATHOLOGY'),
@@ -1179,10 +1283,17 @@ export class WellnessPage {
     return !this.pathologyBooked() && !this.radiologyBooked();
   }
 
-  /** Stores the picked leg — its tile and the package — for the later steps. */
-  protected startLeg(leg: Leg, tile: AhcServiceTile | null): void {
+  /**
+   * Stores the picked leg — its tile, the lab picked for it and the package —
+   * for the later steps. With a lab, its phc_detail row is the package, and
+   * its provider is pre-selected once the provider list loads.
+   */
+  protected startLeg(leg: Leg, tile: AhcServiceTile | null, lab: AhcLab | null = null): void {
     if (!this.canBook(leg)) return;
-    this.ahcStore.setAHCSelctedItem({ leg, tile, package: this.ahcStore.ahcPackage() });
+    const pkg = lab
+      ? { ...lab.raw, serviceItemSearch: lab.raw?.serviceItemSearch ?? this.ahcStore.AHC()?.data }
+      : this.ahcStore.ahcPackage();
+    this.ahcStore.setAHCSelctedItem({ leg, tile, package: pkg, lab });
     this.activeLeg.set(leg);
     this.view.set('steps');
     this.confirmation.set(null);
@@ -1198,6 +1309,7 @@ export class WellnessPage {
     // A place chosen earlier is kept, so the pincode step may already be done.
     this.advance();
     void this.loadProviders();
+    this.loadCentres();
   }
 
   protected closeLeg(): void {
